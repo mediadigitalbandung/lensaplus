@@ -20,26 +20,26 @@ const footerLinks = {
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-primary text-white" role="contentinfo" aria-label="Footer situs">
-      <div className="container-main py-12">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Brand */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+    <footer className="bg-white text-on-surface border-t border-border" role="contentinfo" aria-label="Footer situs">
+      <div className="container-main py-14">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12">
+          {/* Brand + Badge — takes more space */}
+          <div className="col-span-1 sm:col-span-2 lg:col-span-5">
             <div className="flex items-center gap-2">
-              <span className="font-serif text-xl font-bold text-white tracking-tight">
+              <span className="font-serif text-2xl font-bold text-on-surface tracking-tight">
                 Kartawarta
               </span>
             </div>
-            <p className="mt-4 max-w-xs text-body-sm leading-relaxed text-white/40">
+            <p className="mt-4 max-w-sm text-body-md leading-relaxed text-txt-muted">
               Media digital terpercaya. Menyajikan berita terkini dengan standar jurnalistik tertinggi.
             </p>
 
-            {/* Badge Dewan Pers */}
-            <div className="mt-6 inline-flex items-center gap-3 rounded-full bg-white/[0.07] px-4 py-2.5 backdrop-blur-sm border border-white/[0.08]">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500">
+            {/* Badge Dewan Pers — Larger */}
+            <div className="mt-8 inline-flex items-center gap-4 rounded-2xl bg-primary px-6 py-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-500 shadow-lg shadow-blue-500/30">
                 <svg
-                  width="18"
-                  height="18"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -66,27 +66,27 @@ export default function Footer() {
                 </svg>
               </div>
               <div className="flex flex-col">
-                <span className="text-label-md font-semibold text-white tracking-wide leading-tight" style={{ letterSpacing: "0.01em" }}>
+                <span className="text-label-lg font-bold text-white tracking-wide leading-tight">
                   Terverifikasi Dewan Pers
                 </span>
-                <span className="text-[10px] text-white/40 leading-tight mt-0.5">
+                <span className="text-body-sm text-white/50 leading-tight mt-1">
                   Sertifikat No. 608/DP-Verifikasi/K/XI/2020
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Tentang */}
-          <div>
-            <h4 className="mb-4 text-label-md font-semibold uppercase tracking-wider text-white/30">
+          {/* Tentang — shifted right */}
+          <div className="lg:col-span-3 lg:col-start-7">
+            <h4 className="mb-4 text-label-md font-semibold uppercase tracking-wider text-txt-muted">
               Tentang
             </h4>
-            <ul className="space-y-2.5">
+            <ul className="space-y-3">
               {footerLinks.tentang.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-body-sm text-white/50 transition-colors duration-200 hover:text-white"
+                    className="text-body-md text-txt-secondary transition-colors duration-200 hover:text-primary"
                   >
                     {link.name}
                   </Link>
@@ -95,17 +95,17 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Kontak */}
-          <div>
-            <h4 className="mb-4 text-label-md font-semibold uppercase tracking-wider text-white/30">
+          {/* Kontak — shifted right */}
+          <div className="lg:col-span-3 lg:col-start-10">
+            <h4 className="mb-4 text-label-md font-semibold uppercase tracking-wider text-txt-muted">
               Kontak
             </h4>
-            <ul className="space-y-2.5">
+            <ul className="space-y-3">
               {footerLinks.kontak.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-body-sm text-white/50 transition-colors duration-200 hover:text-white"
+                    className="text-body-md text-txt-secondary transition-colors duration-200 hover:text-primary"
                   >
                     {link.name}
                   </Link>
@@ -115,15 +115,15 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom bar — no border line, use spacing */}
-        <div className="mt-12 pt-6">
+        {/* Bottom bar */}
+        <div className="mt-14 pt-6 border-t border-border">
           <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
-            <p className="text-label-sm text-white/30 uppercase tracking-wider">
+            <p className="text-label-sm text-txt-muted uppercase tracking-wider">
               &copy; {new Date().getFullYear()} Kartawarta. Seluruh hak cipta dilindungi.
             </p>
-            <p className="text-label-sm text-white/30">
+            <p className="text-label-sm text-txt-muted">
               Anggota{" "}
-              <span className="font-medium text-white/50">Dewan Pers Indonesia</span>
+              <span className="font-semibold text-txt-secondary">Dewan Pers Indonesia</span>
             </p>
           </div>
         </div>
