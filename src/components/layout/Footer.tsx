@@ -33,6 +33,47 @@ export default function Footer() {
             <p className="mt-4 max-w-xs text-body-sm leading-relaxed text-white/40">
               Media digital terpercaya. Menyajikan berita terkini dengan standar jurnalistik tertinggi.
             </p>
+
+            {/* Badge Dewan Pers */}
+            <div className="mt-6 inline-flex items-center gap-3 rounded-full bg-white/[0.07] px-4 py-2.5 backdrop-blur-sm border border-white/[0.08]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 2L4 5.5V11.5C4 16.74 7.42 21.59 12 23C16.58 21.59 20 16.74 20 11.5V5.5L12 2Z"
+                    fill="white"
+                    fillOpacity="0.25"
+                  />
+                  <path
+                    d="M12 2L4 5.5V11.5C4 16.74 7.42 21.59 12 23C16.58 21.59 20 16.74 20 11.5V5.5L12 2Z"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 12L11 14L15 10"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-label-md font-semibold text-white tracking-wide leading-tight" style={{ letterSpacing: "0.01em" }}>
+                  Terverifikasi Dewan Pers
+                </span>
+                <span className="text-[10px] text-white/40 leading-tight mt-0.5">
+                  Sertifikat No. 608/DP-Verifikasi/K/XI/2020
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Tentang */}

@@ -6,7 +6,7 @@ import NewsTicker from "@/components/layout/NewsTicker";
 import HeroCarousel from "@/components/slider/HeroCarousel";
 import PollingCarousel from "@/components/slider/PollingCarousel";
 import BannerAd, { SidebarAd, InlineAd, NativeAd } from "@/components/ads/BannerAd";
-import { Scale, Briefcase, Trophy, Film, Heart, Wheat, Cpu, Vote as VoteIcon, GraduationCap, Leaf, Compass, BookOpen, TrendingUp, LucideIcon, ArrowRight, Clock, Eye, Flame, Sparkles, ChevronRight } from "lucide-react";
+import { Scale, Briefcase, Trophy, Film, Heart, Wheat, Cpu, Vote as VoteIcon, GraduationCap, Leaf, Compass, BookOpen, TrendingUp, LucideIcon, ArrowRight, Clock, Eye, Flame, Sparkles, ChevronRight, Shield } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 const categoryIconMap: Record<string, LucideIcon> = {
@@ -116,7 +116,7 @@ export default async function HomePage() {
           <div className="container-main">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5 text-secondary ring-1 ring-secondary/10">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20">
                   <Sparkles size={18} strokeWidth={2.5} />
                 </div>
                 <div>
@@ -170,7 +170,7 @@ export default async function HomePage() {
             <div className="lg:col-span-7">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/10">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20">
                     <Flame size={18} strokeWidth={2.5} />
                   </div>
                   <h2 className="font-serif text-headline-md text-on-surface">Berita Terkini</h2>
@@ -235,7 +235,7 @@ export default async function HomePage() {
               {/* Terpopuler */}
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5 text-secondary ring-1 ring-secondary/10">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20">
                     <TrendingUp size={16} strokeWidth={2.5} />
                   </div>
                   <h2 className="font-serif text-headline-sm text-on-surface">Terpopuler</h2>
@@ -285,8 +285,8 @@ export default async function HomePage() {
       <section className="bg-surface py-14">
         <div className="container-main">
           <div className="flex items-center gap-3 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5 text-secondary ring-1 ring-secondary/10">
-              <VoteIcon size={18} strokeWidth={2.5} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20">
+              <Shield size={18} strokeWidth={2.5} />
             </div>
             <div>
               <span className="text-label-md uppercase tracking-widest text-secondary font-bold">Suara Pembaca</span>
