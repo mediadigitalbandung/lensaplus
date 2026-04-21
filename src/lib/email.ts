@@ -6,7 +6,7 @@ const resend = process.env.RESEND_API_KEY
 
 const FROM_EMAIL = process.env.EMAIL_FROM || "Kartawarta <noreply@kartawarta.com>";
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Kartawarta";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.vercel.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
 
 function baseTemplate(title: string, body: string): string {
   return `

@@ -1,6 +1,6 @@
 /**
  * WordPress to Prisma Migration Script
- * Reads WP SQL dump and imports articles into Supabase via Prisma
+ * Reads WP SQL dump and imports articles into PostgreSQL via Prisma
  */
 const fs = require("fs");
 const path = require("path");

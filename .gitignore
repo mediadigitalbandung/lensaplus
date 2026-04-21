@@ -27,7 +27,6 @@ www/wp-content/plugins/speedycache-pro/
 node_modules/
 .next/
 out/
-.vercel/
 
 # OS files
 .DS_Store
@@ -56,8 +55,6 @@ etc/
 
 # Old WordPress files (will be replaced by Next.js)
 www/
-
-.vercel
 
 # Uploaded files
 public/uploads/*

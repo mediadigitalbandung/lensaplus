@@ -55,11 +55,12 @@ Jangan tunggu user minta commit/push — **langsung lakukan** setelah perubahan 
 
 ## Database
 
-- **Provider:** Supabase (Seoul region)
-- **Ref:** `rbjlasipbucuzegdzboa`
+- **Provider:** PostgreSQL (self-hosted di VPS Hostinger 145.79.15.99)
+- **Host:** `localhost:5432` (dari sisi aplikasi yang jalan di VPS yang sama)
+- **Database:** `kartawarta` (user: `kartawarta`)
 - **Schema:** `prisma/schema.prisma`
 - **Migrate:** `npx prisma db push`
-- **Env:** `DATABASE_URL` (port 6543 + pgbouncer) dan `DIRECT_URL` (port 5432)
+- **Env:** `DATABASE_URL="postgresql://kartawarta:<password>@localhost:5432/kartawarta"`
 
 ## File Penting
 
@@ -84,5 +85,5 @@ src/app/panel/          — Admin panel pages
 - Panel admin pakai client components + fetch API routes
 - Gunakan `export const dynamic = "force-dynamic"` untuk halaman yang query database
 - Jangan commit file `.env` — sudah di `.gitignore`
-- Vercel env vars dikelola via `npx vercel env` CLI
+- Env vars produksi dikelola langsung di `/var/www/kartawarta/.env` di VPS (lihat `deploy-vps.sh`)
 - Password di-hash dengan `bcryptjs` (12 rounds)
