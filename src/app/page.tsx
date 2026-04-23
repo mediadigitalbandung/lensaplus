@@ -109,58 +109,6 @@ export default async function HomePage() {
       <BannerAd size="leaderboard" slot="HEADER" className="bg-surface" />
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-          EDITOR'S PICK â€” 4 cards horizontal
-          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      {editorsPickArticles.length > 0 && (
-        <section className="bg-surface py-14">
-          <div className="container-main">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20">
-                  <Sparkles size={18} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <span className="text-label-md uppercase tracking-widest text-secondary font-bold">Pilihan Editor</span>
-                  <h2 className="font-serif text-headline-md text-on-surface mt-0.5">
-                    Wajib Dibaca Hari Ini
-                  </h2>
-                </div>
-              </div>
-              <Link href="/berita" className="hidden sm:flex items-center gap-1.5 rounded-full bg-primary/5 px-4 py-2 text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors">
-                Semua Berita <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {editorsPickArticles.map((a) => (
-                <article key={a.slug} className="group">
-                  <Link href={`/berita/${a.slug}`} className="block">
-                    <div className="relative aspect-[3/2] overflow-hidden rounded-sm">
-                      {a.featuredImage ? (
-                        <Image src={a.featuredImage} alt={a.title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-                      ) : (
-                        <div className="h-full w-full bg-surface-container-low" />
-                      )}
-                    </div>
-                  </Link>
-                  <div className="mt-3">
-                    <span className="text-label-sm font-bold uppercase tracking-widest text-primary">{a.category.name}</span>
-                    <Link href={`/berita/${a.slug}`}>
-                      <h3 className="mt-1 font-serif text-title-lg leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
-                        {a.title}
-                      </h3>
-                    </Link>
-                    <p className="mt-2 flex items-center gap-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
-                      {a.author.name} <span className="text-on-surface-variant/30 mx-0.5">/</span> <Clock size={10} className="text-on-surface-variant/50" /> {timeAgo(a.publishedAt)}
-                    </p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           TERKINI + TERPOPULER + SIDEBAR AD
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <section className="bg-surface-container-low py-14">
@@ -275,6 +223,58 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+          EDITOR'S PICK â€” 4 cards horizontal
+          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {editorsPickArticles.length > 0 && (
+        <section className="bg-surface py-14">
+          <div className="container-main">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20">
+                  <Sparkles size={18} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <span className="text-label-md uppercase tracking-widest text-secondary font-bold">Pilihan Editor</span>
+                  <h2 className="font-serif text-headline-md text-on-surface mt-0.5">
+                    Wajib Dibaca Hari Ini
+                  </h2>
+                </div>
+              </div>
+              <Link href="/berita" className="hidden sm:flex items-center gap-1.5 rounded-full bg-primary/5 px-4 py-2 text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors">
+                Semua Berita <ArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {editorsPickArticles.map((a) => (
+                <article key={a.slug} className="group">
+                  <Link href={`/berita/${a.slug}`} className="block">
+                    <div className="relative aspect-[3/2] overflow-hidden rounded-sm">
+                      {a.featuredImage ? (
+                        <Image src={a.featuredImage} alt={a.title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                      ) : (
+                        <div className="h-full w-full bg-surface-container-low" />
+                      )}
+                    </div>
+                  </Link>
+                  <div className="mt-3">
+                    <span className="text-label-sm font-bold uppercase tracking-widest text-primary">{a.category.name}</span>
+                    <Link href={`/berita/${a.slug}`}>
+                      <h3 className="mt-1 font-serif text-title-lg leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
+                        {a.title}
+                      </h3>
+                    </Link>
+                    <p className="mt-2 flex items-center gap-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
+                      {a.author.name} <span className="text-on-surface-variant/30 mx-0.5">/</span> <Clock size={10} className="text-on-surface-variant/50" /> {timeAgo(a.publishedAt)}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* AD: Between sections */}
       <BannerAd size="banner" slot="BETWEEN_SECTIONS" className="bg-surface" />
