@@ -963,6 +963,99 @@ export default function EditArticlePage() {
             <p className="mt-1 text-sm text-yellow-600">
               Editor: {existingReviewerName || "Belum ditugaskan"}
             </p>
+
+            <div className="mt-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={async () => {
+                    const ok = await confirm({ message: "Setujui artikel ini? Artikel akan berpindah ke status Approved.", variant: "warning", title: "Konfirmasi" });
+                    if (!ok) return;
+                    setSaving(true);
+                    try {
+                      const res = await fetch(`/api/articles/${articleId}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ status: "APPROVED", reviewNote: approveNote || null }),
+                      });
+                      const d = await res.json();
+                      if (!d.success) { setError(d.error || "Gagal menyetujui artikel"); setSaving(false); return; }
+                      success("Artikel berhasil disetujui");
+                      router.push("/panel/artikel");
+                      router.refresh();
+                    } catch { setError("Terjadi kesalahan."); setSaving(false); }
+                  }}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 rounded-[12px] bg-green-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                >
+                  <CheckCircle size={16} />
+                  Approve
+                </button>
+                <button
+                  onClick={handleAdminPublish}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 rounded-[12px] bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+                >
+                  <Upload size={16} />
+                  Publikasi Langsung
+                </button>
+                <button
+                  onClick={() => { setReviewChoice(reviewChoice === "reject" ? null : "reject"); }}
+                  className="flex items-center gap-1.5 rounded-[12px] border border-red-300 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100"
+                >
+                  <XCircle size={16} />
+                  Tolak
+                </button>
+              </div>
+
+              {reviewChoice === "reject" && (
+                <div className="rounded-[12px] border border-red-300 bg-red-50 p-4 mt-3">
+                  <label className="mb-1 block text-sm font-medium text-red-800">
+                    Alasan penolakan (wajib)
+                  </label>
+                  <textarea
+                    value={rejectNote}
+                    onChange={(e) => setRejectNote(e.target.value)}
+                    rows={3}
+                    placeholder="Tuliskan alasan penolakan..."
+                    className="input w-full text-sm"
+                    autoFocus
+                  />
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!rejectNote.trim()) { setError("Alasan penolakan wajib diisi"); return; }
+                        const ok = await confirm({ message: "Tolak artikel ini? Artikel akan dikembalikan ke penulis.", variant: "danger", title: "Konfirmasi" });
+                        if (!ok) return;
+                        setSaving(true);
+                        try {
+                          const res = await fetch(`/api/articles/${articleId}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ status: "REJECTED", reviewNote: rejectNote }),
+                          });
+                          const d = await res.json();
+                          if (!d.success) { setError(d.error || "Gagal menolak artikel"); setSaving(false); return; }
+                          success("Artikel ditolak dan dikembalikan ke penulis");
+                          router.push("/panel/artikel");
+                          router.refresh();
+                        } catch { setError("Terjadi kesalahan."); setSaving(false); }
+                      }}
+                      disabled={saving || !rejectNote.trim()}
+                      className="flex items-center gap-1.5 rounded-[12px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                      <XCircle size={14} />
+                      Konfirmasi Tolak
+                    </button>
+                    <button
+                      onClick={() => { setReviewChoice(null); setRejectNote(""); }}
+                      className="rounded-[12px] px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

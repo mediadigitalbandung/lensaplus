@@ -484,8 +484,9 @@ export async function PUT(
         return successResponse(updated);
       }
 
-      // Admin publish: APPROVED -> PUBLISHED (or schedule)
-      if (data.status === "PUBLISHED" && article.status === "APPROVED") {
+      // Admin publish: APPROVED/IN_REVIEW -> PUBLISHED (or schedule)
+      // Admin can publish directly from IN_REVIEW (bypassing approve step) or from APPROVED
+      if (data.status === "PUBLISHED" && (article.status === "APPROVED" || article.status === "IN_REVIEW")) {
         // Save revision before publish
         await prisma.revision.create({
           data: {
