@@ -55,18 +55,18 @@
 ## Phase 3 · SEO Distribution (Google Indexing + IndexNow + Sorotan + JSON-LD)
 *Agent: `seo-distributor`*
 
-- [ ] Install `googleapis`
-- [ ] Buat `src/lib/seo/google-indexing.ts` — submit URL ke Indexing API pakai service account JSON
-- [ ] Buat `src/lib/seo/indexnow.ts` — POST ke `https://api.indexnow.org/indexnow` dengan key
-- [ ] Generate IndexNow key + simpan di `public/indexnow-key.txt`
-- [ ] Buat `src/lib/seo/sorotan-generator.ts` — 3 angle (kronologi/analisis/dampak), 300-500 kata tiap angle, panggil `callAI()`
-- [ ] Buat `src/lib/seo/json-ld.ts` — `articleJsonLd()`, `newsArticleJsonLd()`, `breadcrumbJsonLd()`, `faqJsonLd()`, `howToJsonLd()`, `qaJsonLd()`
-- [ ] Expand `src/lib/seo-auto.ts` (`onArticlePublished`) — panggil Indexing + IndexNow + Cloudflare purge
-- [ ] Halaman `/sitemap-news.xml` (2 hari terakhir, format Google News)
-- [ ] Halaman publik `/sorotan/[slug]` — detail 300-500 kata + JSON-LD
-- [ ] Halaman publik `/sorotan` — list
-- [ ] Inject JSON-LD di `/berita/[slug]` (NewsArticle + FAQPage kalau ada `faqData` + BreadcrumbList)
-- [ ] API `/api/seo/submit`, `/api/seo/status`, `/api/seo/generate-sorotan`, `/api/seo/generate-sorotan-single`, `/api/seo/batch-index`, `/api/seo/bulk-reindex`, `/api/seo/test-credentials`, `/api/seo/sorotan-status` GET/POST, `/api/seo/ping` (cron)
+- [x] Install `googleapis` (25 packages)
+- [x] `src/lib/seo/google-indexing.ts` — `submitUrlToGoogle()` + `testGoogleCredentials()` via service account JWT
+- [x] `src/lib/seo/indexnow.ts` — `pingIndexNow()` + `getIndexNowKey()` dengan fallback file→SystemSetting→env
+- [x] IndexNow key generated + `public/indexnow-key.txt` + `public/{key}.txt` (spec-compliant)
+- [x] `src/lib/seo/sorotan-generator.ts` — 3 angle (KRONOLOGI/ANALISIS/DAMPAK), prompt Indonesia, consume `callAI`
+- [x] `src/lib/seo/json-ld.ts` — 8 builder: newsArticle, article, breadcrumb, faq, howTo, qa, organization, website
+- [x] Expand `seo-auto.ts` `onArticlePublished(slug, articleId?)` — Promise.allSettled: Indexing + IndexNow + Sorotan; Cloudflare purge placeholder `TODO(phase-6)`; writes AuditLog `ARTICLE_PUBLISHED_SEO_CHAIN`
+- [x] `/sitemap-news.xml` — Google News format, 48 jam, max 1000 artikel, dengan `<news:keywords>` dari tags
+- [x] `/sorotan/[slug]` — detail + Article/Breadcrumb/Organization JSON-LD + sidebar "other angles"
+- [x] `/sorotan` — list dengan angle filter + pagination
+- [x] Inject JSON-LD di `/berita/[slug]`: NewsArticle + BreadcrumbList + FAQPage (kalau `faqData` ada)
+- [x] 10 API endpoints di `/api/seo/*`: submit, status, generate-sorotan, generate-sorotan-single, batch-index, bulk-reindex, test-credentials, sorotan-status (GET+POST), ping (cron CRON_SECRET)
 
 ## Phase 4 · Social Media Automation
 *Agents: `social-publisher` + `social-template-renderer`*
@@ -199,6 +199,19 @@
 ### 2026-04-24 — Phase 1 Database Schema Expansion ✅
 - Delegasi ke `database-architect`. Schema expanded dengan 9 model baru, 4 enum baru, Article +10 field. `prisma validate/format/generate` sukses locally.
 - **Deploy ke VPS**: user jalankan `git pull && prisma generate && prisma db push && npm run build && pm2 restart kartawarta` — sukses. PM2 `kartawarta` online.
+
+### 2026-04-24 — Phase 3 SEO Distribution ✅
+- 4 library file baru di `src/lib/seo/` + IndexNow key di `public/`
+- 2 halaman publik `/sorotan` + `/sorotan/[slug]`
+- 1 route `/sitemap-news.xml`
+- 10 API endpoint di `/api/seo/*` (9 path, sorotan-status GET+POST)
+- `seo-auto.ts` `onArticlePublished` di-rewrite dengan fan-out Indexing + IndexNow + Sorotan generator
+- JSON-LD NewsArticle + BreadcrumbList + FAQPage di `/berita/[slug]`
+- Dependencies: `googleapis`
+- Build: tsc clean, next build pass
+- SystemSetting keys untuk aktivasi: `google_credentials_json`, `google_indexing_enabled`
+- Cloudflare purge hook sudah disiapkan dengan `TODO(phase-6)` comment
+- `/api/seo/ping` siap di-wire ke crontab oleh Phase 7
 
 ### 2026-04-24 — Phase 2 AI Shared Client ✅
 - Delegasi ke agent (spec: `.claude/agents/ai-client-builder.md`). Hasil:

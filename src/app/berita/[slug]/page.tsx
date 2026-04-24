@@ -20,6 +20,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 // Note: DOMPurify removed — content sanitized at input via API validation
 import { slugify } from "@/lib/utils";
+import { faqJsonLd } from "@/lib/seo/json-ld";
 
 async function getArticle(slug: string) {
   const article = await prisma.article.findUnique({
@@ -270,11 +271,41 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
     ],
   };
 
+  // Parse FAQ data (JSON) if present. Accept either an array of {question, answer}
+  // or an object { items: [...] }. Silently drop malformed payloads.
+  let faqLd: object | null = null;
+  if (article.faqData && article.faqData.trim().length > 0) {
+    try {
+      const parsed = JSON.parse(article.faqData) as unknown;
+      const items = Array.isArray(parsed)
+        ? parsed
+        : (parsed as { items?: unknown[] } | null)?.items;
+      if (Array.isArray(items) && items.length > 0) {
+        const valid = items.filter(
+          (it): it is { question: string; answer: string } =>
+            typeof it === "object" &&
+            it !== null &&
+            typeof (it as { question?: unknown }).question === "string" &&
+            typeof (it as { answer?: unknown }).answer === "string",
+        );
+        if (valid.length > 0) {
+          faqLd = faqJsonLd(valid);
+        }
+      }
+    } catch {
+      // malformed faqData — ignore
+    }
+  }
+
+  const structuredData = faqLd
+    ? [jsonLd, breadcrumbLd, faqLd]
+    : [jsonLd, breadcrumbLd];
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumbLd]) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <ReadingProgress />
       <CopyProtection

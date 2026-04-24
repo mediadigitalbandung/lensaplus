@@ -400,7 +400,7 @@ export async function PUT(
           },
         });
       }
-      onArticlePublished(updated.slug);
+      onArticlePublished(updated.slug, updated.id);
 
       return successResponse(updated);
     }
@@ -562,7 +562,7 @@ export async function PUT(
             },
           });
         }
-        onArticlePublished(updated.slug);
+        onArticlePublished(updated.slug, updated.id);
 
         return successResponse(updated);
       }

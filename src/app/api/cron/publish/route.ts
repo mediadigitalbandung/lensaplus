@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       await notifyArticleStatusChange(article.id, article.title, "PUBLISHED", article.authorId);
       const author = authorMap.get(article.authorId);
       if (author) await sendArticlePublishedEmail(author.email, article.title, article.slug);
-      onArticlePublished(article.slug);
+      onArticlePublished(article.slug, article.id);
       published.push(article.title);
     }
 
