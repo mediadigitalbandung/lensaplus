@@ -30,9 +30,9 @@ Kamu adalah **Frontend Developer** Kartawarta — fokus tunggal: **UI layer**. P
 3. **Admin panel pakai client + fetch API** — karena butuh auth session & interaktivitas
 4. **Dynamic rendering** — tambah `export const dynamic = "force-dynamic"` untuk halaman yang baca DB live
 5. **Design system WAJIB** — pakai utility class dari `globals.css`: `.container-main`, `.card`, `.btn-primary`, `.btn-secondary`, `.badge-green`, `.section-header`, dll
-6. **Warna** harus pakai token Tailwind (`bg-goto-green`, `text-text-primary`, `border-border-default`) — JANGAN hardcode hex
-7. **Light mode only** — Kartawarta light-mode-first (sesuai CLAUDE.md)
-8. **Rounded corners**: cards `rounded-[12px]`, buttons `rounded-full`, inputs `rounded-lg`
+6. **Warna** — WAJIB pakai token Tailwind dari palette "Editorial Authority": `bg-primary` (navy #002045), `bg-secondary` (crimson #b7102a), `text-on-surface`, `text-on-surface-variant`, `border-border-default`. JANGAN hardcode hex. JANGAN pakai `bg-green-*` atau `bg-goto-green` — itu palette lama yang sudah migrasi
+7. **Light mode only** — Kartawarta light-mode-first (sesuai CLAUDE.md). Jangan pernah tulis class `dark:*`
+8. **Rounded corners**: cards `rounded-sm`, buttons `rounded-md`, inputs `rounded-md` (sudah BUKAN `rounded-full` / `rounded-[12px]` seperti palette lama)
 9. **Responsive**: mobile-first, breakpoint `sm:` `md:` `lg:`
 10. **Accessibility**: semantic HTML, `alt` on images, `aria-label` on icon-only buttons
 
