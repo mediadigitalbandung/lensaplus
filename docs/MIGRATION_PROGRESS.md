@@ -71,18 +71,18 @@
 ## Phase 4 · Social Media Automation
 *Agents: `social-publisher` + `social-template-renderer`*
 
-- [ ] Install `sharp` versi 0.34+
-- [ ] `src/lib/social/types.ts` — `Platform`, `PublishStatus`, `PublishResult`, `PreparedPost`, `ArticleForPublish`
-- [ ] `src/lib/social/template-renderer.ts` — `renderTemplate(template, article)` pakai Sharp composite + text layers → buffer JPEG → simpan ke `/public/uploads/social/`
-- [ ] `src/lib/social/template-helper.ts` — `findTemplateForPlatform`, `renderAndStoreTemplate`, `enrichArticleForTemplate`
-- [ ] `src/lib/social/ai-caption.ts` — `generateCaptionForTemplate()` (paraphrased title + shortSummary via callAI)
-- [ ] `src/lib/social/caption-generator.ts` — `generateSocialCaption()` (hashtag + CTA)
-- [ ] `src/lib/social/instagram.ts` — `InstagramPublisher` class: create container → publish via Meta Graph API v21
-- [ ] `src/lib/social/facebook.ts` — `FacebookPublisher` class: link_share + photo post variants
-- [ ] `src/lib/social/orchestrator.ts` — `publishArticleToSocial(article)`, `approveDraft(postId)`, `rejectDraft(postId)`, `takedownPost(postId)`
-- [ ] API: `/api/social/posts` (GET), `/api/social/posts/:id/approve|reject|mark-deleted|takedown`, `/api/social/settings` (GET/PUT), `/api/social/templates` CRUD + `preview`, `/api/social/preview`, `/api/social/test-publish`
-- [ ] Panel `/panel/social` — daftar draft + approve/reject UI + template manager
-- [ ] Hook `publishArticleToSocial` dari `onArticlePublished` (non-blocking, respect `draftMode`)
+- [x] Install `sharp@^0.34.0` (3 packages)
+- [x] `src/lib/social/types.ts` — Platform, PublishStatus, PublishResult, PreparedPost, ArticleForPublish, TextLayer, PLATFORM_DIMENSIONS, CAPTION_MAX_LENGTH
+- [x] `src/lib/social/template-renderer.ts` — Sharp composite + SVG text overlay + placeholder {title}/{summary}/{category}/{date}/{author} + JPEG q85
+- [x] `src/lib/social/template-helper.ts` — findTemplateForPlatform, renderAndStoreTemplate (simpan ke `public/uploads/social/`), enrichArticleForTemplate
+- [x] `src/lib/social/ai-caption.ts` — generateCaptionForTemplate via callAI feature "social_caption"
+- [x] `src/lib/social/caption-generator.ts` — generateSocialCaption dengan hashtag + CTA + enforced max length per platform
+- [x] `src/lib/social/instagram.ts` — InstagramPublisher 2-step Meta Graph v21 (/media → /media_publish), error mapping 190/100/368
+- [x] `src/lib/social/facebook.ts` — FacebookPublisher link_share + photo + deletePost untuk takedown
+- [x] `src/lib/social/orchestrator.ts` — publishArticleToSocial, approveDraft, rejectDraft (hapus file), takedownPost; auto-bootstrap singleton settings row id="global"
+- [x] 15 API endpoints di `/api/social/*` (posts + approve/reject/mark-deleted/takedown, settings GET/PUT, templates CRUD + preview, preview, test-publish SUPER_ADMIN)
+- [skip] Panel `/panel/social` — DIPINDAH ke Phase 8 (bundling semua panel UI)
+- [x] Hook `publishArticleToSocial` dari `onArticlePublished` (non-blocking, respect draftMode)
 
 ## Phase 5 · External Analytics (GA4 + GSC + Cloudflare)
 *Agent: `analytics-connector`*
@@ -199,6 +199,23 @@
 ### 2026-04-24 — Phase 1 Database Schema Expansion ✅
 - Delegasi ke `database-architect`. Schema expanded dengan 9 model baru, 4 enum baru, Article +10 field. `prisma validate/format/generate` sukses locally.
 - **Deploy ke VPS**: user jalankan `git pull && prisma generate && prisma db push && npm run build && pm2 restart kartawarta` — sukses. PM2 `kartawarta` online.
+
+### 2026-04-24 — Phase 4 Social Media Automation ✅
+- 8 library file di `src/lib/social/` (types, template-renderer, template-helper, ai-caption, caption-generator, instagram, facebook, orchestrator)
+- 15 API endpoint di `/api/social/*` (11 file route, beberapa handle GET+POST)
+- `onArticlePublished` di-hook dengan `publishArticleToSocial` (non-blocking, default draftMode=true)
+- Dependencies: `sharp@^0.34.0`
+- Build: tsc clean, next build pass
+- **Default draftMode=true** — artikel baru tidak auto-post sampai admin approve, safe first-run
+- SystemSetting / DB rows untuk aktivasi:
+  - `InstagramSettings` id="global": accessToken, igUserId, enabled=true
+  - `FacebookSettings` id="global": pageId, accessToken, postMode, enabled=true
+  - `SocialMediaSettings` id="global": draftMode, autoPublishIG/FB, defaultHashtags, defaultCTA
+  - Minimal 1 `SocialTemplate` aktif per platform
+  - Singleton rows auto-bootstrap default kalau belum ada
+- Limitations: IG takedown flag-only (Graph API tidak support delete), Meta token expire ~60 hari (refresh manual atau wait Phase 11 settings UI), font custom belum embedded di SVG
+- Twitter publisher out of scope Phase 4 (enum tersedia, publisher return not-implemented kalau di-call)
+- Panel UI `/panel/social` di-defer ke Phase 8
 
 ### 2026-04-24 — Phase 3 SEO Distribution ✅
 - 4 library file baru di `src/lib/seo/` + IndexNow key di `public/`

@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { submitUrlToGoogle } from "./seo/google-indexing";
 import { pingIndexNow } from "./seo/indexnow";
 import { generateSorotanIfMissing } from "./seo/sorotan-generator";
+import { publishArticleToSocial } from "./social/orchestrator";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
 
@@ -80,6 +81,7 @@ interface PublishChainSummary {
   googleIndexing: { ok: boolean; error?: string };
   indexNow: { ok: boolean; error?: string };
   sorotan: { ok: boolean; error?: string };
+  social: { ok: boolean; error?: string; platforms?: string[] };
 }
 
 /**
@@ -142,10 +144,11 @@ export async function onArticlePublished(
   // Placeholder for Cloudflare cache purge (Phase 6 — `cloudflare-ops`).
   // TODO(phase-6): import purgeCloudflareCache from '@/lib/cloudflare/purge'
   //                and add to Promise.allSettled below.
-  const [googleRes, indexNowRes, sorotanRes] = await Promise.allSettled([
+  const [googleRes, indexNowRes, sorotanRes, socialRes] = await Promise.allSettled([
     submitUrlToGoogle(url, "URL_UPDATED"),
     pingIndexNow(indexNowUrls),
     resolvedId ? generateSorotanIfMissing(resolvedId) : Promise.resolve(),
+    resolvedId ? publishArticleToSocial(resolvedId) : Promise.resolve({ results: [] }),
   ]);
 
   const summary: PublishChainSummary = {
@@ -162,6 +165,18 @@ export async function onArticlePublished(
       sorotanRes.status === "fulfilled"
         ? { ok: true }
         : { ok: false, error: String(sorotanRes.reason) },
+    social:
+      socialRes.status === "fulfilled"
+        ? {
+            ok: true,
+            platforms:
+              "results" in socialRes.value
+                ? socialRes.value.results.map(
+                    (r) => `${r.platform}:${r.status}${r.error ? `(${r.error})` : ""}`,
+                  )
+                : undefined,
+          }
+        : { ok: false, error: String(socialRes.reason) },
   };
 
   // Update Article.indexStatus based on Google Indexing result.
