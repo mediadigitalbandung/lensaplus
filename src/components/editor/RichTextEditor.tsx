@@ -31,7 +31,8 @@ import {
   Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import ImagePickerModal from "./ImagePickerModal";
 
 interface RichTextEditorProps {
   content: string;
@@ -76,6 +77,7 @@ export default function RichTextEditor({
   onChange,
   placeholder = "Tulis artikel Anda di sini...",
 }: RichTextEditorProps) {
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -100,12 +102,14 @@ export default function RichTextEditor({
     },
   });
 
-  const addImage = useCallback(() => {
-    const url = window.prompt("Masukkan URL gambar:");
-    if (url && editor) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  }, [editor]);
+  const handleImageSelect = useCallback(
+    (url: string) => {
+      if (url && editor) {
+        editor.chain().focus().setImage({ src: url }).run();
+      }
+    },
+    [editor]
+  );
 
   const addLink = useCallback(() => {
     const url = window.prompt("Masukkan URL link:");
@@ -248,7 +252,7 @@ export default function RichTextEditor({
         <div className="mx-1 h-6 w-px bg-border" />
 
         {/* Media */}
-        <ToolbarButton onClick={addImage} title="Sisipkan Gambar">
+        <ToolbarButton onClick={() => setImagePickerOpen(true)} title="Sisipkan Gambar (upload / galeri)">
           <ImageIcon size={16} />
         </ToolbarButton>
         <ToolbarButton onClick={addLink} active={editor.isActive("link")} title="Sisipkan Link">
@@ -286,6 +290,12 @@ export default function RichTextEditor({
         {editor.storage.characterCount?.characters?.() ?? 0} karakter &middot;{" "}
         ~{Math.max(1, Math.ceil((editor.storage.characterCount?.words?.() ?? 0) / 200))} menit baca
       </div>
+
+      <ImagePickerModal
+        open={imagePickerOpen}
+        onClose={() => setImagePickerOpen(false)}
+        onSelect={handleImageSelect}
+      />
     </div>
   );
 }

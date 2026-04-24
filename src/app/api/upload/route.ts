@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { requireAuth, ApiError, successResponse, errorResponse } from "@/lib/api-utils";
+import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomBytes } from "crypto";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth();
+    const session = await requireAuth();
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
@@ -36,10 +37,22 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     await writeFile(join(uploadDir, filename), Buffer.from(bytes));
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
-    const url = `${appUrl}/uploads/${filename}`;
+    // Relative URL so it works from any domain (same-origin serving via Next.js public/)
+    const url = `/uploads/${filename}`;
 
-    return successResponse({ url });
+    // Auto-register in Media library so it appears in the gallery picker
+    const media = await prisma.media.create({
+      data: {
+        filename,
+        url,
+        type: file.type,
+        size: file.size,
+        uploadedBy: session.user.id,
+        uploaderName: session.user.name,
+      },
+    });
+
+    return successResponse({ url, media });
   } catch (error) {
     return errorResponse(error);
   }

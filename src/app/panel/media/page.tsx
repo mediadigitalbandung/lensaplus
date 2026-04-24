@@ -125,30 +125,10 @@ export default function MediaPage() {
     setTimeout(() => setCopied(null), 2000);
   }
 
-  async function handleUploadComplete(url: string) {
-    // Save to media library
-    try {
-      const filename = url.split("/").pop() || "uploaded-image";
-      const res = await fetch("/api/media", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename,
-          url,
-          type: "image",
-          size: 0,
-        }),
-      });
-      if (res.ok) {
-        setShowUpload(false);
-        fetchMedia();
-      } else {
-        const json = await res.json();
-        showError(json.error || "Gagal menyimpan media");
-      }
-    } catch {
-      showError("Gagal menyimpan media");
-    }
+  function handleUploadComplete() {
+    // /api/upload already registers the media record — just refresh the list
+    setShowUpload(false);
+    fetchMedia();
   }
 
   // Get unique uploaders for filter
