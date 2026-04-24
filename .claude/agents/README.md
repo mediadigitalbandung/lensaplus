@@ -1,0 +1,191 @@
+# Kartawarta Agent System
+
+Struktur agent khusus untuk Kartawarta v2.0. Setiap agent punya **1 tanggung jawab tunggal** — tidak overlap.
+
+## Cara Invoke
+
+Saat user minta sesuatu ke Claude Code:
+- **Permintaan editorial kompleks** (buat artikel end-to-end) → panggil `editorial-lead`
+- **Permintaan coding multi-layer** (fitur baru, refactor) → panggil `tech-lead`
+- **Mau rilis ke production** → panggil `release-lead`
+- **Eksekusi migrasi fitur** (samakan dengan `docs/FEATURE_REFERENCE.md`) → panggil `migration-lead`
+- **Tugas tunggal** — panggil specialist langsung (mis. `copy-editor` untuk proofread saja)
+
+Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, atau manual dengan:
+```
+> gunakan fact-checker untuk verifikasi artikel ini
+```
+
+## Struktur (28 Agent: 18 Core + 10 Migration)
+
+### 🗞️ Domain Editorial — Produksi Konten
+| Agent | Fokus Tunggal |
+|---|---|
+| **editorial-lead** | Orchestrator alur artikel end-to-end |
+| article-drafter | Tulis draft awal (5W+1H jurnalistik) |
+| fact-checker | Verifikasi klaim/sumber/kutipan |
+| copy-editor | EYD/PUEBI, gaya bahasa |
+| seo-specialist | Judul, meta, slug, keyword |
+| taxonomy-curator | Kategori & tag dari DB |
+
+### 💻 Domain Development — Kode
+| Agent | Fokus Tunggal |
+|---|---|
+| **tech-lead** | Orchestrator perubahan kode multi-layer |
+| frontend-dev | React/Next pages + Tailwind |
+| api-dev | API routes di `src/app/api/` |
+| database-architect | Prisma schema + migration |
+| auth-guardian | NextAuth + role permission |
+
+### 🚀 Domain Release & Ops — Quality + Deploy + Moderasi
+| Agent | Fokus Tunggal |
+|---|---|
+| **release-lead** | Orchestrator pipeline release |
+| design-guardian | Enforce design system CLAUDE.md |
+| build-test-validator | next build + lint + vitest |
+| security-auditor | OWASP + secret scan |
+| git-release-specialist | commit + push + curl verify |
+| comment-moderator | Approve/reject komentar user |
+| report-handler | Triage laporan hoax/SARA |
+
+### 🚧 Domain Feature Migration — Samakan Kartawarta dengan `docs/FEATURE_REFERENCE.md`
+| Agent | Fokus Tunggal |
+|---|---|
+| **migration-lead** | Orchestrator: baca `docs/MIGRATION_PROGRESS.md`, pick task, delegasi, update progress |
+| ai-client-builder | `src/lib/ai-client.ts` — Claude primary + DeepSeek fallback + AIUsageLog |
+| seo-distributor | Google Indexing API + IndexNow + Sorotan generator + JSON-LD + news sitemap |
+| social-publisher | Meta Graph API IG + FB publisher + orchestrator + caption AI |
+| social-template-renderer | Sharp-based template image rendering (composite + text layers) |
+| analytics-connector | GA4 + GSC + Cloudflare Analytics + Internal stats → API `/api/stats/*` |
+| cloudflare-ops | Cache purge otomatis saat publish (via `purgeCache()`) |
+| cron-engineer | Cron endpoint `/api/cron/*` + crontab docs |
+| integration-secrets-ui | Refactor `/panel/pengaturan` per integrasi + test buttons |
+| doc-panel-builder | `/panel/dokumentasi` render `FEATURE_REFERENCE.md` (SUPER_ADMIN) |
+
+## Alur Kerja Umum
+
+### A. Buat Artikel Baru End-to-End
+```
+User: "Buatkan artikel tentang putusan MA kasus X"
+         ↓
+editorial-lead
+         ↓
+article-drafter → fact-checker → copy-editor
+         ↓                           ↓
+   (paralel) seo-specialist + taxonomy-curator
+         ↓
+editorial-lead sintesa → siap paste ke panel admin
+```
+
+### B. Tambah Fitur Baru (Kode)
+```
+User: "Tambah fitur bookmark folder di panel"
+         ↓
+tech-lead
+         ↓
+database-architect (schema) → api-dev (endpoint) → frontend-dev (UI)
+         ↓                                             ↓
+       auth-guardian (role check)           design-guardian (audit)
+         ↓
+release-lead
+         ↓
+build-test-validator → security-auditor → git-release-specialist
+         ↓
+✅ Production verified
+```
+
+### C. Release Setiap Perubahan (Wajib per CLAUDE.md)
+```
+User: "Sudah siap, deploy ya"
+         ↓
+release-lead
+         ↓
+build-test-validator (build pass?)
+         ↓ ya
+design-guardian (design OK?)
+         ↓ ya
+security-auditor (no vuln?)
+         ↓ ya
+git-release-specialist (commit + push + curl)
+         ↓
+Report: commit hash + URL 200
+```
+
+### D. Moderasi Rutin (Harian)
+```
+User: "Cek komentar pending dan laporan"
+         ↓ (paralel)
+comment-moderator          report-handler
+(approve/reject)           (triage → action plan)
+```
+
+### E. Migrasi Fitur (Lanjut tanpa user menyuruh)
+```
+User: "Lanjutkan migrasi fitur" (atau "lanjut")
+         ↓
+migration-lead
+         ↓ baca docs/MIGRATION_PROGRESS.md, pick task [ ] berikutnya
+         ↓ pilih specialist sesuai matriks
+         ↓ delegasi & validasi hasil
+         ↓ update [x] di progress file + log sesi
+         ↓ pick task berikutnya, lanjut
+         ↓
+Loop sampai fase selesai → build-test-validator → release-lead → user dipanggil hanya kalau:
+  - butuh API key user (Anthropic, Meta, dll)
+  - blocker yang butuh keputusan (breaking schema, design choice)
+  - fase selesai dan siap commit
+```
+
+## Prinsip Desain
+
+1. **Single Responsibility** — setiap agent 1 fokus. Fact-checker tidak menulis ulang. Copy-editor tidak cek fakta.
+2. **No Double Job** — kalau dua agent bisa lakukan hal yang sama, salah satunya salah scope — refine.
+3. **Delegation Chain** — orchestrator tidak mengerjakan detail. Specialist tidak orchestrate.
+4. **Explicit Scope & Out-of-Scope** — tiap agent punya section "JANGAN lakukan" dengan delegasi ke siapa.
+5. **Output Format Standar** — biar orchestrator bisa sintesa dengan mudah.
+
+## File Structure
+
+```
+.claude/agents/
+├── README.md                      (file ini)
+│
+├── editorial-lead.md              orchestrator
+├── article-drafter.md
+├── fact-checker.md
+├── copy-editor.md
+├── seo-specialist.md
+├── taxonomy-curator.md
+│
+├── tech-lead.md                   orchestrator
+├── frontend-dev.md
+├── api-dev.md
+├── database-architect.md
+├── auth-guardian.md
+│
+├── release-lead.md                orchestrator
+├── design-guardian.md
+├── build-test-validator.md
+├── security-auditor.md
+├── git-release-specialist.md
+│
+├── comment-moderator.md
+├── report-handler.md
+│
+├── migration-lead.md                 orchestrator (feature parity to docs/FEATURE_REFERENCE.md)
+├── ai-client-builder.md
+├── seo-distributor.md
+├── social-publisher.md
+├── social-template-renderer.md
+├── analytics-connector.md
+├── cloudflare-ops.md
+├── cron-engineer.md
+├── integration-secrets-ui.md
+└── doc-panel-builder.md
+```
+
+## Maintenance
+
+- **Menambah agent baru** — pastikan fokusnya tidak overlap dengan yang ada. Update README ini.
+- **Mengubah scope** — perbaiki juga tabel "Out of Scope" di agent lain yang menyebut tanggung jawab tersebut.
+- **Deprecate agent** — hapus file + hapus referensi di orchestrator.
