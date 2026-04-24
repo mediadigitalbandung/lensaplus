@@ -10,9 +10,11 @@ import {
   X,
   Search,
   LogOut,
+  LogIn,
   LayoutDashboard,
   ChevronRight,
   Bookmark,
+  User,
 } from "lucide-react";
 
 const categoryNav = [
@@ -34,7 +36,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -128,7 +130,9 @@ export default function Header() {
             </Link>
 
             {/* User area */}
-            {session ? (
+            {status === "loading" ? (
+              <div className="h-10 w-10 animate-pulse rounded-md bg-white/10" aria-hidden="true" />
+            ) : session ? (
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -173,7 +177,16 @@ export default function Header() {
                     </>
                   )}
                 </div>
-              ) : null}
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-2 text-label-md font-semibold text-primary shadow-sm transition-all hover:bg-white/90 sm:px-4"
+                  aria-label="Masuk ke akun"
+                >
+                  <LogIn size={14} />
+                  <span>Masuk</span>
+                </Link>
+              )}
 
             {/* Mobile menu toggle */}
             <button
@@ -296,13 +309,56 @@ export default function Header() {
                   Bookmark Saya
                 </Link>
               </li>
+              {session && (
+                <li>
+                  <Link
+                    href="/panel/dashboard"
+                    className="flex items-center gap-2 rounded-md px-3 py-2.5 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <LayoutDashboard size={16} className="text-primary" />
+                    Panel
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 px-5 py-4">
-            <span className="block text-center text-label-sm text-on-surface-variant">
-              Kartawarta
-            </span>
+          <div className="absolute bottom-0 left-0 right-0 border-t border-surface-container-low px-5 py-4">
+            {status === "loading" ? (
+              <div className="h-10 w-full animate-pulse rounded-md bg-surface-container-low" />
+            ) : session ? (
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary text-label-lg font-bold text-white">
+                  {session.user?.name?.charAt(0)?.toUpperCase() || "U"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-body-sm font-semibold text-on-surface">
+                    {session.user?.name || "User"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      signOut();
+                    }}
+                    className="flex items-center gap-1 text-label-sm text-on-surface-variant transition-colors hover:text-secondary"
+                  >
+                    <LogOut size={12} />
+                    Keluar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-label-lg font-semibold text-white transition-all hover:bg-primary-dark"
+              >
+                <LogIn size={16} />
+                Masuk
+              </Link>
+            )}
           </div>
         </div>
       </div>
