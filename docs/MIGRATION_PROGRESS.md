@@ -87,14 +87,13 @@
 ## Phase 5 · External Analytics (GA4 + GSC + Cloudflare)
 *Agent: `analytics-connector`*
 
-- [ ] `src/lib/stats/google-analytics.ts` — GA4 Data API wrapper (pageviews, top pages)
-- [ ] `src/lib/stats/google-search.ts` — GSC API wrapper (impression, klik, CTR, position)
-- [ ] `src/lib/stats/cloudflare.ts` — bandwidth + cache hit rate via CF GraphQL Analytics API
-- [ ] `src/lib/stats/internal.ts` — stats dari Prisma (artikel, views, users, trend mingguan Recharts-friendly)
-- [ ] API: `/api/stats/internal`, `/api/stats/cloudflare`, `/api/stats/google-analytics`, `/api/stats/google-search`
-- [ ] Panel `/panel/statistik` — dashboard 4 tab (Internal, GA4, GSC, Cloudflare) dengan Recharts
-- [ ] Panel `/panel/statistik-editor` — stats per editor/jurnalis
-- [ ] Install `recharts`
+- [x] `src/lib/stats/google-analytics.ts` — GA4 Data API v1beta, 3 parallel runReport (totals + topPages + dailyTrend)
+- [x] `src/lib/stats/google-search.ts` — GSC API v1, 4 parallel searchanalytics.query (totals + queries + pages + daily)
+- [x] `src/lib/stats/cloudflare.ts` — CF GraphQL httpRequests1dGroups, cacheHitRate = cachedRequests/requests
+- [x] `src/lib/stats/internal.ts` — Prisma queries: articles/users/views/comments/polls/AI/sorotan/social + 7-day trend bucket
+- [x] 4 API endpoints di `/api/stats/*` — EDITOR+ auth, `?from=&to=`, default 30 hari, in-memory cache TTL 5 min
+- [skip] Panel `/panel/statistik` + `/panel/statistik-editor` — DIPINDAH ke Phase 8 (bundling UI)
+- [skip] Install `recharts` — akan di-install saat Phase 8 (UI consumer)
 
 ## Phase 6 · Cloudflare Ops (cache purge otomatis)
 *Agent: `cloudflare-ops`*
@@ -199,6 +198,15 @@
 ### 2026-04-24 — Phase 1 Database Schema Expansion ✅
 - Delegasi ke `database-architect`. Schema expanded dengan 9 model baru, 4 enum baru, Article +10 field. `prisma validate/format/generate` sukses locally.
 - **Deploy ke VPS**: user jalankan `git pull && prisma generate && prisma db push && npm run build && pm2 restart kartawarta` — sukses. PM2 `kartawarta` online.
+
+### 2026-04-24 — Phase 5 Analytics Connector ✅
+- 4 library file di `src/lib/stats/` (internal, google-analytics, google-search, cloudflare)
+- 4 API endpoint di `/api/stats/*` dengan EDITOR+ auth + date range + cache TTL 5 min
+- Graceful fallback: credentials missing → HTTP 200 `{success:false, error, data:empty}` — UI tidak crash
+- Build: tsc clean, next build pass
+- SystemSetting keys: `ga4_property_id` (NEW), `gsc_site_url` (optional), `google_credentials_json` (shared Phase 3), `cloudflare_api_token` + `cloudflare_zone_id` (shared Phase 6)
+- Setup prerequisite: user harus tambah service account sebagai Viewer di GA4 property + Owner di Search Console property
+- Panel UI + `recharts` install di-defer ke Phase 8
 
 ### 2026-04-24 — Phase 4 Social Media Automation ✅
 - 8 library file di `src/lib/social/` (types, template-renderer, template-helper, ai-caption, caption-generator, instagram, facebook, orchestrator)
