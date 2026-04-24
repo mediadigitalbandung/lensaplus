@@ -31,6 +31,13 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
+  Bot,
+  Share2,
+  Lightbulb,
+  Hash,
+  TrendingUp,
+  Gavel,
+  BookOpen,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -47,7 +54,9 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   { name: "Dashboard", href: "/panel/dashboard", icon: LayoutDashboard },
   { name: "Artikel", href: "/panel/artikel", icon: FileText },
+  { name: "Auto Artikel", href: "/panel/auto-artikel", icon: Bot, adminOnly: true },
   { name: "Kategori", href: "/panel/kategori", icon: FolderOpen, adminOnly: true },
+  { name: "Tags", href: "/panel/tags", icon: Hash, editorOnly: true },
   { name: "Riwayat Review", href: "/panel/riwayat-review", icon: ClipboardCheck, editorOnly: true },
   { name: "Komentar", href: "/panel/komentar", icon: MessageCircle, adminOnly: true },
   { name: "Media", href: "/panel/media", icon: ImageIcon, adminOnly: true },
@@ -56,12 +65,17 @@ const menuItems: MenuItem[] = [
   { name: "Iklan", href: "/panel/iklan", icon: Megaphone, adminOnly: true },
   { name: "Redaksi", href: "/panel/redaksi", icon: Users, adminOnly: true },
   { name: "Polling", href: "/panel/polling", icon: Vote, adminOnly: true },
+  { name: "Sosial Media", href: "/panel/social", icon: Share2, adminOnly: true },
+  { name: "Sorotan", href: "/panel/sorotan", icon: Lightbulb, editorOnly: true },
+  { name: "Jadwal Sidang", href: "/panel/jadwal-sidang", icon: Gavel, editorOnly: true },
   { name: "Pengguna", href: "/panel/pengguna", icon: Users, adminOnly: true },
   { name: "Analytics", href: "/panel/analytics", icon: BarChart3, adminOnly: true },
+  { name: "Statistik", href: "/panel/statistik", icon: TrendingUp, editorOnly: true },
   { name: "SEO", href: "/panel/seo", icon: Search, adminOnly: true },
-  { name: "Statistik", href: "/panel/statistik-editor", icon: BarChart3, editorOnly: true },
+  { name: "Statistik Editor", href: "/panel/statistik-editor", icon: BarChart3, editorOnly: true },
   { name: "Email", href: "/panel/email", icon: Mail, adminOnly: true },
   { name: "Pengaturan", href: "/panel/pengaturan", icon: Settings, adminOnly: true },
+  { name: "Dokumentasi", href: "/panel/dokumentasi", icon: BookOpen, adminOnly: true },
   { name: "Profil", href: "/panel/profil", icon: UserCircle },
 ];
 

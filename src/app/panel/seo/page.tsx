@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Search, CheckCircle, AlertTriangle, XCircle, ExternalLink, Globe, FileText, Image, Type, Tag, RefreshCw, TrendingUp, Sparkles, Loader2, Wand2, Zap } from "lucide-react";
+import { Search, CheckCircle, AlertTriangle, XCircle, ExternalLink, Globe, FileText, Image, Type, Tag, RefreshCw, TrendingUp, Sparkles, Loader2, Wand2, Zap, Activity, KeyRound } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 interface SeoData {
   overview: {
@@ -51,15 +52,76 @@ function CoverageBar({ label, value, icon: Icon }: { label: string; value: numbe
   );
 }
 
+interface IndexStatusData {
+  total: number;
+  counts: {
+    pending: number;
+    submitted: number;
+    indexed: number;
+    failed: number;
+    unknown: number;
+  };
+}
+
 export default function SeoDashboardPage() {
   const [data, setData] = useState<SeoData | null>(null);
+  const [indexStatus, setIndexStatus] = useState<IndexStatusData | null>(null);
+  const [sorotanStatus, setSorotanStatus] = useState<IndexStatusData | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [reindexing, setReindexing] = useState(false);
+  const [testingCreds, setTestingCreds] = useState(false);
+  const [credResult, setCredResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [auditFilter, setAuditFilter] = useState<"all" | "perfect" | "issues">("all");
   const [auditSearch, setAuditSearch] = useState("");
   const [auditPage, setAuditPage] = useState(1);
   const AUDIT_PER_PAGE = 15;
   const { success: showSuccess, error: showError } = useToast();
+  const { confirm } = useConfirm();
+
+  async function handleBulkReindex() {
+    const ok = await confirm({
+      title: "Re-index Semua",
+      message: "Semua artikel PUBLISHED akan ditandai 'pending' dan disubmit ulang oleh cron. Lanjutkan?",
+      variant: "warning",
+    });
+    if (!ok) return;
+    try {
+      setReindexing(true);
+      const res = await fetch("/api/seo/bulk-reindex", { method: "POST" });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Gagal");
+      showSuccess(`${json.data?.marked ?? 0} artikel ditandai untuk re-index.`);
+      fetchData();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal bulk reindex");
+    } finally {
+      setReindexing(false);
+    }
+  }
+
+  async function handleTestCredentials() {
+    try {
+      setTestingCreds(true);
+      setCredResult(null);
+      const res = await fetch("/api/seo/test-credentials", { method: "POST" });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Gagal");
+      const result = json.data;
+      const ok = Boolean(result?.ok || result?.success || result?.valid);
+      setCredResult({
+        ok,
+        message: result?.message || (ok ? "Credentials valid." : "Credentials invalid."),
+      });
+    } catch (err) {
+      setCredResult({
+        ok: false,
+        message: err instanceof Error ? err.message : "Gagal test",
+      });
+    } finally {
+      setTestingCreds(false);
+    }
+  }
 
   async function handleAIGenerate() {
     try {
@@ -83,10 +145,22 @@ export default function SeoDashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/panel/seo");
-      if (res.ok) {
-        const json = await res.json();
+      const [panelRes, idxRes, sorRes] = await Promise.all([
+        fetch("/api/panel/seo").catch(() => null),
+        fetch("/api/seo/status").catch(() => null),
+        fetch("/api/seo/sorotan-status").catch(() => null),
+      ]);
+      if (panelRes?.ok) {
+        const json = await panelRes.json();
         setData(json.data);
+      }
+      if (idxRes?.ok) {
+        const json = await idxRes.json();
+        setIndexStatus(json.data);
+      }
+      if (sorRes?.ok) {
+        const json = await sorRes.json();
+        setSorotanStatus(json.data);
       }
     } catch { /* */ } finally {
       setLoading(false);
@@ -217,6 +291,119 @@ export default function SeoDashboardPage() {
           </p>
         </div>
       )}
+
+      {/* Index Monitor */}
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5">
+            <Activity size={14} className="text-primary" /> Monitor Index (Google + IndexNow)
+          </h3>
+          <div className="flex gap-2">
+            <button
+              onClick={handleTestCredentials}
+              disabled={testingCreds}
+              className="btn-ghost flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+            >
+              {testingCreds ? <Loader2 size={12} className="animate-spin" /> : <KeyRound size={12} />}
+              Test Credentials
+            </button>
+            <button
+              onClick={handleBulkReindex}
+              disabled={reindexing}
+              className="btn-secondary flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+            >
+              {reindexing ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+              Re-index Semua
+            </button>
+          </div>
+        </div>
+
+        {credResult && (
+          <div
+            className={`mb-4 rounded-lg border p-3 text-xs ${
+              credResult.ok
+                ? "border-green-200 bg-green-50 text-green-700"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            <span className="font-semibold">
+              {credResult.ok ? "✓ " : "✗ "}
+            </span>
+            {credResult.message}
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="rounded-xl bg-surface-secondary p-3">
+            <p className="text-xs text-txt-muted mb-1">Total</p>
+            <p className="text-xl font-extrabold text-txt-primary">
+              {indexStatus?.total ?? 0}
+            </p>
+          </div>
+          <div className="rounded-xl bg-yellow-50 p-3">
+            <p className="text-xs text-yellow-700 mb-1">Pending</p>
+            <p className="text-xl font-extrabold text-yellow-700">
+              {indexStatus?.counts.pending ?? 0}
+            </p>
+          </div>
+          <div className="rounded-xl bg-blue-50 p-3">
+            <p className="text-xs text-blue-700 mb-1">Submitted</p>
+            <p className="text-xl font-extrabold text-blue-700">
+              {indexStatus?.counts.submitted ?? 0}
+            </p>
+          </div>
+          <div className="rounded-xl bg-primary-light p-3">
+            <p className="text-xs text-primary mb-1">Indexed</p>
+            <p className="text-xl font-extrabold text-primary">
+              {indexStatus?.counts.indexed ?? 0}
+            </p>
+          </div>
+          <div className="rounded-xl bg-red-50 p-3">
+            <p className="text-xs text-red-700 mb-1">Failed</p>
+            <p className="text-xl font-extrabold text-red-700">
+              {indexStatus?.counts.failed ?? 0}
+            </p>
+          </div>
+        </div>
+
+        {sorotanStatus && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-xs font-semibold text-txt-secondary mb-2">Sorotan index</p>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="rounded-xl bg-surface-secondary p-3">
+                <p className="text-xs text-txt-muted mb-1">Total</p>
+                <p className="text-lg font-extrabold text-txt-primary">
+                  {sorotanStatus.total}
+                </p>
+              </div>
+              <div className="rounded-xl bg-yellow-50 p-3">
+                <p className="text-xs text-yellow-700 mb-1">Pending</p>
+                <p className="text-lg font-extrabold text-yellow-700">
+                  {sorotanStatus.counts.pending}
+                </p>
+              </div>
+              <div className="rounded-xl bg-blue-50 p-3">
+                <p className="text-xs text-blue-700 mb-1">Submitted</p>
+                <p className="text-lg font-extrabold text-blue-700">
+                  {sorotanStatus.counts.submitted}
+                </p>
+              </div>
+              <div className="rounded-xl bg-primary-light p-3">
+                <p className="text-xs text-primary mb-1">Indexed</p>
+                <p className="text-lg font-extrabold text-primary">
+                  {sorotanStatus.counts.indexed}
+                </p>
+              </div>
+              <div className="rounded-xl bg-red-50 p-3">
+                <p className="text-xs text-red-700 mb-1">Failed</p>
+                <p className="text-lg font-extrabold text-red-700">
+                  {sorotanStatus.counts.failed}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Article SEO Audit */}
       {(() => {
