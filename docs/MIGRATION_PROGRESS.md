@@ -98,9 +98,10 @@
 ## Phase 6 · Cloudflare Ops (cache purge otomatis)
 *Agent: `cloudflare-ops`*
 
-- [ ] `src/lib/cloudflare/purge.ts` — `purgeCache(urls[])` via CF API v4 (Zone ID + API Token dari SystemSetting)
-- [ ] Hook dari `onArticlePublished`: purge `https://kartawarta.com/`, `https://kartawarta.com/berita/[slug]`, `https://kartawarta.com/kategori/[slug]`
-- [ ] Log hasil purge ke `AuditLog` (action: `CACHE_PURGE`, entity: `article`, entityId: articleId)
+- [x] `src/lib/cloudflare/purge.ts` — `purgeCache(urls)`, `purgeEverything()`, `purgeArticleCache(slug, categorySlug?)` via CF API v4 dengan token dari SystemSetting + env fallback, 15s timeout, validate absolute URLs
+- [x] Hook `onArticlePublished` di `src/lib/seo-auto.ts` — purge 5-6 URL (article, home, /berita, sitemap.xml, sitemap-news.xml, category) paralel dengan Indexing + IndexNow + Sorotan + Social
+- [x] `POST /api/cloudflare/purge` (SUPER_ADMIN) — manual purge, body `{urls:[]}` atau `{everything:true}`, logAudit `CACHE_PURGE`
+- [x] AuditLog entry `ARTICLE_PUBLISHED_SEO_CHAIN` di `onArticlePublished` termasuk `cloudflare: {ok, purgedCount, error}`
 
 ## Phase 7 · Cron Jobs Orchestration
 *Agent: `cron-engineer`*
@@ -198,6 +199,14 @@
 ### 2026-04-24 — Phase 1 Database Schema Expansion ✅
 - Delegasi ke `database-architect`. Schema expanded dengan 9 model baru, 4 enum baru, Article +10 field. `prisma validate/format/generate` sukses locally.
 - **Deploy ke VPS**: user jalankan `git pull && prisma generate && prisma db push && npm run build && pm2 restart kartawarta` — sukses. PM2 `kartawarta` online.
+
+### 2026-04-24 — Phase 6 Cloudflare Ops ✅
+- `src/lib/cloudflare/purge.ts` — 3 fungsi: purgeCache (specific URLs), purgeEverything (danger), purgeArticleCache (convenience)
+- Hook di `onArticlePublished`: purge 5-6 URL per publish, masuk ke Promise.allSettled fan-out
+- `POST /api/cloudflare/purge` (SUPER_ADMIN) untuk manual purge
+- `PublishChainSummary` ditambah field `cloudflare: {ok, purgedCount, error}`
+- Build: tsc clean
+- SystemSetting keys (sudah shared Phase 5): `cloudflare_api_token`, `cloudflare_zone_id`. Env fallback: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID
 
 ### 2026-04-24 — Phase 5 Analytics Connector ✅
 - 4 library file di `src/lib/stats/` (internal, google-analytics, google-search, cloudflare)

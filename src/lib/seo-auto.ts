@@ -12,6 +12,7 @@ import { submitUrlToGoogle } from "./seo/google-indexing";
 import { pingIndexNow } from "./seo/indexnow";
 import { generateSorotanIfMissing } from "./seo/sorotan-generator";
 import { publishArticleToSocial } from "./social/orchestrator";
+import { purgeCache } from "./cloudflare/purge";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
 
@@ -82,6 +83,7 @@ interface PublishChainSummary {
   indexNow: { ok: boolean; error?: string };
   sorotan: { ok: boolean; error?: string };
   social: { ok: boolean; error?: string; platforms?: string[] };
+  cloudflare: { ok: boolean; purgedCount?: number; error?: string };
 }
 
 /**
@@ -141,14 +143,22 @@ export async function onArticlePublished(
     ...(categorySlug ? [`${SITE_URL}/kategori/${categorySlug}`] : []),
   ];
 
-  // Placeholder for Cloudflare cache purge (Phase 6 — `cloudflare-ops`).
-  // TODO(phase-6): import purgeCloudflareCache from '@/lib/cloudflare/purge'
-  //                and add to Promise.allSettled below.
-  const [googleRes, indexNowRes, sorotanRes, socialRes] = await Promise.allSettled([
+  // URLs to purge from Cloudflare — article, homepage, berita list, sitemaps, category
+  const purgeUrls = [
+    url,
+    `${SITE_URL}/`,
+    `${SITE_URL}/berita`,
+    `${SITE_URL}/sitemap.xml`,
+    `${SITE_URL}/sitemap-news.xml`,
+    ...(categorySlug ? [`${SITE_URL}/kategori/${categorySlug}`] : []),
+  ];
+
+  const [googleRes, indexNowRes, sorotanRes, socialRes, cloudflareRes] = await Promise.allSettled([
     submitUrlToGoogle(url, "URL_UPDATED"),
     pingIndexNow(indexNowUrls),
     resolvedId ? generateSorotanIfMissing(resolvedId) : Promise.resolve(),
     resolvedId ? publishArticleToSocial(resolvedId) : Promise.resolve({ results: [] }),
+    purgeCache(purgeUrls),
   ]);
 
   const summary: PublishChainSummary = {
@@ -177,6 +187,10 @@ export async function onArticlePublished(
                 : undefined,
           }
         : { ok: false, error: String(socialRes.reason) },
+    cloudflare:
+      cloudflareRes.status === "fulfilled"
+        ? { ok: cloudflareRes.value.success, purgedCount: cloudflareRes.value.purgedCount, error: cloudflareRes.value.error }
+        : { ok: false, error: String(cloudflareRes.reason) },
   };
 
   // Update Article.indexStatus based on Google Indexing result.
