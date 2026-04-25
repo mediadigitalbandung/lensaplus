@@ -1,0 +1,82 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate (build + typecheck + test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint || true
+
+      - name: Test
+        run: npm test
+
+  deploy:
+    name: SSH deploy to VPS
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            set -e
+            cd /var/www/kartawarta
+            pm2 stop kartawarta || true
+            git stash push package-lock.json -m 'auto-stash' 2>/dev/null || true
+            git pull origin master
+            rm -rf .next
+            npm install
+            npx prisma generate
+            npm run build
+            pm2 restart kartawarta
+            sleep 3
+            pm2 list | grep kartawarta
+
+      - name: Verify production
+        run: |
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -sIo /dev/null -w '%{http_code}' https://kartawarta.com)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Production responding: HTTP $STATUS"
+              exit 0
+            fi
+            echo "Waiting for production to come up... (attempt $i, got $STATUS)"
+            sleep 5
+          done
+          echo "❌ Production check failed"
+          exit 1

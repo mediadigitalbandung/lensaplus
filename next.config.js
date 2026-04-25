@@ -47,7 +47,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: http:",
-              "connect-src 'self' https://api.deepseek.com https://trends.google.com https://query1.finance.yahoo.com https://query2.finance.yahoo.com",
+              "connect-src 'self' https://api.deepseek.com https://api.anthropic.com https://trends.google.com https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io",
               "frame-src https://challenges.cloudflare.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
@@ -67,4 +67,23 @@ const nextConfig = {
   poweredByHeader: false,
 };
 
-module.exports = nextConfig;
+// Wrap with Sentry only when SENTRY_DSN is configured.
+// When DSN is empty, return raw config — no source-map upload, no overhead.
+const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
+
+if (SENTRY_DSN) {
+  const { withSentryConfig } = require("@sentry/nextjs");
+  module.exports = withSentryConfig(nextConfig, {
+    silent: true,
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    // Source map upload — disabled if no auth token
+    sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+    widenClientFileUpload: true,
+    hideSourceMaps: true,
+    disableLogger: true,
+  });
+} else {
+  module.exports = nextConfig;
+}
