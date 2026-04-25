@@ -30,21 +30,15 @@ const PUBLIC_ROUTES = [
  * intentionally want smoke tests to ignore. Anything not matched here is
  * still asserted as a real failure.
  *
- * Hydration errors (#418/423/425) intentionally NOT filtered — we fixed
- * the root cause (date formatting in client carousels via <ClientDate>)
- * and want regressions to fail tests immediately.
- *
- * Cloudflare beacon CSP block is filtered until next.config.js CSP is
- * updated to whitelist static.cloudflareinsights.com.
+ * Hydration errors (#418/423/425) intentionally NOT filtered — root cause
+ * fixed via <ClientDate> deferral pattern. Regressions should fail tests
+ * immediately.
  */
 const NOISE_PATTERNS = [
   "favicon",
   "Failed to load resource",
   "net::ERR_BLOCKED_BY_CLIENT",
   "ResizeObserver",
-  "cloudflareinsights",
-  "beacon.min.js",
-  "Content Security Policy",
 ];
 
 function isNoise(text: string): boolean {
