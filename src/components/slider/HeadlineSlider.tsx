@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import ClientDate from "@/components/ClientDate";
 
 interface HeadlineItem {
   title: string;
@@ -58,9 +59,6 @@ export default function HeadlineSlider({ items }: HeadlineSliderProps) {
   }, [current, total, goToSlide]);
 
   if (total === 0) return null;
-
-  const formatDate = (d: Date | string | null) =>
-    d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "";
 
   return (
     <div className="group relative overflow-hidden rounded-lg bg-surface-dark">
@@ -140,7 +138,7 @@ export default function HeadlineSlider({ items }: HeadlineSliderProps) {
                 <div className="mt-3 flex items-center gap-2 text-[11px] text-white/35">
                   <span>{article.author.name}</span>
                   <span className="h-2.5 w-px bg-white/15" />
-                  <span>{formatDate(article.publishedAt)}</span>
+                  <span><ClientDate date={article.publishedAt} format="long" /></span>
                   {article.readTime && (
                     <>
                       <span className="h-2.5 w-px bg-white/15" />

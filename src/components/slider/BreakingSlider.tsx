@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import ClientDate from "@/components/ClientDate";
 
 interface BreakingItem {
   title: string;
@@ -54,9 +55,6 @@ export default function BreakingSlider({ items }: BreakingSliderProps) {
   }, [current, total, goToSlide]);
 
   if (total === 0) return null;
-
-  const formatDate = (d: Date | string | null) =>
-    d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : "";
 
   return (
     <div className="group relative overflow-hidden rounded-lg bg-surface-dark min-h-[270px] h-full">
@@ -125,7 +123,7 @@ export default function BreakingSlider({ items }: BreakingSliderProps) {
                 </p>
               )}
               <span className="mt-2 block text-[10px] text-white/30">
-                {formatDate(article.publishedAt)}
+                <ClientDate date={article.publishedAt} format="short" />
               </span>
             </div>
           </div>

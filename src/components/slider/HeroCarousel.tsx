@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useCallback } from "react";
+import ClientDate from "@/components/ClientDate";
 
 interface HeroArticle {
   slug: string;
@@ -17,17 +18,6 @@ interface HeroArticle {
 interface HeroCarouselProps {
   main: HeroArticle[];
   side: HeroArticle[];
-}
-
-function timeAgo(date: Date | string | null): string {
-  if (!date) return "";
-  const d = new Date(date);
-  const now = new Date();
-  const mins = Math.floor((now.getTime() - d.getTime()) / 60000);
-  if (mins < 60) return `${mins}m lalu`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}j lalu`;
-  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
 export default function HeroCarousel({ main, side }: HeroCarouselProps) {
@@ -95,7 +85,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                   <div className="mt-4 flex items-center gap-3 text-label-sm uppercase tracking-wider text-white/40">
                     <span className="text-white/60 font-semibold">{a.author.name}</span>
                     <span>/</span>
-                    <span>{timeAgo(a.publishedAt)}</span>
+                    <span><ClientDate date={a.publishedAt} format="relative" /></span>
                   </div>
                 </div>
               </Link>
@@ -145,7 +135,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                     {a.title}
                   </h2>
                   <span className="mt-2 text-label-sm text-white/40 uppercase tracking-wider">
-                    {timeAgo(a.publishedAt)}
+                    <ClientDate date={a.publishedAt} format="relative" />
                   </span>
                 </div>
               </Link>

@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, SlidersHorizontal, Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import ClientDate from "@/components/ClientDate";
 
 interface Article {
   title: string;
@@ -57,9 +58,6 @@ export default function SearchableArticleList({ articles, categoryName }: Search
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice(page * perPage, (page + 1) * perPage);
-
-  const formatDate = (d: Date | string | null) =>
-    d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "";
 
   return (
     <div>
@@ -136,7 +134,7 @@ export default function SearchableArticleList({ articles, categoryName }: Search
                 <span className="h-2.5 w-px bg-border" />
                 <span className="flex items-center gap-1">
                   <Clock size={10} />
-                  {formatDate(article.publishedAt)}
+                  <ClientDate date={article.publishedAt} format="long" />
                 </span>
                 {article.viewCount !== undefined && article.viewCount > 0 && (
                   <>

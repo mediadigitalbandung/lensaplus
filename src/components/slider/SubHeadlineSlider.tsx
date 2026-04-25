@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import ClientDate from "@/components/ClientDate";
 
 interface SubHeadlineItem {
   title: string;
@@ -55,9 +56,6 @@ export default function SubHeadlineSlider({ items }: SubHeadlineSliderProps) {
   }, [currentPage, totalPages, goToPage]);
 
   if (items.length === 0) return null;
-
-  const formatDate = (d: Date | string | null) =>
-    d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "";
 
   // Build pages array
   const pages: SubHeadlineItem[][] = [];
@@ -119,7 +117,7 @@ export default function SubHeadlineSlider({ items }: SubHeadlineSliderProps) {
                       {article.title}
                     </h3>
                     <span className="mt-1.5 text-[10px] text-white/40">
-                      {formatDate(article.publishedAt)}
+                      <ClientDate date={article.publishedAt} format="long" />
                     </span>
                   </Link>
                 </div>

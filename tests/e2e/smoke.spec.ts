@@ -30,14 +30,12 @@ const PUBLIC_ROUTES = [
  * intentionally want smoke tests to ignore. Anything not matched here is
  * still asserted as a real failure.
  *
- * KNOWN ISSUES (worth fixing in dedicated tasks, not by smoke test):
- *  - React minified errors #425/#418/#423 on every public route — SSR
- *    hydration mismatch. Likely from locale-formatted dates rendered
- *    server-side vs client-side timezone. Investigate src/app/page.tsx
- *    timeAgo() and HeroCarousel/HeadlineSlider client components.
- *  - Cloudflare beacon CSP block — Cloudflare auto-injects
- *    `static.cloudflareinsights.com/beacon.min.js` at the edge but the
- *    CSP in next.config.js only whitelists `challenges.cloudflare.com`.
+ * Hydration errors (#418/423/425) intentionally NOT filtered — we fixed
+ * the root cause (date formatting in client carousels via <ClientDate>)
+ * and want regressions to fail tests immediately.
+ *
+ * Cloudflare beacon CSP block is filtered until next.config.js CSP is
+ * updated to whitelist static.cloudflareinsights.com.
  */
 const NOISE_PATTERNS = [
   "favicon",
@@ -47,12 +45,6 @@ const NOISE_PATTERNS = [
   "cloudflareinsights",
   "beacon.min.js",
   "Content Security Policy",
-  // React hydration errors — see KNOWN ISSUES above
-  "Minified React error #425",
-  "Minified React error #418",
-  "Minified React error #423",
-  "Minified React error #422",
-  "Hydration failed",
 ];
 
 function isNoise(text: string): boolean {

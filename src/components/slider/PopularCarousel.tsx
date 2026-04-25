@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import ClientDate from "@/components/ClientDate";
 
 interface PopularItem {
   title: string;
@@ -68,9 +69,6 @@ export default function PopularCarousel({ items }: PopularCarouselProps) {
 
   if (items.length === 0) return null;
 
-  const formatDate = (d: Date | string | null) =>
-    d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : "";
-
   return (
     <div className="relative">
       {/* Scrollable row — 4 visible, manual scroll only */}
@@ -114,7 +112,7 @@ export default function PopularCarousel({ items }: PopularCarouselProps) {
                     </h3>
                   </Link>
                   <div className="mt-1 flex items-center gap-2 text-[11px] text-txt-muted">
-                    <span>{formatDate(article.publishedAt)}</span>
+                    <span><ClientDate date={article.publishedAt} format="short" /></span>
                     {article.viewCount !== undefined && article.viewCount > 0 && (
                       <>
                         <span className="h-2.5 w-px bg-border" />
