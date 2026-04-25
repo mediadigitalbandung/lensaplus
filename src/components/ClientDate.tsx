@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Format = "relative" | "short" | "long";
+type Format = "relative" | "short" | "long" | "weekday-long";
 
 interface Props {
   date: Date | string | null | undefined;
@@ -17,6 +17,14 @@ function render(d: Date, format: Format): string {
   }
   if (format === "long") {
     return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  }
+  if (format === "weekday-long") {
+    return d.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   }
   // relative
   const mins = Math.floor((Date.now() - d.getTime()) / 60000);

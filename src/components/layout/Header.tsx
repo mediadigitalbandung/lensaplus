@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import ClientDate from "@/components/ClientDate";
 import {
   Menu,
   X,
@@ -97,9 +98,10 @@ export default function Header() {
 
           {/* Right side: Date, Search, Actions */}
           <div className="flex flex-1 items-center justify-end gap-3 py-3 pl-12 sm:pl-16 relative z-10">
-            {/* Live date */}
+            {/* Live date — deferred to client to avoid hydration mismatch
+                between VPS (UTC) and visitor (Asia/Jakarta) timezones */}
             <span className="hidden text-label-sm text-white/50 md:block uppercase tracking-wider">
-              {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              <ClientDate date={new Date()} format="weekday-long" live={false} />
             </span>
             <div className="hidden h-4 w-px bg-white/20 md:block" />
             

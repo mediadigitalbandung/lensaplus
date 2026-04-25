@@ -1,6 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+function ClientYear() {
+  const [year, setYear] = useState<number | null>(null);
+  useEffect(() => setYear(new Date().getFullYear()), []);
+  return <>{year ?? ""}</>;
+}
 
 const footerLinks = {
   tentang: [
@@ -119,7 +126,7 @@ export default function Footer() {
         <div className="mt-14 pt-6 border-t border-border">
           <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
             <p className="text-label-sm text-txt-muted uppercase tracking-wider">
-              &copy; {new Date().getFullYear()} Kartawarta. Seluruh hak cipta dilindungi.
+              &copy; <ClientYear /> Kartawarta. Seluruh hak cipta dilindungi.
             </p>
             <p className="text-label-sm text-txt-muted">
               Anggota{" "}
