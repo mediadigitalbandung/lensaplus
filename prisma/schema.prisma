@@ -324,7 +324,7 @@ model Media {
   uploadedBy   String
   uploaderName String
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime @default(now()) @updatedAt
 
   @@index([uploadedBy])
   @@map("media")
