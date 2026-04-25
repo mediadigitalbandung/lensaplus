@@ -159,11 +159,13 @@
 ## Phase 11 · Integrasi Keys & Settings UI
 *Agent: `integration-secrets-ui`*
 
-- [ ] Refactor `/panel/pengaturan` — grupkan keys per integrasi (AI, Google, Meta, Twitter, Cloudflare, Resend)
-- [ ] Toggle show/hide untuk field sensitif (password-type + eye icon)
-- [ ] Test button per integrasi: "Test Connection" → endpoint validasi
-- [ ] API `/api/seo/test-credentials` (existing target), `/api/social/test-publish` (existing target), tambah `/api/ai/test` + `/api/email/test` kalau perlu
-- [ ] Validasi input format (JSON parse untuk `google_credentials_json`)
+- [x] Refactor `/panel/pengaturan` — 9 collapsible sections (Umum, AI, Google, Meta, Twitter, Cloudflare, Resend, Auto-Artikel, Toggle Global) dengan dirty-tracking + save per section
+- [x] Show/hide field sensitif via SecretInput component (eye toggle)
+- [x] Test button per integrasi: AI (both providers), Google credentials, Meta test-publish, Cloudflare test-purge, Resend send-test
+- [x] 4 endpoint baru: `/api/ai/test`, `/api/email/test`, `/api/target-keywords` (+[id] full CRUD), `/api/tags/research`
+- [x] Validasi input: email regex, URL regex, JSON.parse + type/private_key check untuk google_credentials_json, integer untuk count/interval
+- [x] `/panel/auto-artikel`: TargetKeyword CRUD penuh (consume `/api/target-keywords`)
+- [x] `/panel/tags`: AI riset keyword UI beneran (consume `/api/tags/research`)
 
 ## Phase 12 · Security Hardening
 *Agent: `security-auditor` + `auth-guardian`*
@@ -201,6 +203,14 @@
 ### 2026-04-24 — Phase 1 Database Schema Expansion ✅
 - Delegasi ke `database-architect`. Schema expanded dengan 9 model baru, 4 enum baru, Article +10 field. `prisma validate/format/generate` sukses locally.
 - **Deploy ke VPS**: user jalankan `git pull && prisma generate && prisma db push && npm run build && pm2 restart kartawarta` — sukses. PM2 `kartawarta` online.
+
+### 2026-04-24 — Phase 11 Settings UI + integration endpoints ✅
+- `/panel/pengaturan` full rewrite: 9 sections, dirty-tracking, per-section save, test buttons, validasi input
+- 4 endpoint test/CRUD baru: ai/test, email/test, target-keywords (+[id] CRUD), tags/research
+- /panel/auto-artikel + /panel/tags placeholder diganti UI beneran
+- IG/FB token field smart: kosong = pertahankan, isi = update
+- Build: tsc clean, next build pass
+- Limitations: Twitter test placeholder (publisher belum dibangun)
 
 ### 2026-04-24 — Phase 10 Editor Enhancements ✅
 - TipTap Table 4 extension installed + toolbar dropdown

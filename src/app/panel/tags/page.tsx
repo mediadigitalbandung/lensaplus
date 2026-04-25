@@ -16,7 +16,6 @@ import {
   RefreshCw,
   Loader2,
   Sparkles,
-  AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -41,6 +40,13 @@ export default function TagsPage() {
   const [newName, setNewName] = useState("");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"usage" | "name">("usage");
+
+  // AI research state
+  const [topic, setTopic] = useState<string>("");
+  const [researching, setResearching] = useState<boolean>(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [aiProvider, setAiProvider] = useState<string>("");
+  const [aiError, setAiError] = useState<string>("");
 
   if (
     sessionStatus !== "loading" &&
@@ -91,6 +97,59 @@ export default function TagsPage() {
       showError(err instanceof Error ? err.message : "Gagal membuat tag");
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleResearch() {
+    const t = topic.trim();
+    if (t.length < 2) {
+      showError("Topik minimal 2 karakter.");
+      return;
+    }
+    try {
+      setResearching(true);
+      setAiError("");
+      setSuggestions([]);
+      const res = await fetch("/api/tags/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: t }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Riset gagal");
+      const list = (json.data?.suggestions || []) as string[];
+      setSuggestions(list);
+      setAiProvider(json.data?.provider || "");
+      if (list.length === 0) {
+        setAiError(
+          "AI tidak mengembalikan saran yang valid. Coba topik lain.",
+        );
+      } else {
+        showSuccess(`${list.length} saran keyword tersedia.`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Riset gagal";
+      setAiError(msg);
+      showError(msg);
+    } finally {
+      setResearching(false);
+    }
+  }
+
+  async function handleAddSuggestion(name: string) {
+    try {
+      const res = await fetch("/api/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Gagal menambah tag");
+      showSuccess(`Tag "${name}" ditambahkan.`);
+      setSuggestions((prev) => prev.filter((s) => s !== name));
+      fetchTags();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal menambah tag");
     }
   }
 
@@ -189,19 +248,71 @@ export default function TagsPage() {
         </div>
       </div>
 
-      {/* AI Research placeholder */}
-      <div className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-5">
-        <div className="flex items-start gap-3">
-          <AlertCircle size={18} className="mt-0.5 text-yellow-600 shrink-0" />
-          <div>
-            <h3 className="text-sm font-bold text-yellow-800 flex items-center gap-1.5">
-              <Sparkles size={14} /> AI Riset Keyword
-            </h3>
-            <p className="mt-1 text-xs text-yellow-700">
-              TODO: Endpoint <code className="font-mono bg-yellow-100 px-1 py-0.5 rounded">/api/tags/research</code> belum tersedia. UI riset keyword ditunda.
-            </p>
-          </div>
+      {/* AI Research */}
+      <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <h2 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
+          <Sparkles size={14} className="text-primary" /> AI Riset Keyword
+        </h2>
+        <p className="text-xs text-txt-secondary mb-3">
+          Masukkan topik artikel — AI akan menyarankan 8–12 keyword SEO Bahasa Indonesia.
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            className="input flex-1 py-2 text-sm"
+            placeholder="Topik (mis. RUU KUHAP, sengketa pilkada Bandung)..."
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleResearch();
+            }}
+          />
+          <button
+            onClick={handleResearch}
+            disabled={researching}
+            className="btn-secondary flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          >
+            {researching ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Sparkles size={14} />
+            )}
+            {researching ? "Meriset..." : "Riset"}
+          </button>
         </div>
+
+        {aiError && (
+          <p className="mt-3 text-xs text-red-600">{aiError}</p>
+        )}
+
+        {suggestions.length > 0 && (
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-medium text-txt-secondary">
+                Saran ({suggestions.length}){aiProvider ? ` · via ${aiProvider}` : ""}
+              </p>
+              <button
+                onClick={() => setSuggestions([])}
+                className="text-[11px] text-txt-muted hover:text-txt-primary"
+              >
+                Bersihkan
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleAddSuggestion(s)}
+                  className="group inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary-light px-3 py-1 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
+                  title={`Klik untuk menambah "${s}" sebagai tag`}
+                >
+                  <Plus size={10} className="opacity-70 group-hover:opacity-100" />
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* List */}
