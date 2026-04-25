@@ -132,20 +132,20 @@
 ## Phase 9 · Public Pages (baru)
 *Agent: `frontend-dev`*
 
-- [ ] `/sorotan` — list semua Sorotan
-- [ ] `/sorotan/[slug]` — detail Sorotan + JSON-LD
-- [ ] `/rangkuman` — halaman rangkuman umum (placeholder/TBD konten)
-- [ ] `/rangkuman/[slug]` — rangkuman per topik
-- [ ] `/rangkuman/harian` — daily digest
-- [ ] `/rangkuman/harian/[slug]` — per tanggal
-- [ ] `/topik` — daftar topik
-- [ ] `/topik/[slug]` — detail topik
-- [ ] `/jadwal-sidang` — scheduled/live/done
-- [ ] `/lokasi` — direktori pengadilan
-- [ ] `/lokasi/[slug]` — detail lokasi
-- [ ] `/iklan` — rate card
-- [ ] `/feed.xml` (RSS)
-- [ ] `/opengraph-image/route` — dynamic OG image per artikel (Sharp based)
+- [x] `/sorotan` + `/sorotan/[slug]` — DONE di Phase 3
+- [x] `/rangkuman` — list smart cards (pekan-ini, bulan-ini, per category)
+- [x] `/rangkuman/[slug]` — slug router (pekan-ini/bulan-ini/category) + CollectionPage JSON-LD + 404 graceful
+- [x] `/rangkuman/harian` — daily archive grouped 30 hari terakhir
+- [x] `/rangkuman/harian/[slug]` — per tanggal YYYY-MM-DD + 404 invalid/future/empty
+- [x] `/topik` — daftar Category dengan icon + count
+- [x] `/topik/[slug]` — 308 redirect ke `/kategori/[slug]`
+- [x] `/jadwal-sidang` — group Live/Today/Week/Later + empty state graceful
+- [x] `/lokasi` — direktori 8 pengadilan Bandung dari `src/data/court-locations.ts` (force-static)
+- [x] `/lokasi/[slug]` — detail + GovernmentOffice JSON-LD + upcoming schedules + related articles
+- [x] `/iklan` — rate card 4 paket + specs + CTA WhatsApp/email (placeholder konten editable)
+- [x] `/feed.xml` — RSS 2.0 dengan 30 items, content:encoded, atom:link self
+- [x] `/api/og?slug=...` — Sharp-based OG image 1200x630 dengan Cache-Control immutable
+- [x] `src/app/berita/[slug]` metadata — openGraph.images + twitter.images point ke `/api/og?slug=`
 
 ## Phase 10 · Editor Enhancements
 *Agent: `frontend-dev`*
@@ -201,6 +201,18 @@
 ### 2026-04-24 — Phase 1 Database Schema Expansion ✅
 - Delegasi ke `database-architect`. Schema expanded dengan 9 model baru, 4 enum baru, Article +10 field. `prisma validate/format/generate` sukses locally.
 - **Deploy ke VPS**: user jalankan `git pull && prisma generate && prisma db push && npm run build && pm2 restart kartawarta` — sukses. PM2 `kartawarta` online.
+
+### 2026-04-24 — Phase 9 Public Pages ✅
+- 11 page baru + 1 RSS route + 1 OG image API + 1 data file
+- `/rangkuman/*` smart grouping dari Article data, slug router untuk pekan-ini/bulan-ini/category
+- `/topik/[slug]` redirect 308 ke `/kategori/[slug]` (avoid duplicate)
+- `/jadwal-sidang` group by waktu (Live/Today/Week/Later)
+- `/lokasi/*` 8 pengadilan Bandung di static data file (editable tanpa code change major)
+- `/iklan` placeholder rate card (user edit string nanti)
+- `/feed.xml` RSS 2.0 valid dengan content:encoded
+- `/api/og?slug=...` dynamic OG image generator pakai Sharp, immutable cache 1 tahun
+- JSON-LD: CollectionPage di rangkuman detail, GovernmentOffice di lokasi detail
+- Build: tsc clean, next build pass
 
 ### 2026-04-24 — Phase 8 Panel UI ✅
 - 9 panel page di `src/app/panel/*` (auto-artikel, social, sorotan, tags, statistik, seo-extended, jadwal-sidang, dokumentasi + menu layout update)

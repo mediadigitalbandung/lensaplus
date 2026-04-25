@@ -36,6 +36,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
   const title = article.seoTitle || article.title;
   const description = article.seoDescription || article.excerpt || "";
+  const ogImageUrl = `/api/og?slug=${encodeURIComponent(params.slug)}`;
 
   return {
     title: article.title,
@@ -48,15 +49,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       modifiedTime: article.updatedAt.toISOString(),
       authors: [article.author.name],
       section: article.category.name,
-      ...(article.featuredImage && {
-        images: [{ url: article.featuredImage, width: 1200, height: 630, alt: article.title }],
-      }),
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: article.title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      ...(article.featuredImage && { images: [article.featuredImage] }),
+      images: [ogImageUrl],
     },
     alternates: {
       canonical: `/berita/${params.slug}`,
