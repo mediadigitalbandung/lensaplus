@@ -371,6 +371,15 @@ export default function EditArticlePage() {
   const [generatingTags, setGeneratingTags] = useState(false);
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
 
+  // Hard caps from server-side Zod schema — keep client output within these so we never trip 400.
+  const FEATURE_MAX: Record<string, number> = {
+    summary: 500,
+    seo_title: 70,
+    meta_description: 160,
+  };
+  const clampToMax = (val: string, max: number): string =>
+    val.length <= max ? val : val.slice(0, max - 1).trimEnd() + "…";
+
   const generateAI = async (feature: string, setter: (val: string) => void) => {
     if (!title.trim() || !content.trim()) return;
     setAiLoading((prev) => ({ ...prev, [feature]: true }));
@@ -382,7 +391,8 @@ export default function EditArticlePage() {
       });
       const data = await res.json();
       if (data.success && data.data?.result) {
-        setter(data.data.result);
+        const max = FEATURE_MAX[feature];
+        setter(max ? clampToMax(data.data.result, max) : data.data.result);
       } else {
         setError(data.error || "Gagal generate AI");
       }
@@ -454,14 +464,15 @@ export default function EditArticlePage() {
       const json = await res.json();
       const article = json.data;
 
-      setTitle(article.title || "");
+      const clamp = (s: string, max: number) => (s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s);
+      setTitle(clamp(article.title || "", 255));
       setContent(article.content || "");
-      setExcerpt(article.excerpt || "");
+      setExcerpt(clamp(article.excerpt || "", 500));
       setCategoryId(article.categoryId || article.category?.id || "");
       setTags(article.tags?.map((t: { name: string }) => t.name).join(", ") || "");
       setFeaturedImage(article.featuredImage || "");
-      setSeoTitle(article.seoTitle || "");
-      setSeoDescription(article.seoDescription || "");
+      setSeoTitle(clamp(article.seoTitle || "", 70));
+      setSeoDescription(clamp(article.seoDescription || "", 160));
       setCurrentStatus(article.status || "DRAFT");
       setExistingReviewNote(article.reviewNote || "");
       setExistingReviewedBy(article.reviewedBy || "");

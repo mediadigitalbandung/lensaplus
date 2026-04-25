@@ -108,10 +108,10 @@ export default function NewArticlePage() {
       const saved = localStorage.getItem(AUTOSAVE_KEY);
       if (saved) {
         const draft = JSON.parse(saved);
-        if (draft.title) setTitle(draft.title);
+        if (draft.title) setTitle(String(draft.title).slice(0, 255));
         if (draft.content) setContent(draft.content);
         if (draft.categoryId) setCategoryId(draft.categoryId);
-        if (draft.excerpt) setExcerpt(draft.excerpt);
+        if (draft.excerpt) setExcerpt(String(draft.excerpt).slice(0, 500));
         if (draft.tags) setTags(draft.tags);
         if (draft.featuredImage) setFeaturedImage(draft.featuredImage);
         if (draft.sources) setSources(draft.sources);
@@ -161,6 +161,18 @@ export default function NewArticlePage() {
 
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
 
+  // Hard caps from server-side Zod schema — keep client output within these so we never trip 400.
+  const FEATURE_MAX: Record<string, number> = {
+    summary: 500,
+    seo_title: 70,
+    meta_description: 160,
+  };
+
+  const clampToMax = (val: string, max: number): string => {
+    if (val.length <= max) return val;
+    return val.slice(0, max - 1).trimEnd() + "…";
+  };
+
   const generateAI = async (feature: string, setter: (val: string) => void) => {
     if (!title.trim() || !content.trim()) return;
     setAiLoading((prev) => ({ ...prev, [feature]: true }));
@@ -172,7 +184,9 @@ export default function NewArticlePage() {
       });
       const data = await res.json();
       if (data.success && data.data?.result) {
-        setter(data.data.result);
+        const max = FEATURE_MAX[feature];
+        const value = max ? clampToMax(data.data.result, max) : data.data.result;
+        setter(value);
       } else {
         setError(data.error || "Gagal generate AI");
       }
@@ -274,18 +288,21 @@ export default function NewArticlePage() {
         .map((t) => t.trim())
         .filter(Boolean);
 
+      const safeStr = (s: string, max: number) =>
+        s ? (s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s) : undefined;
+
       const res = await fetch("/api/articles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title,
+          title: safeStr(title, 255),
           content,
-          excerpt: excerpt || undefined,
+          excerpt: safeStr(excerpt, 500),
           categoryId,
           tags: tagList,
           featuredImage: featuredImage || undefined,
-          seoTitle: seoTitle || undefined,
-          seoDescription: seoDescription || undefined,
+          seoTitle: safeStr(seoTitle, 70),
+          seoDescription: safeStr(seoDescription, 160),
           status,
           sources: validSources.length > 0 ? validSources : undefined,
           authorId: selectedAuthorId || undefined,

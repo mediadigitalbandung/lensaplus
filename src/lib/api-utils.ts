@@ -48,7 +48,37 @@ export function errorResponse(error: unknown) {
     );
   }
   if (error instanceof ZodError) {
-    const messages = error.errors.map((e) => e.message).join(", ");
+    const fieldLabels: Record<string, string> = {
+      title: "Judul",
+      content: "Konten",
+      excerpt: "Ringkasan",
+      seoTitle: "SEO Title",
+      seoDescription: "Meta Description",
+      reviewNote: "Catatan review",
+      featuredImage: "Gambar utama",
+      categoryId: "Kategori",
+      authorId: "Penulis",
+      assignedEditorId: "Editor",
+      scheduledAt: "Jadwal terbit",
+      tags: "Tag",
+      sources: "Narasumber",
+    };
+    const translate = (msg: string): string =>
+      msg
+        .replace(/String must contain at most (\d+) character\(s\)/, "maksimal $1 karakter")
+        .replace(/String must contain at least (\d+) character\(s\)/, "minimal $1 karakter")
+        .replace(/^Required$/, "wajib diisi")
+        .replace(/^Invalid$/, "tidak valid")
+        .replace(/Invalid url/i, "URL tidak valid")
+        .replace(/Invalid datetime/i, "format tanggal tidak valid");
+    const messages = error.errors
+      .map((e) => {
+        const fieldKey = e.path[0]?.toString();
+        const label = (fieldKey && fieldLabels[fieldKey]) || fieldKey;
+        const translated = translate(e.message);
+        return label ? `${label}: ${translated}` : translated;
+      })
+      .join("; ");
     return NextResponse.json(
       { success: false, error: messages || "Validasi gagal" },
       { status: 400 }
