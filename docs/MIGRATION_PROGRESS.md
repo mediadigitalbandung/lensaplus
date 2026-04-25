@@ -150,11 +150,11 @@
 ## Phase 10 · Editor Enhancements
 *Agent: `frontend-dev`*
 
-- [ ] TipTap: tambahkan extension Table
-- [ ] Image crop modal (`ImageCropModal.tsx`) pakai Canvas/cropper ringan
-- [ ] Autosave draft tiap 15 detik + `beforeunload` handler
-- [ ] Export PDF (jsPDF) + Export TXT dari detail artikel panel
-- [ ] Tombol "AI tools" di toolbar: generate title/meta/caption (panggil `/api/ai/generate`)
+- [x] TipTap Table — Table/TableRow/TableCell/TableHeader extensions + dropdown toolbar (insert 3x3, add/del row/col, toggle header)
+- [x] `ImageCropModal.tsx` — pure HTML5 canvas, drag move + 4 corner handles, 5 aspect ratio presets (16:9, 1:1, 4:5, 1.91:1, bebas), output WebP max 1600px q=0.88
+- [x] Autosave 15s + beforeunload — silent server-backed save, status badge cycling (Tersimpan/Belum tersimpan/Menyimpan), owner-only DRAFT/REJECTED
+- [x] Export PDF + Export TXT — sudah existing di `src/lib/export-utils.ts`, button sudah wired di edit page
+- [x] AI Tools toolbar — Generate Judul/Meta/Caption Sosmed dropdown, callbacks setTitle/setSeoDescription/clipboard
 
 ## Phase 11 · Integrasi Keys & Settings UI
 *Agent: `integration-secrets-ui`*
@@ -201,6 +201,15 @@
 ### 2026-04-24 — Phase 1 Database Schema Expansion ✅
 - Delegasi ke `database-architect`. Schema expanded dengan 9 model baru, 4 enum baru, Article +10 field. `prisma validate/format/generate` sukses locally.
 - **Deploy ke VPS**: user jalankan `git pull && prisma generate && prisma db push && npm run build && pm2 restart kartawarta` — sukses. PM2 `kartawarta` online.
+
+### 2026-04-24 — Phase 10 Editor Enhancements ✅
+- TipTap Table 4 extension installed + toolbar dropdown
+- ImageCropModal pure HTML5 canvas (no extra dep), 5 aspect ratio presets, integrated ke ImageUploader
+- Autosave 15s server-backed silent + beforeunload warning + status badge dirty/clean/saving (owner-only DRAFT/REJECTED)
+- Export PDF + TXT existing already wired
+- AI Tools toolbar di RichTextEditor: Generate Judul/Meta/Caption — callbacks setTitle/setSeoDescription/clipboard
+- Build: tsc clean, next build pass
+- Caveat: multi-tab autosave = last-write-wins (revisions still tracked)
 
 ### 2026-04-24 — Phase 9 Public Pages ✅
 - 11 page baru + 1 RSS route + 1 OG image API + 1 data file

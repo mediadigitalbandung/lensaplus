@@ -144,8 +144,14 @@ export default function EditArticlePage() {
 
   // Auto-save state
   const [autoSaveIndicator, setAutoSaveIndicator] = useState("");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [formDirty, setFormDirty] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSnapshotRef = useRef<string>("");
+  const isMountedRef = useRef(false);
   const AUTOSAVE_KEY = `autosave_draft_${articleId}`;
+  const AUTOSAVE_INTERVAL = 15000;
 
   // Research notes state
   const [researchNotes, setResearchNotes] = useState("");
@@ -157,33 +163,164 @@ export default function EditArticlePage() {
   const charCount = plainText.length;
   const readTime = Math.max(1, Math.ceil(wordCount / 200));
 
-  // Auto-save every 30 seconds (only when status is DRAFT)
+  // Build a stable snapshot of the editable fields used for dirty-detection
+  const buildSnapshot = useCallback(() => {
+    return JSON.stringify({
+      title,
+      content,
+      excerpt,
+      categoryId,
+      tags,
+      featuredImage,
+      seoTitle,
+      seoDescription,
+      sources,
+    });
+  }, [title, content, excerpt, categoryId, tags, featuredImage, seoTitle, seoDescription, sources]);
+
+  // Mark snapshot as clean when article first loads
+  useEffect(() => {
+    if (!loading && !isMountedRef.current && (title || content)) {
+      lastSnapshotRef.current = buildSnapshot();
+      isMountedRef.current = true;
+    }
+  }, [loading, title, content, buildSnapshot]);
+
+  // Track form dirtiness
+  useEffect(() => {
+    if (!isMountedRef.current) return;
+    const snap = buildSnapshot();
+    setFormDirty(snap !== lastSnapshotRef.current);
+  }, [buildSnapshot]);
+
+  // Silent draft save — PUT to /api/articles/:id with current values, status DRAFT.
+  // Only runs when current status is DRAFT or REJECTED, owner-edit allowed.
+  const saveDraft = useCallback(
+    async (opts: { silent?: boolean } = {}) => {
+      const silent = opts.silent ?? true;
+      if (!title.trim() && !content.trim()) return false;
+      if (autoSaving) return false;
+      try {
+        setAutoSaving(true);
+        const validSources = sources.filter((s) => s.name.trim());
+        const tagList = tags.split(",").map((t) => t.trim()).filter(Boolean);
+        // Only write a status if we are still in a draftable state
+        const allowStatusWrite = ["DRAFT", "REJECTED"].includes(currentStatus);
+        const body: Record<string, unknown> = {
+          title,
+          content,
+          excerpt: excerpt || undefined,
+          categoryId: categoryId || undefined,
+          tags: tagList,
+          featuredImage: featuredImage || undefined,
+          seoTitle: seoTitle || undefined,
+          seoDescription: seoDescription || undefined,
+          sources: validSources.length > 0 ? validSources : undefined,
+        };
+        if (allowStatusWrite) body.status = "DRAFT";
+
+        const res = await fetch(`/api/articles/${articleId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          if (!silent) showError("Gagal menyimpan draf otomatis");
+          return false;
+        }
+        const now = new Date();
+        setLastSavedAt(now);
+        setFormDirty(false);
+        lastSnapshotRef.current = buildSnapshot();
+        try { localStorage.removeItem(AUTOSAVE_KEY); } catch { /* ignore */ }
+        if (!silent) success("Draf tersimpan");
+        else setAutoSaveIndicator(`Tersimpan otomatis ${now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`);
+        return true;
+      } catch {
+        if (!silent) showError("Gagal menyimpan draf");
+        return false;
+      } finally {
+        setAutoSaving(false);
+      }
+    },
+    [
+      articleId,
+      autoSaving,
+      buildSnapshot,
+      categoryId,
+      content,
+      currentStatus,
+      excerpt,
+      featuredImage,
+      seoDescription,
+      seoTitle,
+      sources,
+      success,
+      showError,
+      tags,
+      title,
+      AUTOSAVE_KEY,
+    ]
+  );
+
+  // Auto-save every AUTOSAVE_INTERVAL ms (only DRAFT / REJECTED, owner)
   useEffect(() => {
     if (loading) return;
-    if (currentStatus !== "DRAFT" && currentStatus !== "REJECTED") return;
+    const isDraftable = ["DRAFT", "REJECTED"].includes(currentStatus);
+    if (!isDraftable) return;
+    if (articleAuthorId && articleAuthorId !== userId) return; // only owner autosaves
 
     autosaveTimerRef.current = setInterval(() => {
-      if (title.trim() || content.trim()) {
+      if (formDirty && !autoSaving) {
+        // Local snapshot fallback — also saves to backend
         try {
           const draft = { title, content, categoryId, excerpt, tags, featuredImage, sources };
           localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draft));
-          setAutoSaveIndicator("Draft tersimpan otomatis");
-          setTimeout(() => setAutoSaveIndicator(""), 3000);
-        } catch {
-          // localStorage not available
-        }
+        } catch { /* ignore */ }
+        saveDraft({ silent: true });
       }
-    }, 30000);
+    }, AUTOSAVE_INTERVAL);
 
     return () => {
       if (autosaveTimerRef.current) clearInterval(autosaveTimerRef.current);
     };
-  }, [loading, currentStatus, title, content, categoryId, excerpt, tags, featuredImage, sources, AUTOSAVE_KEY]);
+  }, [
+    loading,
+    currentStatus,
+    formDirty,
+    autoSaving,
+    articleAuthorId,
+    userId,
+    saveDraft,
+    title,
+    content,
+    categoryId,
+    excerpt,
+    tags,
+    featuredImage,
+    sources,
+    AUTOSAVE_KEY,
+  ]);
 
-  // Clear auto-save helper
+  // beforeunload warning when form has unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (formDirty) {
+        e.preventDefault();
+        e.returnValue = "Ada perubahan belum tersimpan. Yakin ingin keluar?";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [formDirty]);
+
+  // Clear auto-save helper (used after explicit save / submit)
   const clearAutosave = useCallback(() => {
     try { localStorage.removeItem(AUTOSAVE_KEY); } catch { /* ignore */ }
-  }, [AUTOSAVE_KEY]);
+    lastSnapshotRef.current = buildSnapshot();
+    setFormDirty(false);
+  }, [AUTOSAVE_KEY, buildSnapshot]);
 
   // Load research notes from localStorage
   useEffect(() => {
@@ -1082,7 +1219,19 @@ export default function EditArticlePage() {
               className="input w-full px-4 py-3 text-xl font-bold"
             />
             <div className="rounded-[12px] border border-border overflow-hidden">
-              <RichTextEditor content={content} onChange={setContent} />
+              <RichTextEditor
+                content={content}
+                onChange={setContent}
+                articleTitle={title}
+                onAiTitle={(s) => { setTitle(s); success("Judul AI disisipkan"); }}
+                onAiMeta={(s) => { setSeoDescription(s); success("Meta description AI disisipkan"); }}
+                onAiCaption={(s) => {
+                  navigator.clipboard?.writeText(s).then(
+                    () => success("Caption disalin ke clipboard"),
+                    () => window.prompt("Caption sosmed (Ctrl+C untuk salin):", s)
+                  );
+                }}
+              />
             </div>
           </div>
 
@@ -1343,7 +1492,19 @@ export default function EditArticlePage() {
               <div className="rounded-[12px] border border-border bg-surface p-5">
                 <label className="mb-2 block text-sm font-medium text-txt-primary">Konten</label>
                 <div className="rounded-[12px] border border-border overflow-hidden">
-                  <RichTextEditor content={content} onChange={setContent} />
+                  <RichTextEditor
+                content={content}
+                onChange={setContent}
+                articleTitle={title}
+                onAiTitle={(s) => { setTitle(s); success("Judul AI disisipkan"); }}
+                onAiMeta={(s) => { setSeoDescription(s); success("Meta description AI disisipkan"); }}
+                onAiCaption={(s) => {
+                  navigator.clipboard?.writeText(s).then(
+                    () => success("Caption disalin ke clipboard"),
+                    () => window.prompt("Caption sosmed (Ctrl+C untuk salin):", s)
+                  );
+                }}
+              />
                   <div className="flex items-center gap-4 px-4 py-2 border-t border-border text-sm text-txt-muted">
                     <span>{wordCount} kata</span>
                     <span className="text-border">|</span>
@@ -1499,9 +1660,25 @@ export default function EditArticlePage() {
         {/* Action buttons only for editable states */}
         {canJurnalisEdit && (
           <div className="flex flex-wrap items-center gap-2">
-            {autoSaveIndicator && (
+            {/* Autosave status badge */}
+            {autoSaving ? (
+              <span className="flex items-center gap-1.5 text-xs text-txt-muted">
+                <Loader2 size={12} className="animate-spin" />
+                Menyimpan otomatis...
+              </span>
+            ) : formDirty ? (
+              <span className="flex items-center gap-1.5 rounded-md bg-secondary-light px-2 py-1 text-xs font-medium text-secondary">
+                <AlertCircle size={12} />
+                Belum tersimpan
+              </span>
+            ) : lastSavedAt ? (
+              <span className="flex items-center gap-1.5 text-xs text-txt-muted">
+                <CheckCircle size={12} className="text-primary" />
+                Tersimpan otomatis {lastSavedAt.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            ) : autoSaveIndicator ? (
               <span className="text-xs text-txt-muted">{autoSaveIndicator}</span>
-            )}
+            ) : null}
             <button
               onClick={() => handleJurnalisSubmit("DRAFT")}
               disabled={saving}
@@ -1652,7 +1829,19 @@ export default function EditArticlePage() {
               className="input w-full px-4 py-3 text-xl font-bold"
             />
             <div className="rounded-[12px] border border-border overflow-hidden">
-              <RichTextEditor content={content} onChange={setContent} />
+              <RichTextEditor
+                content={content}
+                onChange={setContent}
+                articleTitle={title}
+                onAiTitle={(s) => { setTitle(s); success("Judul AI disisipkan"); }}
+                onAiMeta={(s) => { setSeoDescription(s); success("Meta description AI disisipkan"); }}
+                onAiCaption={(s) => {
+                  navigator.clipboard?.writeText(s).then(
+                    () => success("Caption disalin ke clipboard"),
+                    () => window.prompt("Caption sosmed (Ctrl+C untuk salin):", s)
+                  );
+                }}
+              />
               <div className="flex items-center gap-4 px-4 py-2 border-t border-border text-sm text-txt-muted">
                 <span>{wordCount} kata</span>
                 <span className="text-border">|</span>

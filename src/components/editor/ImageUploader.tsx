@@ -3,13 +3,16 @@
 import { useState, useRef, useCallback } from "react";
 import NextImage from "next/image";
 import { Upload, X, Loader2, ImageIcon } from "lucide-react";
+import ImageCropModal from "./ImageCropModal";
 
 interface ImageUploaderProps {
   onUpload: (url: string) => void;
   currentImage?: string;
+  /** Default crop aspect; pass 0 to disable crop step entirely */
+  cropAspect?: number;
 }
 
-function compressImage(file: File, maxWidth = 1200, quality = 0.8): Promise<Blob> {
+function compressImage(file: File | Blob, maxWidth = 1200, quality = 0.8): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -56,70 +59,120 @@ function formatSize(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(2) + " MB";
 }
 
-export default function ImageUploader({ onUpload, currentImage }: ImageUploaderProps) {
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Read failed"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+export default function ImageUploader({
+  onUpload,
+  currentImage,
+  cropAspect = 16 / 9,
+}: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<string>(currentImage || "");
   const [sizeInfo, setSizeInfo] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [originalName, setOriginalName] = useState("image.webp");
+  const [originalSize, setOriginalSize] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback(async (file: File) => {
-    setError("");
-    setSizeInfo("");
+  // Step 2: upload (after optional crop)
+  const uploadBlob = useCallback(
+    async (blob: Blob, srcSize: number) => {
+      setUploading(true);
+      try {
+        const compressed = await compressImage(blob);
+        const compressedSize = compressed.size;
 
-    const validTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!validTypes.includes(file.type)) {
-      setError("Format tidak didukung. Gunakan JPEG, PNG, atau WebP.");
-      return;
-    }
+        setSizeInfo(
+          `${formatSize(srcSize)} → ${formatSize(compressedSize)} (${Math.round(
+            (1 - compressedSize / srcSize) * 100
+          )}% lebih kecil)`
+        );
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError("File terlalu besar (maks 10MB sebelum kompres)");
-      return;
-    }
+        if (compressedSize > 2 * 1024 * 1024) {
+          setError("Gambar masih terlalu besar setelah kompres. Gunakan gambar yang lebih kecil.");
+          setUploading(false);
+          return;
+        }
 
-    setUploading(true);
-    try {
-      const originalSize = file.size;
-      const compressed = await compressImage(file);
-      const compressedSize = compressed.size;
+        const formData = new FormData();
+        formData.append("file", compressed, originalName);
 
-      setSizeInfo(
-        `${formatSize(originalSize)} → ${formatSize(compressedSize)} (${Math.round(
-          (1 - compressedSize / originalSize) * 100
-        )}% lebih kecil)`
-      );
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-      if (compressedSize > 2 * 1024 * 1024) {
-        setError("Gambar masih terlalu besar setelah kompres. Gunakan gambar yang lebih kecil.");
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          setError(data.error || "Gagal mengupload gambar");
+          setUploading(false);
+          return;
+        }
+
+        setPreview(data.data.url);
+        onUpload(data.data.url);
+      } catch {
+        setError("Terjadi kesalahan saat mengupload gambar");
+      } finally {
         setUploading(false);
+      }
+    },
+    [onUpload, originalName]
+  );
+
+  // Step 1: validate, then either open crop modal or skip directly to upload
+  const handleFile = useCallback(
+    async (file: File) => {
+      setError("");
+      setSizeInfo("");
+
+      const validTypes = ["image/jpeg", "image/png", "image/webp"];
+      if (!validTypes.includes(file.type)) {
+        setError("Format tidak didukung. Gunakan JPEG, PNG, atau WebP.");
         return;
       }
 
-      const formData = new FormData();
-      formData.append("file", compressed, file.name.replace(/\.[^.]+$/, ".webp"));
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setError(data.error || "Gagal mengupload gambar");
-        setUploading(false);
+      if (file.size > 10 * 1024 * 1024) {
+        setError("File terlalu besar (maks 10MB sebelum kompres)");
         return;
       }
 
-      setPreview(data.data.url);
-      onUpload(data.data.url);
-    } catch {
-      setError("Terjadi kesalahan saat mengupload gambar");
-    } finally {
-      setUploading(false);
-    }
-  }, [onUpload]);
+      setOriginalName(file.name.replace(/\.[^.]+$/, ".webp"));
+      setOriginalSize(file.size);
+
+      if (cropAspect === 0) {
+        // No crop step
+        await uploadBlob(file, file.size);
+        return;
+      }
+
+      // Open crop modal
+      try {
+        const dataUrl = await blobToDataUrl(file);
+        setCropSrc(dataUrl);
+      } catch {
+        setError("Gagal memproses gambar untuk crop");
+      }
+    },
+    [cropAspect, uploadBlob]
+  );
+
+  const handleCropConfirm = useCallback(
+    async (croppedBlob: Blob) => {
+      setCropSrc(null);
+      await uploadBlob(croppedBlob, originalSize || croppedBlob.size);
+    },
+    [uploadBlob, originalSize]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -209,6 +262,25 @@ export default function ImageUploader({ onUpload, currentImage }: ImageUploaderP
 
       {error && (
         <p className="text-xs text-red-400">{error}</p>
+      )}
+
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          aspectRatio={cropAspect}
+          onCancel={() => {
+            setCropSrc(null);
+            if (inputRef.current) inputRef.current.value = "";
+          }}
+          onConfirm={handleCropConfirm}
+        />
+      )}
+
+      {!preview && !cropSrc && uploading && (
+        <div className="flex items-center justify-center py-2 text-xs text-txt-secondary">
+          <Loader2 size={12} className="mr-1 animate-spin" />
+          Memproses upload...
+        </div>
       )}
     </div>
   );
