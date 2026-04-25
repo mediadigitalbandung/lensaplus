@@ -21,7 +21,7 @@ module.exports = {
     {
       name: "kartawarta",
       script: "node_modules/next/dist/bin/next",
-      args: "start --port 3001",
+      args: "start --port 3000",
       cwd: "/var/www/kartawarta",
       exec_mode: isCluster ? "cluster" : "fork",
       instances: isCluster ? "max" : 1,
@@ -30,7 +30,7 @@ module.exports = {
       max_memory_restart: "800M",
       env: {
         NODE_ENV: "production",
-        PORT: "3001",
+        PORT: "3000",
       },
       // Logs
       out_file: "/root/.pm2/logs/kartawarta-out.log",
