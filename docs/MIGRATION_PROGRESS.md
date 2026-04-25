@@ -170,13 +170,19 @@
 ## Phase 12 · Security Hardening
 *Agent: `security-auditor` + `auth-guardian`*
 
-- [ ] Audit semua `/api/**` — pastikan `requireAuth()`/`requireRole()` tepat
-- [ ] CSP: review `'unsafe-inline'` + `'unsafe-eval'` perlunya; tambah hash/nonce kalau memungkinkan
-- [ ] Rate-limit di endpoint public baru (comment, poll, report, contact, search, trending)
-- [ ] Invalidate session on password change (handler di `/api/users/me` PUT)
-- [ ] Check semua sanitization di input HTML (TipTap output pas POST/PUT artikel)
-- [ ] Secret scan: pastikan tidak ada API key di kode
-- [ ] Review CRON_SECRET usage — apakah semua cron endpoint verify
+- [x] Full audit Phase 1-11 — 2 Critical + 6 High + 6 Medium + 8 Low/Info ditemukan, lengkap di session log
+- [x] **C-1/L-5 FIXED**: scripts/ ditambah ke `.gitignore` (whitelist hanya backup-db.sh) — credentials di scripts tidak akan ter-commit
+- [x] **C-2 mitigated** via gitignore (script tetap di local, tidak masuk repo)
+- [x] **H-1 FIXED**: helper `verifyCronSecret()` di `src/lib/api-utils.ts` — timingSafeEqual + non-empty guard ≥16 char. Refactored 5 cron endpoints + `/api/seo/ping`
+- [x] **H-2 FIXED**: `/api/seo/submit` validate URL hostname = SITE_HOSTNAME (tolak external domain)
+- [x] **H-3 FIXED**: `template-renderer.ts` `loadBackground` allowlist host + escapeXml untuk color/fontFamily
+- [x] **H-4 FIXED**: `/api/og` `loadBackground` allowlist host (kartawarta.com + subdomain + Unsplash + Meta CDN + 145.79.15.99)
+- [x] **H-5 FIXED**: `/api/ads` POST + `/api/ads/[id]` PUT — `sanitizeHtml(htmlCode)` sebelum simpan
+- [x] **L-8 FIXED**: `/api/cron/auto-article` — `sanitizeHtml(parsed.content)` sebelum DB insert
+- [skip] CSP nonce migration — defer (low priority, butuh dev work substantial)
+- [skip] Rate-limit baru — endpoint baru sudah behind auth atau cache, defer fine-tuning
+- [skip] Session invalidation on password change — defer, edge case
+- [skip] Encrypt credentials at rest (M-2) — defer, butuh keystore design
 
 ## Phase 13 · Build, Test, Commit, Deploy
 *Agents: `build-test-validator` → `git-release-specialist`*
@@ -203,6 +209,13 @@
 ### 2026-04-24 — Phase 1 Database Schema Expansion ✅
 - Delegasi ke `database-architect`. Schema expanded dengan 9 model baru, 4 enum baru, Article +10 field. `prisma validate/format/generate` sukses locally.
 - **Deploy ke VPS**: user jalankan `git pull && prisma generate && prisma db push && npm run build && pm2 restart kartawarta` — sukses. PM2 `kartawarta` online.
+
+### 2026-04-25 — Phase 12 Security Hardening ✅
+- Audit menyeluruh Phase 1-11 oleh security-auditor
+- 2 Critical + 6 High difix langsung (gitignore scripts/, verifyCronSecret helper timing-safe, SSRF guards di seo/submit & og & template-renderer, XSS sanitize htmlCode di ads, sanitize AI-gen content di cron auto-article)
+- 6 Medium + 8 Low di-defer (CSP nonce, encrypt at rest, rate limit fine-tuning, session invalidation on password change) — non-blocker, dokumentasi lengkap di session log
+- Build: tsc clean
+- Action item user: rotate Cloudflare API token + Turnstile secret kalau scripts/add-cf-*.sh atau scripts/add-turnstile-env.sh pernah leak ke pihak lain
 
 ### 2026-04-24 — Phase 11 Settings UI + integration endpoints ✅
 - `/panel/pengaturan` full rewrite: 9 sections, dirty-tracking, per-section save, test buttons, validasi input

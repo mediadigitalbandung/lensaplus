@@ -68,12 +68,36 @@ function wrapText(text: string, maxChars: number, maxLines: number): string[] {
   return lines;
 }
 
+// SSRF guard — only fetch images from explicit allowlist of trusted hosts.
+const ALLOWED_IMG_HOSTS = new Set([
+  (() => { try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com").hostname; } catch { return "kartawarta.com"; } })(),
+  "kartawarta.com",
+  "www.kartawarta.com",
+  "images.unsplash.com",
+  "graph.facebook.com",
+  "scontent.cdninstagram.com",
+  "145.79.15.99",
+]);
+
+function isAllowedImageHost(rawUrl: string): boolean {
+  try {
+    const h = new URL(rawUrl).hostname.toLowerCase();
+    if (ALLOWED_IMG_HOSTS.has(h)) return true;
+    // Allow subdomains of kartawarta.com
+    return h.endsWith(".kartawarta.com");
+  } catch { return false; }
+}
+
 async function loadBackground(featuredImage: string | null | undefined): Promise<Buffer> {
   // Try featured image first.
   if (featuredImage) {
     try {
       if (/^https?:\/\//i.test(featuredImage)) {
-        const res = await fetch(featuredImage);
+        // SSRF guard: only fetch from allowlisted hosts
+        if (!isAllowedImageHost(featuredImage)) {
+          throw new Error("Image host not in allowlist");
+        }
+        const res = await fetch(featuredImage, { signal: AbortSignal.timeout(10000) });
         if (res.ok) {
           const ab = await res.arrayBuffer();
           return await sharp(Buffer.from(ab))

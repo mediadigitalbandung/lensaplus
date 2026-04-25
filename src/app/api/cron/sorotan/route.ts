@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateSorotan } from "@/lib/seo/sorotan-generator";
+import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -23,13 +24,7 @@ const BATCH_SIZE = 5;
 async function handler(req: NextRequest) {
   const started = Date.now();
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+    try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
 
     const candidates = await prisma.article.findMany({
       where: {

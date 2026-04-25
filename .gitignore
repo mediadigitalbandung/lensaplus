@@ -59,3 +59,9 @@ www/
 # Uploaded files
 public/uploads/*
 !public/uploads/.gitkeep
+
+# Operational scripts that may contain credentials — keep off-repo
+# Whitelist only the safe shell scripts that don't carry secrets.
+scripts/*
+!scripts/backup-db.sh
+!scripts/.gitkeep

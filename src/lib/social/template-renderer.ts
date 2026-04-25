@@ -154,13 +154,33 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
     })
     .join("");
 
-  return `<text x="${anchorX}" y="${baseY}" fill="${color}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${weight}" text-anchor="${textAnchor}">${tspans}</text>`;
+  return `<text x="${anchorX}" y="${baseY}" fill="${escapeXml(color)}" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}" font-weight="${weight}" text-anchor="${textAnchor}">${tspans}</text>`;
+}
+
+// SSRF guard for template background fetches
+const ALLOWED_TPL_BG_HOSTS = new Set([
+  (() => { try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com").hostname; } catch { return "kartawarta.com"; } })(),
+  "kartawarta.com",
+  "www.kartawarta.com",
+  "images.unsplash.com",
+  "145.79.15.99",
+]);
+
+function isAllowedTemplateHost(rawUrl: string): boolean {
+  try {
+    const h = new URL(rawUrl).hostname.toLowerCase();
+    if (ALLOWED_TPL_BG_HOSTS.has(h)) return true;
+    return h.endsWith(".kartawarta.com");
+  } catch { return false; }
 }
 
 /** Resolve a background URL to a Buffer sharp can consume. */
 async function loadBackground(urlOrPath: string): Promise<Buffer> {
   if (/^https?:\/\//i.test(urlOrPath)) {
-    const res = await fetch(urlOrPath);
+    if (!isAllowedTemplateHost(urlOrPath)) {
+      throw new Error(`Template background host not in allowlist: ${urlOrPath}`);
+    }
+    const res = await fetch(urlOrPath, { signal: AbortSignal.timeout(10000) });
     if (!res.ok) {
       throw new Error(
         `Template background fetch failed: HTTP ${res.status} for ${urlOrPath}`,

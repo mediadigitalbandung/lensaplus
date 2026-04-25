@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyArticleStatusChange } from "@/lib/notifications";
 import { sendArticlePublishedEmail } from "@/lib/email";
-import { ApiError, successResponse, errorResponse } from "@/lib/api-utils";
+import { successResponse, errorResponse, verifyCronSecret } from "@/lib/api-utils";
 import { onArticlePublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
 
 export const dynamic = "force-dynamic";
@@ -25,10 +25,7 @@ export const maxDuration = 300;
 async function handler(request: NextRequest) {
   const started = Date.now();
   try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      throw new ApiError("Unauthorized", 401);
-    }
+    verifyCronSecret(request);
 
     const now = new Date();
     const articles = await prisma.article.findMany({

@@ -8,6 +8,7 @@ import {
   logAudit,
   ApiError,
 } from "@/lib/api-utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 const updateAdSchema = z.object({
   name: z.string().min(1).optional(),
@@ -41,10 +42,16 @@ export async function PUT(
     const body = await request.json();
     const data = updateAdSchema.parse(body);
 
+    // XSS guard — sanitize htmlCode (allow YouTube iframe, strip scripts)
+    const sanitizedHtmlCode = data.htmlCode !== undefined
+      ? (data.htmlCode === null ? null : sanitizeHtml(data.htmlCode))
+      : undefined;
+
     const updated = await prisma.ad.update({
       where: { id: params.id },
       data: {
         ...data,
+        ...(sanitizedHtmlCode !== undefined && { htmlCode: sanitizedHtmlCode }),
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,
       },

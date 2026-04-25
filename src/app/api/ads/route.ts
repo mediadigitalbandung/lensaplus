@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, logAudit, getSession } from "@/lib/api-utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 // GET /api/ads — public: get active ads; admin: get all
 export async function GET(request: NextRequest) {
@@ -59,9 +60,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createAdSchema.parse(body);
 
+    // XSS guard — sanitize htmlCode (allow YouTube iframe, strip scripts)
+    const sanitizedHtmlCode = data.htmlCode ? sanitizeHtml(data.htmlCode) : data.htmlCode;
+
     const ad = await prisma.ad.create({
       data: {
         ...data,
+        htmlCode: sanitizedHtmlCode,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         priority: data.priority || 0,

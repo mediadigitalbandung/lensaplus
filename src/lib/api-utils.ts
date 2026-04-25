@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
+import { timingSafeEqual } from "crypto";
 import { authOptions } from "./auth";
 import { Role } from "@prisma/client";
 import { prisma } from "./prisma";
@@ -71,4 +73,40 @@ export async function logAudit(
   await prisma.auditLog.create({
     data: { userId, action, entity, entityId, detail, ip },
   });
+}
+
+/**
+ * Verify Bearer CRON_SECRET on cron endpoints.
+ * - Throws 500 if CRON_SECRET env is missing/empty (closes empty-bypass).
+ * - Uses timingSafeEqual to prevent timing side-channel.
+ *
+ * Use:
+ *   export async function POST(req: NextRequest) {
+ *     try { verifyCronSecret(req); ... }
+ *     catch (e) { return errorResponse(e); }
+ *   }
+ */
+export function verifyCronSecret(req: NextRequest): void {
+  const expected = process.env.CRON_SECRET;
+  if (!expected || expected.length < 16) {
+    throw new ApiError("CRON_SECRET not configured on server", 500);
+  }
+  const auth = req.headers.get("authorization") ?? "";
+  const prefix = "Bearer ";
+  if (!auth.startsWith(prefix)) {
+    throw new ApiError("Unauthorized", 401);
+  }
+  const provided = auth.slice(prefix.length);
+  // timingSafeEqual requires equal-length buffers — pad/truncate to expected length
+  // by simulating a constant-time comparison of differing lengths via fixed length buffers.
+  const expectedBuf = Buffer.from(expected, "utf8");
+  const providedBuf = Buffer.from(provided, "utf8");
+  if (providedBuf.length !== expectedBuf.length) {
+    // Still do a constant-time op against expected to keep timing uniform-ish
+    timingSafeEqual(expectedBuf, expectedBuf);
+    throw new ApiError("Unauthorized", 401);
+  }
+  if (!timingSafeEqual(expectedBuf, providedBuf)) {
+    throw new ApiError("Unauthorized", 401);
+  }
 }

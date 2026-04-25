@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
+  ApiError,
   errorResponse,
   requireRole,
   successResponse,
@@ -18,6 +19,18 @@ import { submitUrlToGoogle } from "@/lib/seo/google-indexing";
 import { pingIndexNow } from "@/lib/seo/indexnow";
 
 export const dynamic = "force-dynamic";
+
+const SITE_HOSTNAME = (() => {
+  try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com").hostname; }
+  catch { return "kartawarta.com"; }
+})();
+
+function isOwnDomain(rawUrl: string): boolean {
+  try {
+    const h = new URL(rawUrl).hostname.toLowerCase();
+    return h === SITE_HOSTNAME || h.endsWith("." + SITE_HOSTNAME);
+  } catch { return false; }
+}
 
 const bodySchema = z.object({
   url: z.string().url(),
@@ -30,6 +43,11 @@ export async function POST(req: NextRequest) {
     await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
     const body = await req.json();
     const { url, articleId, type } = bodySchema.parse(body);
+
+    // SSRF guard: only allow our own domain
+    if (!isOwnDomain(url)) {
+      throw new ApiError(`URL must be on ${SITE_HOSTNAME}`, 400);
+    }
 
     const [googleRes, indexNowRes] = await Promise.allSettled([
       submitUrlToGoogle(url, type ?? "URL_UPDATED"),

@@ -15,7 +15,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ApiError, errorResponse, successResponse } from "@/lib/api-utils";
+import { errorResponse, successResponse, verifyCronSecret } from "@/lib/api-utils";
 import { submitUrlToGoogle } from "@/lib/seo/google-indexing";
 import { pingIndexNow } from "@/lib/seo/indexnow";
 
@@ -29,10 +29,7 @@ const BATCH_SOROTAN = 50;
 
 export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      throw new ApiError("Unauthorized", 401);
-    }
+    verifyCronSecret(req);
 
     // ----- Articles: retry failed + oldest pending -----
     const articles = await prisma.article.findMany({

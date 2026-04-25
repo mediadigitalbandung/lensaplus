@@ -15,17 +15,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 
 async function handler(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 },
-    );
-  }
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
 
   return NextResponse.json(
     {
