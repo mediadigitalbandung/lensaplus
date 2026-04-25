@@ -554,3 +554,40 @@ model CtaTemplate {
 
   @@map("cta_templates")
 }
+
+enum GlossaryRanah {
+  PIDANA
+  PERDATA
+  HTN
+  HI
+  PROSEDUR
+  UMUM
+}
+
+model Glossary {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  istilah      String
+  singkatan    String?
+  bahasaAsli   String?       @map("bahasa_asli")
+  ranah        GlossaryRanah @default(UMUM)
+  // Body in HTML (sanitized) — sync script converts markdown → HTML
+  bodyHtml     String        @db.Text
+  // Source markdown for diff/audit when re-syncing
+  bodyMarkdown String?       @db.Text
+  // Tags for filter (e.g., ["pidana", "kuhap"])
+  tags         String[]      @default([])
+  // Cross-link: related glossary slugs
+  related      String[]      @default([])
+  // Source file path in editorial vault
+  sourcePath   String?
+  // Visibility — admin can hide drafts
+  isPublished  Boolean       @default(true)
+  viewCount    Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([ranah, isPublished])
+  @@index([istilah])
+  @@map("glossary")
+}
