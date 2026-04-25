@@ -318,9 +318,13 @@ model Media {
   url          String   @db.Text
   type         String
   size         Int
+  title        String?
+  caption      String?  @db.Text
+  credit       String?
   uploadedBy   String
   uploaderName String
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([uploadedBy])
   @@map("media")

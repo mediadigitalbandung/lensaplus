@@ -13,6 +13,9 @@ import {
   ChevronRight,
   Upload,
   Filter,
+  Pencil,
+  X,
+  Save,
 } from "lucide-react";
 import ImageUploader from "@/components/editor/ImageUploader";
 
@@ -22,6 +25,9 @@ interface MediaItem {
   url: string;
   type: string;
   size: number;
+  title: string | null;
+  caption: string | null;
+  credit: string | null;
   uploadedBy: string;
   uploaderName: string;
   createdAt: string;
@@ -74,6 +80,11 @@ export default function MediaPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterUser, setFilterUser] = useState<string>("");
+  const [editing, setEditing] = useState<MediaItem | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editCaption, setEditCaption] = useState("");
+  const [editCredit, setEditCredit] = useState("");
+  const [savingMeta, setSavingMeta] = useState(false);
 
   const isAdmin = session?.user?.role === "SUPER_ADMIN";
 
@@ -123,6 +134,50 @@ export default function MediaPage() {
     navigator.clipboard.writeText(url);
     setCopied(id);
     setTimeout(() => setCopied(null), 2000);
+  }
+
+  function openEdit(item: MediaItem) {
+    setEditing(item);
+    setEditTitle(item.title || "");
+    setEditCaption(item.caption || "");
+    setEditCredit(item.credit || "");
+  }
+
+  function closeEdit() {
+    setEditing(null);
+    setEditTitle("");
+    setEditCaption("");
+    setEditCredit("");
+  }
+
+  async function saveMetadata() {
+    if (!editing) return;
+    setSavingMeta(true);
+    try {
+      const res = await fetch(`/api/media/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle,
+          caption: editCaption,
+          credit: editCredit,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        showError(json.error || "Gagal menyimpan metadata");
+        return;
+      }
+      setMedia((prev) =>
+        prev.map((m) => (m.id === editing.id ? { ...m, ...json.data } : m))
+      );
+      success("Metadata gambar tersimpan");
+      closeEdit();
+    } catch {
+      showError("Gagal menyimpan metadata");
+    } finally {
+      setSavingMeta(false);
+    }
   }
 
   function handleUploadComplete() {
@@ -240,7 +295,7 @@ export default function MediaPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.url}
-                    alt={item.filename}
+                    alt={item.title || item.filename}
                     className="h-full w-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
@@ -261,14 +316,23 @@ export default function MediaPage() {
                       )}
                     </button>
                     {(item.uploadedBy === session?.user?.id || isAdmin) && (
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        disabled={deleting === item.id}
-                        className="rounded-lg bg-red-500/90 p-2 text-white hover:bg-red-600 disabled:opacity-50"
-                        title="Hapus"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => openEdit(item)}
+                          className="rounded-lg bg-white/90 p-2 text-txt-primary hover:bg-white"
+                          title="Edit judul / caption / sumber"
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deleting === item.id}
+                          className="rounded-lg bg-red-500/90 p-2 text-white hover:bg-red-600 disabled:opacity-50"
+                          title="Hapus"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -276,16 +340,147 @@ export default function MediaPage() {
                 {/* Info */}
                 <div className="p-3">
                   <p className="truncate text-sm font-medium text-txt-primary">
-                    {item.filename}
+                    {item.title || item.filename}
                   </p>
-                  <p className="mt-0.5 text-xs text-txt-muted">
-                    {item.uploaderName} &middot; {formatDate(item.createdAt)}
-                    {item.size > 0 && ` &middot; ${formatSize(item.size)}`}
+                  {item.caption && (
+                    <p className="mt-1 line-clamp-2 text-xs text-txt-secondary">
+                      {item.caption}
+                    </p>
+                  )}
+                  {item.credit && (
+                    <p className="mt-0.5 truncate text-[11px] font-medium text-primary">
+                      Sumber: {item.credit}
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-txt-muted">
+                    {item.uploaderName} · {formatDate(item.createdAt)}
+                    {item.size > 0 && ` · ${formatSize(item.size)}`}
                   </p>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Edit metadata modal */}
+          {editing && (
+            <div
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+              onClick={closeEdit}
+            >
+              <div
+                className="w-full max-w-md overflow-hidden rounded-xl bg-surface shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-border px-5 py-3">
+                  <h2 className="text-base font-bold text-txt-primary">
+                    Edit Metadata Gambar
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={closeEdit}
+                    className="rounded-md p-2 text-txt-secondary hover:bg-surface-secondary"
+                    aria-label="Tutup"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-4 p-5">
+                  {/* Preview */}
+                  <div className="flex items-start gap-3 rounded-md bg-surface-container-low p-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={editing.url}
+                      alt={editing.filename}
+                      className="h-16 w-16 shrink-0 rounded-sm object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-mono text-txt-muted">
+                        {editing.filename}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-txt-muted">
+                        {editing.uploaderName} · {formatDate(editing.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-txt-primary">
+                      Judul Gambar
+                    </label>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      maxLength={255}
+                      placeholder="Contoh: Walikota meninjau jembatan baru"
+                      className="input w-full"
+                    />
+                    <p className="mt-1 text-[11px] text-txt-muted">
+                      Akan dipakai sebagai alt-text untuk SEO & aksesibilitas.
+                    </p>
+                  </div>
+
+                  {/* Caption */}
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-txt-primary">
+                      Caption
+                    </label>
+                    <textarea
+                      value={editCaption}
+                      onChange={(e) => setEditCaption(e.target.value)}
+                      maxLength={1000}
+                      rows={3}
+                      placeholder="Deskripsi gambar yang akan tampil di bawah foto saat disisipkan ke artikel"
+                      className="input w-full resize-none"
+                    />
+                    <p className="mt-1 text-[11px] text-txt-muted">
+                      {editCaption.length}/1000 karakter
+                    </p>
+                  </div>
+
+                  {/* Credit / Sumber */}
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-txt-primary">
+                      Sumber / Kredit
+                    </label>
+                    <input
+                      type="text"
+                      value={editCredit}
+                      onChange={(e) => setEditCredit(e.target.value)}
+                      maxLength={255}
+                      placeholder="Contoh: Antara/Akbar Nugroho atau Dok. Pemkot"
+                      className="input w-full"
+                    />
+                    <p className="mt-1 text-[11px] text-txt-muted">
+                      Nama fotografer, agensi, atau sumber gambar.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 border-t border-border bg-surface-container-low px-5 py-3">
+                  <button
+                    type="button"
+                    onClick={closeEdit}
+                    disabled={savingMeta}
+                    className="btn-ghost text-sm disabled:opacity-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveMetadata}
+                    disabled={savingMeta}
+                    className="btn-primary flex items-center gap-1.5 text-sm disabled:opacity-50"
+                  >
+                    <Save size={14} />
+                    {savingMeta ? "Menyimpan..." : "Simpan"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (

@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
-import ImagePickerModal from "./ImagePickerModal";
+import ImagePickerModal, { type PickedImage } from "./ImagePickerModal";
 
 interface RichTextEditorProps {
   content: string;
@@ -139,9 +139,37 @@ export default function RichTextEditor({
   });
 
   const handleImageSelect = useCallback(
-    (url: string) => {
-      if (url && editor) {
-        editor.chain().focus().setImage({ src: url }).run();
+    (input: string | PickedImage) => {
+      if (!editor) return;
+      const picked: PickedImage =
+        typeof input === "string" ? { url: input } : input;
+      if (!picked.url) return;
+
+      const escapeHtml = (s: string) =>
+        s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+
+      const alt = escapeHtml(picked.title || "");
+      const url = escapeHtml(picked.url);
+      const caption = picked.caption?.trim();
+      const credit = picked.credit?.trim();
+
+      // If we have caption or credit, insert as <figure> with figcaption.
+      // Otherwise just insert a plain image so the existing TipTap Image extension owns it.
+      if (caption || credit) {
+        const captionHtml = caption ? escapeHtml(caption) : "";
+        const creditHtml = credit
+          ? `<em>Sumber: ${escapeHtml(credit)}</em>`
+          : "";
+        const separator = captionHtml && creditHtml ? " — " : "";
+        const figureHtml = `<figure><img src="${url}" alt="${alt}" /><figcaption>${captionHtml}${separator}${creditHtml}</figcaption></figure><p></p>`;
+        editor.chain().focus().insertContent(figureHtml).run();
+      } else {
+        editor.chain().focus().setImage({ src: picked.url, alt: picked.title || undefined }).run();
       }
     },
     [editor]

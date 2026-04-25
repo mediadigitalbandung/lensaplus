@@ -9,14 +9,24 @@ interface MediaItem {
   url: string;
   type: string;
   size: number;
+  title: string | null;
+  caption: string | null;
+  credit: string | null;
   uploaderName: string;
   createdAt: string;
+}
+
+export interface PickedImage {
+  url: string;
+  title?: string | null;
+  caption?: string | null;
+  credit?: string | null;
 }
 
 interface ImagePickerModalProps {
   open: boolean;
   onClose: () => void;
-  onSelect: (url: string) => void;
+  onSelect: (urlOrImage: string | PickedImage) => void;
 }
 
 type Tab = "upload" | "gallery";
@@ -76,7 +86,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [query, setQuery] = useState("");
-  const [selectedUrl, setSelectedUrl] = useState<string>("");
+  const [selected, setSelected] = useState<MediaItem | null>(null);
 
   const fetchGallery = useCallback(async () => {
     try {
@@ -103,7 +113,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
   // Reset state when modal closes
   useEffect(() => {
     if (!open) {
-      setSelectedUrl("");
+      setSelected(null);
       setUploadError("");
       setQuery("");
     }
@@ -174,8 +184,13 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
   );
 
   const handleGallerySelect = () => {
-    if (!selectedUrl) return;
-    onSelect(selectedUrl);
+    if (!selected) return;
+    onSelect({
+      url: selected.url,
+      title: selected.title,
+      caption: selected.caption,
+      credit: selected.credit,
+    });
     onClose();
   };
 
@@ -344,14 +359,19 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                 <>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                     {filteredMedia.map((m) => {
-                      const isSelected = selectedUrl === m.url;
+                      const isSelected = selected?.id === m.id;
                       return (
                         <button
                           key={m.id}
                           type="button"
-                          onClick={() => setSelectedUrl(m.url)}
+                          onClick={() => setSelected(m)}
                           onDoubleClick={() => {
-                            onSelect(m.url);
+                            onSelect({
+                              url: m.url,
+                              title: m.title,
+                              caption: m.caption,
+                              credit: m.credit,
+                            });
                             onClose();
                           }}
                           className={`group relative aspect-square overflow-hidden rounded-md border-2 transition-all ${
@@ -359,12 +379,12 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                               ? "border-primary ring-2 ring-primary/30"
                               : "border-transparent hover:border-primary/50"
                           }`}
-                          title={m.filename}
+                          title={m.title || m.filename}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={m.url}
-                            alt={m.filename}
+                            alt={m.title || m.filename}
                             className="h-full w-full object-cover"
                             loading="lazy"
                           />
@@ -373,10 +393,20 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                               <Check size={14} />
                             </div>
                           )}
-                          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                            <p className="truncate text-[10px] font-medium text-white">
-                              {m.uploaderName}
+                          {m.credit && (
+                            <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                              {m.credit}
+                            </span>
+                          )}
+                          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 py-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                            <p className="truncate text-[10px] font-semibold text-white">
+                              {m.title || m.filename}
                             </p>
+                            {m.caption && (
+                              <p className="line-clamp-2 text-[9px] text-white/80">
+                                {m.caption}
+                              </p>
+                            )}
                           </div>
                         </button>
                       );
@@ -417,7 +447,11 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
         {tab === "gallery" && (
           <div className="flex items-center justify-between border-t border-border bg-surface-container-low px-5 py-3">
             <p className="text-xs text-txt-muted">
-              {selectedUrl ? "Gambar dipilih — klik Sisipkan" : "Pilih gambar untuk disisipkan (double-click langsung)"}
+              {selected
+                ? selected.caption || selected.credit
+                  ? "Caption & sumber otomatis disisipkan"
+                  : "Gambar dipilih — klik Sisipkan"
+                : "Pilih gambar untuk disisipkan (double-click langsung)"}
             </p>
             <div className="flex gap-2">
               <button type="button" onClick={onClose} className="btn-ghost text-sm">
@@ -426,7 +460,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
               <button
                 type="button"
                 onClick={handleGallerySelect}
-                disabled={!selectedUrl}
+                disabled={!selected}
                 className="btn-primary text-sm disabled:opacity-50"
               >
                 Sisipkan Gambar
