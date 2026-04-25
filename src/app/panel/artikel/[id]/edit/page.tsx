@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -34,7 +33,6 @@ import {
   Printer,
   StickyNote,
 } from "lucide-react";
-import ImageUploader from "@/components/editor/ImageUploader";
 import { stripHtml, downloadTextFile, exportArticlePdf } from "@/lib/export-utils";
 
 const RichTextEditor = dynamic(
@@ -1550,16 +1548,6 @@ export default function EditArticlePage() {
                 <textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} className="input w-full" placeholder="Ringkasan singkat artikel" maxLength={500} />
               </div>
               <div className="rounded-[12px] border border-border bg-surface p-5">
-                <label className="mb-2 block text-sm font-medium text-txt-primary">Gambar Utama</label>
-                <ImageUploader onUpload={(url: string) => setFeaturedImage(url)} currentImage={featuredImage} />
-                <div className="mt-2">
-                  <input type="url" value={featuredImage} onChange={(e) => setFeaturedImage(e.target.value)} placeholder="Atau paste URL gambar" className="input w-full text-xs" />
-                </div>
-                {featuredImage && !featuredImage.startsWith("data:") && (
-                  <Image src={featuredImage} alt="Preview" width={800} height={400} className="mt-2 w-full rounded-[8px] object-cover" style={{ maxHeight: 200 }} unoptimized />
-                )}
-              </div>
-              <div className="rounded-[12px] border border-border bg-surface p-5">
                 <div className="mb-2 flex items-center justify-between">
                   <label className="text-sm font-medium text-txt-primary">SEO Title</label>
                   <AiButton feature="seo_title" setter={setSeoTitle} />
@@ -1970,16 +1958,6 @@ export default function EditArticlePage() {
                 <AiButton feature="summary" setter={setExcerpt} />
               </div>
               <textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} placeholder="Ringkasan singkat artikel" maxLength={500} className="input w-full" />
-            </div>
-            <div className="rounded-[12px] border border-border bg-surface p-6">
-              <label className="mb-2 block text-sm font-medium text-txt-primary">Gambar Utama</label>
-              <ImageUploader onUpload={(url: string) => setFeaturedImage(url)} currentImage={featuredImage} />
-              <div className="mt-2">
-                <input type="url" value={featuredImage} onChange={(e) => setFeaturedImage(e.target.value)} placeholder="Atau paste URL gambar" className="input w-full text-xs" />
-              </div>
-              {featuredImage && !featuredImage.startsWith("data:") && (
-                <Image src={featuredImage} alt="Preview" width={800} height={400} className="mt-2 w-full rounded-[8px] object-cover" style={{ maxHeight: 200 }} unoptimized />
-              )}
             </div>
             {/* Journalism Checklist */}
             <div className="rounded-[12px] border border-primary/20 bg-primary-50 p-4">

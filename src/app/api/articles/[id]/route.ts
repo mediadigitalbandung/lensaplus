@@ -18,6 +18,7 @@ import {
   sendNewReviewEmail,
 } from "@/lib/email";
 import { onArticlePublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
+import { extractFirstImageUrl } from "@/lib/image-extract";
 
 const updateArticleSchema = z.object({
   title: z.string().min(5).max(255).optional(),
@@ -108,6 +109,13 @@ export async function PUT(
     const body = await request.json();
     const { tags: tagNames, sources: sourcesData, reviewNote: bodyReviewNote, ...rawData } = body;
     const data = updateArticleSchema.parse({ ...rawData, reviewNote: bodyReviewNote });
+
+    // Featured image is now derived from the article body's first image — if the
+    // client doesn't send a value but content was edited, re-extract from content.
+    // This keeps the featured image in sync as users add/remove inline images.
+    if (data.content !== undefined && !data.featuredImage) {
+      data.featuredImage = extractFirstImageUrl(data.content);
+    }
 
     // ===== ROLE-BASED WORKFLOW ENFORCEMENT =====
 

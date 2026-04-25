@@ -19,8 +19,6 @@ import {
   TrendingUp,
   Lightbulb,
 } from "lucide-react";
-import ImageUploader from "@/components/editor/ImageUploader";
-
 const RichTextEditor = dynamic(
   () => import("@/components/editor/RichTextEditor"),
   { ssr: false, loading: () => <div className="h-[500px] animate-pulse rounded-[12px] bg-surface-secondary" /> }
@@ -638,36 +636,6 @@ export default function NewArticlePage() {
               maxLength={500}
               className="input w-full"
             />
-          </div>
-
-          {/* Featured Image */}
-          <div className="rounded-[12px] border border-border bg-surface p-6">
-            <label className="mb-2 block text-sm font-medium text-txt-primary">
-              Gambar Utama
-            </label>
-            <ImageUploader
-              onUpload={(url: string) => setFeaturedImage(url)}
-              currentImage={featuredImage}
-            />
-            <div className="mt-2">
-              <input
-                type="url"
-                value={featuredImage}
-                onChange={(e) => setFeaturedImage(e.target.value)}
-                placeholder="Atau paste URL gambar"
-                className="input w-full text-xs"
-              />
-            </div>
-            {featuredImage && !featuredImage.startsWith("data:") && (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={featuredImage}
-                alt="Preview"
-                className="mt-2 w-full rounded-[8px] object-cover"
-                style={{ maxHeight: 200 }}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-              />
-            )}
           </div>
 
           {/* Journalism Checklist */}

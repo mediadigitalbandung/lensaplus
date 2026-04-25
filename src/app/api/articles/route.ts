@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { extractFirstImageUrl } from "@/lib/image-extract";
 import {
   successResponse,
   errorResponse,
@@ -197,13 +198,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const sanitizedContent = sanitizeHtml(data.content);
+    // Featured image: explicit value wins; otherwise auto-extract from content body
+    const resolvedFeaturedImage = data.featuredImage || extractFirstImageUrl(sanitizedContent);
+
     const article = await prisma.article.create({
       data: {
         title: data.title,
         slug,
-        content: sanitizeHtml(data.content),
+        content: sanitizedContent,
         excerpt: data.excerpt || data.content.replace(/<[^>]*>/g, "").slice(0, 200),
-        featuredImage: data.featuredImage,
+        featuredImage: resolvedFeaturedImage,
         status: finalStatus as "DRAFT" | "IN_REVIEW",
         verificationLabel: "UNVERIFIED",
         readTime,
