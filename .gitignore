@@ -65,3 +65,16 @@ public/uploads/*
 scripts/*
 !scripts/backup-db.sh
 !scripts/.gitkeep
+
+# Playwright artifacts
+tests/e2e/.results/
+tests/e2e/.report/
+playwright-report/
+test-results/
+
+# Obsidian (personal config — each user has their own)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.obsidian/plugins/*/data.json
+.trash/
