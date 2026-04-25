@@ -38,6 +38,7 @@ import {
   TrendingUp,
   Gavel,
   BookOpen,
+  Video,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,7 @@ const menuItems: MenuItem[] = [
   { name: "Redaksi", href: "/panel/redaksi", icon: Users, adminOnly: true },
   { name: "Polling", href: "/panel/polling", icon: Vote, adminOnly: true },
   { name: "Sosial Media", href: "/panel/social", icon: Share2, adminOnly: true },
+  { name: "TikTok", href: "/panel/tiktok", icon: Video, editorOnly: true },
   { name: "Sorotan", href: "/panel/sorotan", icon: Lightbulb, editorOnly: true },
   { name: "Jadwal Sidang", href: "/panel/jadwal-sidang", icon: Gavel, editorOnly: true },
   { name: "Pengguna", href: "/panel/pengguna", icon: Users, adminOnly: true },

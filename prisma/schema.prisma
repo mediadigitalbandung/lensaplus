@@ -591,3 +591,170 @@ model Glossary {
   @@index([istilah])
   @@map("glossary")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TikTok Automation
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 1 (current): manual workflow — staff upload media, set caption/hashtags/music,
+//   export ZIP for posting via TikTok mobile app or CapCut. NO direct API posting yet.
+// Phase 2 (next): auto-render videos via @heygen-com/hyperframes from chosen template.
+// Phase 3 (next): direct posting via TikTok Content Posting API (requires audit).
+// See docs/TIKTOK_AUTOMATION.md for full plan.
+
+enum TiktokAccountStatus {
+  CONNECTED
+  TOKEN_EXPIRED
+  REVOKED
+}
+
+enum TiktokContentStatus {
+  DRAFT          // staff still editing
+  READY          // ready to export / queue render
+  RENDERING      // Phase 2: hyperframes job running
+  RENDER_FAILED  // Phase 2: render error
+  SCHEDULED      // queued for autopost at scheduledAt
+  PUBLISHING     // Phase 3: API upload in progress
+  PUBLISHED      // Phase 3: live on TikTok
+  PUBLISH_FAILED // Phase 3: API upload error
+  ARCHIVED
+}
+
+enum TiktokAspectRatio {
+  PORTRAIT_9_16  // 1080x1920 — default TikTok feed
+  SQUARE_1_1     // 1080x1080
+}
+
+enum TiktokMediaKind {
+  IMAGE
+  VIDEO
+}
+
+model TiktokAccount {
+  id             String              @id @default(cuid())
+  // Owner is the Kartawarta staff user who connected the TikTok handle.
+  ownerId        String
+  ownerName      String
+  // TikTok-side identifiers (filled in Phase 3 after OAuth)
+  platformUserId String?             @unique
+  username       String              // e.g. "kartawarta_id"
+  displayName    String
+  avatarUrl      String?
+  scopes         String              @default("") // comma-sep
+  accessToken    String?             @db.Text
+  refreshToken   String?             @db.Text
+  expiresAt      DateTime?
+  status         TiktokAccountStatus @default(CONNECTED)
+  contents       TiktokContent[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([ownerId])
+  @@map("tiktok_accounts")
+}
+
+model TiktokContent {
+  id              String              @id @default(cuid())
+  accountId       String?
+  account         TiktokAccount?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  // Editorial fields
+  title           String              // internal label for staff
+  caption         String?             @db.Text  // TikTok caption (max 2200)
+  hashtags        String              @default("") // comma-sep, "hukum,bandung"
+  // Optional: derived from / linked to an Article
+  sourceArticleId String?
+  // Output settings
+  aspectRatio     TiktokAspectRatio   @default(PORTRAIT_9_16)
+  duration        Int?                // seconds, set after render
+  templateKey     String?             // matches TiktokTemplate.key (Phase 2)
+  // Render output (Phase 2)
+  outputUrl       String?
+  thumbnailUrl    String?
+  // Audio
+  bgmUrl          String?
+  bgmVolume       Float               @default(0.6)
+  // Overlay & per-slot text — flexible JSON
+  overlayJson     Json?
+  // Lifecycle
+  status          TiktokContentStatus @default(DRAFT)
+  scheduledAt     DateTime?
+  publishedAt     DateTime?
+  platformPostId  String?
+  publishError    String?             @db.Text
+  // Authorship
+  createdById     String
+  createdByName   String
+  slots           TiktokMediaSlot[]
+  renderJobs      TiktokRenderJob[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([accountId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([createdById])
+  @@map("tiktok_contents")
+}
+
+model TiktokMediaSlot {
+  id          String          @id @default(cuid())
+  contentId   String
+  content     TiktokContent   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  order       Int             @default(0)
+  kind        TiktokMediaKind
+  url         String          @db.Text
+  filename    String?
+  mimeType    String?
+  // Display tuning
+  durationMs  Int             @default(3000) // image: total on-screen, video: ignored
+  trimStartMs Int             @default(0)
+  trimEndMs   Int?
+  caption     String?         @db.Text       // optional text overlay for this slot
+  width       Int?
+  height      Int?
+  size        Int?
+  createdAt   DateTime        @default(now())
+
+  @@index([contentId])
+  @@index([contentId, order])
+  @@map("tiktok_media_slots")
+}
+
+model TiktokTemplate {
+  id            String            @id @default(cuid())
+  // Stable identifier used by hyperframes renderer (Phase 2)
+  key           String            @unique
+  name          String
+  description   String?           @db.Text
+  // Path on disk to the HTML template (resolved by render worker, Phase 2)
+  htmlPath      String?
+  // Slot rules
+  minSlots      Int               @default(1)
+  maxSlots      Int               @default(10)
+  acceptedKinds String            @default("IMAGE,VIDEO")
+  aspectRatio   TiktokAspectRatio @default(PORTRAIT_9_16)
+  thumbnailUrl  String?
+  isActive      Boolean           @default(true)
+  order         Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@map("tiktok_templates")
+}
+
+model TiktokRenderJob {
+  id           String        @id @default(cuid())
+  contentId    String
+  content      TiktokContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  status       String        @default("QUEUED") // QUEUED, RUNNING, SUCCEEDED, FAILED
+  progress     Int           @default(0)
+  outputUrl    String?
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  errorMessage String?       @db.Text
+  workerId     String?
+  createdAt    DateTime      @default(now())
+
+  @@index([contentId])
+  @@index([status])
+  @@map("tiktok_render_jobs")
+}
