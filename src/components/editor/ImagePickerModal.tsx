@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Upload, ImageIcon, Loader2, Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { X, Upload, ImageIcon, Loader2, Search, ChevronLeft, ChevronRight, Check, ArrowLeft } from "lucide-react";
 
 interface MediaItem {
   id: string;
@@ -79,6 +79,14 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Upload step-2 state — file selected, awaiting metadata
+  const [pendingBlob, setPendingBlob] = useState<Blob | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string>("");
+  const [pendingFilename, setPendingFilename] = useState<string>("");
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadCaption, setUploadCaption] = useState("");
+  const [uploadCredit, setUploadCredit] = useState("");
+
   // Gallery state
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loadingGallery, setLoadingGallery] = useState(false);
@@ -116,7 +124,15 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
       setSelected(null);
       setUploadError("");
       setQuery("");
+      setPendingBlob(null);
+      if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+      setPendingPreview("");
+      setPendingFilename("");
+      setUploadTitle("");
+      setUploadCaption("");
+      setUploadCredit("");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Lock body scroll
@@ -129,7 +145,8 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
     }
   }, [open]);
 
-  const handleFile = useCallback(
+  // Step 1: validate + compress + stage. Does NOT upload yet — wait for metadata.
+  const stageFile = useCallback(
     async (file: File) => {
       setUploadError("");
       const validTypes = ["image/jpeg", "image/png", "image/webp"];
@@ -142,45 +159,84 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
         return;
       }
 
-      setUploading(true);
       try {
         const compressed = await compressImage(file);
         if (compressed.size > 2 * 1024 * 1024) {
           setUploadError("Gambar masih terlalu besar setelah kompres. Coba gambar lebih kecil.");
-          setUploading(false);
           return;
         }
-
-        const formData = new FormData();
-        formData.append("file", compressed, file.name.replace(/\.[^.]+$/, ".webp"));
-
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          setUploadError(data.error || "Gagal mengupload gambar");
-          setUploading(false);
-          return;
-        }
-
-        onSelect(data.data.url);
-        onClose();
+        const previewUrl = URL.createObjectURL(compressed);
+        if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+        setPendingBlob(compressed);
+        setPendingPreview(previewUrl);
+        setPendingFilename(file.name.replace(/\.[^.]+$/, ".webp"));
       } catch {
-        setUploadError("Terjadi kesalahan saat mengupload gambar");
-      } finally {
-        setUploading(false);
+        setUploadError("Gagal memproses gambar");
       }
     },
-    [onSelect, onClose]
+    [pendingPreview]
   );
+
+  // Step 2: submit metadata + file to /api/upload
+  const submitUpload = useCallback(async () => {
+    if (!pendingBlob) return;
+    const title = uploadTitle.trim();
+    const caption = uploadCaption.trim();
+    const credit = uploadCredit.trim();
+    if (!title || !caption || !credit) {
+      setUploadError("Judul, keterangan, dan sumber wajib diisi.");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", pendingBlob, pendingFilename || "image.webp");
+      formData.append("title", title);
+      formData.append("caption", caption);
+      formData.append("credit", credit);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setUploadError(data.error || "Gagal mengupload gambar");
+        return;
+      }
+
+      onSelect({
+        url: data.data.url,
+        title: data.data.media?.title ?? title,
+        caption: data.data.media?.caption ?? caption,
+        credit: data.data.media?.credit ?? credit,
+      });
+      onClose();
+    } catch {
+      setUploadError("Terjadi kesalahan saat mengupload gambar");
+    } finally {
+      setUploading(false);
+    }
+  }, [pendingBlob, pendingFilename, uploadTitle, uploadCaption, uploadCredit, onSelect, onClose]);
+
+  const resetPending = useCallback(() => {
+    if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+    setPendingBlob(null);
+    setPendingPreview("");
+    setPendingFilename("");
+    setUploadTitle("");
+    setUploadCaption("");
+    setUploadCredit("");
+    setUploadError("");
+  }, [pendingPreview]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragActive(false);
       const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+      if (file) stageFile(file);
     },
-    [handleFile]
+    [stageFile]
   );
 
   const handleGallerySelect = () => {
@@ -195,11 +251,16 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
   };
 
   const filteredMedia = query.trim()
-    ? media.filter(
-        (m) =>
-          m.filename.toLowerCase().includes(query.toLowerCase()) ||
-          m.uploaderName.toLowerCase().includes(query.toLowerCase())
-      )
+    ? media.filter((m) => {
+        const q = query.toLowerCase();
+        return (
+          m.filename.toLowerCase().includes(q) ||
+          m.uploaderName.toLowerCase().includes(q) ||
+          (m.title && m.title.toLowerCase().includes(q)) ||
+          (m.caption && m.caption.toLowerCase().includes(q)) ||
+          (m.credit && m.credit.toLowerCase().includes(q))
+        );
+      })
     : media;
 
   if (!open) return null;
@@ -254,56 +315,168 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5">
           {tab === "upload" ? (
-            <div className="flex h-full min-h-[300px] items-center justify-center">
-              <div
-                onDrop={handleDrop}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragActive(true);
-                }}
-                onDragLeave={() => setDragActive(false)}
-                onClick={() => inputRef.current?.click()}
-                className={`flex w-full max-w-lg cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-colors ${
-                  dragActive
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 size={36} className="animate-spin text-primary" />
-                    <p className="mt-4 text-sm font-medium text-txt-primary">
-                      Mengupload gambar...
+            pendingBlob ? (
+              /* Step 2: file dipilih → isi metadata wajib lalu submit */
+              <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+                <div className="flex items-start gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={pendingPreview}
+                    alt="Preview"
+                    className="h-32 w-32 flex-shrink-0 rounded-lg object-cover ring-1 ring-border"
+                  />
+                  <div className="flex-1 text-xs text-txt-muted">
+                    <p className="font-medium text-txt-primary">{pendingFilename}</p>
+                    <p className="mt-1">
+                      {pendingBlob.size < 1024
+                        ? `${pendingBlob.size} B`
+                        : pendingBlob.size < 1024 * 1024
+                          ? `${(pendingBlob.size / 1024).toFixed(1)} KB`
+                          : `${(pendingBlob.size / (1024 * 1024)).toFixed(2)} MB`}
+                      {" · "}WebP terkompres
                     </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-light">
-                      <Upload size={28} className="text-primary" />
-                    </div>
-                    <p className="text-base font-semibold text-txt-primary">
-                      Klik atau drag gambar ke sini
-                    </p>
-                    <p className="mt-1 text-xs text-txt-muted">
-                      JPEG, PNG, WebP · maks 10MB (otomatis dikompres ke WebP &lt;2MB)
-                    </p>
-                  </>
+                    <button
+                      type="button"
+                      onClick={resetPending}
+                      disabled={uploading}
+                      className="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-txt-secondary hover:bg-surface-secondary disabled:opacity-50"
+                    >
+                      <ArrowLeft size={12} /> Ganti gambar
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-txt-primary">
+                    Judul Gambar <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                    maxLength={255}
+                    placeholder="Contoh: Suasana sidang MK uji UU Cipta Kerja"
+                    className="input"
+                    disabled={uploading}
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-txt-primary">
+                    Keterangan / Caption <span className="text-red-600">*</span>
+                  </label>
+                  <textarea
+                    value={uploadCaption}
+                    onChange={(e) => setUploadCaption(e.target.value)}
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="Deskripsi singkat gambar — siapa, apa, dimana, kapan."
+                    className="input w-full"
+                    disabled={uploading}
+                  />
+                  <p className="mt-1 text-[10px] text-txt-muted">
+                    {uploadCaption.length}/1000 — dipakai sebagai alt-text & caption otomatis saat disisipkan.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-txt-primary">
+                    Sumber / Credit <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadCredit}
+                    onChange={(e) => setUploadCredit(e.target.value)}
+                    maxLength={255}
+                    placeholder="Contoh: ANTARA/Andika Wahyu, Reuters, Dok. Pribadi"
+                    className="input"
+                    disabled={uploading}
+                  />
+                </div>
+
+                {uploadError && (
+                  <p className="text-sm text-red-600">{uploadError}</p>
                 )}
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFile(file);
-                  }}
-                />
+
+                <div className="mt-2 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={uploading}
+                    className="btn-ghost text-sm disabled:opacity-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitUpload}
+                    disabled={
+                      uploading ||
+                      !uploadTitle.trim() ||
+                      !uploadCaption.trim() ||
+                      !uploadCredit.trim()
+                    }
+                    className="btn-primary text-sm disabled:opacity-50"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Mengupload...
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={14} />
+                        Upload Gambar
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-              {uploadError && (
-                <p className="absolute bottom-6 text-sm text-red-600">{uploadError}</p>
-              )}
-            </div>
+            ) : (
+              /* Step 1: drop / pilih file */
+              <div className="flex h-full min-h-[300px] items-center justify-center">
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragActive(true);
+                  }}
+                  onDragLeave={() => setDragActive(false)}
+                  onClick={() => inputRef.current?.click()}
+                  className={`flex w-full max-w-lg cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-colors ${
+                    dragActive
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-light">
+                    <Upload size={28} className="text-primary" />
+                  </div>
+                  <p className="text-base font-semibold text-txt-primary">
+                    Klik atau drag gambar ke sini
+                  </p>
+                  <p className="mt-1 text-xs text-txt-muted">
+                    JPEG, PNG, WebP · maks 10MB (otomatis dikompres ke WebP &lt;2MB)
+                  </p>
+                  <p className="mt-3 text-[10px] text-txt-muted">
+                    Setelah memilih file, isi judul, keterangan, dan sumber.
+                  </p>
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) stageFile(file);
+                    }}
+                  />
+                </div>
+                {uploadError && (
+                  <p className="absolute bottom-6 text-sm text-red-600">{uploadError}</p>
+                )}
+              </div>
+            )
           ) : (
             <div>
               {/* Search */}

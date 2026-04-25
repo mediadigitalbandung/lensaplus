@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import NextImage from "next/image";
 import { Upload, X, Loader2, ImageIcon } from "lucide-react";
 import ImageCropModal from "./ImageCropModal";
@@ -83,9 +83,24 @@ export default function ImageUploader({
   const [originalSize, setOriginalSize] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Step 2: upload (after optional crop)
-  const uploadBlob = useCallback(
+  // Pending stage: file is compressed and ready, waiting for required metadata
+  const [pendingBlob, setPendingBlob] = useState<Blob | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string>("");
+  const [title, setTitle] = useState("");
+  const [caption, setCaption] = useState("");
+  const [credit, setCredit] = useState("");
+
+  // Cleanup any pending preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+    };
+  }, [pendingPreview]);
+
+  // Stage a blob (post-crop or post-direct) — compress + show metadata form
+  const stageBlob = useCallback(
     async (blob: Blob, srcSize: number) => {
+      setError("");
       setUploading(true);
       try {
         const compressed = await compressImage(blob);
@@ -99,37 +114,66 @@ export default function ImageUploader({
 
         if (compressedSize > 2 * 1024 * 1024) {
           setError("Gambar masih terlalu besar setelah kompres. Gunakan gambar yang lebih kecil.");
-          setUploading(false);
           return;
         }
 
-        const formData = new FormData();
-        formData.append("file", compressed, originalName);
-
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          setError(data.error || "Gagal mengupload gambar");
-          setUploading(false);
-          return;
-        }
-
-        setPreview(data.data.url);
-        onUpload(data.data.url);
+        if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+        setPendingBlob(compressed);
+        setPendingPreview(URL.createObjectURL(compressed));
       } catch {
-        setError("Terjadi kesalahan saat mengupload gambar");
+        setError("Terjadi kesalahan saat memproses gambar");
       } finally {
         setUploading(false);
       }
     },
-    [onUpload, originalName]
+    [pendingPreview]
   );
 
-  // Step 1: validate, then either open crop modal or skip directly to upload
+  // Final commit — POST to /api/upload with metadata
+  const commitUpload = useCallback(async () => {
+    if (!pendingBlob) return;
+    const t = title.trim();
+    const c = caption.trim();
+    const s = credit.trim();
+    if (!t || !c || !s) {
+      setError("Judul, keterangan, dan sumber wajib diisi.");
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", pendingBlob, originalName);
+      formData.append("title", t);
+      formData.append("caption", c);
+      formData.append("credit", s);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || "Gagal mengupload gambar");
+        return;
+      }
+
+      setPreview(data.data.url);
+      onUpload(data.data.url);
+
+      // Reset pending stage
+      if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+      setPendingBlob(null);
+      setPendingPreview("");
+      setTitle("");
+      setCaption("");
+      setCredit("");
+    } catch {
+      setError("Terjadi kesalahan saat mengupload gambar");
+    } finally {
+      setUploading(false);
+    }
+  }, [pendingBlob, originalName, pendingPreview, title, caption, credit, onUpload]);
+
+  // Step 1: validate file, then either open crop modal or skip directly to metadata form
   const handleFile = useCallback(
     async (file: File) => {
       setError("");
@@ -150,8 +194,8 @@ export default function ImageUploader({
       setOriginalSize(file.size);
 
       if (cropAspect === 0) {
-        // No crop step
-        await uploadBlob(file, file.size);
+        // Skip crop, go directly to metadata stage
+        await stageBlob(file, file.size);
         return;
       }
 
@@ -163,15 +207,15 @@ export default function ImageUploader({
         setError("Gagal memproses gambar untuk crop");
       }
     },
-    [cropAspect, uploadBlob]
+    [cropAspect, stageBlob]
   );
 
   const handleCropConfirm = useCallback(
     async (croppedBlob: Blob) => {
       setCropSrc(null);
-      await uploadBlob(croppedBlob, originalSize || croppedBlob.size);
+      await stageBlob(croppedBlob, originalSize || croppedBlob.size);
     },
-    [uploadBlob, originalSize]
+    [stageBlob, originalSize]
   );
 
   const handleDrop = useCallback(
@@ -198,6 +242,122 @@ export default function ImageUploader({
     if (inputRef.current) inputRef.current.value = "";
   };
 
+  const cancelPending = () => {
+    if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+    setPendingBlob(null);
+    setPendingPreview("");
+    setTitle("");
+    setCaption("");
+    setCredit("");
+    setError("");
+    setSizeInfo("");
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  // PRIORITY 1: pendingBlob → show metadata form
+  if (pendingBlob) {
+    return (
+      <div className="space-y-3 rounded-[12px] border border-primary/30 bg-primary-light/30 p-4">
+        <div className="flex items-start gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={pendingPreview}
+            alt="Preview"
+            className="h-24 w-24 flex-shrink-0 rounded-md object-cover ring-1 ring-border"
+          />
+          <div className="flex-1 text-[11px] text-txt-muted">
+            <p className="font-medium text-txt-primary">Gambar siap diupload</p>
+            {sizeInfo && <p className="mt-0.5">{sizeInfo}</p>}
+            <button
+              type="button"
+              onClick={cancelPending}
+              disabled={uploading}
+              className="mt-1 text-[11px] text-txt-secondary underline hover:text-txt-primary disabled:opacity-50"
+            >
+              Ganti gambar
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-[11px] font-semibold text-txt-primary">
+            Judul Gambar <span className="text-red-600">*</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={255}
+            placeholder="Contoh: Gedung MK saat sidang putusan"
+            className="input text-sm"
+            disabled={uploading}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-[11px] font-semibold text-txt-primary">
+            Keterangan <span className="text-red-600">*</span>
+          </label>
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            rows={2}
+            maxLength={1000}
+            placeholder="Deskripsi singkat — siapa, apa, dimana, kapan."
+            className="input w-full text-sm"
+            disabled={uploading}
+          />
+          <p className="mt-0.5 text-[10px] text-txt-muted">{caption.length}/1000</p>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-[11px] font-semibold text-txt-primary">
+            Sumber <span className="text-red-600">*</span>
+          </label>
+          <input
+            type="text"
+            value={credit}
+            onChange={(e) => setCredit(e.target.value)}
+            maxLength={255}
+            placeholder="Contoh: ANTARA/Andika Wahyu, Reuters, Dok. Pribadi"
+            className="input text-sm"
+            disabled={uploading}
+          />
+        </div>
+
+        {error && <p className="text-xs text-red-500">{error}</p>}
+
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            type="button"
+            onClick={cancelPending}
+            disabled={uploading}
+            className="btn-ghost text-xs disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onClick={commitUpload}
+            disabled={uploading || !title.trim() || !caption.trim() || !credit.trim()}
+            className="btn-primary text-xs disabled:opacity-50"
+          >
+            {uploading ? (
+              <>
+                <Loader2 size={12} className="animate-spin" /> Mengupload...
+              </>
+            ) : (
+              <>
+                <Upload size={12} /> Upload
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // PRIORITY 2: preview from currentImage / just-uploaded → show preview
   return (
     <div className="space-y-2">
       {preview ? (
@@ -237,7 +397,7 @@ export default function ImageUploader({
             <ImageIcon size={24} className="text-txt-muted" />
           )}
           <p className="mt-2 text-center text-xs text-txt-secondary">
-            {uploading ? "Mengupload..." : "Klik atau drag gambar ke sini"}
+            {uploading ? "Memproses..." : "Klik atau drag gambar ke sini"}
           </p>
           <p className="mt-1 text-center text-[10px] text-txt-muted">
             JPEG, PNG, WebP — Maks 2MB (otomatis dikompres)
@@ -256,13 +416,7 @@ export default function ImageUploader({
         }}
       />
 
-      {sizeInfo && (
-        <p className="text-[10px] text-primary">{sizeInfo}</p>
-      )}
-
-      {error && (
-        <p className="text-xs text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
 
       {cropSrc && (
         <ImageCropModal
@@ -274,13 +428,6 @@ export default function ImageUploader({
           }}
           onConfirm={handleCropConfirm}
         />
-      )}
-
-      {!preview && !cropSrc && uploading && (
-        <div className="flex items-center justify-center py-2 text-xs text-txt-secondary">
-          <Loader2 size={12} className="mr-1 animate-spin" />
-          Memproses upload...
-        </div>
       )}
     </div>
   );

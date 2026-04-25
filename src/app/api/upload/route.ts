@@ -28,6 +28,17 @@ export async function POST(request: NextRequest) {
       throw new ApiError("Ukuran gambar maksimal 5MB", 400);
     }
 
+    // Required metadata for every new upload
+    const title = (formData.get("title")?.toString() || "").trim();
+    const caption = (formData.get("caption")?.toString() || "").trim();
+    const credit = (formData.get("credit")?.toString() || "").trim();
+    if (!title) throw new ApiError("Judul gambar wajib diisi", 400);
+    if (!caption) throw new ApiError("Keterangan gambar wajib diisi", 400);
+    if (!credit) throw new ApiError("Sumber gambar wajib diisi", 400);
+    if (title.length > 255) throw new ApiError("Judul gambar maksimal 255 karakter", 400);
+    if (caption.length > 1000) throw new ApiError("Keterangan gambar maksimal 1000 karakter", 400);
+    if (credit.length > 255) throw new ApiError("Sumber gambar maksimal 255 karakter", 400);
+
     const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
     const filename = `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
 
@@ -47,6 +58,9 @@ export async function POST(request: NextRequest) {
         url,
         type: file.type,
         size: file.size,
+        title,
+        caption,
+        credit,
         uploadedBy: session.user.id,
         uploaderName: session.user.name,
       },
