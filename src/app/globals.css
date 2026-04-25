@@ -206,7 +206,26 @@
 .article-content ol { @apply list-decimal; }
 .article-content li { @apply text-on-surface/80 text-body-lg leading-[1.85]; }
 .article-content a { @apply text-primary font-medium underline underline-offset-4 decoration-primary/30 hover:decoration-primary transition-colors; }
-.article-content img { @apply my-8 rounded-sm; }
+.article-content img {
+  @apply my-8 rounded-sm block max-w-full h-auto;
+  min-height: 80px;
+  background-color: #f1f3f4;
+}
+.article-content figure { @apply my-8; }
+.article-content figure img { @apply my-0; }
+.article-content figcaption { @apply mt-2 text-center text-body-sm italic text-on-surface-variant; }
+
+/* TipTap editor (ProseMirror wrapper) — same image rules so what you see in the editor matches the published article */
+.ProseMirror img {
+  @apply my-4 rounded-sm block max-w-full h-auto;
+  min-height: 60px;
+  background-color: #f1f3f4;
+}
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid #002045;
+  outline-offset: 2px;
+}
+
 .article-content table { @apply my-8 w-full border-collapse overflow-hidden rounded-sm; }
 .article-content th, .article-content td { @apply px-4 py-3 text-left text-body-sm; }
 .article-content th { @apply bg-surface-container-low font-semibold text-on-surface; }
