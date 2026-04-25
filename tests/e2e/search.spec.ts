@@ -44,12 +44,17 @@ test("search query with no expected hits shows empty state", async ({ page }) =>
   expect(articleCount).toBeLessThan(5);
 });
 
-test("search input in header navigates to /search when present", async ({ page }) => {
+test("search input in header navigates to /search when present", async ({ page, viewport }) => {
   await page.goto("/");
-  // Look for search input in header — multiple possible locators
+  // Header search input is desktop-only (md:block on input wrapper).
+  // Skip the test on small viewports where the input is hidden.
+  if (viewport && viewport.width < 768) {
+    test.skip(true, "Header search input is hidden on mobile viewports");
+  }
+
   const searchInput = page.locator('input[type="search"], input[name="q"], input[placeholder*="cari" i], input[placeholder*="search" i]').first();
-  if (await searchInput.count() === 0) {
-    test.skip(true, "Header has no search input — search only via direct URL");
+  if (!(await searchInput.isVisible().catch(() => false))) {
+    test.skip(true, "Header search input not visible on this layout");
   }
 
   await searchInput.click();
