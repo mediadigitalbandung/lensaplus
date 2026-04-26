@@ -35,9 +35,15 @@ const prisma = new PrismaClient();
 const dryRun = process.argv.includes("--dry-run");
 
 const uploadsDir = join(process.cwd(), "public", "uploads");
-const PLACEHOLDER_FILENAME = "_kartawarta-placeholder.webp";
+// IMPORTANT: filename must NOT start with "_" — Next.js refuses to serve
+// public/ files whose name begins with an underscore (reserved for _next,
+// _app, _document and other framework internals). The first heal run used
+// "_kartawarta-placeholder.webp" and produced silent 404s.
+const PLACEHOLDER_FILENAME = "kartawarta-placeholder.webp";
+const LEGACY_PLACEHOLDER_FILENAME = "_kartawarta-placeholder.webp";
 const PLACEHOLDER_PATH = join(uploadsDir, PLACEHOLDER_FILENAME);
 const PLACEHOLDER_URL = `/uploads/${PLACEHOLDER_FILENAME}`;
+const LEGACY_PLACEHOLDER_URL = `/uploads/${LEGACY_PLACEHOLDER_FILENAME}`;
 
 function extractUploadPaths(html) {
   if (!html) return [];
@@ -154,7 +160,13 @@ async function main() {
 
     // ---- featuredImage classification ----
     const fClass = classifyImageRef(a.featuredImage);
-    if (a.featuredImage === PLACEHOLDER_URL) {
+    if (a.featuredImage === LEGACY_PLACEHOLDER_URL) {
+      // Migrate from underscored legacy filename (Next.js refuses to serve it)
+      newFeatured = PLACEHOLDER_URL;
+      dirty = true;
+      changes.push(`  featured (legacy placeholder): underscore → ${PLACEHOLDER_URL}`);
+      stats.featuredFixed_missingFile++;
+    } else if (a.featuredImage === PLACEHOLDER_URL) {
       stats.skippedFeatured_validLocal++;
     } else if (fClass === "empty") {
       stats.skippedFeatured_empty++;
@@ -183,7 +195,14 @@ async function main() {
 
     // ---- inline images in content ----
     if (a.content) {
-      // First: any /uploads/* references whose file is missing
+      // Migrate any legacy underscored placeholder refs first
+      if (newContent.includes(LEGACY_PLACEHOLDER_URL)) {
+        newContent = newContent.split(LEGACY_PLACEHOLDER_URL).join(PLACEHOLDER_URL);
+        stats.inlineFixed++;
+        dirty = true;
+        changes.push(`  inline (legacy placeholder): underscore → ${PLACEHOLDER_URL}`);
+      }
+      // Then: any /uploads/* references whose file is missing
       const uploadRefs = extractUploadPaths(a.content);
       for (const ref of uploadRefs) {
         if (ref === PLACEHOLDER_URL) continue;
