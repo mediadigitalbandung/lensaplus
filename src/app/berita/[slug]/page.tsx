@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Metadata } from "next";
 import {
   Flag,
@@ -11,6 +10,8 @@ import CopyProtection from "@/components/artikel/CopyProtection";
 import ReadingProgress from "@/components/artikel/ReadingProgress";
 import PrintButton from "@/components/artikel/PrintButton";
 import ShareBar from "@/components/artikel/ShareBar";
+import { FeaturedImage } from "@/components/artikel/FeaturedImage";
+import { ArticleImageFallback } from "@/components/artikel/ArticleImageFallback";
 import Sidebar from "@/components/layout/Sidebar";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import BannerAd, { SidebarAd } from "@/components/ads/BannerAd";
@@ -412,12 +413,11 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
 
               {/* Featured Image */}
               {article.featuredImage && (
-                <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-[12px]">
-                  <Image src={article.featuredImage} alt={article.title} fill className="object-cover" />
-                </div>
+                <FeaturedImage src={article.featuredImage} alt={article.title} />
               )}
 
               {/* Article content with inline ads */}
+              <ArticleImageFallback />
               <div className="mt-8 max-w-full overflow-hidden">
                 {sanitizedContent.includes(AD_PLACEHOLDER) ? (
                   sanitizedContent.split(AD_PLACEHOLDER).map((chunk, i, arr) => (
