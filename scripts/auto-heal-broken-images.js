@@ -47,6 +47,41 @@ function extractUploadPaths(html) {
   return [...urls];
 }
 
+function extractInlineImgSrcs(html) {
+  if (!html) return [];
+  const srcs = [];
+  const regex = /<img[^>]+src=["']([^"']+)["']/gi;
+  for (const m of html.matchAll(regex)) srcs.push(m[1]);
+  return srcs;
+}
+
+/**
+ * Classify what an image URL field actually contains. Catches the AI-bug
+ * case where featuredImage was set to a plain-text caption instead of a URL.
+ */
+function classifyImageRef(value) {
+  if (value === null || value === undefined || value === "") return "empty";
+  const v = String(value).trim();
+  if (v === "") return "empty";
+  if (/^https?:\/\//i.test(v)) return "external";
+  if (v.startsWith("/uploads/")) return "local-uploads";
+  if (v.startsWith("/")) return "local-other";
+  // anything else (plain text, garbage) — definitely not a URL
+  return "invalid";
+}
+
+function isBrokenLocalUploads(value) {
+  if (classifyImageRef(value) !== "local-uploads") return false;
+  const filename = value.replace(/^\/uploads\//, "");
+  return !existsSync(join(uploadsDir, filename));
+}
+
+function isBrokenLocalOther(value) {
+  if (classifyImageRef(value) !== "local-other") return false;
+  const path = join(process.cwd(), "public", value.replace(/^\//, ""));
+  return !existsSync(path);
+}
+
 async function ensurePlaceholder() {
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
   if (existsSync(PLACEHOLDER_PATH)) {
@@ -91,27 +126,25 @@ async function main() {
 
   await ensurePlaceholder();
 
+  // Scan ALL articles, not just those with /uploads/ refs — the bug case
+  // (featuredImage = plain text caption) does not match startsWith /uploads/
+  // and would slip past a narrower WHERE clause.
   const articles = await prisma.article.findMany({
-    where: {
-      OR: [
-        { featuredImage: { startsWith: "/uploads/" } },
-        { content: { contains: "/uploads/" } },
-      ],
-    },
     select: { id: true, slug: true, status: true, featuredImage: true, content: true },
   });
 
-  console.log(`Articles with /uploads/* references: ${articles.length}`);
+  console.log(`Articles scanned: ${articles.length}`);
   console.log("");
 
   const stats = {
     articlesTouched: 0,
-    featuredFixed: 0,
+    featuredFixed_invalidText: 0,
+    featuredFixed_missingFile: 0,
     inlineFixed: 0,
-    skippedFeatured: 0,
-    skippedInline: 0,
+    skippedFeatured_external: 0,
+    skippedFeatured_validLocal: 0,
+    skippedFeatured_empty: 0,
   };
-  const touchedSlugs = [];
 
   for (const a of articles) {
     let dirty = false;
@@ -119,46 +152,72 @@ async function main() {
     let newContent = a.content;
     const changes = [];
 
-    // featuredImage check
-    if (
-      a.featuredImage &&
-      a.featuredImage.startsWith("/uploads/") &&
-      a.featuredImage !== PLACEHOLDER_URL
-    ) {
-      const filename = a.featuredImage.replace(/^\/uploads\//, "");
-      if (!existsSync(join(uploadsDir, filename))) {
-        newFeatured = PLACEHOLDER_URL;
-        stats.featuredFixed++;
-        dirty = true;
-        changes.push(`  featured: ${a.featuredImage} → placeholder`);
-      } else {
-        stats.skippedFeatured++;
-      }
+    // ---- featuredImage classification ----
+    const fClass = classifyImageRef(a.featuredImage);
+    if (a.featuredImage === PLACEHOLDER_URL) {
+      stats.skippedFeatured_validLocal++;
+    } else if (fClass === "empty") {
+      stats.skippedFeatured_empty++;
+    } else if (fClass === "external") {
+      stats.skippedFeatured_external++;
+    } else if (fClass === "invalid") {
+      // Plain text or garbage — the AI-caption-as-URL bug.
+      newFeatured = PLACEHOLDER_URL;
+      stats.featuredFixed_invalidText++;
+      dirty = true;
+      const preview = String(a.featuredImage).slice(0, 80).replace(/\s+/g, " ");
+      changes.push(`  featured (plain text): "${preview}..." → placeholder`);
+    } else if (fClass === "local-uploads" && isBrokenLocalUploads(a.featuredImage)) {
+      newFeatured = PLACEHOLDER_URL;
+      stats.featuredFixed_missingFile++;
+      dirty = true;
+      changes.push(`  featured (404): ${a.featuredImage} → placeholder`);
+    } else if (fClass === "local-other" && isBrokenLocalOther(a.featuredImage)) {
+      newFeatured = PLACEHOLDER_URL;
+      stats.featuredFixed_missingFile++;
+      dirty = true;
+      changes.push(`  featured (404): ${a.featuredImage} → placeholder`);
+    } else {
+      stats.skippedFeatured_validLocal++;
     }
 
-    // inline content references
+    // ---- inline images in content ----
     if (a.content) {
-      const refs = extractUploadPaths(a.content);
-      for (const ref of refs) {
-        if (ref === PLACEHOLDER_URL) {
-          stats.skippedInline++;
-          continue;
-        }
+      // First: any /uploads/* references whose file is missing
+      const uploadRefs = extractUploadPaths(a.content);
+      for (const ref of uploadRefs) {
+        if (ref === PLACEHOLDER_URL) continue;
         const filename = ref.replace(/^\/uploads\//, "");
         if (!existsSync(join(uploadsDir, filename))) {
           newContent = newContent.split(ref).join(PLACEHOLDER_URL);
           stats.inlineFixed++;
           dirty = true;
-          changes.push(`  inline:   ${ref} → placeholder`);
-        } else {
-          stats.skippedInline++;
+          changes.push(`  inline (404): ${ref} → placeholder`);
         }
       }
+
+      // Then: any <img src="..."> where src is plain text / not a URL.
+      // Replace with placeholder URL while preserving the rest of the tag.
+      newContent = newContent.replace(
+        /<img([^>]*?)src=(["'])([^"']*)\2([^>]*)>/gi,
+        (full, before, quote, src, after) => {
+          if (!src) return full;
+          if (src === PLACEHOLDER_URL) return full;
+          const c = classifyImageRef(src);
+          if (c === "invalid") {
+            stats.inlineFixed++;
+            dirty = true;
+            const preview = src.slice(0, 60).replace(/\s+/g, " ");
+            changes.push(`  inline (plain text): "${preview}..." → placeholder`);
+            return `<img${before}src=${quote}${PLACEHOLDER_URL}${quote}${after}>`;
+          }
+          return full;
+        },
+      );
     }
 
     if (dirty) {
       stats.articlesTouched++;
-      touchedSlugs.push(a.slug);
       console.log(`${a.status === "PUBLISHED" ? "[LIVE]" : `[${a.status}]`} ${a.slug}`);
       changes.forEach((c) => console.log(c));
 
@@ -173,10 +232,13 @@ async function main() {
 
   console.log("");
   console.log("=".repeat(60));
-  console.log(`Articles touched:           ${stats.articlesTouched}`);
-  console.log(`featuredImage replaced:     ${stats.featuredFixed}`);
-  console.log(`Inline image refs replaced: ${stats.inlineFixed}`);
-  console.log(`Already valid (skipped):    featured=${stats.skippedFeatured} inline=${stats.skippedInline}`);
+  console.log(`Articles touched:                  ${stats.articlesTouched}`);
+  console.log(`featuredImage replaced (404):      ${stats.featuredFixed_missingFile}`);
+  console.log(`featuredImage replaced (text bug): ${stats.featuredFixed_invalidText}`);
+  console.log(`Inline images replaced:            ${stats.inlineFixed}`);
+  console.log(`Skipped — external URL:            ${stats.skippedFeatured_external}`);
+  console.log(`Skipped — already valid local:     ${stats.skippedFeatured_validLocal}`);
+  console.log(`Skipped — empty:                   ${stats.skippedFeatured_empty}`);
 
   if (dryRun) {
     console.log("");
