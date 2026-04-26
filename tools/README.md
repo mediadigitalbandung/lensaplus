@@ -2,11 +2,14 @@
 
 CLI scripts untuk operasional + integrasi yang **bukan bagian dari runtime**.
 
-## Daftar Tools
+## ⚠️ Catatan Penting Sebelum Pakai
 
-| Script | Untuk |
-|---|---|
-| `sync-obsidian.mjs` | Sync artikel dari Obsidian editorial vault → DB Kartawarta sebagai DRAFT |
+**Default workflow Kartawarta = tulis artikel langsung di TipTap CMS** (`/panel/artikel/baru`), bukan di Obsidian. Lihat `kartawarta-editorial/WORKFLOW-SEPARATION.md` untuk panduan separasi.
+
+| Script | Wajib? | Untuk |
+|---|---|---|
+| `sync-glossary.mjs` | ✅ Wajib | Satu-satunya jalur edit konten glossary publik (`/glossary`). CMS tidak punya UI editor glossary. |
+| `sync-obsidian.mjs` | 🟡 Opsional (power-user) | Sync **artikel** dari Obsidian markdown → DB. Pakai HANYA kalau workflow Anda markdown-first. Default disarankan: tulis body langsung di TipTap CMS. |
 
 ## Setup
 
@@ -34,7 +37,31 @@ export OBSIDIAN_SYNC_TOKEN='paste-the-same-token-here'
 
 Token harus **sama** dengan yang di server `.env`.
 
-## sync-obsidian.mjs
+## sync-obsidian.mjs (OPSIONAL — power-user)
+
+### Kapan PAKAI script ini
+
+- Workflow Anda murni **markdown-first** dan tetap nyaman menulis body lengkap di Obsidian sebelum pindah ke CMS
+- Pernah ada pengalaman editor markdown lebih cepat dari TipTap WYSIWYG
+- Mau bulk-import artikel lama dari arsip markdown
+
+### Kapan SKIP script ini (default disarankan)
+
+- Workflow normal: outline + research di Obsidian → buka TipTap CMS → tulis body di TipTap
+- Lebih nyaman pakai AI tools toolbar TipTap (Generate Judul/Meta/Caption)
+- Mau memanfaatkan autosave 15 detik TipTap ke DB
+- Hindari double-source-of-truth (body di dua tempat)
+
+### Trade-off Saat Pakai
+
+| Pakai sync-obsidian | Tidak Pakai (default) |
+|---|---|
+| Body draft di Obsidian markdown editor | Body draft langsung di TipTap CMS |
+| Tidak dapat AI toolbar TipTap saat menulis | Dapat AI toolbar (title/meta/caption) |
+| Autosave hanya ke disk lokal | Autosave 15s ke DB Kartawarta |
+| Manual `node tools/sync-obsidian.mjs --apply` setelah set status=ready | Tinggal save → submit review di TipTap |
+| Setelah sync, tetap perlu finalisasi di TipTap (gambar, SEO, sosmed flag) | Semua di TipTap |
+| Edit ulang artikel published → kembali ke TipTap (jangan kembali ke Obsidian) | Edit di TipTap |
 
 ### Flow
 
