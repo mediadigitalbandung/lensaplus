@@ -76,10 +76,12 @@ export function cleanAIShortText(raw: string | null | undefined): string {
   // Strip wrapping code fences ```...```
   s = s.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "");
 
-  // Repeatedly strip leading "**Label:**" / "**Label (...)**" / "Label:" markers
+  // Repeatedly strip leading prefaces / "**Label:**" / "Label:" markers
   // so we land on the actual content.
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     const before = s;
+    // Strip "Berikut..." / "Here is..." / "Inilah..." preface up to first colon
+    s = s.replace(/^(?:berikut|here is|inilah|ini adalah|silakan|terlampir)[^:\n]{0,80}:\s*\n?/i, "").trim();
     // Markdown bold label with colon: "**SEO Title:**" or "**Judul SEO (60 karakter):**"
     s = s.replace(/^\*\*[^*\n:]{1,80}:\*\*\s*\n?/i, "").trim();
     // Plain label with colon: "SEO Title:" / "Judul SEO:" / "Meta Description:" / "Deskripsi:" / "Title:"
@@ -87,12 +89,16 @@ export function cleanAIShortText(raw: string | null | undefined): string {
     if (s === before) break;
   }
 
-  // Strip surrounding markdown bold "**...**" if entire value is wrapped
-  if (/^\*\*[\s\S]+\*\*$/.test(s) && !s.slice(2, -2).includes("**")) {
-    s = s.slice(2, -2).trim();
+  // Strip first matching "**bold**" wrapper if it's at the start; keep any
+  // trailing parenthetical/explanation. Repeats once.
+  // Example: "**RUPST BJB Tentuk** (54 chars)" → "RUPST BJB Tentuk (54 chars)"
+  for (let i = 0; i < 2; i++) {
+    const m = s.match(/^\*\*([^*]+)\*\*(.*)$/s);
+    if (!m) break;
+    s = (m[1] + m[2]).trim();
   }
 
-  // Strip leading/trailing single line of asterisks
+  // Final fallback: strip leading/trailing single line of asterisks
   s = s.replace(/^\*+\s*/, "").replace(/\s*\*+$/, "");
 
   // Strip wrapping straight or curly quotes

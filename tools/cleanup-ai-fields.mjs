@@ -21,14 +21,17 @@ function cleanAIShortText(raw) {
   if (!raw) return "";
   let s = String(raw).trim();
   s = s.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "");
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     const before = s;
+    s = s.replace(/^(?:berikut|here is|inilah|ini adalah|silakan|terlampir)[^:\n]{0,80}:\s*\n?/i, "").trim();
     s = s.replace(/^\*\*[^*\n:]{1,80}:\*\*\s*\n?/i, "").trim();
     s = s.replace(/^(?:\*\*)?(?:seo title|judul seo|meta description|description|deskripsi|title|judul|caption|hashtag)[^:\n]{0,40}:(?:\*\*)?\s*\n?/i, "").trim();
     if (s === before) break;
   }
-  if (/^\*\*[\s\S]+\*\*$/.test(s) && !s.slice(2, -2).includes("**")) {
-    s = s.slice(2, -2).trim();
+  for (let i = 0; i < 2; i++) {
+    const m = s.match(/^\*\*([^*]+)\*\*(.*)$/s);
+    if (!m) break;
+    s = (m[1] + m[2]).trim();
   }
   s = s.replace(/^\*+\s*/, "").replace(/\s*\*+$/, "");
   s = s.replace(/^["'“”‘’]+/, "").replace(/["'“”‘’]+$/, "");
