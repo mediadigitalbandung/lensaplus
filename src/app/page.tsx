@@ -1,4 +1,8 @@
-﻿export const revalidate = 60;
+﻿// Revalidate window. Articles published via /api/articles or the cron route
+// also call revalidatePath("/") via seo-auto.onArticlePublished — so new posts
+// appear instantly. This 30s window is the fallback when that path-revalidate
+// fails (e.g. AI auto-publish at scale, or cache cold-start after deploy).
+export const revalidate = 30;
 
 import Link from "next/link";
 import Image from "next/image";
@@ -49,12 +53,18 @@ export default async function HomePage() {
   const heroMain = articles.slice(0, 5);  // 5 articles rotate in hero
   const heroSide = articles.slice(5, 8);  // 3 side stories
   const editorsPickArticles = articles.slice(8, 12);
-  const terkiniArticles = articles.slice(12, 24);
-  const restArticles = articles.slice(24);
 
-  // Group by category
-  const articlesByCategory: Record<string, { slug: string; articles: typeof restArticles }> = {};
-  for (const a of restArticles) {
+  // Berita Terkini — actual latest 12 articles, skip only the lead hero #1 so
+  // we don't render the same article as "big" in two places. Overlap with the
+  // rotating hero is fine; that's how news sites work and ensures any newly
+  // published article shows up here within the first revalidate.
+  const terkiniArticles = articles.slice(1, 13);
+
+  // Category sections — use the FULL latest list, not just the tail. That way
+  // each category surfaces its freshest articles even when several recent
+  // headlines compete for the hero slots.
+  const articlesByCategory: Record<string, { slug: string; articles: typeof articles }> = {};
+  for (const a of articles) {
     const name = a.category.name;
     if (!articlesByCategory[name]) articlesByCategory[name] = { slug: a.category.slug, articles: [] };
     if (articlesByCategory[name].articles.length < 5) articlesByCategory[name].articles.push(a);

@@ -7,6 +7,7 @@
  * - Placeholder for Cloudflare cache purge (implemented in Phase 6)
  */
 
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { submitUrlToGoogle } from "./seo/google-indexing";
 import { pingIndexNow } from "./seo/indexnow";
@@ -133,6 +134,21 @@ export async function onArticlePublished(
     } catch {
       // ignore
     }
+  }
+
+  // Invalidate Next.js ISR caches so the new article surfaces on the homepage,
+  // its slug page, the berita listing, and its category index immediately
+  // (otherwise readers wait up to `revalidate` seconds for the homepage to
+  // refresh, which is what made "Berita Terkini" look stale).
+  try {
+    revalidatePath("/");
+    revalidatePath("/berita");
+    revalidatePath(`/berita/${slug}`);
+    if (categorySlug) revalidatePath(`/kategori/${categorySlug}`);
+  } catch {
+    // revalidatePath is only valid in route handler / server action context.
+    // If invoked outside one (e.g. background job), just skip — the next
+    // request will refresh per `export const revalidate = ...`.
   }
 
   // URLs to notify — article page, homepage, news sitemap, category page.
