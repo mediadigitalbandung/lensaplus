@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, BookOpen } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import {
   articleJsonLd,
@@ -16,12 +16,26 @@ const ANGLE_LABEL: Record<string, string> = {
   KRONOLOGI: "Kronologi",
   ANALISIS: "Analisis",
   DAMPAK: "Dampak",
+  LATAR_BELAKANG: "Latar Belakang",
+  PROFIL: "Profil Tokoh",
+  REAKSI: "Reaksi",
+  HUKUM: "Sudut Hukum",
+  EKONOMI: "Sudut Ekonomi",
+  PROYEKSI: "Proyeksi",
+  FAQ: "Tanya Jawab",
 };
 
 const ANGLE_COLOR: Record<string, string> = {
   KRONOLOGI: "bg-blue-50 text-blue-700 border-blue-200",
   ANALISIS: "bg-amber-50 text-amber-700 border-amber-200",
   DAMPAK: "bg-rose-50 text-rose-700 border-rose-200",
+  LATAR_BELAKANG: "bg-purple-50 text-purple-700 border-purple-200",
+  PROFIL: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  REAKSI: "bg-pink-50 text-pink-700 border-pink-200",
+  HUKUM: "bg-primary-light text-primary border-primary/20",
+  EKONOMI: "bg-orange-50 text-orange-700 border-orange-200",
+  PROYEKSI: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  FAQ: "bg-indigo-50 text-indigo-700 border-indigo-200",
 };
 
 async function getSorotan(slug: string) {
@@ -231,22 +245,33 @@ export default async function SorotanDetailPage({
                 )}
               </div>
 
-              {/* Back-link to source article */}
-              <div className="mt-10 rounded-[12px] border border-border bg-surface-secondary p-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-txt-muted">
-                  Artikel sumber
-                </p>
-                <Link
-                  href={`/berita/${article.slug}`}
-                  className="mt-2 inline-flex items-center gap-2 text-base font-bold text-txt-primary transition-colors hover:text-primary"
-                >
-                  <ArrowLeft size={16} />
-                  {article.title}
-                </Link>
-                <p className="mt-2 text-sm text-txt-secondary">
-                  Baca artikel aslinya untuk fakta lengkap, narasumber, dan
-                  konteks latar belakang.
-                </p>
+              {/* Continue-reading CTA — prominent navy banner that funnels every
+                  sorotan reader to the main article page. */}
+              <div className="mt-10 overflow-hidden rounded-[12px] border-2 border-primary/30 bg-gradient-to-br from-primary-light to-primary-light/40 shadow-card">
+                <div className="px-6 pt-6 pb-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
+                    <BookOpen size={12} />
+                    Selesai Baca Sorotan?
+                  </span>
+                </div>
+                <div className="px-6 pb-6">
+                  <h3 className="mt-3 font-serif text-headline-sm text-on-surface leading-tight">
+                    Lanjutkan ke artikel utama
+                  </h3>
+                  <p className="mt-2 line-clamp-2 text-sm font-semibold text-txt-primary">
+                    {article.title}
+                  </p>
+                  <p className="mt-2 text-xs text-txt-secondary">
+                    Versi lengkap dengan semua fakta, narasumber, kutipan, dan konteks latar belakang.
+                  </p>
+                  <Link
+                    href={`/berita/${article.slug}`}
+                    className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-primary-dark active:scale-[0.98]"
+                  >
+                    Lanjut Baca Artikel Lengkap
+                    <ArrowRight size={16} />
+                  </Link>
+                </div>
               </div>
             </article>
 

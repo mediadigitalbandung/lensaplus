@@ -160,8 +160,11 @@ export default function SorotanPage() {
             </h1>
           </div>
           <p className="mt-1 text-sm text-txt-secondary">
-            Halaman SEO tambahan — 3 sudut pandang per artikel (Kronologi /
-            Analisis / Dampak).
+            Halaman SEO tambahan — 10 sudut pandang per artikel (Kronologi /
+            Analisis / Dampak / Latar Belakang / Profil / Reaksi / Hukum /
+            Ekonomi / Proyeksi / FAQ). Setiap sorotan menutup dengan tombol
+            &quot;Lanjut Baca Artikel Lengkap&quot; yang funnel pembaca ke
+            artikel utama.
           </p>
         </div>
         <div className="flex gap-2">

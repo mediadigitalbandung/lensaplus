@@ -67,6 +67,13 @@ enum SorotanAngle {
   KRONOLOGI
   ANALISIS
   DAMPAK
+  LATAR_BELAKANG
+  PROFIL
+  REAKSI
+  HUKUM
+  EKONOMI
+  PROYEKSI
+  FAQ
 }
 
 enum SocialPlatform {

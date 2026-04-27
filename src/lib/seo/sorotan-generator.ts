@@ -1,6 +1,9 @@
 /**
- * Sorotan generator — produces 3 re-framed summaries (kronologi / analisis /
- * dampak) per article by delegating to `callAI()`.
+ * Sorotan generator — produces 10 re-framed perspectives per article by
+ * delegating to `callAI()`. Each angle is a different reader entry-point so
+ * a single news story can rank for 10 long-tail SEO queries; readers always
+ * land back on the main article via the prominent "Lanjut baca artikel
+ * lengkap" CTA at the end of every sorotan page.
  *
  * Each sorotan is 300–500 words, saved to the `Sorotan` model with
  * `indexStatus: "pending"` and slug `{article-slug}-{angle-lowercase}`.
@@ -10,12 +13,30 @@ import { SorotanAngle } from "@prisma/client";
 import { callAI } from "@/lib/ai-client";
 import { prisma } from "@/lib/prisma";
 
-const ANGLES: SorotanAngle[] = ["KRONOLOGI", "ANALISIS", "DAMPAK"];
+const ANGLES: SorotanAngle[] = [
+  "KRONOLOGI",
+  "ANALISIS",
+  "DAMPAK",
+  "LATAR_BELAKANG",
+  "PROFIL",
+  "REAKSI",
+  "HUKUM",
+  "EKONOMI",
+  "PROYEKSI",
+  "FAQ",
+];
 
 const ANGLE_LABEL: Record<SorotanAngle, string> = {
   KRONOLOGI: "Kronologi",
   ANALISIS: "Analisis",
   DAMPAK: "Dampak",
+  LATAR_BELAKANG: "Latar Belakang",
+  PROFIL: "Profil Tokoh",
+  REAKSI: "Reaksi",
+  HUKUM: "Sudut Hukum",
+  EKONOMI: "Sudut Ekonomi",
+  PROYEKSI: "Proyeksi",
+  FAQ: "Tanya Jawab",
 };
 
 const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
@@ -25,6 +46,20 @@ const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
     "Rangkum artikel berikut dari sudut ANALISIS — apa penyebab, apa implikasinya, apa yang belum terjawab. Tulis 300–500 kata bahasa Indonesia yang alami, gaya op-ed ringan, paragraf dengan thesis yang jelas. Jangan mengarang fakta baru; hanya analisa yang dapat ditarik dari isi artikel.",
   DAMPAK:
     "Rangkum artikel berikut dari sudut DAMPAK — siapa yang terpengaruh, bagaimana pengaruhnya, apa yang mungkin berubah. Tulis 300–500 kata bahasa Indonesia yang alami, paragraf dengan fokus pada stakeholder dan konsekuensi praktis. Jangan mengarang fakta baru.",
+  LATAR_BELAKANG:
+    "Rangkum artikel berikut dari sudut LATAR BELAKANG — konteks historis, kebijakan, atau peristiwa yang membuat berita ini relevan sekarang. Tulis 300–500 kata bahasa Indonesia yang alami. Fokus: kondisi sebelum peristiwa, faktor pemicu, kerangka regulasi/sejarah. Hanya gunakan informasi yang tersirat atau eksplisit di artikel; jangan menambah fakta baru di luar konteks.",
+  PROFIL:
+    "Rangkum artikel berikut dari sudut PROFIL TOKOH — sosok-sosok kunci yang disebut di artikel: jabatan, peran, kontribusi mereka dalam peristiwa ini. Tulis 300–500 kata bahasa Indonesia. Kalau ada beberapa tokoh, susun per paragraf. Jangan mengarang biografi; hanya ulang-bahas detail yang ada di artikel.",
+  REAKSI:
+    "Rangkum artikel berikut dari sudut REAKSI — bagaimana publik, pakar, atau pihak terkait merespons peristiwa ini. Tulis 300–500 kata bahasa Indonesia. Kutip-ulang reaksi yang ada di artikel (parafrase, bukan copy). Kalau artikel tidak menyebut reaksi konkret, sajikan reaksi yang lazim untuk peristiwa serupa berdasarkan konteks artikel — tetap netral, jangan mengada-ada.",
+  HUKUM:
+    "Rangkum artikel berikut dari sudut HUKUM — pasal, regulasi, prosedur peradilan, atau aspek legal yang relevan. Tulis 300–500 kata bahasa Indonesia. Kartawarta adalah media hukum, jadi sudut ini wajib akurat: hanya sebut UU/pasal/putusan yang DISEBUT di artikel sumber. Kalau artikel tidak menyebut detail hukum spesifik, fokus pada implikasi hukum umum yang dapat ditarik dari peristiwa.",
+  EKONOMI:
+    "Rangkum artikel berikut dari sudut EKONOMI — angka, transaksi, kerugian/keuntungan, sektor industri, dampak fiskal/moneter. Tulis 300–500 kata bahasa Indonesia. Hanya gunakan angka dan klaim ekonomi yang ada di artikel. Kalau artikel tidak punya sudut ekonomi langsung, fokus pada implikasi ekonomi tidak langsung dari peristiwa.",
+  PROYEKSI:
+    "Rangkum artikel berikut dari sudut PROYEKSI — apa yang mungkin terjadi setelah peristiwa ini, langkah selanjutnya, agenda publik, kemungkinan keputusan/sidang/regulasi berikutnya. Tulis 300–500 kata bahasa Indonesia. Tetap berbasis fakta artikel — proyeksi yang masuk akal saja, hindari spekulasi liar.",
+  FAQ:
+    "Susun FAQ singkat (5-7 pertanyaan) untuk pembaca yang baru tahu kasus ini, berbasis artikel berikut. Format: pertanyaan diawali dengan baris dengan tanda tanya, lalu jawaban 2-4 kalimat. Total 300-500 kata bahasa Indonesia. Pertanyaan yang umum: apa yang terjadi, siapa yang terlibat, kapan, di mana, mengapa, apa dampaknya, apa langkah selanjutnya. Jangan mengarang jawaban yang tidak ada di artikel.",
 };
 
 const SYSTEM_PROMPT =
