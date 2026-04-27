@@ -46,7 +46,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
       onMouseLeave={() => setIsPaused(false)}
     >
       <div className="container-main py-0">
-        <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[28rem] lg:min-h-[32rem]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[30rem] lg:min-h-[36rem]">
           {/* Main story — 8 cols, crossfade */}
           <div className="lg:col-span-8 relative overflow-hidden">
             {main.map((a, i) => (
@@ -74,11 +74,11 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                   <span className="inline-block text-label-sm font-bold uppercase tracking-widest text-secondary mb-3">
                     {a.category.name}
                   </span>
-                  <h1 className="font-serif text-display-sm sm:text-display-md lg:text-display-lg text-white leading-[1.1] max-w-2xl pr-4">
+                  <h1 className="font-serif text-display-sm sm:text-display-md lg:text-display-lg text-white leading-[1.1] max-w-2xl pr-4 line-clamp-3">
                     {a.title}
                   </h1>
                   {a.excerpt && (
-                    <p className="mt-4 text-body-md text-white/60 max-w-xl line-clamp-2 hidden sm:block">
+                    <p className="mt-4 text-body-md text-white/60 max-w-xl line-clamp-2 max-sm:hidden">
                       {a.excerpt}
                     </p>
                   )}
@@ -92,7 +92,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             ))}
 
             {/* First item static for layout height */}
-            <div className="relative h-full min-h-[24rem] lg:min-h-full invisible">
+            <div className="relative h-full min-h-[26rem] lg:min-h-full invisible">
               <div className="absolute inset-0" />
             </div>
 
