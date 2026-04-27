@@ -104,6 +104,8 @@ export default function AutoArtikelPage() {
   const [savingToggle, setSavingToggle] = useState<boolean>(false);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loadingArticles, setLoadingArticles] = useState<boolean>(true);
+  // Tab filter: pending = not yet PUBLISHED, published = live on the site
+  const [publishTab, setPublishTab] = useState<"pending" | "published">("pending");
 
   // Target keywords state
   const [keywords, setKeywords] = useState<TargetKeyword[]>([]);
@@ -760,7 +762,7 @@ export default function AutoArtikelPage() {
 
       {/* Article list */}
       <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
-        <div className="border-b border-border bg-surface-secondary px-5 py-4 flex items-center justify-between">
+        <div className="border-b border-border bg-surface-secondary px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <h2 className="flex items-center gap-2 text-base font-bold text-txt-primary">
             <FileText size={16} className="text-primary" />
             Artikel Auto-Generated
@@ -769,21 +771,79 @@ export default function AutoArtikelPage() {
             {articles.length} artikel
           </span>
         </div>
-        {loadingArticles ? (
-          <div className="py-12 text-center">
-            <Loader2 size={24} className="mx-auto animate-spin text-primary" />
-          </div>
-        ) : articles.length === 0 ? (
-          <div className="py-16 text-center">
-            <Bot size={40} className="mx-auto text-border mb-3" />
-            <p className="text-sm text-txt-secondary">
-              Belum ada artikel auto-generated.
-            </p>
-            <p className="mt-1 text-xs text-txt-muted">
-              Aktifkan toggle di atas atau jalankan cron manual.
-            </p>
-          </div>
-        ) : (
+
+        {/* Publish-status tabs */}
+        {(() => {
+          const pendingCount = articles.filter((a) => a.status !== "PUBLISHED").length;
+          const publishedCount = articles.filter((a) => a.status === "PUBLISHED").length;
+          return (
+            <div className="flex border-b border-border bg-surface-secondary/40">
+              <button
+                type="button"
+                onClick={() => setPublishTab("pending")}
+                className={`flex-1 px-5 py-3 text-sm font-semibold transition-colors ${
+                  publishTab === "pending"
+                    ? "bg-surface text-primary border-b-2 border-primary"
+                    : "text-txt-secondary hover:bg-surface/40"
+                }`}
+              >
+                Belum Terpublikasi
+                <span className="ml-2 rounded-full bg-yellow-50 px-2 py-0.5 text-[10px] font-bold text-yellow-700">
+                  {pendingCount}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPublishTab("published")}
+                className={`flex-1 px-5 py-3 text-sm font-semibold transition-colors ${
+                  publishTab === "published"
+                    ? "bg-surface text-primary border-b-2 border-primary"
+                    : "text-txt-secondary hover:bg-surface/40"
+                }`}
+              >
+                Terpublikasi
+                <span className="ml-2 rounded-full bg-primary-light px-2 py-0.5 text-[10px] font-bold text-primary">
+                  {publishedCount}
+                </span>
+              </button>
+            </div>
+          );
+        })()}
+
+        {(() => {
+          const visible =
+            publishTab === "published"
+              ? articles.filter((a) => a.status === "PUBLISHED")
+              : articles.filter((a) => a.status !== "PUBLISHED");
+          if (loadingArticles) {
+            return (
+              <div className="py-12 text-center">
+                <Loader2 size={24} className="mx-auto animate-spin text-primary" />
+              </div>
+            );
+          }
+          if (visible.length === 0) {
+            return (
+              <div className="py-16 text-center">
+                <Bot size={40} className="mx-auto text-border mb-3" />
+                <p className="text-sm text-txt-secondary">
+                  {publishTab === "published"
+                    ? "Belum ada artikel auto-generated yang dipublikasi."
+                    : "Tidak ada artikel auto-generated yang menunggu publikasi."}
+                </p>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
+        {!loadingArticles && (() => {
+          const visible =
+            publishTab === "published"
+              ? articles.filter((a) => a.status === "PUBLISHED")
+              : articles.filter((a) => a.status !== "PUBLISHED");
+          if (visible.length === 0) return null;
+          return (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-surface-secondary">
@@ -803,7 +863,7 @@ export default function AutoArtikelPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {articles.map((a) => (
+                {visible.map((a) => (
                   <tr key={a.id} className="hover:bg-surface-secondary/50">
                     <td className="max-w-[280px] px-5 py-3">
                       <Link
@@ -881,7 +941,8 @@ export default function AutoArtikelPage() {
               </tbody>
             </table>
           </div>
-        )}
+          );
+        })()}
       </div>
 
       <p className="mt-4 flex items-center gap-2 text-xs text-txt-muted">
