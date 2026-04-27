@@ -30,34 +30,50 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com"
   ),
   title: {
-    default: "Kartawarta - Media Digital Terpercaya",
+    default: "Kartawarta — Media Hukum Digital Bandung",
     template: "%s | Kartawarta",
   },
   description:
-    "Portal berita digital terpercaya. Menyajikan berita terkini, analisis mendalam, dan informasi akurat dan terverifikasi.",
+    "Portal berita hukum digital terpercaya untuk Kota Bandung dan Jawa Barat. Liputan putusan pengadilan, regulasi, advokasi, kasus hukum, serta analisis ahli — terverifikasi Dewan Pers.",
   keywords: [
-    "berita terkini",
-    "kartawarta",
-    "berita indonesia",
-    "portal berita",
-    "media digital",
-    "berita terpercaya",
+    "berita hukum Bandung",
+    "berita hukum Jawa Barat",
+    "putusan pengadilan",
+    "kasus hukum Bandung",
+    "media hukum digital",
+    "berita pengadilan",
+    "regulasi hukum",
+    "advokasi hukum",
+    "Kartawarta",
+    "berita terverifikasi Dewan Pers",
   ],
   authors: [{ name: "Kartawarta" }],
   openGraph: {
     type: "website",
     locale: "id_ID",
     siteName: "Kartawarta",
+    title: "Kartawarta — Media Hukum Digital Bandung",
+    description:
+      "Berita hukum Bandung & Jawa Barat — putusan pengadilan, regulasi, advokasi, dan analisis ahli. Terverifikasi Dewan Pers.",
     images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kartawarta - Media Digital Terpercaya",
-    description: "Portal berita digital terpercaya. Menyajikan berita terkini, analisis mendalam, dan informasi akurat.",
+    title: "Kartawarta — Media Hukum Digital Bandung",
+    description:
+      "Berita hukum Bandung & Jawa Barat — putusan pengadilan, regulasi, advokasi, dan analisis ahli.",
     images: ["/kartawarta-icon.png"],
   },
   verification: {
     google: "aOYlnEshfJKwCD4v8OePC3vgPACRIRt2bO5s9dziFj0",
+    other: {
+      ...(process.env.BING_VERIFICATION
+        ? { "msvalidate.01": process.env.BING_VERIFICATION }
+        : {}),
+      ...(process.env.YANDEX_VERIFICATION
+        ? { "yandex-verification": process.env.YANDEX_VERIFICATION }
+        : {}),
+    },
   },
   category: "news",
   icons: {

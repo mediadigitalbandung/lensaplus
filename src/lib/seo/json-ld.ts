@@ -266,6 +266,36 @@ export function qaJsonLd(
 }
 
 /**
+ * Read social profile URLs for the publisher's `sameAs` block.
+ *
+ * Source priority (highest first):
+ *   1. Env var `KARTAWARTA_SOCIAL_URLS` — comma-separated URLs
+ *   2. Individual env vars: `KARTAWARTA_TWITTER_URL`, `_FACEBOOK_URL`,
+ *      `_INSTAGRAM_URL`, `_LINKEDIN_URL`, `_YOUTUBE_URL`, `_TIKTOK_URL`
+ *
+ * Returns [] if nothing configured. Knowledge Graph still works without
+ * sameAs but won't surface social profile cards in SERP.
+ */
+function publisherSameAs(): string[] {
+  const bulk = process.env.KARTAWARTA_SOCIAL_URLS;
+  if (bulk && bulk.trim()) {
+    return bulk
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => /^https?:\/\//i.test(s));
+  }
+  const individual = [
+    process.env.KARTAWARTA_TWITTER_URL,
+    process.env.KARTAWARTA_FACEBOOK_URL,
+    process.env.KARTAWARTA_INSTAGRAM_URL,
+    process.env.KARTAWARTA_LINKEDIN_URL,
+    process.env.KARTAWARTA_YOUTUBE_URL,
+    process.env.KARTAWARTA_TIKTOK_URL,
+  ].filter((s): s is string => !!s && /^https?:\/\//i.test(s));
+  return individual;
+}
+
+/**
  * NewsMediaOrganization — global publisher block.
  */
 export function organizationJsonLd(): object {
@@ -280,12 +310,16 @@ export function organizationJsonLd(): object {
       width: 512,
       height: 512,
     },
-    sameAs: [],
+    sameAs: publisherSameAs(),
   };
 }
 
 /**
  * WebSite — includes SearchAction for sitelinks searchbox.
+ *
+ * urlTemplate must match a real route that accepts the query string.
+ * `/search?q=...` is wired up in src/app/search/page.tsx and is the only
+ * route that surfaces matching articles for arbitrary terms.
  */
 export function websiteJsonLd(): object {
   return {
@@ -297,7 +331,7 @@ export function websiteJsonLd(): object {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${SITE_URL}/berita?q={search_term_string}`,
+        urlTemplate: `${SITE_URL}/search?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },

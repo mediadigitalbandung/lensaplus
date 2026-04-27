@@ -71,6 +71,21 @@ export default async function HomePage() {
   }
   const catEntries = Object.entries(articlesByCategory);
 
+  // sameAs: pulled from env so we don't need a redeploy to add/remove a profile.
+  const socialUrls = (process.env.KARTAWARTA_SOCIAL_URLS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => /^https?:\/\//i.test(s));
+  const fallbackSocialUrls = [
+    process.env.KARTAWARTA_TWITTER_URL,
+    process.env.KARTAWARTA_FACEBOOK_URL,
+    process.env.KARTAWARTA_INSTAGRAM_URL,
+    process.env.KARTAWARTA_LINKEDIN_URL,
+    process.env.KARTAWARTA_YOUTUBE_URL,
+    process.env.KARTAWARTA_TIKTOK_URL,
+  ].filter((s): s is string => !!s && /^https?:\/\//i.test(s));
+  const sameAs = socialUrls.length > 0 ? socialUrls : fallbackSocialUrls;
+
   return (
     <>
       <script
@@ -83,9 +98,10 @@ export default async function HomePage() {
               name: "Kartawarta",
               url: "https://kartawarta.com",
               logo: { "@type": "ImageObject", url: "https://kartawarta.com/kartawarta-icon.png", width: 512, height: 512 },
-              description: "Portal berita digital terpercaya. Menyajikan berita terkini, analisis mendalam, dan informasi akurat.",
+              description:
+                "Portal berita hukum digital terpercaya untuk Bandung dan Jawa Barat. Putusan pengadilan, regulasi, advokasi, dan analisis ahli.",
               foundingDate: "2024",
-              sameAs: [],
+              sameAs,
               publishingPrinciples: "https://kartawarta.com/pedoman-media",
               ethicsPolicy: "https://kartawarta.com/kode-etik",
               contactPoint: { "@type": "ContactPoint", contactType: "customer service", url: "https://kartawarta.com/kontak" },
