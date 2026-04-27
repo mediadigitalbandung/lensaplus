@@ -543,8 +543,19 @@ export default function EditArticlePage() {
   const isOwner = articleAuthorId === userId;
   const isAssignedEditor = isEditor && existingReviewedBy === userId;
 
-  // Determine what view to show
+  // Determine what view to show.
+  //
+  // The author's own DRAFT or REJECTED article ALWAYS renders in the full
+  // journalist editor — regardless of whether the author also has admin or
+  // editor role. Otherwise a SUPER_ADMIN writing their own draft would land
+  // in the stripped-down "Review (Admin)" surface and lose access to the
+  // featured image picker, sources, scheduling, AI helpers, etc.
+  //
+  // The admin/editor review surface is reserved for reviewing somebody
+  // else's work, or for admin action on an already-submitted/published
+  // article (where the editorial workflow takes precedence over authoring).
   const getViewMode = (): "journalist" | "editor" | "admin" | "unauthorized" => {
+    if (isOwner && ["DRAFT", "REJECTED"].includes(currentStatus)) return "journalist";
     if (isAdmin) return "admin";
     if (isEditor && !isOwner) return "editor";
     if (isOwner) return "journalist";
