@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, ApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { cleanAIShortText } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -50,12 +51,14 @@ export async function POST(req: NextRequest) {
         const updates: Record<string, string> = {};
 
         if (!article.seoTitle) {
-          const seoTitle = await callAI(setting.value, "seo_title", article.title, article.content);
-          if (seoTitle) updates.seoTitle = seoTitle.slice(0, 70);
+          const raw = await callAI(setting.value, "seo_title", article.title, article.content);
+          const cleaned = cleanAIShortText(raw);
+          if (cleaned) updates.seoTitle = cleaned.slice(0, 70);
         }
         if (!article.seoDescription) {
-          const desc = await callAI(setting.value, "meta_description", article.title, article.content);
-          if (desc) updates.seoDescription = desc.slice(0, 160);
+          const raw = await callAI(setting.value, "meta_description", article.title, article.content);
+          const cleaned = cleanAIShortText(raw);
+          if (cleaned) updates.seoDescription = cleaned.slice(0, 160);
         }
 
         if (Object.keys(updates).length > 0) {

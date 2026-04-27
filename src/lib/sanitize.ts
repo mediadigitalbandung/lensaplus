@@ -55,3 +55,51 @@ export function sanitizeSlug(slug: string): string {
     .replace(/^-|-$/g, "")
     .slice(0, 100);
 }
+
+/**
+ * Clean AI text output for short fields (seoTitle, seoDescription, captions).
+ * AI providers (Claude, DeepSeek) often wrap responses with Markdown bold,
+ * label prefixes ("**SEO Title:**"), or surrounding asterisks/quotes.
+ * Strip them so the value is suitable for HTML meta/og:title etc.
+ *
+ * Examples cleaned:
+ *  - "**SEO Title:** RUPST Bank BJB" → "RUPST Bank BJB"
+ *  - "**Kinerja Bank BJB Melejit**" → "Kinerja Bank BJB Melejit"
+ *  - "**Judul SEO (60 karakter):**\nKrisis Tambak..." → "Krisis Tambak..."
+ *  - "\"Berita Bandung\"" → "Berita Bandung"
+ *  - "Title: Lorem ipsum" → "Lorem ipsum"
+ */
+export function cleanAIShortText(raw: string | null | undefined): string {
+  if (!raw) return "";
+  let s = String(raw).trim();
+
+  // Strip wrapping code fences ```...```
+  s = s.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "");
+
+  // Repeatedly strip leading "**Label:**" / "**Label (...)**" / "Label:" markers
+  // so we land on the actual content.
+  for (let i = 0; i < 5; i++) {
+    const before = s;
+    // Markdown bold label with colon: "**SEO Title:**" or "**Judul SEO (60 karakter):**"
+    s = s.replace(/^\*\*[^*\n:]{1,80}:\*\*\s*\n?/i, "").trim();
+    // Plain label with colon: "SEO Title:" / "Judul SEO:" / "Meta Description:" / "Deskripsi:" / "Title:"
+    s = s.replace(/^(?:\*\*)?(?:seo title|judul seo|meta description|description|deskripsi|title|judul|caption|hashtag)[^:\n]{0,40}:(?:\*\*)?\s*\n?/i, "").trim();
+    if (s === before) break;
+  }
+
+  // Strip surrounding markdown bold "**...**" if entire value is wrapped
+  if (/^\*\*[\s\S]+\*\*$/.test(s) && !s.slice(2, -2).includes("**")) {
+    s = s.slice(2, -2).trim();
+  }
+
+  // Strip leading/trailing single line of asterisks
+  s = s.replace(/^\*+\s*/, "").replace(/\s*\*+$/, "");
+
+  // Strip wrapping straight or curly quotes
+  s = s.replace(/^["'“”‘’]+/, "").replace(/["'“”‘’]+$/, "");
+
+  // Collapse multiple newlines/whitespace into single space (for one-line fields)
+  s = s.replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+
+  return s;
+}
