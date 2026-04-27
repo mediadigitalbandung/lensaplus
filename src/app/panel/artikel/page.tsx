@@ -414,11 +414,13 @@ export default function ArtikelPage() {
         <LoadingSkeleton />
       ) : (
         <>
-          {/* Table */}
-          <div className="rounded-[12px] border border-border bg-surface shadow-card">
-            <div className="overflow-x-auto">
+          {/* Table — viewport-constrained so the horizontal scrollbar stays
+               within reach instead of getting buried below hundreds of rows.
+               max-h fits below the page header + filters + pagination footer. */}
+          <div className="rounded-[12px] border border-border bg-surface shadow-card overflow-hidden">
+            <div className="overflow-auto max-h-[calc(100vh-260px)]">
               <table className="w-full min-w-[320px] text-sm">
-                <thead className="border-b border-border bg-surface-secondary">
+                <thead className="sticky top-0 z-10 border-b border-border bg-surface-secondary shadow-sm">
                   <tr>
                     <th className="w-10 px-3 py-3.5 text-center">
                       <input
