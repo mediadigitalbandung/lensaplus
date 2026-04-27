@@ -109,19 +109,14 @@ function injectInlineAds(html: string): string {
   return result;
 }
 
-// ── Inline "Baca Juga" suggestions ─────────────────────────────────────────
-// Common pattern in Indonesian news sites (Kompas, Detik, CNN ID): drop a
-// small inline link to a related article between paragraphs. Boosts dwell
-// time and helps SEO via internal linking.
-//
-// Distribution strategy: target ~1 injection per 200 words, up to the number
-// of related articles available, capped at BACA_JUGA_HARD_MAX. Each injection
-// lands on a paragraph boundary (never breaks a sentence) and is spaced at
-// least BACA_JUGA_MIN_GAP_WORDS apart so they don't pile up.
-const BACA_JUGA_TARGET_PER_WORDS = 200;
-const BACA_JUGA_MIN_GAP_WORDS = 120;
-const BACA_JUGA_MIN_REMAINING = 60;
-const BACA_JUGA_HARD_MAX = 4;
+// ── Inline "Baca Juga" block ───────────────────────────────────────────────
+// One single block in the middle of the article body (around the 1/3 mark)
+// that lists up to BACA_JUGA_LIST_MAX related articles vertically. Lands on
+// a paragraph boundary so we never break a sentence.
+const BACA_JUGA_TARGET_OFFSET_RATIO = 1 / 3; // place after ~1/3 of total words
+const BACA_JUGA_MIN_OFFSET_WORDS = 100;
+const BACA_JUGA_MIN_REMAINING = 80;
+const BACA_JUGA_LIST_MAX = 5;
 
 function escapeAttr(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -133,44 +128,46 @@ function injectBacaJuga(
 ): string {
   if (!html || related.length === 0) return html;
   const totalWords = countWords(html);
-  // Need at least one paragraph + the gap before we even try.
-  if (totalWords < BACA_JUGA_MIN_GAP_WORDS + BACA_JUGA_MIN_REMAINING) return html;
+  if (totalWords < BACA_JUGA_MIN_OFFSET_WORDS + BACA_JUGA_MIN_REMAINING) return html;
 
-  // How many injections does this article support?
-  const targetByLength = Math.floor(totalWords / BACA_JUGA_TARGET_PER_WORDS);
-  const maxInjections = Math.min(BACA_JUGA_HARD_MAX, related.length, targetByLength);
-  if (maxInjections === 0) return html;
+  const items = related.slice(0, BACA_JUGA_LIST_MAX);
+  const targetOffset = Math.max(
+    BACA_JUGA_MIN_OFFSET_WORDS,
+    Math.floor(totalWords * BACA_JUGA_TARGET_OFFSET_RATIO),
+  );
 
-  // Split on paragraph boundaries only — don't inject mid-paragraph or mid-heading.
-  // With a capturing group, String.split returns alternating [content, boundary,
-  // content, boundary, ..., content]. So odd-indexed elements ARE the boundaries
-  // (e.g. "</p><p>"), and that's the only place we should inject.
+  // Split on paragraph boundaries; inject ONCE at the first boundary past
+  // targetOffset that still leaves enough body afterwards.
   const blocks = html.split(/(<\/p>\s*<p[^>]*>)/gi);
   let result = "";
-  let wordsSinceLast = 0;
-  let injected = 0;
+  let cumulativeWords = 0;
+  let injected = false;
 
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
     result += block;
-    wordsSinceLast += countWords(block);
+    cumulativeWords += countWords(block);
 
     const isCapturedBoundary = i % 2 === 1; // captured groups land at odd indices
     if (
+      !injected &&
       isCapturedBoundary &&
-      wordsSinceLast >= BACA_JUGA_MIN_GAP_WORDS &&
-      injected < maxInjections
+      cumulativeWords >= targetOffset
     ) {
       const remaining = blocks.slice(i + 1).join("");
       if (countWords(remaining) >= BACA_JUGA_MIN_REMAINING) {
-        const pick = related[injected];
+        const list = items
+          .map(
+            (p) =>
+              `<li><a href="/berita/${escapeAttr(p.slug)}">${escapeAttr(p.title)}</a></li>`,
+          )
+          .join("");
         result +=
-          `<aside class="baca-juga" data-baca-juga>` +
-          `<span>Baca Juga</span>` +
-          `<a href="/berita/${escapeAttr(pick.slug)}">${escapeAttr(pick.title)}</a>` +
+          `<aside class="baca-juga-list" data-baca-juga-list>` +
+          `<span class="baca-juga-list-label">Baca Juga</span>` +
+          `<ul>${list}</ul>` +
           `</aside>`;
-        wordsSinceLast = 0;
-        injected++;
+        injected = true;
       }
     }
   }
