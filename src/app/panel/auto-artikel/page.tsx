@@ -95,6 +95,10 @@ export default function AutoArtikelPage() {
   const { confirm } = useConfirm();
 
   const [enabled, setEnabled] = useState<boolean>(false);
+  const [intervalMinutes, setIntervalMinutes] = useState<number>(60);
+  const [batchSize, setBatchSize] = useState<number>(1);
+  const [savingInterval, setSavingInterval] = useState<boolean>(false);
+  const [savingBatch, setSavingBatch] = useState<boolean>(false);
   const [loadingSettings, setLoadingSettings] = useState<boolean>(true);
   const [savingToggle, setSavingToggle] = useState<boolean>(false);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -120,6 +124,10 @@ export default function AutoArtikelPage() {
       if (res.ok) {
         const json = await res.json();
         setEnabled(String(json.data?.auto_article_enabled ?? "false") === "true");
+        const iv = Number(json.data?.auto_article_interval_minutes ?? "60");
+        setIntervalMinutes([5, 10, 15, 20, 30, 60].includes(iv) ? iv : 60);
+        const bs = Math.floor(Number(json.data?.auto_article_batch_size ?? "1"));
+        setBatchSize(Number.isFinite(bs) ? Math.min(20, Math.max(0, bs)) : 1);
       }
     } catch {
       /* non-critical */
@@ -127,6 +135,45 @@ export default function AutoArtikelPage() {
       setLoadingSettings(false);
     }
   }, []);
+
+  async function saveInterval(value: number) {
+    try {
+      setSavingInterval(true);
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "auto_article_interval_minutes", value: String(value) }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Gagal menyimpan");
+      setIntervalMinutes(value);
+      showSuccess(`Interval di-set ke ${value} menit.`);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSavingInterval(false);
+    }
+  }
+
+  async function saveBatch(value: number) {
+    const clamped = Math.min(20, Math.max(0, Math.floor(value)));
+    try {
+      setSavingBatch(true);
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "auto_article_batch_size", value: String(clamped) }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Gagal menyimpan");
+      setBatchSize(clamped);
+      showSuccess(clamped === 0 ? "Batch di-set 0 — generation pause." : `Batch di-set ke ${clamped} artikel/run.`);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSavingBatch(false);
+    }
+  }
 
   const fetchArticles = useCallback(async () => {
     try {
@@ -408,7 +455,9 @@ export default function AutoArtikelPage() {
               </h2>
               <p className="text-xs text-txt-secondary">
                 {enabled
-                  ? "Cron akan men-generate artikel otomatis setiap jam."
+                  ? batchSize === 0
+                    ? `Aktif tapi batch = 0 (pause). Cron tetap dipanggil tiap ${intervalMinutes} menit.`
+                    : `Cron akan men-generate ${batchSize} artikel setiap ${intervalMinutes} menit.`
                   : "Nonaktif — cron di-skip meskipun dipicu."}
               </p>
             </div>
@@ -427,6 +476,54 @@ export default function AutoArtikelPage() {
               }`}
             />
           </button>
+        </div>
+
+        {/* Interval + batch size controls */}
+        <div className="mt-5 grid grid-cols-1 gap-4 border-t border-border pt-5 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-txt-secondary">
+              Interval Generate
+            </label>
+            <select
+              value={intervalMinutes}
+              onChange={(e) => saveInterval(Number(e.target.value))}
+              disabled={loadingSettings || savingInterval}
+              className="input w-full px-3 py-2 text-sm disabled:opacity-50"
+            >
+              <option value={5}>Setiap 5 menit</option>
+              <option value={10}>Setiap 10 menit</option>
+              <option value={15}>Setiap 15 menit</option>
+              <option value={20}>Setiap 20 menit</option>
+              <option value={30}>Setiap 30 menit</option>
+              <option value={60}>Setiap 1 jam</option>
+            </select>
+            <p className="mt-1 text-xs text-txt-muted">
+              Cron VPS dipanggil tiap 5 menit; throttle endpoint memastikan generate hanya jalan sesuai pilihan ini.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-txt-secondary">
+              Jumlah Artikel per Run
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                max={20}
+                step={1}
+                value={batchSize}
+                onChange={(e) => setBatchSize(Math.min(20, Math.max(0, Math.floor(Number(e.target.value) || 0))))}
+                onBlur={(e) => saveBatch(Math.floor(Number(e.target.value) || 0))}
+                disabled={loadingSettings || savingBatch}
+                className="input w-24 px-3 py-2 text-sm disabled:opacity-50"
+              />
+              <span className="text-xs text-txt-secondary">artikel (0–20)</span>
+            </div>
+            <p className="mt-1 text-xs text-txt-muted">
+              0 = pause sementara tanpa nonaktifkan toggle. 20 = batch maksimum per cycle.
+            </p>
+          </div>
         </div>
       </div>
 

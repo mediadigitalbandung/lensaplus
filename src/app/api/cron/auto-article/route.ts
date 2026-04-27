@@ -216,76 +216,66 @@ async function uniqueSlug(base: string): Promise<string> {
   return `${root}-${suffix}`;
 }
 
-async function handler(req: NextRequest) {
-  const started = Date.now();
+// Read SystemSetting with default fallback. Empty string and missing rows
+// both fall back to the default.
+async function readSetting(key: string, fallback: string): Promise<string> {
   try {
-    try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
+    const row = await prisma.systemSetting.findUnique({ where: { key } });
+    if (!row || !row.value) return fallback;
+    return row.value;
+  } catch {
+    return fallback;
+  }
+}
 
-    // 1. Toggle check
-    let enabled = false;
-    try {
-      const setting = await prisma.systemSetting.findUnique({
-        where: { key: "auto_article_enabled" },
-      });
-      enabled = setting?.value === "true";
-    } catch {
-      // DB unavailable — treat as disabled
-      enabled = false;
-    }
-    if (!enabled) {
-      return NextResponse.json(
-        {
-          success: true,
-          skipped: "disabled",
-          durationMs: Date.now() - started,
-        },
-        { status: 200 },
-      );
-    }
-
-    // 2. Pick keyword
-    const keywords = await prisma.targetKeyword.findMany({
-      where: { isActive: true },
-      orderBy: { priority: "desc" },
-      take: 10,
+async function writeSetting(key: string, value: string): Promise<void> {
+  try {
+    await prisma.systemSetting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
     });
-    if (keywords.length === 0) {
-      return NextResponse.json(
-        {
-          success: true,
-          skipped: "no-active-keywords",
-          durationMs: Date.now() - started,
-        },
-        { status: 200 },
-      );
-    }
-    const kw = keywords[Math.floor(Math.random() * keywords.length)];
+  } catch {
+    /* swallow */
+  }
+}
 
-    // 3. Find ONE source article whose topic matches the keyword.
-    //    Strict 1:1 — if no source exists, skip (the cron should not invent
-    //    facts about a topic we have no human-written reference for).
-    const source = await findSingleSource(kw.keyword);
-    if (!source) {
-      return NextResponse.json(
-        {
-          success: true,
-          skipped: "no-source-article-for-keyword",
-          keyword: kw.keyword,
-          durationMs: Date.now() - started,
-        },
-        { status: 200 },
-      );
-    }
+// Generate ONE auto-article. Returns null on skip (with reason logged in
+// the result); caller (the batch loop) treats null as "this slot didn't
+// produce, try next". Errors that should abort the whole batch throw.
+type GenerateResult =
+  | { ok: true; articleId: string; slug: string; title: string; keyword: string; provider: string; tokens: number; sourceId: string }
+  | { ok: false; reason: string; keyword?: string };
 
-    const sourceDate = source.publishedAt
-      ? new Date(source.publishedAt).toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : "";
+async function generateOne(): Promise<GenerateResult> {
+  // Pick keyword
+  const keywords = await prisma.targetKeyword.findMany({
+    where: { isActive: true },
+    orderBy: { priority: "desc" },
+    take: 10,
+  });
+  if (keywords.length === 0) {
+    return { ok: false, reason: "no-active-keywords" };
+  }
+  const kw = keywords[Math.floor(Math.random() * keywords.length)];
 
-    const userPrompt = `Tugas: tulis ulang (PARAFRASA) artikel berita berikut dalam Bahasa Indonesia jurnalistik. Bukan tulis baru, bukan sintesis — paraphrase artikel ini.
+  // Find ONE source article whose topic matches the keyword.
+  //    Strict 1:1 — if no source exists, skip (the cron should not invent
+  //    facts about a topic we have no human-written reference for).
+  const source = await findSingleSource(kw.keyword);
+  if (!source) {
+    return { ok: false, reason: "no-source-article-for-keyword", keyword: kw.keyword };
+  }
+
+  const sourceDate = source.publishedAt
+    ? new Date(source.publishedAt).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+
+  const userPrompt = `Tugas: tulis ulang (PARAFRASA) artikel berita berikut dalam Bahasa Indonesia jurnalistik. Bukan tulis baru, bukan sintesis — paraphrase artikel ini.
 
 ARTIKEL SUMBER (judul / kategori / tanggal / isi):
 JUDUL: ${source.title}
@@ -314,132 +304,200 @@ Format output WAJIB JSON valid (tanpa teks lain, tanpa code-fence):
   "suggestedTags": ["tag1", "tag2", "tag3"]
 }`;
 
-    let aiResult;
-    try {
-      aiResult = await callAI({
-        feature: "article_draft",
-        userPrompt,
-        maxTokens: 2000,
-        temperature: 0.7,
-      });
-    } catch (e) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `AI call failed: ${e instanceof Error ? e.message : String(e)}`,
-          keyword: kw.keyword,
-          durationMs: Date.now() - started,
-        },
-        { status: 200 },
-      );
-    }
-
-    // 4. Parse
-    const parsed =
-      tryParseJson(aiResult.text) ?? fallbackParse(aiResult.text, kw.keyword);
-
-    // 5. Resolve author + category
-    const admin = await prisma.user.findFirst({
-      where: { role: "SUPER_ADMIN" },
-      orderBy: { createdAt: "asc" },
-      select: { id: true },
+  let aiResult;
+  try {
+    aiResult = await callAI({
+      feature: "article_draft",
+      userPrompt,
+      maxTokens: 2000,
+      temperature: 0.7,
     });
-    if (!admin) {
+  } catch (e) {
+    return { ok: false, reason: `ai-failed: ${e instanceof Error ? e.message : String(e)}`, keyword: kw.keyword };
+  }
+
+  // Parse
+  const parsed =
+    tryParseJson(aiResult.text) ?? fallbackParse(aiResult.text, kw.keyword);
+
+  // Resolve author
+  const admin = await prisma.user.findFirst({
+    where: { role: "SUPER_ADMIN" },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (!admin) {
+    return { ok: false, reason: "no-super-admin", keyword: kw.keyword };
+  }
+
+  // Category & featured image inherit from source.
+  const categoryId = source.categoryId;
+  const featuredImage = source.featuredImage;
+
+  // Create article — sourceArticleId always set (we abort earlier if no source).
+  const slug = await uniqueSlug(parsed.title);
+  let article;
+  try {
+    article = await prisma.article.create({
+      data: {
+        title: parsed.title.slice(0, 250),
+        slug,
+        content: sanitizeHtml(parsed.content),
+        excerpt: parsed.excerpt.slice(0, 500) || null,
+        featuredImage,
+        status: "DRAFT",
+        isAutoGenerated: true,
+        sourceArticleId: source.id,
+        authorId: admin.id,
+        categoryId,
+      },
+      select: { id: true, slug: true, title: true },
+    });
+  } catch (e) {
+    return { ok: false, reason: `db-create-failed: ${e instanceof Error ? e.message : String(e)}`, keyword: kw.keyword };
+  }
+
+  // Update keyword.lastGeneratedAt (best-effort)
+  try {
+    await prisma.targetKeyword.update({
+      where: { id: kw.id },
+      data: { lastGeneratedAt: new Date() },
+    });
+  } catch {
+    /* swallow */
+  }
+
+  // Audit log (best-effort)
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId: admin.id,
+        action: "CRON_AUTO_ARTICLE",
+        entity: "article",
+        entityId: article.id,
+        detail: JSON.stringify({
+          keyword: kw.keyword,
+          provider: aiResult.provider,
+          tokens: aiResult.totalTokens,
+          sourceId: source.id,
+          sourceSlug: source.slug,
+          mode: "paraphrase",
+        }),
+      },
+    });
+  } catch {
+    /* swallow */
+  }
+
+  return {
+    ok: true,
+    articleId: article.id,
+    slug: article.slug,
+    title: article.title,
+    keyword: kw.keyword,
+    provider: aiResult.provider,
+    tokens: aiResult.totalTokens,
+    sourceId: source.id,
+  };
+}
+
+// Convert a stored interval value (string) into a clamped minutes number.
+// Allowed values: 5, 10, 15, 20, 30, 60. Anything else → 60.
+function parseInterval(raw: string): number {
+  const n = Number(raw);
+  if ([5, 10, 15, 20, 30, 60].includes(n)) return n;
+  return 60;
+}
+
+// Clamp batch size to [0, 20]. 0 means "throttle ok but produce nothing".
+function parseBatch(raw: string): number {
+  const n = Math.floor(Number(raw));
+  if (Number.isNaN(n)) return 1;
+  if (n < 0) return 0;
+  if (n > 20) return 20;
+  return n;
+}
+
+async function handler(req: NextRequest) {
+  const started = Date.now();
+  try {
+    try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
+
+    // 1. Toggle check
+    const enabledStr = await readSetting("auto_article_enabled", "false");
+    if (enabledStr !== "true") {
+      return NextResponse.json(
+        { success: true, skipped: "disabled", durationMs: Date.now() - started },
+        { status: 200 },
+      );
+    }
+
+    // 2. Throttle check — settings drive how often we actually generate.
+    //    The crontab fires the endpoint frequently (every 5 min); this gate
+    //    enforces the user's configured cadence without touching crontab.
+    const intervalMin = parseInterval(await readSetting("auto_article_interval_minutes", "60"));
+    const batchSize = parseBatch(await readSetting("auto_article_batch_size", "1"));
+    const lastRunIso = await readSetting("auto_article_last_run_at", "");
+    const lastRunAt = lastRunIso ? new Date(lastRunIso) : null;
+    const now = new Date();
+
+    if (lastRunAt && !Number.isNaN(lastRunAt.getTime())) {
+      const elapsedMin = (now.getTime() - lastRunAt.getTime()) / 60000;
+      if (elapsedMin < intervalMin) {
+        return NextResponse.json(
+          {
+            success: true,
+            skipped: "throttled",
+            intervalMinutes: intervalMin,
+            elapsedMinutes: Math.round(elapsedMin * 10) / 10,
+            nextRunIn: Math.round((intervalMin - elapsedMin) * 10) / 10,
+            durationMs: Date.now() - started,
+          },
+          { status: 200 },
+        );
+      }
+    }
+
+    // 3. Update last_run_at FIRST so concurrent invocations from a flaky cron
+    //    don't double-fire. Even if every generateOne below skips/fails, the
+    //    next throttle window will only open after intervalMin from now.
+    await writeSetting("auto_article_last_run_at", now.toISOString());
+
+    if (batchSize === 0) {
       return NextResponse.json(
         {
-          success: false,
-          error: "No SUPER_ADMIN user exists to own the draft",
-          keyword: kw.keyword,
+          success: true,
+          skipped: "batch-size-zero",
+          intervalMinutes: intervalMin,
+          batchSize: 0,
           durationMs: Date.now() - started,
         },
         { status: 200 },
       );
     }
 
-    // Category & featured image inherit from source — paraphrase shouldn't
-    // drift the topic, and the visual continues to make sense.
-    const categoryId = source.categoryId;
-    const featuredImage = source.featuredImage;
-
-    // 6. Create article — sourceArticleId always set (we abort earlier if no source).
-    const slug = await uniqueSlug(parsed.title);
-    let article;
-    try {
-      article = await prisma.article.create({
-        data: {
-          title: parsed.title.slice(0, 250),
-          slug,
-          content: sanitizeHtml(parsed.content),
-          excerpt: parsed.excerpt.slice(0, 500) || null,
-          featuredImage,
-          status: "DRAFT",
-          isAutoGenerated: true,
-          sourceArticleId: source.id,
-          authorId: admin.id,
-          categoryId,
-        },
-        select: { id: true, slug: true, title: true },
-      });
-    } catch (e) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `DB create failed: ${e instanceof Error ? e.message : String(e)}`,
-          keyword: kw.keyword,
-          durationMs: Date.now() - started,
-        },
-        { status: 200 },
-      );
+    // 4. Generate batchSize articles. Continue past per-iteration skips/errors
+    //    (no source for keyword, AI throttle, etc.) so a partial batch still
+    //    produces something useful.
+    const results: GenerateResult[] = [];
+    for (let i = 0; i < batchSize; i++) {
+      const r = await generateOne();
+      results.push(r);
+      // No artificial delay — AI provider already serialises calls.
     }
 
-    // 7. Update keyword.lastGeneratedAt (best-effort)
-    try {
-      await prisma.targetKeyword.update({
-        where: { id: kw.id },
-        data: { lastGeneratedAt: new Date() },
-      });
-    } catch {
-      // swallow
-    }
-
-    // Audit log (best-effort)
-    try {
-      await prisma.auditLog.create({
-        data: {
-          userId: admin.id,
-          action: "CRON_AUTO_ARTICLE",
-          entity: "article",
-          entityId: article.id,
-          detail: JSON.stringify({
-            keyword: kw.keyword,
-            provider: aiResult.provider,
-            tokens: aiResult.totalTokens,
-            sourceId: source.id,
-            sourceSlug: source.slug,
-            mode: "paraphrase",
-          }),
-        },
-      });
-    } catch {
-      // swallow
-    }
+    const created = results.filter((r) => r.ok);
+    const skipped = results.filter((r) => !r.ok);
 
     return NextResponse.json(
       {
         success: true,
-        articleId: article.id,
-        slug: article.slug,
-        titleGenerated: article.title,
-        keyword: kw.keyword,
-        provider: aiResult.provider,
-        tokens: aiResult.totalTokens,
-        mode: "paraphrase",
-        source: {
-          id: source.id,
-          slug: source.slug,
-          title: source.title,
-          hadFeaturedImage: Boolean(featuredImage),
-        },
+        intervalMinutes: intervalMin,
+        batchSize,
+        created: created.length,
+        skipped: skipped.length,
+        articles: created.map((r) => r.ok ? { id: r.articleId, slug: r.slug, title: r.title, keyword: r.keyword } : null).filter(Boolean),
+        skips: skipped.map((r) => !r.ok ? { reason: r.reason, keyword: r.keyword } : null).filter(Boolean),
         durationMs: Date.now() - started,
       },
       { status: 200 },
