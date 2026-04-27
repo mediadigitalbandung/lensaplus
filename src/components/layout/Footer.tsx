@@ -41,43 +41,42 @@ export default function Footer() {
               Media digital terpercaya. Menyajikan berita terkini dengan standar jurnalistik tertinggi.
             </p>
 
-            {/* Badge Dewan Pers — Larger */}
-            <div className="mt-8 inline-flex items-center gap-4 rounded-2xl bg-primary px-6 py-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-500 shadow-lg shadow-blue-500/30">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M12 2L4 5.5V11.5C4 16.74 7.42 21.59 12 23C16.58 21.59 20 16.74 20 11.5V5.5L12 2Z"
-                    fill="white"
-                    fillOpacity="0.25"
-                  />
-                  <path
-                    d="M12 2L4 5.5V11.5C4 16.74 7.42 21.59 12 23C16.58 21.59 20 16.74 20 11.5V5.5L12 2Z"
-                    stroke="white"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M9 12L11 14L15 10"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-label-lg font-bold text-white tracking-wide leading-tight">
+            {/* Badge Dewan Pers — open layout, no container box */}
+            <div className="mt-8 flex items-start gap-3.5">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                className="shrink-0 text-primary"
+              >
+                <path
+                  d="M12 2L4 5.5V11.5C4 16.74 7.42 21.59 12 23C16.58 21.59 20 16.74 20 11.5V5.5L12 2Z"
+                  fill="currentColor"
+                  fillOpacity="0.08"
+                />
+                <path
+                  d="M12 2L4 5.5V11.5C4 16.74 7.42 21.59 12 23C16.58 21.59 20 16.74 20 11.5V5.5L12 2Z"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M9 12L11 14L15 10"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <div className="flex flex-col leading-tight">
+                <span className="font-serif text-title-md font-semibold text-on-surface tracking-tight">
                   Terverifikasi Dewan Pers
                 </span>
-                <span className="text-body-sm text-white/50 leading-tight mt-1">
-                  Sertifikat No. 608/DP-Verifikasi/K/XI/2020
+                <span className="mt-1 text-label-sm uppercase tracking-wider text-txt-muted">
+                  Sertifikat 608/DP-Verifikasi/K/XI/2020
                 </span>
               </div>
             </div>
