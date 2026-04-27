@@ -55,6 +55,8 @@ interface NewsSource {
   titleSelector: string | null;
   contentSelector: string | null;
   imageSelector: string | null;
+  useHeadless: boolean;
+  waitForSelector: string | null;
   lastCheckedAt: string | null;
   lastSuccessAt: string | null;
   lastError: string | null;
@@ -303,6 +305,14 @@ export default function SumberBeritaPage() {
                         {s.category.name}
                       </span>
                     )}
+                    {s.useHeadless && (
+                      <span
+                        className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800"
+                        title="Render JavaScript via headless Chromium (lambat, untuk SPA)"
+                      >
+                        JS Render
+                      </span>
+                    )}
                   </div>
                   <a
                     href={s.listingUrl}
@@ -463,6 +473,8 @@ function SourceFormModal({
   const [titleSelector, setTitleSelector] = useState(source?.titleSelector || "");
   const [contentSelector, setContentSelector] = useState(source?.contentSelector || "");
   const [imageSelector, setImageSelector] = useState(source?.imageSelector || "");
+  const [useHeadless, setUseHeadless] = useState(source?.useHeadless ?? false);
+  const [waitForSelector, setWaitForSelector] = useState(source?.waitForSelector || "");
   const [saving, setSaving] = useState(false);
   const { success, error: showError } = useToast();
 
@@ -489,6 +501,8 @@ function SourceFormModal({
         titleSelector: titleSelector.trim() || null,
         contentSelector: contentSelector.trim() || null,
         imageSelector: imageSelector.trim() || null,
+        useHeadless,
+        waitForSelector: waitForSelector.trim() || null,
       };
       const res = await fetch(
         isEdit ? `/api/news-sources/${source!.id}` : "/api/news-sources",
@@ -617,6 +631,43 @@ function SourceFormModal({
               placeholder="Catatan internal — tidak ditampilkan publik"
               className="input"
             />
+          </div>
+
+          {/* Headless toggle — for SPA / JS-rendered sites */}
+          <div className="rounded-md border border-border bg-surface-container-low p-3">
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useHeadless}
+                onChange={(e) => setUseHeadless(e.target.checked)}
+                className="mt-0.5 rounded"
+              />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-txt-primary">
+                  Render JavaScript (headless Chromium)
+                </p>
+                <p className="mt-0.5 text-[11px] text-txt-muted">
+                  Aktifkan untuk situs SPA — yaitu kalau Preview return 0 artikel padahal halaman ada beritanya saat dibuka di browser. Contoh: <code className="font-mono">bankbjb.co.id</code>, <code className="font-mono">persib.co.id</code>. Trade-off: 5–15× lebih lambat dan pakai ~500 MB RAM saat render.
+                </p>
+              </div>
+            </label>
+            {useHeadless && (
+              <div className="mt-3">
+                <label className="mb-1 block text-[11px] font-semibold text-txt-primary">
+                  Wait For Selector (opsional)
+                </label>
+                <input
+                  type="text"
+                  value={waitForSelector}
+                  onChange={(e) => setWaitForSelector(e.target.value)}
+                  placeholder=".news-grid .item, article"
+                  className="input font-mono text-xs"
+                />
+                <p className="mt-1 text-[10px] text-txt-muted">
+                  Sistem menunggu selector ini muncul setelah JS load. Biarkan kosong untuk auto-detect.
+                </p>
+              </div>
+            )}
           </div>
 
           <div>

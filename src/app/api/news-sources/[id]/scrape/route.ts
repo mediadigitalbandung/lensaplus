@@ -76,6 +76,8 @@ export async function POST(
         articleSelector: source.articleSelector || undefined,
         titleSelector: source.titleSelector || undefined,
         imageSelector: source.imageSelector || undefined,
+        useHeadless: source.useHeadless,
+        waitForSelector: source.waitForSelector,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -126,6 +128,7 @@ export async function POST(
         const detail = await fetchArticle(candidate.url, {
           contentSelector: source.contentSelector || undefined,
           imageSelector: source.imageSelector || undefined,
+          useHeadless: source.useHeadless,
         });
         const draft = await paraphraseAndCreateDraft({
           source: detail,

@@ -36,6 +36,8 @@ export async function POST(
       articleSelector: source.articleSelector || undefined,
       titleSelector: source.titleSelector || undefined,
       imageSelector: source.imageSelector || undefined,
+      useHeadless: source.useHeadless,
+      waitForSelector: source.waitForSelector,
     });
 
     // Mark which items are already scraped (dedup).

@@ -565,6 +565,13 @@ model NewsSource {
   priority         Int       @default(0)
   /// How often the cron should re-check this source. Range 1–24 hours.
   frequencyHours   Int       @default(4)
+  /// Render JavaScript via headless Chromium before scraping. Required for
+  /// SPA sites (e.g. bankbjb.co.id) whose article cards are injected by
+  /// client-side JS. Roughly 5–10× slower than the static fetcher.
+  useHeadless      Boolean   @default(false)
+  /// CSS selector to wait for after the page loads when in headless mode.
+  /// Helps with lazy-loaded listings.
+  waitForSelector  String?
   /// Optional manual CSS selectors when auto-detect fails.
   articleSelector  String?
   titleSelector    String?

@@ -49,4 +49,12 @@ export interface ScraperOptions {
   contentSelector?: string;
   /** Manual selector for the hero image. */
   imageSelector?: string;
+  /**
+   * Render JavaScript via headless Chromium. Required for SPA sites whose
+   * article cards are injected client-side. ~5–15× slower than the
+   * static fetcher.
+   */
+  useHeadless?: boolean;
+  /** Selector to wait for after page load when in headless mode. */
+  waitForSelector?: string | null;
 }

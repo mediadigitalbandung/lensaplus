@@ -103,6 +103,8 @@ async function handler(req: NextRequest) {
           articleSelector: source.articleSelector || undefined,
           titleSelector: source.titleSelector || undefined,
           imageSelector: source.imageSelector || undefined,
+          useHeadless: source.useHeadless,
+          waitForSelector: source.waitForSelector,
         });
 
         const scrapedSet = new Set(source.scrapedUrls);
@@ -138,6 +140,7 @@ async function handler(req: NextRequest) {
             const detail = await fetchArticle(candidate.url, {
               contentSelector: source.contentSelector || undefined,
               imageSelector: source.imageSelector || undefined,
+              useHeadless: source.useHeadless,
             });
             const draft = await paraphraseAndCreateDraft({
               source: detail,

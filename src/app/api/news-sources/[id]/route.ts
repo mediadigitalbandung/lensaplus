@@ -29,6 +29,8 @@ const updateSchema = z.object({
   titleSelector: z.string().max(500).optional().nullable(),
   contentSelector: z.string().max(500).optional().nullable(),
   imageSelector: z.string().max(500).optional().nullable(),
+  useHeadless: z.boolean().optional(),
+  waitForSelector: z.string().max(500).optional().nullable(),
   defaultTags: z.array(z.string().min(1).max(40)).max(10).optional(),
 });
 

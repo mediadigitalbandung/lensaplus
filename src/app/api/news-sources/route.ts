@@ -31,6 +31,8 @@ const createSchema = z.object({
   titleSelector: z.string().max(500).optional().nullable(),
   contentSelector: z.string().max(500).optional().nullable(),
   imageSelector: z.string().max(500).optional().nullable(),
+  useHeadless: z.boolean().optional(),
+  waitForSelector: z.string().max(500).optional().nullable(),
   defaultTags: z.array(z.string().min(1).max(40)).max(10).optional(),
 });
 
@@ -79,6 +81,8 @@ export async function POST(request: NextRequest) {
         titleSelector: data.titleSelector || null,
         contentSelector: data.contentSelector || null,
         imageSelector: data.imageSelector || null,
+        useHeadless: data.useHeadless ?? false,
+        waitForSelector: data.waitForSelector || null,
         defaultTags: data.defaultTags ?? [],
       },
     });

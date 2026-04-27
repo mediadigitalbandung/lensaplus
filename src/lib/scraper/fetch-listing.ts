@@ -16,6 +16,7 @@
 import * as cheerio from "cheerio";
 import type { Element as DomElement } from "domhandler";
 import { fetchHtml } from "./fetch";
+import { fetchHtmlHeadless } from "./headless";
 import type { ListingItem, ScraperOptions } from "./types";
 
 interface CandidateContainer {
@@ -186,10 +187,16 @@ export async function fetchListing(
   listingUrl: string,
   options: ScraperOptions = {},
 ): Promise<{ items: ListingItem[]; selectorUsed: string }> {
-  const { html, finalUrl } = await fetchHtml(listingUrl, {
-    userAgent: options.userAgent,
-    timeoutMs: options.timeoutMs,
-  });
+  const { html, finalUrl } = options.useHeadless
+    ? await fetchHtmlHeadless(listingUrl, {
+        timeoutMs: options.timeoutMs,
+        waitForSelector: options.waitForSelector ?? options.articleSelector ?? null,
+        userAgent: options.userAgent,
+      })
+    : await fetchHtml(listingUrl, {
+        userAgent: options.userAgent,
+        timeoutMs: options.timeoutMs,
+      });
   const $ = cheerio.load(html);
 
   let cards: cheerio.Cheerio<DomElement>;

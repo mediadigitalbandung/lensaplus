@@ -16,6 +16,7 @@ import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import * as cheerio from "cheerio";
 import { fetchHtml } from "./fetch";
+import { fetchHtmlHeadless } from "./headless";
 import { sanitizeHtml } from "@/lib/sanitize";
 import type { ScrapedArticle, ScraperOptions } from "./types";
 
@@ -94,10 +95,16 @@ export async function fetchArticle(
   url: string,
   options: ScraperOptions = {},
 ): Promise<ScrapedArticle> {
-  const { html, finalUrl } = await fetchHtml(url, {
-    userAgent: options.userAgent,
-    timeoutMs: options.timeoutMs,
-  });
+  const { html, finalUrl } = options.useHeadless
+    ? await fetchHtmlHeadless(url, {
+        timeoutMs: options.timeoutMs,
+        waitForSelector: options.contentSelector ?? "article, main, .article-body, .post-content",
+        userAgent: options.userAgent,
+      })
+    : await fetchHtml(url, {
+        userAgent: options.userAgent,
+        timeoutMs: options.timeoutMs,
+      });
 
   const $ = cheerio.load(html);
 
