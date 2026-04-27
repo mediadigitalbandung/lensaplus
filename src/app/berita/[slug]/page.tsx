@@ -64,8 +64,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-const WORDS_PER_PAGE = 300;
-const TOLERANCE = 50;
+// Pagination threshold tuned so typical 400–700-word articles render as a
+// single page (so all the Baca Juga injections appear together, not split
+// across two clicks). Only genuinely long-form (>900 words) gets paginated.
+const WORDS_PER_PAGE = 800;
+const TOLERANCE = 100;
 const AD_INSERT_WORDS = 100; // inject ad after ~100 words
 const AD_MIN_REMAINING = 80; // don't inject if less than 80 words remain
 const AD_PLACEHOLDER = '<!--AD_SLOT-->';
