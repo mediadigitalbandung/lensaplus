@@ -5,6 +5,7 @@ import { Metadata } from "next";
 import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
+import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 export const metadata: Metadata = {
   title: "Semua Berita",
@@ -105,8 +106,17 @@ export default async function BeritaPage({ searchParams }: PageProps) {
     pageNumbers.push(i);
   }
 
+  const ld = breadcrumbJsonLd([
+    { name: "Beranda", url: "/" },
+    { name: "Semua Berita", url: "/berita" },
+  ]);
+
   return (
     <div className="bg-surface min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+      />
       <div className="container-main py-8">
         {/* Header */}
         <div className="mb-6">
