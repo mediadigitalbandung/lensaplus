@@ -311,13 +311,15 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
     return article.content;
   })();
 
-  const contentPages = splitContentIntoPages(dedupedContent);
+  // Inject inline "Baca Juga" suggestions BEFORE pagination so the threshold
+  // is checked against the full article length, not the per-page slice.
+  // Pagination then naturally splits the article around the injected asides.
+  const contentWithBacaJuga = injectBacaJuga(dedupedContent, inlineBacaJuga);
+  const contentPages = splitContentIntoPages(contentWithBacaJuga);
   const totalPages = contentPages.length;
   const currentPage = Math.min(Math.max(1, parseInt(searchParams.page || "1") || 1), totalPages);
-  // Inject inline "Baca Juga" suggestions then ads, per page (after pagination)
-  // so every page gets the engagement boost.
-  const pageContent = contentPages[currentPage - 1] || dedupedContent;
-  const sanitizedContent = injectInlineAds(injectBacaJuga(pageContent, inlineBacaJuga));
+  // Inject ads per page (after pagination) so every page gets an ad in the middle
+  const sanitizedContent = injectInlineAds(contentPages[currentPage - 1] || contentWithBacaJuga);
 
   const jsonLd = {
     "@context": "https://schema.org",
