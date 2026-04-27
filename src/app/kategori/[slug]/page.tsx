@@ -79,7 +79,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!category) return { title: "Kategori Tidak Ditemukan" };
 
   const title = `${category.name} - Berita Terkini`;
-  const description = `Kumpulan berita ${category.name.toLowerCase()} terbaru dari Kartawarta.`;
+  const description = `Kumpulan berita ${category.name.toLowerCase()} terbaru dari Kartawarta — media hukum digital Bandung & Jawa Barat. Terverifikasi Dewan Pers.`;
 
   return {
     title,
@@ -88,6 +88,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       title: `${title} | Kartawarta`,
       description,
       type: "website",
+      images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
     },
     alternates: {
       canonical: `/kategori/${params.slug}`,

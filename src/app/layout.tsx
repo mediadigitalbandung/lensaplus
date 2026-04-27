@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     template: "%s | Kartawarta",
   },
   description:
-    "Portal berita hukum digital terpercaya untuk Kota Bandung dan Jawa Barat. Liputan putusan pengadilan, regulasi, advokasi, kasus hukum, serta analisis ahli — terverifikasi Dewan Pers.",
+    "Portal berita hukum Bandung & Jawa Barat — putusan pengadilan, regulasi, advokasi, dan analisis ahli. Terverifikasi Dewan Pers.",
   keywords: [
     "berita hukum Bandung",
     "berita hukum Jawa Barat",

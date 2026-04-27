@@ -8,11 +8,14 @@ import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "Semua Berita",
-  description: "Kumpulan seluruh berita terbaru dari Kartawarta — media digital terpercaya Indonesia.",
+  description:
+    "Daftar berita hukum terbaru dari Kartawarta — putusan pengadilan, regulasi, advokasi, dan kasus hukum di Bandung & Jawa Barat.",
   openGraph: {
-    title: "Semua Berita - Kartawarta",
-    description: "Kumpulan seluruh berita terbaru dari Kartawarta — media digital terpercaya Indonesia.",
+    title: "Semua Berita | Kartawarta",
+    description:
+      "Daftar berita hukum terbaru dari Kartawarta — putusan pengadilan, regulasi, advokasi, dan kasus hukum di Bandung & Jawa Barat.",
     type: "website",
+    images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
   },
   alternates: {
     canonical: "/berita",
