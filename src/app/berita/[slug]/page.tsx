@@ -142,6 +142,9 @@ function injectBacaJuga(
   if (maxInjections === 0) return html;
 
   // Split on paragraph boundaries only — don't inject mid-paragraph or mid-heading.
+  // With a capturing group, String.split returns alternating [content, boundary,
+  // content, boundary, ..., content]. So odd-indexed elements ARE the boundaries
+  // (e.g. "</p><p>"), and that's the only place we should inject.
   const blocks = html.split(/(<\/p>\s*<p[^>]*>)/gi);
   let result = "";
   let wordsSinceLast = 0;
@@ -152,9 +155,9 @@ function injectBacaJuga(
     result += block;
     wordsSinceLast += countWords(block);
 
-    const isParagraphBoundary = /<\/p>/i.test(block);
+    const isCapturedBoundary = i % 2 === 1; // captured groups land at odd indices
     if (
-      isParagraphBoundary &&
+      isCapturedBoundary &&
       wordsSinceLast >= BACA_JUGA_MIN_GAP_WORDS &&
       injected < maxInjections
     ) {
