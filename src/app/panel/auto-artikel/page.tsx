@@ -28,6 +28,8 @@ import {
   Upload,
   ArrowDownToLine,
   Eye,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -112,6 +114,8 @@ export default function AutoArtikelPage() {
   // Target keywords state
   const [keywords, setKeywords] = useState<TargetKeyword[]>([]);
   const [loadingKeywords, setLoadingKeywords] = useState<boolean>(true);
+  const [keywordPage, setKeywordPage] = useState<number>(1);
+  const KEYWORDS_PER_PAGE = 10;
   const [categories, setCategories] = useState<Category[]>([]);
   const [newKeyword, setNewKeyword] = useState<string>("");
   const [newCategoryId, setNewCategoryId] = useState<string>("");
@@ -229,6 +233,13 @@ export default function AutoArtikelPage() {
     fetchKeywords();
     fetchCategories();
   }, [fetchSettings, fetchArticles, fetchKeywords, fetchCategories]);
+
+  // Snap pagination back when the keyword count drops (e.g. last item on
+  // current page deleted) so we never render an empty page.
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(keywords.length / KEYWORDS_PER_PAGE));
+    if (keywordPage > totalPages) setKeywordPage(totalPages);
+  }, [keywords.length, keywordPage]);
 
   async function handleCreateKeyword() {
     const trimmed = newKeyword.trim();
@@ -664,7 +675,12 @@ export default function AutoArtikelPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {keywords.map((kw) => (
+                {keywords
+                  .slice(
+                    (keywordPage - 1) * KEYWORDS_PER_PAGE,
+                    keywordPage * KEYWORDS_PER_PAGE,
+                  )
+                  .map((kw) => (
                   <tr
                     key={kw.id}
                     className={`hover:bg-surface-secondary/50 ${
@@ -734,6 +750,59 @@ export default function AutoArtikelPage() {
                 ))}
               </tbody>
             </table>
+
+            {keywords.length > KEYWORDS_PER_PAGE && (
+              <div className="flex items-center justify-between border-t border-border bg-surface-secondary/40 px-5 py-3 text-xs">
+                <span className="text-txt-secondary">
+                  Menampilkan{" "}
+                  <span className="font-semibold text-txt-primary">
+                    {(keywordPage - 1) * KEYWORDS_PER_PAGE + 1}
+                  </span>
+                  –
+                  <span className="font-semibold text-txt-primary">
+                    {Math.min(keywordPage * KEYWORDS_PER_PAGE, keywords.length)}
+                  </span>{" "}
+                  dari{" "}
+                  <span className="font-semibold text-txt-primary">
+                    {keywords.length}
+                  </span>{" "}
+                  keyword
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setKeywordPage((p) => Math.max(1, p - 1))}
+                    disabled={keywordPage === 1}
+                    className="btn-ghost flex items-center gap-1 rounded px-2 py-1 disabled:opacity-30"
+                    aria-label="Halaman sebelumnya"
+                  >
+                    <ChevronLeft size={14} />
+                    Prev
+                  </button>
+                  <span className="px-2 font-semibold text-txt-primary">
+                    {keywordPage} / {Math.ceil(keywords.length / KEYWORDS_PER_PAGE)}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setKeywordPage((p) =>
+                        Math.min(
+                          Math.ceil(keywords.length / KEYWORDS_PER_PAGE),
+                          p + 1,
+                        ),
+                      )
+                    }
+                    disabled={
+                      keywordPage >=
+                      Math.ceil(keywords.length / KEYWORDS_PER_PAGE)
+                    }
+                    className="btn-ghost flex items-center gap-1 rounded px-2 py-1 disabled:opacity-30"
+                    aria-label="Halaman berikutnya"
+                  >
+                    Next
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
