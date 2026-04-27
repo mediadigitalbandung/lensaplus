@@ -334,6 +334,17 @@ Format output WAJIB JSON valid (tanpa teks lain, tanpa code-fence):
   const categoryId = source.categoryId;
   const featuredImage = source.featuredImage;
 
+  // Embed the featured image as the FIRST <img> in the content HTML so it
+  // shows inline at the top of the rich-text editor (and the article body
+  // on the public page). The featuredImage field is also kept for OG tags
+  // and the news sitemap. extractFirstImageUrl in the article PUT keeps
+  // the two in sync if the editor later reorders or replaces images.
+  let bodyHtml = sanitizeHtml(parsed.content);
+  if (featuredImage && !/<img[^>]*src=/i.test(bodyHtml)) {
+    const altText = parsed.title.slice(0, 200).replace(/"/g, "&quot;");
+    bodyHtml = `<p><img src="${featuredImage}" alt="${altText}" /></p>` + bodyHtml;
+  }
+
   // Create article — sourceArticleId always set (we abort earlier if no source).
   const slug = await uniqueSlug(parsed.title);
   let article;
@@ -342,7 +353,7 @@ Format output WAJIB JSON valid (tanpa teks lain, tanpa code-fence):
       data: {
         title: parsed.title.slice(0, 250),
         slug,
-        content: sanitizeHtml(parsed.content),
+        content: bodyHtml,
         excerpt: parsed.excerpt.slice(0, 500) || null,
         featuredImage,
         status: "DRAFT",
