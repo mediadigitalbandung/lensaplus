@@ -88,6 +88,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       title: `${title} | Kartawarta`,
       description,
       type: "website",
+      locale: "id_ID",
+      siteName: "Kartawarta",
       images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
     },
     alternates: {

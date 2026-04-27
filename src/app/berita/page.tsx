@@ -15,6 +15,8 @@ export const metadata: Metadata = {
     description:
       "Daftar berita hukum terbaru dari Kartawarta — putusan pengadilan, regulasi, advokasi, dan kasus hukum di Bandung & Jawa Barat.",
     type: "website",
+    locale: "id_ID",
+    siteName: "Kartawarta",
     images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
   },
   alternates: {

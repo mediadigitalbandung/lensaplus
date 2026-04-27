@@ -1,0 +1,27 @@
+{
+  "userIgnoreFilters": [
+    "node_modules/",
+    ".next/",
+    ".git/",
+    "src/",
+    "prisma/",
+    "public/",
+    "scripts/",
+    "tsconfig.tsbuildinfo",
+    "package.json",
+    "package-lock.json",
+    "next.config.js",
+    "tailwind.config.ts",
+    "ecosystem.config.js",
+    "sentry.client.config.ts",
+    "sentry.server.config.ts",
+    "sentry.edge.config.ts"
+  ],
+  "showUnsupportedFiles": false,
+  "promptDelete": true,
+  "alwaysUpdateLinks": true,
+  "useTab": false,
+  "tabSize": 2,
+  "newFileLocation": "current",
+  "attachmentFolderPath": "docs/attachments"
+}
