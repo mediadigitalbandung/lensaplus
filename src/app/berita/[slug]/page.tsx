@@ -106,6 +106,63 @@ function injectInlineAds(html: string): string {
   return result;
 }
 
+// ── Inline "Baca Juga" suggestions ─────────────────────────────────────────
+// Common pattern in Indonesian news sites (Kompas, Detik, CNN ID): every few
+// hundred words, insert a small inline link to a related article. Boosts dwell
+// time and helps SEO via internal linking. We inject at most BACA_JUGA_MAX
+// suggestions, spaced ~300 words apart, only on paragraph boundaries (so we
+// never break a sentence). The aside tag is sanitize-html-friendly.
+const BACA_JUGA_INTERVAL_WORDS = 250;
+const BACA_JUGA_MAX = 2;
+const BACA_JUGA_MIN_REMAINING = 100;
+
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function injectBacaJuga(
+  html: string,
+  related: { slug: string; title: string }[],
+): string {
+  if (!html || related.length === 0) return html;
+  const totalWords = countWords(html);
+  if (totalWords < BACA_JUGA_INTERVAL_WORDS + BACA_JUGA_MIN_REMAINING) return html;
+
+  // Split on paragraph boundaries only — don't inject mid-paragraph or mid-heading.
+  const blocks = html.split(/(<\/p>\s*<p[^>]*>)/gi);
+  let result = "";
+  let wordCount = 0;
+  let injected = 0;
+  const maxInjections = Math.min(BACA_JUGA_MAX, related.length);
+
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    result += block;
+    wordCount += countWords(block);
+
+    const isParagraphBoundary = /<\/p>/i.test(block);
+    if (
+      isParagraphBoundary &&
+      wordCount >= BACA_JUGA_INTERVAL_WORDS &&
+      injected < maxInjections
+    ) {
+      const remaining = blocks.slice(i + 1).join("");
+      if (countWords(remaining) >= BACA_JUGA_MIN_REMAINING) {
+        const pick = related[injected];
+        result +=
+          `<aside class="baca-juga" data-baca-juga>` +
+          `<span>Baca Juga</span>` +
+          `<a href="/berita/${escapeAttr(pick.slug)}">${escapeAttr(pick.title)}</a>` +
+          `</aside>`;
+        wordCount = 0;
+        injected++;
+      }
+    }
+  }
+
+  return result;
+}
+
 function splitContentIntoPages(html: string): string[] {
   if (!html) return [html];
 
@@ -196,7 +253,11 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
     editorName = reviewer?.name || null;
   }
 
-  // Fetch related articles (same category, exclude current)
+  // Fetch related articles (same category, exclude current). 8 total:
+  //   - first 2 used as inline "Baca Juga" suggestions in the body
+  //   - first 6 displayed in the "Baca Lainnya" grid at the bottom
+  // Inline picks overlap with the grid on purpose — readers who skim past
+  // the inline link still see them in the bottom grid.
   const relatedArticles = await prisma.article.findMany({
     where: {
       status: "PUBLISHED",
@@ -205,8 +266,13 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
     },
     include: { author: true, category: true },
     orderBy: { publishedAt: "desc" },
-    take: 3,
+    take: 8,
   });
+  const inlineBacaJuga = relatedArticles.slice(0, 2).map((r) => ({
+    slug: r.slug,
+    title: r.title,
+  }));
+  const bacaLainnyaGrid = relatedArticles.slice(0, 6);
 
   // Fetch trending for sidebar
   const trendingArticles = await prisma.article.findMany({
@@ -248,8 +314,10 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
   const contentPages = splitContentIntoPages(dedupedContent);
   const totalPages = contentPages.length;
   const currentPage = Math.min(Math.max(1, parseInt(searchParams.page || "1") || 1), totalPages);
-  // Inject ads per page (after pagination) so every page gets an ad in the middle
-  const sanitizedContent = injectInlineAds(contentPages[currentPage - 1] || dedupedContent);
+  // Inject inline "Baca Juga" suggestions then ads, per page (after pagination)
+  // so every page gets the engagement boost.
+  const pageContent = contentPages[currentPage - 1] || dedupedContent;
+  const sanitizedContent = injectInlineAds(injectBacaJuga(pageContent, inlineBacaJuga));
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -584,20 +652,27 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
                 <BannerAd slot="FOOTER" noWrapper />
               </div>
 
-              {/* Related articles */}
-              {relatedArticles.length > 0 && (
+              {/* Baca Lainnya — bottom grid */}
+              {bacaLainnyaGrid.length > 0 && (
                 <section className="mt-10">
                   <div className="flex items-center justify-between mb-5">
-                    <h2 className="border-l-[3px] border-primary pl-3 text-lg font-bold text-txt-primary">Artikel Terkait</h2>
-                    <Link href={`/kategori/${article.category.slug}`} className="text-sm font-medium text-primary hover:underline">
-                      Lihat Lainnya &rarr;
+                    <h2 className="border-l-[3px] border-primary pl-3 text-lg font-bold text-txt-primary">
+                      Baca Lainnya
+                    </h2>
+                    <Link
+                      href={`/kategori/${article.category.slug}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Lihat Semua &rarr;
                     </Link>
                   </div>
-                  <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-                    {relatedArticles.map((related) => (
-                      <div key={related.slug} className="shrink-0 w-[260px] sm:w-[280px]">
-                        <ArticleCard {...related} variant="standard" />
-                      </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {bacaLainnyaGrid.map((related) => (
+                      <ArticleCard
+                        key={related.slug}
+                        {...related}
+                        variant="standard"
+                      />
                     ))}
                   </div>
                 </section>

@@ -226,6 +226,19 @@
   outline-offset: 2px;
 }
 
+/* Inline "Baca Juga" suggestion injected by berita/[slug]/page.tsx — internal-link
+   nudge that breaks up long articles. Styled as a left-bordered card so it stands
+   apart from body paragraphs without feeling like an ad. */
+.article-content .baca-juga {
+  @apply my-7 flex flex-col gap-1 rounded-sm border-l-4 border-primary bg-primary-light/40 px-5 py-4 sm:flex-row sm:items-center sm:gap-3;
+}
+.article-content .baca-juga > span {
+  @apply text-label-md font-bold uppercase tracking-widest text-primary;
+}
+.article-content .baca-juga > a {
+  @apply text-body-md font-semibold text-on-surface no-underline transition-colors hover:text-primary hover:underline;
+}
+
 .article-content table { @apply my-8 w-full border-collapse overflow-hidden rounded-sm; }
 .article-content th, .article-content td { @apply px-4 py-3 text-left text-body-sm; }
 .article-content th { @apply bg-surface-container-low font-semibold text-on-surface; }
