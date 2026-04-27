@@ -32,6 +32,9 @@ import {
   FileText,
   Printer,
   StickyNote,
+  ExternalLink,
+  Archive,
+  ArrowDownToLine,
 } from "lucide-react";
 import { stripHtml, downloadTextFile, exportArticlePdf } from "@/lib/export-utils";
 
@@ -114,6 +117,7 @@ export default function EditArticlePage() {
   const [showChecklist, setShowChecklist] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentStatus, setCurrentStatus] = useState("");
+  const [articleSlug, setArticleSlug] = useState("");
   const [existingReviewNote, setExistingReviewNote] = useState("");
   const [existingReviewedBy, setExistingReviewedBy] = useState("");
   const [existingReviewerName, setExistingReviewerName] = useState("");
@@ -474,6 +478,7 @@ export default function EditArticlePage() {
       setSeoTitle(clamp(article.seoTitle || "", 70));
       setSeoDescription(clamp(article.seoDescription || "", 160));
       setCurrentStatus(article.status || "DRAFT");
+      setArticleSlug(article.slug || "");
       setExistingReviewNote(article.reviewNote || "");
       setExistingReviewedBy(article.reviewedBy || "");
       setExistingReviewerName(article.reviewerName || "");
@@ -556,6 +561,10 @@ export default function EditArticlePage() {
   // article (where the editorial workflow takes precedence over authoring).
   const getViewMode = (): "journalist" | "editor" | "admin" | "unauthorized" => {
     if (isOwner && ["DRAFT", "REJECTED"].includes(currentStatus)) return "journalist";
+    // PUBLISHED articles get the full editor for owner OR admin so they can
+    // amend live content, see featured image / sources / SEO / AI helpers,
+    // and access the takedown / archive actions inline.
+    if ((isOwner || isAdmin) && currentStatus === "PUBLISHED") return "journalist";
     if (isAdmin) return "admin";
     if (isEditor && !isOwner) return "editor";
     if (isOwner) return "journalist";
@@ -565,8 +574,11 @@ export default function EditArticlePage() {
 
   const viewMode = getViewMode();
 
-  // Check if jurnalis can edit content
-  const canJurnalisEdit = isOwner && ["DRAFT", "REJECTED"].includes(currentStatus);
+  // Check if jurnalis can edit content. Owners can edit DRAFT/REJECTED;
+  // owners and admins can also edit PUBLISHED articles (post-publish update).
+  const canJurnalisEdit =
+    (isOwner && ["DRAFT", "REJECTED"].includes(currentStatus)) ||
+    ((isOwner || isAdmin) && currentStatus === "PUBLISHED");
 
   // --- JURNALIS HANDLERS ---
   const handleJurnalisSubmit = async (status: "DRAFT" | "IN_REVIEW") => {
@@ -623,6 +635,114 @@ export default function EditArticlePage() {
       router.refresh();
     } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
+      setSaving(false);
+    }
+  };
+
+  // --- PUBLISHED ARTICLE HANDLERS (post-publish edit + admin actions) ---
+
+  // Save edits to a PUBLISHED article without changing its status (stays live).
+  const handlePublishedSave = async () => {
+    setError("");
+    if (!title.trim()) return setError("Judul wajib diisi");
+    if (!content.trim()) return setError("Konten tidak boleh kosong");
+    if (!categoryId) return setError("Kategori harus dipilih");
+
+    setSaving(true);
+    try {
+      const validSources = sources.filter((s) => s.name.trim());
+      const tagList = tags.split(",").map((t) => t.trim()).filter(Boolean);
+
+      const res = await fetch(`/api/articles/${articleId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          content,
+          excerpt: excerpt || undefined,
+          categoryId,
+          tags: tagList,
+          featuredImage: featuredImage || undefined,
+          seoTitle: seoTitle || undefined,
+          seoDescription: seoDescription || undefined,
+          sources: validSources.length > 0 ? validSources : undefined,
+          // No status — admin edit branch keeps PUBLISHED as is.
+        }),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || "Gagal menyimpan perubahan");
+        setSaving(false);
+        return;
+      }
+
+      clearAutosave();
+      success("Perubahan tersimpan. Artikel tetap LIVE.");
+      setFormDirty(false);
+      setSaving(false);
+    } catch {
+      setError("Terjadi kesalahan. Silakan coba lagi.");
+      setSaving(false);
+    }
+  };
+
+  // Takedown: PUBLISHED -> DRAFT (admin only). Article disappears from public.
+  const handleTakedown = async () => {
+    const ok = await confirm({
+      message: "Takedown artikel ini? Status akan kembali ke DRAFT — artikel langsung hilang dari publik dan bisa diedit ulang sebelum re-publish.",
+      variant: "warning",
+      title: "Konfirmasi Takedown",
+    });
+    if (!ok) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/articles/${articleId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "DRAFT" }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || "Gagal takedown artikel");
+        setSaving(false);
+        return;
+      }
+      success("Artikel di-takedown. Status sekarang DRAFT.");
+      router.push("/panel/artikel");
+      router.refresh();
+    } catch {
+      setError("Terjadi kesalahan.");
+      setSaving(false);
+    }
+  };
+
+  // Archive: any status -> ARCHIVED (admin only). Final state, hidden + locked.
+  const handleArchive = async () => {
+    const ok = await confirm({
+      message: "Arsipkan artikel ini? Artikel akan disembunyikan dari publik dan ditandai sebagai arsip. Bisa dikembalikan ke DRAFT nanti kalau perlu.",
+      variant: "danger",
+      title: "Konfirmasi Arsipkan",
+    });
+    if (!ok) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/articles/${articleId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ARCHIVED" }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || "Gagal mengarsipkan artikel");
+        setSaving(false);
+        return;
+      }
+      success("Artikel diarsipkan.");
+      router.push("/panel/artikel");
+      router.refresh();
+    } catch {
+      setError("Terjadi kesalahan.");
       setSaving(false);
     }
   };
@@ -1689,23 +1809,73 @@ export default function EditArticlePage() {
             ) : autoSaveIndicator ? (
               <span className="text-xs text-txt-muted">{autoSaveIndicator}</span>
             ) : null}
-            <button
-              onClick={() => handleJurnalisSubmit("DRAFT")}
-              disabled={saving}
-              className="btn-secondary flex items-center gap-1.5 px-4 py-2 text-sm font-medium disabled:opacity-50"
-            >
-              <Save size={16} />
-              Simpan Draf
-            </button>
-            {CAN_SUBMIT_REVIEW.includes(userRole) && (
-              <button
-                onClick={() => handleJurnalisSubmit("IN_REVIEW")}
-                disabled={saving}
-                className="btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold disabled:opacity-50"
-              >
-                <Send size={16} />
-                Kirim untuk Review
-              </button>
+
+            {currentStatus === "PUBLISHED" ? (
+              <>
+                {articleSlug && (
+                  <a
+                    href={`/berita/${articleSlug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-ghost flex items-center gap-1.5 px-4 py-2 text-sm font-medium"
+                    title="Buka artikel di tab baru"
+                  >
+                    <ExternalLink size={16} />
+                    Lihat Artikel
+                  </a>
+                )}
+                <button
+                  onClick={handlePublishedSave}
+                  disabled={saving}
+                  className="btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                >
+                  <Save size={16} />
+                  Simpan Perubahan
+                </button>
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={handleTakedown}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 rounded-md border border-yellow-300 bg-yellow-50 px-4 py-2 text-sm font-semibold text-yellow-700 hover:bg-yellow-100 disabled:opacity-50"
+                      title="Turunkan dari publik, kembali ke DRAFT"
+                    >
+                      <ArrowDownToLine size={16} />
+                      Takedown
+                    </button>
+                    <button
+                      onClick={handleArchive}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                      title="Arsipkan — sembunyikan dari publik permanen"
+                    >
+                      <Archive size={16} />
+                      Arsipkan
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleJurnalisSubmit("DRAFT")}
+                  disabled={saving}
+                  className="btn-secondary flex items-center gap-1.5 px-4 py-2 text-sm font-medium disabled:opacity-50"
+                >
+                  <Save size={16} />
+                  Simpan Draf
+                </button>
+                {CAN_SUBMIT_REVIEW.includes(userRole) && (
+                  <button
+                    onClick={() => handleJurnalisSubmit("IN_REVIEW")}
+                    disabled={saving}
+                    className="btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                  >
+                    <Send size={16} />
+                    Kirim untuk Review
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}

@@ -604,6 +604,83 @@ export async function PUT(
         return successResponse(updated);
       }
 
+      // Admin "Takedown": PUBLISHED -> DRAFT (unpublish, allow edit)
+      if (data.status === "DRAFT" && article.status === "PUBLISHED") {
+        const updated = await prisma.article.update({
+          where: { id: params.id },
+          data: {
+            status: "DRAFT",
+            verificationLabel: "UNVERIFIED",
+            publishedAt: null,
+            scheduledAt: null,
+          },
+          include: {
+            author: { select: { id: true, name: true } },
+            category: { select: { id: true, name: true, slug: true } },
+            tags: true,
+            sources: true,
+          },
+        });
+
+        await logAudit(
+          session.user.id,
+          "STATUS_CHANGE",
+          "article",
+          article.id,
+          `Admin takedown artikel (PUBLISHED → DRAFT): ${article.title}`
+        );
+
+        return successResponse(updated);
+      }
+
+      // Admin "Arsipkan": any status -> ARCHIVED (hide from public, lock edits)
+      if (data.status === "ARCHIVED" && article.status !== "ARCHIVED") {
+        const updated = await prisma.article.update({
+          where: { id: params.id },
+          data: { status: "ARCHIVED" },
+          include: {
+            author: { select: { id: true, name: true } },
+            category: { select: { id: true, name: true, slug: true } },
+            tags: true,
+            sources: true,
+          },
+        });
+
+        await logAudit(
+          session.user.id,
+          "STATUS_CHANGE",
+          "article",
+          article.id,
+          `Admin arsipkan artikel (${article.status} → ARCHIVED): ${article.title}`
+        );
+
+        return successResponse(updated);
+      }
+
+      // Admin "Restore from archive": ARCHIVED -> DRAFT
+      if (data.status === "DRAFT" && article.status === "ARCHIVED") {
+        const updated = await prisma.article.update({
+          where: { id: params.id },
+          data: { status: "DRAFT", verificationLabel: "UNVERIFIED" },
+          include: {
+            author: { select: { id: true, name: true } },
+            category: { select: { id: true, name: true, slug: true } },
+            tags: true,
+            sources: true,
+          },
+        });
+
+        await logAudit(
+          session.user.id,
+          "STATUS_CHANGE",
+          "article",
+          article.id,
+          `Admin restore dari arsip (ARCHIVED → DRAFT): ${article.title}`
+        );
+
+        return successResponse(updated);
+      }
+
       // Admin content edit — save changes without status change
       if (data.content && data.content !== article.content) {
         await prisma.revision.create({

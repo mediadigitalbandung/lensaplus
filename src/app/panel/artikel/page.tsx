@@ -460,14 +460,14 @@ export default function ArtikelPage() {
                           />
                         </td>
                         <td className="max-w-[200px] sm:max-w-[300px] px-3 sm:px-5 py-4">
-                          <a
-                            href={`/berita/${article.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="truncate block font-medium text-txt-primary text-sm hover:text-primary transition-colors cursor-pointer"
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/panel/artikel/${article.id}/edit`)}
+                            className="truncate block w-full text-left font-medium text-txt-primary text-sm hover:text-primary transition-colors cursor-pointer"
+                            title="Buka di editor"
                           >
                             {article.title}
-                          </a>
+                          </button>
                         </td>
                         <td className="hidden md:table-cell px-5 py-4 text-sm text-txt-secondary">
                           {article.category?.name || "\u2014"}
