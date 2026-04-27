@@ -25,6 +25,8 @@ import {
   Plus,
   Power,
   PowerOff,
+  Upload,
+  ArrowDownToLine,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -287,6 +289,50 @@ export default function AutoArtikelPage() {
       showError(err instanceof Error ? err.message : "Gagal menyimpan");
     } finally {
       setSavingToggle(false);
+    }
+  }
+
+  async function handlePublish(id: string, title: string) {
+    const ok = await confirm({
+      title: "Publikasikan artikel",
+      message: `Publikasikan "${title}" sekarang? Artikel akan langsung tampil di publik.`,
+      variant: "warning",
+    });
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/articles/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PUBLISHED" }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Gagal publikasi");
+      showSuccess("Artikel dipublikasi.");
+      fetchArticles();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal publikasi");
+    }
+  }
+
+  async function handleTakedown(id: string, title: string) {
+    const ok = await confirm({
+      title: "Takedown artikel",
+      message: `Turunkan "${title}" dari publik? Status kembali ke DRAFT — bisa dipublish ulang nanti.`,
+      variant: "warning",
+    });
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/articles/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "DRAFT" }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Gagal takedown");
+      showSuccess("Artikel di-takedown ke DRAFT.");
+      fetchArticles();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal takedown");
     }
   }
 
@@ -681,6 +727,25 @@ export default function AutoArtikelPage() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {a.status === "PUBLISHED" ? (
+                          <button
+                            onClick={() => handleTakedown(a.id, a.title)}
+                            className="btn-ghost rounded p-2 hover:text-yellow-700"
+                            title="Takedown — kembalikan ke DRAFT"
+                            aria-label="Takedown artikel"
+                          >
+                            <ArrowDownToLine size={16} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handlePublish(a.id, a.title)}
+                            className="btn-ghost rounded p-2 hover:text-primary"
+                            title="Publikasi sekarang"
+                            aria-label="Publikasi artikel"
+                          >
+                            <Upload size={16} />
+                          </button>
+                        )}
                         <Link
                           href={`/panel/artikel/${a.id}/edit`}
                           className="btn-ghost rounded p-2"
