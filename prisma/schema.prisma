@@ -185,6 +185,7 @@ model Category {
   polls           Poll[]
   socialTemplates SocialTemplate[]
   targetKeywords  TargetKeyword[]
+  newsSources     NewsSource[]
 
   @@map("categories")
 }
@@ -541,6 +542,39 @@ model TargetKeyword {
 
   @@index([isActive, priority])
   @@map("target_keywords")
+}
+
+/// External news source the cron should periodically scrape, paraphrase
+/// and turn into Kartawarta drafts. One row per upstream listing URL
+/// (e.g. https://www.bankbjb.co.id/page/berita).
+model NewsSource {
+  id               String    @id @default(cuid())
+  name             String
+  listingUrl       String    @unique
+  category         Category? @relation(fields: [categoryId], references: [id])
+  categoryId       String?
+  description      String?
+  isActive         Boolean   @default(true)
+  priority         Int       @default(0)
+  /// How often the cron should re-check this source. Range 1–24 hours.
+  frequencyHours   Int       @default(4)
+  /// Optional manual CSS selectors when auto-detect fails.
+  articleSelector  String?
+  titleSelector    String?
+  contentSelector  String?
+  imageSelector    String?
+  /// URLs we have already paraphrased — used to dedup.
+  scrapedUrls      String[]  @default([])
+  totalScraped     Int       @default(0)
+  defaultTags      String[]  @default([])
+  lastCheckedAt    DateTime?
+  lastSuccessAt    DateTime?
+  lastError        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([isActive, priority])
+  @@map("news_sources")
 }
 
 model CtaTemplate {
