@@ -8,7 +8,7 @@ import {
   logAudit,
   ApiError,
 } from "@/lib/api-utils";
-import { calculateReadTime } from "@/lib/utils";
+import { calculateReadTime, slugify } from "@/lib/utils";
 import { canApproveArticles } from "@/lib/auth";
 import { notifyArticleStatusChange } from "@/lib/notifications";
 import {
@@ -205,10 +205,10 @@ export async function PUT(
           ...(tagNames && Array.isArray(tagNames) && {
             tags: {
               set: [],
-              connectOrCreate: tagNames.map((name: string) => ({
-                where: { name },
-                create: { name, slug: name.toLowerCase().replace(/\s+/g, "-") },
-              })),
+              connectOrCreate: tagNames.map((name: string) => {
+                const slug = slugify(name);
+                return { where: { slug }, create: { name, slug } };
+              }),
             },
           }),
         },
@@ -319,10 +319,10 @@ export async function PUT(
         if (tagNames && Array.isArray(tagNames)) {
           updateData.tags = {
             set: [],
-            connectOrCreate: tagNames.map((name: string) => ({
-              where: { name },
-              create: { name, slug: name.toLowerCase().replace(/\s+/g, "-") },
-            })),
+            connectOrCreate: tagNames.map((name: string) => {
+              const slug = slugify(name);
+              return { where: { slug }, create: { name, slug } };
+            }),
           };
         }
 
@@ -714,10 +714,10 @@ export async function PUT(
       if (tagNames && Array.isArray(tagNames)) {
         updateData.tags = {
           set: [],
-          connectOrCreate: tagNames.map((name: string) => ({
-            where: { name },
-            create: { name, slug: name.toLowerCase().replace(/\s+/g, "-") },
-          })),
+          connectOrCreate: tagNames.map((name: string) => {
+            const slug = slugify(name);
+            return { where: { slug }, create: { name, slug } };
+          }),
         };
       }
       if (sourcesData && Array.isArray(sourcesData)) {
