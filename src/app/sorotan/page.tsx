@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 export const metadata: Metadata = {
   title: "Sorotan",
@@ -83,8 +84,17 @@ export default async function SorotanListPage({ searchParams }: PageProps) {
     return `/sorotan?${qs.toString()}`;
   }
 
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Beranda", url: "/" },
+    { name: "Sorotan", url: "/sorotan" },
+  ]);
+
   return (
     <div className="bg-surface min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <div className="container-main py-8">
         <div className="mb-6">
           <div className="flex items-center gap-3">

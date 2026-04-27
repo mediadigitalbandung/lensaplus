@@ -13,6 +13,12 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/panel/", "/api/", "/login", "/search"],
       },
     ],
-    sitemap: [`${siteUrl}/sitemap.xml`, `${siteUrl}/news-sitemap.xml`],
+    sitemap: [
+      `${siteUrl}/sitemap.xml`,
+      `${siteUrl}/sitemap-news.xml`,
+      `${siteUrl}/sitemap-glossary.xml`,
+      `${siteUrl}/sitemap-sorotan.xml`,
+      `${siteUrl}/sitemap-lokasi.xml`,
+    ],
   };
 }

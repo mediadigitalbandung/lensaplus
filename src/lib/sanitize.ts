@@ -101,6 +101,15 @@ export function cleanAIShortText(raw: string | null | undefined): string {
   // Final fallback: strip leading/trailing single line of asterisks
   s = s.replace(/^\*+\s*/, "").replace(/\s*\*+$/, "");
 
+  // Strip trailing AI annotation in parentheses:
+  //   "(54 karakter)" / "(maks 60 chars)" / "(N words)" / "(60 huruf)"
+  // Run twice in case nested.
+  for (let i = 0; i < 2; i++) {
+    const before = s;
+    s = s.replace(/\s*\((?:approx\.?\s*|maks\s*|max\s*|sekitar\s*)?\d{1,3}\s*(?:char(?:acter)?s?|karakter|words?|kata|huruf)\.?\s*\)\s*$/i, "").trim();
+    if (s === before) break;
+  }
+
   // Strip wrapping straight or curly quotes
   s = s.replace(/^["'“”‘’]+/, "").replace(/["'“”‘’]+$/, "");
 

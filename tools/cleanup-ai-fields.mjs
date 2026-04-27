@@ -34,6 +34,11 @@ function cleanAIShortText(raw) {
     s = (m[1] + m[2]).trim();
   }
   s = s.replace(/^\*+\s*/, "").replace(/\s*\*+$/, "");
+  for (let i = 0; i < 2; i++) {
+    const before = s;
+    s = s.replace(/\s*\((?:approx\.?\s*|maks\s*|max\s*|sekitar\s*)?\d{1,3}\s*(?:char(?:acter)?s?|karakter|words?|kata|huruf)\.?\s*\)\s*$/i, "").trim();
+    if (s === before) break;
+  }
   s = s.replace(/^["'“”‘’]+/, "").replace(/["'“”‘’]+$/, "");
   s = s.replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim();
   return s;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { Scale, Gavel, Building2, Globe2, FileText, BookOpen, Search } from "lucide-react";
+import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 export const revalidate = 300; // 5 min ISR
 
@@ -53,8 +54,17 @@ export default async function GlossaryPage() {
 
   const ranahOrder = ["PIDANA", "PERDATA", "HTN", "HI", "PROSEDUR", "UMUM"];
 
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Beranda", url: "/" },
+    { name: "Glossary", url: "/glossary" },
+  ]);
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
