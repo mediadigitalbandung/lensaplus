@@ -93,6 +93,34 @@ function buildFilename(ext: string): string {
   return `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
 }
 
+/**
+ * Build alternative URLs to retry when the primary image URL 404s.
+ * Targets common SPA-host CMS patterns where the og:image path is
+ * resolved against an upload prefix the page never tells you about.
+ */
+function buildFallbackUrls(primary: URL): string[] {
+  const path = primary.pathname;
+  const origin = `${primary.protocol}//${primary.host}`;
+  const fallbacks: string[] = [];
+  // Bank BJB style: og:image is "2026/04/foo.jpg", actually at /files/2026/04/foo.jpg
+  // Try each common upload prefix when the existing path doesn't already include one.
+  const knownPrefixes = ["/files", "/uploads", "/wp-content/uploads", "/media", "/storage"];
+  for (const prefix of knownPrefixes) {
+    if (!path.startsWith(prefix + "/")) {
+      fallbacks.push(`${origin}${prefix}${path.startsWith("/") ? "" : "/"}${path}`);
+    }
+  }
+  // Try root-relative on year/month pattern (some sites strip the article path)
+  const yearMonthMatch = path.match(/(\d{4}\/\d{2}\/.+)$/);
+  if (yearMonthMatch) {
+    for (const prefix of knownPrefixes) {
+      const candidate = `${origin}${prefix}/${yearMonthMatch[1]}`;
+      if (!fallbacks.includes(candidate)) fallbacks.push(candidate);
+    }
+  }
+  return fallbacks;
+}
+
 export interface DownloadResult {
   /** Site-relative URL — store this in featuredImage. */
   url: string;
@@ -134,19 +162,30 @@ export async function downloadImageToUploads(
     throw new Error(`Refusing private-network image URL: ${imageUrl}`);
   }
 
+  // Try the URL as-is, then a few common SPA-host fallbacks if it 404s.
+  // E.g. Bank BJB's og:image emits "2026/04/photo.jpg" relative to the
+  // article URL, but the file actually lives under /files/2026/04/photo.jpg.
+  const tryUrls = [imageUrl, ...buildFallbackUrls(parsed)];
+
+  let response: Response | null = null;
+  let lastStatus = 0;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(imageUrl, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": userAgent(),
-        Accept: "image/jpeg,image/png,image/webp,image/gif,image/*;q=0.8",
-      },
-      redirect: "follow",
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} fetching image`);
+    for (const candidateUrl of tryUrls) {
+      response = await fetch(candidateUrl, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": userAgent(),
+          Accept: "image/jpeg,image/png,image/webp,image/gif,image/*;q=0.8",
+        },
+        redirect: "follow",
+      });
+      if (response.ok) break;
+      lastStatus = response.status;
+    }
+    if (!response || !response.ok) {
+      throw new Error(`HTTP ${lastStatus || "??"} fetching image (tried ${tryUrls.length} URL${tryUrls.length > 1 ? "s" : ""})`);
     }
     const contentType = (response.headers.get("content-type") || "").toLowerCase();
     if (!contentType.startsWith("image/")) {
