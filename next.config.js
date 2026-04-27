@@ -1,6 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Disable Next.js's image optimizer entirely. Reasons:
+    //   1. The /_next/image proxy fetches /uploads/* from Next.js itself,
+    //      and `next start` caches the public/ file list at startup, so
+    //      newly-uploaded media returns 404 from the optimizer until PM2
+    //      restart — even though Nginx serves the same path fine.
+    //   2. Our upload pipeline already converts images to WebP at 1200px max,
+    //      so optimizer adds no real benefit.
+    //   3. Nginx serves /uploads/* directly with 30-day immutable cache.
+    //   4. Unsplash images are already CDN-served and well-sized.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

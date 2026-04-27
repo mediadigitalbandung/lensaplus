@@ -25,6 +25,14 @@ export function FeaturedImage({ src, alt }: Props) {
     );
   }
 
+  // unoptimized: bypass Next.js's /_next/image proxy. Without this, the
+  // optimizer tries to fetch /uploads/... from Next.js itself, which fails
+  // because next start caches the public/ file list at startup and never
+  // sees newly-uploaded files. Nginx serves /uploads/* directly from disk,
+  // so a direct browser request always works (and the file is already a
+  // properly-sized .webp from the upload pipeline anyway).
+  const isLocalUpload = src.startsWith("/uploads/");
+
   return (
     <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-[12px]">
       <Image
@@ -33,6 +41,7 @@ export function FeaturedImage({ src, alt }: Props) {
         fill
         className="object-cover"
         onError={() => setErrored(true)}
+        unoptimized={isLocalUpload}
       />
     </div>
   );
