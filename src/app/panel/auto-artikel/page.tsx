@@ -106,6 +106,8 @@ export default function AutoArtikelPage() {
   const [loadingArticles, setLoadingArticles] = useState<boolean>(true);
   // Tab filter: pending = not yet PUBLISHED, published = live on the site
   const [publishTab, setPublishTab] = useState<"pending" | "published">("pending");
+  const [page, setPage] = useState<number>(1);
+  const PAGE_SIZE = 15;
 
   // Target keywords state
   const [keywords, setKeywords] = useState<TargetKeyword[]>([]);
@@ -780,7 +782,7 @@ export default function AutoArtikelPage() {
             <div className="flex border-b border-border bg-surface-secondary/40">
               <button
                 type="button"
-                onClick={() => setPublishTab("pending")}
+                onClick={() => { setPublishTab("pending"); setPage(1); }}
                 className={`flex-1 px-5 py-3 text-sm font-semibold transition-colors ${
                   publishTab === "pending"
                     ? "bg-surface text-primary border-b-2 border-primary"
@@ -794,7 +796,7 @@ export default function AutoArtikelPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setPublishTab("published")}
+                onClick={() => { setPublishTab("published"); setPage(1); }}
                 className={`flex-1 px-5 py-3 text-sm font-semibold transition-colors ${
                   publishTab === "published"
                     ? "bg-surface text-primary border-b-2 border-primary"
@@ -838,11 +840,15 @@ export default function AutoArtikelPage() {
         })()}
 
         {!loadingArticles && (() => {
-          const visible =
+          const visibleAll =
             publishTab === "published"
               ? articles.filter((a) => a.status === "PUBLISHED")
               : articles.filter((a) => a.status !== "PUBLISHED");
-          if (visible.length === 0) return null;
+          if (visibleAll.length === 0) return null;
+          const totalPages = Math.max(1, Math.ceil(visibleAll.length / PAGE_SIZE));
+          const safePage = Math.min(page, totalPages);
+          const start = (safePage - 1) * PAGE_SIZE;
+          const visible = visibleAll.slice(start, start + PAGE_SIZE);
           return (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -940,6 +946,31 @@ export default function AutoArtikelPage() {
                 ))}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-3 border-t border-border bg-surface-secondary/40 px-5 py-3">
+                <span className="text-xs text-txt-muted">
+                  Halaman {safePage} dari {totalPages} · {visibleAll.length} artikel
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPage(Math.max(1, safePage - 1))}
+                    disabled={safePage <= 1}
+                    className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-txt-secondary hover:bg-surface-secondary disabled:opacity-30"
+                  >
+                    Sebelumnya
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                    disabled={safePage >= totalPages}
+                    className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-txt-secondary hover:bg-surface-secondary disabled:opacity-30"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           );
         })()}
