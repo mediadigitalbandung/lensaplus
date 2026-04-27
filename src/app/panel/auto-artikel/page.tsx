@@ -27,6 +27,7 @@ import {
   PowerOff,
   Upload,
   ArrowDownToLine,
+  Eye,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -805,9 +806,13 @@ export default function AutoArtikelPage() {
                 {articles.map((a) => (
                   <tr key={a.id} className="hover:bg-surface-secondary/50">
                     <td className="max-w-[280px] px-5 py-3">
-                      <p className="truncate font-medium text-txt-primary">
+                      <Link
+                        href={`/panel/artikel/${a.id}/edit`}
+                        className="block truncate font-medium text-txt-primary hover:text-primary transition-colors"
+                        title="Buka di editor"
+                      >
                         {a.title}
-                      </p>
+                      </Link>
                     </td>
                     <td className="px-5 py-3">
                       <span
@@ -824,6 +829,18 @@ export default function AutoArtikelPage() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {a.status === "PUBLISHED" && a.slug && (
+                          <a
+                            href={`/berita/${a.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-ghost rounded p-2 hover:text-primary"
+                            title="Lihat artikel di publik"
+                            aria-label="Lihat artikel"
+                          >
+                            <Eye size={16} />
+                          </a>
+                        )}
                         {a.status === "PUBLISHED" ? (
                           <button
                             onClick={() => handleTakedown(a.id, a.title)}
