@@ -107,14 +107,18 @@ function injectInlineAds(html: string): string {
 }
 
 // ── Inline "Baca Juga" suggestions ─────────────────────────────────────────
-// Common pattern in Indonesian news sites (Kompas, Detik, CNN ID): every few
-// hundred words, insert a small inline link to a related article. Boosts dwell
-// time and helps SEO via internal linking. We inject at most BACA_JUGA_MAX
-// suggestions, spaced ~300 words apart, only on paragraph boundaries (so we
-// never break a sentence). The aside tag is sanitize-html-friendly.
-const BACA_JUGA_INTERVAL_WORDS = 250;
-const BACA_JUGA_MAX = 2;
-const BACA_JUGA_MIN_REMAINING = 100;
+// Common pattern in Indonesian news sites (Kompas, Detik, CNN ID): drop a
+// small inline link to a related article between paragraphs. Boosts dwell
+// time and helps SEO via internal linking.
+//
+// Distribution strategy: target ~1 injection per 200 words, up to the number
+// of related articles available, capped at BACA_JUGA_HARD_MAX. Each injection
+// lands on a paragraph boundary (never breaks a sentence) and is spaced at
+// least BACA_JUGA_MIN_GAP_WORDS apart so they don't pile up.
+const BACA_JUGA_TARGET_PER_WORDS = 200;
+const BACA_JUGA_MIN_GAP_WORDS = 120;
+const BACA_JUGA_MIN_REMAINING = 60;
+const BACA_JUGA_HARD_MAX = 4;
 
 function escapeAttr(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -126,24 +130,29 @@ function injectBacaJuga(
 ): string {
   if (!html || related.length === 0) return html;
   const totalWords = countWords(html);
-  if (totalWords < BACA_JUGA_INTERVAL_WORDS + BACA_JUGA_MIN_REMAINING) return html;
+  // Need at least one paragraph + the gap before we even try.
+  if (totalWords < BACA_JUGA_MIN_GAP_WORDS + BACA_JUGA_MIN_REMAINING) return html;
+
+  // How many injections does this article support?
+  const targetByLength = Math.floor(totalWords / BACA_JUGA_TARGET_PER_WORDS);
+  const maxInjections = Math.min(BACA_JUGA_HARD_MAX, related.length, targetByLength);
+  if (maxInjections === 0) return html;
 
   // Split on paragraph boundaries only — don't inject mid-paragraph or mid-heading.
   const blocks = html.split(/(<\/p>\s*<p[^>]*>)/gi);
   let result = "";
-  let wordCount = 0;
+  let wordsSinceLast = 0;
   let injected = 0;
-  const maxInjections = Math.min(BACA_JUGA_MAX, related.length);
 
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
     result += block;
-    wordCount += countWords(block);
+    wordsSinceLast += countWords(block);
 
     const isParagraphBoundary = /<\/p>/i.test(block);
     if (
       isParagraphBoundary &&
-      wordCount >= BACA_JUGA_INTERVAL_WORDS &&
+      wordsSinceLast >= BACA_JUGA_MIN_GAP_WORDS &&
       injected < maxInjections
     ) {
       const remaining = blocks.slice(i + 1).join("");
@@ -154,7 +163,7 @@ function injectBacaJuga(
           `<span>Baca Juga</span>` +
           `<a href="/berita/${escapeAttr(pick.slug)}">${escapeAttr(pick.title)}</a>` +
           `</aside>`;
-        wordCount = 0;
+        wordsSinceLast = 0;
         injected++;
       }
     }
@@ -253,8 +262,9 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
     editorName = reviewer?.name || null;
   }
 
-  // Fetch related articles (same category, exclude current). 8 total:
-  //   - first 2 used as inline "Baca Juga" suggestions in the body
+  // Fetch related articles (same category, exclude current). 10 total:
+  //   - first up-to-4 used as inline "Baca Juga" suggestions in the body
+  //     (actual count depends on article length: ~1 per 200 words, hard max 4)
   //   - first 6 displayed in the "Baca Lainnya" grid at the bottom
   // Inline picks overlap with the grid on purpose — readers who skim past
   // the inline link still see them in the bottom grid.
@@ -266,9 +276,9 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
     },
     include: { author: true, category: true },
     orderBy: { publishedAt: "desc" },
-    take: 8,
+    take: 10,
   });
-  const inlineBacaJuga = relatedArticles.slice(0, 2).map((r) => ({
+  const inlineBacaJuga = relatedArticles.slice(0, 4).map((r) => ({
     slug: r.slug,
     title: r.title,
   }));
