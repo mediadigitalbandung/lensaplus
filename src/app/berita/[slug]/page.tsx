@@ -228,11 +228,28 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
   const articleUrl = `${appUrl}/berita/${params.slug}`;
-  const contentPages = splitContentIntoPages(article.content);
+
+  // Avoid double-rendering when the article body opens with the same image as
+  // the featured image at the top — strips the leading <img> or <figure>...img...</figure>
+  // from `content` only when its src matches `article.featuredImage` exactly.
+  // 16 articles in the wild had this from the auto-article / migration flow.
+  const dedupedContent = (() => {
+    const featured = article.featuredImage?.trim();
+    if (!featured) return article.content;
+    const figureRe = /^\s*<figure[^>]*>\s*<img[^>]*\bsrc=["']([^"']+)["'][^>]*>[\s\S]*?<\/figure>\s*/i;
+    const imgRe = /^\s*<img[^>]*\bsrc=["']([^"']+)["'][^>]*\/?>\s*(?:<\/img>)?\s*/i;
+    const figMatch = article.content.match(figureRe);
+    if (figMatch && figMatch[1] === featured) return article.content.slice(figMatch[0].length);
+    const imgMatch = article.content.match(imgRe);
+    if (imgMatch && imgMatch[1] === featured) return article.content.slice(imgMatch[0].length);
+    return article.content;
+  })();
+
+  const contentPages = splitContentIntoPages(dedupedContent);
   const totalPages = contentPages.length;
   const currentPage = Math.min(Math.max(1, parseInt(searchParams.page || "1") || 1), totalPages);
   // Inject ads per page (after pagination) so every page gets an ad in the middle
-  const sanitizedContent = injectInlineAds(contentPages[currentPage - 1] || article.content);
+  const sanitizedContent = injectInlineAds(contentPages[currentPage - 1] || dedupedContent);
 
   const jsonLd = {
     "@context": "https://schema.org",
