@@ -187,8 +187,10 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
   }
 
   // Attribution footer
-  const attribution = buildAttribution(source.url, sourceName, source.title);
-  const finalContent = sanitizeHtml(`${parsed.content}\n${attribution}`);
+  // Attribution footer removed per editor request 2026-04-28 — drafts now
+  // ship clean HTML. Source URL is preserved on the NewsSource scrapedUrls
+  // dedup list and in audit logs if attribution is later needed.
+  const finalContent = sanitizeHtml(parsed.content);
 
   const slug = await uniqueSlug(parsed.title);
 
