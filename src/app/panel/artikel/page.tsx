@@ -21,6 +21,8 @@ import {
   Download,
   Archive,
   ImageOff,
+  Send,
+  EyeOff,
 } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-utils";
 
@@ -148,6 +150,11 @@ export default function ArtikelPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [actioning, setActioning] = useState<string | null>(null);
+  // Only SUPER_ADMIN / CHIEF_EDITOR see direct Publish + Takedown buttons.
+  const userRoleForActions = (session?.user as { role?: string } | undefined)?.role || "";
+  const canPublishDirect =
+    userRoleForActions === "SUPER_ADMIN" || userRoleForActions === "CHIEF_EDITOR";
   // Editors default to IN_REVIEW, creators default to ALL
   const [filterStatus, setFilterStatus] = useState(isEditor ? "IN_REVIEW" : "ALL");
   // Origin filter: "all" | "manual" | "auto" — lets staff separate their own
@@ -224,6 +231,60 @@ export default function ArtikelPage() {
       console.error("Delete article error:", err);
     } finally {
       setDeleting(null);
+    }
+  }
+
+  async function handlePublish(article: Article) {
+    const ok = await confirm({
+      title: "Publikasikan artikel?",
+      message: `"${article.title}" akan langsung tampil di kartawarta.com dan masuk news sitemap.`,
+      variant: "default",
+    });
+    if (!ok) return;
+    try {
+      setActioning(article.id);
+      const res = await fetch(`/api/articles/${article.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PUBLISHED" }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Gagal mempublikasikan artikel");
+      }
+      success("Artikel dipublikasikan");
+      fetchArticles();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal mempublikasikan");
+    } finally {
+      setActioning(null);
+    }
+  }
+
+  async function handleTakedown(article: Article) {
+    const ok = await confirm({
+      title: "Takedown artikel?",
+      message: `"${article.title}" akan dikembalikan ke DRAFT — hilang dari kartawarta.com dan news sitemap. Body dan metadata tetap tersimpan, bisa di-republish setelah edit.`,
+      variant: "danger",
+    });
+    if (!ok) return;
+    try {
+      setActioning(article.id);
+      const res = await fetch(`/api/articles/${article.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "DRAFT" }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Gagal takedown artikel");
+      }
+      success("Artikel dikembalikan ke draft");
+      fetchArticles();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal takedown");
+    } finally {
+      setActioning(null);
     }
   }
 
@@ -599,6 +660,31 @@ export default function ArtikelPage() {
                             >
                               <Edit size={16} />
                             </button>
+                            {/* Quick Publish — admin/chief only, for DRAFT/IN_REVIEW/APPROVED */}
+                            {canPublishDirect &&
+                              ["DRAFT", "IN_REVIEW", "APPROVED"].includes(article.status) && (
+                                <button
+                                  onClick={() => handlePublish(article)}
+                                  disabled={actioning === article.id}
+                                  className="btn-ghost rounded p-2 text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
+                                  title="Publikasikan langsung"
+                                  aria-label="Publikasikan artikel"
+                                >
+                                  <Send size={16} />
+                                </button>
+                              )}
+                            {/* Takedown — admin/chief only, for PUBLISHED */}
+                            {canPublishDirect && article.status === "PUBLISHED" && (
+                              <button
+                                onClick={() => handleTakedown(article)}
+                                disabled={actioning === article.id}
+                                className="btn-ghost rounded p-2 text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                                title="Takedown — kembalikan ke draft"
+                                aria-label="Takedown artikel"
+                              >
+                                <EyeOff size={16} />
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDelete(article.id, article.title)}
                               disabled={deleting === article.id}

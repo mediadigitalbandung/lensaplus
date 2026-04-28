@@ -580,6 +580,41 @@ export async function PUT(
         return successResponse(updated);
       }
 
+      // Admin takedown: PUBLISHED -> DRAFT (or ARCHIVED with note).
+      // Strips publishedAt so the article disappears from the public site
+      // and from the news sitemap. The article body and metadata remain
+      // intact so it can be re-published after edits.
+      if (
+        article.status === "PUBLISHED" &&
+        (data.status === "DRAFT" || data.status === "ARCHIVED")
+      ) {
+        const updated = await prisma.article.update({
+          where: { id: params.id },
+          data: {
+            status: data.status,
+            publishedAt: null,
+            scheduledAt: null,
+            reviewNote: data.reviewNote || null,
+          },
+          include: {
+            author: { select: { id: true, name: true } },
+            category: { select: { id: true, name: true, slug: true } },
+            tags: true,
+            sources: true,
+          },
+        });
+
+        await logAudit(
+          session.user.id,
+          "STATUS_CHANGE",
+          "article",
+          article.id,
+          `Admin takedown artikel ke ${data.status}: ${article.title}${data.reviewNote ? ` — Catatan: ${data.reviewNote}` : ""}`
+        );
+
+        return successResponse(updated);
+      }
+
       // Admin return to editor: APPROVED -> IN_REVIEW (with optional note)
       if (data.status === "IN_REVIEW" && article.status === "APPROVED") {
         const updated = await prisma.article.update({
