@@ -20,6 +20,20 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
+  Vote,
+  Sparkles,
+  BookOpen,
+  Share2,
+  Folder,
+  Tag,
+  Bot,
+  Settings,
+  Highlighter,
+  Gavel,
+  Newspaper,
+  Music,
+  Mail,
 } from "lucide-react";
 
 interface Article {
@@ -714,6 +728,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<StatsItem[]>([]);
   const [recentArticles, setRecentArticles] = useState<Article[]>([]);
   const [allArticles, setAllArticles] = useState<Article[]>([]);
+  const [extraStats, setExtraStats] = useState<StatsItem[]>([]);
 
   const fetchData = useCallback(async () => {
       if (!session?.user) return;
@@ -727,15 +742,17 @@ export default function DashboardPage() {
           : `/api/articles?limit=1000&status=ALL`;
 
         const fetches: Promise<Response>[] = [fetch(articlesUrl)];
-        // Only admins/editors see reports
+        // Only admins/editors see reports + aggregated dashboard stats
         if (!isCreator) {
           fetches.push(fetch("/api/reports"));
+          fetches.push(fetch("/api/panel/dashboard-stats"));
         }
 
         const results = await Promise.all(fetches);
 
         let fetchedArticles: Article[] = [];
         let reportsPending = 0;
+        let dashStats: any = null;
 
         if (results[0].ok) {
           const articlesJson = await results[0].json();
@@ -745,6 +762,11 @@ export default function DashboardPage() {
         if (!isCreator && results[1]?.ok) {
           const reportsJson = await results[1].json();
           reportsPending = reportsJson.data?.pendingCount || 0;
+        }
+
+        if (!isCreator && results[2]?.ok) {
+          const statsJson = await results[2].json();
+          dashStats = statsJson.data || null;
         }
 
         // Store all articles for analytics
@@ -772,6 +794,33 @@ export default function DashboardPage() {
             { label: "Laporan Masuk", value: reportsPending.toString(), icon: AlertTriangle, color: "text-red-500 bg-red-50" },
             { label: "Tayangan Hari Ini", value: formatNumber(todayViews), icon: TrendingUp, color: "text-purple-500 bg-purple-50" },
           ]);
+
+          // Extra cards from aggregated dashboard-stats
+          if (dashStats) {
+            const aiTokens = dashStats.aiUsage?.totalTokens30d || 0;
+            const aiTokensDisplay =
+              aiTokens >= 1_000_000
+                ? `${(aiTokens / 1_000_000).toFixed(1)}M`
+                : aiTokens >= 1000
+                ? `${(aiTokens / 1000).toFixed(1)}K`
+                : formatNumber(aiTokens);
+
+            setExtraStats([
+              { label: "Total Komentar", value: formatNumber(dashStats.comments?.total || 0), icon: MessageSquare, color: "text-blue-500 bg-blue-50" },
+              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50" },
+              { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), icon: Highlighter, color: "text-amber-500 bg-amber-50" },
+              { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50" },
+              { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50" },
+              { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50" },
+              { label: "Token AI (30hr)", value: aiTokensDisplay, icon: Bot, color: "text-indigo-500 bg-indigo-50" },
+              { label: "Total Kategori", value: formatNumber(dashStats.categories?.total || 0), icon: Folder, color: "text-orange-500 bg-orange-50" },
+              { label: "Total Tag", value: formatNumber(dashStats.tags?.total || 0), icon: Tag, color: "text-teal-500 bg-teal-50" },
+              { label: "Pengguna Aktif", value: formatNumber(dashStats.users?.active || 0), icon: Users, color: "text-blue-500 bg-blue-50" },
+              { label: "Iklan Aktif", value: formatNumber(dashStats.ads?.active || 0), icon: Megaphone, color: "text-rose-500 bg-rose-50" },
+              { label: "Sumber Berita Aktif", value: formatNumber(dashStats.newsSources?.active || 0), icon: Newspaper, color: "text-cyan-600 bg-cyan-50" },
+              { label: "Sidang Mendatang", value: formatNumber(dashStats.courtSchedules?.upcoming || 0), icon: Gavel, color: "text-stone-500 bg-stone-100" },
+            ]);
+          }
 
           const sorted = [...fetchedArticles].sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -812,6 +861,17 @@ export default function DashboardPage() {
             { label: "Ditolak", value: rejected.toString(), icon: XCircle, color: "text-red-500 bg-red-50" },
             { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50" },
           ]);
+
+          if (dashStats) {
+            setExtraStats([
+              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50" },
+              { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), icon: Highlighter, color: "text-amber-500 bg-amber-50" },
+              { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50" },
+              { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50" },
+              { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50" },
+              { label: "Sidang Mendatang", value: formatNumber(dashStats.courtSchedules?.upcoming || 0), icon: Gavel, color: "text-stone-500 bg-stone-100" },
+            ]);
+          }
 
           // Recent: IN_REVIEW first, then by createdAt
           const sorted = [...fetchedArticles].sort((a, b) => {
@@ -887,7 +947,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats grid */}
-      <div className={`mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 ${isAdmin ? "md:grid-cols-4 xl:grid-cols-7" : "md:grid-cols-4"}`}>
+      <div className={`mb-4 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 ${isAdmin ? "md:grid-cols-4 xl:grid-cols-7" : "md:grid-cols-4"}`}>
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -907,6 +967,34 @@ export default function DashboardPage() {
         })}
       </div>
 
+      {/* Secondary stats grid — content & engagement counts */}
+      {extraStats.length > 0 && (
+        <div className="mb-8">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-txt-muted">
+            Konten &amp; Engagement
+          </p>
+          <div className={`grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 ${isAdmin ? "xl:grid-cols-7" : "xl:grid-cols-6"}`}>
+            {extraStats.map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={stat.label}
+                  className="rounded-[12px] border border-border bg-surface p-3 sm:p-4 shadow-card overflow-hidden"
+                >
+                  <div className={`inline-flex rounded-[12px] p-1.5 sm:p-2 ${stat.color}`}>
+                    <Icon size={16} />
+                  </div>
+                  <p className="mt-1.5 text-lg sm:text-2xl xl:text-3xl font-extrabold text-txt-primary truncate">
+                    {stat.value}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-txt-secondary truncate">{stat.label}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Quick actions FIRST */}
       <div className="mb-6 rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border px-6 py-5">
@@ -917,78 +1005,58 @@ export default function DashboardPage() {
             Aksi Cepat
           </h2>
         </div>
-          <div className="grid grid-cols-2 gap-3 p-5">
-            <Link
-              href="/panel/artikel/baru"
-              className="flex flex-col items-center gap-2 rounded-[12px] border-2 border-dashed border-border p-6 text-center transition-colors hover:border-primary hover:bg-primary-50"
-              aria-label="Tulis artikel baru"
-            >
-              <FileText size={24} className="text-primary" />
-              <span className="text-sm font-medium text-txt-secondary">
-                Tulis Artikel Baru
-              </span>
-            </Link>
-            {(isEditorRole || isAdmin) && (
-              <Link
-                href="/panel/artikel"
-                className="flex flex-col items-center gap-2 rounded-[12px] border-2 border-dashed border-border p-6 text-center transition-colors hover:border-primary hover:bg-primary-50"
-                aria-label="Review artikel"
-              >
-                <Clock size={24} className="text-yellow-500" />
-                <span className="text-sm font-medium text-txt-secondary">
-                  Review Artikel
-                </span>
-              </Link>
-            )}
-            {isCreator && (
-              <Link
-                href="/panel/artikel"
-                className="flex flex-col items-center gap-2 rounded-[12px] border-2 border-dashed border-border p-6 text-center transition-colors hover:border-primary hover:bg-primary-50"
-                aria-label="Lihat artikel saya"
-              >
-                <Send size={24} className="text-blue-500" />
-                <span className="text-sm font-medium text-txt-secondary">
-                  Artikel Saya
-                </span>
-              </Link>
-            )}
-            {!isCreator && (
-              <Link
-                href="/panel/laporan"
-                className="flex flex-col items-center gap-2 rounded-[12px] border-2 border-dashed border-border p-6 text-center transition-colors hover:border-primary hover:bg-primary-50"
-                aria-label="Cek laporan masuk"
-              >
-                <AlertTriangle size={24} className="text-red-500" />
-                <span className="text-sm font-medium text-txt-secondary">
-                  Cek Laporan
-                </span>
-              </Link>
-            )}
-            {(isAdmin || userRole === "CHIEF_EDITOR") && (
-              <>
-                <Link
-                  href="/panel/pengguna"
-                  className="flex flex-col items-center gap-2 rounded-[12px] border-2 border-dashed border-border p-6 text-center transition-colors hover:border-primary hover:bg-primary-50"
-                  aria-label="Kelola pengguna"
-                >
-                  <Users size={24} className="text-purple-500" />
-                  <span className="text-sm font-medium text-txt-secondary">
-                    Kelola Pengguna
-                  </span>
-                </Link>
-                <Link
-                  href="/panel/iklan"
-                  className="flex flex-col items-center gap-2 rounded-[12px] border-2 border-dashed border-border p-6 text-center transition-colors hover:border-primary hover:bg-primary-50"
-                  aria-label="Kelola iklan"
-                >
-                  <Megaphone size={24} className="text-blue-500" />
-                  <span className="text-sm font-medium text-txt-secondary">
-                    Kelola Iklan
-                  </span>
-                </Link>
-              </>
-            )}
-          </div>
+        <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 sm:gap-3 sm:p-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {(() => {
+            type Action = {
+              href: string;
+              label: string;
+              icon: React.ElementType;
+              color: string;
+              show: boolean;
+            };
+            const actions: Action[] = [
+              { href: "/panel/artikel/baru", label: "Tulis Artikel", icon: FileText, color: "text-primary", show: true },
+              { href: "/panel/auto-artikel", label: "Auto Artikel AI", icon: Sparkles, color: "text-indigo-500", show: !isCreator },
+              { href: "/panel/sumber-berita", label: "Sumber Berita", icon: Newspaper, color: "text-cyan-600", show: !isCreator },
+              { href: "/panel/artikel", label: isCreator ? "Artikel Saya" : "Review Artikel", icon: isCreator ? Send : Clock, color: isCreator ? "text-blue-500" : "text-yellow-500", show: true },
+              { href: "/panel/laporan", label: "Cek Laporan", icon: AlertTriangle, color: "text-red-500", show: !isCreator },
+              { href: "/panel/komentar", label: "Moderasi Komentar", icon: MessageSquare, color: "text-blue-500", show: !isCreator },
+              { href: "/panel/sorotan", label: "Sorotan SEO", icon: Highlighter, color: "text-amber-500", show: !isCreator },
+              { href: "/panel/polling", label: "Kelola Polling", icon: Vote, color: "text-purple-500", show: !isCreator },
+              { href: "/panel/jadwal-sidang", label: "Jadwal Sidang", icon: Gavel, color: "text-stone-600", show: !isCreator },
+              { href: "/panel/social", label: "Sosial Media", icon: Share2, color: "text-pink-500", show: !isCreator },
+              { href: "/panel/tiktok", label: "TikTok", icon: Music, color: "text-fuchsia-500", show: !isCreator },
+              { href: "/panel/statistik", label: "Statistik", icon: BarChart3, color: "text-green-600", show: !isCreator },
+              { href: "/panel/seo", label: "SEO Panel", icon: TrendingUp, color: "text-emerald-600", show: !isCreator },
+              { href: "/panel/kategori", label: "Kategori", icon: Folder, color: "text-orange-500", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/tags", label: "Tag", icon: Tag, color: "text-teal-500", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/redaksi", label: "Redaksi", icon: Users, color: "text-blue-500", show: !isCreator },
+              { href: "/panel/pengguna", label: "Kelola Pengguna", icon: Users, color: "text-purple-500", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/iklan", label: "Kelola Iklan", icon: Megaphone, color: "text-rose-500", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/email", label: "Email Routing", icon: Mail, color: "text-blue-600", show: isAdmin },
+              { href: "/panel/ai-log", label: "Log AI", icon: Bot, color: "text-indigo-500", show: isAdmin },
+              { href: "/panel/pengaturan", label: "Pengaturan", icon: Settings, color: "text-gray-600", show: isAdmin },
+            ];
+            return actions
+              .filter((a) => a.show)
+              .map((a) => {
+                const Icon = a.icon;
+                return (
+                  <Link
+                    key={a.href}
+                    href={a.href}
+                    className="flex flex-col items-center gap-1.5 rounded-[12px] border border-dashed border-border p-3 sm:p-4 text-center transition-colors hover:border-primary hover:bg-primary-50"
+                    aria-label={a.label}
+                  >
+                    <Icon size={20} className={a.color} />
+                    <span className="text-xs sm:text-sm font-medium text-txt-secondary leading-tight">
+                      {a.label}
+                    </span>
+                  </Link>
+                );
+              });
+          })()}
+        </div>
       </div>
 
       {/* Recent articles - full width, rich info */}
