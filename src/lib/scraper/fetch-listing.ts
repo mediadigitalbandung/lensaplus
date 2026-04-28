@@ -121,6 +121,91 @@ function absolutise(href: string, base: string): string | null {
   }
 }
 
+/**
+ * Reject URLs that obviously point at non-news pages — service/product
+ * directories, contact widgets, social media share intents.
+ *
+ * The auto-detector keys off DOM structure (link + heading + image) and
+ * cannot tell a service tile ("Pinjaman", "E-Banking") from a news card.
+ * On Bank BJB the homepage mixes both. This list catches the bulk of the
+ * false positives without needing per-source configuration.
+ */
+const NON_ARTICLE_URL_PATTERNS = [
+  /\/produk(\/|$)/i,
+  /\/products?(\/|$)/i,
+  /\/layanan(\/|$)/i,
+  /\/services?(\/|$)/i,
+  /\/kontak(\/|$)/i,
+  /\/contact(\/|$)/i,
+  /\/tentang(\/|$)/i,
+  /\/about(\/|$)/i,
+  /\/karir(\/|$)/i,
+  /\/career(\/|$)/i,
+  /\/lokasi(\/|$)/i,
+  /\/cabang(\/|$)/i,
+  /\/branch(\/|$)/i,
+  /\/atm(\/|$)/i,
+  /\/faq(\/|$)/i,
+  /\/sitemap(\.|\/|$)/i,
+  /\/login(\/|$|\?)/i,
+  /\/register(\/|$|\?)/i,
+  /\/privacy(\/|$)/i,
+  /\/terms?(\/|$)/i,
+  /\/syarat(\/|$)/i,
+  /\/disclaimer(\/|$)/i,
+  /\/wbs(\/|$)/i, // whistleblower system
+  /\/pengaduan(\/|$)/i,
+  /^(tel|mailto|sms|whatsapp|fb-messenger):/i,
+];
+
+function looksLikeArticleUrl(url: string): boolean {
+  for (const pattern of NON_ARTICLE_URL_PATTERNS) {
+    if (pattern.test(url)) return false;
+  }
+  return true;
+}
+
+/**
+ * Reject titles that look like service/menu labels rather than headlines.
+ *
+ * Heuristics:
+ *   - Must have at least 4 words (headlines almost always do; menu items
+ *     like "Pinjaman", "bjb Call VoIP" don't).
+ *   - Must be at least 20 characters (rules out very short navigation
+ *     labels even if they happen to be 4-word).
+ *   - Must not be only an exact match of a known service category label.
+ */
+const SERVICE_LABEL_WORDS = new Set(
+  [
+    "simpanan", "pinjaman", "investasi", "asuransi", "ebanking", "e-banking",
+    "mobilebanking", "mobile-banking", "internetbanking", "internet-banking",
+    "deposito", "tabungan", "kartu", "kredit", "atm", "edc",
+    "produk", "layanan", "services", "service", "promo", "promosi",
+    "kontak", "contact", "tentang", "about", "karir", "career",
+    "faq", "bantuan", "support", "wbs", "pengaduan",
+    "whatsapp", "call", "voip", "email", "e-mail", "chat",
+  ],
+);
+
+function looksLikeHeadline(rawTitle: string): boolean {
+  const title = rawTitle.trim();
+  if (title.length < 20) return false;
+  const words = title.split(/\s+/).filter((w) => w.length > 0);
+  if (words.length < 4) return false;
+  // If every "meaningful" token is a service word, it's almost certainly a
+  // service tile concatenated by the layout — reject.
+  const lowered = title.toLowerCase();
+  const tokensWithoutPunct = lowered
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 1);
+  const allService =
+    tokensWithoutPunct.length > 0 &&
+    tokensWithoutPunct.every((t) => SERVICE_LABEL_WORDS.has(t));
+  if (allService) return false;
+  return true;
+}
+
 function extractFromCard(
   $: cheerio.CheerioAPI,
   card: DomElement,
@@ -140,6 +225,10 @@ function extractFromCard(
     if (anchorText.length > 8) title = anchorText;
   }
   if (!title || title.length < 8) return null;
+  // Reject service/menu tiles that share the news-card DOM shape.
+  // Skipped only when no manual selector was supplied — the operator can
+  // still force-include short headlines via articleSelector + titleSelector.
+  if (!options.articleSelector && !looksLikeHeadline(title)) return null;
 
   // Link: explicit href on the card itself (Persib-style <a class="card">),
   // else anchor inside a heading, else first anchor child.
@@ -151,6 +240,8 @@ function extractFromCard(
   if (!url) return null;
   // Skip in-page anchors and javascript: pseudo links
   if (url.startsWith("javascript:") || url === baseUrl + "#") return null;
+  // Skip URLs that point at service/contact/legal pages.
+  if (!options.articleSelector && !looksLikeArticleUrl(url)) return null;
 
   // Thumbnail
   let thumbnail: string | undefined;
