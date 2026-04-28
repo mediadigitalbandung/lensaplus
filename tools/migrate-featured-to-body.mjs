@@ -60,14 +60,27 @@ const stats = { skipped: 0, updated: 0 };
 for (const a of articles) {
   const firstInBody = extractFirstImageUrl(a.content);
 
-  // Idempotent: already starts with the featured image
-  if (firstInBody && firstInBody === a.featuredImage) {
+  // Helper: HTML-decode the body's image URL for fair comparison.
+  // Unsplash featured images often have `&q=80` raw, but in body the editor
+  // may store the same URL HTML-encoded as `&amp;q=80`.
+  const htmlDecode = (s) =>
+    s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  const featNorm = htmlDecode(a.featuredImage);
+  const firstInBodyNorm = firstInBody ? htmlDecode(firstInBody) : null;
+
+  // Idempotent: already starts with the featured image (post-decode)
+  if (firstInBodyNorm && firstInBodyNorm === featNorm) {
     stats.skipped++;
     continue;
   }
 
-  // Featured exists somewhere else in body — also skip
-  if (a.content && a.featuredImage && a.content.includes(a.featuredImage)) {
+  // Featured exists somewhere else in body — match either raw or html-encoded
+  const encoded = a.featuredImage.replace(/&/g, "&amp;");
+  if (
+    a.content &&
+    a.featuredImage &&
+    (a.content.includes(a.featuredImage) || a.content.includes(encoded))
+  ) {
     stats.skipped++;
     continue;
   }
