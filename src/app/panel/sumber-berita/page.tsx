@@ -12,7 +12,7 @@
  * and obeys each source's `frequencyHours` (1–24).
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Globe,
@@ -851,6 +851,10 @@ function PreviewModal({
   const [scrapedSet, setScrapedSet] = useState<Set<string>>(
     () => new Set(data.items.filter((i) => i.alreadyScraped).map((i) => i.url)),
   );
+  // Bulk-generate progress state.
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; failed: number } | null>(null);
+  const bulkAbortRef = useRef(false);
 
   async function handleGenerate(url: string) {
     setItemState((s) => ({ ...s, [url]: { status: "running" } }));
@@ -896,6 +900,50 @@ function PreviewModal({
     }
   }
 
+  /** Sequentially generate every "BARU" item left in the preview.
+   * Sequential not parallel because each generate triggers an AI paraphrase
+   * call — parallel would hammer the AI provider's rate limit and the source
+   * site's connections. Small breather between calls for the same reason.
+   * Stops when the user clicks "Stop" (sets bulkAbortRef.current = true). */
+  async function handleGenerateAll() {
+    const targets = data.items.filter(
+      (item) => !scrapedSet.has(item.url) && itemState[item.url]?.status !== "running",
+    );
+    if (targets.length === 0) {
+      showError("Tidak ada artikel baru untuk di-generate.");
+      return;
+    }
+    bulkAbortRef.current = false;
+    setBulkRunning(true);
+    setBulkProgress({ done: 0, total: targets.length, failed: 0 });
+    let done = 0;
+    let failed = 0;
+    for (const item of targets) {
+      if (bulkAbortRef.current) break;
+      try {
+        await handleGenerate(item.url);
+        // Give the upstream site + AI a short rest between requests.
+        await new Promise((r) => setTimeout(r, 350));
+      } catch {
+        failed++;
+      }
+      done++;
+      setBulkProgress({ done, total: targets.length, failed });
+    }
+    setBulkRunning(false);
+    const aborted = bulkAbortRef.current;
+    bulkAbortRef.current = false;
+    if (aborted) {
+      showError(`Dihentikan setelah ${done}/${targets.length} artikel.`);
+    } else {
+      success(`Selesai: ${done - failed} sukses${failed ? `, ${failed} gagal` : ""}.`);
+    }
+  }
+
+  const remainingNew = data.items.filter(
+    (i) => !scrapedSet.has(i.url) && itemState[i.url]?.status !== "running",
+  ).length;
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
@@ -905,8 +953,8 @@ function PreviewModal({
         className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <div>
+        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-3">
+          <div className="min-w-0 flex-1">
             <h2 className="text-base font-bold text-txt-primary">
               Preview — {sourceName}
             </h2>
@@ -915,12 +963,46 @@ function PreviewModal({
               selector: <code className="font-mono">{data.selectorUsed}</code>
             </p>
             <p className="mt-0.5 text-[11px] text-txt-muted">
-              Klik <strong>Generate</strong> per artikel untuk paraphrase jadi draft, atau buka link untuk lihat sumber.
+              Klik <strong>Generate</strong> per artikel atau{" "}
+              <strong>Generate Semua</strong> untuk semua sekaligus.
             </p>
+            {bulkProgress && (
+              <p className="mt-1 text-[11px] font-semibold text-primary">
+                Progress: {bulkProgress.done}/{bulkProgress.total}
+                {bulkProgress.failed ? ` · ${bulkProgress.failed} gagal` : ""}
+                {bulkRunning ? " · sedang berjalan…" : " · selesai"}
+              </p>
+            )}
           </div>
-          <button onClick={onClose} className="btn-ghost p-2">
-            <X size={18} />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {bulkRunning ? (
+              <button
+                onClick={() => {
+                  bulkAbortRef.current = true;
+                }}
+                className="flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
+                title="Stop setelah artikel yang sedang berjalan selesai"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleGenerateAll}
+                disabled={remainingNew === 0}
+                className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-40"
+                title={
+                  remainingNew === 0
+                    ? "Tidak ada artikel baru tersisa"
+                    : `Generate ${remainingNew} artikel baru sekaligus`
+                }
+              >
+                Generate Semua ({remainingNew})
+              </button>
+            )}
+            <button onClick={onClose} className="btn-ghost p-2">
+              <X size={18} />
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           {data.items.length === 0 ? (
