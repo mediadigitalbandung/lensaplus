@@ -331,6 +331,42 @@ export default function ArtikelPage() {
     }
   }
 
+  async function handleBulkPublish() {
+    const ok = await confirm({
+      message: `Publikasikan ${selectedIds.size} artikel sekarang? Status akan jadi DIPUBLIKASI dan langsung tampil di publik.`,
+      variant: "warning",
+      title: "Konfirmasi Publish",
+    });
+    if (!ok) return;
+    setBulkProcessing(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const res = await fetch("/api/articles/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "publish", ids }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || "Gagal mempublikasi artikel");
+      }
+      const json = await res.json();
+      const count = json.data?.count ?? ids.length;
+      const requested = json.data?.requested ?? ids.length;
+      success(
+        count === requested
+          ? `${count} artikel berhasil dipublikasikan.`
+          : `${count} dari ${requested} artikel dipublikasikan (sisanya di-skip — sudah PUBLISHED atau ARCHIVED).`,
+      );
+      setSelectedIds(new Set());
+      fetchArticles();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Terjadi kesalahan saat mempublikasi beberapa artikel.");
+    } finally {
+      setBulkProcessing(false);
+    }
+  }
+
   async function handleBulkArchive() {
     const ok = await confirm({ message: `Arsipkan ${selectedIds.size} artikel yang dipilih?`, variant: "warning", title: "Konfirmasi" });
     if (!ok) return;
@@ -398,6 +434,16 @@ export default function ArtikelPage() {
       {selectedIds.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full bg-surface-dark px-6 py-3 shadow-lg border border-white/10">
           <span className="text-sm text-white">{selectedIds.size} dipilih</span>
+          {canPublishDirect && (
+            <button
+              onClick={handleBulkPublish}
+              disabled={bulkProcessing}
+              className="text-sm font-semibold text-primary-light hover:text-white disabled:opacity-50"
+              aria-label="Publikasi artikel terpilih"
+            >
+              Publish
+            </button>
+          )}
           <button
             onClick={handleBulkArchive}
             disabled={bulkProcessing}
