@@ -50,21 +50,32 @@ export default async function HomePage() {
     }),
   ]);
 
-  const heroMain = articles.slice(0, 5);  // 5 articles rotate in hero
-  const heroSide = articles.slice(5, 8);  // 3 side stories
-  const editorsPickArticles = articles.slice(8, 12);
+  // Dedup by source article — auto-articles that paraphrase the same
+  // source produce near-duplicate titles ("Bank BJB Raup Laba…" × 3).
+  // We keep the first (most recent) occurrence per source. Manual articles
+  // have no sourceArticleId, so they all fall through unchanged.
+  const seenSource = new Set<string>();
+  const dedupedArticles = articles.filter((a) => {
+    const key = a.sourceArticleId || a.id;
+    if (seenSource.has(key)) return false;
+    seenSource.add(key);
+    return true;
+  });
+
+  const heroMain = dedupedArticles.slice(0, 5);  // 5 articles rotate in hero
+  const heroSide = dedupedArticles.slice(5, 8);  // 3 side stories — all distinct topics
+  const editorsPickArticles = dedupedArticles.slice(8, 12);
 
   // Berita Terkini — actual latest 12 articles, skip only the lead hero #1 so
   // we don't render the same article as "big" in two places. Overlap with the
   // rotating hero is fine; that's how news sites work and ensures any newly
   // published article shows up here within the first revalidate.
-  const terkiniArticles = articles.slice(1, 13);
+  const terkiniArticles = dedupedArticles.slice(1, 13);
 
-  // Category sections — use the FULL latest list, not just the tail. That way
-  // each category surfaces its freshest articles even when several recent
-  // headlines compete for the hero slots.
+  // Category sections — use the deduped FULL list. Same dedup-by-source
+  // rule so a category isn't filled with 5 paraphrases of the same source.
   const articlesByCategory: Record<string, { slug: string; articles: typeof articles }> = {};
-  for (const a of articles) {
+  for (const a of dedupedArticles) {
     const name = a.category.name;
     if (!articlesByCategory[name]) articlesByCategory[name] = { slug: a.category.slug, articles: [] };
     if (articlesByCategory[name].articles.length < 5) articlesByCategory[name].articles.push(a);
