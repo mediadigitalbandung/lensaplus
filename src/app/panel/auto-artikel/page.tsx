@@ -168,7 +168,7 @@ export default function AutoArtikelPage() {
   }
 
   async function saveBatch(value: number) {
-    const clamped = Math.min(20, Math.max(0, Math.floor(value)));
+    const clamped = Math.min(3, Math.max(0, Math.floor(value)));
     try {
       setSavingBatch(true);
       const res = await fetch("/api/settings", {
@@ -653,18 +653,18 @@ export default function AutoArtikelPage() {
               <input
                 type="number"
                 min={0}
-                max={20}
+                max={3}
                 step={1}
                 value={batchSize}
-                onChange={(e) => setBatchSize(Math.min(20, Math.max(0, Math.floor(Number(e.target.value) || 0))))}
+                onChange={(e) => setBatchSize(Math.min(3, Math.max(0, Math.floor(Number(e.target.value) || 0))))}
                 onBlur={(e) => saveBatch(Math.floor(Number(e.target.value) || 0))}
                 disabled={loadingSettings || savingBatch}
                 className="input w-24 px-3 py-2 text-sm disabled:opacity-50"
               />
-              <span className="text-xs text-txt-secondary">artikel (0–20)</span>
+              <span className="text-xs text-txt-secondary">artikel (0–3)</span>
             </div>
             <p className="mt-1 text-xs text-txt-muted">
-              0 = pause sementara tanpa nonaktifkan toggle. 20 = batch maksimum per cycle.
+              0 = pause sementara tanpa nonaktifkan toggle. Maks 3 — paraphrase dibatasi 3 draft per cron tick agar tidak terlalu banyak menumpuk.
             </p>
           </div>
         </div>

@@ -420,12 +420,14 @@ function parseInterval(raw: string): number {
   return 60;
 }
 
-// Clamp batch size to [0, 20]. 0 means "throttle ok but produce nothing".
+// Clamp batch size to [0, 3]. Editorial cap so a single cron tick never
+// floods the queue with more than 3 paraphrased drafts. 0 means
+// "throttle ok but produce nothing".
 function parseBatch(raw: string): number {
   const n = Math.floor(Number(raw));
   if (Number.isNaN(n)) return 1;
   if (n < 0) return 0;
-  if (n > 20) return 20;
+  if (n > 3) return 3;
   return n;
 }
 
