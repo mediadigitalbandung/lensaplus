@@ -31,6 +31,8 @@ const updateSchema = z.object({
   imageSelector: z.string().max(500).optional().nullable(),
   useHeadless: z.boolean().optional(),
   waitForSelector: z.string().max(500).optional().nullable(),
+  crawlSubcategories: z.boolean().optional(),
+  crawlMaxPages: z.number().int().min(1).max(20).optional(),
   defaultTags: z.array(z.string().min(1).max(40)).max(10).optional(),
 });
 

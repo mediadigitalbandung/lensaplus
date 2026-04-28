@@ -25,6 +25,7 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { fetchListing } from "@/lib/scraper/fetch-listing";
+import { crawlListings } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
 
@@ -69,16 +70,22 @@ export async function POST(
       throw new ApiError("Tidak ada kategori untuk artikel", 500);
     }
 
-    // 1. Fetch listing
+    // 1. Fetch listing — crawl sub-categories if enabled.
     let listing;
     try {
-      listing = await fetchListing(source.listingUrl, {
+      const baseOpts = {
         articleSelector: source.articleSelector || undefined,
         titleSelector: source.titleSelector || undefined,
         imageSelector: source.imageSelector || undefined,
         useHeadless: source.useHeadless,
         waitForSelector: source.waitForSelector,
-      });
+      };
+      listing = source.crawlSubcategories
+        ? await crawlListings(source.listingUrl, {
+            ...baseOpts,
+            crawlMaxPages: source.crawlMaxPages,
+          })
+        : await fetchListing(source.listingUrl, baseOpts);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await prisma.newsSource.update({

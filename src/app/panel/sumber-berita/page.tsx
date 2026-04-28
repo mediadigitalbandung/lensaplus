@@ -58,6 +58,8 @@ interface NewsSource {
   imageSelector: string | null;
   useHeadless: boolean;
   waitForSelector: string | null;
+  crawlSubcategories: boolean;
+  crawlMaxPages: number;
   lastCheckedAt: string | null;
   lastSuccessAt: string | null;
   lastError: string | null;
@@ -314,6 +316,14 @@ export default function SumberBeritaPage() {
                         JS Render
                       </span>
                     )}
+                    {s.crawlSubcategories && (
+                      <span
+                        className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-800"
+                        title={`Deep crawl ke max ${s.crawlMaxPages} halaman sub-kategori`}
+                      >
+                        Deep Crawl
+                      </span>
+                    )}
                   </div>
                   <a
                     href={s.listingUrl}
@@ -478,6 +488,8 @@ function SourceFormModal({
   const [imageSelector, setImageSelector] = useState(source?.imageSelector || "");
   const [useHeadless, setUseHeadless] = useState(source?.useHeadless ?? false);
   const [waitForSelector, setWaitForSelector] = useState(source?.waitForSelector || "");
+  const [crawlSubcategories, setCrawlSubcategories] = useState(source?.crawlSubcategories ?? false);
+  const [crawlMaxPages, setCrawlMaxPages] = useState(source?.crawlMaxPages ?? 8);
   const [saving, setSaving] = useState(false);
   const { success, error: showError } = useToast();
 
@@ -506,6 +518,8 @@ function SourceFormModal({
         imageSelector: imageSelector.trim() || null,
         useHeadless,
         waitForSelector: waitForSelector.trim() || null,
+        crawlSubcategories,
+        crawlMaxPages: Math.max(1, Math.min(20, Number(crawlMaxPages) || 8)),
       };
       const res = await fetch(
         isEdit ? `/api/news-sources/${source!.id}` : "/api/news-sources",
@@ -668,6 +682,48 @@ function SourceFormModal({
                 />
                 <p className="mt-1 text-[10px] text-txt-muted">
                   Sistem menunggu selector ini muncul setelah JS load. Biarkan kosong untuk auto-detect.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Deep crawl — follow sub-category links */}
+          <div className="rounded-md border border-border bg-surface-container-low p-3">
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={crawlSubcategories}
+                onChange={(e) => setCrawlSubcategories(e.target.checked)}
+                className="mt-0.5 rounded"
+              />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-txt-primary">
+                  Crawl sub-kategori (deep scan)
+                </p>
+                <p className="mt-0.5 text-[11px] text-txt-muted">
+                  Selain root listing, scraper juga akan ikuti link sub-kategori 1 level (mis. <code className="font-mono">/news/infrastruktur</code>, <code className="font-mono">/news/olahraga</code>) dan kumpulkan artikel dari sana juga. Hasil di-dedup by URL.
+                </p>
+              </div>
+            </label>
+            {crawlSubcategories && (
+              <div className="mt-3">
+                <label className="mb-1 block text-[11px] font-semibold text-txt-primary">
+                  Max halaman di-crawl (1–20)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={crawlMaxPages}
+                  onChange={(e) =>
+                    setCrawlMaxPages(
+                      Math.max(1, Math.min(20, Math.floor(Number(e.target.value) || 8))),
+                    )
+                  }
+                  className="input w-24"
+                />
+                <p className="mt-1 text-[10px] text-txt-muted">
+                  Cap total halaman dikunjungi (root + sub-kategori). Default 8 — cukup untuk 8 kategori berita.
                 </p>
               </div>
             )}

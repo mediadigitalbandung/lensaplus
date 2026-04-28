@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
 import { fetchListing } from "@/lib/scraper/fetch-listing";
+import { crawlListings } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
 
@@ -99,13 +100,19 @@ async function handler(req: NextRequest) {
       };
 
       try {
-        const listing = await fetchListing(source.listingUrl, {
+        const baseOpts = {
           articleSelector: source.articleSelector || undefined,
           titleSelector: source.titleSelector || undefined,
           imageSelector: source.imageSelector || undefined,
           useHeadless: source.useHeadless,
           waitForSelector: source.waitForSelector,
-        });
+        };
+        const listing = source.crawlSubcategories
+          ? await crawlListings(source.listingUrl, {
+              ...baseOpts,
+              crawlMaxPages: source.crawlMaxPages,
+            })
+          : await fetchListing(source.listingUrl, baseOpts);
 
         const scrapedSet = new Set(source.scrapedUrls);
         const newCandidates = listing.items.filter(

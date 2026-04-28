@@ -15,6 +15,7 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { fetchListing } from "@/lib/scraper/fetch-listing";
+import { crawlListings } from "@/lib/scraper/crawl-listings";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
 
@@ -32,13 +33,31 @@ export async function POST(
     });
     if (!source) throw new ApiError("Sumber tidak ditemukan", 404);
 
-    const { items, selectorUsed } = await fetchListing(source.listingUrl, {
+    const scrapeOptions = {
       articleSelector: source.articleSelector || undefined,
       titleSelector: source.titleSelector || undefined,
       imageSelector: source.imageSelector || undefined,
       useHeadless: source.useHeadless,
       waitForSelector: source.waitForSelector,
-    });
+    };
+
+    let items;
+    let selectorUsed: string;
+    let pagesVisited: string[] = [source.listingUrl];
+
+    if (source.crawlSubcategories) {
+      const crawl = await crawlListings(source.listingUrl, {
+        ...scrapeOptions,
+        crawlMaxPages: source.crawlMaxPages,
+      });
+      items = crawl.items;
+      selectorUsed = crawl.selectorUsed;
+      pagesVisited = crawl.pagesVisited;
+    } else {
+      const r = await fetchListing(source.listingUrl, scrapeOptions);
+      items = r.items;
+      selectorUsed = r.selectorUsed;
+    }
 
     // Mark which items are already scraped (dedup).
     const scrapedSet = new Set(source.scrapedUrls);
@@ -51,7 +70,8 @@ export async function POST(
       selectorUsed,
       total: items.length,
       newCount: enriched.filter((i) => !i.alreadyScraped).length,
-      items: enriched.slice(0, 30), // cap so preview is snappy
+      items: enriched.slice(0, 60), // cap so preview is snappy
+      pagesVisited,
     });
   } catch (error) {
     return errorResponse(error);

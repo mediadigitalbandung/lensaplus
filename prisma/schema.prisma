@@ -572,6 +572,15 @@ model NewsSource {
   /// CSS selector to wait for after the page loads when in headless mode.
   /// Helps with lazy-loaded listings.
   waitForSelector  String?
+  /// Follow sub-category links from the listing page and aggregate their
+  /// article candidates too (1-level deep BFS). Useful for sites like
+  /// bandung.go.id whose root listing links to per-category pages
+  /// (/news/infrastruktur, /news/olahraga, etc.). Capped at
+  /// `crawlMaxPages` total pages.
+  crawlSubcategories Boolean @default(false)
+  /// Hard cap on pages visited during a crawl (root + sub-listings).
+  /// Anything more turns into "we're scraping their entire site".
+  crawlMaxPages    Int       @default(8)
   /// Optional manual CSS selectors when auto-detect fails.
   articleSelector  String?
   titleSelector    String?
