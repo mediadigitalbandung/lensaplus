@@ -10,8 +10,8 @@ import {
 } from "@/lib/api-utils";
 
 const bulkActionSchema = z.object({
-  action: z.enum(["archive", "delete"]),
-  ids: z.array(z.string()).min(1).max(100),
+  action: z.enum(["archive", "delete", "publish"]),
+  ids: z.array(z.string()).min(1).max(200),
 });
 
 // POST /api/articles/bulk
@@ -36,6 +36,36 @@ export async function POST(request: NextRequest) {
       );
 
       return successResponse({ count: ids.length, action: "archive" });
+    }
+
+    if (action === "publish") {
+      // Mass-publish path: status=PUBLISHED, publishedAt=now, label=VERIFIED.
+      // Skips the per-article publish-chain (Indexing API, Sorotan, social,
+      // Cloudflare purge) — a 200-article fan-out would be too slow inline.
+      // The next ISR refresh + nightly indexing cron picks them up.
+      const now = new Date();
+      const result = await prisma.article.updateMany({
+        where: {
+          id: { in: ids },
+          status: { in: ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED"] },
+        },
+        data: {
+          status: "PUBLISHED",
+          publishedAt: now,
+          verificationLabel: "VERIFIED",
+          scheduledAt: null,
+        },
+      });
+
+      await logAudit(
+        session.user.id,
+        "STATUS_CHANGE",
+        "article",
+        ids.join(","),
+        `Bulk publish ${result.count} dari ${ids.length} artikel`,
+      );
+
+      return successResponse({ count: result.count, requested: ids.length, action: "publish" });
     }
 
     if (action === "delete") {

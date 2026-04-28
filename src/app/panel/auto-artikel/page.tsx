@@ -110,6 +110,9 @@ export default function AutoArtikelPage() {
   const [publishTab, setPublishTab] = useState<"pending" | "published">("pending");
   const [page, setPage] = useState<number>(1);
   const PAGE_SIZE = 15;
+  // Bulk-action progress state — non-null while a bulk publish/delete is running.
+  const [bulkAction, setBulkAction] = useState<"publish" | "delete" | null>(null);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
 
   // Target keywords state
   const [keywords, setKeywords] = useState<TargetKeyword[]>([]);
@@ -416,6 +419,128 @@ export default function AutoArtikelPage() {
       fetchArticles();
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal menghapus");
+    }
+  }
+
+  /** Run an async action against an array of articles, sequentially.
+   * Each call is followed by a tiny delay so we don't hammer the SEO/social
+   * fan-out that fires on every publish. Updates `bulkProgress` as it goes. */
+  async function bulkRun(
+    targets: Article[],
+    action: (a: Article) => Promise<void>,
+  ) {
+    let done = 0;
+    let failed = 0;
+    setBulkProgress({ done: 0, total: targets.length });
+    for (const a of targets) {
+      try {
+        await action(a);
+      } catch {
+        failed++;
+      }
+      done++;
+      setBulkProgress({ done, total: targets.length });
+      // Small breather — keeps the publish-chain side-effects (Cloudflare
+      // purge, IndexNow, social posts) from stacking on top of each other.
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    setBulkProgress(null);
+    return { done, failed };
+  }
+
+  /** Chunk an array of IDs and fire /api/articles/bulk per chunk.
+   * Server max is 200 IDs per call. 500 articles → 3 round-trips ≈ 10s
+   * vs the old sequential per-article path which took ~75s. Trade-off:
+   * the per-article publish-chain (Sorotan generator, Cloudflare purge,
+   * social fan-out) is skipped here. Sorotan can be backfilled from
+   * /panel/sorotan; Cloudflare ISR refresh on next page hit; social fan-out
+   * for 500 posts at once would be spam and isn't desired. */
+  async function bulkApi(
+    action: "publish" | "delete",
+    ids: string[],
+  ): Promise<{ done: number; failed: number }> {
+    const CHUNK = 200;
+    let done = 0;
+    let failed = 0;
+    setBulkProgress({ done: 0, total: ids.length });
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK);
+      try {
+        const res = await fetch("/api/articles/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, ids: slice }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          failed += slice.length;
+        } else {
+          const succeeded =
+            typeof json.data?.count === "number" ? json.data.count : slice.length;
+          done += succeeded;
+          failed += slice.length - succeeded;
+        }
+      } catch {
+        failed += slice.length;
+      }
+      setBulkProgress({ done: done + failed, total: ids.length });
+    }
+    setBulkProgress(null);
+    return { done, failed };
+  }
+
+  async function handlePublishAll(visible: Article[]) {
+    const drafts = visible.filter((a) => a.status !== "PUBLISHED");
+    if (drafts.length === 0) {
+      showError("Tidak ada draf untuk dipublikasi.");
+      return;
+    }
+    const ok = await confirm({
+      title: `Publikasikan ${drafts.length} artikel?`,
+      message: `Semua ${drafts.length} draf auto-article di tab ini akan langsung dipublikasi (status PUBLISHED, label VERIFIED, publishedAt sekarang). Sorotan/social/Cloudflare-purge tidak ikut di-trigger karena bulk — jalankan via panel Sorotan kalau perlu. Tidak ada tombol undo, gunakan Takedown per artikel untuk rollback.`,
+      variant: "warning",
+    });
+    if (!ok) return;
+    setBulkAction("publish");
+    try {
+      const { done, failed } = await bulkApi(
+        "publish",
+        drafts.map((d) => d.id),
+      );
+      showSuccess(`Publish selesai: ${done} sukses${failed ? `, ${failed} gagal` : ""}.`);
+      fetchArticles();
+    } finally {
+      setBulkAction(null);
+    }
+  }
+
+  async function handleDeleteAll(visible: Article[]) {
+    if (visible.length === 0) {
+      showError("Tidak ada artikel untuk dihapus.");
+      return;
+    }
+    const ok = await confirm({
+      title: `Hapus ${visible.length} artikel?`,
+      message: `Hapus PERMANEN semua ${visible.length} artikel auto-generated di tab ini? Termasuk semua revisi, sorotan, komentar, dan report yang terkait. Tidak bisa di-undo.`,
+      variant: "danger",
+    });
+    if (!ok) return;
+    const ok2 = await confirm({
+      title: "Konfirmasi sekali lagi",
+      message: `Anda akan menghapus ${visible.length} artikel secara permanen. Lanjutkan?`,
+      variant: "danger",
+    });
+    if (!ok2) return;
+    setBulkAction("delete");
+    try {
+      const { done, failed } = await bulkApi(
+        "delete",
+        visible.map((a) => a.id),
+      );
+      showSuccess(`Hapus selesai: ${done} sukses${failed ? `, ${failed} gagal` : ""}.`);
+      fetchArticles();
+    } finally {
+      setBulkAction(null);
     }
   }
 
@@ -879,6 +1004,56 @@ export default function AutoArtikelPage() {
                   {publishedCount}
                 </span>
               </button>
+            </div>
+          );
+        })()}
+
+        {/* Bulk-action toolbar (publish all, delete all) — visible on either tab */}
+        {(() => {
+          const visible =
+            publishTab === "published"
+              ? articles.filter((a) => a.status === "PUBLISHED")
+              : articles.filter((a) => a.status !== "PUBLISHED");
+          const isBusy = bulkAction !== null;
+          if (visible.length === 0 && !isBusy) return null;
+          return (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-secondary/40 px-5 py-3">
+              <p className="text-xs text-txt-secondary">
+                {isBusy && bulkProgress ? (
+                  <span className="flex items-center gap-2 font-semibold text-primary">
+                    <Loader2 size={12} className="animate-spin" />
+                    {bulkAction === "publish" ? "Publish" : "Hapus"} massal —{" "}
+                    {bulkProgress.done} / {bulkProgress.total}
+                  </span>
+                ) : (
+                  <>
+                    Aksi massal — berlaku untuk semua{" "}
+                    <strong>{visible.length}</strong> artikel di tab ini.
+                  </>
+                )}
+              </p>
+              <div className="flex items-center gap-2">
+                {publishTab === "pending" && (
+                  <button
+                    type="button"
+                    onClick={() => handlePublishAll(visible)}
+                    disabled={isBusy}
+                    className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                  >
+                    <Upload size={12} />
+                    Publish Semuanya
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteAll(visible)}
+                  disabled={isBusy}
+                  className="flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+                >
+                  <Trash2 size={12} />
+                  Hapus Semuanya
+                </button>
+              </div>
             </div>
           );
         })()}
