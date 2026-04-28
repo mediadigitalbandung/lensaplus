@@ -19,6 +19,8 @@ import {
   AlertCircle,
   Zap,
   Bot,
+  ExternalLink,
+  Eye,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { EDITOR_ROLES } from "@/lib/roles";
@@ -254,7 +256,16 @@ export default function SorotanPage() {
             artikel utama.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="/sorotan"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-ghost flex items-center gap-2 px-3 py-2.5 text-sm"
+            title="Buka halaman publik Sorotan di tab baru"
+          >
+            <ExternalLink size={14} /> Lihat Halaman Publik
+          </a>
           <button
             onClick={fetchData}
             className="btn-ghost flex items-center gap-2 px-3 py-2.5 text-sm"
@@ -415,11 +426,32 @@ export default function SorotanPage() {
       <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4">
         <div className="flex items-start gap-3">
           <Sparkles size={16} className="mt-0.5 text-blue-600 shrink-0" />
-          <p className="text-xs text-blue-700">
-            Sorotan dibuat otomatis via AI (3 angle: KRONOLOGI, ANALISIS,
-            DAMPAK). Setiap artikel idealnya punya 3 sorotan. Artikel dengan
-            sorotan 0–2 bisa di-generate ulang.
-          </p>
+          <div className="text-xs text-blue-700 space-y-1">
+            <p>
+              Sorotan dibuat otomatis via AI (3 angle: KRONOLOGI, ANALISIS,
+              DAMPAK). Setiap artikel idealnya punya 3 sorotan.
+            </p>
+            <p>
+              <span className="font-semibold">Halaman publik</span>:{" "}
+              <a
+                href="/sorotan"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-blue-900"
+              >
+                /sorotan
+              </a>{" "}
+              (index) — pola URL per sorotan:{" "}
+              <code className="font-mono bg-blue-100 px-1 rounded">
+                /sorotan/&lt;slug-artikel&gt;-&lt;angle&gt;
+              </code>
+              , mis.{" "}
+              <code className="font-mono bg-blue-100 px-1 rounded">
+                /sorotan/regulasi-ai-di-indonesia-kronologi
+              </code>
+              .
+            </p>
+          </div>
         </div>
       </div>
 
@@ -471,18 +503,30 @@ export default function SorotanPage() {
                       {formatDate(a.publishedAt)}
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <button
-                        onClick={() => handleSingle(a.id)}
-                        disabled={singleProcessing === a.id}
-                        className="btn-secondary inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-                      >
-                        {singleProcessing === a.id ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          <Sparkles size={12} />
-                        )}
-                        Generate
-                      </button>
+                      <div className="inline-flex items-center gap-1">
+                        <a
+                          href={`/sorotan/${a.slug}-kronologi`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-ghost inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium hover:text-primary"
+                          title="Lihat halaman Sorotan untuk artikel ini (angle Kronologi)"
+                        >
+                          <Eye size={12} />
+                          Lihat
+                        </a>
+                        <button
+                          onClick={() => handleSingle(a.id)}
+                          disabled={singleProcessing === a.id}
+                          className="btn-secondary inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                        >
+                          {singleProcessing === a.id ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Sparkles size={12} />
+                          )}
+                          Generate
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
