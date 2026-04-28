@@ -782,9 +782,14 @@ function PreviewModal({
   const { success, error: showError } = useToast();
   // Track per-item state: idle | running | done | error.
   // Keyed by URL so the source listing order stays stable.
-  const [itemState, setItemState] = useState<
-    Record<string, { status: "idle" | "running" | "done" | "error"; message?: string }>
-  >({});
+  // `articleId` is set when scrape-one succeeds so the card can link
+  // straight to the editor.
+  interface ItemState {
+    status: "idle" | "running" | "done" | "error";
+    message?: string;
+    articleId?: string;
+  }
+  const [itemState, setItemState] = useState<Record<string, ItemState>>({});
   // Mutable copy of "alreadyScraped" so the UI flips immediately after a
   // successful generate without requiring a full preview refetch.
   const [scrapedSet, setScrapedSet] = useState<Set<string>>(
@@ -812,11 +817,17 @@ function PreviewModal({
       const d = json.data;
       if (d.skipped === "already-scraped") {
         setScrapedSet((prev) => new Set(prev).add(url));
+        // No articleId returned on the dedup early-exit — fall back to URL-based
+        // link to the panel article list filtered by source URL won't work, so
+        // mark "done" without an articleId; user opens via panel artikel list.
         setItemState((s) => ({ ...s, [url]: { status: "done" } }));
         return;
       }
       setScrapedSet((prev) => new Set(prev).add(url));
-      setItemState((s) => ({ ...s, [url]: { status: "done" } }));
+      setItemState((s) => ({
+        ...s,
+        [url]: { status: "done", articleId: d.articleId },
+      }));
       success(`Draft dibuat: "${d.title}"`);
       onScraped();
     } catch (e) {
@@ -922,40 +933,55 @@ function PreviewModal({
                       >
                         Lihat sumber <ExternalLink size={10} />
                       </a>
-                      <button
-                        type="button"
-                        onClick={() => handleGenerate(item.url)}
-                        disabled={isRunning || isDone}
-                        className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed ${
-                          isDone
-                            ? "bg-emerald-100 text-emerald-700"
-                            : isRunning
+                      {isDone && state?.articleId ? (
+                        <Link
+                          href={`/panel/artikel/${state.articleId}/edit`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-emerald-700"
+                          title="Buka draft di editor (tab baru)"
+                        >
+                          <CheckCircle size={11} /> Buka Draft
+                          <ExternalLink size={10} className="opacity-70" />
+                        </Link>
+                      ) : isDone ? (
+                        // Already-scraped early-exit: no articleId surfaced.
+                        // Send user to the article list filtered to scraper output.
+                        <Link
+                          href="/panel/artikel?status=DRAFT&origin=scraper"
+                          target="_blank"
+                          className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-200"
+                          title="Buka daftar draft hasil scraper"
+                        >
+                          <CheckCircle size={11} /> Lihat di list
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleGenerate(item.url)}
+                          disabled={isRunning}
+                          className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed ${
+                            isRunning
                               ? "bg-primary/10 text-primary"
                               : "bg-primary text-white hover:bg-primary-dark"
-                        }`}
-                        title={
-                          isDone
-                            ? "Sudah dibuat sebagai draft"
-                            : isRunning
+                          }`}
+                          title={
+                            isRunning
                               ? "Sedang generate..."
                               : "Generate paraphrase jadi draft"
-                        }
-                      >
-                        {isRunning ? (
-                          <>
-                            <Loader2 size={11} className="animate-spin" />
-                            Generate...
-                          </>
-                        ) : isDone ? (
-                          <>
-                            <CheckCircle size={11} /> Draft
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles size={11} /> Generate
-                          </>
-                        )}
-                      </button>
+                          }
+                        >
+                          {isRunning ? (
+                            <>
+                              <Loader2 size={11} className="animate-spin" />
+                              Generate...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={11} /> Generate
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                     {state?.status === "error" && state.message && (
                       <p className="text-[10px] text-red-600">{state.message}</p>
