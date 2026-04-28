@@ -155,8 +155,9 @@ export default function ArtikelPage() {
   const userRoleForActions = (session?.user as { role?: string } | undefined)?.role || "";
   const canPublishDirect =
     userRoleForActions === "SUPER_ADMIN" || userRoleForActions === "CHIEF_EDITOR";
-  // Editors default to IN_REVIEW, creators default to ALL
-  const [filterStatus, setFilterStatus] = useState(isEditor ? "IN_REVIEW" : "ALL");
+  // Default to ALL for everyone — editors prefer to see the full pipeline
+  // at a glance and switch to "Menunggu Review" only when actively triaging.
+  const [filterStatus, setFilterStatus] = useState("ALL");
   // Origin filter: "all" | "manual" | "auto" — lets staff separate their own
   // articles from cron-generated drafts.
   const [filterOrigin, setFilterOrigin] = useState<"all" | "manual" | "cron" | "scraper">("all");
@@ -165,13 +166,6 @@ export default function ArtikelPage() {
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
-  // Update default filter when session loads
-  useEffect(() => {
-    if (isEditor) {
-      setFilterStatus("IN_REVIEW");
-    }
-  }, [isEditor]);
 
   const fetchArticles = useCallback(async () => {
     if (!session?.user) return;
