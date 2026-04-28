@@ -141,8 +141,10 @@ function extractFromCard(
   }
   if (!title || title.length < 8) return null;
 
-  // Link: use anchor inside heading if present, else first anchor
-  let href = $card.find("h1 a, h2 a, h3 a, h4 a").first().attr("href");
+  // Link: explicit href on the card itself (Persib-style <a class="card">),
+  // else anchor inside a heading, else first anchor child.
+  let href = $card.is("a") ? $card.attr("href") : undefined;
+  if (!href) href = $card.find("h1 a, h2 a, h3 a, h4 a").first().attr("href");
   if (!href) href = $card.find("a[href]").first().attr("href");
   if (!href) return null;
   const url = absolutise(href, baseUrl);
