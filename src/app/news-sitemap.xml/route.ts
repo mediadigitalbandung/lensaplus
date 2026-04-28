@@ -23,10 +23,21 @@ export async function GET() {
     take: 1000,
   });
 
+  // Resolve <image:loc> to an absolute URL. Google rejects the news
+  // sitemap when <image:loc> is path-relative ("/uploads/foo.jpg"),
+  // which is what the previous version emitted whenever featuredImage
+  // came from our local uploads pipeline.
+  const toAbsoluteImageUrl = (raw: string): string => {
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (raw.startsWith("//")) return `https:${raw}`;
+    if (raw.startsWith("/")) return `${siteUrl}${raw}`;
+    return `${siteUrl}/${raw}`;
+  };
+
   const items = articles.map((a) => {
     const keywords = a.tags.map((t) => t.name).join(", ");
     const imageTag = a.featuredImage
-      ? `<image:image><image:loc>${escXml(a.featuredImage)}</image:loc><image:title>${escXml(a.title)}</image:title></image:image>`
+      ? `<image:image><image:loc>${escXml(toAbsoluteImageUrl(a.featuredImage))}</image:loc><image:title>${escXml(a.title)}</image:title></image:image>`
       : "";
     return `<url>
     <loc>${siteUrl}/berita/${a.slug}</loc>
