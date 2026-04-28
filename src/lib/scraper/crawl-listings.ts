@@ -26,6 +26,10 @@ import type { ListingItem, ScraperOptions } from "./types";
 
 interface CrawlOptions extends ScraperOptions {
   crawlMaxPages?: number;
+  /** Number of paginated listing pages to follow (1 = root only). */
+  paginationMaxPages?: number;
+  /** Pagination URL template, e.g. "?page={n}" or "/page/{n}". */
+  paginationPattern?: string | null;
 }
 
 interface CrawlResult {
@@ -51,6 +55,81 @@ const ARTICLE_PATH_HINTS = [
 
 function looksLikeArticle(pathname: string): boolean {
   return ARTICLE_PATH_HINTS.some((re) => re.test(pathname));
+}
+
+/**
+ * Build the list of paginated listing URLs derived from `rootUrl`.
+ *
+ * Algorithm:
+ *   1. If `pattern` is supplied, substitute `{n}` for each page number.
+ *   2. Else auto-detect: if the root URL already has `?page=N`, `?p=N`,
+ *      or `/page/N`, reuse that pattern.
+ *   3. Else default to "?page={n}" — the most common convention.
+ *
+ * Always emits page numbers 1..maxPages; root URL stays as-is for page 1
+ * unless it would conflict with the detected pattern, in which case the
+ * pattern wins.
+ */
+function expandPagination(
+  rootUrl: string,
+  maxPages: number,
+  pattern: string | null | undefined,
+): string[] {
+  if (maxPages <= 1) return [rootUrl];
+
+  // Detect/normalise pattern.
+  let template = (pattern || "").trim();
+  let baseUrl = rootUrl;
+
+  if (!template) {
+    // Auto-detect from root URL.
+    try {
+      const u = new URL(rootUrl);
+      if (u.searchParams.has("page")) {
+        template = "?page={n}";
+        u.searchParams.delete("page");
+        baseUrl = u.toString().replace(/\?$/, "");
+      } else if (u.searchParams.has("p")) {
+        template = "?p={n}";
+        u.searchParams.delete("p");
+        baseUrl = u.toString().replace(/\?$/, "");
+      } else if (/\/page\/\d+\/?$/.test(u.pathname)) {
+        template = "/page/{n}";
+        u.pathname = u.pathname.replace(/\/page\/\d+\/?$/, "");
+        baseUrl = u.toString();
+      } else {
+        template = "?page={n}";
+      }
+    } catch {
+      template = "?page={n}";
+    }
+  } else if (rootUrl.includes("?page=") || rootUrl.includes("?p=")) {
+    // Strip existing pagination from rootUrl to avoid duplication.
+    try {
+      const u = new URL(rootUrl);
+      u.searchParams.delete("page");
+      u.searchParams.delete("p");
+      baseUrl = u.toString().replace(/\?$/, "");
+    } catch {
+      /* keep baseUrl as-is */
+    }
+  }
+
+  const urls: string[] = [];
+  for (let n = 1; n <= maxPages; n++) {
+    const suffix = template.replace(/\{n\}/g, String(n));
+    // If template starts with `?` we glue with `?` or `&` depending on baseUrl.
+    if (suffix.startsWith("?")) {
+      const glue = baseUrl.includes("?") ? "&" + suffix.slice(1) : suffix;
+      urls.push(baseUrl + glue);
+    } else {
+      // Path-style: glue without doubling slashes.
+      const trimmed = baseUrl.replace(/\/$/, "");
+      const path = suffix.startsWith("/") ? suffix : "/" + suffix;
+      urls.push(trimmed + path);
+    }
+  }
+  return urls;
 }
 
 /** Extract anchors that look like sub-listing pages. */
@@ -136,27 +215,55 @@ export async function crawlListings(
   rootUrl: string,
   options: CrawlOptions = {},
 ): Promise<CrawlResult> {
-  const maxPages = Math.max(1, Math.min(options.crawlMaxPages ?? 8, 20));
-  const visited = new Set<string>([rootUrl]);
+  const maxPages = Math.max(1, Math.min(options.crawlMaxPages ?? 8, 50));
+  const paginationMax = Math.max(1, Math.min(options.paginationMaxPages ?? 1, 30));
+  const visited = new Set<string>();
   const queue: string[] = [];
   const allItems: ListingItem[] = [];
   const pagesVisited: string[] = [];
+  let firstSelectorUsed = "";
 
-  // 1. Fetch root via existing fetchListing (uses card detection logic).
-  const rootResult = await fetchListing(rootUrl, options);
-  pagesVisited.push(rootUrl);
-  allItems.push(...rootResult.items);
+  // 1. Build the paginated listing URL set (e.g. ?page=1, ?page=2, …).
+  //    If paginationMax = 1 this is just [rootUrl].
+  const paginatedRoots = expandPagination(
+    rootUrl,
+    paginationMax,
+    options.paginationPattern,
+  );
 
-  // 2. Collect candidate sub-listing URLs from the root page.
-  const { html: rootHtml } = await getRawHtml(rootUrl, options);
-  for (const sub of findSubListings(rootHtml, rootUrl, rootUrl)) {
-    if (!visited.has(sub) && visited.size < maxPages) {
-      visited.add(sub);
-      queue.push(sub);
+  // 2. Fetch each paginated root, aggregate cards. First page also feeds
+  //    sub-listing discovery.
+  for (const pageUrl of paginatedRoots) {
+    if (visited.has(pageUrl)) continue;
+    visited.add(pageUrl);
+    if (pagesVisited.length >= maxPages) break;
+    try {
+      const r = await fetchListing(pageUrl, options);
+      pagesVisited.push(pageUrl);
+      allItems.push(...r.items);
+      if (!firstSelectorUsed) firstSelectorUsed = r.selectorUsed;
+    } catch {
+      pagesVisited.push(pageUrl);
     }
   }
 
-  // 3. BFS through sub-listings — extract candidates from each.
+  // 3. From the first paginated root only, discover sub-listing URLs to
+  //    queue. Skip if we'd already exceed maxPages.
+  if (pagesVisited.length < maxPages) {
+    try {
+      const { html: rootHtml } = await getRawHtml(rootUrl, options);
+      for (const sub of findSubListings(rootHtml, rootUrl, rootUrl)) {
+        if (!visited.has(sub) && visited.size < maxPages) {
+          visited.add(sub);
+          queue.push(sub);
+        }
+      }
+    } catch {
+      /* root might fail headless render — fine, we already have paginated items */
+    }
+  }
+
+  // 4. BFS through sub-listings — extract candidates from each.
   while (queue.length > 0 && pagesVisited.length < maxPages) {
     const url = queue.shift()!;
     try {
@@ -182,6 +289,6 @@ export async function crawlListings(
   return {
     items: deduped,
     pagesVisited,
-    selectorUsed: rootResult.selectorUsed,
+    selectorUsed: firstSelectorUsed || "(no cards detected)",
   };
 }

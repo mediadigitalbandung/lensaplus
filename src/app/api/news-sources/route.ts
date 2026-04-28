@@ -34,7 +34,9 @@ const createSchema = z.object({
   useHeadless: z.boolean().optional(),
   waitForSelector: z.string().max(500).optional().nullable(),
   crawlSubcategories: z.boolean().optional(),
-  crawlMaxPages: z.number().int().min(1).max(20).optional(),
+  crawlMaxPages: z.number().int().min(1).max(50).optional(),
+  paginationMaxPages: z.number().int().min(1).max(30).optional(),
+  paginationPattern: z.string().max(60).optional().nullable(),
   defaultTags: z.array(z.string().min(1).max(40)).max(10).optional(),
 });
 
@@ -87,6 +89,8 @@ export async function POST(request: NextRequest) {
         waitForSelector: data.waitForSelector || null,
         crawlSubcategories: data.crawlSubcategories ?? false,
         crawlMaxPages: data.crawlMaxPages ?? 8,
+        paginationMaxPages: data.paginationMaxPages ?? 1,
+        paginationPattern: data.paginationPattern || null,
         defaultTags: data.defaultTags ?? [],
       },
     });

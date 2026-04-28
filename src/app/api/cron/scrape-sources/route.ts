@@ -107,10 +107,14 @@ async function handler(req: NextRequest) {
           useHeadless: source.useHeadless,
           waitForSelector: source.waitForSelector,
         };
-        const listing = source.crawlSubcategories
+        const wantsMultiPage =
+          source.crawlSubcategories || (source.paginationMaxPages ?? 1) > 1;
+        const listing = wantsMultiPage
           ? await crawlListings(source.listingUrl, {
               ...baseOpts,
               crawlMaxPages: source.crawlMaxPages,
+              paginationMaxPages: source.paginationMaxPages,
+              paginationPattern: source.paginationPattern,
             })
           : await fetchListing(source.listingUrl, baseOpts);
 

@@ -45,10 +45,15 @@ export async function POST(
     let selectorUsed: string;
     let pagesVisited: string[] = [source.listingUrl];
 
-    if (source.crawlSubcategories) {
+    // Use crawlListings whenever sub-category crawl OR pagination is enabled.
+    const wantsMultiPage =
+      source.crawlSubcategories || (source.paginationMaxPages ?? 1) > 1;
+    if (wantsMultiPage) {
       const crawl = await crawlListings(source.listingUrl, {
         ...scrapeOptions,
         crawlMaxPages: source.crawlMaxPages,
+        paginationMaxPages: source.paginationMaxPages,
+        paginationPattern: source.paginationPattern,
       });
       items = crawl.items;
       selectorUsed = crawl.selectorUsed;

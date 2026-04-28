@@ -581,6 +581,15 @@ model NewsSource {
   /// Hard cap on pages visited during a crawl (root + sub-listings).
   /// Anything more turns into "we're scraping their entire site".
   crawlMaxPages    Int       @default(8)
+  /// How many paginated pages to follow on the listing page itself
+  /// (e.g. /media?page=1, /media?page=2, …). 1 = no pagination follow
+  /// (just the root). Useful for archives like persib.co.id/media that
+  /// have 1000+ pages — set to e.g. 5 for the 5 most recent pages.
+  paginationMaxPages Int     @default(1)
+  /// Optional explicit pagination URL template, e.g. "?page={n}" or
+  /// "/page/{n}". When null, the scraper auto-detects from the URL
+  /// (?page=, ?p=, /page/) or defaults to "?page={n}".
+  paginationPattern  String?
   /// Optional manual CSS selectors when auto-detect fails.
   articleSelector  String?
   titleSelector    String?
