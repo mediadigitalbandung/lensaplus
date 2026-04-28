@@ -20,6 +20,7 @@ import {
   UserCheck,
   Download,
   Archive,
+  ImageOff,
 } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-utils";
 
@@ -463,6 +464,7 @@ export default function ArtikelPage() {
                         aria-label="Pilih semua artikel"
                       />
                     </th>
+                    <th className="hidden sm:table-cell w-16 px-2 py-3.5 text-center text-sm font-medium text-txt-secondary">Foto</th>
                     <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Judul</th>
                     <th className="hidden md:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Kategori</th>
                     {isEditor && (
@@ -490,6 +492,33 @@ export default function ArtikelPage() {
                             className="h-4 w-4 rounded border-border text-primary accent-goto-green"
                             aria-label={`Pilih artikel ${article.title}`}
                           />
+                        </td>
+                        <td className="hidden sm:table-cell w-16 px-2 py-2 align-middle">
+                          {article.featuredImage ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={article.featuredImage}
+                              alt=""
+                              className="h-12 w-12 rounded-md object-cover ring-1 ring-border mx-auto"
+                              loading="lazy"
+                              onError={(e) => {
+                                const t = e.target as HTMLImageElement;
+                                t.style.display = "none";
+                                t.parentElement?.classList.add("flex", "items-center", "justify-center");
+                                const icon = document.createElement("div");
+                                icon.className = "h-12 w-12 rounded-md bg-surface-container flex items-center justify-center text-txt-muted/50";
+                                icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H3M3 8l4-4h10l4 4M3 8v13M21 8v13M5 21h14"/></svg>';
+                                t.parentElement?.appendChild(icon);
+                              }}
+                            />
+                          ) : (
+                            <div
+                              className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-surface-container text-txt-muted/40"
+                              title="Tidak ada gambar utama"
+                            >
+                              <ImageOff size={16} />
+                            </div>
+                          )}
                         </td>
                         <td className="max-w-[200px] sm:max-w-[300px] px-3 sm:px-5 py-4">
                           <button
