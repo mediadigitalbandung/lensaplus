@@ -57,6 +57,9 @@ interface StatsItem {
   value: string;
   icon: React.ElementType;
   color: string;
+  href?: string;
+  hint?: string;
+  accent?: "primary" | "warn" | "danger" | "info" | "ok" | "muted";
 }
 
 import { CREATOR_ROLES, EDITOR_ROLES } from "@/lib/roles";
@@ -119,6 +122,102 @@ function LoadingSkeleton() {
 
 function formatNumber(num: number): string {
   return num.toLocaleString("id-ID");
+}
+
+const accentBar: Record<NonNullable<StatsItem["accent"]>, string> = {
+  primary: "from-primary/80 via-primary/40 to-transparent",
+  warn: "from-yellow-400/80 via-yellow-300/40 to-transparent",
+  danger: "from-red-500/80 via-red-400/40 to-transparent",
+  info: "from-blue-500/80 via-blue-400/40 to-transparent",
+  ok: "from-emerald-500/80 via-emerald-400/40 to-transparent",
+  muted: "from-txt-muted/40 via-txt-muted/20 to-transparent",
+};
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  subtitle,
+  action,
+}: {
+  icon: React.ElementType;
+  title: string;
+  subtitle?: string;
+  action?: { label: string; href: string };
+}) {
+  return (
+    <div className="mb-3 flex items-end justify-between gap-3">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary ring-1 ring-primary/10">
+          <Icon size={14} />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-[13px] sm:text-sm font-bold text-txt-primary tracking-tight truncate">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-[10px] sm:text-[11px] text-txt-muted truncate font-medium">
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+      {action && (
+        <Link
+          href={action.href}
+          className="text-xs font-semibold text-primary hover:text-primary-dark transition-colors whitespace-nowrap"
+        >
+          {action.label} &rarr;
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function PremiumStatCard({ stat }: { stat: StatsItem }) {
+  const Icon = stat.icon;
+  const isClickable = !!stat.href;
+  const Wrapper: any = isClickable ? Link : "div";
+  const wrapperProps = isClickable ? { href: stat.href! } : {};
+  const accent = stat.accent ?? "info";
+
+  return (
+    <Wrapper
+      {...wrapperProps}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface to-surface-secondary/30 p-3 sm:p-4 shadow-card transition-all duration-200 ${
+        isClickable ? "hover:-translate-y-0.5 hover:shadow-ambient hover:border-primary/30 cursor-pointer" : ""
+      }`}
+      aria-label={isClickable ? `Buka ${stat.label}` : undefined}
+    >
+      {/* Top accent bar */}
+      <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${accentBar[accent]} opacity-60 group-hover:opacity-100 transition-opacity`} />
+
+      <div className="flex items-start justify-between gap-2">
+        <div className={`inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl ${stat.color} shadow-sm ring-1 ring-inset ring-black/5`}>
+          <Icon size={16} />
+        </div>
+        {isClickable && (
+          <ChevronRight
+            size={14}
+            className="text-txt-muted opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all -translate-x-1 group-hover:translate-x-0"
+          />
+        )}
+      </div>
+
+      <div className="mt-2.5">
+        <p className="text-xl sm:text-2xl xl:text-[28px] font-extrabold leading-none text-txt-primary tabular-nums tracking-tight">
+          {stat.value}
+        </p>
+        <p className="mt-1.5 text-[11px] sm:text-xs font-semibold text-txt-secondary truncate">
+          {stat.label}
+        </p>
+        {stat.hint && (
+          <p className="mt-0.5 text-[10px] sm:text-[11px] text-txt-muted truncate font-medium">
+            {stat.hint}
+          </p>
+        )}
+      </div>
+    </Wrapper>
+  );
 }
 
 function formatDate(dateStr: string): string {
@@ -786,13 +885,13 @@ export default function DashboardPage() {
             .reduce((sum, a) => sum + (a.viewCount || 0), 0);
 
           setStats([
-            { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50" },
-            { label: "Total Tayangan", value: formatNumber(totalViews), icon: Eye, color: "text-primary bg-primary-light" },
-            { label: "Menunggu Review", value: pendingReview.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50" },
-            { label: "Dipublikasi", value: formatNumber(published), icon: CheckCircle, color: "text-primary bg-primary-light" },
-            { label: "Dijadwalkan", value: scheduled.toString(), icon: CalendarClock, color: "text-blue-500 bg-blue-50" },
-            { label: "Laporan Masuk", value: reportsPending.toString(), icon: AlertTriangle, color: "text-red-500 bg-red-50" },
-            { label: "Tayangan Hari Ini", value: formatNumber(todayViews), icon: TrendingUp, color: "text-purple-500 bg-purple-50" },
+            { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50", href: "/panel/artikel", accent: "info", hint: "Semua status" },
+            { label: "Total Tayangan", value: formatNumber(totalViews), icon: Eye, color: "text-primary bg-primary-light", href: "/panel/statistik", accent: "primary", hint: "Akumulasi semua artikel" },
+            { label: "Tayangan Hari Ini", value: formatNumber(todayViews), icon: TrendingUp, color: "text-purple-500 bg-purple-50", href: "/panel/statistik", accent: "primary", hint: "Artikel published hari ini" },
+            { label: "Menunggu Review", value: pendingReview.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50", href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: pendingReview > 0 ? "Perlu tindakan editor" : "Antrean kosong" },
+            { label: "Dipublikasi", value: formatNumber(published), icon: CheckCircle, color: "text-primary bg-primary-light", href: "/panel/artikel?status=PUBLISHED", accent: "ok", hint: "Live di website" },
+            { label: "Dijadwalkan", value: scheduled.toString(), icon: CalendarClock, color: "text-blue-500 bg-blue-50", href: "/panel/artikel?status=APPROVED", accent: "info", hint: "Menunggu auto-publish" },
+            { label: "Laporan Masuk", value: reportsPending.toString(), icon: AlertTriangle, color: "text-red-500 bg-red-50", href: "/panel/laporan", accent: "danger", hint: reportsPending > 0 ? "Perlu ditinjau" : "Tidak ada laporan" },
           ]);
 
           // Extra cards from aggregated dashboard-stats
@@ -806,19 +905,19 @@ export default function DashboardPage() {
                 : formatNumber(aiTokens);
 
             setExtraStats([
-              { label: "Total Komentar", value: formatNumber(dashStats.comments?.total || 0), icon: MessageSquare, color: "text-blue-500 bg-blue-50" },
-              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50" },
-              { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), icon: Highlighter, color: "text-amber-500 bg-amber-50" },
-              { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50" },
-              { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50" },
-              { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50" },
-              { label: "Token AI (30hr)", value: aiTokensDisplay, icon: Bot, color: "text-indigo-500 bg-indigo-50" },
-              { label: "Total Kategori", value: formatNumber(dashStats.categories?.total || 0), icon: Folder, color: "text-orange-500 bg-orange-50" },
-              { label: "Total Tag", value: formatNumber(dashStats.tags?.total || 0), icon: Tag, color: "text-teal-500 bg-teal-50" },
-              { label: "Pengguna Aktif", value: formatNumber(dashStats.users?.active || 0), icon: Users, color: "text-blue-500 bg-blue-50" },
-              { label: "Iklan Aktif", value: formatNumber(dashStats.ads?.active || 0), icon: Megaphone, color: "text-rose-500 bg-rose-50" },
-              { label: "Sumber Berita Aktif", value: formatNumber(dashStats.newsSources?.active || 0), icon: Newspaper, color: "text-cyan-600 bg-cyan-50" },
-              { label: "Sidang Mendatang", value: formatNumber(dashStats.courtSchedules?.upcoming || 0), icon: Gavel, color: "text-stone-500 bg-stone-100" },
+              { label: "Total Komentar", value: formatNumber(dashStats.comments?.total || 0), icon: MessageSquare, color: "text-blue-500 bg-blue-50", href: "/panel/komentar", accent: "info", hint: "Total semua komentar" },
+              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50", href: "/panel/komentar", accent: "warn", hint: "Belum disetujui" },
+              { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), icon: Highlighter, color: "text-amber-500 bg-amber-50", href: "/panel/sorotan", accent: "primary", hint: "Variasi SEO artikel" },
+              { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50", href: "/panel/polling", accent: "info", hint: `${dashStats.polls?.active || 0} aktif` },
+              { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50", href: "/panel/dokumentasi", accent: "ok", hint: `${dashStats.glossary?.published || 0} dipublikasi` },
+              { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50", href: "/panel/social", accent: "primary", hint: "Bulan ini" },
+              { label: "Token AI (30hr)", value: aiTokensDisplay, icon: Bot, color: "text-indigo-500 bg-indigo-50", href: "/panel/ai-log", accent: "info", hint: "Konsumsi 30 hari" },
+              { label: "Total Kategori", value: formatNumber(dashStats.categories?.total || 0), icon: Folder, color: "text-orange-500 bg-orange-50", href: "/panel/kategori", accent: "muted", hint: "Taksonomi utama" },
+              { label: "Total Tag", value: formatNumber(dashStats.tags?.total || 0), icon: Tag, color: "text-teal-500 bg-teal-50", href: "/panel/tags", accent: "muted", hint: "Taksonomi sekunder" },
+              { label: "Pengguna Aktif", value: formatNumber(dashStats.users?.active || 0), icon: Users, color: "text-blue-500 bg-blue-50", href: "/panel/pengguna", accent: "info", hint: `${dashStats.users?.total || 0} total` },
+              { label: "Iklan Aktif", value: formatNumber(dashStats.ads?.active || 0), icon: Megaphone, color: "text-rose-500 bg-rose-50", href: "/panel/iklan", accent: "danger", hint: `${dashStats.ads?.total || 0} total` },
+              { label: "Sumber Berita Aktif", value: formatNumber(dashStats.newsSources?.active || 0), icon: Newspaper, color: "text-cyan-600 bg-cyan-50", href: "/panel/sumber-berita", accent: "info", hint: "Untuk auto-artikel" },
+              { label: "Sidang Mendatang", value: formatNumber(dashStats.courtSchedules?.upcoming || 0), icon: Gavel, color: "text-stone-500 bg-stone-100", href: "/panel/jadwal-sidang", accent: "muted", hint: "Terjadwal" },
             ]);
           }
 
@@ -834,10 +933,10 @@ export default function DashboardPage() {
           const myPublished = fetchedArticles.filter((a) => a.status === "PUBLISHED").length;
 
           setStats([
-            { label: "Artikel Saya", value: formatNumber(myTotal), icon: FileText, color: "text-blue-500 bg-blue-50" },
-            { label: "Draf Saya", value: myDrafts.toString(), icon: FileText, color: "text-surface-tertiary bg-surface-secondary" },
-            { label: "Menunggu Review", value: myPendingReview.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50" },
-            { label: "Dipublikasi", value: formatNumber(myPublished), icon: CheckCircle, color: "text-primary bg-primary-light" },
+            { label: "Artikel Saya", value: formatNumber(myTotal), icon: FileText, color: "text-blue-500 bg-blue-50", href: "/panel/artikel", accent: "info", hint: "Semua status" },
+            { label: "Draf Saya", value: myDrafts.toString(), icon: FileText, color: "text-surface-tertiary bg-surface-secondary", href: "/panel/artikel?status=DRAFT", accent: "muted", hint: "Belum dikirim" },
+            { label: "Menunggu Review", value: myPendingReview.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50", href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: "Diproses editor" },
+            { label: "Dipublikasi", value: formatNumber(myPublished), icon: CheckCircle, color: "text-primary bg-primary-light", href: "/panel/artikel?status=PUBLISHED", accent: "ok", hint: "Live di website" },
           ]);
 
           // Recent: my articles sorted by createdAt
@@ -856,20 +955,20 @@ export default function DashboardPage() {
           const totalArticles = fetchedArticles.length;
 
           setStats([
-            { label: "Antrean Review", value: reviewQueue.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50" },
-            { label: "Disetujui Hari Ini", value: approvedToday.toString(), icon: CheckCircle, color: "text-primary bg-primary-light" },
-            { label: "Ditolak", value: rejected.toString(), icon: XCircle, color: "text-red-500 bg-red-50" },
-            { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50" },
+            { label: "Antrean Review", value: reviewQueue.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50", href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: reviewQueue > 0 ? "Perlu tindakan" : "Antrean kosong" },
+            { label: "Disetujui Hari Ini", value: approvedToday.toString(), icon: CheckCircle, color: "text-primary bg-primary-light", href: "/panel/riwayat-review", accent: "ok", hint: "Approval hari ini" },
+            { label: "Ditolak", value: rejected.toString(), icon: XCircle, color: "text-red-500 bg-red-50", href: "/panel/artikel?status=REJECTED", accent: "danger", hint: "Perlu revisi" },
+            { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50", href: "/panel/artikel", accent: "info", hint: "Seluruh artikel" },
           ]);
 
           if (dashStats) {
             setExtraStats([
-              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50" },
-              { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), icon: Highlighter, color: "text-amber-500 bg-amber-50" },
-              { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50" },
-              { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50" },
-              { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50" },
-              { label: "Sidang Mendatang", value: formatNumber(dashStats.courtSchedules?.upcoming || 0), icon: Gavel, color: "text-stone-500 bg-stone-100" },
+              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50", href: "/panel/komentar", accent: "warn", hint: "Belum disetujui" },
+              { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), icon: Highlighter, color: "text-amber-500 bg-amber-50", href: "/panel/sorotan", accent: "primary", hint: "Variasi SEO artikel" },
+              { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50", href: "/panel/polling", accent: "info", hint: `${dashStats.polls?.active || 0} aktif` },
+              { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50", href: "/panel/dokumentasi", accent: "ok", hint: `${dashStats.glossary?.published || 0} dipublikasi` },
+              { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50", href: "/panel/social", accent: "primary", hint: "Bulan ini" },
+              { label: "Sidang Mendatang", value: formatNumber(dashStats.courtSchedules?.upcoming || 0), icon: Gavel, color: "text-stone-500 bg-stone-100", href: "/panel/jadwal-sidang", accent: "muted", hint: "Terjadwal" },
             ]);
           }
 
@@ -934,130 +1033,239 @@ export default function DashboardPage() {
     );
   }
 
+  // Group extra stats into semantic sections for premium feel
+  const contentStats = extraStats.filter((s) =>
+    ["Komentar Pending", "Total Komentar", "Total Sorotan", "Total Polling", "Total Glossary", "Posting Sosmed (30hr)"].includes(s.label)
+  );
+  const operasionalStats = extraStats.filter((s) =>
+    ["Token AI (30hr)", "Total Kategori", "Total Tag", "Pengguna Aktif", "Iklan Aktif", "Sumber Berita Aktif", "Sidang Mendatang"].includes(s.label)
+  );
+
+  // Role label for display
+  const roleLabelMap: Record<string, string> = {
+    SUPER_ADMIN: "Super Admin",
+    CHIEF_EDITOR: "Editor Kepala",
+    EDITOR: "Editor",
+    SENIOR_JOURNALIST: "Jurnalis Senior",
+    JOURNALIST: "Jurnalis",
+    CONTRIBUTOR: "Kontributor",
+  };
+  const roleLabel = roleLabelMap[userRole] || "Pengguna";
+  const todayLabel = new Date().toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <div>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-lg sm:text-2xl font-bold text-txt-primary">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-sm text-txt-secondary">
-          Selamat datang kembali, {session?.user?.name}!
-        </p>
-      </div>
-
-      {/* Stats grid */}
-      <div className={`mb-4 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 ${isAdmin ? "md:grid-cols-4 xl:grid-cols-7" : "md:grid-cols-4"}`}>
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={stat.label}
-              className="rounded-[12px] border border-border bg-surface p-3 sm:p-4 shadow-card overflow-hidden"
-            >
-              <div className={`inline-flex rounded-[12px] p-1.5 sm:p-2 ${stat.color}`}>
-                <Icon size={16} />
-              </div>
-              <p className="mt-1.5 text-lg sm:text-2xl xl:text-3xl font-extrabold text-txt-primary truncate">
-                {stat.value}
-              </p>
-              <p className="text-[10px] sm:text-xs text-txt-secondary truncate">{stat.label}</p>
+      {/* Premium hero header */}
+      <div className="mb-6 relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary via-primary to-primary-dark text-white shadow-card">
+        <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-white/5 blur-2xl" aria-hidden />
+        <div className="absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-secondary/20 blur-3xl" aria-hidden />
+        <div className="relative px-5 py-5 sm:px-7 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 backdrop-blur-sm px-2.5 py-0.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider ring-1 ring-white/20">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                {roleLabel}
+              </span>
+              <span className="text-[10px] sm:text-xs text-white/70 hidden sm:inline">{todayLabel}</span>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Secondary stats grid — content & engagement counts */}
-      {extraStats.length > 0 && (
-        <div className="mb-8">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-txt-muted">
-            Konten &amp; Engagement
-          </p>
-          <div className={`grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 ${isAdmin ? "xl:grid-cols-7" : "xl:grid-cols-6"}`}>
-            {extraStats.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div
-                  key={stat.label}
-                  className="rounded-[12px] border border-border bg-surface p-3 sm:p-4 shadow-card overflow-hidden"
-                >
-                  <div className={`inline-flex rounded-[12px] p-1.5 sm:p-2 ${stat.color}`}>
-                    <Icon size={16} />
-                  </div>
-                  <p className="mt-1.5 text-lg sm:text-2xl xl:text-3xl font-extrabold text-txt-primary truncate">
-                    {stat.value}
-                  </p>
-                  <p className="text-[10px] sm:text-xs text-txt-secondary truncate">{stat.label}</p>
-                </div>
-              );
-            })}
+            <h1 className="mt-2 text-xl sm:text-3xl font-extrabold tracking-tight">
+              Halo, {session?.user?.name?.split(" ")[0] || "Editor"} 👋
+            </h1>
+            <p className="mt-1 text-sm text-white/80">
+              {isCreator
+                ? "Lihat performa artikel Anda dan mulai menulis."
+                : "Pantau alur redaksi, distribusi, dan operasional dari satu tempat."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Link
+              href="/panel/artikel/baru"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-primary shadow-sm hover:bg-white/90 transition-colors"
+            >
+              <FileText size={15} /> Tulis Artikel
+            </Link>
+            {!isCreator && (
+              <Link
+                href="/panel/auto-artikel"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 backdrop-blur-sm px-3.5 py-2 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-white/20 transition-colors"
+              >
+                <Sparkles size={15} /> Auto AI
+              </Link>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Section: Ikhtisar Editorial */}
+      <SectionHeader
+        icon={BarChart3}
+        title="Ikhtisar Editorial"
+        subtitle="Ringkasan status artikel dan trafik"
+      />
+      <div className={`mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 ${isAdmin ? "md:grid-cols-4 xl:grid-cols-7" : "md:grid-cols-4"}`}>
+        {stats.map((stat) => (
+          <PremiumStatCard key={stat.label} stat={stat} />
+        ))}
+      </div>
+
+      {/* Section: Konten & Engagement */}
+      {contentStats.length > 0 && (
+        <>
+          <SectionHeader
+            icon={MessageSquare}
+            title="Konten & Engagement"
+            subtitle="Komentar, sorotan, polling, dan distribusi sosial"
+          />
+          <div className={`mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 ${isAdmin ? "xl:grid-cols-6" : "xl:grid-cols-6"}`}>
+            {contentStats.map((stat) => (
+              <PremiumStatCard key={stat.label} stat={stat} />
+            ))}
+          </div>
+        </>
       )}
 
-      {/* Quick actions FIRST */}
-      <div className="mb-6 rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
-        <div className="border-b border-border px-6 py-5">
-          <h2 className="flex items-center gap-2.5 text-base font-bold text-txt-primary">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light">
-              <Layers size={16} className="text-primary" />
-            </div>
-            Aksi Cepat
-          </h2>
-        </div>
-        <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 sm:gap-3 sm:p-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {(() => {
-            type Action = {
-              href: string;
-              label: string;
-              icon: React.ElementType;
-              color: string;
-              show: boolean;
-            };
-            const actions: Action[] = [
-              { href: "/panel/artikel/baru", label: "Tulis Artikel", icon: FileText, color: "text-primary", show: true },
-              { href: "/panel/auto-artikel", label: "Auto Artikel AI", icon: Sparkles, color: "text-indigo-500", show: !isCreator },
-              { href: "/panel/sumber-berita", label: "Sumber Berita", icon: Newspaper, color: "text-cyan-600", show: !isCreator },
-              { href: "/panel/artikel", label: isCreator ? "Artikel Saya" : "Review Artikel", icon: isCreator ? Send : Clock, color: isCreator ? "text-blue-500" : "text-yellow-500", show: true },
-              { href: "/panel/laporan", label: "Cek Laporan", icon: AlertTriangle, color: "text-red-500", show: !isCreator },
-              { href: "/panel/komentar", label: "Moderasi Komentar", icon: MessageSquare, color: "text-blue-500", show: !isCreator },
-              { href: "/panel/sorotan", label: "Sorotan SEO", icon: Highlighter, color: "text-amber-500", show: !isCreator },
-              { href: "/panel/polling", label: "Kelola Polling", icon: Vote, color: "text-purple-500", show: !isCreator },
-              { href: "/panel/jadwal-sidang", label: "Jadwal Sidang", icon: Gavel, color: "text-stone-600", show: !isCreator },
-              { href: "/panel/social", label: "Sosial Media", icon: Share2, color: "text-pink-500", show: !isCreator },
-              { href: "/panel/tiktok", label: "TikTok", icon: Music, color: "text-fuchsia-500", show: !isCreator },
-              { href: "/panel/statistik", label: "Statistik", icon: BarChart3, color: "text-green-600", show: !isCreator },
-              { href: "/panel/seo", label: "SEO Panel", icon: TrendingUp, color: "text-emerald-600", show: !isCreator },
-              { href: "/panel/kategori", label: "Kategori", icon: Folder, color: "text-orange-500", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/tags", label: "Tag", icon: Tag, color: "text-teal-500", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/redaksi", label: "Redaksi", icon: Users, color: "text-blue-500", show: !isCreator },
-              { href: "/panel/pengguna", label: "Kelola Pengguna", icon: Users, color: "text-purple-500", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/iklan", label: "Kelola Iklan", icon: Megaphone, color: "text-rose-500", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/email", label: "Email Routing", icon: Mail, color: "text-blue-600", show: isAdmin },
-              { href: "/panel/ai-log", label: "Log AI", icon: Bot, color: "text-indigo-500", show: isAdmin },
-              { href: "/panel/pengaturan", label: "Pengaturan", icon: Settings, color: "text-gray-600", show: isAdmin },
-            ];
-            return actions
-              .filter((a) => a.show)
-              .map((a) => {
-                const Icon = a.icon;
+      {/* Section: Operasional & Sistem */}
+      {operasionalStats.length > 0 && (
+        <>
+          <SectionHeader
+            icon={Settings}
+            title="Operasional & Sistem"
+            subtitle="Pengguna, taksonomi, AI, dan integrasi"
+          />
+          <div className="mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
+            {operasionalStats.map((stat) => (
+              <PremiumStatCard key={stat.label} stat={stat} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Quick actions — grouped premium */}
+      {(() => {
+        type Action = {
+          href: string;
+          label: string;
+          icon: React.ElementType;
+          color: string;
+          bg: string;
+          show: boolean;
+        };
+        type Group = {
+          id: string;
+          title: string;
+          icon: React.ElementType;
+          subtitle: string;
+          actions: Action[];
+        };
+        const groups: Group[] = [
+          {
+            id: "editorial",
+            title: "Editorial",
+            icon: FileText,
+            subtitle: "Tulis, review, dan moderasi",
+            actions: [
+              { href: "/panel/artikel/baru", label: "Tulis Artikel", icon: FileText, color: "text-primary", bg: "bg-primary-light", show: true },
+              { href: "/panel/auto-artikel", label: "Auto Artikel AI", icon: Sparkles, color: "text-indigo-600", bg: "bg-indigo-50", show: !isCreator },
+              { href: "/panel/sumber-berita", label: "Sumber Berita", icon: Newspaper, color: "text-cyan-600", bg: "bg-cyan-50", show: !isCreator },
+              { href: "/panel/artikel", label: isCreator ? "Artikel Saya" : "Review Artikel", icon: isCreator ? Send : Clock, color: isCreator ? "text-blue-600" : "text-yellow-600", bg: isCreator ? "bg-blue-50" : "bg-yellow-50", show: true },
+              { href: "/panel/komentar", label: "Komentar", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50", show: !isCreator },
+              { href: "/panel/laporan", label: "Laporan", icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50", show: !isCreator },
+            ],
+          },
+          {
+            id: "distribusi",
+            title: "Distribusi & SEO",
+            icon: Share2,
+            subtitle: "Sebar ke pembaca, mesin pencari, dan sosmed",
+            actions: [
+              { href: "/panel/sorotan", label: "Sorotan SEO", icon: Highlighter, color: "text-amber-600", bg: "bg-amber-50", show: !isCreator },
+              { href: "/panel/seo", label: "SEO Panel", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", show: !isCreator },
+              { href: "/panel/social", label: "Sosial Media", icon: Share2, color: "text-pink-600", bg: "bg-pink-50", show: !isCreator },
+              { href: "/panel/tiktok", label: "TikTok", icon: Music, color: "text-fuchsia-600", bg: "bg-fuchsia-50", show: !isCreator },
+              { href: "/panel/statistik", label: "Statistik", icon: BarChart3, color: "text-green-600", bg: "bg-green-50", show: !isCreator },
+              { href: "/panel/polling", label: "Polling", icon: Vote, color: "text-purple-600", bg: "bg-purple-50", show: !isCreator },
+              { href: "/panel/jadwal-sidang", label: "Jadwal Sidang", icon: Gavel, color: "text-stone-700", bg: "bg-stone-100", show: !isCreator },
+            ],
+          },
+          {
+            id: "manajemen",
+            title: "Manajemen",
+            icon: Settings,
+            subtitle: "Pengguna, taksonomi, dan iklan",
+            actions: [
+              { href: "/panel/redaksi", label: "Redaksi", icon: Users, color: "text-blue-600", bg: "bg-blue-50", show: !isCreator },
+              { href: "/panel/pengguna", label: "Pengguna", icon: Users, color: "text-purple-600", bg: "bg-purple-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/kategori", label: "Kategori", icon: Folder, color: "text-orange-600", bg: "bg-orange-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/tags", label: "Tag", icon: Tag, color: "text-teal-600", bg: "bg-teal-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/iklan", label: "Iklan", icon: Megaphone, color: "text-rose-600", bg: "bg-rose-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/email", label: "Email", icon: Mail, color: "text-blue-700", bg: "bg-blue-50", show: isAdmin },
+              { href: "/panel/ai-log", label: "Log AI", icon: Bot, color: "text-indigo-600", bg: "bg-indigo-50", show: isAdmin },
+              { href: "/panel/pengaturan", label: "Pengaturan", icon: Settings, color: "text-slate-700", bg: "bg-slate-100", show: isAdmin },
+            ],
+          },
+        ];
+
+        const visibleGroups = groups
+          .map((g) => ({ ...g, actions: g.actions.filter((a) => a.show) }))
+          .filter((g) => g.actions.length > 0);
+
+        if (visibleGroups.length === 0) return null;
+
+        return (
+          <div className="mb-8">
+            <SectionHeader
+              icon={Layers}
+              title="Aksi Cepat"
+              subtitle="Pintasan ke tugas yang paling sering dipakai"
+            />
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              {visibleGroups.map((group) => {
+                const GIcon = group.icon;
                 return (
-                  <Link
-                    key={a.href}
-                    href={a.href}
-                    className="flex flex-col items-center gap-1.5 rounded-[12px] border border-dashed border-border p-3 sm:p-4 text-center transition-colors hover:border-primary hover:bg-primary-50"
-                    aria-label={a.label}
-                  >
-                    <Icon size={20} className={a.color} />
-                    <span className="text-xs sm:text-sm font-medium text-txt-secondary leading-tight">
-                      {a.label}
-                    </span>
-                  </Link>
+                  <div key={group.id} className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+                    <div className="flex items-center gap-2 border-b border-border bg-gradient-to-r from-surface-secondary/60 to-transparent px-4 py-2.5">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary-light text-primary">
+                        <GIcon size={12} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-txt-primary tracking-tight truncate">
+                          {group.title}
+                        </p>
+                        <p className="text-[10px] text-txt-muted truncate">{group.subtitle}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-3">
+                      {group.actions.map((a) => {
+                        const Icon = a.icon;
+                        return (
+                          <Link
+                            key={a.href}
+                            href={a.href}
+                            className="group/action flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-center transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
+                            aria-label={a.label}
+                          >
+                            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${a.bg} ${a.color} ring-1 ring-inset ring-black/5 transition-transform group-hover/action:scale-110`}>
+                              <Icon size={16} />
+                            </div>
+                            <span className="text-[11px] sm:text-xs font-semibold text-txt-secondary leading-tight">
+                              {a.label}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
-              });
-          })()}
-        </div>
-      </div>
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Recent articles - full width, rich info */}
       <div className="mb-6 rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
