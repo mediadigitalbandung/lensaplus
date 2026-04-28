@@ -67,6 +67,10 @@ export default function SorotanPage() {
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [singleProcessing, setSingleProcessing] = useState<string | null>(null);
 
+  // Article list pagination (client-side over the fetched batch)
+  const [page, setPage] = useState<number>(1);
+  const ARTICLES_PER_PAGE = 15;
+
   // Auto-generation settings (sorotan_*)
   const [autoEnabled, setAutoEnabled] = useState<boolean>(false);
   const [intervalMin, setIntervalMin] = useState<number>(60);
@@ -88,7 +92,7 @@ export default function SorotanPage() {
     try {
       setLoading(true);
       const [artRes, statusRes] = await Promise.all([
-        fetch("/api/articles?status=PUBLISHED&limit=100&sort=oldest"),
+        fetch("/api/articles?status=PUBLISHED&limit=500&sort=oldest"),
         fetch("/api/seo/sorotan-status"),
       ]);
 
@@ -128,6 +132,13 @@ export default function SorotanPage() {
     fetchData();
     fetchAutoSettings();
   }, [fetchData, fetchAutoSettings]);
+
+  // Clamp the current page when the article list shrinks (e.g. after a
+  // generate run flips an article out of the "needs sorotan" filter).
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(articles.length / ARTICLES_PER_PAGE));
+    if (page > totalPages) setPage(totalPages);
+  }, [articles.length, page]);
 
   async function saveSetting(key: string, value: string) {
     const res = await fetch("/api/settings", {
@@ -489,7 +500,12 @@ export default function SorotanPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {articles.map((a) => (
+                {articles
+                  .slice(
+                    (page - 1) * ARTICLES_PER_PAGE,
+                    page * ARTICLES_PER_PAGE,
+                  )
+                  .map((a) => (
                   <tr key={a.id} className="hover:bg-surface-secondary/50">
                     <td className="max-w-[360px] px-5 py-3">
                       <p className="truncate font-medium text-txt-primary">
@@ -532,6 +548,56 @@ export default function SorotanPage() {
                 ))}
               </tbody>
             </table>
+
+            {articles.length > ARTICLES_PER_PAGE && (
+              <div className="flex items-center justify-between border-t border-border bg-surface-secondary/40 px-5 py-3 text-xs">
+                <span className="text-txt-secondary">
+                  Menampilkan{" "}
+                  <span className="font-semibold text-txt-primary">
+                    {(page - 1) * ARTICLES_PER_PAGE + 1}
+                  </span>
+                  –
+                  <span className="font-semibold text-txt-primary">
+                    {Math.min(page * ARTICLES_PER_PAGE, articles.length)}
+                  </span>{" "}
+                  dari{" "}
+                  <span className="font-semibold text-txt-primary">
+                    {articles.length}
+                  </span>{" "}
+                  artikel
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="btn-ghost flex items-center gap-1 rounded px-2 py-1 disabled:opacity-30"
+                    aria-label="Halaman sebelumnya"
+                  >
+                    Prev
+                  </button>
+                  <span className="px-2 font-semibold text-txt-primary">
+                    {page} / {Math.ceil(articles.length / ARTICLES_PER_PAGE)}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setPage((p) =>
+                        Math.min(
+                          Math.ceil(articles.length / ARTICLES_PER_PAGE),
+                          p + 1,
+                        ),
+                      )
+                    }
+                    disabled={
+                      page >= Math.ceil(articles.length / ARTICLES_PER_PAGE)
+                    }
+                    className="btn-ghost flex items-center gap-1 rounded px-2 py-1 disabled:opacity-30"
+                    aria-label="Halaman berikutnya"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
