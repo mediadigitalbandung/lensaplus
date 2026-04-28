@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   CheckCircle,
   X,
+  Sparkles,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -436,9 +437,11 @@ export default function SumberBeritaPage() {
       {/* Preview modal */}
       {preview && (
         <PreviewModal
+          sourceId={preview.sourceId}
           sourceName={preview.sourceName}
           data={preview.data}
           onClose={() => setPreview(null)}
+          onScraped={fetchSources}
         />
       )}
     </div>
@@ -764,14 +767,68 @@ function SourceFormModal({
 /* ─────────────────────────  PreviewModal  ───────────────────────── */
 
 function PreviewModal({
+  sourceId,
   sourceName,
   data,
   onClose,
+  onScraped,
 }: {
+  sourceId: string;
   sourceName: string;
   data: PreviewResponse;
   onClose: () => void;
+  onScraped: () => void;
 }) {
+  const { success, error: showError } = useToast();
+  // Track per-item state: idle | running | done | error.
+  // Keyed by URL so the source listing order stays stable.
+  const [itemState, setItemState] = useState<
+    Record<string, { status: "idle" | "running" | "done" | "error"; message?: string }>
+  >({});
+  // Mutable copy of "alreadyScraped" so the UI flips immediately after a
+  // successful generate without requiring a full preview refetch.
+  const [scrapedSet, setScrapedSet] = useState<Set<string>>(
+    () => new Set(data.items.filter((i) => i.alreadyScraped).map((i) => i.url)),
+  );
+
+  async function handleGenerate(url: string) {
+    setItemState((s) => ({ ...s, [url]: { status: "running" } }));
+    try {
+      const res = await fetch(`/api/news-sources/${sourceId}/scrape-one`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        const errMsg = json.error || `HTTP ${res.status}`;
+        setItemState((s) => ({
+          ...s,
+          [url]: { status: "error", message: errMsg },
+        }));
+        showError(`Gagal generate: ${errMsg}`);
+        return;
+      }
+      const d = json.data;
+      if (d.skipped === "already-scraped") {
+        setScrapedSet((prev) => new Set(prev).add(url));
+        setItemState((s) => ({ ...s, [url]: { status: "done" } }));
+        return;
+      }
+      setScrapedSet((prev) => new Set(prev).add(url));
+      setItemState((s) => ({ ...s, [url]: { status: "done" } }));
+      success(`Draft dibuat: "${d.title}"`);
+      onScraped();
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : "Network error";
+      setItemState((s) => ({
+        ...s,
+        [url]: { status: "error", message: errMsg },
+      }));
+      showError(`Gagal generate: ${errMsg}`);
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
@@ -790,6 +847,9 @@ function PreviewModal({
               {data.total} artikel terdeteksi · {data.newCount} baru ·
               selector: <code className="font-mono">{data.selectorUsed}</code>
             </p>
+            <p className="mt-0.5 text-[11px] text-txt-muted">
+              Klik <strong>Generate</strong> per artikel untuk paraphrase jadi draft, atau buka link untuk lihat sumber.
+            </p>
           </div>
           <button onClick={onClose} className="btn-ghost p-2">
             <X size={18} />
@@ -802,53 +862,107 @@ function PreviewModal({
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {data.items.map((item, i) => (
-                <a
-                  key={i}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`group flex gap-3 rounded-md border p-3 transition-colors ${
-                    item.alreadyScraped
-                      ? "border-border bg-surface-container-low opacity-60"
-                      : "border-border bg-surface hover:border-primary/50"
-                  }`}
-                >
-                  {item.thumbnail && (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={item.thumbnail}
-                      alt=""
-                      className="h-16 w-16 flex-shrink-0 rounded object-cover"
-                      onError={(e) =>
-                        ((e.target as HTMLImageElement).style.display = "none")
-                      }
-                    />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 text-sm font-medium text-txt-primary group-hover:text-primary">
-                      {item.title}
-                    </p>
-                    {item.snippet && (
-                      <p className="mt-1 line-clamp-2 text-[11px] text-txt-muted">
-                        {item.snippet}
-                      </p>
-                    )}
-                    <div className="mt-1 flex items-center gap-1">
-                      {item.alreadyScraped ? (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-txt-muted">
-                          ✓ Sudah scraped
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
-                          ◉ Baru
-                        </span>
+              {data.items.map((item, i) => {
+                const isScraped = scrapedSet.has(item.url);
+                const state = itemState[item.url];
+                const isRunning = state?.status === "running";
+                const isDone = state?.status === "done" || isScraped;
+
+                return (
+                  <div
+                    key={i}
+                    className={`group flex flex-col gap-2 rounded-md border p-3 transition-colors ${
+                      isDone
+                        ? "border-emerald-200 bg-emerald-50/40"
+                        : "border-border bg-surface"
+                    }`}
+                  >
+                    <div className="flex gap-3">
+                      {item.thumbnail && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={item.thumbnail}
+                          alt=""
+                          className="h-16 w-16 flex-shrink-0 rounded object-cover"
+                          onError={(e) =>
+                            ((e.target as HTMLImageElement).style.display = "none")
+                          }
+                        />
                       )}
-                      <ExternalLink size={10} className="text-txt-muted" />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-medium text-txt-primary">
+                          {item.title}
+                        </p>
+                        {item.snippet && (
+                          <p className="mt-1 line-clamp-2 text-[11px] text-txt-muted">
+                            {item.snippet}
+                          </p>
+                        )}
+                        <div className="mt-1 flex items-center gap-1.5">
+                          {isDone ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                              <CheckCircle size={10} /> Sudah jadi draft
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                              ◉ Baru
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Per-card actions */}
+                    <div className="flex items-center justify-between gap-2 border-t border-border pt-2">
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] text-txt-secondary hover:text-primary"
+                      >
+                        Lihat sumber <ExternalLink size={10} />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleGenerate(item.url)}
+                        disabled={isRunning || isDone}
+                        className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed ${
+                          isDone
+                            ? "bg-emerald-100 text-emerald-700"
+                            : isRunning
+                              ? "bg-primary/10 text-primary"
+                              : "bg-primary text-white hover:bg-primary-dark"
+                        }`}
+                        title={
+                          isDone
+                            ? "Sudah dibuat sebagai draft"
+                            : isRunning
+                              ? "Sedang generate..."
+                              : "Generate paraphrase jadi draft"
+                        }
+                      >
+                        {isRunning ? (
+                          <>
+                            <Loader2 size={11} className="animate-spin" />
+                            Generate...
+                          </>
+                        ) : isDone ? (
+                          <>
+                            <CheckCircle size={11} /> Draft
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={11} /> Generate
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    {state?.status === "error" && state.message && (
+                      <p className="text-[10px] text-red-600">{state.message}</p>
+                    )}
                   </div>
-                </a>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
