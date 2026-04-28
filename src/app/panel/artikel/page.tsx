@@ -511,9 +511,13 @@ export default function ArtikelPage() {
         <>
           {/* Table — viewport-constrained so the horizontal scrollbar stays
                within reach instead of getting buried below hundreds of rows.
-               max-h fits below the page header + filters + pagination footer. */}
+               Chrome above the table:
+                 panel header (~60) + page header (~80) + search row (~60)
+                 + status filter row (~50) + origin filter row (~50)
+                 + paddings (~40) ≈ 340px
+               min-h keeps it usable on 720p / Surface laptops. */}
           <div className="rounded-[12px] border border-border bg-surface shadow-card overflow-hidden">
-            <div className="overflow-auto max-h-[calc(100vh-260px)]">
+            <div className="overflow-auto max-h-[calc(100vh-340px)] min-h-[360px]">
               <table className="w-full min-w-[320px] text-sm">
                 <thead className="sticky top-0 z-10 border-b border-border bg-surface-secondary shadow-sm">
                   <tr>
