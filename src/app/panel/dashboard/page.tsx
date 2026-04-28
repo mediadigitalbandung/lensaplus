@@ -1089,14 +1089,6 @@ export default function DashboardPage() {
             >
               <FileText size={15} /> Tulis Artikel
             </Link>
-            {!isCreator && (
-              <Link
-                href="/panel/auto-artikel"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 backdrop-blur-sm px-3.5 py-2 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-white/20 transition-colors"
-              >
-                <Sparkles size={15} /> Auto AI
-              </Link>
-            )}
           </div>
         </div>
       </div>
