@@ -32,6 +32,31 @@ const MAX_BODY_IMAGES = 5;
  * resolve relative URLs against `baseUrl`, and skip the hero image so we
  * don't duplicate what's already used as featuredImage.
  */
+/**
+ * Reject URLs that look like logos, icons, avatars, or chrome — i.e.
+ * NOT body images. We can't inspect dimensions from a URL alone, so we
+ * filter on filename + path tokens that are reliably non-content.
+ */
+const NON_BODY_IMAGE_PATTERNS = [
+  /logo/i,
+  /favicon/i,
+  /\bicon[s]?\b/i,
+  /watermark/i,
+  /placeholder/i,
+  /spinner/i,
+  /loading/i,
+  /\bavatar\b/i,
+  /\bsprite\b/i,
+  /\bbutton\b/i,
+  /\bbadge\b/i,
+  /\.svg(\?|$)/i,
+  /\bblank\b/i,
+];
+
+function looksLikeBodyImage(url: string): boolean {
+  return !NON_BODY_IMAGE_PATTERNS.some((re) => re.test(url));
+}
+
 function extractBodyImageUrls(
   html: string,
   baseUrl: string,
@@ -56,6 +81,7 @@ function extractBodyImageUrls(
     }
     if (!/^https?:\/\//i.test(abs)) return;
     if (excludeHeroUrl && abs === excludeHeroUrl) return;
+    if (!looksLikeBodyImage(abs)) return;
     if (seen.has(abs)) return;
     seen.add(abs);
     out.push(abs);
