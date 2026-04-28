@@ -38,7 +38,6 @@ interface Source {
 }
 
 import { CAN_SUBMIT_REVIEW, EDITOR_ROLES, roleLabelsMap } from "@/lib/roles";
-import FeaturedImagePicker from "@/components/editor/FeaturedImagePicker";
 
 export default function NewArticlePage() {
   const router = useRouter();
@@ -655,9 +654,6 @@ export default function NewArticlePage() {
               className="input w-full"
             />
           </div>
-
-          {/* Featured Image */}
-          <FeaturedImagePicker value={featuredImage} onChange={setFeaturedImage} />
 
           {/* Journalism Checklist */}
           <div className="rounded-[12px] border border-primary/20 bg-primary-50 p-4">

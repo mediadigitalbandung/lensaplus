@@ -18,6 +18,7 @@ import {
   XCircle,
   AlertCircle,
   Zap,
+  Bot,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { EDITOR_ROLES } from "@/lib/roles";
@@ -64,6 +65,15 @@ export default function SorotanPage() {
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [singleProcessing, setSingleProcessing] = useState<string | null>(null);
 
+  // Auto-generation settings (sorotan_*)
+  const [autoEnabled, setAutoEnabled] = useState<boolean>(false);
+  const [intervalMin, setIntervalMin] = useState<number>(60);
+  const [batchSize, setBatchSize] = useState<number>(5);
+  const [savingToggle, setSavingToggle] = useState<boolean>(false);
+  const [savingInterval, setSavingInterval] = useState<boolean>(false);
+  const [savingBatch, setSavingBatch] = useState<boolean>(false);
+  const isAdmin = userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR";
+
   if (
     sessionStatus !== "loading" &&
     session &&
@@ -95,9 +105,86 @@ export default function SorotanPage() {
     }
   }, []);
 
+  const fetchAutoSettings = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await fetch("/api/settings");
+      if (!res.ok) return;
+      const json = await res.json();
+      const data = json.data || {};
+      setAutoEnabled(String(data.sorotan_auto_enabled ?? "false") === "true");
+      const iv = Number(data.sorotan_interval_minutes ?? "60");
+      setIntervalMin([5, 10, 15, 20, 30, 60].includes(iv) ? iv : 60);
+      const bs = Math.floor(Number(data.sorotan_batch_size ?? "5"));
+      setBatchSize(Number.isFinite(bs) ? Math.min(20, Math.max(0, bs)) : 5);
+    } catch {
+      /* */
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchAutoSettings();
+  }, [fetchData, fetchAutoSettings]);
+
+  async function saveSetting(key: string, value: string) {
+    const res = await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, value }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || "Gagal menyimpan");
+  }
+
+  async function handleToggleAuto() {
+    try {
+      setSavingToggle(true);
+      const newValue = !autoEnabled;
+      await saveSetting("sorotan_auto_enabled", newValue ? "true" : "false");
+      setAutoEnabled(newValue);
+      showSuccess(
+        newValue
+          ? "Auto-generate Sorotan aktif. Cron akan jalan sesuai interval."
+          : "Auto-generate dinonaktifkan.",
+      );
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSavingToggle(false);
+    }
+  }
+
+  async function handleSaveInterval(value: number) {
+    try {
+      setSavingInterval(true);
+      await saveSetting("sorotan_interval_minutes", String(value));
+      setIntervalMin(value);
+      showSuccess(`Interval Sorotan di-set ke ${value} menit.`);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSavingInterval(false);
+    }
+  }
+
+  async function handleSaveBatch(value: number) {
+    const clamped = Math.min(20, Math.max(0, Math.floor(value)));
+    try {
+      setSavingBatch(true);
+      await saveSetting("sorotan_batch_size", String(clamped));
+      setBatchSize(clamped);
+      showSuccess(
+        clamped === 0
+          ? "Batch di-set 0 — generation pause."
+          : `Batch Sorotan di-set ${clamped} artikel/run.`,
+      );
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal menyimpan");
+    } finally {
+      setSavingBatch(false);
+    }
+  }
 
   async function handleBatchGenerate() {
     try {
@@ -229,6 +316,97 @@ export default function SorotanPage() {
             <p className="mt-1 text-2xl font-extrabold text-red-600">
               {sorotanStatus.counts.failed}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-generation panel — admin only */}
+      {isAdmin && (
+        <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light">
+                <Bot size={18} className="text-primary" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-txt-primary">
+                  Auto Generate Sorotan
+                </h2>
+                <p className="text-xs text-txt-secondary">
+                  {autoEnabled
+                    ? batchSize === 0
+                      ? `Aktif tapi batch = 0 (pause). Cron tetap dipanggil tiap ${intervalMin} menit.`
+                      : `Cron akan generate ${batchSize} artikel setiap ${intervalMin} menit.`
+                    : "Nonaktif — Sorotan hanya dibuat manual via tombol di atas."}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleToggleAuto}
+              disabled={savingToggle}
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-50 ${
+                autoEnabled ? "bg-primary" : "bg-surface-tertiary"
+              }`}
+              aria-label="Toggle auto-sorotan"
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                  autoEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 border-t border-border pt-5 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-txt-secondary">
+                Interval Generate
+              </label>
+              <select
+                value={intervalMin}
+                onChange={(e) => handleSaveInterval(Number(e.target.value))}
+                disabled={savingInterval}
+                className="input w-full px-3 py-2 text-sm disabled:opacity-50"
+              >
+                <option value={5}>Setiap 5 menit</option>
+                <option value={10}>Setiap 10 menit</option>
+                <option value={15}>Setiap 15 menit</option>
+                <option value={20}>Setiap 20 menit</option>
+                <option value={30}>Setiap 30 menit</option>
+                <option value={60}>Setiap 1 jam</option>
+              </select>
+              <p className="mt-1 text-xs text-txt-muted">
+                Cron VPS dipanggil tiap 5 menit; throttle endpoint memastikan
+                generate hanya jalan sesuai pilihan ini.
+              </p>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-txt-secondary">
+                Jumlah Artikel per Run
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={20}
+                  step={1}
+                  value={batchSize}
+                  onChange={(e) =>
+                    setBatchSize(
+                      Math.min(20, Math.max(0, Math.floor(Number(e.target.value) || 0))),
+                    )
+                  }
+                  onBlur={(e) => handleSaveBatch(Math.floor(Number(e.target.value) || 0))}
+                  disabled={savingBatch}
+                  className="input w-24 px-3 py-2 text-sm disabled:opacity-50"
+                />
+                <span className="text-xs text-txt-secondary">artikel (0–20)</span>
+              </div>
+              <p className="mt-1 text-xs text-txt-muted">
+                Tiap artikel butuh ~3 panggilan AI. 0 = pause tanpa nonaktifkan
+                toggle.
+              </p>
+            </div>
           </div>
         </div>
       )}

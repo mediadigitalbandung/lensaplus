@@ -57,7 +57,6 @@ interface Source {
 }
 
 import { EDITOR_ROLES, ADMIN_ROLES, CAN_SUBMIT_REVIEW, roleLabelsMap } from "@/lib/roles";
-import FeaturedImagePicker from "@/components/editor/FeaturedImagePicker";
 
 function LoadingSkeleton() {
   return (
@@ -1392,7 +1391,6 @@ export default function EditArticlePage() {
               <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Ringkasan</label>
               <textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className="input w-full" rows={3} placeholder="Ringkasan artikel..." />
             </div>
-            <FeaturedImagePicker value={featuredImage} onChange={setFeaturedImage} />
           </div>
         </div>
       </div>
@@ -1700,7 +1698,6 @@ export default function EditArticlePage() {
                 <textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} rows={2} className="input w-full" placeholder="Meta description (maks 155 karakter)" maxLength={155} />
                 <p className="mt-1 text-xs text-txt-muted">{seoDescription.length}/155</p>
               </div>
-              <FeaturedImagePicker value={featuredImage} onChange={setFeaturedImage} />
               <button
                 onClick={async () => {
                   setSaving(true);
@@ -1744,13 +1741,6 @@ export default function EditArticlePage() {
               <div className="rounded-[12px] border border-border bg-surface p-5">
                 <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Ringkasan</label>
                 <p className="text-sm text-txt-primary">{excerpt}</p>
-              </div>
-            )}
-            {featuredImage && (
-              <div className="rounded-[12px] border border-border bg-surface p-5">
-                <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Gambar Utama</label>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={featuredImage} alt="Featured" className="mt-2 max-h-64 rounded-[8px] object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
               </div>
             )}
             <div className="rounded-[12px] border border-border bg-surface p-5">
@@ -2147,8 +2137,6 @@ export default function EditArticlePage() {
               </div>
               <textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} placeholder="Ringkasan singkat artikel" maxLength={500} className="input w-full" />
             </div>
-            {/* Featured Image */}
-            <FeaturedImagePicker value={featuredImage} onChange={setFeaturedImage} />
             {/* Journalism Checklist */}
             <div className="rounded-[12px] border border-primary/20 bg-primary-50 p-4">
               <button type="button" onClick={() => setShowChecklist(!showChecklist)} className="flex w-full items-center justify-between text-sm font-bold text-primary-dark">
@@ -2228,13 +2216,6 @@ export default function EditArticlePage() {
             <div className="rounded-[12px] border border-border bg-surface p-5">
               <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Ringkasan</label>
               <p className="text-sm text-txt-primary">{excerpt}</p>
-            </div>
-          )}
-          {featuredImage && (
-            <div className="rounded-[12px] border border-border bg-surface p-5">
-              <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Gambar Utama</label>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={featuredImage} alt="Featured" className="mt-2 max-h-64 rounded-[8px] object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
             </div>
           )}
           <div className="rounded-[12px] border border-border bg-surface p-5">
