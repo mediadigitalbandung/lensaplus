@@ -28,6 +28,7 @@ import { fetchListing } from "@/lib/scraper/fetch-listing";
 import { crawlListings } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
+import { getScraperAuthor } from "@/lib/scraper/author";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
 
@@ -129,6 +130,10 @@ export async function POST(
       featuredImage?: string | null;
     }> = [];
     const newlyScrapedUrls: string[] = [];
+    // Scraper drafts always carry the configured author (default: Owen),
+    // not the operator who clicked Scrape. This keeps the byline
+    // consistent regardless of which admin triggers the run.
+    const scraperAuthor = await getScraperAuthor();
 
     for (const candidate of newCandidates.slice(0, limit)) {
       try {
@@ -140,8 +145,8 @@ export async function POST(
         const draft = await paraphraseAndCreateDraft({
           source: detail,
           sourceName: source.name,
-          authorId: session.user.id,
-          authorName: session.user.name,
+          authorId: scraperAuthor.id,
+          authorName: scraperAuthor.name,
           categoryId,
           defaultTags: source.defaultTags,
           downloadImage: true,

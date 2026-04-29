@@ -20,6 +20,7 @@ import { fetchListing } from "@/lib/scraper/fetch-listing";
 import { crawlListings } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
+import { getScraperAuthor } from "@/lib/scraper/author";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -57,12 +58,14 @@ async function handler(req: NextRequest) {
       );
     }
 
-    // Resolve a fallback admin user to own the drafts (system actor).
-    const admin = await prisma.user.findFirst({
-      where: { role: "SUPER_ADMIN", isActive: true },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, name: true },
-    });
+    // Resolve the configured byline (default Owen). Falls back to oldest
+    // active SUPER_ADMIN if no override is set.
+    let admin: { id: string; name: string } | null = null;
+    try {
+      admin = await getScraperAuthor();
+    } catch {
+      admin = null;
+    }
     if (!admin) {
       return NextResponse.json(
         {

@@ -25,6 +25,7 @@ import {
 } from "@/lib/api-utils";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
+import { getScraperAuthor } from "@/lib/scraper/author";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
 
@@ -94,11 +95,12 @@ export async function POST(
       useHeadless: source.useHeadless,
     });
 
+    const scraperAuthor = await getScraperAuthor();
     const draft = await paraphraseAndCreateDraft({
       source: detail,
       sourceName: source.name,
-      authorId: session.user.id,
-      authorName: session.user.name,
+      authorId: scraperAuthor.id,
+      authorName: scraperAuthor.name,
       categoryId,
       defaultTags: source.defaultTags,
       downloadImage: true,
