@@ -60,7 +60,7 @@ function AdContent({ ad }: { ad: Ad }) {
     ad.type === "HTML" && ad.htmlCode ? (
       <div dangerouslySetInnerHTML={{ __html: ad.htmlCode }} />
     ) : ad.imageUrl ? (
-      <img src={ad.imageUrl} alt="Iklan" className="w-full h-auto block rounded-sm" loading="lazy" />
+      <img src={ad.imageUrl} alt="Iklan" className="w-full h-auto block" loading="lazy" />
     ) : null;
 
   if (!content) return null;
@@ -77,7 +77,7 @@ function AdContent({ ad }: { ad: Ad }) {
 
 function AdPlaceholder({ label = "Iklan" }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center rounded-sm bg-surface-container-low py-5">
+    <div className="flex items-center justify-center bg-surface-container-low py-5">
       <span className="text-label-sm uppercase tracking-wider text-on-surface-variant/30">{label}</span>
     </div>
   );
@@ -107,7 +107,7 @@ export default function BannerAd({ size = "banner", slot, className = "", noWrap
 export function SidebarAd({ slot = "SIDEBAR" }: { slot?: string }) {
   const ad = useAd(slot);
 
-  const wrapper = "w-full rounded-sm overflow-hidden";
+  const wrapper = "w-full overflow-hidden";
 
   if (ad) {
     const content =
@@ -152,13 +152,13 @@ export function NativeAd({ className = "" }: { className?: string }) {
   const ad = useAd("IN_ARTICLE");
 
   return (
-    <div className={`rounded-sm bg-surface-container-low p-5 ${className}`}>
+    <div className={`bg-surface-container-low p-5 ${className}`}>
       <span className="text-label-sm uppercase tracking-wider text-on-surface-variant/40 mb-3 block">Sponsored</span>
       {ad ? (
         <AdContent ad={ad} />
       ) : (
         <div className="flex items-center gap-4">
-          <div className="h-16 w-24 shrink-0 rounded-sm bg-surface-container animate-pulse" />
+          <div className="h-16 w-24 shrink-0 bg-surface-container animate-pulse" />
           <div className="flex-1 space-y-2">
             <div className="h-3 w-3/4 rounded bg-surface-container animate-pulse" />
             <div className="h-3 w-1/2 rounded bg-surface-container animate-pulse" />
