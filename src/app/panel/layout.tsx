@@ -57,6 +57,7 @@ const menuItems: MenuItem[] = [
   { name: "Dashboard", href: "/panel/dashboard", icon: LayoutDashboard },
   { name: "Artikel", href: "/panel/artikel", icon: FileText },
   { name: "Auto Artikel", href: "/panel/auto-artikel", icon: Bot, adminOnly: true },
+  { name: "Material Artikel", href: "/panel/material-artikel", icon: Sparkles, editorOnly: true },
   { name: "Sumber Berita", href: "/panel/sumber-berita", icon: Globe, adminOnly: true },
   { name: "Kategori", href: "/panel/kategori", icon: FolderOpen, adminOnly: true },
   { name: "Tags", href: "/panel/tags", icon: Hash, editorOnly: true },
