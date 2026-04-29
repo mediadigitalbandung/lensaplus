@@ -25,6 +25,7 @@ import {
   Info,
   FileText,
   Upload,
+  RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { EDITOR_ROLES } from "@/lib/roles";
@@ -189,6 +190,26 @@ export default function MaterialArtikelPage() {
       }
     });
     setSlots([]);
+  }
+
+  /**
+   * Reset every slot to "idle" while keeping the same File objects in
+   * memory, so the operator can re-run handleGenerate without
+   * re-uploading photos and the document. The previously-created Article
+   * rows in the DB are NOT deleted — editor can prune them manually
+   * from /panel/artikel after reviewing the new batch.
+   */
+  function resetForRegen() {
+    setSlots((prev) =>
+      prev.map((s) => ({
+        ...s,
+        status: "idle" as const,
+        resultArticleId: undefined,
+        resultSlug: undefined,
+        resultTitle: undefined,
+        errorMessage: undefined,
+      })),
+    );
   }
 
   async function handleGenerate() {
@@ -582,9 +603,10 @@ export default function MaterialArtikelPage() {
                 >
                   panel artikel
                 </Link>{" "}
-                untuk review.
+                untuk review, atau klik <em>Generate Ulang</em> untuk
+                versi baru dari dokumen yang sama.
               </span>
-            ) : !canGenerate ? (
+            ) : !canGenerate && !generating ? (
               <span className="text-txt-muted">
                 Lengkapi: {!categoryId && "kategori, "}
                 {!docFile && "dokumen, "}
@@ -598,22 +620,34 @@ export default function MaterialArtikelPage() {
               </>
             )}
           </div>
-          <button
-            onClick={handleGenerate}
-            disabled={!canGenerate}
-            className="btn-primary flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
-          >
-            {generating ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Sparkles size={14} />
+          <div className="flex items-center gap-2">
+            {allDone && !generating && (
+              <button
+                onClick={resetForRegen}
+                className="btn-ghost flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium"
+                title="Reset status semua slot. Foto + dokumen tetap, klik Generate lagi untuk versi baru."
+              >
+                <RefreshCw size={14} />
+                Generate Ulang
+              </button>
             )}
-            {generating
-              ? "Generating…"
-              : allDone
-                ? "Selesai"
-                : `Generate ${slots.length} Draft`}
-          </button>
+            <button
+              onClick={handleGenerate}
+              disabled={!canGenerate}
+              className="btn-primary flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
+            >
+              {generating ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Sparkles size={14} />
+              )}
+              {generating
+                ? "Generating…"
+                : allDone
+                  ? "Selesai"
+                  : `Generate ${slots.length} Draft`}
+            </button>
+          </div>
         </div>
       )}
     </div>
