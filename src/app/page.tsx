@@ -166,13 +166,13 @@ export default async function HomePage() {
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           HERO â€” Auto-rotating carousel + side stories
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* AD: Banner di bawah ticker market, di atas hero — visibility tinggi */}
+      <BannerAd size="leaderboard" slot="HEADER" className="bg-surface" />
+
       <HeroCarousel
         main={JSON.parse(JSON.stringify(heroMain))}
         side={JSON.parse(JSON.stringify(heroSide))}
       />
-
-      {/* AD: Header */}
-      <BannerAd size="leaderboard" slot="HEADER" className="bg-surface" />
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           TERKINI + TERPOPULER + SIDEBAR AD
