@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import {
@@ -35,6 +36,13 @@ export async function POST(request: NextRequest) {
         `Bulk archive ${ids.length} artikel`
       );
 
+      try {
+        revalidatePath("/");
+        revalidatePath("/berita");
+      } catch {
+        /* harmless */
+      }
+
       return successResponse({ count: ids.length, action: "archive" });
     }
 
@@ -65,6 +73,19 @@ export async function POST(request: NextRequest) {
         `Bulk publish ${result.count} dari ${ids.length} artikel`,
       );
 
+      // Bulk skips the per-article publish-chain (Sorotan/Cloudflare/social),
+      // but the ISR cache invalidation is essential — without it the homepage
+      // and listings keep serving the pre-publish snapshot until the next
+      // 30s revalidate, which feels like "berita terkini tidak update". Fire
+      // once per bulk; per-slug paths aren't worth iterating since the
+      // article slug pages are dynamic anyway.
+      try {
+        revalidatePath("/");
+        revalidatePath("/berita");
+      } catch {
+        /* revalidatePath may be a no-op outside a route handler — harmless */
+      }
+
       return successResponse({ count: result.count, requested: ids.length, action: "publish" });
     }
 
@@ -86,6 +107,13 @@ export async function POST(request: NextRequest) {
         ids.join(","),
         `Bulk delete ${ids.length} artikel`
       );
+
+      try {
+        revalidatePath("/");
+        revalidatePath("/berita");
+      } catch {
+        /* harmless */
+      }
 
       return successResponse({ count: ids.length, action: "delete" });
     }
