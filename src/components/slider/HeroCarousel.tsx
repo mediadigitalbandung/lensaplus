@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import ClientDate from "@/components/ClientDate";
 
 interface HeroArticle {
@@ -20,20 +20,56 @@ interface HeroCarouselProps {
   side: HeroArticle[];
 }
 
+// How many side cards are visible at once. The full `side` array is split
+// into pages of this size and rotated like the main hero. With pageSize=3
+// the side feels balanced against the 8/4 grid; bumping it would crowd
+// the panel.
+const SIDE_PAGE_SIZE = 3;
+
 export default function HeroCarousel({ main, side }: HeroCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [sidePageIndex, setSidePageIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
   const next = useCallback(() => {
     setActiveIndex((prev) => (prev + 1) % main.length);
   }, [main.length]);
 
-  // Auto-rotate every 6 seconds
+  // Slice the full side pool into pages of 3. Last page may be short — the
+  // dedup logic upstream guarantees ≥ 3 unique articles in slot 5+, so
+  // SIDE_PAGE_SIZE almost always gives a clean 3-card row.
+  const sidePages = useMemo(() => {
+    const pages: HeroArticle[][] = [];
+    for (let i = 0; i < side.length; i += SIDE_PAGE_SIZE) {
+      const chunk = side.slice(i, i + SIDE_PAGE_SIZE);
+      if (chunk.length === SIDE_PAGE_SIZE) pages.push(chunk);
+    }
+    // Always have at least one page so the panel never goes blank.
+    if (pages.length === 0 && side.length > 0) pages.push(side.slice(0, SIDE_PAGE_SIZE));
+    return pages;
+  }, [side]);
+
+  const totalSidePages = sidePages.length;
+
+  const nextSide = useCallback(() => {
+    setSidePageIndex((prev) => (prev + 1) % Math.max(1, totalSidePages));
+  }, [totalSidePages]);
+
+  // Auto-rotate main hero every 6 seconds.
   useEffect(() => {
     if (isPaused || main.length <= 1) return;
     const timer = setInterval(next, 6000);
     return () => clearInterval(timer);
   }, [isPaused, next, main.length]);
+
+  // Auto-rotate side stack every 8 seconds — slightly off-cadence from the
+  // main panel so the two carousels don't flip in lockstep, which would
+  // make the whole hero feel busy.
+  useEffect(() => {
+    if (isPaused || totalSidePages <= 1) return;
+    const timer = setInterval(nextSide, 8000);
+    return () => clearInterval(timer);
+  }, [isPaused, nextSide, totalSidePages]);
 
   if (main.length === 0) return null;
 
@@ -111,44 +147,72 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             </div>
           </div>
 
-          {/* Side stories — 4 cols, stacked. Mirror the main hero's slow
-              ken-burns zoom + vertical gradient so all four panels feel
-              like one unit instead of "big animated card + three flat
-              thumbnails". */}
-          <div className="lg:col-span-4 flex flex-col">
-            {side.map((a, i) => (
-              <Link
-                key={a.slug}
-                href={`/berita/${a.slug}`}
-                className={`group flex-1 relative overflow-hidden ${i < side.length - 1 ? "border-b border-white/10" : ""}`}
+          {/* Side stories — 4 cols, paginated 3-at-a-time. Each page
+              crossfades like the main hero, so when the visible group
+              changes the whole stack of three cards rotates to a fresh
+              set of articles. */}
+          <div className="lg:col-span-4 relative overflow-hidden">
+            {sidePages.map((pageItems, pageIdx) => (
+              <div
+                key={pageIdx}
+                className={`absolute inset-0 flex flex-col transition-opacity duration-700 ease-in-out ${
+                  pageIdx === sidePageIndex ? "opacity-100 z-10" : "opacity-0 z-0"
+                }`}
               >
-                <div className="absolute inset-0">
-                  {a.featuredImage ? (
-                    <Image
-                      src={a.featuredImage}
-                      alt={a.title}
-                      fill
-                      className="object-cover transition-transform duration-[6000ms] ease-linear group-hover:scale-[1.02]"
-                      style={{ transform: "scale(1.05)" }}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-primary-container" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                </div>
-                <div className="relative p-6 sm:p-7 flex flex-col justify-end h-full min-h-[8rem]">
-                  <span className="text-label-sm font-bold uppercase tracking-widest text-secondary mb-1">
-                    {a.category.name}
-                  </span>
-                  <h2 className="font-serif text-title-lg text-white leading-snug line-clamp-2 group-hover:text-white/90 transition-colors">
-                    {a.title}
-                  </h2>
-                  <span className="mt-2 text-label-sm text-white/40 uppercase tracking-wider">
-                    <ClientDate date={a.publishedAt} format="relative" />
-                  </span>
-                </div>
-              </Link>
+                {pageItems.map((a, i) => (
+                  <Link
+                    key={a.slug}
+                    href={`/berita/${a.slug}`}
+                    className={`group flex-1 relative overflow-hidden ${i < pageItems.length - 1 ? "border-b border-white/10" : ""}`}
+                  >
+                    <div className="absolute inset-0">
+                      {a.featuredImage ? (
+                        <Image
+                          src={a.featuredImage}
+                          alt={a.title}
+                          fill
+                          className="object-cover transition-transform duration-[6000ms] ease-linear group-hover:scale-[1.02]"
+                          style={{
+                            transform:
+                              pageIdx === sidePageIndex ? "scale(1.05)" : "scale(1)",
+                          }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-primary-container" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                    </div>
+                    <div className="relative p-6 sm:p-7 flex flex-col justify-end h-full min-h-[8rem]">
+                      <span className="text-label-sm font-bold uppercase tracking-widest text-secondary mb-1">
+                        {a.category.name}
+                      </span>
+                      <h2 className="font-serif text-title-lg text-white leading-snug line-clamp-2 group-hover:text-white/90 transition-colors">
+                        {a.title}
+                      </h2>
+                      <span className="mt-2 text-label-sm text-white/40 uppercase tracking-wider">
+                        <ClientDate date={a.publishedAt} format="relative" />
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             ))}
+
+            {/* Page dots — only when more than one page exists */}
+            {totalSidePages > 1 && (
+              <div className="absolute top-4 right-5 z-20 flex items-center gap-1.5">
+                {sidePages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSidePageIndex(i)}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i === sidePageIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"
+                    }`}
+                    aria-label={`Side page ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

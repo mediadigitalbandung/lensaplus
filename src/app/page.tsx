@@ -62,15 +62,15 @@ export default async function HomePage() {
     return true;
   });
 
-  const heroMain = dedupedArticles.slice(0, 5);  // 5 articles rotate in hero
-  const heroSide = dedupedArticles.slice(5, 8);  // 3 side stories — all distinct topics
-  const editorsPickArticles = dedupedArticles.slice(8, 12);
+  const heroMain = dedupedArticles.slice(0, 5);   // 5 articles rotate in hero
+  const heroSide = dedupedArticles.slice(5, 14);  // 9 side stories — 3 pages of 3 rotating
+  const editorsPickArticles = dedupedArticles.slice(14, 18);
 
-  // Berita Terkini — actual latest 12 articles, skip only the lead hero #1 so
-  // we don't render the same article as "big" in two places. Overlap with the
-  // rotating hero is fine; that's how news sites work and ensures any newly
-  // published article shows up here within the first revalidate.
-  const terkiniArticles = dedupedArticles.slice(1, 13);
+  // Berita Terkini — 18 latest articles (1 lead + 17 in 2-col grid). Sized so
+  // the left column matches the height of the right Terpopuler+ads sidebar
+  // and there's no awkward whitespace below. Skip only the lead hero #1 so
+  // we don't render the same article as "big" in two places.
+  const terkiniArticles = dedupedArticles.slice(1, 19);
 
   // Category sections — use the deduped FULL list. Same dedup-by-source
   // rule so a category isn't filled with 5 paraphrases of the same source.
@@ -241,6 +241,19 @@ export default async function HomePage() {
                     </div>
                   </article>
                 ))}
+              </div>
+
+              {/* "Lihat Lainnya" CTA — fills the gap when sidebar runs taller
+                  than the article list and gives readers an explicit door to the
+                  full /berita listing. */}
+              <div className="mt-10 border-t border-on-surface/10 pt-6 flex justify-center">
+                <Link
+                  href="/berita"
+                  className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-label-md font-bold uppercase tracking-wider text-white transition-all hover:bg-primary-dark hover:gap-3 shadow-md shadow-primary/20"
+                >
+                  Lihat Berita Lainnya
+                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                </Link>
               </div>
             </div>
 
