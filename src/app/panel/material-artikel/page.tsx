@@ -1,12 +1,11 @@
 "use client";
 
 /**
- * Material Artikel — bulk-generate Article DRAFTs from (photo + notes) pairs.
- *
- * Editor uploads N photos, attaches a free-text note per photo (paste from
- * press release / interview / fact sheet), picks a category, hits Generate.
- * Each pair → one DRAFT article with the photo embedded as the first <img>
- * in the body. Drafts land in /panel/artikel for review.
+ * Material Artikel — bulk-generate Article DRAFTs from one source document
+ * + N photos. Document is the only source of facts. AI splits the document
+ * into N angles, one per photo. Each draft ships with the photo embedded
+ * as a <figure> at the top, with AI-written caption + "Sumber: Kartawarta"
+ * credit.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -24,6 +23,8 @@ import {
   CheckCircle,
   ArrowRight,
   Info,
+  FileText,
+  Upload,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { EDITOR_ROLES } from "@/lib/roles";
@@ -35,11 +36,9 @@ interface Category {
 }
 
 interface Slot {
-  /** Stable id for keying React rows; not sent to server. */
   uid: string;
   file: File;
   previewUrl: string;
-  note: string;
   status: "idle" | "generating" | "done" | "failed";
   resultArticleId?: string;
   resultSlug?: string;
@@ -48,7 +47,9 @@ interface Slot {
 }
 
 const VALID_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const VALID_DOC_EXT = [".docx", ".pdf", ".txt", ".md"];
 const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_DOC_BYTES = 10 * 1024 * 1024;
 const MAX_PHOTOS = 20;
 
 function bytesHuman(n: number): string {
@@ -57,19 +58,25 @@ function bytesHuman(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function isValidDocFile(file: File): boolean {
+  const lower = file.name.toLowerCase();
+  return VALID_DOC_EXT.some((ext) => lower.endsWith(ext));
+}
+
 export default function MaterialArtikelPage() {
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
   const { success: showSuccess, error: showError } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [docFile, setDocFile] = useState<File | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState<string>("");
   const [batchName, setBatchName] = useState<string>("");
   const [generating, setGenerating] = useState<boolean>(false);
 
-  // Gate access — EDITOR_ROLES = SUPER_ADMIN, CHIEF_EDITOR, EDITOR
   if (
     sessionStatus !== "loading" &&
     session &&
@@ -94,8 +101,6 @@ export default function MaterialArtikelPage() {
     fetchCategories();
   }, [fetchCategories]);
 
-  // Revoke object URLs on unmount + when slots change. Browsers leak the
-  // object URL until the page is unloaded otherwise.
   useEffect(() => {
     return () => {
       slots.forEach((s) => {
@@ -109,7 +114,7 @@ export default function MaterialArtikelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleFiles(files: FileList | null) {
+  function handlePhotoFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     const remaining = MAX_PHOTOS - slots.length;
     if (remaining <= 0) {
@@ -120,11 +125,7 @@ export default function MaterialArtikelPage() {
     const incoming: Slot[] = [];
     let rejected = 0;
     for (const file of Array.from(files).slice(0, remaining)) {
-      if (!VALID_TYPES.includes(file.type)) {
-        rejected++;
-        continue;
-      }
-      if (file.size > MAX_BYTES) {
+      if (!VALID_TYPES.includes(file.type) || file.size > MAX_BYTES) {
         rejected++;
         continue;
       }
@@ -132,7 +133,6 @@ export default function MaterialArtikelPage() {
         uid: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         file,
         previewUrl: URL.createObjectURL(file),
-        note: "",
         status: "idle",
       });
     }
@@ -140,17 +140,30 @@ export default function MaterialArtikelPage() {
     if (incoming.length === 0) {
       showError(
         rejected > 0
-          ? "Semua file ditolak — hanya JPG/PNG/WebP ≤ 5 MB yang diterima."
-          : "Tidak ada file yang valid.",
+          ? "Semua file ditolak — JPG/PNG/WebP ≤ 5 MB."
+          : "Tidak ada file valid.",
       );
       return;
     }
     if (rejected > 0) {
-      showError(
-        `${rejected} file di-skip (format tidak didukung atau > 5 MB).`,
-      );
+      showError(`${rejected} file di-skip (format/ukuran).`);
     }
     setSlots((prev) => [...prev, ...incoming]);
+  }
+
+  function handleDocFile(file: File | null) {
+    if (!file) return;
+    if (!isValidDocFile(file)) {
+      showError("Hanya .docx, .pdf, .txt, atau .md yang didukung.");
+      return;
+    }
+    if (file.size > MAX_DOC_BYTES) {
+      showError(
+        `Ukuran dokumen > ${Math.round(MAX_DOC_BYTES / 1024 / 1024)} MB.`,
+      );
+      return;
+    }
+    setDocFile(file);
   }
 
   function removeSlot(uid: string) {
@@ -165,12 +178,6 @@ export default function MaterialArtikelPage() {
       }
       return prev.filter((s) => s.uid !== uid);
     });
-  }
-
-  function updateNote(uid: string, note: string) {
-    setSlots((prev) =>
-      prev.map((s) => (s.uid === uid ? { ...s, note } : s)),
-    );
   }
 
   function clearAll() {
@@ -193,24 +200,23 @@ export default function MaterialArtikelPage() {
       showError("Tambahkan minimal 1 foto.");
       return;
     }
-    const tooShort = slots.filter((s) => s.note.trim().length < 30);
-    if (tooShort.length > 0) {
-      showError(
-        `${tooShort.length} foto belum punya catatan ≥ 30 karakter.`,
-      );
+    if (!docFile) {
+      showError("Upload dokumen sumber dulu.");
       return;
     }
 
     setGenerating(true);
-    setSlots((prev) => prev.map((s) => ({ ...s, status: "generating" as const })));
+    setSlots((prev) =>
+      prev.map((s) => ({ ...s, status: "generating" as const })),
+    );
 
     try {
       const fd = new FormData();
       fd.append("categoryId", categoryId);
       if (batchName.trim()) fd.append("batchName", batchName.trim());
+      fd.append("document", docFile);
       slots.forEach((s, i) => {
         fd.append(`photo_${i}`, s.file);
-        fd.append(`note_${i}`, s.note);
       });
 
       const res = await fetch("/api/panel/generate-from-materials", {
@@ -235,11 +241,15 @@ export default function MaterialArtikelPage() {
         }>;
       };
 
-      // Map results back to slots by index.
       setSlots((prev) =>
         prev.map((s, i) => {
           const r = results.find((x) => x.photoIndex === i);
-          if (!r) return { ...s, status: "failed" as const, errorMessage: "Tidak ada respons" };
+          if (!r)
+            return {
+              ...s,
+              status: "failed" as const,
+              errorMessage: "Tidak ada respons",
+            };
           return r.ok
             ? {
                 ...s,
@@ -257,7 +267,7 @@ export default function MaterialArtikelPage() {
       );
 
       if (failed === 0) {
-        showSuccess(`${created} draf berhasil dibuat.`);
+        showSuccess(`${created} draf berhasil dibuat dari dokumen.`);
       } else {
         showSuccess(
           `${created} berhasil, ${failed} gagal. Cek detail per foto.`,
@@ -268,7 +278,11 @@ export default function MaterialArtikelPage() {
       setSlots((prev) =>
         prev.map((s) =>
           s.status === "generating"
-            ? { ...s, status: "failed" as const, errorMessage: "Request gagal" }
+            ? {
+                ...s,
+                status: "failed" as const,
+                errorMessage: "Request gagal",
+              }
             : s,
         ),
       );
@@ -286,10 +300,11 @@ export default function MaterialArtikelPage() {
   }
 
   const allDone = slots.length > 0 && slots.every((s) => s.status === "done");
+  const canGenerate =
+    !generating && !allDone && slots.length > 0 && !!docFile && !!categoryId;
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -299,9 +314,13 @@ export default function MaterialArtikelPage() {
             </h1>
           </div>
           <p className="mt-1 text-sm text-txt-secondary">
-            Generate artikel dari kumpulan foto + catatan. 1 foto + catatan
-            kontekstualnya = 1 draft artikel. Draft masuk ke{" "}
-            <Link href="/panel/artikel?status=DRAFT" className="text-primary hover:underline">
+            Generate artikel dari satu dokumen sumber + N foto. Dokumen
+            menjadi sumber tunggal fakta — AI parafrase, satu artikel per
+            foto. Hasil masuk ke{" "}
+            <Link
+              href="/panel/artikel?status=DRAFT"
+              className="text-primary hover:underline"
+            >
               /panel/artikel
             </Link>
             .
@@ -309,21 +328,20 @@ export default function MaterialArtikelPage() {
         </div>
       </div>
 
-      {/* Info banner */}
       <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4">
         <div className="flex items-start gap-3">
           <Info size={16} className="mt-0.5 text-blue-600 shrink-0" />
           <div className="text-xs text-blue-700 space-y-1">
             <p>
-              Cara pakai: <strong>(1)</strong> upload foto-foto,{" "}
-              <strong>(2)</strong> tempel catatan/cuplikan dokumen ke
-              setiap kotak <em>Catatan</em>, <strong>(3)</strong> pilih
-              kategori, <strong>(4)</strong> klik Generate Semua.
+              <strong>Cara pakai:</strong> (1) pilih kategori, (2) upload
+              dokumen sumber (DOCX/PDF/TXT/MD), (3) upload foto-foto
+              (N foto = N artikel berbeda angle), (4) klik Generate.
             </p>
             <p>
-              AI akan menulis artikel berbasis catatan tersebut sebagai
-              satu-satunya sumber fakta. Foto otomatis disisipkan di
-              paling atas body artikel.
+              AI parafrase dokumen menjadi N artikel. Tiap artikel dapat
+              angle berbeda dari dokumen yang sama. Foto otomatis dipasang
+              di atas body dengan caption + sumber{" "}
+              <em>Kartawarta</em> yang ditulis AI.
             </p>
           </div>
         </div>
@@ -352,9 +370,6 @@ export default function MaterialArtikelPage() {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-txt-muted">
-              Semua draft di batch ini akan masuk kategori yang sama.
-            </p>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-txt-secondary">
@@ -365,22 +380,75 @@ export default function MaterialArtikelPage() {
               value={batchName}
               onChange={(e) => setBatchName(e.target.value)}
               disabled={generating}
-              placeholder="mis. Liputan Sidang KPK 28 Apr"
+              placeholder="mis. RUPST Bank BJB 28 Apr"
               className="input w-full px-3 py-2 text-sm disabled:opacity-50"
               maxLength={100}
             />
-            <p className="mt-1 text-xs text-txt-muted">
-              Hanya untuk audit log — tidak tampil di artikel.
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Photo + notes section */}
+      {/* Document uploader */}
+      <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-txt-secondary">
+          Dokumen Sumber <span className="text-red-500">*</span>
+        </h2>
+        {!docFile ? (
+          <button
+            onClick={() => docInputRef.current?.click()}
+            disabled={generating}
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-surface-secondary py-10 text-txt-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+          >
+            <FileText size={32} />
+            <p className="text-sm font-medium">
+              Klik untuk upload dokumen sumber
+            </p>
+            <p className="text-xs">
+              .DOCX, .PDF, .TXT, atau .MD — maks 10 MB
+            </p>
+          </button>
+        ) : (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary-light p-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <FileText size={20} className="shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-txt-primary">
+                  {docFile.name}
+                </p>
+                <p className="text-xs text-txt-secondary">
+                  {bytesHuman(docFile.size)} · siap di-parse
+                </p>
+              </div>
+            </div>
+            {!generating && (
+              <button
+                onClick={() => setDocFile(null)}
+                className="rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600"
+                aria-label="Hapus dokumen"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        )}
+        <input
+          ref={docInputRef}
+          type="file"
+          accept=".docx,.pdf,.txt,.md,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf,text/plain,text/markdown"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0] || null;
+            handleDocFile(f);
+            if (docInputRef.current) docInputRef.current.value = "";
+          }}
+        />
+      </div>
+
+      {/* Photos */}
       <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-bold uppercase tracking-wider text-txt-secondary">
-            Foto &amp; Catatan ({slots.length}/{MAX_PHOTOS})
+            Foto ({slots.length}/{MAX_PHOTOS}) — 1 foto = 1 artikel
           </h2>
           <div className="flex items-center gap-2">
             {slots.length > 0 && !generating && (
@@ -393,7 +461,7 @@ export default function MaterialArtikelPage() {
               </button>
             )}
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => photoInputRef.current?.click()}
               disabled={generating || slots.length >= MAX_PHOTOS}
               className="btn-primary flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
             >
@@ -401,14 +469,14 @@ export default function MaterialArtikelPage() {
               Tambah Foto
             </button>
             <input
-              ref={fileInputRef}
+              ref={photoInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
               multiple
               hidden
               onChange={(e) => {
-                handleFiles(e.target.files);
-                if (fileInputRef.current) fileInputRef.current.value = "";
+                handlePhotoFiles(e.target.files);
+                if (photoInputRef.current) photoInputRef.current.value = "";
               }}
             />
           </div>
@@ -416,22 +484,24 @@ export default function MaterialArtikelPage() {
 
         {slots.length === 0 ? (
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => photoInputRef.current?.click()}
             disabled={generating}
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-surface-secondary py-12 text-txt-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-surface-secondary py-10 text-txt-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
           >
-            <ImageIcon size={36} />
+            <ImageIcon size={32} />
             <p className="text-sm font-medium">Klik untuk upload foto</p>
-            <p className="text-xs">JPG / PNG / WebP, ≤ 5 MB per file, max {MAX_PHOTOS} foto</p>
+            <p className="text-xs">
+              JPG / PNG / WebP, ≤ 5 MB per file, max {MAX_PHOTOS} foto
+            </p>
           </button>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {slots.map((s, i) => (
               <div
                 key={s.uid}
-                className={`rounded-xl border p-4 transition-colors ${
+                className={`relative rounded-xl border p-2 transition-colors ${
                   s.status === "done"
-                    ? "border-primary/30 bg-primary-light"
+                    ? "border-primary/40 bg-primary-light"
                     : s.status === "failed"
                       ? "border-red-300 bg-red-50"
                       : s.status === "generating"
@@ -439,100 +509,60 @@ export default function MaterialArtikelPage() {
                         : "border-border bg-surface-secondary"
                 }`}
               >
-                <div className="flex flex-col gap-4 sm:flex-row">
-                  {/* Photo preview */}
-                  <div className="relative shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={s.previewUrl}
-                      alt={s.file.name}
-                      className="h-32 w-full rounded-lg object-cover sm:w-48"
-                    />
-                    <span className="absolute left-2 top-2 rounded-full bg-on-surface/90 px-2 py-0.5 text-[10px] font-bold text-white">
-                      #{i + 1}
-                    </span>
-                    {s.status === "idle" && !generating && (
-                      <button
-                        onClick={() => removeSlot(s.uid)}
-                        className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white shadow hover:bg-red-600"
-                        aria-label="Hapus foto"
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Note + status */}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-txt-muted">
-                      <span className="truncate font-mono">{s.file.name}</span>
-                      <span>·</span>
-                      <span>{bytesHuman(s.file.size)}</span>
-                      {s.status === "generating" && (
-                        <>
-                          <span>·</span>
-                          <span className="flex items-center gap-1 font-semibold text-blue-600">
-                            <Loader2 size={10} className="animate-spin" />
-                            Generating…
-                          </span>
-                        </>
-                      )}
-                      {s.status === "done" && (
-                        <>
-                          <span>·</span>
-                          <span className="flex items-center gap-1 font-semibold text-primary">
-                            <CheckCircle size={10} />
-                            Selesai
-                          </span>
-                        </>
-                      )}
-                      {s.status === "failed" && (
-                        <>
-                          <span>·</span>
-                          <span className="flex items-center gap-1 font-semibold text-red-600">
-                            <AlertCircle size={10} />
-                            Gagal
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    <textarea
-                      value={s.note}
-                      onChange={(e) => updateNote(s.uid, e.target.value)}
-                      disabled={generating || s.status === "done"}
-                      placeholder="Tempel catatan, fakta, kutipan, atau cuplikan dokumen yang relevan dengan foto ini. Minimal 30 karakter — semakin lengkap konteksnya, semakin akurat hasilnya."
-                      rows={5}
-                      className="input w-full px-3 py-2 text-sm disabled:opacity-50"
-                      maxLength={8000}
-                    />
-                    <div className="flex items-center justify-between text-xs">
-                      <span
-                        className={
-                          s.note.trim().length < 30
-                            ? "text-red-500"
-                            : "text-txt-muted"
-                        }
-                      >
-                        {s.note.trim().length} / 8000 karakter
-                        {s.note.trim().length > 0 && s.note.trim().length < 30 && (
-                          <span> (min 30)</span>
-                        )}
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={s.previewUrl}
+                    alt={s.file.name}
+                    className="h-32 w-full rounded-lg object-cover"
+                  />
+                  <span className="absolute left-2 top-2 rounded-full bg-on-surface/90 px-2 py-0.5 text-[10px] font-bold text-white">
+                    #{i + 1}
+                  </span>
+                  {s.status === "idle" && !generating && (
+                    <button
+                      onClick={() => removeSlot(s.uid)}
+                      className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white shadow hover:bg-red-600"
+                      aria-label="Hapus foto"
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
+                </div>
+                <div className="mt-2 space-y-1">
+                  <p
+                    className="truncate text-[10px] font-mono text-txt-muted"
+                    title={s.file.name}
+                  >
+                    {s.file.name}
+                  </p>
+                  {s.status === "generating" && (
+                    <p className="flex items-center gap-1 text-[10px] font-semibold text-blue-600">
+                      <Loader2 size={10} className="animate-spin" />
+                      Generating…
+                    </p>
+                  )}
+                  {s.status === "done" && s.resultArticleId && (
+                    <Link
+                      href={`/panel/artikel/${s.resultArticleId}/edit`}
+                      className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:underline"
+                    >
+                      <CheckCircle size={10} />
+                      <span className="truncate">
+                        {s.resultTitle?.slice(0, 50)}
                       </span>
-                      {s.status === "done" && s.resultArticleId && (
-                        <Link
-                          href={`/panel/artikel/${s.resultArticleId}/edit`}
-                          className="flex items-center gap-1 font-semibold text-primary hover:underline"
-                        >
-                          {s.resultTitle?.slice(0, 60)}
-                          <ArrowRight size={12} />
-                        </Link>
-                      )}
-                      {s.status === "failed" && s.errorMessage && (
-                        <span className="text-red-600">{s.errorMessage}</span>
-                      )}
-                    </div>
-                  </div>
+                      <ArrowRight size={10} className="shrink-0" />
+                    </Link>
+                  )}
+                  {s.status === "failed" && (
+                    <p
+                      className="flex items-center gap-1 text-[10px] font-semibold text-red-600"
+                      title={s.errorMessage}
+                    >
+                      <AlertCircle size={10} />
+                      <span className="truncate">{s.errorMessage}</span>
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -540,8 +570,7 @@ export default function MaterialArtikelPage() {
         )}
       </div>
 
-      {/* Submit */}
-      {slots.length > 0 && (
+      {(slots.length > 0 || docFile) && (
         <div className="sticky bottom-4 z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-ambient">
           <div className="text-sm text-txt-secondary">
             {allDone ? (
@@ -555,17 +584,23 @@ export default function MaterialArtikelPage() {
                 </Link>{" "}
                 untuk review.
               </span>
+            ) : !canGenerate ? (
+              <span className="text-txt-muted">
+                Lengkapi: {!categoryId && "kategori, "}
+                {!docFile && "dokumen, "}
+                {slots.length === 0 && "foto"}
+              </span>
             ) : (
               <>
-                {slots.length} foto siap di-generate. AI akan dipanggil{" "}
-                {slots.length}× — perkiraan ~{slots.length * 6}–{slots.length * 12}{" "}
-                detik.
+                {slots.length} foto + 1 dokumen siap. AI 1× call → ~
+                {Math.max(20, slots.length * 8)}–
+                {Math.max(40, slots.length * 16)} detik.
               </>
             )}
           </div>
           <button
             onClick={handleGenerate}
-            disabled={generating || slots.length === 0 || allDone}
+            disabled={!canGenerate}
             className="btn-primary flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
           >
             {generating ? (
