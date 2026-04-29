@@ -32,11 +32,27 @@ export async function GET() {
 
     const data = await res.json();
 
+    // Resolve USD→IDR rate first so we can convert USD-denominated commodities
+    // (gold, oil, BTC) into Rupiah for the local audience.
+    const usdIdrQuote = data["USDIDR=X"];
+    const usdIdrRate =
+      (usdIdrQuote?.close?.[usdIdrQuote.close.length - 1] as number | undefined) || 0;
+    const USD_QUOTED = new Set(["EMAS", "MINYAK", "BTC"]);
+
     const stocks = SYMBOLS.map((s) => {
       const q = data[s.id];
       if (!q) return null;
-      const close = q.close?.[q.close.length - 1] || 0;
-      const prev = q.chartPreviousClose || close;
+      let close = q.close?.[q.close.length - 1] || 0;
+      let prev = q.chartPreviousClose || close;
+
+      // Convert USD-quoted commodities to IDR (price + prevClose).
+      // Change/percent are derived from the converted values so the deltas
+      // shown to the user are also in Rupiah.
+      if (USD_QUOTED.has(s.label) && usdIdrRate > 0) {
+        close = close * usdIdrRate;
+        prev = prev * usdIdrRate;
+      }
+
       const change = close - prev;
       const pct = prev > 0 ? (change / prev) * 100 : 0;
       return {
@@ -46,10 +62,11 @@ export async function GET() {
         change: Math.round(change * 100) / 100,
         changePercent: Math.round(pct * 100) / 100,
         direction: change > 0.001 ? "up" : change < -0.001 ? "down" : "flat",
+        currency: USD_QUOTED.has(s.label) ? "IDR" : (s.label === "USD/IDR" ? "IDR" : "IDR"),
       };
     }).filter(Boolean);
 
-    return NextResponse.json({ data: stocks, updatedAt: new Date().toISOString() });
+    return NextResponse.json({ data: stocks, updatedAt: new Date().toISOString(), usdIdrRate });
   } catch (e) {
     return NextResponse.json({ data: [], error: String(e) }, { status: 500 });
   }

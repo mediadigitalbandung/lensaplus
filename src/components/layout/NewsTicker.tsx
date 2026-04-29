@@ -12,11 +12,32 @@ interface StockItem {
 }
 
 function fmtPrice(p: number, sym: string): string {
-  if (sym === "BTC") return "$" + p.toLocaleString("en-US", { maximumFractionDigits: 0 });
-  if (sym === "EMAS" || sym === "MINYAK") return "$" + p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Commodities & crypto: server has converted to IDR — render as Rp with
+  // compact suffix when values get huge (BTC ~Rp 1.2M USD * rate = miliaran).
+  if (sym === "BTC") {
+    if (p >= 1_000_000_000) return "Rp " + (p / 1_000_000_000).toFixed(2) + " M";
+    if (p >= 1_000_000) return "Rp " + (p / 1_000_000).toFixed(1) + " jt";
+    return "Rp " + p.toLocaleString("id-ID", { maximumFractionDigits: 0 });
+  }
+  if (sym === "EMAS" || sym === "MINYAK") {
+    if (p >= 1_000_000) return "Rp " + (p / 1_000_000).toFixed(2) + " jt";
+    return "Rp " + p.toLocaleString("id-ID", { maximumFractionDigits: 0 });
+  }
   if (sym === "USD/IDR") return "Rp " + p.toLocaleString("id-ID", { maximumFractionDigits: 0 });
   if (p >= 1000) return p.toLocaleString("id-ID", { maximumFractionDigits: 0 });
   return p.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtChange(c: number, sym: string): string {
+  // Big absolute changes (Rp puluhan ribu+ for converted commodities & USD/IDR)
+  // → integer with locale separators. Small (saham, %) → 2 decimals.
+  const sign = c >= 0 ? "+" : "";
+  const isLargeIdr = ["BTC", "EMAS", "MINYAK", "USD/IDR"].includes(sym);
+  if (isLargeIdr) {
+    if (Math.abs(c) >= 1_000_000) return sign + (c / 1_000_000).toFixed(2) + " jt";
+    return sign + Math.round(c).toLocaleString("id-ID");
+  }
+  return sign + c.toFixed(2);
 }
 
 /* ── Hooks ── */
@@ -92,7 +113,7 @@ function StockCard({ s }: { s: StockItem }) {
         <span className={`text-label-sm font-mono font-bold ${
           s.direction === "up" ? "text-emerald-600" : s.direction === "down" ? "text-red-600" : "text-gray-500"
         }`}>
-          {s.change >= 0 ? "+" : ""}{s.change.toFixed(2)}
+          {fmtChange(s.change, s.symbol)}
         </span>
         <span className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded-[4px] ${
           s.direction === "up" ? "bg-emerald-50 text-emerald-600" : s.direction === "down" ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"
