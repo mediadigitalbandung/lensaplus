@@ -9,20 +9,23 @@ interface TickerItem { title: string; href: string; hot?: boolean; category?: st
 interface StockItem {
   symbol: string; price: number; prevClose: number;
   change: number; changePercent: number; direction: "up" | "down" | "flat";
+  unit?: string;
 }
 
 function fmtPrice(p: number, sym: string): string {
-  // Commodities & crypto: server has converted to IDR — render as Rp with
-  // compact suffix when values get huge (BTC ~Rp 1.2M USD * rate = miliaran).
+  // BTC: 1 coin in IDR is in the billions → compact "M" (miliar) / "jt" (juta).
   if (sym === "BTC") {
     if (p >= 1_000_000_000) return "Rp " + (p / 1_000_000_000).toFixed(2) + " M";
     if (p >= 1_000_000) return "Rp " + (p / 1_000_000).toFixed(1) + " jt";
     return "Rp " + p.toLocaleString("id-ID", { maximumFractionDigits: 0 });
   }
-  if (sym === "EMAS" || sym === "MINYAK") {
+  // MINYAK: per barrel in IDR ~Rp 1.7 jt → use "jt" suffix when ≥1 jt.
+  if (sym === "MINYAK") {
     if (p >= 1_000_000) return "Rp " + (p / 1_000_000).toFixed(2) + " jt";
     return "Rp " + p.toLocaleString("id-ID", { maximumFractionDigits: 0 });
   }
+  // EMAS: now per gram (~Rp 2,5 jt) — show full integer Rupiah.
+  if (sym === "EMAS") return "Rp " + Math.round(p).toLocaleString("id-ID");
   if (sym === "USD/IDR") return "Rp " + p.toLocaleString("id-ID", { maximumFractionDigits: 0 });
   if (p >= 1000) return p.toLocaleString("id-ID", { maximumFractionDigits: 0 });
   return p.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -96,9 +99,16 @@ function StockCard({ s }: { s: StockItem }) {
         s.direction === "up" ? "bg-emerald-500" : s.direction === "down" ? "bg-red-500" : "bg-gray-300"
       }`} />
       
-      <div className="flex items-center justify-between mb-2 mt-0.5">
-        <span className="text-label-md font-bold text-gray-600 group-hover:text-gray-900 transition-colors">{s.symbol}</span>
-        <div className={`p-1 rounded-md transition-colors ${
+      <div className="flex items-start justify-between mb-2 mt-0.5 gap-1">
+        <div className="min-w-0">
+          <span className="block text-label-md font-bold text-gray-600 group-hover:text-gray-900 transition-colors leading-tight">{s.symbol}</span>
+          {s.unit && (
+            <span className="block text-[9px] sm:text-[10px] text-gray-400 leading-tight font-medium mt-0.5 truncate">
+              {s.unit}
+            </span>
+          )}
+        </div>
+        <div className={`shrink-0 p-1 rounded-md transition-colors ${
           s.direction === "up" ? "bg-emerald-50 text-emerald-600" : s.direction === "down" ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"
         }`}>
           {s.direction === "up" ? <ArrowUpRight size={14} strokeWidth={2.5} /> :
@@ -106,7 +116,7 @@ function StockCard({ s }: { s: StockItem }) {
            <Minus size={14} strokeWidth={2.5} />}
         </div>
       </div>
-      
+
       <div className="text-title-lg font-mono font-bold text-gray-900 leading-none tracking-tight">{fmtPrice(s.price, s.symbol)}</div>
       
       <div className="mt-2.5 flex items-center gap-1.5">

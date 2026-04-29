@@ -2,20 +2,23 @@ import { NextResponse } from "next/server";
 
 export const revalidate = 15; // ISR: revalidate every 15 seconds
 
-const SYMBOLS = [
-  { id: "^JKSE", label: "IHSG" },
-  { id: "BBCA.JK", label: "BBCA" },
-  { id: "BBRI.JK", label: "BBRI" },
-  { id: "BMRI.JK", label: "BMRI" },
-  { id: "TLKM.JK", label: "TLKM" },
-  { id: "ASII.JK", label: "ASII" },
-  { id: "UNVR.JK", label: "UNVR" },
-  { id: "GOTO.JK", label: "GOTO" },
-  { id: "USDIDR=X", label: "USD/IDR" },
-  { id: "GC=F", label: "EMAS" },
-  { id: "CL=F", label: "MINYAK" },
-  { id: "BTC-USD", label: "BTC" },
+const SYMBOLS: { id: string; label: string; unit: string }[] = [
+  { id: "^JKSE", label: "IHSG", unit: "poin indeks" },
+  { id: "BBCA.JK", label: "BBCA", unit: "per saham" },
+  { id: "BBRI.JK", label: "BBRI", unit: "per saham" },
+  { id: "BMRI.JK", label: "BMRI", unit: "per saham" },
+  { id: "TLKM.JK", label: "TLKM", unit: "per saham" },
+  { id: "ASII.JK", label: "ASII", unit: "per saham" },
+  { id: "UNVR.JK", label: "UNVR", unit: "per saham" },
+  { id: "GOTO.JK", label: "GOTO", unit: "per saham" },
+  { id: "USDIDR=X", label: "USD/IDR", unit: "per 1 USD" },
+  { id: "GC=F", label: "EMAS", unit: "per gram" },
+  { id: "CL=F", label: "MINYAK", unit: "per barel" },
+  { id: "BTC-USD", label: "BTC", unit: "per 1 BTC" },
 ];
+
+// 1 troy ounce = 31.1034768 gram — Yahoo's GC=F is USD/oz; we want IDR/gram
+const TROY_OUNCE_TO_GRAM = 31.1034768;
 
 export async function GET() {
   try {
@@ -53,16 +56,24 @@ export async function GET() {
         prev = prev * usdIdrRate;
       }
 
+      // Yahoo quotes gold in USD per troy ounce; Indonesian audience expects
+      // per gram. Divide after the IDR conversion so we end up at IDR/gram.
+      if (s.label === "EMAS") {
+        close = close / TROY_OUNCE_TO_GRAM;
+        prev = prev / TROY_OUNCE_TO_GRAM;
+      }
+
       const change = close - prev;
       const pct = prev > 0 ? (change / prev) * 100 : 0;
       return {
         symbol: s.label,
+        unit: s.unit,
         price: close,
         prevClose: prev,
         change: Math.round(change * 100) / 100,
         changePercent: Math.round(pct * 100) / 100,
         direction: change > 0.001 ? "up" : change < -0.001 ? "down" : "flat",
-        currency: USD_QUOTED.has(s.label) ? "IDR" : (s.label === "USD/IDR" ? "IDR" : "IDR"),
+        currency: "IDR",
       };
     }).filter(Boolean);
 
