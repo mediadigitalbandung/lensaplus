@@ -111,7 +111,10 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             </div>
           </div>
 
-          {/* Side stories — 4 cols, stacked */}
+          {/* Side stories — 4 cols, stacked. Mirror the main hero's slow
+              ken-burns zoom + vertical gradient so all four panels feel
+              like one unit instead of "big animated card + three flat
+              thumbnails". */}
           <div className="lg:col-span-4 flex flex-col">
             {side.map((a, i) => (
               <Link
@@ -121,14 +124,20 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
               >
                 <div className="absolute inset-0">
                   {a.featuredImage ? (
-                    <Image src={a.featuredImage} alt={a.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <Image
+                      src={a.featuredImage}
+                      alt={a.title}
+                      fill
+                      className="object-cover transition-transform duration-[6000ms] ease-linear group-hover:scale-[1.02]"
+                      style={{ transform: "scale(1.05)" }}
+                    />
                   ) : (
                     <div className="absolute inset-0 bg-primary-container" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                 </div>
                 <div className="relative p-6 sm:p-7 flex flex-col justify-end h-full min-h-[8rem]">
-                  <span className="text-label-sm font-bold uppercase tracking-widest text-secondary/80 mb-1">
+                  <span className="text-label-sm font-bold uppercase tracking-widest text-secondary mb-1">
                     {a.category.name}
                   </span>
                   <h2 className="font-serif text-title-lg text-white leading-snug line-clamp-2 group-hover:text-white/90 transition-colors">
