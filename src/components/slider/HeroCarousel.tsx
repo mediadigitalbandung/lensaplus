@@ -82,9 +82,9 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
       onMouseLeave={() => setIsPaused(false)}
     >
       <div className="container-main py-0">
-        <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[30rem] lg:min-h-[36rem]">
-          {/* Main story — 8 cols, crossfade */}
-          <div className="lg:col-span-8 relative overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-12 min-h-[30rem] sm:min-h-[28rem] lg:min-h-[36rem]">
+          {/* Main story — 8 cols on sm+, full width below sm. Crossfade. */}
+          <div className="sm:col-span-8 relative overflow-hidden">
             {main.map((a, i) => (
               <Link
                 key={a.slug}
@@ -128,7 +128,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             ))}
 
             {/* First item static for layout height */}
-            <div className="relative h-full min-h-[26rem] lg:min-h-full invisible">
+            <div className="relative h-full min-h-[26rem] sm:min-h-full invisible">
               <div className="absolute inset-0" />
             </div>
 
@@ -147,10 +147,10 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             </div>
           </div>
 
-          {/* Side stories — 4 cols on lg, full-width below. Paginated 3-at-a-time
-              with crossfade like the main hero. min-h on mobile prevents the
-              wrapper collapsing to zero (children are absolute-positioned). */}
-          <div className="lg:col-span-4 relative overflow-hidden min-h-[26rem] lg:min-h-full border-t border-white/10 lg:border-t-0">
+          {/* Side stories — 4 cols beside main from sm+ so they stay tucked to
+              the right rather than stacking under the hero on tablets/phones.
+              Below sm (≤640px) they fall back to a row under the hero. */}
+          <div className="sm:col-span-4 relative overflow-hidden min-h-[20rem] sm:min-h-full border-t border-white/10 sm:border-t-0 sm:border-l sm:border-white/10">
             {sidePages.map((pageItems, pageIdx) => (
               <div
                 key={pageIdx}
