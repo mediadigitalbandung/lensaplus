@@ -106,19 +106,19 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                   <div className="absolute inset-0 bg-primary" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 px-7 py-8 sm:px-10 sm:py-10 lg:px-14 lg:py-12">
-                  <span className="inline-block text-label-sm font-bold uppercase tracking-widest text-secondary mb-3">
+                <div className="absolute bottom-0 left-0 right-0 px-5 py-6 pb-12 sm:px-10 sm:py-10 lg:px-14 lg:py-12">
+                  <span className="inline-block text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-secondary mb-2 sm:mb-3">
                     {a.category.name}
                   </span>
-                  <h1 className="font-serif text-display-sm sm:text-display-md lg:text-display-lg text-white leading-[1.1] max-w-2xl pr-4 line-clamp-3">
+                  <h1 className="font-serif text-headline-sm sm:text-display-sm lg:text-display-md xl:text-display-lg text-white leading-[1.15] sm:leading-[1.1] max-w-2xl pr-4 line-clamp-3">
                     {a.title}
                   </h1>
                   {a.excerpt && (
-                    <p className="mt-4 text-body-md text-white/60 max-w-xl line-clamp-2 max-sm:hidden">
+                    <p className="mt-3 sm:mt-4 text-body-md text-white/60 max-w-xl line-clamp-2 max-sm:hidden">
                       {a.excerpt}
                     </p>
                   )}
-                  <div className="mt-4 flex items-center gap-3 text-label-sm uppercase tracking-wider text-white/40">
+                  <div className="mt-2 sm:mt-4 flex items-center gap-2 sm:gap-3 text-[10px] sm:text-label-sm uppercase tracking-wider text-white/40">
                     <span className="text-white/60 font-semibold">{a.author.name}</span>
                     <span>/</span>
                     <span><ClientDate date={a.publishedAt} format="relative" /></span>
@@ -133,13 +133,13 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             </div>
 
             {/* Progress dots */}
-            <div className="absolute bottom-4 left-7 sm:left-10 lg:left-14 z-20 flex items-center gap-2">
+            <div className="absolute bottom-3 sm:bottom-4 left-5 sm:left-10 lg:left-14 z-20 flex items-center gap-1.5 sm:gap-2">
               {main.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveIndex(i)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === activeIndex ? "w-8 bg-white" : "w-3 bg-white/30 hover:bg-white/50"
+                  className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
+                    i === activeIndex ? "w-6 sm:w-8 bg-white" : "w-2 sm:w-3 bg-white/30 hover:bg-white/50"
                   }`}
                   aria-label={`Slide ${i + 1}`}
                 />
@@ -181,14 +181,14 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                     </div>
-                    <div className="relative p-6 sm:p-7 flex flex-col justify-end h-full min-h-[8rem]">
-                      <span className="text-label-sm font-bold uppercase tracking-widest text-secondary mb-1">
+                    <div className="relative p-3 sm:p-7 flex flex-col justify-end h-full min-h-[6rem] sm:min-h-[8rem]">
+                      <span className="text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-secondary mb-0.5 sm:mb-1">
                         {a.category.name}
                       </span>
-                      <h2 className="font-serif text-title-lg text-white leading-snug line-clamp-2 group-hover:text-white/90 transition-colors">
+                      <h2 className="font-serif text-title-sm sm:text-title-lg text-white leading-snug line-clamp-2 group-hover:text-white/90 transition-colors">
                         {a.title}
                       </h2>
-                      <span className="mt-2 text-label-sm text-white/40 uppercase tracking-wider">
+                      <span className="mt-1 sm:mt-2 text-[10px] sm:text-label-sm text-white/40 uppercase tracking-wider">
                         <ClientDate date={a.publishedAt} format="relative" />
                       </span>
                     </div>
@@ -199,7 +199,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
 
             {/* Page dots — only when more than one page exists */}
             {totalSidePages > 1 && (
-              <div className="absolute top-4 right-5 z-20 flex items-center gap-1.5">
+              <div className="absolute top-2.5 sm:top-4 right-3 sm:right-5 z-20 flex items-center gap-1 sm:gap-1.5">
                 {sidePages.map((_, i) => (
                   <button
                     key={i}
