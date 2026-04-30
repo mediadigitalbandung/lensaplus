@@ -230,9 +230,9 @@ export default function Header() {
               <li key={item.href} className="shrink-0">
                 <Link
                   href={item.href}
-                  className={`relative inline-block px-2.5 sm:px-3 py-3 text-label-lg transition-all duration-200 whitespace-nowrap ${
+                  className={`relative inline-block px-2 sm:px-3 py-2 sm:py-3 text-label-sm sm:text-label-lg transition-all duration-200 whitespace-nowrap ${
                     isActive
-                      ? "text-white font-bold after:absolute after:bottom-0 after:left-2.5 after:right-2.5 after:h-[2px] after:bg-primary"
+                      ? "text-white font-bold after:absolute after:bottom-0 after:left-2 sm:after:left-2.5 after:right-2 sm:after:right-2.5 after:h-[2px] after:bg-primary"
                       : "text-white/70 font-medium hover:text-white"
                   }`}
                 >

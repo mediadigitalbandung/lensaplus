@@ -91,41 +91,44 @@ function useTrending() {
 /* ── Stock Card ── */
 function StockCard({ s }: { s: StockItem }) {
   return (
-    <div className={`shrink-0 rounded-[12px] px-4 py-3 min-w-[150px] sm:min-w-[170px] border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_14px_-4px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-0.5 relative overflow-hidden group cursor-default ${
+    <div className={`shrink-0 rounded-[10px] sm:rounded-[12px] px-3 py-2 sm:px-4 sm:py-3 min-w-[120px] sm:min-w-[170px] border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_14px_-4px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-0.5 relative overflow-hidden group cursor-default ${
       s.direction === "up" ? "bg-emerald-50/60 border-emerald-100" : s.direction === "down" ? "bg-red-50/60 border-red-100" : "bg-gray-50/60 border-gray-100"
     }`}>
       {/* Decorative top accent line */}
-      <div className={`absolute top-0 left-0 w-full h-1 transition-colors ${
+      <div className={`absolute top-0 left-0 w-full h-0.5 sm:h-1 transition-colors ${
         s.direction === "up" ? "bg-emerald-500" : s.direction === "down" ? "bg-red-500" : "bg-gray-300"
       }`} />
-      
-      <div className="flex items-start justify-between mb-2 mt-0.5 gap-1">
+
+      <div className="flex items-start justify-between mb-1.5 sm:mb-2 mt-0.5 gap-1">
         <div className="min-w-0">
-          <span className="block text-label-md font-bold text-gray-600 group-hover:text-gray-900 transition-colors leading-tight">{s.symbol}</span>
+          <span className="block text-label-sm sm:text-label-md font-bold text-gray-600 group-hover:text-gray-900 transition-colors leading-tight">{s.symbol}</span>
           {s.unit && (
             <span className="block text-[9px] sm:text-[10px] text-gray-400 leading-tight font-medium mt-0.5 truncate">
               {s.unit}
             </span>
           )}
         </div>
-        <div className={`shrink-0 p-1 rounded-md transition-colors ${
+        <div className={`shrink-0 p-0.5 sm:p-1 rounded-md transition-colors ${
           s.direction === "up" ? "bg-emerald-50 text-emerald-600" : s.direction === "down" ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"
         }`}>
-          {s.direction === "up" ? <ArrowUpRight size={14} strokeWidth={2.5} /> :
-           s.direction === "down" ? <ArrowDownRight size={14} strokeWidth={2.5} /> :
-           <Minus size={14} strokeWidth={2.5} />}
+          {s.direction === "up" ? <ArrowUpRight size={12} strokeWidth={2.5} className="sm:hidden" /> :
+           s.direction === "down" ? <ArrowDownRight size={12} strokeWidth={2.5} className="sm:hidden" /> :
+           <Minus size={12} strokeWidth={2.5} className="sm:hidden" />}
+          {s.direction === "up" ? <ArrowUpRight size={14} strokeWidth={2.5} className="hidden sm:block" /> :
+           s.direction === "down" ? <ArrowDownRight size={14} strokeWidth={2.5} className="hidden sm:block" /> :
+           <Minus size={14} strokeWidth={2.5} className="hidden sm:block" />}
         </div>
       </div>
 
-      <div className="text-title-lg font-mono font-bold text-gray-900 leading-none tracking-tight">{fmtPrice(s.price, s.symbol)}</div>
-      
-      <div className="mt-2.5 flex items-center gap-1.5">
-        <span className={`text-label-sm font-mono font-bold ${
+      <div className="text-title-md sm:text-title-lg font-mono font-bold text-gray-900 leading-none tracking-tight">{fmtPrice(s.price, s.symbol)}</div>
+
+      <div className="mt-1.5 sm:mt-2.5 flex items-center gap-1 sm:gap-1.5">
+        <span className={`text-[10px] sm:text-label-sm font-mono font-bold ${
           s.direction === "up" ? "text-emerald-600" : s.direction === "down" ? "text-red-600" : "text-gray-500"
         }`}>
           {fmtChange(s.change, s.symbol)}
         </span>
-        <span className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded-[4px] ${
+        <span className={`text-[9px] sm:text-[11px] font-mono font-bold px-1 sm:px-1.5 py-0.5 rounded-[4px] ${
           s.direction === "up" ? "bg-emerald-50 text-emerald-600" : s.direction === "down" ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"
         }`}>
           {s.changePercent >= 0 ? "+" : ""}{s.changePercent.toFixed(2)}%
@@ -151,31 +154,31 @@ function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate
       onTouchStart={() => setPaused(true)}
       onTouchEnd={() => setPaused(false)}
     >
-      <div className="container-main py-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-label-md font-bold uppercase tracking-widest text-gray-500">Market</span>
+      <div className="container-main py-2 sm:py-3">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-label-sm sm:text-label-md font-bold uppercase tracking-widest text-gray-500">Market</span>
             <span className="hidden sm:inline text-label-sm text-gray-400">Live</span>
           </div>
-          {lastUpdate && <span className="text-label-sm text-gray-400 font-mono">Update {lastUpdate} WIB</span>}
+          {lastUpdate && <span className="text-[10px] sm:text-label-sm text-gray-400 font-mono">Update {lastUpdate} WIB</span>}
         </div>
       </div>
 
       <div className="relative">
         <div
-          className="flex gap-2.5 w-max"
+          className="flex gap-2 sm:gap-2.5 w-max"
           style={{
             animation: `stockScroll ${duration}s linear infinite`,
             animationPlayState: paused ? "paused" : "running",
           }}
         >
           {/* Set 1 */}
-          <div className="flex gap-2.5 pl-5 sm:pl-8">
+          <div className="flex gap-2 sm:gap-2.5 pl-5 sm:pl-8">
             {stocks.map((s) => <StockCard key={`a-${s.symbol}`} s={s} />)}
           </div>
           {/* Set 2 (duplicate for seamless loop) */}
-          <div className="flex gap-2.5">
+          <div className="flex gap-2 sm:gap-2.5">
             {stocks.map((s) => <StockCard key={`b-${s.symbol}`} s={s} />)}
           </div>
         </div>
@@ -207,10 +210,10 @@ export default function NewsTicker() {
       {/* ═══ TRENDING INDONESIA ═══ */}
       {looped.length > 0 && (
         <div className="bg-primary border-b border-[#001530] overflow-hidden">
-          <div className="flex items-center py-2.5 relative">
-            <div className="shrink-0 flex items-center gap-2 px-4 sm:px-6 z-10 bg-primary shadow-[8px_0_12px_-2px_#002045]">
-              <span className="h-2 w-2 rounded-full bg-secondary animate-pulse shrink-0" />
-              <span className="text-label-md font-bold tracking-widest text-white uppercase whitespace-nowrap">
+          <div className="flex items-center py-2 sm:py-2.5 relative">
+            <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 z-10 bg-primary shadow-[8px_0_12px_-2px_#002045]">
+              <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-secondary animate-pulse shrink-0" />
+              <span className="text-label-sm sm:text-label-md font-bold tracking-widest text-white uppercase whitespace-nowrap">
                 Trending
               </span>
             </div>
@@ -225,12 +228,12 @@ export default function NewsTicker() {
                 <div className="flex items-center">
                   {trendingItems.map((item, i) => (
                     <Link key={`a-${i}`} href={item.href}
-                      className="mx-3 sm:mx-5 inline-flex items-center gap-2 text-body-md font-medium text-white/80 hover:text-white whitespace-nowrap transition-colors">
+                      className="mx-2.5 sm:mx-5 inline-flex items-center gap-1.5 sm:gap-2 text-body-sm sm:text-body-md font-medium text-white/80 hover:text-white whitespace-nowrap transition-colors">
                       {item.hot && (
-                        <span className="inline-flex items-center rounded-sm bg-secondary px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider">HOT</span>
+                        <span className="inline-flex items-center rounded-sm bg-secondary px-1 sm:px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider">HOT</span>
                       )}
                       {item.category && (
-                        <span className="text-label-sm font-bold text-blue-200/80 uppercase tracking-wider">{item.category}</span>
+                        <span className="text-[10px] sm:text-label-sm font-bold text-blue-200/80 uppercase tracking-wider">{item.category}</span>
                       )}
                       <span className="h-1 w-1 rounded-full bg-white/20 shrink-0" />
                       {item.title}
@@ -241,12 +244,12 @@ export default function NewsTicker() {
                 <div className="flex items-center">
                   {trendingItems.map((item, i) => (
                     <Link key={`b-${i}`} href={item.href}
-                      className="mx-3 sm:mx-5 inline-flex items-center gap-2 text-body-md font-medium text-white/80 hover:text-white whitespace-nowrap transition-colors">
+                      className="mx-2.5 sm:mx-5 inline-flex items-center gap-1.5 sm:gap-2 text-body-sm sm:text-body-md font-medium text-white/80 hover:text-white whitespace-nowrap transition-colors">
                       {item.hot && (
-                        <span className="inline-flex items-center rounded-sm bg-secondary px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider">HOT</span>
+                        <span className="inline-flex items-center rounded-sm bg-secondary px-1 sm:px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider">HOT</span>
                       )}
                       {item.category && (
-                        <span className="text-label-sm font-bold text-blue-200/80 uppercase tracking-wider">{item.category}</span>
+                        <span className="text-[10px] sm:text-label-sm font-bold text-blue-200/80 uppercase tracking-wider">{item.category}</span>
                       )}
                       <span className="h-1 w-1 rounded-full bg-white/20 shrink-0" />
                       {item.title}
