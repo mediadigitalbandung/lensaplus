@@ -502,117 +502,50 @@ export default async function HomePage() {
           CATEGORY GRID
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {(() => {
-        // Per-category accent palette — soft hues that read well on the navy
-        // background. Same hue families used for the lucide icons elsewhere.
-        const ACCENTS: Record<string, { from: string; to: string; ring: string; glow: string }> = {
-          hukum:                  { from: "from-blue-500/30",    to: "to-blue-500/5",    ring: "ring-blue-300/20",    glow: "group-hover:shadow-blue-500/20" },
-          "bisnis-ekonomi":       { from: "from-amber-500/30",   to: "to-amber-500/5",   ring: "ring-amber-300/20",   glow: "group-hover:shadow-amber-500/20" },
-          olahraga:               { from: "from-emerald-500/30", to: "to-emerald-500/5", ring: "ring-emerald-300/20", glow: "group-hover:shadow-emerald-500/20" },
-          hiburan:                { from: "from-pink-500/30",    to: "to-pink-500/5",    ring: "ring-pink-300/20",    glow: "group-hover:shadow-pink-500/20" },
-          kesehatan:              { from: "from-rose-500/30",    to: "to-rose-500/5",    ring: "ring-rose-300/20",    glow: "group-hover:shadow-rose-500/20" },
-          "pertanian-peternakan": { from: "from-lime-500/30",    to: "to-lime-500/5",    ring: "ring-lime-300/20",    glow: "group-hover:shadow-lime-500/20" },
-          teknologi:              { from: "from-cyan-500/30",    to: "to-cyan-500/5",    ring: "ring-cyan-300/20",    glow: "group-hover:shadow-cyan-500/20" },
-          politik:                { from: "from-red-500/30",     to: "to-red-500/5",     ring: "ring-red-300/20",     glow: "group-hover:shadow-red-500/20" },
-          pendidikan:             { from: "from-indigo-500/30",  to: "to-indigo-500/5",  ring: "ring-indigo-300/20",  glow: "group-hover:shadow-indigo-500/20" },
-          lingkungan:             { from: "from-green-500/30",   to: "to-green-500/5",   ring: "ring-green-300/20",   glow: "group-hover:shadow-green-500/20" },
-          "gaya-hidup":           { from: "from-fuchsia-500/30", to: "to-fuchsia-500/5", ring: "ring-fuchsia-300/20", glow: "group-hover:shadow-fuchsia-500/20" },
-          opini:                  { from: "from-orange-500/30",  to: "to-orange-500/5",  ring: "ring-orange-300/20",  glow: "group-hover:shadow-orange-500/20" },
-        };
-        const defaultAccent = { from: "from-slate-400/20", to: "to-slate-400/5", ring: "ring-white/10", glow: "" };
-
-        // Most-active first; empty (0-article) categories drop to bottom and
-        // render at half opacity so they don't compete with the active set.
+        // Most-active first; empty (0-article) categories drop to bottom.
         const sortedCategories = [...categories].sort(
           (a, b) => b._count.articles - a._count.articles,
         );
-        const featured = sortedCategories.slice(0, 4);
-        const rest = sortedCategories.slice(4);
 
         return (
-          <section className="relative overflow-hidden bg-primary py-16">
-            {/* Backdrop glow — adds depth, breaks up the flat navy field */}
-            <div className="pointer-events-none absolute inset-0 opacity-30">
-              <div className="absolute -top-32 left-1/4 h-96 w-96 rounded-full bg-blue-400 blur-[120px]" />
-              <div className="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full bg-secondary blur-[120px]" />
-            </div>
-
-            <div className="container-main relative">
-              {/* Header */}
-              <div className="mb-10 flex flex-wrap items-end justify-between gap-3">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-white/15 to-white/5 text-white shadow-lg shadow-black/20 ring-1 ring-white/10">
-                    <Compass size={24} strokeWidth={2} />
-                  </div>
-                  <div>
-                    <span className="text-label-md font-bold uppercase tracking-widest text-white/50">Topik</span>
-                    <h2 className="mt-0.5 font-serif text-headline-lg leading-tight text-white">Jelajahi Kategori</h2>
-                  </div>
+          <section className="bg-primary py-14">
+            <div className="container-main">
+              {/* Header — flat, editorial, no chrome */}
+              <div className="mb-8 flex items-end justify-between gap-4 border-b border-white/15 pb-5">
+                <div>
+                  <span className="text-label-md font-bold uppercase tracking-widest text-white/60">Topik</span>
+                  <h2 className="mt-1 font-serif text-headline-lg leading-tight text-white">Jelajahi Kategori</h2>
                 </div>
-                <p className="max-w-md text-body-md text-white/50">
-                  Temukan berita berdasarkan topik yang Anda minati — dari hukum hingga gaya hidup.
+                <p className="hidden max-w-sm text-body-sm text-white/55 sm:block">
+                  Temukan berita berdasarkan topik yang Anda minati.
                 </p>
               </div>
 
-              {/* Featured row — top 4 categories as larger accented cards */}
-              {featured.length > 0 && (
-                <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  {featured.map((cat) => {
-                    const Icon = categoryIconMap[cat.slug] || Scale;
-                    const accent = ACCENTS[cat.slug] || defaultAccent;
-                    const isEmpty = cat._count.articles === 0;
-                    return (
-                      <Link
-                        key={cat.slug}
-                        href={`/kategori/${cat.slug}`}
-                        className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${accent.from} ${accent.to} p-5 ring-1 ${accent.ring} transition-all duration-500 hover:-translate-y-1 hover:shadow-xl ${accent.glow} ${isEmpty ? "opacity-50" : ""}`}
-                      >
-                        <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-sm" />
-                        <div className="relative flex h-full flex-col justify-between gap-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-white shadow-md ring-1 ring-white/20 backdrop-blur-md transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
-                              <Icon size={20} strokeWidth={2.2} />
-                            </div>
-                            <ChevronRight size={18} className="text-white/30 transition-all duration-500 group-hover:translate-x-1 group-hover:text-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-serif text-title-lg leading-tight text-white">{cat.name}</h3>
-                            <p className="mt-1.5 text-label-md font-semibold uppercase tracking-wider text-white/60">
-                              {cat._count.articles} artikel
-                            </p>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Compact row — remaining categories */}
-              {rest.length > 0 && (
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {rest.map((cat) => {
-                    const Icon = categoryIconMap[cat.slug] || Scale;
-                    const accent = ACCENTS[cat.slug] || defaultAccent;
-                    const isEmpty = cat._count.articles === 0;
-                    return (
-                      <Link
-                        key={cat.slug}
-                        href={`/kategori/${cat.slug}`}
-                        className={`group flex items-center gap-3 rounded-xl bg-white/[0.04] p-3 ring-1 ring-white/[0.07] transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.08] hover:ring-white/[0.15] ${isEmpty ? "opacity-50" : ""}`}
-                      >
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${accent.from} ${accent.to} text-white/85 ring-1 ${accent.ring} transition-all duration-300 group-hover:scale-105 group-hover:text-white`}>
-                          <Icon size={16} strokeWidth={2.2} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="block truncate text-title-sm font-semibold text-white">{cat.name}</span>
-                          <span className="block text-label-sm uppercase tracking-wider text-white/35">{cat._count.articles} artikel</span>
-                        </div>
-                        <ChevronRight size={14} className="shrink-0 text-white/15 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-white/50" />
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
+              {/* Uniform grid — square tiles, single bold treatment */}
+              <div className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                {sortedCategories.map((cat) => {
+                  const Icon = categoryIconMap[cat.slug] || Scale;
+                  const isEmpty = cat._count.articles === 0;
+                  return (
+                    <Link
+                      key={cat.slug}
+                      href={`/kategori/${cat.slug}`}
+                      className={`group flex flex-col justify-between gap-6 bg-primary p-5 transition-colors duration-200 hover:bg-secondary ${isEmpty ? "opacity-40" : ""}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <Icon size={22} strokeWidth={2} className="text-white" />
+                        <ChevronRight size={16} className="text-white/30 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-serif text-title-md leading-tight text-white">{cat.name}</h3>
+                        <p className="mt-1 text-label-sm uppercase tracking-wider text-white/55">
+                          {cat._count.articles} artikel
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </section>
         );
