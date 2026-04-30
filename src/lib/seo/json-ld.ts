@@ -20,6 +20,13 @@ const SITE_URL =
 const SITE_NAME = "Kartawarta";
 const LOGO_URL = `${SITE_URL}/kartawarta-icon.png`;
 
+// Sister media properties under the same publisher. Listed in `sameAs` of
+// the NewsMediaOrganization so Google understands these belong to the same
+// brand entity (knowledge-graph signal, not a backlink).
+const SISTER_BRANDS: string[] = [
+  "https://jurnalishukumbandung.com",
+];
+
 export interface JsonLdAuthor {
   name: string;
   slug?: string;
@@ -87,6 +94,7 @@ function publisherBlock() {
       width: 512,
       height: 512,
     },
+    sameAs: publisherSameAs(),
   };
 }
 
@@ -277,22 +285,25 @@ export function qaJsonLd(
  * sameAs but won't surface social profile cards in SERP.
  */
 function publisherSameAs(): string[] {
-  const bulk = process.env.KARTAWARTA_SOCIAL_URLS;
-  if (bulk && bulk.trim()) {
-    return bulk
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => /^https?:\/\//i.test(s));
-  }
-  const individual = [
-    process.env.KARTAWARTA_TWITTER_URL,
-    process.env.KARTAWARTA_FACEBOOK_URL,
-    process.env.KARTAWARTA_INSTAGRAM_URL,
-    process.env.KARTAWARTA_LINKEDIN_URL,
-    process.env.KARTAWARTA_YOUTUBE_URL,
-    process.env.KARTAWARTA_TIKTOK_URL,
-  ].filter((s): s is string => !!s && /^https?:\/\//i.test(s));
-  return individual;
+  const social = (() => {
+    const bulk = process.env.KARTAWARTA_SOCIAL_URLS;
+    if (bulk && bulk.trim()) {
+      return bulk
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => /^https?:\/\//i.test(s));
+    }
+    return [
+      process.env.KARTAWARTA_TWITTER_URL,
+      process.env.KARTAWARTA_FACEBOOK_URL,
+      process.env.KARTAWARTA_INSTAGRAM_URL,
+      process.env.KARTAWARTA_LINKEDIN_URL,
+      process.env.KARTAWARTA_YOUTUBE_URL,
+      process.env.KARTAWARTA_TIKTOK_URL,
+    ].filter((s): s is string => !!s && /^https?:\/\//i.test(s));
+  })();
+  // De-dupe in case a sister URL happens to also be in the social list.
+  return Array.from(new Set([...social, ...SISTER_BRANDS]));
 }
 
 /**
