@@ -95,7 +95,11 @@ export default async function HomePage() {
     process.env.KARTAWARTA_YOUTUBE_URL,
     process.env.KARTAWARTA_TIKTOK_URL,
   ].filter((s): s is string => !!s && /^https?:\/\//i.test(s));
-  const sameAs = socialUrls.length > 0 ? socialUrls : fallbackSocialUrls;
+  // Sister media properties — knowledge-graph signal that JHB and Kartawarta
+  // share a publisher entity. De-dupe in case it's already in the social list.
+  const sisterBrands = ["https://jurnalishukumbandung.com"];
+  const baseSameAs = socialUrls.length > 0 ? socialUrls : fallbackSocialUrls;
+  const sameAs = Array.from(new Set([...baseSameAs, ...sisterBrands]));
 
   return (
     <>
