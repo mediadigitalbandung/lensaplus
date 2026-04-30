@@ -7,6 +7,7 @@ import TopLoader from "@/components/layout/TopLoader";
 import PublicNav from "@/components/layout/PublicNav";
 import PublicFooter from "@/components/layout/PublicFooter";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import SideRailAds from "@/components/ads/SideRailAds";
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -121,6 +122,7 @@ export default function RootLayout({
           <PublicNav />
           <main id="main-content" className="flex-1">{children}</main>
           <PublicFooter />
+          <SideRailAds />
           <ServiceWorkerRegistration />
         </Providers>
       </body>
