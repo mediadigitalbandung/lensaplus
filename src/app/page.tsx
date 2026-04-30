@@ -177,25 +177,27 @@ export default async function HomePage() {
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           TERKINI + TERPOPULER + SIDEBAR AD
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      <section className="bg-surface-container-low py-14">
+      <section className="bg-surface-container-low py-10 sm:py-12 lg:py-14">
         <div className="container-main">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10">
             {/* Berita Terkini â€” 7 cols */}
             <div className="lg:col-span-7">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20">
+              <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20 shrink-0">
                     <Flame size={18} strokeWidth={2.5} />
                   </div>
-                  <h2 className="font-serif text-headline-md text-on-surface">Berita Terkini</h2>
+                  <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface truncate">Berita Terkini</h2>
                 </div>
-                <Link href="/berita" className="flex items-center gap-1.5 rounded-full bg-primary/5 px-4 py-2 text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors">
-                  Lihat Semua <ChevronRight size={14} />
+                <Link href="/berita" className="flex items-center gap-1.5 rounded-full bg-primary/5 px-3 sm:px-4 py-1.5 sm:py-2 text-label-sm sm:text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors shrink-0">
+                  <span className="hidden sm:inline">Lihat Semua</span>
+                  <span className="sm:hidden">Semua</span>
+                  <ChevronRight size={14} />
                 </Link>
               </div>
               {/* First article large */}
               {terkiniArticles[0] && (
-                <article className="group mb-8">
+                <article className="group mb-6 sm:mb-8">
                   <Link href={`/berita/${terkiniArticles[0].slug}`} className="block">
                     <div className="relative aspect-[2/1] overflow-hidden rounded-sm">
                       {terkiniArticles[0].featuredImage ? (
@@ -205,26 +207,26 @@ export default async function HomePage() {
                       )}
                     </div>
                   </Link>
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <span className="text-label-sm font-bold uppercase tracking-widest text-primary">{terkiniArticles[0].category.name}</span>
                     <Link href={`/berita/${terkiniArticles[0].slug}`}>
-                      <h3 className="mt-1 font-serif text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
+                      <h3 className="mt-1 font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
                         {terkiniArticles[0].title}
                       </h3>
                     </Link>
                     {terkiniArticles[0].excerpt && (
-                      <p className="mt-2 text-body-md text-on-surface-variant line-clamp-2">{terkiniArticles[0].excerpt}</p>
+                      <p className="mt-2 text-body-sm sm:text-body-md text-on-surface-variant line-clamp-2">{terkiniArticles[0].excerpt}</p>
                     )}
                   </div>
                 </article>
               )}
               {/* Rest as compact list */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 sm:gap-y-5">
                 {terkiniArticles.slice(1).map((a) => (
-                  <article key={a.slug} className="group flex gap-4">
+                  <article key={a.slug} className="group flex gap-3 sm:gap-4">
                     {a.featuredImage && (
                       <Link href={`/berita/${a.slug}`} className="shrink-0">
-                        <div className="relative h-20 w-28 overflow-hidden rounded-sm">
+                        <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-sm">
                           <Image src={a.featuredImage} alt={a.title} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                         </div>
                       </Link>
@@ -246,10 +248,10 @@ export default async function HomePage() {
               {/* "Lihat Lainnya" CTA — fills the gap when sidebar runs taller
                   than the article list and gives readers an explicit door to the
                   full /berita listing. */}
-              <div className="mt-10 border-t border-on-surface/10 pt-6 flex justify-center">
+              <div className="mt-8 sm:mt-10 border-t border-on-surface/10 pt-5 sm:pt-6 flex justify-center">
                 <Link
                   href="/berita"
-                  className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-label-md font-bold uppercase tracking-wider text-white transition-all hover:bg-primary-dark hover:gap-3 shadow-md shadow-primary/20"
+                  className="group inline-flex items-center gap-2 rounded-full bg-primary px-5 sm:px-6 py-2.5 sm:py-3 text-label-sm sm:text-label-md font-bold uppercase tracking-wider text-white transition-all hover:bg-primary-dark hover:gap-3 shadow-md shadow-primary/20"
                 >
                   Lihat Berita Lainnya
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
@@ -261,8 +263,8 @@ export default async function HomePage() {
             <aside className="lg:col-span-5">
               {/* Terpopuler */}
               <div className="mb-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20">
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-5 sm:mb-6">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
                     <TrendingUp size={16} strokeWidth={2.5} />
                   </div>
                   <h2 className="font-serif text-headline-sm text-on-surface">Terpopuler</h2>
@@ -307,25 +309,25 @@ export default async function HomePage() {
           EDITOR'S PICK â€” 4 cards horizontal
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {editorsPickArticles.length > 0 && (
-        <section className="bg-surface py-14">
+        <section className="bg-surface py-10 sm:py-12 lg:py-14">
           <div className="container-main">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20">
+            <div className="flex items-start sm:items-center justify-between gap-3 mb-6 sm:mb-8">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
                   <Sparkles size={18} strokeWidth={2.5} />
                 </div>
-                <div>
-                  <span className="text-label-md uppercase tracking-widest text-secondary font-bold">Pilihan Editor</span>
-                  <h2 className="font-serif text-headline-md text-on-surface mt-0.5">
+                <div className="min-w-0">
+                  <span className="text-label-sm sm:text-label-md uppercase tracking-widest text-secondary font-bold">Pilihan Editor</span>
+                  <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface mt-0.5">
                     Wajib Dibaca Hari Ini
                   </h2>
                 </div>
               </div>
-              <Link href="/berita" className="hidden sm:flex items-center gap-1.5 rounded-full bg-primary/5 px-4 py-2 text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors">
+              <Link href="/berita" className="hidden sm:flex items-center gap-1.5 rounded-full bg-primary/5 px-4 py-2 text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors shrink-0">
                 Semua Berita <ArrowRight size={14} />
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
               {editorsPickArticles.map((a) => (
                 <article key={a.slug} className="group">
                   <Link href={`/berita/${a.slug}`} className="block">
@@ -361,15 +363,15 @@ export default async function HomePage() {
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           POLLING
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      <section className="bg-surface py-14">
+      <section className="bg-surface py-10 sm:py-12 lg:py-14">
         <div className="container-main">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20">
+          <div className="flex items-center gap-2.5 sm:gap-3 mb-6 sm:mb-8">
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
               <Shield size={18} strokeWidth={2.5} />
             </div>
-            <div>
-              <span className="text-label-md uppercase tracking-widest text-secondary font-bold">Suara Pembaca</span>
-              <h2 className="font-serif text-headline-md text-on-surface mt-0.5">Polling</h2>
+            <div className="min-w-0">
+              <span className="text-label-sm sm:text-label-md uppercase tracking-widest text-secondary font-bold">Suara Pembaca</span>
+              <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface mt-0.5">Polling</h2>
             </div>
           </div>
           <PollingCarousel />
@@ -389,28 +391,30 @@ export default async function HomePage() {
 
         return (
           <div key={catSlug}>
-            <section className={`py-14 ${isEven ? "bg-surface" : "bg-surface-container-low"}`}>
+            <section className={`py-10 sm:py-12 lg:py-14 ${isEven ? "bg-surface" : "bg-surface-container-low"}`}>
               <div className="container-main">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                  <Link href={`/kategori/${catSlug}`} className="group flex items-center gap-3">
+                <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
+                  <Link href={`/kategori/${catSlug}`} className="group flex items-center gap-2.5 sm:gap-3 min-w-0">
                     {(() => { const CatIcon = categoryIconMap[catSlug] || Scale; return (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/10 group-hover:from-primary/25 group-hover:to-primary/10 transition-all">
+                      <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/10 group-hover:from-primary/25 group-hover:to-primary/10 transition-all shrink-0">
                         <CatIcon size={18} strokeWidth={2.5} />
                       </div>
                     ); })()}
-                    <h2 className="font-serif text-headline-sm text-on-surface group-hover:text-primary transition-colors">
+                    <h2 className="font-serif text-title-lg sm:text-headline-sm text-on-surface group-hover:text-primary transition-colors truncate">
                       {catName}
                     </h2>
                   </Link>
-                  <Link href={`/kategori/${catSlug}`} className="flex items-center gap-1.5 rounded-full bg-primary/5 px-4 py-2 text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors">
-                    Lihat Semua <ChevronRight size={14} />
+                  <Link href={`/kategori/${catSlug}`} className="flex items-center gap-1.5 rounded-full bg-primary/5 px-3 sm:px-4 py-1.5 sm:py-2 text-label-sm sm:text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors shrink-0">
+                    <span className="hidden sm:inline">Lihat Semua</span>
+                    <span className="sm:hidden">Semua</span>
+                    <ChevronRight size={14} />
                   </Link>
                 </div>
 
                 {/* Layout A (even): Large left + list right */}
                 {isEven ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
                     {main && (
                       <div className="lg:col-span-7">
                         <Link href={`/berita/${main.slug}`} className="group block">
@@ -422,26 +426,26 @@ export default async function HomePage() {
                             )}
                           </div>
                         </Link>
-                        <div className="mt-5">
+                        <div className="mt-4 sm:mt-5">
                           <Link href={`/berita/${main.slug}`}>
-                            <h3 className="font-serif text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
+                            <h3 className="font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
                               {main.title}
                             </h3>
                           </Link>
-                          {main.excerpt && <p className="mt-3 text-body-md text-on-surface-variant line-clamp-2">{main.excerpt}</p>}
-                          <p className="mt-3 flex items-center gap-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
+                          {main.excerpt && <p className="mt-2 sm:mt-3 text-body-sm sm:text-body-md text-on-surface-variant line-clamp-2">{main.excerpt}</p>}
+                          <p className="mt-2 sm:mt-3 flex items-center gap-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
                             {main.author.name} <span className="mx-0.5 text-on-surface-variant/20">/</span> <Clock size={10} className="text-on-surface-variant/50" /> {timeAgo(main.publishedAt)}
                           </p>
                         </div>
                       </div>
                     )}
                     {side.length > 0 && (
-                      <div className="lg:col-span-5 flex flex-col gap-5">
+                      <div className="lg:col-span-5 flex flex-col gap-4 sm:gap-5">
                         {side.map((a) => (
-                          <article key={a.slug} className="group flex gap-4">
+                          <article key={a.slug} className="group flex gap-3 sm:gap-4">
                             {a.featuredImage && (
                               <Link href={`/berita/${a.slug}`} className="shrink-0">
-                                <div className="relative h-20 w-28 overflow-hidden rounded-sm">
+                                <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-sm">
                                   <Image src={a.featuredImage} alt={a.title} fill className="object-cover" />
                                 </div>
                               </Link>
@@ -459,7 +463,7 @@ export default async function HomePage() {
                   </div>
                 ) : (
                   /* Layout B (odd): Grid of cards */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                     {catArticles.slice(0, 3).map((a) => (
                       <article key={a.slug} className="group">
                         <Link href={`/berita/${a.slug}`} className="block">
@@ -508,15 +512,15 @@ export default async function HomePage() {
         );
 
         return (
-          <section className="bg-primary py-14">
+          <section className="bg-primary py-10 sm:py-12 lg:py-14">
             <div className="container-main">
               {/* Header — flat, editorial, no chrome */}
-              <div className="mb-8 flex items-end justify-between gap-4 border-b border-white/15 pb-5">
-                <div>
-                  <span className="text-label-md font-bold uppercase tracking-widest text-white/60">Topik</span>
-                  <h2 className="mt-1 font-serif text-headline-lg leading-tight text-white">Jelajahi Kategori</h2>
+              <div className="mb-6 sm:mb-8 flex items-end justify-between gap-4 border-b border-white/15 pb-4 sm:pb-5">
+                <div className="min-w-0">
+                  <span className="text-label-sm sm:text-label-md font-bold uppercase tracking-widest text-white/60">Topik</span>
+                  <h2 className="mt-1 font-serif text-headline-sm sm:text-headline-md lg:text-headline-lg leading-tight text-white">Jelajahi Kategori</h2>
                 </div>
-                <p className="hidden max-w-sm text-body-sm text-white/55 sm:block">
+                <p className="hidden max-w-sm text-body-sm text-white/55 sm:block shrink-0">
                   Temukan berita berdasarkan topik yang Anda minati.
                 </p>
               </div>
@@ -530,14 +534,15 @@ export default async function HomePage() {
                     <Link
                       key={cat.slug}
                       href={`/kategori/${cat.slug}`}
-                      className={`group flex flex-col justify-between gap-6 bg-primary p-5 transition-colors duration-200 hover:bg-secondary ${isEmpty ? "opacity-40" : ""}`}
+                      className={`group flex flex-col justify-between gap-4 sm:gap-6 bg-primary p-4 sm:p-5 transition-colors duration-200 hover:bg-secondary ${isEmpty ? "opacity-40" : ""}`}
                     >
                       <div className="flex items-center justify-between">
-                        <Icon size={22} strokeWidth={2} className="text-white" />
+                        <Icon size={20} strokeWidth={2} className="text-white sm:hidden" />
+                        <Icon size={22} strokeWidth={2} className="text-white hidden sm:block" />
                         <ChevronRight size={16} className="text-white/30 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-white" />
                       </div>
                       <div>
-                        <h3 className="font-serif text-title-md leading-tight text-white">{cat.name}</h3>
+                        <h3 className="font-serif text-title-sm sm:text-title-md leading-tight text-white">{cat.name}</h3>
                         <p className="mt-1 text-label-sm uppercase tracking-wider text-white/55">
                           {cat._count.articles} artikel
                         </p>

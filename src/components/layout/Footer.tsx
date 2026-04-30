@@ -28,8 +28,8 @@ const footerLinks = {
 export default function Footer() {
   return (
     <footer className="bg-white text-on-surface border-t border-border" role="contentinfo" aria-label="Footer situs">
-      <div className="container-main py-14">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12">
+      <div className="container-main py-10 sm:py-12 lg:py-14">
+        <div className="grid grid-cols-1 gap-8 sm:gap-10 sm:grid-cols-2 lg:grid-cols-12">
           {/* Brand + Badge — takes more space */}
           <div className="col-span-1 sm:col-span-2 lg:col-span-5">
             <div className="flex items-center gap-2">

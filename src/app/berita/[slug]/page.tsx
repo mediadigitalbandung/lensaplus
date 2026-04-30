@@ -420,12 +420,12 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
         {/* Status banner for non-published articles */}
         {!isPublished && statusLabels[article.status] && (
           <div className={`${statusLabels[article.status].color} text-white`}>
-            <div className="container-main flex items-center justify-between py-3">
-              <div className="flex items-center gap-2">
-                <span className="flex h-2 w-2 rounded-full bg-white animate-pulse" />
-                <span className="text-sm font-bold uppercase tracking-wider">Preview — {statusLabels[article.status].label}</span>
+            <div className="container-main flex items-center justify-between gap-3 py-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="flex h-2 w-2 rounded-full bg-white animate-pulse shrink-0" />
+                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider truncate">Preview — {statusLabels[article.status].label}</span>
               </div>
-              <span className="text-xs text-white/70">Halaman ini hanya dapat dilihat oleh pihak terkait</span>
+              <span className="hidden sm:inline text-xs text-white/70 shrink-0">Halaman ini hanya dapat dilihat oleh pihak terkait</span>
             </div>
           </div>
         )}
@@ -485,21 +485,21 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
               )}
 
               {/* Meta bar */}
-              <div className="mt-4 text-sm text-txt-muted">
+              <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-txt-muted">
                 <span>Penulis: <span className="text-txt-primary font-medium">{article.author.name}</span></span>
                 {editorName && (
                   <>
-                    <span className="mx-2">&middot;</span>
+                    <span className="text-txt-muted/50">&middot;</span>
                     <span>Editor: <span className="text-txt-primary font-medium">{editorName}</span></span>
                   </>
                 )}
-                <span className="mx-2">&middot;</span>
+                <span className="text-txt-muted/50">&middot;</span>
                 <span>
                   {article.publishedAt
                     ? new Date(article.publishedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
                     : "-"}
                 </span>
-                <span className="mx-2">&middot;</span>
+                <span className="text-txt-muted/50">&middot;</span>
                 <span>{article.readTime ?? 0} menit baca</span>
               </div>
 
@@ -543,24 +543,24 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
 
               {/* Page navigation */}
               {totalPages > 1 && (
-                <div className="mt-8 flex items-center justify-between rounded-[12px] border border-border bg-surface-secondary p-4">
-                  <div className="text-sm text-txt-secondary">
+                <div className="mt-8 flex flex-col gap-3 rounded-[12px] border border-border bg-surface-secondary p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-xs sm:text-sm text-txt-secondary">
                     Halaman <span className="font-bold text-txt-primary">{currentPage}</span> dari <span className="font-bold text-txt-primary">{totalPages}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     {currentPage > 1 && (
                       <Link
                         href={`/berita/${params.slug}?page=${currentPage - 1}`}
-                        className="btn-secondary px-4 py-2 text-sm"
+                        className="btn-secondary px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm"
                       >
-                        ← Sebelumnya
+                        ← <span className="hidden sm:inline">Sebelumnya</span>
                       </Link>
                     )}
                     {Array.from({ length: totalPages }, (_, i) => (
                       <Link
                         key={i + 1}
                         href={`/berita/${params.slug}${i === 0 ? "" : `?page=${i + 1}`}`}
-                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
+                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-xs sm:text-sm font-semibold transition-colors ${
                           currentPage === i + 1
                             ? "bg-primary text-white"
                             : "hover:bg-surface-tertiary text-txt-secondary"
@@ -572,9 +572,9 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
                     {currentPage < totalPages && (
                       <Link
                         href={`/berita/${params.slug}?page=${currentPage + 1}`}
-                        className="btn-primary px-4 py-2 text-sm"
+                        className="btn-primary px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm"
                       >
-                        Selanjutnya →
+                        <span className="hidden sm:inline">Selanjutnya</span> →
                       </Link>
                     )}
                   </div>
