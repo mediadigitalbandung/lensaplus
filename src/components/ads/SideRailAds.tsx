@@ -24,13 +24,23 @@ export default function SideRailAds() {
   if (pathname.startsWith("/login")) return null;
   if (pathname.startsWith("/berita/")) return null;
 
+  // Skyscraper rail: 160 × 600 px (IAB Wide Skyscraper). The descendant
+  // selectors force whatever shape the SidebarAd renders (img / a > img / div)
+  // to fill the rail height instead of letting the image's intrinsic ratio
+  // dictate it.
+  const rail =
+    "pointer-events-auto h-[600px] w-full overflow-hidden " +
+    "[&_a]:block [&_a]:h-full [&_a]:w-full " +
+    "[&_img]:h-full [&_img]:w-full [&_img]:object-cover " +
+    "[&>div]:h-full";
+
   return (
     <>
       <aside
         aria-label="Iklan kiri"
         className="pointer-events-none fixed left-4 top-1/2 z-30 hidden w-40 -translate-y-1/2 2xl:block"
       >
-        <div className="pointer-events-auto">
+        <div className={rail}>
           <SidebarAd slot="SIDEBAR" />
         </div>
       </aside>
@@ -38,7 +48,7 @@ export default function SideRailAds() {
         aria-label="Iklan kanan"
         className="pointer-events-none fixed right-4 top-1/2 z-30 hidden w-40 -translate-y-1/2 2xl:block"
       >
-        <div className="pointer-events-auto">
+        <div className={rail}>
           <SidebarAd slot="SIDEBAR" />
         </div>
       </aside>
