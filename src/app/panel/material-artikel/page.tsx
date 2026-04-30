@@ -592,8 +592,8 @@ export default function MaterialArtikelPage() {
       </div>
 
       {(slots.length > 0 || docFile) && (
-        <div className="sticky bottom-4 z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-ambient">
-          <div className="text-sm text-txt-secondary">
+        <div className="sticky bottom-4 z-30 flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-ambient sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-txt-secondary sm:text-sm">
             {allDone ? (
               <span className="font-semibold text-primary">
                 Semua draft selesai. Buka{" "}
@@ -604,7 +604,7 @@ export default function MaterialArtikelPage() {
                   panel artikel
                 </Link>{" "}
                 untuk review, atau klik <em>Generate Ulang</em> untuk
-                versi baru dari dokumen yang sama.
+                versi baru.
               </span>
             ) : !canGenerate && !generating ? (
               <span className="text-txt-muted">
@@ -614,27 +614,28 @@ export default function MaterialArtikelPage() {
               </span>
             ) : (
               <>
-                {slots.length} foto + 1 dokumen siap. AI 1× call → ~
+                {slots.length} foto + 1 dokumen siap. ~
                 {Math.max(20, slots.length * 8)}–
                 {Math.max(40, slots.length * 16)} detik.
               </>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 sm:shrink-0">
             {allDone && !generating && (
               <button
                 onClick={resetForRegen}
-                className="btn-ghost flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium"
-                title="Reset status semua slot. Foto + dokumen tetap, klik Generate lagi untuk versi baru."
+                className="btn-ghost flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2.5 text-xs font-medium sm:flex-none sm:px-4 sm:text-sm"
+                title="Reset status semua slot. Foto + dokumen tetap."
               >
                 <RefreshCw size={14} />
-                Generate Ulang
+                <span className="hidden sm:inline">Generate Ulang</span>
+                <span className="sm:hidden">Ulang</span>
               </button>
             )}
             <button
               onClick={handleGenerate}
               disabled={!canGenerate}
-              className="btn-primary flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
+              className="btn-primary flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2.5 text-xs font-semibold disabled:opacity-50 sm:flex-none sm:px-5 sm:text-sm"
             >
               {generating ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -645,7 +646,7 @@ export default function MaterialArtikelPage() {
                 ? "Generating…"
                 : allDone
                   ? "Selesai"
-                  : `Generate ${slots.length} Draft`}
+                  : `Generate ${slots.length}`}
             </button>
           </div>
         </div>

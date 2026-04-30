@@ -147,11 +147,10 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             </div>
           </div>
 
-          {/* Side stories — 4 cols, paginated 3-at-a-time. Each page
-              crossfades like the main hero, so when the visible group
-              changes the whole stack of three cards rotates to a fresh
-              set of articles. */}
-          <div className="lg:col-span-4 relative overflow-hidden">
+          {/* Side stories — 4 cols on lg, full-width below. Paginated 3-at-a-time
+              with crossfade like the main hero. min-h on mobile prevents the
+              wrapper collapsing to zero (children are absolute-positioned). */}
+          <div className="lg:col-span-4 relative overflow-hidden min-h-[26rem] lg:min-h-full border-t border-white/10 lg:border-t-0">
             {sidePages.map((pageItems, pageIdx) => (
               <div
                 key={pageIdx}
