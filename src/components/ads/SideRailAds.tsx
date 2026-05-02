@@ -24,15 +24,14 @@ export default function SideRailAds() {
   if (pathname.startsWith("/login")) return null;
   if (pathname.startsWith("/berita/")) return null;
 
-  // Skyscraper rail: 160 × 600 px (IAB Wide Skyscraper). The descendant
-  // selectors force whatever shape the SidebarAd renders (img / a > img / div)
-  // to fill the rail height instead of letting the image's intrinsic ratio
-  // dictate it.
+  // Skyscraper rail visual: 160 × min(80vh, 720px). Sidebar ads are designed
+  // for 300×250 rectangles, so when one renders inside a 160×720 column the
+  // content is much shorter than the rail. We compose a proper skyscraper
+  // shell — primary-tinted column with an "IKLAN" cap and the ad centered
+  // vertically — so the rail always reads as a tall vertical ad slot.
   const rail =
-    "pointer-events-auto h-[600px] w-full overflow-hidden " +
-    "[&_a]:block [&_a]:h-full [&_a]:w-full " +
-    "[&_img]:h-full [&_img]:w-full [&_img]:object-cover " +
-    "[&>div]:h-full";
+    "pointer-events-auto flex h-[min(80vh,720px)] w-full flex-col overflow-hidden " +
+    "rounded-md border border-primary/10 bg-surface-container-lowest shadow-ambient";
 
   return (
     <>
@@ -41,7 +40,14 @@ export default function SideRailAds() {
         className="pointer-events-none fixed left-4 top-1/2 z-30 hidden w-40 -translate-y-1/2 2xl:block"
       >
         <div className={rail}>
-          <SidebarAd slot="SIDEBAR" />
+          <div className="border-b border-primary/10 bg-primary/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary/60">
+            Iklan
+          </div>
+          <div className="flex flex-1 items-center justify-center overflow-hidden p-3
+            [&_a]:block [&_a]:w-full
+            [&_img]:w-full [&_img]:max-h-full [&_img]:object-contain">
+            <SidebarAd slot="SIDEBAR" />
+          </div>
         </div>
       </aside>
       <aside
@@ -49,7 +55,14 @@ export default function SideRailAds() {
         className="pointer-events-none fixed right-4 top-1/2 z-30 hidden w-40 -translate-y-1/2 2xl:block"
       >
         <div className={rail}>
-          <SidebarAd slot="SIDEBAR" />
+          <div className="border-b border-primary/10 bg-primary/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary/60">
+            Iklan
+          </div>
+          <div className="flex flex-1 items-center justify-center overflow-hidden p-3
+            [&_a]:block [&_a]:w-full
+            [&_img]:w-full [&_img]:max-h-full [&_img]:object-contain">
+            <SidebarAd slot="SIDEBAR" />
+          </div>
         </div>
       </aside>
     </>
