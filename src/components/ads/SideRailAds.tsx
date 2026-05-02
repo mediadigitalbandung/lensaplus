@@ -144,7 +144,7 @@ export default function SideRailAds() {
     <>
       <aside
         aria-label="Iklan kiri"
-        className="pointer-events-none fixed left-4 top-[220px] z-10 hidden 2xl:block"
+        className="pointer-events-none fixed left-4 top-[480px] z-10 hidden 2xl:block"
       >
         <div className={shell}>
           <div className={cap}>Iklan</div>
@@ -155,7 +155,7 @@ export default function SideRailAds() {
       </aside>
       <aside
         aria-label="Iklan kanan"
-        className="pointer-events-none fixed right-4 top-[220px] z-10 hidden 2xl:block"
+        className="pointer-events-none fixed right-4 top-[480px] z-10 hidden 2xl:block"
       >
         <div className={shell}>
           <div className={cap}>Iklan</div>
