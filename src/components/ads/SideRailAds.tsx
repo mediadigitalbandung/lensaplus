@@ -4,14 +4,14 @@
  * Sticky vertical (skyscraper) ads pinned to the empty space outside the
  * 1152-px content container on wide viewports.
  *
- * Renders its own skyscraper-shaped content (160 × ≤720) directly from the
- * SIDEBAR ad slot data instead of delegating to SidebarAd, because that
- * component is designed for a 300×250 rectangle and its output looks
- * stranded inside a tall column. This file owns the rail visual.
+ * Fixed-size IAB Wide Skyscraper: 160 × 600. Width and height are both
+ * pinned in pixels so the rail looks consistent across viewport sizes
+ * and matches what IAB-compliant skyscraper creatives expect.
  *
  * Visibility rules:
- *  - Only shown at ≥ 2xl (1536px). Below that the rails would crowd the
- *    container and break the layout.
+ *  - Only shown at ≥ 2xl (1536px). Below that the page is too narrow to
+ *    fit a 160px rail on each side of the 1152px content container with
+ *    breathing room — the rail would either crowd or overlap content.
  *  - Hidden on /panel/*, /login — admin surfaces stay ad-free.
  *  - Hidden on /berita/[slug] — those already have a dedicated sidebar.
  */
@@ -131,10 +131,10 @@ export default function SideRailAds() {
   if (pathname.startsWith("/login")) return null;
   if (pathname.startsWith("/berita/")) return null;
 
-  // Skyscraper shell: 160 × min(80vh, 720px). Border + shadow define the
+  // Fixed IAB Wide Skyscraper: 160 × 600. Border + shadow define the
   // column shape so the rail always reads as a tall vertical ad slot.
   const shell =
-    "pointer-events-auto flex h-[min(80vh,720px)] w-full flex-col overflow-hidden " +
+    "pointer-events-auto flex h-[600px] w-[160px] flex-col overflow-hidden " +
     "rounded-md border border-primary/10 bg-surface-container-lowest shadow-ambient";
 
   const cap =
@@ -144,7 +144,7 @@ export default function SideRailAds() {
     <>
       <aside
         aria-label="Iklan kiri"
-        className="pointer-events-none fixed left-4 top-1/2 z-30 hidden w-40 -translate-y-1/2 2xl:block"
+        className="pointer-events-none fixed left-4 top-1/2 z-30 hidden -translate-y-1/2 2xl:block"
       >
         <div className={shell}>
           <div className={cap}>Iklan</div>
@@ -155,7 +155,7 @@ export default function SideRailAds() {
       </aside>
       <aside
         aria-label="Iklan kanan"
-        className="pointer-events-none fixed right-4 top-1/2 z-30 hidden w-40 -translate-y-1/2 2xl:block"
+        className="pointer-events-none fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 2xl:block"
       >
         <div className={shell}>
           <div className={cap}>Iklan</div>
