@@ -124,8 +124,32 @@ function RailContent() {
   );
 }
 
+// Layout constants that drive the scroll behavior. The rail starts under
+// the market ticker at scroll=0, then follows the page up as the user
+// scrolls, and locks at MIN_TOP_PX (just below the sticky brand bar) when
+// the page has scrolled past INITIAL_TOP_PX.
+const INITIAL_TOP_PX = 480; // bottom of NewsTicker (brand+nav+trending+market) at scroll=0
+const MIN_TOP_PX = 140; // clearance from sticky brand bar (~80) + nav (~50) + buffer
+
+function useRailTop(): number {
+  const [top, setTop] = useState(INITIAL_TOP_PX);
+
+  useEffect(() => {
+    const update = () => {
+      const next = Math.max(MIN_TOP_PX, INITIAL_TOP_PX - window.scrollY);
+      setTop(next);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+
+  return top;
+}
+
 export default function SideRailAds() {
   const pathname = usePathname() || "";
+  const top = useRailTop();
 
   if (pathname.startsWith("/panel")) return null;
   if (pathname.startsWith("/login")) return null;
@@ -140,11 +164,14 @@ export default function SideRailAds() {
   const cap =
     "shrink-0 border-b border-primary/10 bg-primary/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary/60";
 
+  const railStyle = { top: `${top}px` };
+
   return (
     <>
       <aside
         aria-label="Iklan kiri"
-        className="pointer-events-none fixed left-4 top-[max(140px,calc(50vh_-_300px))] z-10 hidden 2xl:block"
+        className="pointer-events-none fixed left-4 z-10 hidden 2xl:block"
+        style={railStyle}
       >
         <div className={shell}>
           <div className={cap}>Iklan</div>
@@ -155,7 +182,8 @@ export default function SideRailAds() {
       </aside>
       <aside
         aria-label="Iklan kanan"
-        className="pointer-events-none fixed right-4 top-[max(140px,calc(50vh_-_300px))] z-10 hidden 2xl:block"
+        className="pointer-events-none fixed right-4 z-10 hidden 2xl:block"
+        style={railStyle}
       >
         <div className={shell}>
           <div className={cap}>Iklan</div>
