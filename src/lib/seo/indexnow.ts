@@ -12,6 +12,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto-secrets";
 
 const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -49,7 +50,7 @@ export async function getIndexNowKey(): Promise<string | null> {
       where: { key: "indexnow_key" },
     });
     if (setting?.value && setting.value.trim().length > 0) {
-      cachedKey = setting.value.trim();
+      cachedKey = decryptSecret(setting.value.trim());
       return cachedKey;
     }
   } catch {

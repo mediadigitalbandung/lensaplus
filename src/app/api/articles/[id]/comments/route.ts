@@ -9,6 +9,7 @@ import {
 } from "@/lib/api-utils";
 import { commentRateLimit } from "@/lib/rate-limit";
 import { sanitizeText, sanitizeEmail } from "@/lib/sanitize";
+import { checkSpam } from "@/lib/spam-filter";
 
 const createCommentSchema = z.object({
   authorName: z.string().min(2, "Nama minimal 2 karakter").max(100),
@@ -77,11 +78,34 @@ export async function POST(
     const body = await request.json();
     const data = createCommentSchema.parse(body);
 
+    const sanitizedAuthor = sanitizeText(data.authorName);
+    const sanitizedEmail = sanitizeEmail(data.authorEmail);
+    const sanitizedContent = sanitizeText(data.content);
+
+    // Spam filter — heuristic + (optional) Akismet. Hard "spam" verdict
+    // means we don't even persist it; "review" persists unapproved with
+    // a note for the moderator; "ok" is the normal path.
+    const spam = await checkSpam({
+      content: sanitizedContent,
+      authorName: sanitizedAuthor,
+      authorEmail: sanitizedEmail,
+      ip,
+      userAgent: request.headers.get("user-agent") || undefined,
+    });
+    if (spam.verdict === "spam") {
+      // Return success-shaped response so spam bots don't learn that we
+      // rejected them — but record nothing.
+      return successResponse(
+        { id: null, isApproved: false, status: "filtered" },
+        201,
+      );
+    }
+
     const comment = await prisma.comment.create({
       data: {
-        authorName: sanitizeText(data.authorName),
-        authorEmail: sanitizeEmail(data.authorEmail),
-        content: sanitizeText(data.content),
+        authorName: sanitizedAuthor,
+        authorEmail: sanitizedEmail,
+        content: sanitizedContent,
         parentId: data.parentId || null,
         articleId: params.id,
         isApproved: false,

@@ -56,14 +56,47 @@ jobs:
           script: |
             set -e
             cd /var/www/kartawarta
+
+            # Build lock — prevents two CI runs (or a manual SSH build)
+            # from spawning concurrent next-build processes that fight
+            # over RAM and create orphan jest-workers.
+            LOCK=/tmp/kartawarta-build.lock
+            if [ -e "$LOCK" ]; then
+              if kill -0 "$(cat $LOCK 2>/dev/null)" 2>/dev/null; then
+                echo "Another build (PID $(cat $LOCK)) is already running. Aborting."
+                exit 1
+              fi
+              echo "Stale lock found — removing."
+              rm -f "$LOCK"
+            fi
+            echo $$ > "$LOCK"
+            trap 'rm -f "$LOCK"' EXIT
+
+            # Reap orphan next/jest-worker processes from any prior aborted
+            # build before we start (they hold open file descriptors on
+            # `.next/` and pin RAM).
+            pkill -9 -f 'next/dist/build' 2>/dev/null || true
+            pkill -9 -f 'jest-worker'      2>/dev/null || true
+
             pm2 stop kartawarta || true
-            git stash push package-lock.json -m 'auto-stash' 2>/dev/null || true
-            git pull origin master
+            sleep 2
+
+            # Drop ANY local file modifications before pulling — hotfixes
+            # via scp occasionally leave the working tree dirty.
+            git fetch origin master
+            git reset --hard origin/master
+
             rm -rf .next
-            npm install
+            npm install --no-audit --no-fund
             npx prisma generate
-            npm run build
-            pm2 restart kartawarta
+            # Memory-capped, telemetry-disabled, low-priority build to keep
+            # other PM2 apps responsive on a shared ~16GB VPS.
+            NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 nice -n 10 npm run build
+
+            # Verify build emitted artifacts before restart.
+            test -f .next/BUILD_ID || { echo "BUILD_ID missing — build failed silently"; exit 1; }
+
+            pm2 restart kartawarta --update-env
             sleep 3
             pm2 list | grep kartawarta
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole, ApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { cleanAIShortText } from "@/lib/sanitize";
+import { decryptSecret } from "@/lib/crypto-secrets";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
     if (!setting?.value) {
       return NextResponse.json({ success: false, error: "API Key AI (DeepSeek) belum dikonfigurasi di Pengaturan." }, { status: 400 });
     }
+    const deepseekApiKey = decryptSecret(setting.value);
 
     let processed = 0;
     const results: { title: string; seoTitle?: string; seoDescription?: string }[] = [];
@@ -51,12 +53,12 @@ export async function POST(req: NextRequest) {
         const updates: Record<string, string> = {};
 
         if (!article.seoTitle) {
-          const raw = await callAI(setting.value, "seo_title", article.title, article.content);
+          const raw = await callAI(deepseekApiKey, "seo_title", article.title, article.content);
           const cleaned = cleanAIShortText(raw);
           if (cleaned) updates.seoTitle = cleaned.slice(0, 70);
         }
         if (!article.seoDescription) {
-          const raw = await callAI(setting.value, "meta_description", article.title, article.content);
+          const raw = await callAI(deepseekApiKey, "meta_description", article.title, article.content);
           const cleaned = cleanAIShortText(raw);
           if (cleaned) updates.seoDescription = cleaned.slice(0, 160);
         }

@@ -524,7 +524,7 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
                         dangerouslySetInnerHTML={{ __html: chunk }}
                       />
                       {i < arr.length - 1 && (
-                        <div className="my-6">
+                        <div className="my-6 overflow-hidden">
                           <BannerAd slot="IN_ARTICLE" noWrapper />
                         </div>
                       )}
@@ -540,7 +540,7 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
 
               {/* Page navigation */}
               {totalPages > 1 && (
-                <div className="mt-8 flex flex-col gap-3 rounded-[12px] border border-border bg-surface-secondary p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-8 flex flex-col gap-3 rounded-sm border border-border bg-surface-secondary p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-xs sm:text-sm text-txt-secondary">
                     Halaman <span className="font-bold text-txt-primary">{currentPage}</span> dari <span className="font-bold text-txt-primary">{totalPages}</span>
                   </div>
@@ -594,7 +594,7 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
 
               {/* Sources */}
               {article.sources.length > 0 && (
-                <div className="mt-8 rounded-[12px] border border-border bg-surface p-6 shadow-card">
+                <div className="mt-8 rounded-sm border border-border bg-surface p-6 shadow-card">
                   <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-txt-primary">
                     Sumber &amp; Narasumber
                   </h3>
@@ -638,7 +638,7 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
               </div>
 
               {/* Author box */}
-              <div id="author" className="mt-8 rounded-[12px] border border-border bg-surface p-6 shadow-card">
+              <div id="author" className="mt-8 rounded-sm border border-border bg-surface p-6 shadow-card">
                 <div className="flex gap-5">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-white">
                     {article.author.name.charAt(0)}

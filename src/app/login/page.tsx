@@ -16,7 +16,9 @@ function LoginContent() {
 
   const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const sessionExpired = searchParams.get("reason") === "session_expired";
+  // Accept both spellings — middleware writes "session-expired", legacy code uses underscore.
+  const reason = searchParams.get("reason") || "";
+  const sessionExpired = reason === "session_expired" || reason === "session-expired";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -5,6 +5,7 @@
  */
 
 import { prisma } from "../prisma";
+import { decryptSecret } from "../crypto-secrets";
 
 const CF_API = "https://api.cloudflare.com/client/v4";
 
@@ -13,7 +14,9 @@ async function getCredentials(): Promise<{ token: string; zoneId: string } | nul
     prisma.systemSetting.findUnique({ where: { key: "cloudflare_api_token" } }).catch(() => null),
     prisma.systemSetting.findUnique({ where: { key: "cloudflare_zone_id" } }).catch(() => null),
   ]);
-  const token = tokenRow?.value || process.env.CLOUDFLARE_API_TOKEN;
+  const token = tokenRow?.value
+    ? decryptSecret(tokenRow.value)
+    : process.env.CLOUDFLARE_API_TOKEN;
   const zoneId = zoneRow?.value || process.env.CLOUDFLARE_ZONE_ID;
   if (!token || !zoneId) return null;
   return { token, zoneId };

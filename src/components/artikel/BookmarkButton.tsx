@@ -30,16 +30,18 @@ export default function BookmarkButton({ slug }: { slug: string }) {
   return (
     <button
       onClick={toggleBookmark}
-      className={`btn-ghost rounded-full px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${
+      className={`btn-ghost min-h-[44px] rounded-md px-4 py-2.5 text-xs flex items-center gap-1.5 transition-colors active:scale-95 ${
         bookmarked
           ? "text-primary bg-primary-light"
           : "text-txt-secondary hover:text-primary"
       }`}
       title={bookmarked ? "Hapus bookmark" : "Simpan bookmark"}
+      aria-label={bookmarked ? "Hapus bookmark artikel ini" : "Simpan artikel ke bookmark"}
+      aria-pressed={bookmarked}
     >
       <Bookmark
-        size={14}
-        className={bookmarked ? "fill-goto-green" : ""}
+        size={16}
+        className={bookmarked ? "fill-primary" : ""}
       />
       {bookmarked ? "Disimpan" : "Bookmark"}
     </button>

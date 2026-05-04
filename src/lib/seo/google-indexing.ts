@@ -12,6 +12,7 @@
 
 import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto-secrets";
 
 const INDEXING_SCOPE = "https://www.googleapis.com/auth/indexing";
 
@@ -54,7 +55,7 @@ async function getCredentials(): Promise<ServiceAccountCredentials | null> {
       }
     }
     if (cred?.value && cred.value.trim().length > 0) {
-      raw = cred.value.trim();
+      raw = decryptSecret(cred.value.trim());
     }
   } catch {
     // DB unavailable — fall through to env fallback.

@@ -63,6 +63,7 @@ interface StatsItem {
 }
 
 import { CREATOR_ROLES, EDITOR_ROLES } from "@/lib/roles";
+import CronHealthWidget from "@/components/dashboard/CronHealthWidget";
 
 const statusColors: Record<string, string> = {
   PUBLISHED: "bg-primary-light text-primary",
@@ -1332,6 +1333,13 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Cron health — admin/editor only */}
+      {!isCreator && (
+        <div className="mt-6">
+          <CronHealthWidget />
+        </div>
+      )}
 
       {/* Analytics Section */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">

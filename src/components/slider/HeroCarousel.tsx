@@ -30,6 +30,10 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [sidePageIndex, setSidePageIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const prefersReducedMotion =
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
 
   const next = useCallback(() => {
     setActiveIndex((prev) => (prev + 1) % main.length);
@@ -55,21 +59,21 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
     setSidePageIndex((prev) => (prev + 1) % Math.max(1, totalSidePages));
   }, [totalSidePages]);
 
-  // Auto-rotate main hero every 6 seconds.
+  // Auto-rotate main hero every 6 seconds. Disabled when user prefers reduced motion.
   useEffect(() => {
-    if (isPaused || main.length <= 1) return;
+    if (isPaused || main.length <= 1 || prefersReducedMotion) return;
     const timer = setInterval(next, 6000);
     return () => clearInterval(timer);
-  }, [isPaused, next, main.length]);
+  }, [isPaused, next, main.length, prefersReducedMotion]);
 
   // Auto-rotate side stack every 8 seconds — slightly off-cadence from the
   // main panel so the two carousels don't flip in lockstep, which would
   // make the whole hero feel busy.
   useEffect(() => {
-    if (isPaused || totalSidePages <= 1) return;
+    if (isPaused || totalSidePages <= 1 || prefersReducedMotion) return;
     const timer = setInterval(nextSide, 8000);
     return () => clearInterval(timer);
-  }, [isPaused, nextSide, totalSidePages]);
+  }, [isPaused, nextSide, totalSidePages, prefersReducedMotion]);
 
   if (main.length === 0) return null;
 

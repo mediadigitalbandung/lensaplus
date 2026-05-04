@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireRole, successResponse, errorResponse, ApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto-secrets";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
     if (!setting?.value) {
       throw new ApiError("API Key AI belum dikonfigurasi", 400);
     }
+    const deepseekApiKey = decryptSecret(setting.value);
 
     // Get articles that have fewer than 5 tags
     const articles = await prisma.article.findMany({
@@ -52,7 +54,7 @@ Format jawaban HANYA tag dipisah koma, tanpa penjelasan.`;
             signal: controller.signal,
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${setting.value}`,
+              Authorization: `Bearer ${deepseekApiKey}`,
             },
             body: JSON.stringify({
               model: "deepseek-chat",

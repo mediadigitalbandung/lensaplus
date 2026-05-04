@@ -2,6 +2,12 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { requireRole, successResponse, errorResponse } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import {
+  encryptSecret,
+  decryptSecret,
+  isSensitiveKey,
+  maskSecret,
+} from "@/lib/crypto-secrets";
 
 // All keys that the panel is allowed to write. Anything outside this list
 // is rejected by the Zod enum below — prevents arbitrary key insertion that
@@ -64,7 +70,19 @@ export async function GET() {
     const settings = await prisma.systemSetting.findMany();
     const keyValue: Record<string, string> = {};
     for (const s of settings) {
-      keyValue[s.key] = s.value;
+      if (isSensitiveKey(s.key)) {
+        // Decrypt first, then return masked value so the panel can confirm
+        // "which key is stored" without exposing the credential.
+        try {
+          const plaintext = decryptSecret(s.value);
+          keyValue[s.key] = maskSecret(plaintext);
+        } catch {
+          // If decrypt fails (e.g. corrupted), return a fixed mask.
+          keyValue[s.key] = "••••••••????";
+        }
+      } else {
+        keyValue[s.key] = s.value;
+      }
     }
 
     return successResponse(keyValue);
@@ -80,13 +98,23 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const data = settingSchema.parse(body);
 
+    // Encrypt sensitive values before persisting.
+    const storedValue = isSensitiveKey(data.key)
+      ? encryptSecret(data.value)
+      : data.value;
+
     await prisma.systemSetting.upsert({
       where: { key: data.key },
-      update: { value: data.value },
-      create: { key: data.key, value: data.value },
+      update: { value: storedValue },
+      create: { key: data.key, value: storedValue },
     });
 
-    return successResponse({ key: data.key, value: data.value });
+    // Never return the plaintext back to the client.
+    const responseValue = isSensitiveKey(data.key)
+      ? maskSecret(data.value)
+      : data.value;
+
+    return successResponse({ key: data.key, value: responseValue });
   } catch (error) {
     return errorResponse(error);
   }

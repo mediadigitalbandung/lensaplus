@@ -1,26 +1,33 @@
 {
-  "name": "Kartawarta — Media Digital Terpercaya",
+  "name": "Kartawarta — Media Hukum Digital Bandung",
   "short_name": "Kartawarta",
-  "description": "Portal berita digital terpercaya. Menyajikan berita terkini, analisis mendalam, dan informasi akurat.",
+  "description": "Portal berita hukum digital terpercaya untuk Bandung dan Jawa Barat — putusan pengadilan, regulasi, advokasi, dan analisis ahli.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#002045",
   "orientation": "portrait-primary",
-  "categories": ["news", "media"],
-  "lang": "id",
+  "lang": "id-ID",
+  "categories": ["news", "magazines"],
   "icons": [
     {
-      "src": "/kartawarta-icon.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/kartawarta-icon.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

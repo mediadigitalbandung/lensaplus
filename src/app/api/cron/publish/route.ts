@@ -4,6 +4,7 @@ import { notifyArticleStatusChange } from "@/lib/notifications";
 import { sendArticlePublishedEmail } from "@/lib/email";
 import { successResponse, errorResponse, verifyCronSecret } from "@/lib/api-utils";
 import { onArticlePublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
+import { recordCronRun } from "@/lib/cron-tracker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -47,6 +48,7 @@ async function handler(request: NextRequest) {
     });
 
     if (articles.length === 0) {
+      await recordCronRun("publish", { ok: true, durationMs: Date.now() - started });
       return successResponse({
         processed: 0,
         published: 0,
@@ -136,6 +138,11 @@ async function handler(request: NextRequest) {
       }
     }
 
+    await recordCronRun("publish", {
+      ok: errors.length === 0,
+      durationMs: Date.now() - started,
+      error: errors.length > 0 ? errors.slice(0, 3).join(" | ") : undefined,
+    });
     return successResponse({
       processed: articles.length,
       published: published.length,
@@ -144,6 +151,11 @@ async function handler(request: NextRequest) {
       durationMs: Date.now() - started,
     });
   } catch (error) {
+    await recordCronRun("publish", {
+      ok: false,
+      durationMs: Date.now() - started,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return errorResponse(error);
   }
 }

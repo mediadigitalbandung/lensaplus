@@ -8,6 +8,7 @@ import PublicNav from "@/components/layout/PublicNav";
 import PublicFooter from "@/components/layout/PublicFooter";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import SideRailAds from "@/components/ads/SideRailAds";
+import InstallPrompt from "@/components/pwa/InstallPrompt";
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -105,8 +106,21 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" />
+        {/* RSS auto-discovery for feed readers (Feedly, Inoreader, NewsBlur, etc.) */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="Kartawarta — Media Hukum Digital Bandung"
+          href="/feed.xml"
+        />
         <meta name="theme-color" content="#002045" />
         <meta name="google" content="notranslate" />
+        {/* PWA / Add-to-Home-Screen */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Kartawarta" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased">
         <Providers>
@@ -124,6 +138,7 @@ export default function RootLayout({
           <PublicFooter />
           <SideRailAds />
           <ServiceWorkerRegistration />
+          <InstallPrompt />
         </Providers>
       </body>
     </html>

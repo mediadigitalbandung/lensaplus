@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
+import { trackCron } from "@/lib/cron-tracker";
 import { fetchListing } from "@/lib/scraper/fetch-listing";
 import { crawlListings } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
@@ -250,9 +251,9 @@ async function handler(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  return handler(req);
+  try { return await trackCron("scrape-sources", () => handler(req)); } catch (e) { return errorResponse(e); }
 }
 
 export async function POST(req: NextRequest) {
-  return handler(req);
+  try { return await trackCron("scrape-sources", () => handler(req)); } catch (e) { return errorResponse(e); }
 }

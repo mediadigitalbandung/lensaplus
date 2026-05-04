@@ -17,9 +17,19 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Check if user account is still active
-    if ((token as Record<string, unknown>).invalid) {
+    const tok = token as Record<string, unknown>;
+
+    // Account deactivated or single-device session superseded by another login.
+    if (tok.sessionInvalid) {
       const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("reason", "session-expired");
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Legacy flag kept for backward compat during transition.
+    if (tok.invalid) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("reason", "session-expired");
       return NextResponse.redirect(loginUrl);
     }
   }

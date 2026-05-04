@@ -24,6 +24,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateSorotan } from "@/lib/seo/sorotan-generator";
 import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
+import { trackCron } from "@/lib/cron-tracker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -207,9 +208,9 @@ async function handler(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  return handler(req);
+  try { return await trackCron("sorotan", () => handler(req)); } catch (e) { return errorResponse(e); }
 }
 
 export async function POST(req: NextRequest) {
-  return handler(req);
+  try { return await trackCron("sorotan", () => handler(req)); } catch (e) { return errorResponse(e); }
 }

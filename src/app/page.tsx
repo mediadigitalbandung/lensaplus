@@ -12,6 +12,7 @@ import PollingCarousel from "@/components/slider/PollingCarousel";
 import BannerAd, { SidebarAd, InlineAd, NativeAd } from "@/components/ads/BannerAd";
 import { Scale, Briefcase, Trophy, Film, Heart, Wheat, Cpu, Vote as VoteIcon, GraduationCap, Leaf, Compass, BookOpen, TrendingUp, LucideIcon, ArrowRight, Clock, Eye, Flame, Sparkles, ChevronRight, Shield } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getCached } from "@/lib/cache";
 
 const categoryIconMap: Record<string, LucideIcon> = {
   "hukum": Scale, "bisnis-ekonomi": Briefcase, "olahraga": Trophy, "hiburan": Film,
@@ -31,23 +32,32 @@ function timeAgo(date: Date | string | null): string {
 }
 
 export default async function HomePage() {
+  // 60s in-process cache — same TTL as the page-level revalidate. Cuts the
+  // 3 large queries down from ~20 hits/min during a traffic burst to 1.
+  // Invalidated by onArticlePublished() (see src/lib/seo-auto.ts).
   const [articles, categories, trendingArticles] = await Promise.all([
-    prisma.article.findMany({
-      where: { status: "PUBLISHED" },
-      include: { author: true, category: true },
-      orderBy: { publishedAt: "desc" },
-      take: 60,
-    }),
-    prisma.category.findMany({
-      include: { _count: { select: { articles: true } } },
-      orderBy: { order: "asc" },
-    }),
-    prisma.article.findMany({
-      where: { status: "PUBLISHED" },
-      include: { author: true, category: true },
-      orderBy: { viewCount: "desc" },
-      take: 10,
-    }),
+    getCached("home:articles:60", 60_000, () =>
+      prisma.article.findMany({
+        where: { status: "PUBLISHED" },
+        include: { author: true, category: true },
+        orderBy: { publishedAt: "desc" },
+        take: 60,
+      }),
+    ),
+    getCached("home:categories", 300_000, () =>
+      prisma.category.findMany({
+        include: { _count: { select: { articles: true } } },
+        orderBy: { order: "asc" },
+      }),
+    ),
+    getCached("home:trending:10", 60_000, () =>
+      prisma.article.findMany({
+        where: { status: "PUBLISHED" },
+        include: { author: true, category: true },
+        orderBy: { viewCount: "desc" },
+        take: 10,
+      }),
+    ),
   ]);
 
   // Dedup by source article — auto-articles that paraphrase the same

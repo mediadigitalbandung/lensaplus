@@ -121,7 +121,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
           {Array.from({ length: 2 }).map((_, i) => (
             <div
               key={i}
-              className="animate-pulse rounded-[12px] bg-surface-secondary p-4"
+              className="animate-pulse rounded-sm bg-surface-secondary p-4"
             >
               <div className="h-4 w-1/4 rounded bg-surface-tertiary" />
               <div className="mt-2 h-3 w-3/4 rounded bg-surface-tertiary" />
@@ -133,7 +133,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
           {comments.map((comment) => (
             <div
               key={comment.id}
-              className="rounded-[12px] border border-border bg-surface p-4"
+              className="rounded-sm border border-border bg-surface p-4"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -161,20 +161,20 @@ export default function CommentSection({ articleId }: { articleId: string }) {
       )}
 
       {/* Comment form */}
-      <div className="rounded-[12px] border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-sm border border-border bg-surface p-5 shadow-card">
         <h3 className="mb-4 text-sm font-bold text-txt-primary uppercase tracking-wider">
           Tulis Komentar
         </h3>
 
         {success && (
-          <div className="mb-4 flex items-center gap-2 rounded-[12px] bg-primary-light px-4 py-3 text-sm text-primary">
+          <div className="mb-4 flex items-center gap-2 rounded-sm bg-primary-light px-4 py-3 text-sm text-primary">
             <CheckCircle size={16} />
             Komentar Anda akan ditampilkan setelah disetujui moderator.
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-[12px] bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="mb-4 rounded-sm bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}
@@ -219,6 +219,10 @@ export default function CommentSection({ articleId }: { articleId: string }) {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
+              onFocus={(e) => {
+                // Ensure the submit button stays visible when mobile keyboard opens
+                setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "nearest" }), 300);
+              }}
               placeholder="Tulis komentar Anda..."
               className="input w-full text-sm"
               rows={4}
@@ -233,7 +237,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
           <button
             type="submit"
             disabled={submitting || !captchaToken}
-            className="btn-primary flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
+            className="btn-primary flex min-h-[44px] items-center gap-1.5 px-5 py-3 text-sm font-semibold disabled:opacity-50"
           >
             {submitting ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sistem Email Routing Kartawarta — Dokumentasi</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 18mm 16mm;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 10.5pt;
+        line-height: 1.55;
+        color: #191c1d;
+      }
+      .page {
+        max-width: 178mm;
+      }
+      h1 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 24pt;
+        line-height: 1.15;
+        color: #002045;
+        margin: 0 0 4pt;
+        letter-spacing: -0.01em;
+      }
+      h2 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 16pt;
+        color: #002045;
+        margin: 24pt 0 8pt;
+        padding-bottom: 4pt;
+        border-bottom: 1.5pt solid #002045;
+        page-break-after: avoid;
+      }
+      h3 {
+        font-size: 12pt;
+        color: #002045;
+        margin: 14pt 0 4pt;
+        page-break-after: avoid;
+      }
+      h4 {
+        font-size: 11pt;
+        color: #44474e;
+        margin: 10pt 0 3pt;
+        page-break-after: avoid;
+      }
+      p {
+        margin: 0 0 8pt;
+      }
+      ul,
+      ol {
+        margin: 0 0 8pt;
+        padding-left: 18pt;
+      }
+      li {
+        margin: 0 0 3pt;
+      }
+      code {
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 9.5pt;
+        background: #f1f3f4;
+        padding: 1pt 4pt;
+        border-radius: 3pt;
+        color: #b7102a;
+      }
+      pre {
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 9pt;
+        background: #002045;
+        color: #e8edf3;
+        padding: 10pt 12pt;
+        border-radius: 4pt;
+        white-space: pre;
+        overflow-x: auto;
+        margin: 0 0 10pt;
+        page-break-inside: avoid;
+      }
+      pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10pt;
+        margin: 0 0 12pt;
+        page-break-inside: avoid;
+      }
+      th,
+      td {
+        border: 0.5pt solid #c4c6d0;
+        padding: 5pt 7pt;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #002045;
+        color: #fff;
+        font-weight: 600;
+      }
+      tr:nth-child(even) td {
+        background: #f8f9fa;
+      }
+      .header-bar {
+        background: linear-gradient(135deg, #002045, #1a3a5c);
+        color: #fff;
+        padding: 18pt 20pt;
+        border-radius: 6pt;
+        margin: 0 0 20pt;
+        page-break-inside: avoid;
+      }
+      .header-bar h1 {
+        color: #fff;
+        margin: 0;
+      }
+      .header-bar .subtitle {
+        color: #c4c6d0;
+        margin-top: 6pt;
+        font-size: 11pt;
+      }
+      .meta {
+        color: #74777f;
+        font-size: 9pt;
+        margin-top: 8pt;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 8.5pt;
+        font-weight: 700;
+        padding: 1pt 6pt;
+        border-radius: 3pt;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-right: 4pt;
+      }
+      .badge.outbound {
+        background: #fce8eb;
+        color: #b7102a;
+      }
+      .badge.inbound {
+        background: #e8edf3;
+        color: #002045;
+      }
+      .badge.send-as {
+        background: #f5ede8;
+        color: #371800;
+      }
+      .callout {
+        border-left: 3pt solid #b7102a;
+        background: #fce8eb;
+        padding: 8pt 12pt;
+        border-radius: 0 4pt 4pt 0;
+        margin: 8pt 0 12pt;
+        font-size: 9.5pt;
+        page-break-inside: avoid;
+      }
+      .callout.info {
+        border-color: #002045;
+        background: #e8edf3;
+      }
+      .callout strong {
+        color: #002045;
+      }
+      .callout.warn strong {
+        color: #b7102a;
+      }
+      .ascii {
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 8.5pt;
+        background: #f8f9fa;
+        border: 0.5pt solid #c4c6d0;
+        padding: 10pt;
+        white-space: pre;
+        line-height: 1.3;
+        border-radius: 4pt;
+        margin: 0 0 12pt;
+        page-break-inside: avoid;
+      }
+      .footer-note {
+        margin-top: 30pt;
+        padding-top: 12pt;
+        border-top: 0.5pt solid #c4c6d0;
+        font-size: 9pt;
+        color: #74777f;
+      }
+      .nowrap {
+        white-space: nowrap;
+      }
+      .small {
+        font-size: 9pt;
+        color: #44474e;
+      }
+      section {
+        page-break-inside: auto;
+      }
+      section.keep {
+        page-break-inside: avoid;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header-bar">
+        <h1>Sistem Email Routing Kartawarta</h1>
+        <div class="subtitle">
+          Dokumentasi cara kerja inbound, outbound transactional, dan Send-As
+          via Gmail
+        </div>
+        <div class="meta">
+          Untuk tim editorial &amp; admin · Versi April 2026 · kartawarta.com
+        </div>
+      </div>
+
+      <h2>1. Ringkasan Arsitektur</h2>
+      <p>
+        Email Kartawarta jalan di tiga jalur terpisah yang masing-masing
+        memakai provider berbeda. Pemahaman cepat: <strong>Resend</strong>
+        kirim notifikasi sistem ke jurnalis, <strong>Cloudflare</strong>
+        terima email masuk ke <code>@kartawarta.com</code>, dan
+        <strong>Brevo</strong> jadi pintu keluar saat tim balas dari Gmail
+        memakai alamat <code>@kartawarta.com</code>.
+      </p>
+
+      <div class="ascii">
++──────────────────────────────────────────────────────────────────+
+│   JALUR 1 — OUTBOUND TRANSACTIONAL  (Sistem → Jurnalis)         │
+│       Article workflow → Resend API → email penerima             │
++──────────────────────────────────────────────────────────────────+
+│   JALUR 2 — INBOUND ROUTING         (Dunia → @kartawarta.com)    │
+│       redaksi@kartawarta.com → Cloudflare MX → forward Gmail     │
++──────────────────────────────────────────────────────────────────+
+│   JALUR 3 — OUTBOUND SEND-AS        (Tim → Dunia, atas nama @kw) │
+│       Gmail compose → Brevo SMTP → keluar dari @kartawarta.com   │
++──────────────────────────────────────────────────────────────────+
+      </div>
+
+      <h3>Provider yang dipakai</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%">Provider</th>
+            <th>Peran</th>
+            <th style="width: 20%">Kuota gratis</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Resend</strong></td>
+            <td>
+              REST API untuk kirim email transactional (notifikasi status
+              artikel ke jurnalis &amp; editor)
+            </td>
+            <td>100 email/hari</td>
+          </tr>
+          <tr>
+            <td><strong>Cloudflare Email Routing</strong></td>
+            <td>
+              Tampung MX record <code>kartawarta.com</code>, terapkan rule
+              forwarding per alamat ke inbox Gmail tim
+            </td>
+            <td>Unlimited</td>
+          </tr>
+          <tr>
+            <td><strong>Brevo SMTP relay</strong></td>
+            <td>
+              SMTP keluar untuk Gmail "Send As" — supaya balasan terlihat
+              berasal dari <code>@kartawarta.com</code>
+            </td>
+            <td>300 email/hari</td>
+          </tr>
+          <tr>
+            <td><strong>Gmail (akun pribadi tim)</strong></td>
+            <td>
+              UI untuk baca &amp; tulis. Simpan inbox, threading, search,
+              labelling. Send-As alias diatur per akun.
+            </td>
+            <td>Standar Gmail</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>2. Outbound Transactional (Sistem → Jurnalis)</h2>
+      <p>
+        Library: <code>src/lib/email.ts</code>. Wrapper tipis di atas Resend
+        SDK. Fungsi-fungsi yang ada:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 32%">Fungsi</th>
+            <th>Dipanggil saat</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>sendNewReviewEmail()</code></td>
+            <td>
+              Jurnalis klik "Kirim untuk Review" → email ke editor yang
+              di-assign
+            </td>
+          </tr>
+          <tr>
+            <td><code>sendArticleApprovedEmail()</code></td>
+            <td>Editor klik Approve di panel review</td>
+          </tr>
+          <tr>
+            <td><code>sendArticleRejectedEmail()</code></td>
+            <td>
+              Editor klik Tolak — sertakan catatan revisi yang harus
+              diperbaiki
+            </td>
+          </tr>
+          <tr>
+            <td><code>sendArticlePublishedEmail()</code></td>
+            <td>
+              Saat status berubah jadi PUBLISHED — baik manual oleh admin
+              maupun via cron <code>/api/cron/publish</code> untuk artikel
+              yang dijadwalkan
+            </td>
+          </tr>
+          <tr>
+            <td><code>sendEmail()</code></td>
+            <td>Fungsi dasar — dipakai semua wrapper di atas</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Template &amp; identitas pengirim</h3>
+      <p>
+        Semua email pakai <code>baseTemplate()</code> — HTML responsif
+        dengan logo Kartawarta, accent navy <code>#002045</code> /
+        crimson <code>#b7102a</code>, dan tombol CTA yang membawa
+        penerima kembali ke panel atau halaman publik.
+      </p>
+      <p>
+        From-address default <code>Kartawarta &lt;noreply@kartawarta.com&gt;</code>
+        di-set lewat env <code>EMAIL_FROM</code>, dengan fallback ke
+        <code>SystemSetting.notification_email_from</code> yang bisa
+        diubah dari <code>/panel/pengaturan</code> tanpa redeploy.
+      </p>
+
+      <div class="callout info">
+        <strong>Fail-silent.</strong> Kalau Resend belum dikonfigurasi
+        (API key kosong) atau provider sedang down, sistem
+        <em>tidak melempar error</em> — workflow artikel tetap jalan,
+        tapi notifikasi email skip diam-diam. Audit log di DB tetap
+        mencatat status change-nya, jadi tidak ada data hilang.
+      </div>
+
+      <h3>Yang dibutuhkan supaya jalur ini aktif</h3>
+      <pre><code>RESEND_API_KEY="re_xxxxxxxx"
+EMAIL_FROM="Kartawarta &lt;noreply@kartawarta.com&gt;"
+NEXT_PUBLIC_APP_URL="https://kartawarta.com"</code></pre>
+      <p class="small">
+        Domain <code>kartawarta.com</code> harus diverifikasi di Resend
+        dashboard (DNS record) supaya from-address tidak masuk spam.
+      </p>
+
+      <h2>3. Inbound Email (@kartawarta.com → Gmail tim)</h2>
+      <p>
+        Cloudflare Email Routing duduk di MX record domain. Saat ada
+        email masuk ke <code>nama@kartawarta.com</code>, Cloudflare
+        mencocokkan dengan <em>rule</em> yang sudah dibuat dan
+        meneruskan ke email pribadi tim (biasanya Gmail).
+      </p>
+      <h3>Alur penerimaan</h3>
+      <ol>
+        <li>
+          Pengirim eksternal compose email ke
+          <code>redaksi@kartawarta.com</code>.
+        </li>
+        <li>
+          Server pengirim cek MX record →
+          <code>route1.mx.cloudflare.net</code> dst.
+        </li>
+        <li>
+          Cloudflare cek rule. Misal "redaksi@kartawarta.com →
+          forward ke owen.kartawarta@gmail.com".
+        </li>
+        <li>
+          Email diteruskan ke Gmail penerima. Penerima baca, label,
+          balas seperti email biasa.
+        </li>
+        <li>
+          Kalau penerima ingin balas <em>atas nama
+          @kartawarta.com</em> bukan @gmail.com, dia pakai Send-As
+          (Jalur 3 di bawah).
+        </li>
+      </ol>
+      <h3>MX record yang sudah aktif</h3>
+      <pre><code>kartawarta.com  MX  10  route1.mx.cloudflare.net
+kartawarta.com  MX  10  route2.mx.cloudflare.net
+kartawarta.com  MX  10  route3.mx.cloudflare.net</code></pre>
+      <h3>Verifikasi destination</h3>
+      <p>
+        Saat dibuatkan email baru di panel admin atau lewat Cloudflare
+        Dashboard, alamat Gmail penerima pertama kali harus
+        <strong>verifikasi</strong> — Cloudflare kirim email
+        konfirmasi, penerima harus klik link di dalamnya. Setelah itu
+        rule baru aktif.
+      </p>
+
+      <h2>4. Manajemen Routing dari Panel Admin</h2>
+      <p>
+        Halaman <code>/panel/email</code> (akses
+        <strong>SUPER_ADMIN</strong> saja) menyediakan UI untuk semua
+        operasi rule routing tanpa harus buka Cloudflare Dashboard.
+      </p>
+      <h3>Yang bisa dilakukan dari panel</h3>
+      <ul>
+        <li>
+          <strong>List semua email</strong> — alamat
+          <code>@kartawarta.com</code> yang sudah dibuat, status aktif/
+          nonaktif, dan tujuan forwarding-nya.
+        </li>
+        <li>
+          <strong>Buat email baru</strong> — pilih dari user
+          terdaftar (auto-fill local-part &amp; destination dari
+          profil) atau input manual <code>localPart</code> +
+          <code>destinationEmail</code>. Validasi format Indonesia
+          jurnalistik (huruf kecil, alfanumerik, titik, dash).
+        </li>
+        <li>
+          <strong>Toggle on/off</strong> — non-aktifkan sementara
+          tanpa menghapus rule. Cocok saat seseorang cuti panjang.
+        </li>
+        <li>
+          <strong>Hapus permanen</strong>.
+        </li>
+        <li>
+          <strong>"Setup Gmail"</strong> — expand panduan Send-As
+          step-by-step + tombol copy-to-clipboard untuk SMTP credential
+          Brevo.
+        </li>
+      </ul>
+      <h3>Endpoint API yang dipakai</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 18%">Method</th>
+            <th>Path</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>GET</td>
+            <td><code>/api/email-routing</code></td>
+            <td>List rules</td>
+          </tr>
+          <tr>
+            <td>POST</td>
+            <td><code>/api/email-routing</code></td>
+            <td>Buat rule baru + register destination (kirim email verifikasi)</td>
+          </tr>
+          <tr>
+            <td>PATCH</td>
+            <td><code>/api/email-routing</code></td>
+            <td>Toggle <code>enabled</code></td>
+          </tr>
+          <tr>
+            <td>DELETE</td>
+            <td><code>/api/email-routing?id=...</code></td>
+            <td>Hapus rule</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Endpoint diproteksi NextAuth + role check
+        <strong>SUPER_ADMIN</strong>. Library di
+        <code>src/lib/cloudflare-email.ts</code> wrap Cloudflare API v4
+        — semua request lewat <code>api.cloudflare.com/client/v4/zones/{zoneId}/email/routing/...</code>.
+      </p>
+
+      <h2>5. Outbound Send-As (Reply dari @kartawarta.com via Gmail)</h2>
+      <p>
+        Cloudflare Email Routing <em>tidak</em> bisa mengirim email
+        keluar — dia hanya untuk inbound. Untuk reply atau compose baru
+        atas nama <code>@kartawarta.com</code>, Gmail user perlu
+        konfigurasi <strong>Send-As</strong> dengan SMTP Brevo sebagai
+        relay.
+      </p>
+      <h3>Setup di Gmail (per user, satu kali)</h3>
+      <ol>
+        <li>Buka Gmail → <strong>Settings</strong> (ikon gear) → <strong>See all settings</strong>.</li>
+        <li>Tab <strong>Accounts and Import</strong> → bagian <em>Send mail as</em> → klik <strong>Add another email address</strong>.</li>
+        <li>
+          <p>Isi:</p>
+          <ul>
+            <li>Name: <em>nama lengkap</em></li>
+            <li>Email address: <code>nama@kartawarta.com</code></li>
+            <li>Centang <strong>Treat as an alias</strong></li>
+          </ul>
+        </li>
+        <li>
+          <p>Pilih <em>Send through SMTP</em> (bukan Gmail SMTP). Isi:</p>
+          <table>
+            <tbody>
+              <tr><td>SMTP Server</td><td><code>smtp-relay.brevo.com</code></td></tr>
+              <tr><td>Port</td><td><code>587</code> (TLS)</td></tr>
+              <tr><td>Username</td><td>didapat dari Brevo dashboard, format <code>xxxxxxxxx@smtp-brevo.com</code></td></tr>
+              <tr><td>Password</td><td>SMTP master password (dari Brevo dashboard, bukan password login Brevo)</td></tr>
+            </tbody>
+          </table>
+        </li>
+        <li>
+          Gmail kirim kode konfirmasi ke
+          <code>nama@kartawarta.com</code>. Karena alamat itu sudah
+          di-forward ke Gmail user (Jalur 2), kode masuk otomatis ke
+          inbox Gmail-nya. Masukkan kodenya → done.
+        </li>
+        <li>
+          Setelah ini, saat compose, ada dropdown "From" — pilih
+          <code>nama@kartawarta.com</code>. Email keluar lewat Brevo,
+          headernya bersih (DKIM + DMARC sudah authenticated di domain),
+          tidak masuk spam.
+        </li>
+      </ol>
+
+      <div class="callout warn">
+        <strong>Catatan SMTP credential.</strong> Username dan password
+        Brevo SMTP saat ini <em>shared</em> antar semua tim. Kalau
+        salah satu kompromis, semua user kena. Untuk skala lebih
+        besar, pertimbangkan Brevo paid plan dengan SMTP credential
+        per-user, atau migrasi ke Google Workspace yang centralized.
+      </div>
+
+      <h3>DNS records pendukung Brevo (sudah live)</h3>
+      <pre><code>TXT     brevo-code              (verifikasi domain)
+CNAME   brevo1._domainkey       (DKIM signing)
+CNAME   brevo2._domainkey       (DKIM signing)
+TXT     _dmarc                  v=DMARC1; p=none; rua=...</code></pre>
+
+      <h2>6. Test &amp; Diagnostik</h2>
+      <h3>Endpoint <code>/api/email/test</code></h3>
+      <p>
+        SUPER_ADMIN bisa POST ke endpoint ini untuk verify Resend
+        config tanpa harus generate event di app:
+      </p>
+      <pre><code>POST /api/email/test
+{ "to": "alamat-anda@gmail.com" }
+
+→ { "success": true, "to": "...", "from": "Kartawarta &lt;...&gt;" }</code></pre>
+      <p>
+        Yang dicek: API key valid, from-address authenticated, Resend
+        accept payload. Kalau gagal, response berisi
+        <code>error</code> dengan pesan dari Resend.
+      </p>
+      <h3>Cek logs</h3>
+      <ul>
+        <li>
+          <strong>Resend dashboard</strong> → tab Logs — list semua
+          email yang dikirim 7 hari terakhir + status
+          (delivered/bounced/complaint).
+        </li>
+        <li>
+          <strong>Cloudflare dashboard</strong> → Email Routing →
+          Activity — log inbound forwarding.
+        </li>
+        <li>
+          <strong>Brevo dashboard</strong> → Statistics → SMTP — log
+          email keluar via Send-As.
+        </li>
+      </ul>
+
+      <h2>7. Yang Harus Dijaga (Gotchas)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 32%">Gejala</th>
+            <th style="width: 30%">Penyebab umum</th>
+            <th>Cara cek</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Email notifikasi tidak sampai sama sekali</td>
+            <td>RESEND_API_KEY kosong / salah</td>
+            <td>POST <code>/api/email/test</code> — kalau success false, perbaiki env atau SystemSetting</td>
+          </tr>
+          <tr>
+            <td>From-address default "noreply"</td>
+            <td>EMAIL_FROM tidak di-set</td>
+            <td>Update env atau SystemSetting <code>notification_email_from</code></td>
+          </tr>
+          <tr>
+            <td>Email masuk folder spam</td>
+            <td>DKIM/DMARC belum authenticated</td>
+            <td>Cek DNS record di Cloudflare; pastikan Brevo sudah verify domain</td>
+          </tr>
+          <tr>
+            <td>Forward Cloudflare tidak jalan</td>
+            <td>Rule disabled atau destination belum verify</td>
+            <td>Buka <code>/panel/email</code> → cek toggle &amp; status verifikasi</td>
+          </tr>
+          <tr>
+            <td>Send-As Gmail gagal autentikasi SMTP</td>
+            <td>SMTP password salah atau Brevo blok IP</td>
+            <td>Login Brevo dashboard → SMTP &amp; API → re-issue password</td>
+          </tr>
+          <tr>
+            <td>Hit 100 email/hari Resend</td>
+            <td>Limit free plan</td>
+            <td>Upgrade Resend, atau batch notifikasi sehingga 1 email = banyak event</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout info">
+        <strong>Audit trail.</strong> Setiap perubahan status artikel
+        yang men-trigger email otomatis tercatat di
+        <code>AuditLog</code> — kolom <code>action</code> berisi
+        <code>STATUS_CHANGE</code> dan <code>detail</code> menjelaskan
+        siapa yang trigger. Kalau ada user lapor "tidak terima
+        email", cek dulu apakah event-nya pernah terjadi (di audit log
+        + Resend dashboard) sebelum nuduh sistem.
+      </div>
+
+      <h2>8. Konfigurasi Saat Ini (per April 2026)</h2>
+      <p>
+        Email yang sudah aktif &amp; ter-forward dari Cloudflare ke Gmail
+        tim:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Alamat</th>
+            <th>Forward ke</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>owen@kartawarta.com</code></td>
+            <td>owenjacobn@gmail.com</td>
+            <td>Aktif &amp; verified</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="small">
+        Tambah email lain (mis. <code>redaksi@</code>,
+        <code>iklan@</code>) lewat <code>/panel/email</code> kapan saja.
+      </p>
+
+      <h2>9. Ringkasan untuk Editorial</h2>
+      <ol>
+        <li>
+          Sistem <strong>otomatis kirim email notifikasi</strong>
+          setiap kali artikel pindah status (submit review, approved,
+          rejected, published). Tidak ada yang perlu diatur per
+          artikel — Resend handle.
+        </li>
+        <li>
+          Setiap anggota tim bisa punya alamat
+          <code>@kartawarta.com</code> sendiri yang
+          <strong>auto-forward ke Gmail</strong> mereka. Admin bikin
+          via <code>/panel/email</code>.
+        </li>
+        <li>
+          Untuk <strong>balas dari alamat
+          @kartawarta.com</strong> (bukan dari @gmail.com), tiap
+          anggota tim setup Send-As di Gmail-nya satu kali — pakai
+          SMTP Brevo. Panduan ada di tombol "Setup Gmail" di panel.
+        </li>
+        <li>
+          Semua infrastruktur (Cloudflare, Brevo, Resend) <strong>gratis
+          untuk skala saat ini</strong>. Naik level kalau sudah lebih
+          dari 100 notifikasi/hari atau 300 email keluar/hari.
+        </li>
+      </ol>
+
+      <div class="footer-note">
+        Dokumen ini di-generate dari kode &amp; dokumentasi internal
+        Kartawarta. Source kode: <code>src/lib/email.ts</code>,
+        <code>src/lib/cloudflare-email.ts</code>,
+        <code>src/app/api/email-routing/route.ts</code>,
+        <code>src/app/api/email/test/route.ts</code>,
+        <code>docs/setup-email-kartawarta.md</code>. Untuk update,
+        regenerate via <code>scripts/render-pdf.mjs</code>.
+      </div>
+    </div>
+  </body>
+</html>

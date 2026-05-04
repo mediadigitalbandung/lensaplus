@@ -193,8 +193,10 @@ export default function Header() {
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-md text-white/70 transition-colors hover:text-white hover:bg-white/10 lg:hidden"
-              aria-label="Menu"
+              className="flex h-11 w-11 items-center justify-center rounded-md text-white/70 transition-colors hover:text-white hover:bg-white/10 lg:hidden"
+              aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu navigasi"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-nav-drawer"
             >
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -259,6 +261,10 @@ export default function Header() {
         />
 
         <div
+          id="mobile-nav-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu navigasi"
           className={`absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-surface-container-lowest transition-transform duration-300 ease-out shadow-ambient-lg ${
             mobileMenuOpen ? "translate-x-0" : "translate-x-full"
           }`}
@@ -285,7 +291,7 @@ export default function Header() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="flex items-center justify-between rounded-md px-3 py-2.5 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary"
+                    className="flex min-h-[44px] items-center justify-between rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.name}
@@ -304,7 +310,7 @@ export default function Header() {
               <li>
                 <Link
                   href="/bookmark"
-                  className="flex items-center gap-2 rounded-md px-3 py-2.5 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary"
+                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Bookmark size={16} className="text-primary" />
@@ -315,7 +321,7 @@ export default function Header() {
                 <li>
                   <Link
                     href="/panel/dashboard"
-                    className="flex items-center gap-2 rounded-md px-3 py-2.5 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary"
+                    className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <LayoutDashboard size={16} className="text-primary" />
@@ -326,7 +332,7 @@ export default function Header() {
             </ul>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 border-t border-surface-container-low px-5 py-4">
+          <div className="absolute bottom-0 left-0 right-0 border-t border-surface-container-low px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             {status === "loading" ? (
               <div className="h-10 w-full animate-pulse rounded-md bg-surface-container-low" />
             ) : session ? (

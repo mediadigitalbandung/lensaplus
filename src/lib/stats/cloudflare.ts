@@ -13,6 +13,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { decryptSecret, isSensitiveKey } from "@/lib/crypto-secrets";
 
 const CF_GRAPHQL_URL = "https://api.cloudflare.com/client/v4/graphql";
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -70,7 +71,10 @@ function setCached(key: string, data: CloudflareStats) {
 async function getSetting(key: string): Promise<string | null> {
   try {
     const row = await prisma.systemSetting.findUnique({ where: { key } });
-    if (row?.value && row.value.trim().length > 0) return row.value.trim();
+    if (row?.value && row.value.trim().length > 0) {
+      const raw = row.value.trim();
+      return isSensitiveKey(key) ? decryptSecret(raw) : raw;
+    }
   } catch {
     // ignore
   }

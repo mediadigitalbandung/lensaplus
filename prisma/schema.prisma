@@ -455,6 +455,32 @@ model ContactMessage {
   @@map("contact_messages")
 }
 
+/// Newsletter subscribers — opt-in email list for weekly digest.
+/// Double-opt-in pattern: confirmedAt is null until the user clicks the
+/// confirmation link sent to their email.
+model NewsletterSubscriber {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  /// Opaque token for confirm + unsubscribe links. Regenerated on resubscribe.
+  token         String    @unique @default(cuid())
+  /// Set when the user clicks the confirm link. Until then, no emails are sent.
+  confirmedAt   DateTime?
+  /// Set when the user clicks unsubscribe. Soft-delete; we keep the row to
+  /// avoid resending after unsubscribe.
+  unsubscribedAt DateTime?
+  /// IP at signup — for rate limit + abuse triage.
+  signupIp      String?
+  /// Free-text source label e.g. "footer", "popup", "imported".
+  source        String?
+  /// Last digest sent timestamp — keeps us idempotent if cron runs twice.
+  lastSentAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([confirmedAt, unsubscribedAt])
+  @@map("newsletter_subscribers")
+}
+
 model Sorotan {
   id            String       @id @default(cuid())
   slug          String       @unique

@@ -14,6 +14,7 @@ import { pingIndexNow } from "./seo/indexnow";
 import { generateSorotanIfMissing } from "./seo/sorotan-generator";
 import { publishArticleToSocial } from "./social/orchestrator";
 import { purgeCache } from "./cloudflare/purge";
+import { invalidateCachePrefix } from "./cache";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
 
@@ -149,6 +150,16 @@ export async function onArticlePublished(
     // revalidatePath is only valid in route handler / server action context.
     // If invoked outside one (e.g. background job), just skip — the next
     // request will refresh per `export const revalidate = ...`.
+  }
+
+  // In-process cache (src/lib/cache.ts) holds homepage / trending data
+  // independently from Next.js ISR. Drop those keys so readers see the
+  // new article on the next request, not after the in-process TTL expires.
+  try {
+    invalidateCachePrefix("home:");
+    invalidateCachePrefix("trending:");
+  } catch {
+    /* swallow */
   }
 
   // URLs to notify — article page, homepage, news sitemap, category page.

@@ -20,6 +20,7 @@ import {
   successResponse,
 } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret, isSensitiveKey } from "@/lib/crypto-secrets";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,10 @@ const bodySchema = z.object({
 async function getSetting(key: string): Promise<string | null> {
   try {
     const row = await prisma.systemSetting.findUnique({ where: { key } });
-    if (row?.value && row.value.trim().length > 0) return row.value.trim();
+    if (row?.value && row.value.trim().length > 0) {
+      const raw = row.value.trim();
+      return isSensitiveKey(key) ? decryptSecret(raw) : raw;
+    }
   } catch {
     /* ignore */
   }

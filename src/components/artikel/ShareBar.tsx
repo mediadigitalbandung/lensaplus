@@ -79,7 +79,7 @@ export default function ShareBar({ articleUrl, articleTitle }: ShareBarProps) {
 
   return (
     <div className="relative">
-      <div className="flex flex-wrap items-center gap-3 rounded-[12px] bg-surface-secondary p-3 sm:p-4">
+      <div className="flex flex-wrap items-center gap-3 rounded-sm bg-surface-secondary p-3 sm:p-4">
         <div className="flex items-center gap-2 text-txt-secondary">
           <Share2 size={14} />
           <span className="text-xs font-semibold uppercase tracking-wider">Bagikan</span>
@@ -91,10 +91,11 @@ export default function ShareBar({ articleUrl, articleTitle }: ShareBarProps) {
               href={platform.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-white transition-all ${platform.bg} ${platform.hoverBg}`}
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-white transition-all active:scale-95 ${platform.bg} ${platform.hoverBg}`}
               title={`Bagikan ke ${platform.name}`}
+              aria-label={`Bagikan ke ${platform.name}`}
             >
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
                 {platform.letter}
               </span>
               <span className="hidden sm:inline">{platform.name}</span>
@@ -104,12 +105,13 @@ export default function ShareBar({ articleUrl, articleTitle }: ShareBarProps) {
           {/* Copy Link Button */}
           <button
             onClick={handleCopyLink}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-white transition-all ${
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-white transition-all active:scale-95 ${
               copied ? "bg-primary" : "bg-gray-500 hover:bg-gray-600"
             }`}
             title="Salin Link"
+            aria-label="Salin tautan artikel"
           >
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/20">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
               {copied ? <Check size={10} /> : <Link2 size={10} />}
             </span>
             <span className="hidden sm:inline">

@@ -4,6 +4,22 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { Role } from "@prisma/client";
 
+/**
+ * Single-device enforcement:
+ * - Enabled by default (SINGLE_DEVICE_ENFORCEMENT defaults to "true").
+ * - Set SINGLE_DEVICE_ENFORCEMENT=false to bypass (e.g., staging debug).
+ * - Each new login generates a new sessionId, stored in User.activeSessionId.
+ * - JWT carries the sessionId and a lastValidatedAt timestamp.
+ * - DB re-validation happens at most once per SESSION_REVALIDATE_INTERVAL_MS (10 min).
+ *   Max staleness: 10 minutes before a forcibly-revoked session is detected.
+ * - Mismatch → token marked sessionInvalid → middleware redirects to /login?reason=session-expired.
+ */
+const SESSION_REVALIDATE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+
+export function isSingleDeviceEnabled(): boolean {
+  return process.env.SINGLE_DEVICE_ENFORCEMENT !== "false";
+}
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -29,6 +45,10 @@ declare module "next-auth/jwt" {
     role: Role;
     avatar?: string | null;
     sessionId?: string;
+    /** Unix ms — last time we queried DB for session + role validation */
+    lastValidatedAt?: number;
+    /** Set to true when session is invalidated (kicked by another login) */
+    sessionInvalid?: boolean;
   }
 }
 
@@ -63,12 +83,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email atau password salah");
         }
 
-        // Single-device login check — temporarily disabled
-        // if (user.activeSessionId) {
-        //   throw new Error("Akun Anda sedang online di perangkat lain. Silakan logout terlebih dahulu dari perangkat tersebut.");
-        // }
-
-        // Generate unique session ID and save to DB
+        // Generate unique session ID for this login.
+        // Writing the new sessionId to DB immediately invalidates any existing
+        // session on another device — their next JWT revalidation will detect
+        // the mismatch and mark their token as sessionInvalid.
         const sessionId = crypto.randomUUID();
         await prisma.user.update({
           where: { id: user.id },
@@ -87,52 +105,95 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
+      // Initial sign-in: populate token from authorize() return value.
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.avatar = user.avatar;
         token.sessionId = user.sessionId;
+        token.lastValidatedAt = Date.now();
+        token.sessionInvalid = false;
+        return token;
       }
-      // Refresh role from DB and check session validity
-      if (token.id && token.sessionId) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { role: true, name: true, avatar: true, isActive: true, activeSessionId: true },
-          });
-          if (!dbUser || !dbUser.isActive) {
-            return { ...token, invalid: true };
-          }
-          // Check if another device tried to login (session mismatch)
-          if (dbUser.activeSessionId && dbUser.activeSessionId !== token.sessionId) {
-            // Mark that there was a login attempt from another device
-            token.loginAttempt = true;
-          } else {
-            token.loginAttempt = false;
-          }
-          token.role = dbUser.role;
-          token.name = dbUser.name;
-          token.avatar = dbUser.avatar;
-        } catch {
-          // Silently fail
+
+      // Subsequent requests: re-validate from DB at most once per interval.
+      // Always skip if token has already been marked invalid (avoid redundant queries).
+      if (token.sessionInvalid) {
+        return token;
+      }
+
+      const now = Date.now();
+      const lastValidated = token.lastValidatedAt ?? 0;
+      const needsRevalidation = now - lastValidated >= SESSION_REVALIDATE_INTERVAL_MS;
+
+      if (!needsRevalidation) {
+        // Within cache window — trust the cached values.
+        return token;
+      }
+
+      // Past the cache window — hit the DB for fresh role + session check.
+      if (!token.id) {
+        return token;
+      }
+
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id },
+          select: {
+            role: true,
+            name: true,
+            avatar: true,
+            isActive: true,
+            activeSessionId: true,
+          },
+        });
+
+        // Account deleted or deactivated.
+        if (!dbUser || !dbUser.isActive) {
+          token.sessionInvalid = true;
+          return token;
         }
+
+        // Single-device enforcement: sessionId in JWT must match DB.
+        // Tokens without a sessionId (pre-feature sessions) are allowed through
+        // for backward compatibility — they carry no session identifier to compare.
+        if (
+          isSingleDeviceEnabled() &&
+          token.sessionId &&
+          dbUser.activeSessionId !== token.sessionId
+        ) {
+          // Another device has logged in and taken over the activeSessionId.
+          token.sessionInvalid = true;
+          return token;
+        }
+
+        // Update cached values.
+        token.role = dbUser.role;
+        token.name = dbUser.name ?? token.name;
+        token.avatar = dbUser.avatar ?? token.avatar;
+        token.lastValidatedAt = now;
+      } catch {
+        // DB unreachable — fail open (don't kick user) to avoid mass logouts
+        // during transient DB issues. The 10-min cache buys us resilience.
       }
+
       return token;
     },
+
     async session({ session, token }) {
-      if ((token as Record<string, unknown>).invalid) {
-        return { ...session, user: { ...session.user, invalid: true } } as typeof session;
+      // Propagate invalid flag — middleware will redirect to login.
+      if (token.sessionInvalid) {
+        (session as unknown as Record<string, unknown>).sessionInvalid = true;
+        return session;
       }
+
       session.user.id = token.id;
       session.user.role = token.role;
       session.user.avatar = token.avatar;
       session.user.sessionId = token.sessionId;
       if (token.name) session.user.name = token.name as string;
-      // Pass login attempt warning to client
-      const sess = session as unknown as { loginAttempt?: boolean };
-      const tok = token as unknown as { loginAttempt?: boolean };
-      sess.loginAttempt = !!tok.loginAttempt;
+
       return session;
     },
   },

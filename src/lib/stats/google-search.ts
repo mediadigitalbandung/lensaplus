@@ -14,6 +14,7 @@
 
 import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto-secrets";
 
 const GSC_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -90,7 +91,7 @@ async function getCredentials(): Promise<ServiceAccountCredentials | null> {
       where: { key: "google_credentials_json" },
     });
     if (cred?.value && cred.value.trim().length > 0) {
-      raw = cred.value.trim();
+      raw = decryptSecret(cred.value.trim());
     }
   } catch {
     // ignore

@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "./prisma";
+import { decryptSecret } from "./crypto-secrets";
 
 /**
  * Shared AI client for Kartawarta.
@@ -72,7 +73,7 @@ async function getApiKey(provider: Provider): Promise<string | null> {
       where: { key: settingKey },
     });
     if (setting?.value && setting.value.trim().length > 0) {
-      return setting.value.trim();
+      return decryptSecret(setting.value.trim());
     }
   } catch {
     // DB unavailable — fall through to env fallback.

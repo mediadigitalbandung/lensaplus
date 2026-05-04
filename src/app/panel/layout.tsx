@@ -226,7 +226,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   });
 
   const sidebarContent = (
-    <div className="flex h-full flex-col px-3 py-4 overflow-y-auto overscroll-contain">
+    <div className="flex h-full flex-col px-3 py-4 overflow-y-auto overscroll-contain pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <a
         href="/"
         className="mb-6 flex items-center gap-2.5 rounded-lg px-4 py-2.5 text-[13px] font-medium text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-150"
@@ -305,6 +305,9 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
         {/* Sidebar — desktop: always visible, mobile: slide-in */}
         <aside
+          id="panel-sidebar"
+          role="navigation"
+          aria-label="Navigasi panel"
           className={cn(
             "fixed left-0 top-0 z-50 h-[100dvh] w-60 bg-surface-dark pt-16 transition-transform duration-200 overflow-hidden",
             "lg:translate-x-0 lg:z-40",
@@ -329,8 +332,10 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="rounded-xl p-2 text-txt-primary hover:bg-surface-secondary lg:hidden"
-                aria-label="Buka menu navigasi"
+                className="rounded-xl p-2.5 text-txt-primary hover:bg-surface-secondary lg:hidden"
+                aria-label="Buka menu navigasi panel"
+                aria-expanded={sidebarOpen}
+                aria-controls="panel-sidebar"
               >
                 <Menu size={24} />
               </button>

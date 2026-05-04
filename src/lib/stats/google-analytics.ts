@@ -15,6 +15,7 @@
 
 import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto-secrets";
 
 const GA4_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -79,7 +80,7 @@ async function getCredentials(): Promise<ServiceAccountCredentials | null> {
       where: { key: "google_credentials_json" },
     });
     if (cred?.value && cred.value.trim().length > 0) {
-      raw = cred.value.trim();
+      raw = decryptSecret(cred.value.trim());
     }
   } catch {
     // DB unavailable — fall through to env.
