@@ -207,8 +207,26 @@ model Tag {
   name     String    @unique
   slug     String    @unique
   articles Article[]
+  topics   Topic[]
 
   @@map("tags")
+}
+
+model Topic {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  description     String   @db.Text
+  metaTitle       String?
+  metaDescription String?  @db.Text
+  coverImage      String?
+  isPublished     Boolean  @default(true)
+  tags            Tag[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isPublished])
+  @@map("topics")
 }
 
 model Source {

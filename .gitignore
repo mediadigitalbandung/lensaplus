@@ -64,6 +64,8 @@ public/uploads/*
 # Whitelist only the safe shell scripts that don't carry secrets.
 scripts/*
 !scripts/backup-db.sh
+!scripts/backup-verify.sh
+!scripts/backup-restore-drill.sh
 !scripts/.gitkeep
 
 # Playwright artifacts

@@ -65,5 +65,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.4,
   }));
 
-  return [...staticPages, ...categoryPages, ...articlePages, ...tagPages, ...authorPages];
+  // Topic cluster pages (published only)
+  let topicPages: MetadataRoute.Sitemap = [];
+  try {
+    // Topic model added via schema migration — cast needed until Prisma client regenerates.
+    // biome-ignore lint: prisma cast
+    const topics = await (prisma as any).topic.findMany({
+      where: { isPublished: true },
+      select: { slug: true, updatedAt: true },
+    }) as { slug: string; updatedAt: Date }[];
+    topicPages = topics.map((t) => ({
+      url: `${siteUrl}/topik/${t.slug}`,
+      lastModified: t.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+  } catch {
+    // Topic model may not exist yet — swallow gracefully.
+  }
+
+  return [...staticPages, ...categoryPages, ...articlePages, ...tagPages, ...authorPages, ...topicPages];
 }

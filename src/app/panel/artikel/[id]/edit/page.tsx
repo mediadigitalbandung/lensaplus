@@ -374,6 +374,29 @@ export default function EditArticlePage() {
 
   const [generatingTags, setGeneratingTags] = useState(false);
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
+  const [generatingFaq, setGeneratingFaq] = useState(false);
+  const [faqCount, setFaqCount] = useState<number | null>(null);
+
+  const handleGenerateFaq = async () => {
+    if (!title.trim() || !content.trim()) return;
+    setGeneratingFaq(true);
+    try {
+      const res = await fetch(`/api/articles/${articleId}/generate-faq`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFaqCount(data.data.generated);
+        success(`FAQ berhasil digenerate: ${data.data.generated} pasangan Q&A`);
+      } else {
+        showError(data.error || "Gagal generate FAQ");
+      }
+    } catch {
+      showError("Gagal menghubungi server");
+    } finally {
+      setGeneratingFaq(false);
+    }
+  };
 
   // Hard caps from server-side Zod schema — keep client output within these so we never trip 400.
   const FEATURE_MAX: Record<string, number> = {
@@ -2066,6 +2089,30 @@ export default function EditArticlePage() {
                     </div>
                     <textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} maxLength={160} rows={2} placeholder="Deskripsi singkat untuk hasil pencarian" className="input w-full text-sm" />
                   </div>
+                  {/* FAQ Generator — only for editors */}
+                  {EDITOR_ROLES.includes(userRole) && (
+                    <div className="rounded-lg border border-border bg-surface-secondary px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-txt-primary">FAQ Page (JSON-LD)</p>
+                          <p className="text-xs text-txt-muted">
+                            {faqCount !== null
+                              ? `${faqCount} pasangan Q&A tersimpan. Klik untuk regenerate.`
+                              : "Generate 5-7 Q&A dari konten artikel untuk rich result Google."}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleGenerateFaq}
+                          disabled={generatingFaq || !title.trim() || !content.trim()}
+                          className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-on-primary hover:bg-primary-dark disabled:opacity-40"
+                        >
+                          {generatingFaq ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                          {generatingFaq ? "Generating..." : "Generate FAQ"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
