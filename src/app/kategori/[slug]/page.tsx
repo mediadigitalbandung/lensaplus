@@ -128,6 +128,8 @@ export default async function CategoryPage({ params }: { params: { slug: string 
   }));
 
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  // CollectionPage + ItemList so crawlers see what's in this category, plus a
+  // sibling BreadcrumbList script for rich-result eligibility.
   const categoryJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -135,18 +137,30 @@ export default async function CategoryPage({ params }: { params: { slug: string 
     description: category.description || `Berita ${category.name} terbaru dari Kartawarta.`,
     url: `${siteUrl}/kategori/${category.slug}`,
     isPartOf: { "@type": "WebSite", name: "Kartawarta", url: siteUrl },
-    breadcrumb: {
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Beranda", item: siteUrl },
-        { "@type": "ListItem", position: 2, name: category.name, item: `${siteUrl}/kategori/${category.slug}` },
-      ],
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: articles.length,
+      itemListElement: articles.map((a: { slug: string; title: string }, i: number) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `${siteUrl}/berita/${a.slug}`,
+        name: a.title,
+      })),
     },
+  };
+  const categoryBreadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Beranda", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: category.name, item: `${siteUrl}/kategori/${category.slug}` },
+    ],
   };
 
   return (
     <div className="bg-surface min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(categoryJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(categoryBreadcrumbJsonLd) }} />
       <div className="container-main py-8">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-1.5 text-sm text-txt-muted">

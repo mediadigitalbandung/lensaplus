@@ -15,21 +15,34 @@ function generateSecurePassword(length = 16): string {
 // Protected by a setup key to prevent unauthorized access
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const setupKey = searchParams.get("key");
-
-    // Simple protection - check setup key
-    if (setupKey !== process.env.SETUP_KEY) {
-      return errorResponse({ message: "Invalid setup key", statusCode: 403 });
+    const expected = process.env.SETUP_KEY;
+    // Hard-disable when SETUP_KEY is not configured. Without this guard,
+    // `setupKey === undefined && process.env.SETUP_KEY === undefined`
+    // would compare equal and grant access without any key.
+    if (!expected || expected.length < 16) {
+      return errorResponse({ message: "Setup endpoint disabled", statusCode: 403 });
     }
-
-    // Check if already seeded
+    // Disable the endpoint entirely once a SUPER_ADMIN exists. Avoids
+    // recon (probing whether setup is done) and removes the footgun in prod.
     const existingAdmin = await prisma.user.findFirst({
       where: { role: "SUPER_ADMIN" },
+      select: { id: true },
     });
-
     if (existingAdmin) {
-      return successResponse({ message: "Database sudah di-setup sebelumnya", alreadySetup: true });
+      return errorResponse({ message: "Setup endpoint disabled", statusCode: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const setupKey = searchParams.get("key") || "";
+
+    // Constant-time comparison to defeat timing oracles.
+    const provided = Buffer.from(setupKey);
+    const target = Buffer.from(expected);
+    const ok =
+      provided.length === target.length &&
+      crypto.timingSafeEqual(provided, target);
+    if (!ok) {
+      return errorResponse({ message: "Invalid setup key", statusCode: 403 });
     }
 
     // Create categories

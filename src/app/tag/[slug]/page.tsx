@@ -15,11 +15,27 @@ interface PageProps {
   searchParams: { page?: string };
 }
 
+// High-priority tag overrides — hand-tuned meta for hub pages we want to push.
+// Keeps generic fallback for all other tags.
+const TAG_META_OVERRIDES: Record<string, { title: string; description: string }> = {
+  "bank-bjb": {
+    title: "Bank BJB — Liputan Lengkap RUPST, Direksi & Kinerja",
+    description:
+      "Liputan terverifikasi Kartawarta tentang Bank BJB: RUPST 2025, jajaran direksi & komisaris, dividen, kinerja keuangan, dan kerja sama strategis Bank Pembangunan Daerah Jawa Barat dan Banten.",
+  },
+};
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const tag = await prisma.tag.findUnique({ where: { slug: params.slug } });
   if (!tag) return { title: "Tag Tidak Ditemukan" };
-  const title = `Berita ${tag.name} Terbaru`;
-  const description = `Baca berita terbaru tentang ${tag.name}. Kumpulan artikel dan analisis terkait ${tag.name} dari Kartawarta.`;
+  const override = TAG_META_OVERRIDES[params.slug];
+  const articleCount = await prisma.article.count({
+    where: { status: "PUBLISHED", tags: { some: { slug: params.slug } } },
+  });
+  const title = override?.title || `Berita ${tag.name} Terbaru`;
+  const description =
+    override?.description ||
+    `${articleCount} artikel terbaru tentang ${tag.name} dari Kartawarta — liputan, analisis, dan perkembangan terkini.`;
   return {
     title,
     description,
@@ -64,25 +80,40 @@ export default async function TagPage({ params, searchParams }: PageProps) {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
-  const tagJsonLd = {
+  // CollectionPage with an ItemList of articles so crawlers can see what's in
+  // the collection. BreadcrumbList is emitted as a SIBLING <script>, not
+  // nested — Google only reads top-level BreadcrumbList for rich results.
+  const collectionJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: `Berita ${tag.name} — Kartawarta`,
     url: `${siteUrl}/tag/${tag.slug}`,
     isPartOf: { "@type": "WebSite", name: "Kartawarta", url: siteUrl },
-    breadcrumb: {
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Beranda", item: siteUrl },
-        { "@type": "ListItem", position: 2, name: "Tag", item: `${siteUrl}/tag` },
-        { "@type": "ListItem", position: 3, name: tag.name, item: `${siteUrl}/tag/${tag.slug}` },
-      ],
+    description: `${total.toLocaleString("id-ID")} artikel Kartawarta dengan tag ${tag.name}.`,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: articles.length,
+      itemListElement: articles.map((a, i) => ({
+        "@type": "ListItem",
+        position: (page - 1) * PER_PAGE + i + 1,
+        url: `${siteUrl}/berita/${a.slug}`,
+        name: a.title,
+      })),
     },
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Beranda", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: tag.name, item: `${siteUrl}/tag/${tag.slug}` },
+    ],
   };
 
   return (
     <div className="bg-surface min-h-screen">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(tagJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <div className="container-main py-8">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-2 text-sm text-txt-secondary">

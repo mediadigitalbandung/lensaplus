@@ -1,5 +1,6 @@
 "use client";
 
+import DOMPurify from "isomorphic-dompurify";
 import { X, ImageIcon } from "lucide-react";
 import { slotLabels, slotSpecs } from "./ad-constants";
 
@@ -8,7 +9,14 @@ function AdContent({ type, imageUrl, htmlCode, height }: { type: string; imageUr
     return <img src={imageUrl} alt="Preview" className="max-w-full h-auto object-contain" style={{ maxHeight: height }} />;
   }
   if (type === "HTML" && htmlCode) {
-    return <div dangerouslySetInnerHTML={{ __html: htmlCode }} />;
+    // Form preview runs BEFORE the server-side sanitize on save. Without
+    // client-side sanitize an admin pasting a tracking pixel / payload
+    // would execute JS in their own panel session.
+    const safe = DOMPurify.sanitize(htmlCode, {
+      ADD_TAGS: ["iframe"],
+      ADD_ATTR: ["allowfullscreen", "frameborder"],
+    });
+    return <div dangerouslySetInnerHTML={{ __html: safe }} />;
   }
   return (
     <div className="flex flex-col items-center gap-1 py-6 text-txt-muted">

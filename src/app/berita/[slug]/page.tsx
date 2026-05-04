@@ -21,7 +21,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 // Note: DOMPurify removed — content sanitized at input via API validation
 import { slugify } from "@/lib/utils";
-import { faqJsonLd } from "@/lib/seo/json-ld";
+import { faqJsonLd, newsArticleJsonLd } from "@/lib/seo/json-ld";
 
 async function getArticle(slug: string) {
   const article = await prisma.article.findUnique({
@@ -287,6 +287,14 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
   }));
   const bacaLainnyaGrid = relatedArticles.slice(0, 6);
 
+  // Sorotan cross-links: 3 analytical angles per article. Surfacing them on
+  // the source article funnels internal authority + lengthens session.
+  const articleSorotan = await prisma.sorotan.findMany({
+    where: { articleId: article.id },
+    orderBy: { angle: "asc" },
+    select: { slug: true, title: true, angle: true },
+  });
+
   // Fetch trending for sidebar
   const trendingArticles = await prisma.article.findMany({
     where: { status: "PUBLISHED" },
@@ -334,32 +342,21 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
   // Inject ads per page (after pagination) so every page gets an ad in the middle
   const sanitizedContent = injectInlineAds(contentPages[currentPage - 1] || contentWithBacaJuga);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: article.title,
-    description: article.excerpt || "",
-    image: article.featuredImage ? [article.featuredImage] : [],
-    datePublished: article.publishedAt?.toISOString(),
-    dateModified: article.updatedAt.toISOString(),
-    author: {
-      "@type": "Person",
-      name: article.author.name,
-      url: `${appUrl}/penulis/${slugify(article.author.name)}`,
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "Kartawarta",
-      logo: { "@type": "ImageObject", url: `${appUrl}/kartawarta-icon.png`, width: 512, height: 512 },
-      url: appUrl,
-    },
-    mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
-    articleSection: article.category.name,
-    isAccessibleForFree: true,
+  // Use shared NewsArticle builder so publisher renders as NewsMediaOrganization
+  // (Google News eligibility) and stays in sync with homepage organization JSON-LD.
+  const jsonLd = newsArticleJsonLd({
+    title: article.title,
+    slug: article.slug,
+    excerpt: article.excerpt,
+    content: article.content,
+    featuredImage: article.featuredImage,
+    publishedAt: article.publishedAt,
+    updatedAt: article.updatedAt,
+    author: { name: article.author.name, slug: slugify(article.author.name) },
+    category: { name: article.category.name, slug: article.category.slug },
+    tags: article.tags.map((t: { name: string }) => ({ name: t.name })),
     wordCount: countWords(article.content),
-    ...(article.tags.length > 0 && { keywords: article.tags.map((t: { name: string }) => t.name).join(", ") }),
-    inLanguage: "id-ID",
-  };
+  });
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -666,6 +663,46 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
               <div className="mt-8">
                 <BannerAd slot="FOOTER" noWrapper />
               </div>
+
+              {/* Sorotan — analytical angles for this article */}
+              {articleSorotan.length > 0 && (
+                <section className="mt-10 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/60 via-surface to-surface p-5 sm:p-6">
+                  <div className="mb-4 flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="m9 11-6 6v3h9l3-3" /><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-txt-primary tracking-tight">Sorotan</h2>
+                      <p className="text-xs text-txt-muted">Tiga sudut pandang dari peristiwa ini</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {articleSorotan.map((s) => {
+                      const angleLabel: Record<string, string> = {
+                        KRONOLOGI: "Kronologi",
+                        ANALISIS: "Analisis",
+                        DAMPAK: "Dampak",
+                      };
+                      return (
+                        <Link
+                          key={s.slug}
+                          href={`/sorotan/${s.slug}`}
+                          className="group block rounded-xl border border-border bg-surface p-4 transition-all hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-card"
+                        >
+                          <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                            {angleLabel[s.angle] || s.angle}
+                          </span>
+                          <p className="mt-2 text-sm font-semibold text-txt-primary line-clamp-3 group-hover:text-amber-700 transition-colors">
+                            {s.title}
+                          </p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
 
               {/* Baca Lainnya — bottom grid */}
               {bacaLainnyaGrid.length > 0 && (

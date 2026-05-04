@@ -17,7 +17,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/syarat-ketentuan`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.2 },
     { url: `${siteUrl}/kode-etik`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.2 },
     { url: `${siteUrl}/pedoman-media`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.2 },
-    { url: `${siteUrl}/bookmark`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
+    // /bookmark is a client-only page that reads localStorage — no indexable
+    // content, removed to stop wasting crawl budget.
   ];
 
   // Category pages

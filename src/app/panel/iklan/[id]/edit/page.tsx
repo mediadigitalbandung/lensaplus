@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { useRouter, useParams } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -278,7 +279,7 @@ export default function EditIklanPage() {
                   {formHtmlCode && (
                     <div className="rounded-lg border border-border bg-surface-secondary p-3 overflow-hidden">
                       <p className="text-xs font-semibold text-txt-secondary mb-2">Preview HTML:</p>
-                      <div dangerouslySetInnerHTML={{ __html: formHtmlCode }} />
+                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formHtmlCode, { ADD_TAGS: ["iframe"], ADD_ATTR: ["allowfullscreen", "frameborder"] }) }} />
                     </div>
                   )}
                 </div>

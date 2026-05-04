@@ -18,18 +18,35 @@ const ALLOWED_ATTR: Record<string, sanitize.AllowedAttribute[]> = {
   a: ["href", "target", "rel", "title"],
   img: ["src", "alt", "title", "width", "height", "class"],
   iframe: ["src", "width", "height", "allowfullscreen", "frameborder", "data-youtube-video"],
-  div: ["class", "id", "style"],
-  span: ["class", "id", "style"],
-  td: ["style", "class"],
-  th: ["style", "class"],
+  // `style` allowed only on table cells / table itself for text-align, and
+  // filtered down to a tiny safe property whitelist via `allowedStyles`.
+  // div/span/etc. cannot have `style` — Tailwind via `class` is enough and
+  // dropping inline-style there blocks UI-redressing CSS injection.
+  div: ["class", "id"],
+  span: ["class", "id"],
+  td: ["class", "style"],
+  th: ["class", "style"],
   table: ["class", "style"],
   "*": ["class", "id"],
+};
+
+// A strict subset of CSS properties safe for editor-driven inline `style`
+// (e.g. text-align on table cells). `position`, `transform`, `opacity`,
+// `z-index`, `clip-path`, etc. are NOT allowed because they can implement
+// UI redressing / data exfiltration.
+const ALLOWED_STYLES: sanitize.IOptions["allowedStyles"] = {
+  "*": {
+    "text-align": [/^(left|right|center|justify)$/],
+    "color": [/^(#[0-9a-f]{3}|#[0-9a-f]{6}|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\))$/i],
+    "background-color": [/^(#[0-9a-f]{3}|#[0-9a-f]{6}|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\))$/i],
+  },
 };
 
 export function sanitizeHtml(html: string): string {
   return sanitize(html, {
     allowedTags: ALLOWED_TAGS,
     allowedAttributes: ALLOWED_ATTR,
+    allowedStyles: ALLOWED_STYLES,
     allowedIframeHostnames: ["www.youtube.com", "youtube.com", "www.youtube-nocookie.com"],
   });
 }

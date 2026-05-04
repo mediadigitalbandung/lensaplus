@@ -24,11 +24,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { captchaToken, ...rest } = body;
 
-    // Verify Turnstile CAPTCHA
-    if (captchaToken) {
-      const valid = await verifyTurnstile(captchaToken);
-      if (!valid) throw new ApiError("Verifikasi CAPTCHA gagal. Coba lagi.", 400);
+    // Turnstile CAPTCHA is mandatory — submitting without a token used to
+    // skip verification entirely, defeating the purpose of having CAPTCHA.
+    if (!captchaToken || typeof captchaToken !== "string") {
+      throw new ApiError("Verifikasi CAPTCHA wajib.", 400);
     }
+    const valid = await verifyTurnstile(captchaToken);
+    if (!valid) throw new ApiError("Verifikasi CAPTCHA gagal. Coba lagi.", 400);
 
     const data = contactSchema.parse(rest);
 
