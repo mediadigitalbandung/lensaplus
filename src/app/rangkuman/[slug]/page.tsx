@@ -55,6 +55,7 @@ async function resolveDigest(slug: string): Promise<ResolvedDigest | null> {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const digest = await resolveDigest(params.slug);
   if (!digest) return { title: "Rangkuman Tidak Ditemukan" };
+  const ogImage = `/api/og?title=${encodeURIComponent(digest.title)}&type=rangkuman`;
   return {
     title: digest.title,
     description: digest.intro,
@@ -62,6 +63,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${digest.title} - Kartawarta`,
       description: digest.intro,
       type: "website",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: digest.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${digest.title} - Kartawarta`,
+      description: digest.intro,
+      images: [ogImage],
     },
     alternates: { canonical: `/rangkuman/${params.slug}` },
   };

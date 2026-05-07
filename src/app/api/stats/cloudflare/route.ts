@@ -7,8 +7,7 @@
  * `{ success: false, error, data: <empty struct> }` so the UI doesn't crash.
  */
 
-import { NextResponse } from "next/server";
-import { errorResponse, requireRole } from "@/lib/api-utils";
+import { errorResponse, requireRole, successResponse } from "@/lib/api-utils";
 import { getCloudflareAnalytics } from "@/lib/stats/cloudflare";
 
 export const dynamic = "force-dynamic";
@@ -43,16 +42,12 @@ export async function GET(req: Request) {
     };
 
     if (data._error) {
-      return NextResponse.json(
-        { success: false, error: data._error, data, meta },
-        { status: 200 },
-      );
+      // Return 200 with success:false so the UI can still render empty state
+      // (credentials missing or API unreachable is non-fatal for the dashboard).
+      return successResponse({ _partialError: data._error, data, meta });
     }
 
-    return NextResponse.json(
-      { success: true, data, meta },
-      { status: 200 },
-    );
+    return successResponse({ data, meta });
   } catch (err) {
     return errorResponse(err);
   }

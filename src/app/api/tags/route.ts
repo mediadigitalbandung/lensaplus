@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
@@ -68,7 +68,7 @@ export async function DELETE(request: NextRequest) {
 
     await logAudit(session.user.id, "DELETE", "tag", id, `Menghapus tag: ${tag.name}`);
 
-    return successResponse({ deleted: true });
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);
   }

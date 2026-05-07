@@ -4,6 +4,15 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { Role } from "@prisma/client";
 
+// MED-AUTH1 — Explicit cookie security flags (audit remediation 2026-05-07).
+// In production (HTTPS), the __Secure- prefix is added automatically so the
+// browser rejects the cookie over plain HTTP.  __Host- on the CSRF token is
+// the most restrictive option: no Domain attribute, path must be "/", Secure.
+// In development NODE_ENV !== "production", no prefix is added so localhost
+// (HTTP) still works normally.  Cookie names stay identical between envs
+// except for the prefix — existing sessions in production remain valid.
+const useSecureCookies = process.env.NODE_ENV === "production";
+
 /**
  * Single-device enforcement:
  * - Enabled by default (SINGLE_DEVICE_ENFORCEMENT defaults to "true").
@@ -53,6 +62,40 @@ declare module "next-auth/jwt" {
 }
 
 export const authOptions: NextAuthOptions = {
+  // ── Explicit cookie security flags (MED-AUTH1) ───────────────────────────
+  // Declaring these explicitly makes the security posture audit-visible and
+  // prevents silent regressions if NextAuth changes its defaults on upgrade.
+  cookies: {
+    sessionToken: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    callbackUrl: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    csrfToken: {
+      // __Host- is stricter: enforces Secure + path="/" + no Domain attribute.
+      name: `${useSecureCookies ? "__Host-" : ""}next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    // pkceCodeVerifier, state, nonce — not used (Credentials-only, no OAuth).
+  },
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -195,6 +238,20 @@ export const authOptions: NextAuthOptions = {
       if (token.name) session.user.name = token.name as string;
 
       return session;
+    },
+
+    // ── Open-redirect guard (MED-AUTH1 supplement) ────────────────────────
+    // NextAuth v4 does not validate the ?callbackUrl= parameter by default,
+    // which allows an attacker to craft a link like:
+    //   /login?callbackUrl=https://evil.com
+    // and steal credentials via phishing.  This callback enforces same-origin.
+    async redirect({ url, baseUrl }) {
+      // Same-origin absolute URL — allow.
+      if (url.startsWith(baseUrl)) return url;
+      // Relative path — resolve against baseUrl and allow.
+      if (url.startsWith("/")) return new URL(url, baseUrl).toString();
+      // Any other origin — silently fall back to home.
+      return baseUrl;
     },
   },
   pages: {

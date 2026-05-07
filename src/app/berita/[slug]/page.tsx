@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const ogImageUrl = `/api/og?slug=${encodeURIComponent(params.slug)}`;
 
   return {
-    title: article.title,
+    title,
     description,
     openGraph: {
       title,

@@ -16,8 +16,17 @@ import { decryptSecret } from "@/lib/crypto-secrets";
 
 const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 const DEFAULT_TIMEOUT_MS = 10_000;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — short enough to pick up rotated keys without a PM2 restart.
 
-let cachedKey: string | null = null;
+let cachedKey: { value: string; expiresAt: number } | null = null;
+
+/**
+ * Test-only: drop the cached key so the next `getIndexNowKey()` resolves
+ * fresh from disk / DB / env. Not exported in the production path.
+ */
+export function _resetIndexNowKeyCache(): void {
+  cachedKey = null;
+}
 
 export interface IndexNowResult {
   success: boolean;
@@ -30,40 +39,54 @@ export interface IndexNowResult {
  * and env fallbacks.
  */
 export async function getIndexNowKey(): Promise<string | null> {
-  if (cachedKey) return cachedKey;
+  // Return the cached key only if it hasn't expired. The TTL is short so a
+  // SystemSetting rotation propagates within ~5min without a PM2 restart.
+  if (cachedKey && Date.now() < cachedKey.expiresAt) {
+    return cachedKey.value;
+  }
+
+  let resolved: string | null = null;
 
   // 1. public/indexnow-key.txt (canonical location)
   try {
     const filePath = path.join(process.cwd(), "public", "indexnow-key.txt");
     const contents = (await fs.readFile(filePath, "utf-8")).trim();
     if (contents.length > 0) {
-      cachedKey = contents;
-      return cachedKey;
+      resolved = contents;
     }
   } catch {
     // fall through
   }
 
   // 2. SystemSetting
-  try {
-    const setting = await prisma.systemSetting.findUnique({
-      where: { key: "indexnow_key" },
-    });
-    if (setting?.value && setting.value.trim().length > 0) {
-      cachedKey = decryptSecret(setting.value.trim());
-      return cachedKey;
+  if (!resolved) {
+    try {
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: "indexnow_key" },
+      });
+      if (setting?.value && setting.value.trim().length > 0) {
+        resolved = decryptSecret(setting.value.trim());
+      }
+    } catch {
+      // fall through
     }
-  } catch {
-    // fall through
   }
 
   // 3. env
-  const envValue = process.env.INDEXNOW_KEY;
-  if (envValue && envValue.trim().length > 0) {
-    cachedKey = envValue.trim();
-    return cachedKey;
+  if (!resolved) {
+    const envValue = process.env.INDEXNOW_KEY;
+    if (envValue && envValue.trim().length > 0) {
+      resolved = envValue.trim();
+    }
   }
 
+  if (resolved) {
+    cachedKey = { value: resolved, expiresAt: Date.now() + CACHE_TTL_MS };
+    return resolved;
+  }
+
+  // Misses are NOT cached — that way the next request gets a fresh chance
+  // once the operator finishes configuring the key.
   return null;
 }
 

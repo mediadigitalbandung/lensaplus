@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -125,7 +125,7 @@ export async function DELETE(
       `Menghapus pengguna: ${user.name} (${user.email})`
     );
 
-    return successResponse({ deleted: true });
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);
   }

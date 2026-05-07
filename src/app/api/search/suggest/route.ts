@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiRateLimit } from "@/lib/rate-limit";
+import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -13,17 +14,14 @@ export async function GET(request: NextRequest) {
     const ip = request.headers.get("x-forwarded-for") || "unknown";
     const { success: allowed } = apiRateLimit(ip);
     if (!allowed) {
-      return NextResponse.json(
-        { success: false, error: "Terlalu banyak permintaan. Coba lagi nanti." },
-        { status: 429 },
-      );
+      throw new ApiError("Terlalu banyak permintaan. Coba lagi nanti.", 429);
     }
 
     const { searchParams } = new URL(request.url);
     const query = (searchParams.get("q") || "").slice(0, 100);
 
     if (query.length < 2) {
-      return NextResponse.json({ success: true, data: [] });
+      return successResponse([]);
     }
 
     const articles = await prisma.article.findMany({
@@ -39,11 +37,8 @@ export async function GET(request: NextRequest) {
       take: 5,
     });
 
-    return NextResponse.json({ success: true, data: articles });
-  } catch {
-    return NextResponse.json(
-      { success: false, error: "Gagal mengambil saran pencarian" },
-      { status: 500 }
-    );
+    return successResponse(articles);
+  } catch (err) {
+    return errorResponse(err);
   }
 }

@@ -45,7 +45,31 @@ vi.mock("../prisma", () => ({
 }));
 
 // Import AFTER mocks.
-import { callAI } from "../ai-client";
+import { callAI, isRetryable } from "../ai-client";
+
+describe("isRetryable", () => {
+  it("returns false for 400 / Bad Request / invalid prompt errors", () => {
+    expect(isRetryable(new Error("HTTP 400: Bad Request"))).toBe(false);
+    expect(isRetryable(new Error("invalid prompt — message is empty"))).toBe(
+      false,
+    );
+    expect(isRetryable(new Error("invalid_request_error"))).toBe(false);
+  });
+
+  it("returns true for network / 5xx / 429 / auth errors", () => {
+    expect(isRetryable(new Error("ETIMEDOUT"))).toBe(true);
+    expect(isRetryable(new Error("fetch failed"))).toBe(true);
+    expect(isRetryable(new Error("HTTP 503 Service Unavailable"))).toBe(true);
+    expect(isRetryable(new Error("HTTP 429 rate limit exceeded"))).toBe(true);
+    expect(isRetryable(new Error("HTTP 401 Unauthorized"))).toBe(true);
+    expect(isRetryable(new Error("AbortError"))).toBe(true);
+  });
+
+  it("returns true (conservative default) for unknown errors", () => {
+    expect(isRetryable(new Error("something weird happened"))).toBe(true);
+    expect(isRetryable("plain string error")).toBe(true);
+  });
+});
 
 // Helper: make SystemSetting return given keys.
 function mockKeys(opts: {

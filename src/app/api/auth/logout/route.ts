@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
-import { logAudit } from "@/lib/api-utils";
+import { NextRequest } from "next/server";
+import { logAudit, successResponse, errorResponse } from "@/lib/api-utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
         // best-effort, don't fail the logout itself
       }
     }
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ success: false });
+    return successResponse(null);
+  } catch (err) {
+    return errorResponse(err);
   }
 }

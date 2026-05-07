@@ -4,13 +4,23 @@ import { z } from "zod";
 import { successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
 
 // GET /api/redaksi — public
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const members = await prisma.redaksiMember.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-    });
-    return successResponse(members);
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+
+    const [members, total] = await Promise.all([
+      prisma.redaksiMember.findMany({
+        where: { isActive: true },
+        orderBy: { order: "asc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.redaksiMember.count({ where: { isActive: true } }),
+    ]);
+
+    return successResponse({ members, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     return errorResponse(error);
   }

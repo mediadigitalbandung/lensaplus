@@ -1285,7 +1285,7 @@ export default function EditArticlePage() {
                     } catch { setError("Terjadi kesalahan."); setSaving(false); }
                   }}
                   disabled={saving}
-                  className="flex items-center gap-1.5 rounded-[12px] bg-green-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
                 >
                   <CheckCircle size={16} />
                   Approve

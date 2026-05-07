@@ -28,22 +28,15 @@ function formatTime(dateStr: string): string {
   });
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wide text-txt-primary">
-      {children}
-    </h3>
-  );
-}
 
 export default function Sidebar({ trending = [], recent = [], popular = [] }: SidebarProps) {
   return (
     <aside className="space-y-8" aria-label="Sidebar artikel">
       {/* Trending */}
       {trending.length > 0 && (
-        <div>
+        <section aria-labelledby="sidebar-trending-heading">
           <div className="flex items-center justify-between">
-            <SectionTitle>Trending</SectionTitle>
+            <h3 id="sidebar-trending-heading" className="border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wide text-txt-primary">Trending</h3>
             <Link href="/search?q=trending" className="text-xs font-medium text-primary hover:underline">
               Lihat Lainnya &rarr;
             </Link>
@@ -71,13 +64,13 @@ export default function Sidebar({ trending = [], recent = [], popular = [] }: Si
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
       {/* Terbaru */}
       {recent.length > 0 && (
-        <div>
-          <SectionTitle>Terbaru</SectionTitle>
+        <section aria-labelledby="sidebar-terbaru-heading">
+          <h3 id="sidebar-terbaru-heading" className="border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wide text-txt-primary">Terbaru</h3>
           <ul className="mt-4">
             {recent.map((article, i) => (
               <li
@@ -98,13 +91,13 @@ export default function Sidebar({ trending = [], recent = [], popular = [] }: Si
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
       {/* Paling Dibaca */}
       {popular.length > 0 && (
-        <div>
-          <SectionTitle>Paling Dibaca</SectionTitle>
+        <section aria-labelledby="sidebar-populer-heading">
+          <h3 id="sidebar-populer-heading" className="border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wide text-txt-primary">Paling Dibaca</h3>
           <ul className="mt-4">
             {popular.map((article, i) => (
               <li
@@ -133,7 +126,7 @@ export default function Sidebar({ trending = [], recent = [], popular = [] }: Si
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
     </aside>
   );

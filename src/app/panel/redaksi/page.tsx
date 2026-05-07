@@ -240,11 +240,11 @@ export default function RedaksiPanelPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="redaksi-jabatan" className="mb-1.5 block text-sm font-medium text-txt-secondary">Jabatan *</label>
-                  <input id="redaksi-jabatan" type="text" placeholder="Contoh: Pemimpin Redaksi" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required className="input w-full" />
+                  <input id="redaksi-jabatan" type="text" placeholder="Contoh: Pemimpin Redaksi" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required aria-required="true" className="input w-full" />
                 </div>
                 <div>
                   <label htmlFor="redaksi-nama" className="mb-1.5 block text-sm font-medium text-txt-secondary">Nama *</label>
-                  <input id="redaksi-nama" type="text" placeholder="Nama lengkap" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="input w-full" />
+                  <input id="redaksi-nama" type="text" placeholder="Nama lengkap" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required aria-required="true" className="input w-full" />
                 </div>
               </div>
               <div>

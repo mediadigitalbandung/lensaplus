@@ -59,6 +59,51 @@ const DEFAULT_SYSTEM_PROMPT =
 type Provider = "anthropic" | "deepseek";
 
 /**
+ * Decide whether an Anthropic error should trigger DeepSeek fallback.
+ *
+ * Retryable (fallback OK): transient network/server failures, auth/quota
+ * issues that won't be different on a fresh call to the same provider.
+ *
+ * Not retryable (re-throw): 400 Bad Request — the prompt itself is malformed,
+ * so DeepSeek will likely fail the same way and we'd be paying for a useless
+ * second call (and risking generation of misleading output).
+ */
+export function isRetryable(err: unknown): boolean {
+  const msg =
+    err instanceof Error ? err.message : typeof err === "string" ? err : String(err);
+
+  // 400 Bad Request — prompt-level issue. Do NOT fallback.
+  // Match early so it wins over the broad 4xx-ish patterns below.
+  if (/\b400\b|bad request|invalid prompt|invalid_request_error/i.test(msg)) {
+    return false;
+  }
+
+  // Network / aborted / timeout — retry.
+  if (/ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|fetch failed/i.test(msg)) {
+    return true;
+  }
+  if (/AbortError|aborted|timeout|timed out/i.test(msg)) return true;
+
+  // 5xx server-side — retry.
+  if (/\b50\d\b|internal server error|service unavailable|bad gateway|gateway timeout/i.test(msg)) {
+    return true;
+  }
+
+  // 401/403 — token issue. DeepSeek has its own key, so fallback is meaningful.
+  if (/\b401\b|\b403\b|invalid api key|unauthorized|forbidden|authentication/i.test(msg)) {
+    return true;
+  }
+
+  // 429 — rate limit / quota. Fallback to DeepSeek is the whole point.
+  if (/\b429\b|rate limit|rate_limit|quota|overloaded/i.test(msg)) {
+    return true;
+  }
+
+  // Unknown / SDK-internal — conservatively retry.
+  return true;
+}
+
+/**
  * Read API key for a provider from SystemSetting, fallback to env var.
  * Returns null if neither source has a value.
  */
@@ -261,6 +306,12 @@ export async function callAI(opts: CallAIOptions): Promise<CallAIResult> {
       logUsage(opts, result);
       return result;
     } catch (err) {
+      // If the error is non-retryable (e.g. 400 Bad Request from a malformed
+      // prompt), don't waste a DeepSeek call — the prompt would fail there
+      // too and the response would be misleading. Re-throw immediately.
+      if (!isRetryable(err)) {
+        throw err;
+      }
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(`anthropic: ${msg}`);
     }

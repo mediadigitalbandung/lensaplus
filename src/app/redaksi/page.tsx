@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Image from "next/image";
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 
@@ -41,7 +42,7 @@ export default async function RedaksiPage() {
                 >
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-white overflow-hidden">
                     {item.photo ? (
-                      <img src={item.photo} alt={item.name} className="h-12 w-12 object-cover" />
+                      <Image src={item.photo} alt={item.name} width={48} height={48} className="h-12 w-12 object-cover" />
                     ) : (
                       item.name.charAt(0).toUpperCase()
                     )}

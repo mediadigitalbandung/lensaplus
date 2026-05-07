@@ -48,7 +48,7 @@ const config: Config = {
         txt: {
           primary: "#191c1d",
           secondary: "#44474e",
-          muted: "#74777f",
+          muted: "#5d6066",
           inverse: "#ffffff",
         },
         border: {

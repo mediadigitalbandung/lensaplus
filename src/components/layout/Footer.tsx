@@ -84,7 +84,7 @@ export default function Footer() {
 
           {/* Tentang — shifted right */}
           <div className="lg:col-span-3 lg:col-start-7">
-            <h4 className="mb-4 text-label-md font-semibold uppercase tracking-wider text-txt-muted">
+            <h4 id="footer-tentang-heading" className="mb-4 text-label-md font-semibold uppercase tracking-wider text-txt-muted">
               Tentang
             </h4>
             <ul className="space-y-3">
@@ -103,7 +103,7 @@ export default function Footer() {
 
           {/* Kontak — shifted right */}
           <div className="lg:col-span-3 lg:col-start-10">
-            <h4 className="mb-4 text-label-md font-semibold uppercase tracking-wider text-txt-muted">
+            <h4 id="footer-kontak-heading" className="mb-4 text-label-md font-semibold uppercase tracking-wider text-txt-muted">
               Kontak
             </h4>
             <ul className="space-y-3">

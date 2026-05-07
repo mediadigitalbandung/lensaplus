@@ -60,7 +60,7 @@ function AdContent({ ad }: { ad: Ad }) {
     ad.type === "HTML" && ad.htmlCode ? (
       <div dangerouslySetInnerHTML={{ __html: ad.htmlCode }} />
     ) : ad.imageUrl ? (
-      <img src={ad.imageUrl} alt="Iklan" className="w-full h-auto block" loading="lazy" />
+      <img src={ad.imageUrl} alt="Iklan" width={728} height={90} className="w-full h-auto block" loading="lazy" />
     ) : null;
 
   if (!content) return null;
@@ -114,7 +114,7 @@ export function SidebarAd({ slot = "SIDEBAR" }: { slot?: string }) {
       ad.type === "HTML" && ad.htmlCode ? (
         <div dangerouslySetInnerHTML={{ __html: ad.htmlCode }} className={wrapper} />
       ) : ad.imageUrl ? (
-        <img src={ad.imageUrl} alt="Iklan" className={`${wrapper} object-cover`} loading="lazy" />
+        <img src={ad.imageUrl} alt="Iklan" width={300} height={250} className={`${wrapper} object-cover`} loading="lazy" />
       ) : null;
 
     if (!content) return null;

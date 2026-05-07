@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, requireAuth, ApiError } from "@/lib/api-utils";
 import { reportRateLimit } from "@/lib/rate-limit";
+import { sanitizeText } from "@/lib/sanitize";
 
 const updateReportSchema = z.object({
   id: z.string().min(1),
@@ -102,6 +103,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const data = createReportSchema.parse(body);
+
+    // Sanitize free-text detail field — strip HTML/angle brackets before storing
+    if (data.detail) {
+      data.detail = sanitizeText(data.detail);
+    }
 
     const article = await prisma.article.findUnique({ where: { id: data.articleId } });
     if (!article) {

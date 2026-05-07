@@ -24,12 +24,21 @@ export async function GET(
       throw new ApiError("Artikel tidak ditemukan", 404);
     }
 
-    const revisions = await prisma.revision.findMany({
-      where: { articleId: params.id },
-      orderBy: { createdAt: "desc" },
-    });
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
 
-    return successResponse(revisions);
+    const [revisions, total] = await Promise.all([
+      prisma.revision.findMany({
+        where: { articleId: params.id },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.revision.count({ where: { articleId: params.id } }),
+    ]);
+
+    return successResponse({ revisions, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     return errorResponse(error);
   }

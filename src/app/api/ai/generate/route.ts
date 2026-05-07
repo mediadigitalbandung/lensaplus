@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { aiRateLimit } from "@/lib/rate-limit";
 import { callAI, type AIFeature } from "@/lib/ai-client";
+import { cleanAIShortText } from "@/lib/sanitize";
 
 const PROMPTS: Record<string, (title: string, content: string) => string> = {
   tags: (title, content) =>
@@ -73,8 +74,13 @@ export async function POST(req: NextRequest) {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
     await logAudit(session.user.id, "AI_GENERATE", "Article", "generate", JSON.stringify({ feature, tokensUsed: result.totalTokens, provider: result.provider }), ip);
 
+    // Strip Markdown artifacts from short-field AI outputs (seo_title, meta_description)
+    // so callers receive clean plain-text values ready for HTML <meta> tags.
+    const SHORT_FIELDS = new Set(["seo_title", "meta_description"]);
+    const resultText = SHORT_FIELDS.has(feature) ? cleanAIShortText(result.text) : result.text;
+
     return successResponse({
-      result: result.text,
+      result: resultText,
       tokensUsed: result.totalTokens,
       provider: result.provider,
     });

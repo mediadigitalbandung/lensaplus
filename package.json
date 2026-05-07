@@ -16,7 +16,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.90.0",
+    "@anthropic-ai/sdk": "^0.95.1",
     "@mozilla/readability": "^0.6.0",
     "@prisma/client": "^5.22.0",
     "@sentry/nextjs": "^10.50.0",

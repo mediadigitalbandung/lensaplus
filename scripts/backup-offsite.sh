@@ -25,6 +25,21 @@ REMOTE="${OFFSITE_RCLONE_REMOTE:-}"
 RETENTION_DAYS="${OFFSITE_RETENTION_DAYS:-90}"
 LOG_FILE="/var/log/kartawarta-offsite.log"
 
+# --- Alerting ---------------------------------------------------------------
+alert() {
+  local subject="$1"
+  local body="$2"
+  local hook="${BACKUP_WEBHOOK_URL:-${WEBHOOK_URL:-}}"
+  if [ -n "$hook" ]; then
+    curl -sS -X POST "$hook" \
+      -H "Content-Type: application/json" \
+      -d "{\"text\":\"[Kartawarta offsite-backup] ${subject}: ${body}\"}" \
+      --max-time 10 \
+      >/dev/null 2>&1 || true
+  fi
+}
+trap 'alert "Offsite backup FAIL" "Script $(basename "$0") exited with code $?"' ERR
+
 # Load env from app's .env if the variable isn't already set.
 ENV_FILE="/var/www/kartawarta/.env"
 if [ -z "$REMOTE" ] && [ -f "$ENV_FILE" ]; then

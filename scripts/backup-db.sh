@@ -20,6 +20,24 @@ RETENTION_DAYS=7
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 OUT_FILE="$BACKUP_DIR/kartawarta-$TIMESTAMP.sql.gz"
 
+# --- Alerting ---------------------------------------------------------------
+# Posts a one-line message to BACKUP_WEBHOOK_URL (preferred) or WEBHOOK_URL.
+# Both Discord and Slack accept {text:"..."} payloads. Failures are silenced
+# so a missing webhook never breaks the cron job.
+alert() {
+  local subject="$1"
+  local body="$2"
+  local hook="${BACKUP_WEBHOOK_URL:-${WEBHOOK_URL:-}}"
+  if [ -n "$hook" ]; then
+    curl -sS -X POST "$hook" \
+      -H "Content-Type: application/json" \
+      -d "{\"text\":\"[Kartawarta backup] ${subject}: ${body}\"}" \
+      --max-time 10 \
+      >/dev/null 2>&1 || true
+  fi
+}
+trap 'alert "Backup FAIL" "Script $(basename "$0") exited with code $?"' ERR
+
 mkdir -p "$BACKUP_DIR"
 
 # Load DATABASE_URL from the app's .env (non-fatal if missing).
@@ -34,11 +52,20 @@ fi
 
 if [ -z "${DATABASE_URL:-}" ]; then
   echo "[$(date -Is)] ERROR: DATABASE_URL not set; aborting backup." >&2
+  alert "Backup FAIL" "DATABASE_URL not set in backup-db.sh"
   exit 1
 fi
 
 echo "[$(date -Is)] Starting pg_dump -> $OUT_FILE"
 pg_dump "$DATABASE_URL" | gzip > "$OUT_FILE"
+
+# Verify gzip integrity immediately so a corrupt file never lingers.
+if ! gzip -t "$OUT_FILE"; then
+  echo "[$(date -Is)] FAIL: gzip integrity error on $OUT_FILE" >&2
+  alert "Backup FAIL" "gzip CRC error on freshly-written $OUT_FILE"
+  rm -f "$OUT_FILE"
+  exit 2
+fi
 
 # Retention: delete backups older than RETENTION_DAYS.
 find "$BACKUP_DIR" -maxdepth 1 -type f -name "kartawarta-*.sql.gz" -mtime "+$RETENTION_DAYS" -delete

@@ -4,7 +4,7 @@
  * DELETE /api/news-sources/:id  — delete (admin)
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
@@ -111,7 +111,7 @@ export async function DELETE(
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
     await logAudit(session.user.id, "NEWS_SOURCE_DELETE", "NewsSource", params.id, JSON.stringify({ name: existing.name }), ip);
 
-    return successResponse({ deleted: true });
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);
   }

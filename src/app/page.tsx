@@ -37,11 +37,29 @@ export default async function HomePage() {
   // for "Berita Terkini" freshness; trending changes slowly so 60s is fine.
   // Cache is invalidated immediately by onArticlePublished() at publish
   // time (see src/lib/seo-auto.ts).
+  // MED-DB1: explicit select — omit content @db.Text (≥10KB/row) to avoid
+  // ~600KB transfer on each homepage load. excerpt + featuredImage + metadata
+  // are all this page needs.
+  const articleSelect = {
+    id: true,
+    title: true,
+    slug: true,
+    excerpt: true,
+    featuredImage: true,
+    publishedAt: true,
+    viewCount: true,
+    sourceArticleId: true,
+    verificationLabel: true,
+    status: true,
+    author: { select: { id: true, name: true, avatar: true } },
+    category: { select: { id: true, name: true, slug: true } },
+  } as const;
+
   const [articles, categories, trendingArticles] = await Promise.all([
     getCached("home:articles:30", 30_000, () =>
       prisma.article.findMany({
         where: { status: "PUBLISHED" },
-        include: { author: true, category: true },
+        select: articleSelect,
         orderBy: { publishedAt: "desc" },
         take: 60,
       }),
@@ -55,7 +73,7 @@ export default async function HomePage() {
     getCached("home:trending:10", 60_000, () =>
       prisma.article.findMany({
         where: { status: "PUBLISHED" },
-        include: { author: true, category: true },
+        select: articleSelect,
         orderBy: { viewCount: "desc" },
         take: 10,
       }),

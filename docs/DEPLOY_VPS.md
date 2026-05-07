@@ -16,8 +16,9 @@ Required for cron (Phase 7):
 | Key | Purpose |
 | --- | --- |
 | `CRON_SECRET` | Shared secret for `Authorization: Bearer ...` on every `/api/cron/*` endpoint. 32+ random chars. |
-| `DATABASE_URL` | Also read by `scripts/backup-db.sh`. |
+| `DATABASE_URL` | Also read by `scripts/backup-db.sh` and `scripts/safe-db-push.sh`. |
 | `NEXT_PUBLIC_APP_URL` | Canonical site URL, used by SEO helpers. |
+| `BACKUP_WEBHOOK_URL` | Optional. Discord/Slack incoming-webhook URL. Receives one-line alerts when any backup script fails (`backup-db`, `backup-uploads`, `backup-offsite`, `backup-verify`, `safe-db-push`). Falls back to `WEBHOOK_URL` if unset. |
 
 Generate a `CRON_SECRET` once:
 
@@ -227,6 +228,52 @@ DB restore example:
 gunzip -c /var/backups/kartawarta/kartawarta-YYYYMMDD-HHMMSS.sql.gz \
   | psql "$DATABASE_URL"
 ```
+
+## Schema migration
+
+Use `scripts/safe-db-push.sh` (instead of running `npx prisma db push` directly) so a fresh
+snapshot is taken **seconds before** the schema change is applied. If the push fails, the
+snapshot — `/var/backups/kartawarta/pre-push/pre-push-{timestamp}.sql.gz` — is the cleanest
+rollback target.
+
+```bash
+# Default usage
+/var/www/kartawarta/scripts/safe-db-push.sh
+
+# Pass-through args (e.g. when shrinking a column)
+/var/www/kartawarta/scripts/safe-db-push.sh --accept-data-loss
+```
+
+What it does, in order:
+
+1. `pg_dump` the live DB to `/var/backups/kartawarta/pre-push/pre-push-YYYYMMDD-HHMMSS.sql.gz`.
+2. `gzip -t` the snapshot — aborts the push if the snapshot itself is corrupt.
+3. `cd /var/www/kartawarta && npx prisma db push "$@"`.
+4. Prune pre-push snapshots older than 14 days on success.
+5. On failure, log the snapshot path and exit non-zero (no auto-restore — manual decision).
+
+Restore from a pre-push snapshot:
+
+```bash
+gunzip -c /var/backups/kartawarta/pre-push/pre-push-YYYYMMDD-HHMMSS.sql.gz \
+  | psql "$DATABASE_URL"
+```
+
+## Backup failure alerts
+
+All backup scripts (`backup-db`, `backup-uploads`, `backup-offsite`, `backup-verify`,
+`safe-db-push`) post a one-line message to a webhook on failure. Set the URL once in
+`/var/www/kartawarta/.env`:
+
+```bash
+# Discord:  https://discord.com/api/webhooks/<id>/<token>
+# Slack:    https://hooks.slack.com/services/<team>/<channel>/<token>
+BACKUP_WEBHOOK_URL=https://discord.com/api/webhooks/.../...
+```
+
+The scripts also accept the legacy `WEBHOOK_URL` for compatibility with `backup-verify.sh`'s
+older invocation. If neither is set, scripts log to file as before — alerts are simply
+skipped (no error).
 
 Uploads restore example:
 

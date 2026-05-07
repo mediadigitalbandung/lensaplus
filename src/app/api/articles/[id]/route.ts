@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import {
@@ -68,12 +68,13 @@ export async function GET(
       reviewerName = reviewer?.name || null;
     }
 
-    // Increment view count for published articles
+    // MED-DB2: fire-and-forget — don't block GET response on a write.
+    // Non-critical counter; swallow errors silently.
     if (article.status === "PUBLISHED") {
-      await prisma.article.update({
+      prisma.article.update({
         where: { id: params.id },
         data: { viewCount: { increment: 1 } },
-      });
+      }).catch(() => {/* non-critical */});
     }
 
     return successResponse({ ...article, reviewerName });
@@ -545,11 +546,16 @@ export async function PUT(
           return successResponse(updated);
         }
 
+        // MED-CONT3: VERIFIED only when publishing from APPROVED (editor reviewed).
+        // Admin shortcut from DRAFT/IN_REVIEW skips editor review, so label stays UNVERIFIED.
+        const verificationLabelForPublish =
+          article.status === "APPROVED" ? "VERIFIED" : (article.verificationLabel || "UNVERIFIED");
+
         const updated = await prisma.article.update({
           where: { id: params.id },
           data: {
             status: "PUBLISHED",
-            verificationLabel: "VERIFIED",
+            verificationLabel: verificationLabelForPublish,
             publishedAt: new Date(),
             scheduledAt: null,
           },
@@ -916,7 +922,7 @@ export async function DELETE(
       `Menghapus artikel: ${article.title}`
     );
 
-    return successResponse({ deleted: true });
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);
   }

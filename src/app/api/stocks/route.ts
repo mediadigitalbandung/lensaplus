@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { successResponse, errorResponse } from "@/lib/api-utils";
 
 export const revalidate = 15; // ISR: revalidate every 15 seconds
 
@@ -77,8 +77,8 @@ export async function GET() {
       };
     }).filter(Boolean);
 
-    return NextResponse.json({ data: stocks, updatedAt: new Date().toISOString(), usdIdrRate });
+    return successResponse({ stocks, updatedAt: new Date().toISOString(), usdIdrRate });
   } catch (e) {
-    return NextResponse.json({ data: [], error: String(e) }, { status: 500 });
+    return errorResponse(e);
   }
 }

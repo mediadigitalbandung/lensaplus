@@ -566,7 +566,7 @@ export default function ArtikelPage() {
                         type="checkbox"
                         checked={allFilteredSelected}
                         onChange={() => toggleSelectAll(filteredIds)}
-                        className="h-4 w-4 rounded border-border text-primary accent-goto-green"
+                        className="h-4 w-4 rounded border-border text-primary accent-primary"
                         aria-label="Pilih semua artikel"
                       />
                     </th>
@@ -595,7 +595,7 @@ export default function ArtikelPage() {
                             type="checkbox"
                             checked={selectedIds.has(article.id)}
                             onChange={() => toggleSelect(article.id)}
-                            className="h-4 w-4 rounded border-border text-primary accent-goto-green"
+                            className="h-4 w-4 rounded border-border text-primary accent-primary"
                             aria-label={`Pilih artikel ${article.title}`}
                           />
                         </td>

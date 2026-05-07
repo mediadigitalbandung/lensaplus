@@ -18,6 +18,7 @@ import {
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { courtLocations, getCourtLocationBySlug } from "@/data/court-locations";
 import { prisma } from "@/lib/prisma";
+import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 interface PageProps {
   params: { slug: string };
@@ -30,6 +31,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const court = getCourtLocationBySlug(params.slug);
   if (!court) return { title: "Lokasi Tidak Ditemukan" };
+  const ogImage = `/api/og?title=${encodeURIComponent(court.name)}&type=lokasi`;
   return {
     title: court.name,
     description: court.description,
@@ -37,6 +39,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${court.name} - Kartawarta`,
       description: court.description,
       type: "website",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: court.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${court.name} - Kartawarta`,
+      description: court.description,
+      images: [ogImage],
     },
     alternates: { canonical: `/lokasi/${court.slug}` },
   };
@@ -108,11 +117,17 @@ export default async function LokasiDetailPage({ params }: PageProps) {
     openingHours: court.hours,
   };
 
+  const breadcrumb = breadcrumbJsonLd([
+    { name: "Beranda", url: "/" },
+    { name: "Lokasi", url: "/lokasi" },
+    { name: court.shortName, url: `/lokasi/${court.slug}` },
+  ]);
+
   return (
     <div className="bg-surface min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumb]) }}
       />
       <div className="container-main py-8">
         {/* Breadcrumb */}

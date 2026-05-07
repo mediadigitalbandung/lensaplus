@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { Pause, Play } from "lucide-react";
 import ClientDate from "@/components/ClientDate";
 
 interface HeroArticle {
@@ -86,7 +87,13 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
       onMouseLeave={() => setIsPaused(false)}
     >
       <div className="container-main py-0">
-        <div className="grid grid-cols-1 sm:grid-cols-12 min-h-[30rem] sm:min-h-[28rem] lg:min-h-[36rem]">
+        <div
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Hero artikel utama"
+          aria-live="polite"
+          className="grid grid-cols-1 sm:grid-cols-12 min-h-[30rem] sm:min-h-[28rem] lg:min-h-[36rem]"
+        >
           {/* Main story — 8 cols on sm+, full width below sm. Crossfade. */}
           <div className="sm:col-span-8 relative overflow-hidden">
             {main.map((a, i) => (
@@ -136,7 +143,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
               <div className="absolute inset-0" />
             </div>
 
-            {/* Progress dots */}
+            {/* Progress dots + pause/play control */}
             <div className="absolute bottom-3 sm:bottom-4 left-5 sm:left-10 lg:left-14 z-20 flex items-center gap-1.5 sm:gap-2">
               {main.map((_, i) => (
                 <button
@@ -145,9 +152,17 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                   className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
                     i === activeIndex ? "w-6 sm:w-8 bg-white" : "w-2 sm:w-3 bg-white/30 hover:bg-white/50"
                   }`}
-                  aria-label={`Slide ${i + 1}`}
+                  aria-label={`Slide ${i + 1} dari ${main.length}`}
+                  aria-current={i === activeIndex ? "true" : "false"}
                 />
               ))}
+              <button
+                onClick={() => setIsPaused((p) => !p)}
+                aria-label={isPaused ? "Putar otomatis hero" : "Jeda otomatis hero"}
+                className="ml-1 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-white/20 hover:bg-white/40 transition-colors text-white"
+              >
+                {isPaused ? <Play size={10} aria-hidden /> : <Pause size={10} aria-hidden />}
+              </button>
             </div>
           </div>
 
@@ -211,7 +226,8 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                     className={`h-1.5 rounded-full transition-all duration-300 ${
                       i === sidePageIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"
                     }`}
-                    aria-label={`Side page ${i + 1}`}
+                    aria-label={`Panel samping ${i + 1} dari ${totalSidePages}`}
+                    aria-current={i === sidePageIndex ? "true" : "false"}
                   />
                 ))}
               </div>

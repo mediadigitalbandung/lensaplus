@@ -103,16 +103,16 @@ export default function KontakPage() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <label htmlFor="kontak-nama" className="mb-1 block text-sm font-medium text-txt-primary">Nama</label>
-                        <input id="kontak-nama" type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="input w-full" />
+                        <input id="kontak-nama" type="text" required aria-required="true" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="input w-full" />
                       </div>
                       <div>
                         <label htmlFor="kontak-email" className="mb-1 block text-sm font-medium text-txt-primary">Email</label>
-                        <input id="kontak-email" type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input w-full" />
+                        <input id="kontak-email" type="email" required aria-required="true" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input w-full" />
                       </div>
                     </div>
                     <div>
                       <label htmlFor="kontak-subjek" className="mb-1 block text-sm font-medium text-txt-primary">Subjek</label>
-                      <select id="kontak-subjek" required value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="input w-full">
+                      <select id="kontak-subjek" required aria-required="true" value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="input w-full">
                         <option value="">Pilih subjek</option>
                         <option value="umum">Pertanyaan Umum</option>
                         <option value="redaksi">Kirim Tulisan / Opini</option>
@@ -124,7 +124,7 @@ export default function KontakPage() {
                     </div>
                     <div>
                       <label htmlFor="kontak-pesan" className="mb-1 block text-sm font-medium text-txt-primary">Pesan</label>
-                      <textarea id="kontak-pesan" required rows={5} value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} className="input w-full" />
+                      <textarea id="kontak-pesan" required aria-required="true" rows={5} value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} className="input w-full" />
                     </div>
                     <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} />
                     {error && (

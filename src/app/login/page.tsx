@@ -89,6 +89,7 @@ function LoginContent() {
                 onChange={(e) => setEmail(e.target.value.toLowerCase())}
                 placeholder="nama@email.com"
                 required
+                aria-required="true"
                 className="input pl-11"
               />
             </div>
@@ -107,6 +108,7 @@ function LoginContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Masukkan password"
                 required
+                aria-required="true"
                 className="input pl-11 pr-11"
               />
               <button
