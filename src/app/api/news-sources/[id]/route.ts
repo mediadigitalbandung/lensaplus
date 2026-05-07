@@ -12,6 +12,7 @@ import {
   errorResponse,
   requireRole,
   ApiError,
+  logAudit,
 } from "@/lib/api-utils";
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
 
@@ -62,7 +63,7 @@ export async function PUT(
   { params }: { params: { id: string } },
 ) {
   try {
-    await requireRole([...ADMIN_ROLES]);
+    const session = await requireRole([...ADMIN_ROLES]);
     const existing = await prisma.newsSource.findUnique({
       where: { id: params.id },
     });
@@ -85,6 +86,10 @@ export async function PUT(
       data,
       include: { category: { select: { id: true, name: true, slug: true } } },
     });
+
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "NEWS_SOURCE_UPDATE", "NewsSource", params.id, JSON.stringify({ name: updated.name }), ip);
+
     return successResponse(updated);
   } catch (error) {
     return errorResponse(error);
@@ -92,16 +97,20 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } },
 ) {
   try {
-    await requireRole([...ADMIN_ROLES]);
+    const session = await requireRole([...ADMIN_ROLES]);
     const existing = await prisma.newsSource.findUnique({
       where: { id: params.id },
     });
     if (!existing) throw new ApiError("Sumber tidak ditemukan", 404);
     await prisma.newsSource.delete({ where: { id: params.id } });
+
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "NEWS_SOURCE_DELETE", "NewsSource", params.id, JSON.stringify({ name: existing.name }), ip);
+
     return successResponse({ deleted: true });
   } catch (error) {
     return errorResponse(error);

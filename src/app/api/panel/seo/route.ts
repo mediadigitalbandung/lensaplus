@@ -44,6 +44,7 @@ export async function GET() {
           category: { select: { name: true } },
         },
         orderBy: { publishedAt: "desc" },
+        take: 100,
       }),
     ]);
 

@@ -7,9 +7,10 @@ import { ImageOff } from "lucide-react";
 type Props = {
   src: string;
   alt: string;
+  priority?: boolean;
 };
 
-export function FeaturedImage({ src, alt }: Props) {
+export function FeaturedImage({ src, alt, priority = false }: Props) {
   const [errored, setErrored] = useState(false);
 
   if (errored) {
@@ -42,6 +43,8 @@ export function FeaturedImage({ src, alt }: Props) {
         className="object-cover"
         onError={() => setErrored(true)}
         unoptimized={isLocalUpload}
+        priority={priority}
+        sizes="(max-width: 768px) 100vw, 800px"
       />
     </div>
   );

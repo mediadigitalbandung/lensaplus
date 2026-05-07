@@ -39,6 +39,8 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
 import { trackCron } from "@/lib/cron-tracker";
 import { checkArticle } from "@/lib/ai-guardrail";
+import { tryAdvisoryLock, releaseAdvisoryLock } from "@/lib/cron-lock";
+import * as Sentry from "@sentry/nextjs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -530,7 +532,26 @@ async function handler(req: NextRequest) {
   try {
     try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
 
-    // 1. Toggle check
+    // 1. Advisory lock — prevent concurrent invocations from duplicating work.
+    //    Acquire BEFORE the toggle/throttle checks so a concurrent request
+    //    that already passed those gates doesn't race into generateOne().
+    const LOCK_KEY = "cron:auto-article";
+    const lockAcquired = await tryAdvisoryLock(LOCK_KEY);
+    if (!lockAcquired) {
+      return NextResponse.json(
+        {
+          success: false,
+          skipped: true,
+          reason: "ANOTHER_RUN_IN_PROGRESS",
+          durationMs: Date.now() - started,
+        },
+        { status: 200 },
+      );
+    }
+
+    try {
+
+    // 2. Toggle check
     const enabledStr = await readSetting("auto_article_enabled", "false");
     if (enabledStr !== "true") {
       return NextResponse.json(
@@ -539,7 +560,7 @@ async function handler(req: NextRequest) {
       );
     }
 
-    // 2. Throttle check — settings drive how often we actually generate.
+    // 3. Throttle check — settings drive how often we actually generate.
     //    The crontab fires the endpoint frequently (every 5 min); this gate
     //    enforces the user's configured cadence without touching crontab.
     const intervalMin = parseInterval(await readSetting("auto_article_interval_minutes", "60"));
@@ -609,14 +630,24 @@ async function handler(req: NextRequest) {
       },
       { status: 200 },
     );
+    } finally {
+      // Release lock regardless of success, error, or early return inside the
+      // inner try so the next cron tick can acquire it normally.
+      await releaseAdvisoryLock(LOCK_KEY);
+    }
   } catch (e) {
+    // Unexpected error — surface as 5xx so monitoring (UptimeRobot, Sentry)
+    // flags an alert. Expected skips (disabled, throttled, lock-held) all
+    // return 200 above and never reach here.
+    Sentry.captureException(e, { tags: { cron: "auto-article" } });
+    console.error("[cron auto-article] UNEXPECTED:", e);
     return NextResponse.json(
       {
         success: false,
         error: e instanceof Error ? e.message : String(e),
         durationMs: Date.now() - started,
       },
-      { status: 200 },
+      { status: 500 },
     );
   }
 }

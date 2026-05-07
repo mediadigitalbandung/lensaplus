@@ -20,6 +20,15 @@ import { decryptSecret } from "@/lib/crypto-secrets";
 const GA4_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+function withTimeout<T>(p: Promise<T>, ms = 15000, label = "TIMEOUT"): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) =>
+      setTimeout(() => rej(new Error(`GA_${label}`)), ms),
+    ),
+  ]);
+}
+
 // ---------- Types ----------
 
 export interface GA4Stats {
@@ -162,42 +171,48 @@ export async function getGA4Data(opts: GA4Options): Promise<GA4Stats> {
     const property = `properties/${propertyId}`;
 
     // Totals + top pages in one report
-    const totalsReportP = analytics.properties.runReport({
-      property,
-      requestBody: {
-        dateRanges: [{ startDate: opts.from, endDate: opts.to }],
-        metrics: [
-          { name: "screenPageViews" },
-          { name: "activeUsers" },
-          { name: "sessions" },
-          { name: "averageSessionDuration" },
-        ],
-      },
-    });
+    const totalsReportP = withTimeout(
+      analytics.properties.runReport({
+        property,
+        requestBody: {
+          dateRanges: [{ startDate: opts.from, endDate: opts.to }],
+          metrics: [
+            { name: "screenPageViews" },
+            { name: "activeUsers" },
+            { name: "sessions" },
+            { name: "averageSessionDuration" },
+          ],
+        },
+      }),
+    );
 
-    const topPagesReportP = analytics.properties.runReport({
-      property,
-      requestBody: {
-        dateRanges: [{ startDate: opts.from, endDate: opts.to }],
-        dimensions: [{ name: "pagePath" }],
-        metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
-        orderBys: [
-          { metric: { metricName: "screenPageViews" }, desc: true },
-        ],
-        limit: "10",
-      },
-    });
+    const topPagesReportP = withTimeout(
+      analytics.properties.runReport({
+        property,
+        requestBody: {
+          dateRanges: [{ startDate: opts.from, endDate: opts.to }],
+          dimensions: [{ name: "pagePath" }],
+          metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
+          orderBys: [
+            { metric: { metricName: "screenPageViews" }, desc: true },
+          ],
+          limit: "10",
+        },
+      }),
+    );
 
-    const dailyReportP = analytics.properties.runReport({
-      property,
-      requestBody: {
-        dateRanges: [{ startDate: opts.from, endDate: opts.to }],
-        dimensions: [{ name: "date" }],
-        metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
-        orderBys: [{ dimension: { dimensionName: "date" } }],
-        limit: "90",
-      },
-    });
+    const dailyReportP = withTimeout(
+      analytics.properties.runReport({
+        property,
+        requestBody: {
+          dateRanges: [{ startDate: opts.from, endDate: opts.to }],
+          dimensions: [{ name: "date" }],
+          metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
+          orderBys: [{ dimension: { dimensionName: "date" } }],
+          limit: "90",
+        },
+      }),
+    );
 
     const [totalsRes, topPagesRes, dailyRes] = await Promise.all([
       totalsReportP,

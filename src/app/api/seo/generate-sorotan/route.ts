@@ -15,6 +15,7 @@ import {
   errorResponse,
   requireRole,
   successResponse,
+  logAudit,
 } from "@/lib/api-utils";
 import { generateSorotan } from "@/lib/seo/sorotan-generator";
 
@@ -29,7 +30,7 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
     const body = await req.json().catch(() => ({}));
     const { articleIds, limit } = bodySchema.parse(body ?? {});
 
@@ -71,6 +72,9 @@ export async function POST(req: NextRequest) {
 
     const totalCreated = results.reduce((s, r) => s + r.created, 0);
     const totalErrors = results.reduce((s, r) => s + r.errors.length, 0);
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "SEO_GENERATE_SOROTAN", "Article", "batch", JSON.stringify({ targets: targets.length, totalCreated, totalErrors }), ip);
 
     return successResponse({
       targets: targets.length,

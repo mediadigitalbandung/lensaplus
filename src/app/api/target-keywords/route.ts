@@ -47,6 +47,8 @@ export async function GET(req: NextRequest) {
     const isActiveParam = searchParams.get("isActive");
     const categoryId = searchParams.get("categoryId");
     const q = searchParams.get("q");
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "100")));
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
 
     const where: Record<string, unknown> = {};
     if (isActiveParam !== null && isActiveParam !== "") {
@@ -57,15 +59,20 @@ export async function GET(req: NextRequest) {
       where.keyword = { contains: q.trim(), mode: "insensitive" };
     }
 
-    const keywords = await prisma.targetKeyword.findMany({
-      where,
-      orderBy: [{ priority: "desc" }, { keyword: "asc" }],
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-      },
-    });
+    const [keywords, total] = await Promise.all([
+      prisma.targetKeyword.findMany({
+        where,
+        orderBy: [{ priority: "desc" }, { keyword: "asc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+        },
+      }),
+      prisma.targetKeyword.count({ where }),
+    ]);
 
-    return successResponse(keywords);
+    return successResponse({ keywords, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (err) {
     return errorResponse(err);
   }

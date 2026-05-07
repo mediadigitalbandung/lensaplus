@@ -25,6 +25,8 @@ import { prisma } from "@/lib/prisma";
 import { generateSorotan } from "@/lib/seo/sorotan-generator";
 import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
 import { trackCron } from "@/lib/cron-tracker";
+import { tryAdvisoryLock, releaseAdvisoryLock } from "@/lib/cron-lock";
+import * as Sentry from "@sentry/nextjs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -70,7 +72,25 @@ async function handler(req: NextRequest) {
   try {
     try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
 
-    // 1. Toggle check
+    // 1. Advisory lock — prevent concurrent invocations from generating
+    //    duplicate sorotan for the same articles.
+    const LOCK_KEY = "cron:sorotan";
+    const lockAcquired = await tryAdvisoryLock(LOCK_KEY);
+    if (!lockAcquired) {
+      return NextResponse.json(
+        {
+          success: false,
+          skipped: true,
+          reason: "ANOTHER_RUN_IN_PROGRESS",
+          durationMs: Date.now() - started,
+        },
+        { status: 200 },
+      );
+    }
+
+    try {
+
+    // 2. Toggle check
     const enabledStr = await readSetting("sorotan_auto_enabled", "false");
     if (enabledStr !== "true") {
       return NextResponse.json(
@@ -79,7 +99,7 @@ async function handler(req: NextRequest) {
       );
     }
 
-    // 2. Throttle: skip if not enough time since last run.
+    // 3. Throttle: skip if not enough time since last run.
     const intervalMin = parseInterval(await readSetting("sorotan_interval_minutes", "60"));
     const batchSize = parseBatch(await readSetting("sorotan_batch_size", "5"));
     const lastRunIso = await readSetting("sorotan_last_run_at", "");
@@ -170,6 +190,7 @@ async function handler(req: NextRequest) {
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         errors.push(`${c.slug}: ${msg}`);
+        Sentry.captureException(e, { tags: { cron: "sorotan", articleSlug: c.slug } });
         results.push({
           articleId: c.id,
           slug: c.slug,
@@ -195,14 +216,22 @@ async function handler(req: NextRequest) {
       },
       { status: 200 },
     );
+    } finally {
+      // Release lock so the next cron tick can proceed normally.
+      await releaseAdvisoryLock(LOCK_KEY);
+    }
   } catch (e) {
+    // Unexpected error — 5xx so monitoring detects real failures.
+    // Expected skips (disabled, throttled, lock-held) all return 200 above.
+    Sentry.captureException(e, { tags: { cron: "sorotan" } });
+    console.error("[cron sorotan] UNEXPECTED:", e);
     return NextResponse.json(
       {
         success: false,
         error: e instanceof Error ? e.message : String(e),
         durationMs: Date.now() - started,
       },
-      { status: 200 },
+      { status: 500 },
     );
   }
 }

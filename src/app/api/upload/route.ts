@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireAuth, ApiError, successResponse, errorResponse } from "@/lib/api-utils";
+import { requireAuth, ApiError, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import sharp from "sharp";
@@ -124,6 +124,9 @@ export async function POST(request: NextRequest) {
         uploaderName: session.user.name,
       },
     });
+
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "FILE_UPLOAD", "Media", media.id, JSON.stringify({ filename: media.filename, size: media.size }), ip);
 
     return successResponse({ url: primary.url, media });
   } catch (error) {

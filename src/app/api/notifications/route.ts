@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, successResponse, errorResponse, ApiError } from "@/lib/api-utils";
+import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -71,6 +71,36 @@ export async function PATCH(req: NextRequest) {
     }
 
     throw new ApiError("Provide { all: true } or { ids: string[] }", 400);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+// DELETE /api/notifications — delete own notifications by ids or all
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await requireAuth();
+    const userId = session.user.id;
+    const body = await req.json().catch(() => ({}));
+
+    let deleted = 0;
+    if (body.all === true) {
+      const result = await prisma.notification.deleteMany({ where: { userId } });
+      deleted = result.count;
+    } else if (Array.isArray(body.ids) && body.ids.length > 0) {
+      if (body.ids.length > 100) throw new ApiError("Maximum 100 IDs per request", 400);
+      const result = await prisma.notification.deleteMany({
+        where: { id: { in: body.ids }, userId },
+      });
+      deleted = result.count;
+    } else {
+      throw new ApiError("Provide { all: true } or { ids: string[] }", 400);
+    }
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(userId, "NOTIFICATION_DELETE", "Notification", "bulk", JSON.stringify({ deleted }), ip);
+
+    return successResponse({ deleted });
   } catch (error) {
     return errorResponse(error);
   }

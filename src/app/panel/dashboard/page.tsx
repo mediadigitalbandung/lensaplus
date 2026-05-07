@@ -997,9 +997,9 @@ export default function DashboardPage() {
     return (
       <div>
         <div className="mb-6">
-          <h1 className="text-lg sm:text-2xl font-bold text-txt-primary">
+          <h2 className="text-lg sm:text-2xl font-bold text-txt-primary">
             Dashboard
-          </h1>
+          </h2>
           <p className="mt-1 text-sm text-txt-secondary">
             Selamat datang kembali, {session?.user?.name}!
           </p>
@@ -1013,9 +1013,9 @@ export default function DashboardPage() {
     return (
       <div>
         <div className="mb-6">
-          <h1 className="text-lg sm:text-2xl font-bold text-txt-primary">
+          <h2 className="text-lg sm:text-2xl font-bold text-txt-primary">
             Dashboard
-          </h1>
+          </h2>
           <p className="mt-1 text-sm text-txt-secondary">
             Selamat datang kembali, {session?.user?.name}!
           </p>

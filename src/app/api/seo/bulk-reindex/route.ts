@@ -7,23 +7,28 @@
  * Auth: SUPER_ADMIN
  */
 
+import { NextRequest } from "next/server";
 import {
   errorResponse,
   requireRole,
   successResponse,
+  logAudit,
 } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
 
     const updated = await prisma.article.updateMany({
       where: { status: "PUBLISHED" },
       data: { indexStatus: "pending" },
     });
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "SEO_BULK_REINDEX", "Article", "bulk", JSON.stringify({ marked: updated.count }), ip);
 
     return successResponse({
       marked: updated.count,

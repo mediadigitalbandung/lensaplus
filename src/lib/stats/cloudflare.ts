@@ -172,6 +172,8 @@ export async function getCloudflareAnalytics(
     );
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
     const res = await fetch(CF_GRAPHQL_URL, {
       method: "POST",
@@ -187,6 +189,7 @@ export async function getCloudflareAnalytics(
           end: opts.to,
         },
       }),
+      signal: controller.signal,
     });
 
     if (!res.ok) {
@@ -233,7 +236,13 @@ export async function getCloudflareAnalytics(
     setCached(key, result);
     return result;
   } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      console.error("[cloudflare] GraphQL Analytics timeout (15s)");
+      return emptyStats("TIMEOUT");
+    }
     const msg = err instanceof Error ? err.message : String(err);
     return emptyStats(msg);
+  } finally {
+    clearTimeout(timeout);
   }
 }

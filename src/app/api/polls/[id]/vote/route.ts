@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
+import { pollVoteRateLimit } from "@/lib/rate-limit";
 
 const voteSchema = z.object({
   optionId: z.string().min(1),
@@ -11,12 +12,18 @@ const voteSchema = z.object({
 // POST /api/polls/:id/vote — public, 1 vote per IP per poll
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const body = await request.json();
-    const data = voteSchema.parse(body);
-
     // Get IP from headers
     const forwarded = request.headers.get("x-forwarded-for");
     const ip = forwarded ? forwarded.split(",")[0].trim() : request.headers.get("x-real-ip") || "unknown";
+
+    // Rate limit to defend against IP-spoofed flood attempts
+    const { success: allowed } = pollVoteRateLimit(ip);
+    if (!allowed) {
+      throw new ApiError("Terlalu banyak percobaan vote. Coba lagi dalam satu menit.", 429);
+    }
+
+    const body = await request.json();
+    const data = voteSchema.parse(body);
 
     // Check if poll exists and is active
     const poll = await prisma.poll.findUnique({

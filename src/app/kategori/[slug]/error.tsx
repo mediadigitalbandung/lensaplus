@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
 import Link from "next/link";
+import * as Sentry from "@sentry/nextjs";
 
 export default function CategoryError({
   error,
@@ -13,6 +14,7 @@ export default function CategoryError({
 }) {
   useEffect(() => {
     console.error("Category page error:", error);
+    Sentry.captureException(error, { tags: { digest: error.digest } });
   }, [error]);
 
   return (

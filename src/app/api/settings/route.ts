@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireRole, successResponse, errorResponse } from "@/lib/api-utils";
+import { requireRole, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import {
   encryptSecret,
@@ -93,7 +93,7 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
 
     const body = await req.json();
     const data = settingSchema.parse(body);
@@ -113,6 +113,9 @@ export async function PUT(req: NextRequest) {
     const responseValue = isSensitiveKey(data.key)
       ? maskSecret(data.value)
       : data.value;
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "SETTING_UPDATE", "SystemSetting", data.key, JSON.stringify({ key: data.key }), ip);
 
     return successResponse({ key: data.key, value: responseValue });
   } catch (error) {

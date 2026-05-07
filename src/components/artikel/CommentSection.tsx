@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { MessageCircle, Send, CheckCircle, User } from "lucide-react";
 import Turnstile from "@/components/ui/Turnstile";
 
@@ -234,6 +235,13 @@ export default function CommentSection({ articleId }: { articleId: string }) {
             </p>
           </div>
           <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} />
+          <p className="text-sm text-on-surface-variant">
+            Dengan mengirim, Anda menyetujui pemrosesan data sesuai{" "}
+            <Link href="/privasi" className="text-primary underline hover:text-primary-dark">
+              Kebijakan Privasi
+            </Link>{" "}
+            Kartawarta sesuai UU PDP No. 27/2022.
+          </p>
           <button
             type="submit"
             disabled={submitting || !captchaToken}

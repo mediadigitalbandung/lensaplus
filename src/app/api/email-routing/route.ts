@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireAuth, ApiError, successResponse, errorResponse } from "@/lib/api-utils";
+import { requireAuth, ApiError, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
 import { listEmailRules, createEmailForward, deleteEmailRule, toggleEmailRule, addDestinationAddress } from "@/lib/cloudflare-email";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +50,9 @@ export async function POST(request: NextRequest) {
     // Create the forwarding rule
     const rule = await createEmailForward(localPart, destinationEmail);
 
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "EMAIL_ROUTING_CREATE", "EmailRouting", rule.id ?? localPart, JSON.stringify({ localPart, destinationEmail }), ip);
+
     return successResponse({
       id: rule.id,
       from: `${localPart}@kartawarta.com`,
@@ -72,6 +75,10 @@ export async function DELETE(request: NextRequest) {
     if (!ruleId) throw new ApiError("Rule ID required", 400);
 
     await deleteEmailRule(ruleId);
+
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "EMAIL_ROUTING_DELETE", "EmailRouting", ruleId, undefined, ip);
+
     return successResponse({ message: "Email berhasil dihapus" });
   } catch (error) {
     return errorResponse(error);

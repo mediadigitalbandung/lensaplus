@@ -5,6 +5,7 @@ import { sendArticlePublishedEmail } from "@/lib/email";
 import { successResponse, errorResponse, verifyCronSecret } from "@/lib/api-utils";
 import { onArticlePublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
 import { recordCronRun } from "@/lib/cron-tracker";
+import * as Sentry from "@sentry/nextjs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -69,73 +70,87 @@ async function handler(request: NextRequest) {
     const published: string[] = [];
     const errors: string[] = [];
 
-    for (const article of articles) {
-      try {
-        await prisma.article.update({
-          where: { id: article.id },
-          data: {
-            status: "PUBLISHED",
-            publishedAt: article.scheduledAt || now,
-            scheduledAt: null,
-          },
+    // Collapse status update + SEO auto-fill into ONE update per article,
+    // then run all DB updates in parallel (Promise.allSettled) to eliminate
+    // the sequential round-trips that caused N+1 on large batches.
+    const dbUpdates = articles.map((article) =>
+      prisma.article.update({
+        where: { id: article.id },
+        data: {
+          status: "PUBLISHED",
+          publishedAt: article.scheduledAt || now,
+          scheduledAt: null,
+          // Auto-fill SEO fields in the same UPDATE if empty
+          ...(!article.seoTitle && {
+            seoTitle: generateSeoTitle(article.title),
+          }),
+          ...(!article.seoDescription && {
+            seoDescription: generateSeoDescription(
+              article.excerpt,
+              article.content,
+            ),
+          }),
+        },
+      })
+    );
+
+    const dbResults = await Promise.allSettled(dbUpdates);
+
+    // Collect which articles were persisted and which failed
+    const succeededArticles: typeof articles = [];
+    dbResults.forEach((result, i) => {
+      const article = articles[i];
+      if (result.status === "fulfilled") {
+        succeededArticles.push(article);
+      } else {
+        const msg = result.reason instanceof Error
+          ? result.reason.message
+          : String(result.reason);
+        errors.push(`publish[${article.id}]: ${msg}`);
+        Sentry.captureException(result.reason, {
+          tags: { cron: "publish", articleId: article.id },
         });
-        // Auto-fill SEO fields if empty
-        if (!article.seoTitle || !article.seoDescription) {
-          await prisma.article.update({
-            where: { id: article.id },
-            data: {
-              ...(!article.seoTitle && {
-                seoTitle: generateSeoTitle(article.title),
-              }),
-              ...(!article.seoDescription && {
-                seoDescription: generateSeoDescription(
-                  article.excerpt,
-                  article.content,
-                ),
-              }),
-            },
-          });
-        }
-        try {
-          await notifyArticleStatusChange(
-            article.id,
-            article.title,
-            "PUBLISHED",
-            article.authorId,
-          );
-        } catch (e) {
-          errors.push(
-            `notify[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
-          );
-        }
-        const author = authorMap.get(article.authorId);
-        if (author) {
-          try {
-            await sendArticlePublishedEmail(
-              author.email,
-              article.title,
-              article.slug,
-            );
-          } catch (e) {
-            errors.push(
-              `email[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
-            );
-          }
-        }
-        // AWAITED: cron needs final SEO/Social/CF result
-        try {
-          await onArticlePublished(article.slug, article.id);
-        } catch (e) {
-          errors.push(
-            `onPublished[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
-          );
-        }
-        published.push(article.title);
+      }
+    });
+
+    // Side-effects run sequentially per article to preserve ordering guarantees
+    // (notify → email → SEO/Social/CF chain).
+    for (const article of succeededArticles) {
+      try {
+        await notifyArticleStatusChange(
+          article.id,
+          article.title,
+          "PUBLISHED",
+          article.authorId,
+        );
       } catch (e) {
         errors.push(
-          `publish[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
+          `notify[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
         );
       }
+      const author = authorMap.get(article.authorId);
+      if (author) {
+        try {
+          await sendArticlePublishedEmail(
+            author.email,
+            article.title,
+            article.slug,
+          );
+        } catch (e) {
+          errors.push(
+            `email[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+      }
+      // AWAITED: cron needs final SEO/Social/CF result
+      try {
+        await onArticlePublished(article.slug, article.id);
+      } catch (e) {
+        errors.push(
+          `onPublished[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+      published.push(article.title);
     }
 
     await recordCronRun("publish", {
@@ -151,6 +166,7 @@ async function handler(request: NextRequest) {
       durationMs: Date.now() - started,
     });
   } catch (error) {
+    Sentry.captureException(error, { tags: { cron: "publish" } });
     await recordCronRun("publish", {
       ok: false,
       durationMs: Date.now() - started,

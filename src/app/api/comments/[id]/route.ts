@@ -5,6 +5,7 @@ import {
   errorResponse,
   requireRole,
   ApiError,
+  logAudit,
 } from "@/lib/api-utils";
 
 const ALLOWED_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"] as const;
@@ -15,7 +16,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireRole([...ALLOWED_ROLES]);
+    const session = await requireRole([...ALLOWED_ROLES]);
 
     const body = await request.json();
     const isApproved = body.isApproved === true;
@@ -32,6 +33,9 @@ export async function PUT(
       data: { isApproved },
     });
 
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, isApproved ? "COMMENT_APPROVE" : "COMMENT_REJECT", "Comment", params.id, undefined, ip);
+
     return successResponse(updated);
   } catch (error) {
     return errorResponse(error);
@@ -44,7 +48,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireRole([...ALLOWED_ROLES]);
+    const session = await requireRole([...ALLOWED_ROLES]);
 
     const comment = await prisma.comment.findUnique({
       where: { id: params.id },
@@ -54,6 +58,9 @@ export async function DELETE(
     }
 
     await prisma.comment.delete({ where: { id: params.id } });
+
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "COMMENT_DELETE", "Comment", params.id, undefined, ip);
 
     return successResponse({ deleted: true });
   } catch (error) {

@@ -6,6 +6,7 @@ import {
   errorResponse,
   requireAuth,
   ApiError,
+  logAudit,
 } from "@/lib/api-utils";
 
 const createMediaSchema = z.object({
@@ -70,6 +71,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "MEDIA_CREATE", "Media", media.id, JSON.stringify({ filename: media.filename }), ip);
+
     return successResponse(media, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -102,6 +106,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.media.delete({ where: { id } });
+
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "MEDIA_DELETE", "Media", id, JSON.stringify({ filename: media.filename }), ip);
 
     return successResponse({ deleted: true });
   } catch (error) {

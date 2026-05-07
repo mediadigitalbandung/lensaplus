@@ -88,6 +88,9 @@ export async function purgeEverything(): Promise<PurgeResult> {
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
     const res = await fetch(`${CF_API}/zones/${creds.zoneId}/purge_cache`, {
       method: "POST",
       headers: {
@@ -95,7 +98,10 @@ export async function purgeEverything(): Promise<PurgeResult> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ purge_everything: true }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
+
     const json = (await res.json().catch(() => null)) as { success?: boolean; errors?: Array<{ message: string }> } | null;
     if (!json?.success) {
       return { success: false, purgedCount: 0, error: json?.errors?.[0]?.message || `HTTP ${res.status}` };

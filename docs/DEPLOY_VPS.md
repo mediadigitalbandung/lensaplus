@@ -76,6 +76,11 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Monthly restore drill — restores to kartawarta_drill DB, validates, drops (1st of month 04:00)
 0 4 1 * * /var/www/kartawarta/scripts/backup-restore-drill.sh >> /var/log/kartawarta-restore-drill.log 2>&1
+
+# Data retention purge — every Sunday 03:00 (HIGH-PR2/PR3 fix)
+# Purges: AuditLog >12mo, PollVote IPs on closed polls >30d, ContactMessage read >180d, Report resolved >90d
+0 3 * * 0 curl -sS -X POST https://kartawarta.com/api/cron/retention-purge \
+  -H "Authorization: Bearer ${CRON_SECRET}" >> /var/log/kartawarta-cron.log 2>&1
 ```
 
 First-time setup:

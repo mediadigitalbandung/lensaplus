@@ -14,6 +14,7 @@
  */
 
 import { prisma } from "./prisma";
+import * as Sentry from "@sentry/nextjs";
 
 export type CronJobName =
   | "publish"
@@ -49,11 +50,22 @@ export async function recordCronRun(
     ops.push(
       upsertSetting(`cron_${name}_last_error`, result.error.slice(0, 500)),
     );
+    // Forward cron failures to Sentry so on-call can see them.
+    try {
+      Sentry.captureException(new Error(result.error), { tags: { cron: name } });
+    } catch {
+      /* swallow — Sentry must never break the cron */
+    }
   }
   try {
     await Promise.all(ops);
-  } catch {
+  } catch (e) {
     /* swallow — tracker must not break the cron */
+    try {
+      Sentry.captureException(e, { tags: { cron: name, kind: "tracker-write-failed" } });
+    } catch {
+      /* swallow */
+    }
   }
 }
 

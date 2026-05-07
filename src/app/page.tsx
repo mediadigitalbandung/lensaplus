@@ -185,6 +185,8 @@ export default async function HomePage() {
           HERO â€” Auto-rotating carousel + side stories
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {/* AD: Banner di bawah ticker market, di atas hero — visibility tinggi */}
+      {/* Single h1 for screen readers and search engines — HeroCarousel uses h2 per slide */}
+      <h1 className="sr-only">Kartawarta — Media Hukum Bandung</h1>
       <BannerAd size="leaderboard" slot="HEADER" className="bg-surface" />
 
       <HeroCarousel
@@ -219,7 +221,7 @@ export default async function HomePage() {
                   <Link href={`/berita/${terkiniArticles[0].slug}`} className="block">
                     <div className="relative aspect-[2/1] overflow-hidden rounded-sm">
                       {terkiniArticles[0].featuredImage ? (
-                        <Image src={terkiniArticles[0].featuredImage} alt={terkiniArticles[0].title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
+                        <Image src={terkiniArticles[0].featuredImage} alt={terkiniArticles[0].title} fill priority className="object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
                       ) : (
                         <div className="h-full w-full bg-surface-container" />
                       )}

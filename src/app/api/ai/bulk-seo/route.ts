@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole, ApiError } from "@/lib/api-utils";
+import { requireRole, ApiError, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { cleanAIShortText } from "@/lib/sanitize";
 import { decryptSecret } from "@/lib/crypto-secrets";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
 
     const body = await req.json();
     const { articleIds } = body as { articleIds?: string[] };
@@ -72,6 +72,9 @@ export async function POST(req: NextRequest) {
         // Skip failed, continue
       }
     }
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "AI_BULK_SEO", "Article", "batch", JSON.stringify({ processed, total: articles.length }), ip);
 
     return NextResponse.json({
       success: true,

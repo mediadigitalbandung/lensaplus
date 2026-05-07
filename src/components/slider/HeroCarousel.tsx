@@ -114,9 +114,9 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                   <span className="inline-block text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-secondary mb-2 sm:mb-3">
                     {a.category.name}
                   </span>
-                  <h1 className="font-serif text-headline-sm sm:text-display-sm lg:text-display-md xl:text-display-lg text-white leading-[1.15] sm:leading-[1.1] max-w-2xl pr-4 line-clamp-3">
+                  <h2 className="font-serif text-headline-sm sm:text-display-sm lg:text-display-md xl:text-display-lg text-white leading-[1.15] sm:leading-[1.1] max-w-2xl pr-4 line-clamp-3">
                     {a.title}
-                  </h1>
+                  </h2>
                   {a.excerpt && (
                     <p className="mt-3 sm:mt-4 text-body-md text-white/60 max-w-xl line-clamp-2 max-sm:hidden">
                       {a.excerpt}

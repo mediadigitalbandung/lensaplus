@@ -3,12 +3,32 @@
  * - Identifies as "Kartawarta-Scraper" so admins can see who is hitting them.
  * - Hard timeout to keep cron predictable.
  * - Forwards a sane Accept-Language header for ID-first content negotiation.
+ * - SSRF guard: blocks private/loopback/link-local hosts before any network I/O.
  */
 
 const DEFAULT_USER_AGENT =
   "Kartawarta-Scraper/1.0 (+https://kartawarta.com/kontak)";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
+
+/**
+ * Returns true when the hostname resolves to a private/loopback/link-local
+ * address that should never be reachable from a public scraper.
+ * Mirrors the guard already present in download-image.ts.
+ */
+export function isPrivateHost(host: string): boolean {
+  if (host === "localhost") return true;
+  // IPv4 RFC1918 + loopback + link-local (including cloud metadata endpoint)
+  if (
+    /^(10\.|127\.|169\.254\.|192\.168\.)/.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+  ) {
+    return true;
+  }
+  // IPv6 loopback / link-local
+  if (host === "::1" || /^fe80:/i.test(host)) return true;
+  return false;
+}
 
 export interface FetchHtmlOptions {
   userAgent?: string;
@@ -21,6 +41,20 @@ export async function fetchHtml(
   url: string,
   options: FetchHtmlOptions = {},
 ): Promise<{ html: string; finalUrl: string; contentType: string }> {
+  // SSRF guard — must run before any network call.
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid URL: ${url}`);
+  }
+  if (!/^https?:$/.test(parsed.protocol)) {
+    throw new Error(`SSRF_BLOCKED: non-http protocol ${parsed.protocol}`);
+  }
+  if (isPrivateHost(parsed.hostname)) {
+    throw new Error(`SSRF_BLOCKED: private host disallowed (${parsed.hostname})`);
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),

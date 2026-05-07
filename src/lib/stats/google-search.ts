@@ -19,6 +19,15 @@ import { decryptSecret } from "@/lib/crypto-secrets";
 const GSC_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+function withTimeout<T>(p: Promise<T>, ms = 15000, label = "GSC_TIMEOUT"): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) =>
+      setTimeout(() => rej(new Error(`GA_${label}`)), ms),
+    ),
+  ]);
+}
+
 // ---------- Types ----------
 
 export interface GSCStats {
@@ -168,44 +177,52 @@ export async function getGSCData(opts: GSCOptions): Promise<GSCStats> {
 
     // Aggregated totals (no dimensions) — Search Console returns one row
     // with totals when you omit dimensions.
-    const totalsP = searchconsole.searchanalytics.query({
-      siteUrl,
-      requestBody: {
-        startDate: opts.from,
-        endDate: opts.to,
-        rowLimit: 1,
-      },
-    });
+    const totalsP = withTimeout(
+      searchconsole.searchanalytics.query({
+        siteUrl,
+        requestBody: {
+          startDate: opts.from,
+          endDate: opts.to,
+          rowLimit: 1,
+        },
+      }),
+    );
 
-    const queriesP = searchconsole.searchanalytics.query({
-      siteUrl,
-      requestBody: {
-        startDate: opts.from,
-        endDate: opts.to,
-        dimensions: ["query"],
-        rowLimit: 10,
-      },
-    });
+    const queriesP = withTimeout(
+      searchconsole.searchanalytics.query({
+        siteUrl,
+        requestBody: {
+          startDate: opts.from,
+          endDate: opts.to,
+          dimensions: ["query"],
+          rowLimit: 10,
+        },
+      }),
+    );
 
-    const pagesP = searchconsole.searchanalytics.query({
-      siteUrl,
-      requestBody: {
-        startDate: opts.from,
-        endDate: opts.to,
-        dimensions: ["page"],
-        rowLimit: 10,
-      },
-    });
+    const pagesP = withTimeout(
+      searchconsole.searchanalytics.query({
+        siteUrl,
+        requestBody: {
+          startDate: opts.from,
+          endDate: opts.to,
+          dimensions: ["page"],
+          rowLimit: 10,
+        },
+      }),
+    );
 
-    const dailyP = searchconsole.searchanalytics.query({
-      siteUrl,
-      requestBody: {
-        startDate: opts.from,
-        endDate: opts.to,
-        dimensions: ["date"],
-        rowLimit: 90,
-      },
-    });
+    const dailyP = withTimeout(
+      searchconsole.searchanalytics.query({
+        siteUrl,
+        requestBody: {
+          startDate: opts.from,
+          endDate: opts.to,
+          dimensions: ["date"],
+          rowLimit: 90,
+        },
+      }),
+    );
 
     const [totalsRes, queriesRes, pagesRes, dailyRes] = await Promise.all([
       totalsP,

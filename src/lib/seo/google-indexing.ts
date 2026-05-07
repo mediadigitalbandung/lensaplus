@@ -16,12 +16,55 @@ import { decryptSecret } from "@/lib/crypto-secrets";
 
 const INDEXING_SCOPE = "https://www.googleapis.com/auth/indexing";
 
+const QUOTA_KEY = "google_indexing_daily_count";
+const QUOTA_DATE_KEY = "google_indexing_daily_count_date";
+const QUOTA_LIMIT = 200;
+
+async function getDailyCount(): Promise<number> {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const dateRow = await prisma.systemSetting.findUnique({ where: { key: QUOTA_DATE_KEY } });
+  if (dateRow?.value !== today) {
+    // Reset counter
+    await prisma.systemSetting.upsert({
+      where: { key: QUOTA_DATE_KEY },
+      create: { key: QUOTA_DATE_KEY, value: today },
+      update: { value: today },
+    });
+    await prisma.systemSetting.upsert({
+      where: { key: QUOTA_KEY },
+      create: { key: QUOTA_KEY, value: "0" },
+      update: { value: "0" },
+    });
+    return 0;
+  }
+  const countRow = await prisma.systemSetting.findUnique({ where: { key: QUOTA_KEY } });
+  return parseInt(countRow?.value || "0", 10);
+}
+
+async function incrementDailyCount(): Promise<void> {
+  const current = await getDailyCount();
+  await prisma.systemSetting.upsert({
+    where: { key: QUOTA_KEY },
+    create: { key: QUOTA_KEY, value: String(current + 1) },
+    update: { value: String(current + 1) },
+  });
+}
+
+async function saturateDailyCount(): Promise<void> {
+  await prisma.systemSetting.upsert({
+    where: { key: QUOTA_KEY },
+    create: { key: QUOTA_KEY, value: String(QUOTA_LIMIT) },
+    update: { value: String(QUOTA_LIMIT) },
+  });
+}
+
 export type GoogleIndexingType = "URL_UPDATED" | "URL_DELETED";
 
 export interface GoogleIndexingResult {
   success: boolean;
   indexedAt?: Date;
   error?: string;
+  reason?: string;
   statusCode?: number;
 }
 
@@ -98,6 +141,21 @@ export async function submitUrlToGoogle(
     };
   }
 
+  // Daily quota gate — Google's free quota is ~200/day. If we've already
+  // hit the limit, fail fast without burning an API call.
+  try {
+    const count = await getDailyCount();
+    if (count >= QUOTA_LIMIT) {
+      return {
+        success: false,
+        error: "QUOTA_EXCEEDED_DAILY",
+        reason: `Daily Google Indexing API quota (${QUOTA_LIMIT}) reached`,
+      };
+    }
+  } catch {
+    // Quota check failed — fall through and try the API anyway.
+  }
+
   try {
     const auth = new google.auth.JWT({
       email: credentials.client_email,
@@ -110,6 +168,13 @@ export async function submitUrlToGoogle(
       requestBody: { url, type },
     });
 
+    // Record success in the daily counter (best-effort).
+    try {
+      await incrementDailyCount();
+    } catch {
+      /* swallow */
+    }
+
     return {
       success: true,
       indexedAt: new Date(),
@@ -117,6 +182,19 @@ export async function submitUrlToGoogle(
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    // If Google rejects with quota-exceeded, saturate our local counter so
+    // subsequent calls within the same day fail fast.
+    if (
+      msg.includes("Quota exceeded") ||
+      msg.includes("429") ||
+      msg.toLowerCase().includes("rate limit")
+    ) {
+      try {
+        await saturateDailyCount();
+      } catch {
+        /* swallow */
+      }
+    }
     return { success: false, error: msg };
   }
 }

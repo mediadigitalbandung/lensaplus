@@ -59,3 +59,8 @@ export function aiRateLimit(userId: string): { success: boolean; remaining: numb
 export function reportRateLimit(ip: string): { success: boolean; remaining: number } {
   return rateLimit(`report:${ip}`, 5, 15 * 60 * 1000); // 5 reports per 15 min
 }
+
+// Poll vote rate limit — guards against IP-spoofed flood via x-forwarded-for
+export function pollVoteRateLimit(ip: string): { success: boolean; remaining: number } {
+  return rateLimit(`pollvote:${ip}`, 10, 60 * 1000); // 10 votes per minute per IP
+}

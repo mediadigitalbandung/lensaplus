@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 import Link from "next/link";
 import { Metadata } from "next";
@@ -510,7 +510,7 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
 
               {/* Featured Image */}
               {article.featuredImage && (
-                <FeaturedImage src={article.featuredImage} alt={article.title} />
+                <FeaturedImage src={article.featuredImage} alt={article.title} priority />
               )}
 
               {/* Article content with inline ads */}

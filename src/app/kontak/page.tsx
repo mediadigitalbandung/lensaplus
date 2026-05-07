@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
 import Turnstile from "@/components/ui/Turnstile";
 
@@ -129,6 +130,13 @@ export default function KontakPage() {
                     {error && (
                       <p className="text-sm text-red-600">{error}</p>
                     )}
+                    <p className="text-sm text-on-surface-variant">
+                      Dengan mengirim, Anda menyetujui pemrosesan data sesuai{" "}
+                      <Link href="/privasi" className="text-primary underline hover:text-primary-dark">
+                        Kebijakan Privasi
+                      </Link>{" "}
+                      Kartawarta sesuai UU PDP No. 27/2022.
+                    </p>
                     <button type="submit" disabled={sending || !captchaToken} className="btn-primary flex items-center gap-2 disabled:opacity-50">
                       <Send size={16} /> {sending ? "Mengirim..." : "Kirim Pesan"}
                     </button>

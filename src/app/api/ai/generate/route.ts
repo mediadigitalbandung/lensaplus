@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireAuth, successResponse, errorResponse, ApiError } from "@/lib/api-utils";
+import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { aiRateLimit } from "@/lib/rate-limit";
 import { callAI, type AIFeature } from "@/lib/ai-client";
 
@@ -69,6 +69,9 @@ export async function POST(req: NextRequest) {
       }
       throw new ApiError("Gagal menghubungi AI service. Coba lagi nanti.", 502);
     }
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "AI_GENERATE", "Article", "generate", JSON.stringify({ feature, tokensUsed: result.totalTokens, provider: result.provider }), ip);
 
     return successResponse({
       result: result.text,

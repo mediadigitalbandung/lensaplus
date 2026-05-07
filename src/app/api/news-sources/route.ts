@@ -14,6 +14,7 @@ import {
   errorResponse,
   requireRole,
   ApiError,
+  logAudit,
 } from "@/lib/api-utils";
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
 
@@ -59,7 +60,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireRole([...ADMIN_ROLES]);
+    const session = await requireRole([...ADMIN_ROLES]);
     const body = await request.json();
     const data = createSchema.parse(body);
 
@@ -94,6 +95,10 @@ export async function POST(request: NextRequest) {
         defaultTags: data.defaultTags ?? [],
       },
     });
+
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "NEWS_SOURCE_CREATE", "NewsSource", created.id, JSON.stringify({ name: created.name, listingUrl: created.listingUrl }), ip);
+
     return successResponse(created, 201);
   } catch (error) {
     return errorResponse(error);

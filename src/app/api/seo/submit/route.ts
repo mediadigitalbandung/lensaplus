@@ -14,6 +14,7 @@ import {
   errorResponse,
   requireRole,
   successResponse,
+  logAudit,
 } from "@/lib/api-utils";
 import { submitUrlToGoogle } from "@/lib/seo/google-indexing";
 import { pingIndexNow } from "@/lib/seo/indexnow";
@@ -40,7 +41,7 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
     const body = await req.json();
     const { url, articleId, type } = bodySchema.parse(body);
 
@@ -76,6 +77,9 @@ export async function POST(req: NextRequest) {
         // article may not exist — non-fatal
       }
     }
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "SEO_SUBMIT", "Article", articleId ?? "unknown", JSON.stringify({ url, type: type ?? "URL_UPDATED", googleSuccess: google.success }), ip);
 
     return successResponse({
       url,

@@ -1,10 +1,11 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import {
   successResponse,
   errorResponse,
   requireAuth,
+  logAudit,
 } from "@/lib/api-utils";
 
 const updateProfileSchema = z.object({
@@ -63,7 +64,54 @@ export async function PUT(request: NextRequest) {
       select: profileFields,
     });
 
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(session.user.id, "PROFILE_UPDATE", "User", session.user.id, undefined, ip);
+
     return successResponse(updated);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+/**
+ * DELETE /api/users/me
+ *
+ * Data Subject Rights — right to erasure (UU PDP / GDPR Art.17).
+ * Soft-delete: sets isActive=false and scrubs all PII fields.
+ * The user row is retained so FK relations (articles, audit logs) remain intact.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await requireAuth();
+    const userId = session.user.id;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isActive: false,
+        name: "[Dihapus]",
+        email: `deleted-${userId}@deleted.local`,
+        // PII fields — set to null
+        bio: null,
+        avatar: null,
+        phone: null,
+        nomorKartuPers: null,
+        organisasiPers: null,
+        pendidikan: null,
+        pengalaman: null,
+        keahlian: null,
+        portofolio: null,
+        mediaSosial: null,
+        alamat: null,
+        specialization: null,
+        activeSessionId: null,
+      },
+    });
+
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(userId, "ACCOUNT_DELETE", "User", userId, "Self-requested account deletion (soft)", ip);
+
+    return NextResponse.json({ success: true, message: "Akun telah dihapus." }, { status: 200 });
   } catch (error) {
     return errorResponse(error);
   }
