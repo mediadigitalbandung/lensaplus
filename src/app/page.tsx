@@ -78,11 +78,13 @@ export default async function HomePage() {
   const heroSide = dedupedArticles.slice(5, 14);  // 9 side stories — 3 pages of 3 rotating
   const editorsPickArticles = dedupedArticles.slice(14, 18);
 
-  // Berita Terkini — 18 latest articles (1 lead + 17 in 2-col grid). Sized so
-  // the left column matches the height of the right Terpopuler+ads sidebar
-  // and there's no awkward whitespace below. Skip only the lead hero #1 so
-  // we don't render the same article as "big" in two places.
-  const terkiniArticles = dedupedArticles.slice(1, 19);
+  // Berita Terkini — 18 latest articles (1 lead + 17 in 2-col grid). Start
+  // from index 0 (the absolute newest) so reader sees the freshest article
+  // here even if they scrolled past the rotating hero. This duplicates the
+  // hero #1 visually, which is the standard news-site pattern (NYT, Tempo,
+  // Detik all do this) — readers expect "Berita Terkini" lead = the
+  // newest, full stop.
+  const terkiniArticles = dedupedArticles.slice(0, 18);
 
   // Category sections — use the deduped FULL list. Same dedup-by-source
   // rule so a category isn't filled with 5 paraphrases of the same source.
