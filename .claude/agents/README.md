@@ -9,6 +9,7 @@ Saat user minta sesuatu ke Claude Code:
 - **Permintaan coding multi-layer** (fitur baru, refactor) → panggil `tech-lead`
 - **Mau rilis ke production** → panggil `release-lead`
 - **Eksekusi migrasi fitur** (samakan dengan `docs/FEATURE_REFERENCE.md`) → panggil `migration-lead`
+- **Audit menyeluruh project** (security + perf + SEO + a11y + DB + …) → panggil `audit-lead`
 - **Tugas tunggal** — panggil specialist langsung (mis. `copy-editor` untuk proofread saja)
 
 Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, atau manual dengan:
@@ -16,7 +17,7 @@ Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, a
 > gunakan fact-checker untuk verifikasi artikel ini
 ```
 
-## Struktur (28 Agent: 18 Core + 10 Migration)
+## Struktur (40 Agent: 18 Core + 10 Migration + 12 Audit)
 
 ### 🗞️ Domain Editorial — Produksi Konten
 | Agent | Fokus Tunggal |
@@ -47,6 +48,26 @@ Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, a
 | git-release-specialist | commit + push + curl verify |
 | comment-moderator | Approve/reject komentar user |
 | report-handler | Triage laporan hoax/SARA |
+
+### 🔍 Domain Audit — Audit Menyeluruh Project (18 Dimensi)
+| Agent | Fokus Tunggal |
+|---|---|
+| **audit-lead** | Orchestrator: koordinasi 14 sub-auditor, sintesa `docs/AUDIT_REPORT.md` dengan severity matrix |
+| perf-auditor | Performance: bundle, ISR/dynamic mapping, image, N+1, Core Web Vitals risk |
+| seo-auditor | SEO infra: JSON-LD, sitemap, canonical, indexing pipeline |
+| db-auditor | Schema drift, index coverage, dead column, FK cascade, raw SQL safety |
+| a11y-auditor | WCAG 2.1 AA: semantic HTML, ARIA, kontras, keyboard nav, alt text |
+| dep-auditor | npm audit (CVE), outdated, license, unused deps, lockfile integrity |
+| api-design-auditor | REST consistency: status code, error shape, pagination, idempotency |
+| observability-auditor | Sentry, AuditLog completeness, cron secret/idempotency, error boundary |
+| integration-health-auditor | Anthropic/DeepSeek fallback, Meta token, Google APIs, Cloudflare, Resend |
+| content-safety-auditor | Sanitize coverage, state machine artikel, comment moderation, autosave |
+| backup-dr-auditor | DB backup script, retention, off-site, restore docs, RTO/RPO |
+| privacy-compliance-auditor | UU PDP, cookie consent, retention, DSR, cross-border transfer |
+| (existing) security-auditor | Layer 1 #1 — OWASP, secret, XSS, SQLi, SSRF, IDOR |
+| (existing) auth-guardian | Layer 1 #2 audit-mode — RBAC coverage di /panel/* & /api/* |
+| (existing) build-test-validator | Layer 1 #3-4 — typecheck/lint/build/vitest |
+| (existing) design-guardian | Layer 5 #15 — token consistency, legacy `goto.green` purge |
 
 ### 🚧 Domain Feature Migration — Samakan Kartawarta dengan `docs/FEATURE_REFERENCE.md`
 | Agent | Fokus Tunggal |
@@ -136,6 +157,20 @@ Loop sampai fase selesai → build-test-validator → release-lead → user dipa
   - fase selesai dan siap commit
 ```
 
+### F. Audit Menyeluruh (18 Dimensi)
+```
+User: "Audit project ini" / "audit menyeluruh" / "kepala audit"
+         ↓
+audit-lead
+         ↓ Wave 1 (paralel 5): security + auth-guardian + build-test + design + dep
+         ↓ Wave 2 (paralel 5): db + perf + seo + a11y + api-design
+         ↓ Wave 3 (paralel 4): observability + integration-health + content-safety + backup-dr
+         ↓ Wave 4 (paralel 1): privacy
+         ↓ konsolidasi: docs/AUDIT_REPORT.md (severity matrix + remediation roadmap)
+         ↓
+Report final ke user → kalau ada CRITICAL/HIGH → delegasi tech-lead untuk fix
+```
+
 ## Prinsip Desain
 
 1. **Single Responsibility** — setiap agent 1 fokus. Fact-checker tidak menulis ulang. Copy-editor tidak cek fakta.
@@ -181,7 +216,20 @@ Loop sampai fase selesai → build-test-validator → release-lead → user dipa
 ├── cloudflare-ops.md
 ├── cron-engineer.md
 ├── integration-secrets-ui.md
-└── doc-panel-builder.md
+├── doc-panel-builder.md
+│
+├── audit-lead.md                     orchestrator (18-dimension audit menyeluruh)
+├── perf-auditor.md
+├── seo-auditor.md
+├── db-auditor.md
+├── a11y-auditor.md
+├── dep-auditor.md
+├── api-design-auditor.md
+├── observability-auditor.md
+├── integration-health-auditor.md
+├── content-safety-auditor.md
+├── backup-dr-auditor.md
+└── privacy-compliance-auditor.md
 ```
 
 ## Maintenance
