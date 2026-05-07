@@ -163,14 +163,23 @@ VPS post-deploy:
 #### Hotfix #1 — Cron logAudit FK + chmod persistence
 Commit `2ba8ac0`. Issue: `/api/cron/check-meta-tokens` passed literal `"system"` string sebagai userId, FK constraint violated. Fix: helper `logAudit(userId: string | null)` accept null; cron pass null. Plus `git update-index --chmod=+x` 3 scripts agar executable bit persist across `git reset --hard`.
 
+#### Hotfix #2 — Rollback FAQ enum drop (Sprint 3 over-correction)
+Commit `6f13b9f`. **Discovery saat VPS deploy**: production DB punya **114 valid Sorotan rows** dengan `angle='FAQ'` — bukan zero seperti audit assumption. Sprint 3 schema drop attempt FAILED via `safe-db-push.sh` ("db push FAILED" karena Postgres tidak bisa drop enum value yang masih dipakai data). App tetap running because Prisma client (regenerated tanpa FAQ) silently passed through unknown enum value, tapi type contract inconsistent.
+
+**Resolution**: Restore FAQ to `SorotanAngle` enum dengan documentary comment. Restore `ANGLE_LABEL.FAQ = "Tanya Jawab"` for UI display. ANGLES generation array tetap 9 (no new FAQ). 114 legacy Sorotan dengan FAQ angle terus accessible — verified via curl ke `/sorotan/...-faq` slug yang return HTTP 200 dengan title "Tanya Jawab — ...".
+
+Pelajaran untuk audit cycle berikutnya: db-auditor agent harus pre-flight `SELECT COUNT(*)` di production sebelum stage schema drop. Read codebase saja tidak cukup — production data bisa berbeda dari asumsi.
+
 #### Total Remediated
 | Sprint | Severity | Count | Commits |
 |---|---|---|---|
 | Sprint 0 | CRITICAL | 16/16 | 7b71093, 34d0cf4 |
 | Sprint 1 | HIGH | 35/44 | 470188d, a173412 |
 | Sprint 2 | MEDIUM | 30/52 | 8297446 |
-| Sprint 3 | LOW + sisa | 30+ | 96d683e, 2ba8ac0 |
-| **Total** | — | **111/151 (74%)** | 8 commits + audit infra |
+| Sprint 3 | LOW + sisa | 29+ | 96d683e, 2ba8ac0, 6f13b9f |
+| **Total** | — | **110/151 (73%)** | 9 commits + audit infra |
+
+(Sprint 3 dikurangi 1 dari sebelumnya: SorotanAngle.FAQ drop di-rollback karena 114 valid rows. CtaTemplate drop tetap berhasil — itu beneran zero rows.)
 
 #### Deferred — Tidak Akan Dikerjakan di Audit Cycle Ini
 - **next.js CVE chain (4 high)** — butuh major upgrade Next 14→16 (breaking, scheduled separately)
