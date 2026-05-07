@@ -73,10 +73,12 @@ enum SorotanAngle {
   HUKUM
   EKONOMI
   PROYEKSI
-  // FAQ removed — FAQ content lives in Article.faqData (separate field).
-  // BEFORE pushing: verify zero rows in sorotan WHERE angle = 'FAQ'.
-  // api-dev must also strip FAQ from ANGLES/ANGLE_LABEL/ANGLE_PROMPTS
-  // in src/lib/seo/sorotan-generator.ts before this push goes to VPS.
+  /// 114 legacy Sorotan rows in production use FAQ angle (2026-04 era).
+  /// sorotan-generator.ts no longer produces new FAQ entries — new FAQ
+  /// content lives in Article.faqData (separate field). Enum value
+  /// retained for backward-read compatibility. Sprint 3 attempted drop
+  /// but rolled back after discovering 114 valid rows.
+  FAQ
 }
 
 enum SocialPlatform {

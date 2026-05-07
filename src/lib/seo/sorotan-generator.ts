@@ -13,6 +13,8 @@ import { SorotanAngle } from "@prisma/client";
 import { callAI } from "@/lib/ai-client";
 import { prisma } from "@/lib/prisma";
 
+// ANGLES = angle yang aktif diproduksi oleh generator. FAQ legacy enum
+// value tetap valid untuk read tapi tidak digenerate baru.
 const ANGLES: SorotanAngle[] = [
   "KRONOLOGI",
   "ANALISIS",
@@ -35,6 +37,7 @@ const ANGLE_LABEL: Record<SorotanAngle, string> = {
   HUKUM: "Sudut Hukum",
   EKONOMI: "Sudut Ekonomi",
   PROYEKSI: "Proyeksi",
+  FAQ: "Tanya Jawab",
 };
 
 const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
@@ -56,6 +59,10 @@ const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
     "Rangkum artikel berikut dari sudut EKONOMI — angka, transaksi, kerugian/keuntungan, sektor industri, dampak fiskal/moneter. Tulis 300–500 kata bahasa Indonesia. Hanya gunakan angka dan klaim ekonomi yang ada di artikel. Kalau artikel tidak punya sudut ekonomi langsung, fokus pada implikasi ekonomi tidak langsung dari peristiwa.",
   PROYEKSI:
     "Rangkum artikel berikut dari sudut PROYEKSI — apa yang mungkin terjadi setelah peristiwa ini, langkah selanjutnya, agenda publik, kemungkinan keputusan/sidang/regulasi berikutnya. Tulis 300–500 kata bahasa Indonesia. Tetap berbasis fakta artikel — proyeksi yang masuk akal saja, hindari spekulasi liar.",
+  // FAQ — legacy value, no longer generated. ANGLE_PROMPTS satisfied via
+  // Record<SorotanAngle> type by including a stub. ANGLES array doesn't
+  // include FAQ, so this prompt is never actually used at runtime.
+  FAQ: "",
 };
 
 const SYSTEM_PROMPT =
