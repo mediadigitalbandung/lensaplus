@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-utils";
 import { calculateReadTime, slugify } from "@/lib/utils";
 import { canApproveArticles } from "@/lib/auth";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { notifyArticleStatusChange } from "@/lib/notifications";
 import {
   sendArticleApprovedEmail,
@@ -109,6 +110,11 @@ export async function PUT(
     const body = await request.json();
     const { tags: tagNames, sources: sourcesData, reviewNote: bodyReviewNote, ...rawData } = body;
     const data = updateArticleSchema.parse({ ...rawData, reviewNote: bodyReviewNote });
+
+    // CRIT-01: Sanitize HTML content ONCE here, before any branch uses it
+    if (data.content) {
+      data.content = sanitizeHtml(data.content);
+    }
 
     // Featured image is now derived from the article body's first image — if the
     // client doesn't send a value but content was edited, re-extract from content.

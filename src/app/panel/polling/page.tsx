@@ -249,14 +249,14 @@ export default function PollingPanelPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Pertanyaan *</label>
-                <textarea placeholder="Contoh: Apakah Anda setuju dengan revisi UU ITE?" value={formQuestion} onChange={(e) => setFormQuestion(e.target.value)} required rows={2} className="input w-full" />
+                <label htmlFor="polling-pertanyaan" className="mb-1.5 block text-sm font-medium text-txt-secondary">Pertanyaan *</label>
+                <textarea id="polling-pertanyaan" placeholder="Contoh: Apakah Anda setuju dengan revisi UU ITE?" value={formQuestion} onChange={(e) => setFormQuestion(e.target.value)} required rows={2} className="input w-full" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Kategori (opsional)</label>
-                  <select value={formCategoryId} onChange={(e) => setFormCategoryId(e.target.value)} className="input w-full">
+                  <label htmlFor="polling-kategori" className="mb-1.5 block text-sm font-medium text-txt-secondary">Kategori (opsional)</label>
+                  <select id="polling-kategori" value={formCategoryId} onChange={(e) => setFormCategoryId(e.target.value)} className="input w-full">
                     <option value="">— Semua (Homepage) —</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
@@ -287,12 +287,13 @@ export default function PollingPanelPage() {
 
               {/* Options */}
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Opsi Jawaban * (min. 2, maks. 10)</label>
+                <label htmlFor="polling-opsi-0" className="mb-1.5 block text-sm font-medium text-txt-secondary">Opsi Jawaban * (min. 2, maks. 10)</label>
                 <div className="space-y-2">
                   {formOptions.map((opt, idx) => (
                     <div key={idx} className="flex items-center gap-2">
                       <span className="text-xs text-txt-muted w-5 text-center shrink-0">{idx + 1}.</span>
                       <input
+                        id={`polling-opsi-${idx}`}
                         type="text"
                         placeholder={`Opsi ${idx + 1}`}
                         value={opt}
@@ -318,12 +319,12 @@ export default function PollingPanelPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Urutan</label>
-                  <input type="number" min={0} value={formOrder} onChange={(e) => setFormOrder(Number(e.target.value))} className="input w-full" />
+                  <label htmlFor="polling-urutan" className="mb-1.5 block text-sm font-medium text-txt-secondary">Urutan</label>
+                  <input id="polling-urutan" type="number" min={0} value={formOrder} onChange={(e) => setFormOrder(Number(e.target.value))} className="input w-full" />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Status</label>
-                  <select value={formIsActive ? "true" : "false"} onChange={(e) => setFormIsActive(e.target.value === "true")} className="input w-full">
+                  <label htmlFor="polling-status" className="mb-1.5 block text-sm font-medium text-txt-secondary">Status</label>
+                  <select id="polling-status" value={formIsActive ? "true" : "false"} onChange={(e) => setFormIsActive(e.target.value === "true")} className="input w-full">
                     <option value="true">Aktif</option>
                     <option value="false">Nonaktif</option>
                   </select>

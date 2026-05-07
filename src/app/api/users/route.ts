@@ -6,31 +6,40 @@ import { successResponse, errorResponse, requireRole, requireAuth, logAudit, Api
 import { createEmailForward, addDestinationAddress } from "@/lib/cloudflare-email";
 
 // GET /api/users
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth();
     const isAdmin = ["SUPER_ADMIN", "CHIEF_EDITOR"].includes(session.user.role);
 
     if (isAdmin) {
-      // Admin: return full data
-      const users = await prisma.user.findMany({
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          avatar: true,
-          role: true,
-          specialization: true,
-          isActive: true,
-          createdAt: true,
-          _count: { select: { articles: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+      const { searchParams } = new URL(request.url);
+      const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+      const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50")));
 
-      return successResponse(users);
+      // Admin: return full data with pagination
+      const [users, total] = await Promise.all([
+        prisma.user.findMany({
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            avatar: true,
+            role: true,
+            specialization: true,
+            isActive: true,
+            createdAt: true,
+            _count: { select: { articles: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.user.count(),
+      ]);
+
+      return successResponse({ data: users, total, page, limit });
     } else {
-      // Non-admin: return only id, name, role for active users
+      // Non-admin: return only id, name, role for active users (small set, no pagination needed)
       const users = await prisma.user.findMany({
         where: { isActive: true },
         select: {

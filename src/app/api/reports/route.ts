@@ -76,7 +76,7 @@ export async function PATCH(request: NextRequest) {
 
     const existing = await prisma.report.findUnique({ where: { id: data.id } });
     if (!existing) {
-      return errorResponse({ message: "Laporan tidak ditemukan", statusCode: 404 });
+      throw new ApiError("Laporan tidak ditemukan", 404);
     }
 
     const report = await prisma.report.update({
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     const article = await prisma.article.findUnique({ where: { id: data.articleId } });
     if (!article) {
-      return errorResponse({ message: "Artikel tidak ditemukan", statusCode: 404 });
+      throw new ApiError("Artikel tidak ditemukan", 404);
     }
 
     const report = await prisma.report.create({ data });

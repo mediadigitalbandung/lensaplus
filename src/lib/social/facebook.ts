@@ -101,7 +101,13 @@ export class FacebookPublisher {
       }
       return { success: true, externalId: res.id };
     } catch (err) {
-      return { success: false, error: err instanceof Error ? err.message : String(err) };
+      const msg = err instanceof Error ? err.message : String(err);
+      const isTokenExpired = /code 190/i.test(msg);
+      const error = isTokenExpired ? `TOKEN_EXPIRED — ${msg}` : msg;
+      if (isTokenExpired) {
+        console.error("[facebook] TOKEN_EXPIRED error 190 — pipeline blocked until token is refreshed");
+      }
+      return { success: false, error };
     }
   }
 
@@ -128,7 +134,13 @@ export class FacebookPublisher {
       }
       return { success: true, externalId };
     } catch (err) {
-      return { success: false, error: err instanceof Error ? err.message : String(err) };
+      const msg = err instanceof Error ? err.message : String(err);
+      const isTokenExpired = /code 190/i.test(msg);
+      const error = isTokenExpired ? `TOKEN_EXPIRED — ${msg}` : msg;
+      if (isTokenExpired) {
+        console.error("[facebook] TOKEN_EXPIRED error 190 — pipeline blocked until token is refreshed");
+      }
+      return { success: false, error };
     }
   }
 

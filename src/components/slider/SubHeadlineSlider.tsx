@@ -48,6 +48,8 @@ export default function SubHeadlineSlider({ items }: SubHeadlineSliderProps) {
 
   useEffect(() => {
     if (totalPages <= 1) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       goToPage((currentPage + 1) % totalPages);

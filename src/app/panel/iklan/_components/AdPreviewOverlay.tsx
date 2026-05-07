@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import { X, ImageIcon } from "lucide-react";
 import { slotLabels, slotSpecs } from "./ad-constants";
@@ -56,16 +57,39 @@ export default function AdPreviewOverlay({ slot, imageUrl, htmlCode, type, targe
 }) {
   const spec = slotSpecs[slot];
   const label = slotLabels[slot];
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // ESC to close
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
+  // Focus close button on open
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+  }, []);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70" onClick={onClose}>
-      <div className="relative max-w-[95vw] max-h-[90vh] overflow-auto bg-surface rounded-2xl shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70"
+      onClick={onClose}
+      aria-hidden="true"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ad-preview-modal-title"
+        className="relative max-w-[95vw] max-h-[90vh] overflow-auto bg-surface rounded-2xl shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sticky top-0 z-10 flex items-center justify-between bg-surface border-b border-border px-5 py-3 rounded-t-2xl">
           <div>
-            <h3 className="text-sm font-bold text-txt-primary">Preview — {label}</h3>
+            <h2 id="ad-preview-modal-title" className="text-sm font-bold text-txt-primary">Preview — {label}</h2>
             <p className="text-xs text-txt-muted">{spec?.ratio} • {spec?.desc}</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-surface-secondary"><X size={18} /></button>
+          <button ref={closeButtonRef} onClick={onClose} className="rounded-lg p-1.5 hover:bg-surface-secondary" aria-label="Tutup preview"><X size={18} /></button>
         </div>
 
         <div className="p-4 sm:p-6 bg-surface-secondary">

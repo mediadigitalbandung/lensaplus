@@ -1,15 +1,35 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Printer, FileText, X } from "lucide-react";
 
 export default function PrintButton() {
   const [showPreview, setShowPreview] = useState(false);
+  const firstFocusRef = useRef<HTMLButtonElement>(null);
 
   function handlePrint() {
     setShowPreview(false);
     setTimeout(() => window.print(), 100);
   }
+
+  function close() {
+    setShowPreview(false);
+  }
+
+  // ESC to close
+  useEffect(() => {
+    if (!showPreview) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [showPreview]);
+
+  // Focus first element on open
+  useEffect(() => {
+    if (showPreview) {
+      firstFocusRef.current?.focus();
+    }
+  }, [showPreview]);
 
   return (
     <>
@@ -36,16 +56,27 @@ export default function PrintButton() {
 
       {/* PDF Preview Modal */}
       {showPreview && (
-        <div className="fixed inset-0 z-[999] bg-black/60 flex items-center justify-center p-4 no-print" onClick={() => setShowPreview(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[999] bg-black/60 flex items-center justify-center p-4 no-print"
+          onClick={close}
+          aria-hidden="true"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="print-modal-title"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <div>
-                <h3 className="text-base font-bold text-txt-primary">Preview PDF</h3>
+                <h2 id="print-modal-title" className="text-base font-bold text-txt-primary">Preview PDF</h2>
                 <p className="text-xs text-txt-muted">Tampilan saat dicetak / export ke PDF</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  ref={firstFocusRef}
                   onClick={handlePrint}
                   className="btn-primary px-4 py-2 text-sm"
                 >
@@ -53,18 +84,18 @@ export default function PrintButton() {
                   Cetak / Simpan PDF
                 </button>
                 <button
-                  onClick={() => setShowPreview(false)}
+                  onClick={close}
                   className="p-2 hover:bg-surface-secondary rounded-lg"
+                  aria-label="Tutup modal"
                 >
                   <X size={18} />
                 </button>
               </div>
             </div>
 
-            {/* Preview content â€” iframe of print view */}
+            {/* Preview content - mirror of print layout */}
             <div className="flex-1 overflow-auto p-6 bg-surface-secondary">
               <div className="bg-white shadow-lg rounded-lg mx-auto" style={{ maxWidth: "210mm", minHeight: "297mm", padding: "15mm 20mm" }}>
-                {/* Replicate print layout */}
                 <PrintPreviewContent />
               </div>
             </div>
@@ -81,28 +112,26 @@ function PrintPreviewContent() {
   if (!articleEl) return <p className="text-txt-muted">Tidak dapat memuat preview</p>;
 
   // Extract elements
-  const printHeader = articleEl.querySelector(".print-header");
   const categoryEl = articleEl.querySelector("[class*='uppercase'][class*='tracking']");
   const titleEl = articleEl.querySelector("h1");
   const metaEl = articleEl.querySelector("[class*='text-txt-muted']");
   const featuredImg = articleEl.querySelector("[class*='aspect-'][class*='16/9'] img") as HTMLImageElement | null;
   const contentEl = articleEl.querySelector(".article-content");
-  const printFooter = articleEl.querySelector(".print-footer");
 
   return (
     <div style={{ fontFamily: "Georgia, serif", color: "#1C1C1E" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, borderBottom: "2px solid #00AA13", paddingBottom: 12, marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, borderBottom: "2px solid #002045", paddingBottom: 12, marginBottom: 20 }}>
         <img src="/kartawarta-icon.png" alt="Kartawarta" style={{ width: 40, height: 40 }} />
         <div>
           <div style={{ fontSize: 16, fontWeight: 800 }}>Kartawarta</div>
-          <div style={{ fontSize: 9, color: "#6B7280" }}>Media Hukum Digital Terpercaya â€” kartawarta.com</div>
+          <div style={{ fontSize: 9, color: "#6B7280" }}>Media Hukum Digital Terpercaya &mdash; kartawarta.com</div>
         </div>
       </div>
 
-      {/* Category */}
+      {/* Category badge */}
       {categoryEl && (
-        <div style={{ display: "inline-block", background: "#E6F9E8", color: "#00AA13", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <div style={{ display: "inline-block", background: "#e8edf3", color: "#002045", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
           {categoryEl.textContent}
         </div>
       )}
@@ -140,7 +169,7 @@ function PrintPreviewContent() {
 
       {/* Footer */}
       <div style={{ marginTop: 24, paddingTop: 12, borderTop: "1px solid #E5E7EB", fontSize: 9, color: "#9CA3AF", textAlign: "center" }}>
-        &copy; {new Date().getFullYear()} Kartawarta â€” kartawarta.com
+        &copy; {new Date().getFullYear()} Kartawarta &mdash; kartawarta.com
         <br />Artikel ini dicetak pada {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
         <br />Sumber: {typeof window !== "undefined" ? window.location.href : ""}
       </div>

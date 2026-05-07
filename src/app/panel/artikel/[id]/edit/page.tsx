@@ -2077,17 +2077,17 @@ export default function EditArticlePage() {
                 <div className="space-y-3 border-t border-border px-6 py-4">
                   <div>
                     <div className="mb-1 flex items-center justify-between">
-                      <label className="text-sm font-medium text-txt-primary">SEO Title ({seoTitle.length}/70)</label>
+                      <label htmlFor="edit-seo-title" className="text-sm font-medium text-txt-primary">SEO Title ({seoTitle.length}/70)</label>
                       <AiButton feature="seo_title" setter={setSeoTitle} />
                     </div>
-                    <input type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} maxLength={70} placeholder={title || "Judul untuk mesin pencari"} className="input w-full text-sm" />
+                    <input id="edit-seo-title" type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} maxLength={70} placeholder={title || "Judul untuk mesin pencari"} className="input w-full text-sm" />
                   </div>
                   <div>
                     <div className="mb-1 flex items-center justify-between">
-                      <label className="text-sm font-medium text-txt-primary">Meta Description ({seoDescription.length}/160)</label>
+                      <label htmlFor="edit-seo-desc" className="text-sm font-medium text-txt-primary">Meta Description ({seoDescription.length}/160)</label>
                       <AiButton feature="meta_description" setter={setSeoDescription} />
                     </div>
-                    <textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} maxLength={160} rows={2} placeholder="Deskripsi singkat untuk hasil pencarian" className="input w-full text-sm" />
+                    <textarea id="edit-seo-desc" value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} maxLength={160} rows={2} placeholder="Deskripsi singkat untuk hasil pencarian" className="input w-full text-sm" />
                   </div>
                   {/* FAQ Generator — only for editors */}
                   {EDITOR_ROLES.includes(userRole) && (
@@ -2121,8 +2121,8 @@ export default function EditArticlePage() {
           {/* Sidebar */}
           <div className="space-y-4">
             <div className="rounded-[12px] border border-border bg-surface p-6">
-              <label className="mb-2 block text-sm font-medium text-txt-primary">Kategori *</label>
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input w-full">
+              <label htmlFor="edit-kategori" className="mb-2 block text-sm font-medium text-txt-primary">Kategori *</label>
+              <select id="edit-kategori" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input w-full">
                 <option value="">Pilih Kategori</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -2132,10 +2132,11 @@ export default function EditArticlePage() {
             {/* Pilih Penulis — only for admin/editor */}
             {EDITOR_ROLES.includes(userRole) && (
               <div className="rounded-[12px] border border-border bg-surface p-6">
-                <label className="mb-2 block text-sm font-medium text-txt-primary">
+                <label htmlFor="edit-penulis" className="mb-2 block text-sm font-medium text-txt-primary">
                   Penulis
                 </label>
                 <select
+                  id="edit-penulis"
                   value={selectedAuthorId}
                   onChange={(e) => setSelectedAuthorId(e.target.value)}
                   className="input w-full"
@@ -2152,10 +2153,11 @@ export default function EditArticlePage() {
             )}
             {/* Pilih Editor — for all roles */}
             <div className="rounded-[12px] border border-border bg-surface p-6">
-              <label className="mb-2 block text-sm font-medium text-txt-primary">
+              <label htmlFor="edit-editor" className="mb-2 block text-sm font-medium text-txt-primary">
                 Editor
               </label>
               <select
+                id="edit-editor"
                 value={selectedEditorId}
                 onChange={(e) => setSelectedEditorId(e.target.value)}
                 className="input w-full"
@@ -2171,18 +2173,18 @@ export default function EditArticlePage() {
             </div>
             <div className="rounded-[12px] border border-border bg-surface p-6">
               <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm font-medium text-txt-primary">Tags</label>
+                <label htmlFor="edit-tags" className="text-sm font-medium text-txt-primary">Tags</label>
                 <AiButton feature="tags" setter={setTags} />
               </div>
-              <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tag1, Tag2, Tag3" className="input w-full" />
+              <input id="edit-tags" type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tag1, Tag2, Tag3" className="input w-full" />
               <p className="mt-1 text-xs text-txt-muted">Pisahkan dengan koma</p>
             </div>
             <div className="rounded-[12px] border border-border bg-surface p-6">
               <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm font-medium text-txt-primary">Ringkasan</label>
+                <label htmlFor="edit-ringkasan" className="text-sm font-medium text-txt-primary">Ringkasan</label>
                 <AiButton feature="summary" setter={setExcerpt} />
               </div>
-              <textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} placeholder="Ringkasan singkat artikel" maxLength={500} className="input w-full" />
+              <textarea id="edit-ringkasan" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} placeholder="Ringkasan singkat artikel" maxLength={500} className="input w-full" />
             </div>
             {/* Journalism Checklist */}
             <div className="rounded-[12px] border border-primary/20 bg-primary-50 p-4">

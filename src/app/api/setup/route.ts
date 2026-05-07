@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { successResponse, errorResponse } from "@/lib/api-utils";
+import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
 
 function generateSecurePassword(length = 16): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     // `setupKey === undefined && process.env.SETUP_KEY === undefined`
     // would compare equal and grant access without any key.
     if (!expected || expected.length < 16) {
-      return errorResponse({ message: "Setup endpoint disabled", statusCode: 403 });
+      throw new ApiError("Setup endpoint disabled", 403);
     }
     // Disable the endpoint entirely once a SUPER_ADMIN exists. Avoids
     // recon (probing whether setup is done) and removes the footgun in prod.
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       select: { id: true },
     });
     if (existingAdmin) {
-      return errorResponse({ message: "Setup endpoint disabled", statusCode: 403 });
+      throw new ApiError("Setup endpoint disabled", 403);
     }
 
     const { searchParams } = new URL(request.url);
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       provided.length === target.length &&
       crypto.timingSafeEqual(provided, target);
     if (!ok) {
-      return errorResponse({ message: "Invalid setup key", statusCode: 403 });
+      throw new ApiError("Invalid setup key", 403);
     }
 
     // Create categories

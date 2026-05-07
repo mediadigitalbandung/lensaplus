@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -541,7 +542,7 @@ export default function RevisionsPage() {
                     </label>
                     <div
                       className="prose prose-sm max-w-none text-txt-primary text-justify rounded-[8px] border border-border bg-surface-secondary p-4 max-h-[500px] overflow-y-auto"
-                      dangerouslySetInnerHTML={{ __html: rev.content }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(rev.content) }}
                     />
                   </div>
                 )}

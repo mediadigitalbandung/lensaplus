@@ -521,7 +521,7 @@ function MyArticleStats({ articles }: { articles: Article[] }) {
               </span>
               <div className="flex-1 h-5 bg-surface-secondary rounded-md overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-goto-green to-goto-dark rounded-md transition-all duration-500 flex items-center justify-end pr-1.5"
+                  className="h-full bg-gradient-to-r from-primary to-primary-dark rounded-md transition-all duration-500 flex items-center justify-end pr-1.5"
                   style={{ width: `${(month.count / maxMonthly) * 100}%`, minWidth: month.count > 0 ? "24px" : "0px" }}
                 >
                   {month.count > 0 && (
@@ -585,7 +585,7 @@ function WeeklyArticleTrend({ articles }: { articles: Article[] }) {
             </span>
             <div className="flex-1 h-5 bg-surface-secondary rounded-md overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-goto-green to-goto-dark rounded-md transition-all duration-500 flex items-center justify-end pr-1.5"
+                className="h-full bg-gradient-to-r from-primary to-primary-dark rounded-md transition-all duration-500 flex items-center justify-end pr-1.5"
                 style={{ width: `${(day.count / maxCount) * 100}%`, minWidth: day.count > 0 ? "24px" : "0px" }}
               >
                 {day.count > 0 && (

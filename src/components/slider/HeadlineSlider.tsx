@@ -51,6 +51,8 @@ export default function HeadlineSlider({ items }: HeadlineSliderProps) {
   // Auto-advance
   useEffect(() => {
     if (total <= 1) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       goToSlide(((current) + 1) % total);

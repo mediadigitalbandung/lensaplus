@@ -121,7 +121,13 @@ export class InstagramPublisher {
       return { success: true, externalId: publishRes.id };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      // CRIT-11: surface token expiry clearly so orchestrator + cron can act.
+      const isTokenExpired = /code 190/i.test(msg);
+      const error = isTokenExpired ? `TOKEN_EXPIRED — ${msg}` : msg;
+      if (isTokenExpired) {
+        console.error("[instagram] TOKEN_EXPIRED error 190 — pipeline blocked until token is refreshed");
+      }
+      return { success: false, error };
     }
   }
 }

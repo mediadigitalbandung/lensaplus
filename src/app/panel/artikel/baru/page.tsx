@@ -529,10 +529,11 @@ export default function NewArticlePage() {
               <div className="space-y-3 border-t border-border px-6 py-4">
                 <div>
                   <div className="mb-1 flex items-center justify-between">
-                    <label className="text-sm font-medium text-txt-primary">SEO Title ({seoTitle.length}/70)</label>
+                    <label htmlFor="artikel-seo-title" className="text-sm font-medium text-txt-primary">SEO Title ({seoTitle.length}/70)</label>
                     <AiButton feature="seo_title" setter={setSeoTitle} />
                   </div>
                   <input
+                    id="artikel-seo-title"
                     type="text"
                     value={seoTitle}
                     onChange={(e) => setSeoTitle(e.target.value)}
@@ -543,10 +544,11 @@ export default function NewArticlePage() {
                 </div>
                 <div>
                   <div className="mb-1 flex items-center justify-between">
-                    <label className="text-sm font-medium text-txt-primary">Meta Description ({seoDescription.length}/160)</label>
+                    <label htmlFor="artikel-seo-desc" className="text-sm font-medium text-txt-primary">Meta Description ({seoDescription.length}/160)</label>
                     <AiButton feature="meta_description" setter={setSeoDescription} />
                   </div>
                   <textarea
+                    id="artikel-seo-desc"
                     value={seoDescription}
                     onChange={(e) => setSeoDescription(e.target.value)}
                     maxLength={160}
@@ -564,10 +566,11 @@ export default function NewArticlePage() {
         <div className="space-y-4">
           {/* Category */}
           <div className="rounded-[12px] border border-border bg-surface p-6">
-            <label className="mb-2 block text-sm font-medium text-txt-primary">
+            <label htmlFor="artikel-kategori" className="mb-2 block text-sm font-medium text-txt-primary">
               Kategori *
             </label>
             <select
+              id="artikel-kategori"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               className="input w-full"
@@ -584,10 +587,11 @@ export default function NewArticlePage() {
           {/* Pilih Penulis — only for admin/editor */}
           {EDITOR_ROLES.includes(userRole) && (
             <div className="rounded-[12px] border border-border bg-surface p-6">
-              <label className="mb-2 block text-sm font-medium text-txt-primary">
+              <label htmlFor="artikel-penulis" className="mb-2 block text-sm font-medium text-txt-primary">
                 Penulis
               </label>
               <select
+                id="artikel-penulis"
                 value={selectedAuthorId}
                 onChange={(e) => setSelectedAuthorId(e.target.value)}
                 className="input w-full"
@@ -605,10 +609,11 @@ export default function NewArticlePage() {
 
           {/* Pilih Editor — for all roles */}
           <div className="rounded-[12px] border border-border bg-surface p-6">
-            <label className="mb-2 block text-sm font-medium text-txt-primary">
+            <label htmlFor="artikel-editor" className="mb-2 block text-sm font-medium text-txt-primary">
               Editor
             </label>
             <select
+              id="artikel-editor"
               value={selectedEditorId}
               onChange={(e) => setSelectedEditorId(e.target.value)}
               className="input w-full"
@@ -626,10 +631,11 @@ export default function NewArticlePage() {
           {/* Tags */}
           <div className="rounded-[12px] border border-border bg-surface p-6">
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-sm font-medium text-txt-primary">Tags</label>
+              <label htmlFor="artikel-tags" className="text-sm font-medium text-txt-primary">Tags</label>
               <AiButton feature="tags" setter={setTags} />
             </div>
             <input
+              id="artikel-tags"
               type="text"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
@@ -642,10 +648,11 @@ export default function NewArticlePage() {
           {/* Excerpt */}
           <div className="rounded-[12px] border border-border bg-surface p-6">
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-sm font-medium text-txt-primary">Ringkasan</label>
+              <label htmlFor="artikel-ringkasan" className="text-sm font-medium text-txt-primary">Ringkasan</label>
               <AiButton feature="summary" setter={setExcerpt} />
             </div>
             <textarea
+              id="artikel-ringkasan"
               value={excerpt}
               onChange={(e) => setExcerpt(e.target.value)}
               rows={3}

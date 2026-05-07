@@ -207,8 +207,9 @@ export default function RedaksiPanelPage() {
             {/* Pick from existing users */}
             {users.length > 0 && (
               <div className="mb-5">
-                <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Pilih dari Pengguna Terdaftar</label>
+                <label htmlFor="redaksi-user-select" className="mb-1.5 block text-sm font-medium text-txt-secondary">Pilih dari Pengguna Terdaftar</label>
                 <select
+                  id="redaksi-user-select"
                   className="input w-full"
                   value={form.userId}
                   onChange={(e) => {
@@ -238,17 +239,17 @@ export default function RedaksiPanelPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Jabatan *</label>
-                  <input type="text" placeholder="Contoh: Pemimpin Redaksi" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required className="input w-full" />
+                  <label htmlFor="redaksi-jabatan" className="mb-1.5 block text-sm font-medium text-txt-secondary">Jabatan *</label>
+                  <input id="redaksi-jabatan" type="text" placeholder="Contoh: Pemimpin Redaksi" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required className="input w-full" />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Nama *</label>
-                  <input type="text" placeholder="Nama lengkap" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="input w-full" />
+                  <label htmlFor="redaksi-nama" className="mb-1.5 block text-sm font-medium text-txt-secondary">Nama *</label>
+                  <input id="redaksi-nama" type="text" placeholder="Nama lengkap" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="input w-full" />
                 </div>
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Deskripsi</label>
-                <input type="text" placeholder="Tugas dan tanggung jawab" value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} className="input w-full" />
+                <label htmlFor="redaksi-deskripsi" className="mb-1.5 block text-sm font-medium text-txt-secondary">Deskripsi</label>
+                <input id="redaksi-deskripsi" type="text" placeholder="Tugas dan tanggung jawab" value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} className="input w-full" />
               </div>
 
               {/* Foto upload */}
@@ -289,12 +290,12 @@ export default function RedaksiPanelPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Urutan</label>
-                  <input type="number" min={0} value={form.order} onChange={(e) => setForm({ ...form, order: Number(e.target.value) })} className="input w-full" />
+                  <label htmlFor="redaksi-urutan" className="mb-1.5 block text-sm font-medium text-txt-secondary">Urutan</label>
+                  <input id="redaksi-urutan" type="number" min={0} value={form.order} onChange={(e) => setForm({ ...form, order: Number(e.target.value) })} className="input w-full" />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Status</label>
-                  <select value={form.isActive ? "true" : "false"} onChange={(e) => setForm({ ...form, isActive: e.target.value === "true" })} className="input w-full">
+                  <label htmlFor="redaksi-status" className="mb-1.5 block text-sm font-medium text-txt-secondary">Status</label>
+                  <select id="redaksi-status" value={form.isActive ? "true" : "false"} onChange={(e) => setForm({ ...form, isActive: e.target.value === "true" })} className="input w-full">
                     <option value="true">Aktif</option>
                     <option value="false">Nonaktif</option>
                   </select>

@@ -66,6 +66,8 @@ scripts/*
 !scripts/backup-db.sh
 !scripts/backup-verify.sh
 !scripts/backup-restore-drill.sh
+!scripts/backup-uploads.sh
+!scripts/backup-offsite.sh
 !scripts/.gitkeep
 
 # Playwright artifacts
