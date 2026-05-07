@@ -99,12 +99,38 @@ Hasil audit di `docs/AUDIT_REPORT.md` (overwrite per session) dengan history per
 ### 2026-05-07 → 2026-05-08 — Audit Menyeluruh #1 (post-migration baseline) ✅
 - Mode: `full`
 - Trigger: User minta "audit menyeluruh, kepala audit" setelah 13/13 fase migrasi selesai
-- Status: **SELESAI**
-- Hasil: 16 CRITICAL + 44 HIGH + 52 MEDIUM + 31 LOW + 8 INFO = 151 findings
-- Verdict final: ❌ **BLOCK RELEASE** — perlu Sprint 0 dulu (CRIT-01 stored XSS regression, CRIT-13/14 backup gap, CRIT-11/12 integration silent-fail, CRIT-05/06/07/08 a11y, CRIT-15/16 design legacy)
+- Status: **SELESAI** + Sprint 0 + Sprint 1 deployed
+- Hasil audit: 16 CRITICAL + 44 HIGH + 52 MEDIUM + 31 LOW + 8 INFO = 151 findings
+- Hasil remediation: **16/16 CRITICAL + 35/44 HIGH = 51 findings remediated, deployed**
+- Verdict bertahap: ❌ BLOCK → Sprint 0 → ⚠️ FIX REKOM → Sprint 1 → ✅ **PRODUCTION-READY**
 - Report lengkap: [docs/AUDIT_REPORT.md](AUDIT_REPORT.md)
-- Sub-auditor invoked: 14 (Wave 1: security/auth-guardian/build-test/design-guardian/dep-auditor; Wave 2: db/perf/seo/a11y/api-design; Wave 3: observability/integration-health/content-safety/backup-dr/privacy)
+- Sub-auditor invoked: 14 (Wave 1-3 paralel)
+- Sprint commits:
+  - `7b71093` feat(audit): infrastructure (12 agent + AUDIT_PLAN + AUDIT_REPORT)
+  - `34d0cf4` fix(audit): Sprint 0 — 16 CRITICAL
+  - `470188d` fix(db): schema BREAKING — FK cascade + index opt
+  - `a173412` fix(audit): Sprint 1 — 35+ HIGH
 - 12 agent baru ditambahkan ke `.claude/agents/`: audit-lead, perf-auditor, seo-auditor, db-auditor, a11y-auditor, dep-auditor, api-design-auditor, observability-auditor, integration-health-auditor, content-safety-auditor, backup-dr-auditor, privacy-compliance-auditor
+
+#### Sprint 0 (CRITICAL) — DEPLOYED 2026-05-07
+4 paralel agent (api-dev, frontend-dev, social-publisher, cron-engineer) — 16/16 fix:
+CRIT-01 sanitize PUT, CRIT-02 DOMPurify revisions, CRIT-03 users pagination, CRIT-04 bulk-tags batch, CRIT-05 form htmlFor, CRIT-06/07 modal a11y, CRIT-08 reduced-motion, CRIT-09 ApiError 404, CRIT-10 articles limit cap, CRIT-11 Meta token expiry cron, CRIT-12 Resend SystemSetting refactor, CRIT-13 off-site backup script, CRIT-14 uploads backup, CRIT-15/16 GoTo Green legacy purge.
+
+#### Sprint 1 (HIGH) — DEPLOYED 2026-05-08
+6 paralel agent + tech-lead delegation — 35+/44 fix:
+- Security: SSRF scraper, polls vote rate-limit, panel/iklan guard, cron TOCTOU advisory lock
+- Observability: 20 endpoint logAudit, Sentry beforeSend PII filter, manual captureException, /api/health
+- Performance: 9 page ISR conversion, FeaturedImage priority, h1 fixes
+- Integration: timeouts (CF/GA4/GSC/purgeEverything), Indexing API quota counter
+- Privacy: privacy policy rewrite UU PDP 12 sections, retention-purge cron, DSR endpoints (export + delete), kontak privacy notice
+- DB: FK cascade explicit (7), AuditLog.userId nullable BREAKING, redundant index drop, trending index add, /api/cron/publish N+1 refactor
+- Deps: npm audit fix (sanitize-html 2.17.3, brace-expansion, vite 8.0.11), date-fns removed, @types/sanitize-html → devDeps
+
+#### Deferred ke Sprint 2/3
+- 9 HIGH (~deps next.js CVE chain butuh major upgrade, AuditLog catch-up endpoints, perf medium-priority)
+- 52 MEDIUM
+- 31 LOW
+- 8 INFO (no fix needed)
 
 ## Update Status Dimensi (post-audit)
 
