@@ -93,15 +93,18 @@ export function errorResponse(error: unknown) {
 }
 
 export async function logAudit(
-  userId: string,
+  userId: string | null,
   action: string,
   entity: string,
   entityId: string,
   detail?: string,
   ip?: string
 ) {
+  // System actors (cron jobs, anonymous events) pass null since AuditLog.userId
+  // is now nullable (Sprint 1 schema change). Non-existent string IDs would
+  // violate the user FK — coerce to null for safety.
   await prisma.auditLog.create({
-    data: { userId, action, entity, entityId, detail, ip },
+    data: { userId: userId || null, action, entity, entityId, detail, ip },
   });
 }
 

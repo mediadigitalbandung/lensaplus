@@ -235,7 +235,7 @@ async function handler(req: NextRequest) {
       };
     }
 
-    await logAudit("system", "META_TOKEN_CHECK", "MetaSettings", "global", JSON.stringify(summary));
+    await logAudit(null, "META_TOKEN_CHECK", "MetaSettings", "global", JSON.stringify(summary));
 
     return NextResponse.json(
       {
