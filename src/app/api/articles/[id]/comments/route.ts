@@ -6,6 +6,7 @@ import {
   errorResponse,
   getSession,
   ApiError,
+  logAudit,
 } from "@/lib/api-utils";
 import { commentRateLimit } from "@/lib/rate-limit";
 import { sanitizeText, sanitizeEmail } from "@/lib/sanitize";
@@ -122,6 +123,20 @@ export async function POST(
         isApproved: false,
       },
     });
+
+    // Audit log public comment submission (null userId — unauthenticated actor)
+    try {
+      await logAudit(
+        null,
+        "COMMENT_SUBMIT",
+        "comment",
+        comment.id,
+        JSON.stringify({ articleId: params.id, spamVerdict: spam.verdict }),
+        ip,
+      );
+    } catch {
+      // swallow
+    }
 
     return successResponse(comment, 201);
   } catch (error) {

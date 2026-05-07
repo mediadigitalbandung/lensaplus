@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ArrowLeft, BookOpen, Tag as TagIcon } from "lucide-react";
+import DOMPurify from "isomorphic-dompurify";
 
 export const revalidate = 300;
 
@@ -145,10 +146,10 @@ export default async function GlossaryDetailPage({ params }: { params: { slug: s
             )}
           </header>
 
-          {/* Body */}
+          {/* Body — defense-in-depth re-sanitize even though Obsidian sync already sanitizes on save */}
           <article
             className="article-content"
-            dangerouslySetInnerHTML={{ __html: item.bodyHtml }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.bodyHtml) }}
           />
 
           {/* Related */}

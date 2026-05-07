@@ -22,6 +22,7 @@ import {
   errorResponse,
   requireRole,
   ApiError,
+  logAudit,
 } from "@/lib/api-utils";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
@@ -120,23 +121,21 @@ export async function POST(
 
     // Audit
     try {
-      await prisma.auditLog.create({
-        data: {
-          userId: session.user.id,
-          action: "NEWS_SOURCE_SCRAPE_ONE",
-          entity: "news_source",
-          entityId: source.id,
-          detail: JSON.stringify({
-            sourceName: source.name,
-            url: data.url,
-            articleId: draft.articleId,
-            slug: draft.slug,
-            tokens: draft.tokens,
-            provider: draft.provider,
-            durationMs: Date.now() - started,
-          }),
-        },
-      });
+      await logAudit(
+        session.user.id,
+        "NEWS_SOURCE_SCRAPE_ONE",
+        "news_source",
+        source.id,
+        JSON.stringify({
+          sourceName: source.name,
+          url: data.url,
+          articleId: draft.articleId,
+          slug: draft.slug,
+          tokens: draft.tokens,
+          provider: draft.provider,
+          durationMs: Date.now() - started,
+        }),
+      );
     } catch {
       // swallow
     }

@@ -173,6 +173,7 @@ export default function TambahIklanPage() {
                         </button>
                       </div>
                       <div className="p-4 bg-[repeating-conic-gradient(#f0f1f3_0%_25%,#fff_0%_50%)] bg-[length:16px_16px] flex items-center justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded ad image URL, cannot whitelist all origins */}
                         <img src={formImageUrl} alt="Preview" className="max-w-full h-auto rounded-lg object-contain shadow-sm" style={{ maxHeight: 300 }} />
                       </div>
                       {currentSpec && (

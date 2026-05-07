@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   ApiError,
   errorResponse,
+  logAudit,
   requireAuth,
   successResponse,
 } from "@/lib/api-utils";
@@ -49,6 +50,8 @@ export async function PATCH(
       },
     });
 
+    await logAudit(session.user.id, "TIKTOK_SLOT_PATCH", "tiktok_content", params.id, `Patched slot ${params.slotId}`);
+
     return successResponse(updated);
   } catch (error) {
     return errorResponse(error);
@@ -80,6 +83,8 @@ export async function DELETE(
     await prisma.$transaction(
       remaining.map((s, idx) => prisma.tiktokMediaSlot.update({ where: { id: s.id }, data: { order: idx } })),
     );
+
+    await logAudit(session.user.id, "TIKTOK_SLOT_DELETE", "tiktok_content", params.id, `Deleted slot ${params.slotId}`);
 
     return successResponse({ deleted: true });
   } catch (error) {

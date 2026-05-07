@@ -23,7 +23,6 @@ const ANGLES: SorotanAngle[] = [
   "HUKUM",
   "EKONOMI",
   "PROYEKSI",
-  "FAQ",
 ];
 
 const ANGLE_LABEL: Record<SorotanAngle, string> = {
@@ -36,7 +35,6 @@ const ANGLE_LABEL: Record<SorotanAngle, string> = {
   HUKUM: "Sudut Hukum",
   EKONOMI: "Sudut Ekonomi",
   PROYEKSI: "Proyeksi",
-  FAQ: "Tanya Jawab",
 };
 
 const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
@@ -58,8 +56,6 @@ const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
     "Rangkum artikel berikut dari sudut EKONOMI — angka, transaksi, kerugian/keuntungan, sektor industri, dampak fiskal/moneter. Tulis 300–500 kata bahasa Indonesia. Hanya gunakan angka dan klaim ekonomi yang ada di artikel. Kalau artikel tidak punya sudut ekonomi langsung, fokus pada implikasi ekonomi tidak langsung dari peristiwa.",
   PROYEKSI:
     "Rangkum artikel berikut dari sudut PROYEKSI — apa yang mungkin terjadi setelah peristiwa ini, langkah selanjutnya, agenda publik, kemungkinan keputusan/sidang/regulasi berikutnya. Tulis 300–500 kata bahasa Indonesia. Tetap berbasis fakta artikel — proyeksi yang masuk akal saja, hindari spekulasi liar.",
-  FAQ:
-    "Susun FAQ singkat (5-7 pertanyaan) untuk pembaca yang baru tahu kasus ini, berbasis artikel berikut. Format: pertanyaan diawali dengan baris dengan tanda tanya, lalu jawaban 2-4 kalimat. Total 300-500 kata bahasa Indonesia. Pertanyaan yang umum: apa yang terjadi, siapa yang terlibat, kapan, di mana, mengapa, apa dampaknya, apa langkah selanjutnya. Jangan mengarang jawaban yang tidak ada di artikel.",
 };
 
 const SYSTEM_PROMPT =

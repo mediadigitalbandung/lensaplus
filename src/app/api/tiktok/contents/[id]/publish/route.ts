@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   ApiError,
   errorResponse,
+  logAudit,
   requireAuth,
 } from "@/lib/api-utils";
 import { canManageTiktok } from "@/lib/tiktok/specs";
@@ -35,6 +36,9 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 
     const exists = await prisma.tiktokContent.findUnique({ where: { id: params.id } });
     if (!exists) throw new ApiError("Konten tidak ditemukan", 404);
+
+    // Audit attempt even for stub — signals intent for compliance trail
+    await logAudit(session.user.id, "TIKTOK_PUBLISH_ATTEMPT", "tiktok_content", params.id, "Publish attempted (Phase 3 stub — 501)");
 
     return errorResponse(
       new ApiError(

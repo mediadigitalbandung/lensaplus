@@ -257,6 +257,7 @@ export default function RedaksiPanelPage() {
                 <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Foto</label>
                 {form.photo ? (
                   <div className="flex items-center gap-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded member photo URL, cannot whitelist all origins */}
                     <img src={form.photo} alt="Foto" className="h-16 w-16 rounded-full object-cover border border-border" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-txt-muted truncate">{form.photo}</p>
@@ -320,6 +321,7 @@ export default function RedaksiPanelPage() {
               <div className="flex items-center gap-4 rounded-[12px] border border-border bg-surface p-5">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-white overflow-hidden">
                   {form.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- user-uploaded member photo URL, cannot whitelist all origins
                     <img src={form.photo} alt={form.name || "Preview"} className="h-14 w-14 object-cover" />
                   ) : form.name ? (
                     form.name.charAt(0).toUpperCase()
@@ -356,6 +358,7 @@ export default function RedaksiPanelPage() {
                       >
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white overflow-hidden">
                           {m.photo ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- user-uploaded member photo URL, cannot whitelist all origins
                             <img src={m.photo} alt={m.name} className="h-7 w-7 object-cover" />
                           ) : (
                             m.name.charAt(0).toUpperCase()
@@ -400,6 +403,7 @@ export default function RedaksiPanelPage() {
               <GripVertical size={16} className="text-txt-muted shrink-0 hidden sm:block" />
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-white overflow-hidden">
                 {m.photo ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- user-uploaded member photo URL, cannot whitelist all origins
                   <img src={m.photo} alt={m.name} className="h-12 w-12 object-cover" />
                 ) : (
                   m.name.charAt(0).toUpperCase()

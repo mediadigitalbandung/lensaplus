@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   ApiError,
   errorResponse,
+  logAudit,
   requireAuth,
   successResponse,
 } from "@/lib/api-utils";
@@ -62,6 +63,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       },
     });
 
+    await logAudit(session.user.id, "TIKTOK_SLOT_ADD", "tiktok_content", params.id, `Added ${data.kind} slot`);
+
     return successResponse(slot, 201);
   } catch (error) {
     return errorResponse(error);
@@ -103,6 +106,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       where: { contentId: params.id },
       orderBy: { order: "asc" },
     });
+
+    await logAudit(session.user.id, "TIKTOK_SLOT_REORDER", "tiktok_content", params.id, `Reordered ${ordered.length} slots`);
+
     return successResponse(updated);
   } catch (error) {
     return errorResponse(error);

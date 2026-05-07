@@ -7,6 +7,7 @@ import { slotLabels, slotSpecs } from "./ad-constants";
 
 function AdContent({ type, imageUrl, htmlCode, height }: { type: string; imageUrl: string; htmlCode: string; height: number }) {
   if (type !== "HTML" && imageUrl) {
+    // eslint-disable-next-line @next/next/no-img-element -- user-uploaded ad image, URL unknown at build time
     return <img src={imageUrl} alt="Preview" className="max-w-full h-auto object-contain" style={{ maxHeight: height }} />;
   }
   if (type === "HTML" && htmlCode) {

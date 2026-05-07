@@ -23,6 +23,7 @@ import {
   errorResponse,
   requireRole,
   ApiError,
+  logAudit,
 } from "@/lib/api-utils";
 import { fetchListing } from "@/lib/scraper/fetch-listing";
 import { crawlListings } from "@/lib/scraper/crawl-listings";
@@ -187,22 +188,20 @@ export async function POST(
 
     // 5. Audit log (best-effort)
     try {
-      await prisma.auditLog.create({
-        data: {
-          userId: session.user.id,
-          action: "NEWS_SOURCE_SCRAPE",
-          entity: "news_source",
-          entityId: source.id,
-          detail: JSON.stringify({
-            sourceName: source.name,
-            listingUrl: source.listingUrl,
-            attempted: results.length,
-            ok: successes,
-            failed: results.length - successes,
-            durationMs: Date.now() - started,
-          }),
-        },
-      });
+      await logAudit(
+        session.user.id,
+        "NEWS_SOURCE_SCRAPE",
+        "news_source",
+        source.id,
+        JSON.stringify({
+          sourceName: source.name,
+          listingUrl: source.listingUrl,
+          attempted: results.length,
+          ok: successes,
+          failed: results.length - successes,
+          durationMs: Date.now() - started,
+        }),
+      );
     } catch {
       // swallow
     }

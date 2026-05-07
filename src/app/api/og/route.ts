@@ -21,7 +21,13 @@ import path from "path";
 import fs from "fs/promises";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
+// Output is fully determined by the `slug` query string and Cloudflare/CDN
+// caches the response (Cache-Control: public, max-age=31536000, immutable).
+// Dropping force-dynamic lets Next.js skip its dynamic-rendering machinery
+// when the response is already memoised at the edge — origin sees only
+// uncached cold-starts (article changes invalidate via og: URL versioning).
+export const dynamic = "force-static";
+export const revalidate = false; // immutable per response Cache-Control header
 export const runtime = "nodejs";
 
 const WIDTH = 1200;

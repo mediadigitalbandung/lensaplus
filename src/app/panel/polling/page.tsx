@@ -265,6 +265,7 @@ export default function PollingPanelPage() {
                   <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Gambar (opsional)</label>
                   {formImage ? (
                     <div className="relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded poll image URL, cannot whitelist all origins */}
                       <img src={formImage} alt="" className="w-full h-24 object-cover rounded-lg border border-border" />
                       <button type="button" onClick={() => setFormImage("")} className="absolute top-1.5 right-1.5 p-1 rounded-md bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"><X size={14} /></button>
                     </div>
@@ -348,6 +349,7 @@ export default function PollingPanelPage() {
               <div className="rounded-xl border border-border bg-surface-secondary overflow-hidden">
                 {formImage && (
                   <div className="w-full aspect-[2/1] bg-surface-tertiary overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded poll image URL, cannot whitelist all origins */}
                     <img src={formImage} alt="" className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -393,6 +395,7 @@ export default function PollingPanelPage() {
               <div className="flex items-start gap-4">
                 {poll.image && (
                   <div className="shrink-0 w-20 h-14 rounded-lg overflow-hidden bg-surface-tertiary">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded poll image URL, cannot whitelist all origins */}
                     <img src={poll.image} alt="" className="w-full h-full object-cover" />
                   </div>
                 )}

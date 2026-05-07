@@ -6,8 +6,13 @@
 
 import { prisma } from "@/lib/prisma";
 
+// Google News sitemap MUST reflect the last 48-hour publishing window in
+// near-real-time (window slides every minute). Keep `force-dynamic` so each
+// request runs the query; CDN caching is governed by the response
+// Cache-Control header (public, max-age=300, s-maxage=300) below.
+// Note: Next.js ignores `revalidate` when `dynamic = "force-dynamic"`, so
+// declaring both was redundant — removed to avoid cosmetic conflict.
 export const dynamic = "force-dynamic";
-export const revalidate = 300; // 5 minutes
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";

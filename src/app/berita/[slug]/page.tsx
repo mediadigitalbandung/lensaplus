@@ -1,6 +1,7 @@
 export const revalidate = 60;
 
 import Link from "next/link";
+import Image from "next/image";
 import { Metadata } from "next";
 import {
   Flag,
@@ -447,7 +448,7 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
             <article className="lg:col-span-2">
               {/* Print-only header */}
               <div className="print-header hidden">
-                <img src="/kartawarta-icon.png" alt="Kartawarta" />
+                <Image src="/kartawarta-icon.png" alt="Kartawarta" width={40} height={40} />
                 <div>
                   <div className="print-title">Kartawarta</div>
                   <div className="print-subtitle">Media Hukum Digital Terpercaya — kartawarta.com</div>

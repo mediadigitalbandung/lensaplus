@@ -85,7 +85,20 @@ export async function POST(req: NextRequest) {
     });
     const reportPurged = reportResult.count;
 
-    const summary = { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged };
+    // 5. Anonymize NewsletterSubscriber.signupIp after 90 days for confirmed
+    //    subscribers. IP is only needed for spam/fraud audit during sign-up;
+    //    once confirmed, it no longer serves a retention purpose.
+    const subscriberIpResult = await prisma.newsletterSubscriber.updateMany({
+      where: {
+        confirmedAt: { not: null },
+        signupIp: { not: null },
+        createdAt: { lt: subDays(now, 90) },
+      },
+      data: { signupIp: null },
+    });
+    const subscriberIpAnonymized = subscriberIpResult.count;
+
+    const summary = { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged, subscriberIpAnonymized };
 
     // Audit the purge itself using a system sentinel. The logAudit helper requires
     // a valid userId FK — find the first SUPER_ADMIN to attach it to. If none

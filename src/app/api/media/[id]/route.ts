@@ -6,6 +6,7 @@ import {
   errorResponse,
   requireAuth,
   ApiError,
+  logAudit,
 } from "@/lib/api-utils";
 
 const updateMediaSchema = z.object({
@@ -43,6 +44,8 @@ export async function PATCH(
         credit: data.credit?.trim() || null,
       },
     });
+
+    await logAudit(session.user.id, "MEDIA_UPDATE", "media", params.id, `Updated media metadata`);
 
     return successResponse(updated);
   } catch (error) {

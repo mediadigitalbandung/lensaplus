@@ -36,7 +36,7 @@ import { prisma } from "@/lib/prisma";
 import { callAI } from "@/lib/ai-client";
 import { slugify } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
+import { verifyCronSecret, errorResponse, logAudit } from "@/lib/api-utils";
 import { trackCron } from "@/lib/cron-tracker";
 import { checkArticle } from "@/lib/ai-guardrail";
 import { tryAdvisoryLock, releaseAdvisoryLock } from "@/lib/cron-lock";
@@ -373,27 +373,18 @@ Format output WAJIB JSON valid (tanpa teks lain, tanpa code-fence):
 
     // Log to audit so editors can review
     try {
-      const admin = await prisma.user.findFirst({
-        where: { role: "SUPER_ADMIN" },
-        orderBy: { createdAt: "asc" },
-        select: { id: true },
-      });
-      if (admin) {
-        await prisma.auditLog.create({
-          data: {
-            userId: admin.id,
-            action: "CRON_AUTO_ARTICLE_GUARDRAIL_BLOCK",
-            entity: "article",
-            entityId: "N/A",
-            detail: JSON.stringify({
-              keyword: kw.keyword,
-              sourceId: source.id,
-              reason: "fabricated-quote",
-              details: criticalDetails,
-            }),
-          },
-        });
-      }
+      await logAudit(
+        null,
+        "CRON_AUTO_ARTICLE_GUARDRAIL_BLOCK",
+        "article",
+        "N/A",
+        JSON.stringify({
+          keyword: kw.keyword,
+          sourceId: source.id,
+          reason: "fabricated-quote",
+          details: criticalDetails,
+        }),
+      );
     } catch { /* swallow */ }
 
     return {
@@ -474,24 +465,22 @@ Format output WAJIB JSON valid (tanpa teks lain, tanpa code-fence):
 
   // Audit log (best-effort)
   try {
-    await prisma.auditLog.create({
-      data: {
-        userId: admin.id,
-        action: "CRON_AUTO_ARTICLE",
-        entity: "article",
-        entityId: article.id,
-        detail: JSON.stringify({
-          keyword: kw.keyword,
-          provider: aiResult.provider,
-          tokens: aiResult.totalTokens,
-          sourceId: source.id,
-          sourceSlug: source.slug,
-          mode: "paraphrase",
-          guardrailWarnings: guardrail.warnings.length,
-          guardrailPass: guardrail.pass,
-        }),
-      },
-    });
+    await logAudit(
+      null,
+      "CRON_AUTO_ARTICLE",
+      "article",
+      article.id,
+      JSON.stringify({
+        keyword: kw.keyword,
+        provider: aiResult.provider,
+        tokens: aiResult.totalTokens,
+        sourceId: source.id,
+        sourceSlug: source.slug,
+        mode: "paraphrase",
+        guardrailWarnings: guardrail.warnings.length,
+        guardrailPass: guardrail.pass,
+      }),
+    );
   } catch {
     /* swallow */
   }

@@ -48,10 +48,12 @@ export async function PUT(
       }
     }
 
-    // Hash password if provided
+    // Hash password if provided; also invalidate active sessions so the
+    // target user is forced to re-authenticate with the new password.
     const updateData: Record<string, unknown> = { ...data };
     if (data.password) {
       updateData.password = await bcrypt.hash(data.password, 12);
+      updateData.activeSessionId = null;
     }
 
     const updated = await prisma.user.update({

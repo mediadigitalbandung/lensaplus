@@ -13,7 +13,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { successResponse, errorResponse, verifyCronSecret } from "@/lib/api-utils";
+import { successResponse, errorResponse, verifyCronSecret, logAudit } from "@/lib/api-utils";
 import { sendEmail } from "@/lib/email";
 import { trackCron } from "@/lib/cron-tracker";
 
@@ -127,6 +127,19 @@ async function handler(req: NextRequest) {
     } catch (e) {
       failures.push(`${sub.email}: ${e instanceof Error ? e.message : String(e)}`);
     }
+  }
+
+  // Audit log (best-effort)
+  try {
+    await logAudit(
+      null,
+      "CRON_NEWSLETTER_DIGEST",
+      "newsletter_subscriber",
+      "system",
+      JSON.stringify({ sent, candidates: subscribers.length, articleCount: articles.length, failures: failures.length }),
+    );
+  } catch {
+    // swallow
   }
 
   return successResponse({

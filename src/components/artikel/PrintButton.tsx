@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Printer, FileText, X } from "lucide-react";
 
 export default function PrintButton() {
@@ -122,7 +123,7 @@ function PrintPreviewContent() {
     <div style={{ fontFamily: "Georgia, serif", color: "#1C1C1E" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, borderBottom: "2px solid #002045", paddingBottom: 12, marginBottom: 20 }}>
-        <img src="/kartawarta-icon.png" alt="Kartawarta" style={{ width: 40, height: 40 }} />
+        <Image src="/kartawarta-icon.png" alt="Kartawarta" width={40} height={40} />
         <div>
           <div style={{ fontSize: 16, fontWeight: 800 }}>Kartawarta</div>
           <div style={{ fontSize: 9, color: "#6B7280" }}>Media Hukum Digital Terpercaya &mdash; kartawarta.com</div>

@@ -37,6 +37,7 @@ import {
   ArrowDownToLine,
 } from "lucide-react";
 import { stripHtml, downloadTextFile, exportArticlePdf } from "@/lib/export-utils";
+import DOMPurify from "isomorphic-dompurify";
 
 const RichTextEditor = dynamic(
   () => import("@/components/editor/RichTextEditor"),
@@ -1768,7 +1769,8 @@ export default function EditArticlePage() {
             )}
             <div className="rounded-[12px] border border-border bg-surface p-5">
               <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Konten</label>
-              <div className="prose prose-sm max-w-none text-txt-primary text-justify" dangerouslySetInnerHTML={{ __html: content }} />
+              {/* Defense-in-depth: sanitize live editor state before preview render */}
+              <div className="prose prose-sm max-w-none text-txt-primary text-justify" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
             </div>
           </div>
         )}
@@ -2269,7 +2271,8 @@ export default function EditArticlePage() {
           )}
           <div className="rounded-[12px] border border-border bg-surface p-5">
             <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Konten</label>
-            <div className="prose prose-sm max-w-none text-txt-primary text-justify" dangerouslySetInnerHTML={{ __html: content }} />
+            {/* Defense-in-depth: sanitize live editor state before preview render */}
+            <div className="prose prose-sm max-w-none text-txt-primary text-justify" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
           </div>
         </div>
       )}

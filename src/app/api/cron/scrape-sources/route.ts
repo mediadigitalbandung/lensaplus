@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
+import { verifyCronSecret, errorResponse, logAudit } from "@/lib/api-utils";
 import { trackCron } from "@/lib/cron-tracker";
 import { fetchListing } from "@/lib/scraper/fetch-listing";
 import { crawlListings } from "@/lib/scraper/crawl-listings";
@@ -211,19 +211,17 @@ async function handler(req: NextRequest) {
 
     // Audit log
     try {
-      await prisma.auditLog.create({
-        data: {
-          userId: admin.id,
-          action: "CRON_SCRAPE_SOURCES",
-          entity: "news_source",
-          entityId: "system",
-          detail: JSON.stringify({
-            eligibleCount: eligible.length,
-            totalDraftsCreated: totalOk,
-            durationMs: Date.now() - started,
-          }),
-        },
-      });
+      await logAudit(
+        null,
+        "CRON_SCRAPE_SOURCES",
+        "news_source",
+        "system",
+        JSON.stringify({
+          eligibleCount: eligible.length,
+          totalDraftsCreated: totalOk,
+          durationMs: Date.now() - started,
+        }),
+      );
     } catch {
       // swallow
     }

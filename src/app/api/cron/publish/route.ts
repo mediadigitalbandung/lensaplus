@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyArticleStatusChange } from "@/lib/notifications";
 import { sendArticlePublishedEmail } from "@/lib/email";
-import { successResponse, errorResponse, verifyCronSecret } from "@/lib/api-utils";
+import { successResponse, errorResponse, verifyCronSecret, logAudit } from "@/lib/api-utils";
 import { onArticlePublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
 import { recordCronRun } from "@/lib/cron-tracker";
 import * as Sentry from "@sentry/nextjs";
@@ -151,6 +151,24 @@ async function handler(request: NextRequest) {
         );
       }
       published.push(article.title);
+    }
+
+    // Audit log batch publish (best-effort — cron actor uses null userId)
+    try {
+      await logAudit(
+        null,
+        "CRON_BATCH_PUBLISH",
+        "article",
+        "system",
+        JSON.stringify({
+          published: published.length,
+          errors: errors.length,
+          titles: published.slice(0, 5),
+          durationMs: Date.now() - started,
+        }),
+      );
+    } catch {
+      // swallow
     }
 
     await recordCronRun("publish", {
