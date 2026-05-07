@@ -408,7 +408,10 @@ export async function PUT(
           },
         });
       }
-      onArticlePublished(updated.slug, updated.id);
+      // AWAITED so cache invalidation + revalidatePath finish before the
+      // PUT response returns — fire-and-forget here causes a window where
+      // the client refreshes the homepage and still sees stale data.
+      await onArticlePublished(updated.slug, updated.id);
 
       return successResponse(updated);
     }
@@ -575,7 +578,8 @@ export async function PUT(
             },
           });
         }
-        onArticlePublished(updated.slug, updated.id);
+        // AWAITED — see comment in editor publish branch.
+        await onArticlePublished(updated.slug, updated.id);
 
         return successResponse(updated);
       }

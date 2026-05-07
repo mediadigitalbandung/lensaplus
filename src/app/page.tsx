@@ -32,11 +32,13 @@ function timeAgo(date: Date | string | null): string {
 }
 
 export default async function HomePage() {
-  // 60s in-process cache — same TTL as the page-level revalidate. Cuts the
-  // 3 large queries down from ~20 hits/min during a traffic burst to 1.
-  // Invalidated by onArticlePublished() (see src/lib/seo-auto.ts).
+  // 30s in-process cache — matches `export const revalidate = 30` so we
+  // never out-stale the page itself. Articles list TTL is the bottleneck
+  // for "Berita Terkini" freshness; trending changes slowly so 60s is fine.
+  // Cache is invalidated immediately by onArticlePublished() at publish
+  // time (see src/lib/seo-auto.ts).
   const [articles, categories, trendingArticles] = await Promise.all([
-    getCached("home:articles:60", 60_000, () =>
+    getCached("home:articles:30", 30_000, () =>
       prisma.article.findMany({
         where: { status: "PUBLISHED" },
         include: { author: true, category: true },
