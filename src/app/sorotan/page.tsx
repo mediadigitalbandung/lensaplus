@@ -6,34 +6,75 @@ import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
-export const metadata: Metadata = {
-  title: "Sorotan",
-  description:
-    "Sorotan — ringkasan sudut pandang kronologi, analisis, dan dampak atas berita hukum pilihan Kartawarta.",
-  openGraph: {
-    title: "Sorotan - Kartawarta",
+// Pagination + angle filter canonical: page 1 tanpa filter → "/sorotan",
+// page>1 → "/sorotan?page=N", angle filter → "/sorotan?angle=X". Filter
+// + page kombinasi self-canonical supaya Google ngerti varian ini halaman
+// kontennya genuinely beda (subset by angle), bukan duplicate.
+export async function generateMetadata({
+  searchParams: searchParamsPromise,
+}: PageProps): Promise<Metadata> {
+  const searchParams = await searchParamsPromise;
+  const page = Math.max(1, parseInt(searchParams.page || "1"));
+  const angleParam = searchParams.angle?.toUpperCase();
+  const angleKey = angleParam && Object.prototype.hasOwnProperty.call(ANGLE_LABEL, angleParam) ? angleParam : null;
+  const angleLabel = angleKey ? ANGLE_LABEL[angleKey] : null;
+
+  const qs = new URLSearchParams();
+  if (angleKey) qs.set("angle", angleKey);
+  if (page > 1) qs.set("page", String(page));
+  const canonical = qs.toString() ? `/sorotan?${qs.toString()}` : "/sorotan";
+
+  const titleParts = ["Sorotan"];
+  if (angleLabel) titleParts.push(angleLabel);
+  if (page > 1) titleParts.push(`Halaman ${page}`);
+  const title = titleParts.join(" — ");
+
+  return {
+    title,
     description:
-      "Ringkasan sudut pandang kronologi, analisis, dan dampak atas berita hukum pilihan Kartawarta.",
-    type: "website",
-  },
-  alternates: {
-    canonical: "/sorotan",
-  },
-};
+      "Sorotan — sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita hukum pilihan Kartawarta.",
+    openGraph: {
+      title: `${title} - Kartawarta`,
+      description:
+        "Sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita hukum pilihan Kartawarta.",
+      type: "website",
+    },
+    alternates: { canonical },
+  };
+}
 
 const PER_PAGE = 12;
 
+// Mirror keys di src/lib/seo/sorotan-generator.ts ANGLES (10 angle aktif).
+// Generator nulis 9 angle baru + FAQ legacy untuk backward-compat.
+// Kalau angle baru ditambahkan ke generator, sync di sini juga.
 const ANGLE_LABEL: Record<string, string> = {
   KRONOLOGI: "Kronologi",
   ANALISIS: "Analisis",
   DAMPAK: "Dampak",
+  LATAR_BELAKANG: "Latar Belakang",
+  PROFIL: "Profil Tokoh",
+  REAKSI: "Reaksi",
+  HUKUM: "Sudut Hukum",
+  EKONOMI: "Sudut Ekonomi",
+  PROYEKSI: "Proyeksi",
+  FAQ: "Tanya Jawab",
 };
 
 const ANGLE_COLOR: Record<string, string> = {
   KRONOLOGI: "bg-blue-50 text-blue-700 border-blue-200",
   ANALISIS: "bg-amber-50 text-amber-700 border-amber-200",
   DAMPAK: "bg-rose-50 text-rose-700 border-rose-200",
+  LATAR_BELAKANG: "bg-purple-50 text-purple-700 border-purple-200",
+  PROFIL: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  REAKSI: "bg-pink-50 text-pink-700 border-pink-200",
+  HUKUM: "bg-primary-light text-primary border-primary/20",
+  EKONOMI: "bg-orange-50 text-orange-700 border-orange-200",
+  PROYEKSI: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  FAQ: "bg-indigo-50 text-indigo-700 border-indigo-200",
 };
+
+const VALID_ANGLES = Object.keys(ANGLE_LABEL) as (keyof typeof ANGLE_LABEL)[];
 
 interface PageProps {
   searchParams: Promise<{
@@ -47,11 +88,15 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
   const page = Math.max(1, parseInt(searchParams.page || "1"));
   const angleParam = searchParams.angle?.toUpperCase();
   const validAngle =
-    angleParam && ["KRONOLOGI", "ANALISIS", "DAMPAK"].includes(angleParam)
-      ? (angleParam as "KRONOLOGI" | "ANALISIS" | "DAMPAK")
+    angleParam && (VALID_ANGLES as string[]).includes(angleParam)
+      ? (angleParam as (typeof VALID_ANGLES)[number])
       : null;
 
-  const where = validAngle ? { angle: validAngle } : {};
+  // Cast diperlukan karena Prisma SorotanAngle enum strict-typed dan validAngle
+  // sudah kita verifikasi sebagai member set yang valid.
+  const where = validAngle
+    ? ({ angle: validAngle } as { angle: (typeof VALID_ANGLES)[number] })
+    : {};
 
   const [sorotan, total] = await Promise.all([
     prisma.sorotan.findMany({

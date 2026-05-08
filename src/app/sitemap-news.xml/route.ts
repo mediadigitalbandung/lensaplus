@@ -31,15 +31,21 @@ function escapeXml(input: string): string {
 export async function GET() {
   const since = new Date(Date.now() - TWO_DAYS_MS);
 
+  // Google News rejects entries without an associated image. Filter at the
+  // query level so a flooding of publish-without-image articles doesn't
+  // contaminate the news sitemap with entries Google will silently drop
+  // (and that drag down our news submission credibility ratio).
   const articles = await prisma.article.findMany({
     where: {
       status: "PUBLISHED",
       publishedAt: { gte: since },
+      featuredImage: { not: null },
     },
     select: {
       slug: true,
       title: true,
       publishedAt: true,
+      featuredImage: true,
       tags: { select: { name: true } },
     },
     orderBy: { publishedAt: "desc" },
@@ -51,6 +57,10 @@ export async function GET() {
     .map((a) => {
       const loc = `${SITE_URL}/berita/${a.slug}`;
       const keywords = a.tags.map((t) => t.name).join(", ");
+      // featuredImage may be relative (/uploads/...) or absolute. Normalize.
+      const img = a.featuredImage!.startsWith("http")
+        ? a.featuredImage!
+        : `${SITE_URL}${a.featuredImage!.startsWith("/") ? "" : "/"}${a.featuredImage}`;
       return `  <url>
     <loc>${escapeXml(loc)}</loc>
     <news:news>
@@ -62,13 +72,18 @@ export async function GET() {
       <news:title>${escapeXml(a.title)}</news:title>${keywords ? `
       <news:keywords>${escapeXml(keywords)}</news:keywords>` : ""}
     </news:news>
+    <image:image>
+      <image:loc>${escapeXml(img)}</image:loc>
+      <image:title>${escapeXml(a.title)}</image:title>
+    </image:image>
   </url>`;
     })
     .join("\n");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${urls}
 </urlset>`;
 

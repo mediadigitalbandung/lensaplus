@@ -111,8 +111,12 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
   const sorotanUrl = `${appUrl}/sorotan/${sorotan.slug}`;
   const angleLabel = ANGLE_LABEL[sorotan.angle] ?? sorotan.angle;
 
-  // JSON-LD
-  const articleLd = articleJsonLd(
+  // JSON-LD. Sorotan adalah re-framing dari artikel utama (long-tail SEO),
+  // jadi WAJIB declare isBasedOn → article asli supaya Google ngerti relasi
+  // dan tidak nge-flag thin/duplicate content. Plus mainEntityOfPage = sorotan
+  // URL (self) supaya Google tetap bisa rank halaman sorotan untuk query
+  // long-tail spesifik (e.g. "kronologi kasus X").
+  const articleLdBase = articleJsonLd(
     {
       title: sorotan.title,
       slug: sorotan.slug,
@@ -128,12 +132,25 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
       },
     },
     `/sorotan/${sorotan.slug}`,
-  );
+  ) as Record<string, unknown>;
+  const articleLd = {
+    ...articleLdBase,
+    isBasedOn: `${appUrl}/berita/${article.slug}`,
+    about: {
+      "@type": "NewsArticle",
+      headline: article.title,
+      url: `${appUrl}/berita/${article.slug}`,
+      ...(article.publishedAt && { datePublished: article.publishedAt.toISOString() }),
+    },
+  };
 
+  // Breadcrumb taut sorotan ke artikel induk supaya search engine + reader
+  // dapat path balik yang jelas: Home → Berita → Article → Sorotan-angle.
   const breadcrumbLd = breadcrumbJsonLd([
     { name: "Beranda", url: "/" },
-    { name: "Sorotan", url: "/sorotan" },
-    { name: sorotan.title, url: `/sorotan/${sorotan.slug}` },
+    { name: article.category.name, url: `/kategori/${article.category.slug}` },
+    { name: article.title, url: `/berita/${article.slug}` },
+    { name: angleLabel, url: `/sorotan/${sorotan.slug}` },
   ]);
 
   const orgLd = organizationJsonLd();

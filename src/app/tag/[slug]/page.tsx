@@ -25,23 +25,29 @@ const TAG_META_OVERRIDES: Record<string, { title: string; description: string }>
   },
 };
 
-export async function generateMetadata({ params: paramsPromise }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise, searchParams: searchParamsPromise }: PageProps): Promise<Metadata> {
   const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
+  const page = Math.max(1, parseInt(searchParams.page || "1"));
   const tag = await prisma.tag.findUnique({ where: { slug: params.slug } });
   if (!tag) return { title: "Tag Tidak Ditemukan" };
   const override = TAG_META_OVERRIDES[params.slug];
   const articleCount = await prisma.article.count({
     where: { status: "PUBLISHED", tags: { some: { slug: params.slug } } },
   });
-  const title = override?.title || `Berita ${tag.name} Terbaru`;
+  const baseTitle = override?.title || `Berita ${tag.name} Terbaru`;
+  const title = page > 1 ? `${baseTitle} — Halaman ${page}` : baseTitle;
   const description =
     override?.description ||
     `${articleCount} artikel terbaru tentang ${tag.name} dari Kartawarta — liputan, analisis, dan perkembangan terkini.`;
+  // Pagination self-canonical so Google indexes page 2..N articles instead of
+  // collapsing every paginated view onto page 1.
+  const canonical = page > 1 ? `/tag/${params.slug}?page=${page}` : `/tag/${params.slug}`;
   return {
     title,
     description,
     openGraph: { title: `${title} — Kartawarta`, description, type: "website" },
-    alternates: { canonical: `/tag/${params.slug}` },
+    alternates: { canonical },
   };
 }
 

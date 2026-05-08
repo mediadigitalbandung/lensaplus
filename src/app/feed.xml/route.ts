@@ -16,7 +16,17 @@ export async function GET() {
 
   const articles = await prisma.article.findMany({
     where: { status: "PUBLISHED" },
-    include: { author: true, category: true },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      excerpt: true,
+      content: true,
+      featuredImage: true,
+      publishedAt: true,
+      author: { select: { name: true } },
+      category: { select: { name: true } },
+    },
     orderBy: { publishedAt: "desc" },
     take: 30,
   });
@@ -34,7 +44,23 @@ export async function GET() {
       const pubDate = a.publishedAt
         ? new Date(a.publishedAt).toUTCString()
         : new Date().toUTCString();
-      const contentEncoded = a.excerpt || "";
+      // <content:encoded> per RSS 2.0 + content module spec carries the full
+      // article body so feed readers (Feedly, Inoreader, NewsBlur) can show
+      // the article inline. Falling back to excerpt makes the feed feel
+      // truncated and pushes readers off-platform — defeats the point of
+      // publishing an RSS feed.
+      const contentEncoded = a.content || a.excerpt || "";
+      // <enclosure> for the cover image gives podcast-style feed clients +
+      // some news aggregators a thumbnail to display. featuredImage may be
+      // relative — normalize before emitting.
+      const imageAbs = a.featuredImage
+        ? a.featuredImage.startsWith("http")
+          ? a.featuredImage
+          : `${siteUrl}${a.featuredImage.startsWith("/") ? "" : "/"}${a.featuredImage}`
+        : null;
+      const enclosure = imageAbs
+        ? `\n      <enclosure url="${escapeXml(imageAbs)}" type="image/jpeg" />`
+        : "";
       return `    <item>
       <title>${escapeXml(a.title)}</title>
       <link>${link}</link>
@@ -43,7 +69,7 @@ export async function GET() {
       <pubDate>${pubDate}</pubDate>
       <guid isPermaLink="false">${a.id}</guid>
       <category>${escapeXml(a.category.name)}</category>
-      <author>noreply@kartawarta.com (${escapeXml(a.author.name)})</author>
+      <author>noreply@kartawarta.com (${escapeXml(a.author.name)})</author>${enclosure}
     </item>`;
     })
     .join("\n");

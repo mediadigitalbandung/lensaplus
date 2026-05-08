@@ -7,24 +7,6 @@ import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
-export const metadata: Metadata = {
-  title: "Semua Berita",
-  description:
-    "Daftar berita hukum terbaru dari Kartawarta — putusan pengadilan, regulasi, advokasi, dan kasus hukum di Bandung & Jawa Barat.",
-  openGraph: {
-    title: "Semua Berita | Kartawarta",
-    description:
-      "Daftar berita hukum terbaru dari Kartawarta — putusan pengadilan, regulasi, advokasi, dan kasus hukum di Bandung & Jawa Barat.",
-    type: "website",
-    locale: "id_ID",
-    siteName: "Kartawarta",
-    images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
-  },
-  alternates: {
-    canonical: "/berita",
-  },
-};
-
 const PER_PAGE = 12;
 
 interface PageProps {
@@ -34,6 +16,35 @@ interface PageProps {
     category?: string;
     q?: string;
   }>;
+}
+
+// Pagination canonical: page 1 → "/berita", page N>1 → "/berita?page=N".
+// Filter params (sort/category/q) tidak masuk canonical karena variants ini
+// dianggap soft-duplicate dari halaman base — kita biarkan Google pilih
+// canonical sendiri via signal lain (internal links).
+export async function generateMetadata({
+  searchParams: searchParamsPromise,
+}: PageProps): Promise<Metadata> {
+  const searchParams = await searchParamsPromise;
+  const page = Math.max(1, parseInt(searchParams.page || "1"));
+  const canonical = page > 1 ? `/berita?page=${page}` : "/berita";
+  const titleSuffix = page > 1 ? ` — Halaman ${page}` : "";
+
+  return {
+    title: `Semua Berita${titleSuffix}`,
+    description:
+      "Daftar berita hukum terbaru dari Kartawarta — putusan pengadilan, regulasi, advokasi, dan kasus hukum di Bandung & Jawa Barat.",
+    openGraph: {
+      title: `Semua Berita${titleSuffix} | Kartawarta`,
+      description:
+        "Daftar berita hukum terbaru dari Kartawarta — putusan pengadilan, regulasi, advokasi, dan kasus hukum di Bandung & Jawa Barat.",
+      type: "website",
+      locale: "id_ID",
+      siteName: "Kartawarta",
+      images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
+    },
+    alternates: { canonical },
+  };
 }
 
 export default async function BeritaPage({ searchParams: searchParamsPromise }: PageProps) {
