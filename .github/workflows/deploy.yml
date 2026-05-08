@@ -82,87 +82,75 @@ jobs:
               || { echo "deploy-vps.sh failed to start"; cat /tmp/kartawarta-deploy.log; exit 1; }
             echo "deploy-vps.sh running in background"
 
-      # ── Step 2: Poll for completion via short, individual SSH calls ──
-      # Each call returns in under a second (just a `cat` of the status
-      # file), so the action wrapper never accumulates output and never
-      # hits the runner's resource limits. Total wallclock budget: ~14 min.
+      # ── Step 2: Poll for completion via appleboy/ssh-action ──
+      # We loop INSIDE one SSH session. Each iteration only emits a few
+      # bytes of `cat` output (PENDING/OK/FAIL), so the cumulative output
+      # over the full 14-min budget is well under 1 KB — no OOM risk for
+      # the action wrapper, unlike the original synchronous build that
+      # streamed hundreds of KB of warnings.
       - name: Wait for deploy to finish
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-        shell: bash
-        run: |
-          set -u
-          mkdir -p ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > $HOME/.ssh/id_deploy
-          chmod 600 $HOME/.ssh/id_deploy
-          ssh-keyscan -p 22 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          command_timeout: 15m
+          script: |
+            STATUS_FILE=/tmp/kartawarta-deploy-status
+            LOG_FILE=/tmp/kartawarta-deploy.log
 
-          SSH_OPTS="-i $HOME/.ssh/id_deploy -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15"
+            for i in $(seq 1 84); do
+              if [ -f "$STATUS_FILE" ]; then
+                STATUS=$(cat "$STATUS_FILE")
+                case "$STATUS" in
+                  OK)
+                    echo "Deploy succeeded after ${i} polls"
+                    echo "─── deploy log (last 30 lines) ───"
+                    tail -n 30 "$LOG_FILE" || true
+                    exit 0
+                    ;;
+                  FAIL*)
+                    echo "Deploy failed: $STATUS"
+                    echo "─── deploy log (last 80 lines) ───"
+                    tail -n 80 "$LOG_FILE" || true
+                    exit 1
+                    ;;
+                esac
+              fi
 
-          # Poll for ~14 min (84 × 10s). Build typically finishes in 4–5 min.
-          for i in $(seq 1 84); do
-            STATUS=$(ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" \
-              'cat /tmp/kartawarta-deploy-status 2>/dev/null || echo PENDING' 2>/dev/null \
-              || echo SSH_ERR)
-
-            case "$STATUS" in
-              OK)
-                echo "::notice::Deploy succeeded after ${i} polls"
-                ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" \
-                  'echo "─── deploy log (last 30 lines) ───"; tail -n 30 /tmp/kartawarta-deploy.log' \
-                  || true
-                rm -f $HOME/.ssh/id_deploy
-                exit 0
-                ;;
-              FAIL*)
-                echo "::error::Deploy failed: $STATUS"
-                ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" \
-                  'echo "─── deploy log (last 80 lines) ───"; tail -n 80 /tmp/kartawarta-deploy.log' \
-                  || true
-                rm -f $HOME/.ssh/id_deploy
-                exit 1
-                ;;
-              SSH_ERR)
-                # Transient — VPS may be momentarily unreachable. Don't fail.
-                echo "ssh transient error on poll ${i}, retrying"
-                ;;
-              *)
-                # Verify the deploy is still alive; if not, fail fast.
-                ALIVE=$(ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" \
-                  'pgrep -f scripts/deploy-vps.sh > /dev/null && echo YES || echo NO' 2>/dev/null \
-                  || echo SSH_ERR)
-                if [ "$ALIVE" = "NO" ]; then
-                  # Re-check status — the script may have just written it.
-                  sleep 1
-                  FINAL=$(ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" \
-                    'cat /tmp/kartawarta-deploy-status 2>/dev/null || echo MISSING' 2>/dev/null \
-                    || echo SSH_ERR)
-                  if [ "$FINAL" = "OK" ]; then
-                    echo "::notice::Deploy succeeded (caught at exit)"
-                    rm -f $HOME/.ssh/id_deploy
+              # No status file yet — ensure the deploy script is still alive.
+              if ! pgrep -f scripts/deploy-vps.sh > /dev/null; then
+                # Process gone but no status file means it died unexpectedly.
+                # Wait a heartbeat in case status was just written.
+                sleep 1
+                if [ -f "$STATUS_FILE" ]; then
+                  STATUS=$(cat "$STATUS_FILE")
+                  if [ "$STATUS" = "OK" ]; then
+                    echo "Deploy succeeded (caught at exit)"
                     exit 0
                   fi
-                  echo "::error::deploy-vps.sh exited without writing OK status (final='$FINAL')"
-                  ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" \
-                    'echo "─── deploy log (last 80 lines) ───"; tail -n 80 /tmp/kartawarta-deploy.log' \
-                    || true
-                  rm -f $HOME/.ssh/id_deploy
+                  echo "Deploy failed: $STATUS"
+                  echo "─── deploy log (last 80 lines) ───"
+                  tail -n 80 "$LOG_FILE" || true
                   exit 1
                 fi
-                echo "poll ${i}: still building..."
-                ;;
-            esac
-            sleep 10
-          done
+                echo "deploy-vps.sh exited without writing status"
+                echo "─── deploy log (last 80 lines) ───"
+                tail -n 80 "$LOG_FILE" || true
+                exit 1
+              fi
 
-          echo "::error::Deploy timed out after ~14 min"
-          ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" \
-            'echo "─── deploy log (last 80 lines) ───"; tail -n 80 /tmp/kartawarta-deploy.log' \
-            || true
-          rm -f $HOME/.ssh/id_deploy
-          exit 1
+              # Don't print every iteration — keep cumulative output tiny.
+              if [ $((i % 6)) -eq 0 ]; then
+                echo "poll ${i}: still building..."
+              fi
+              sleep 10
+            done
+
+            echo "Deploy timed out after ~14 min"
+            tail -n 80 "$LOG_FILE" || true
+            exit 1
 
       # ── Step 3: Verify production responds OK ──
       - name: Verify production
