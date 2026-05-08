@@ -242,13 +242,20 @@ export async function onArticlePublished(
         : { ok: false, error: String(cloudflareRes.reason) },
   };
 
-  // Update Article.indexStatus based on Google Indexing result.
+  // Update Article.indexStatus based on Google Indexing result. Capture the
+  // error reason on failure so the SEO panel can show *why* (most common:
+  // "Permission denied. Failed to verify the URL ownership." — meaning the
+  // service account hasn't been added as Owner in Google Search Console
+  // for this domain). On success we clear the previous error.
   if (resolvedId) {
     try {
       await prisma.article.update({
         where: { id: resolvedId },
         data: {
           indexStatus: summary.googleIndexing.ok ? "submitted" : "failed",
+          indexLastError: summary.googleIndexing.ok
+            ? null
+            : (summary.googleIndexing.error ?? "Unknown error").slice(0, 500),
           lastIndexedAt: new Date(),
         },
       });

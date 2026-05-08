@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
           where: { id: articleId },
           data: {
             indexStatus: google.success ? "submitted" : "failed",
+            indexLastError: google.success ? null : (google.error ?? "Unknown error").slice(0, 500),
             lastIndexedAt: new Date(),
           },
         });

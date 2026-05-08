@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
           where: { id: a.id },
           data: {
             indexStatus: r.success ? "submitted" : "failed",
+            indexLastError: r.success ? null : (r.error ?? "Unknown error").slice(0, 500),
             lastIndexedAt: new Date(),
           },
         });
@@ -104,6 +105,7 @@ export async function GET(req: NextRequest) {
           where: { id: s.id },
           data: {
             indexStatus: r.success ? "submitted" : "failed",
+            indexLastError: r.success ? null : (r.error ?? "Unknown error").slice(0, 500),
             lastIndexedAt: new Date(),
           },
         });

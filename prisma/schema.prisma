@@ -170,6 +170,11 @@ model Article {
   socialCaptions     Json?
   faqData            String?           @db.Text
   indexStatus        String?           @default("pending")
+  /// Last error message captured when indexStatus became "failed". Helps the
+  /// SEO panel surface WHY a submission failed (most common: service account
+  /// not added as Owner in Google Search Console → "Permission denied.
+  /// Failed to verify the URL ownership."). Null when last attempt succeeded.
+  indexLastError     String?
   lastIndexedAt      DateTime?
   sorotan            Sorotan[]
   socialPosts        SocialPost[]
@@ -493,6 +498,7 @@ model Sorotan {
   title         String
   content       String       @db.Text
   indexStatus   String?      @default("pending")
+  indexLastError String?
   lastIndexedAt DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt

@@ -85,6 +85,14 @@ interface IndexStatusData {
     failed: number;
     unknown: number;
   };
+  topErrors?: Array<{ message: string; count: number }>;
+  lastSubmitted?: {
+    id: string;
+    slug: string;
+    title: string;
+    lastIndexedAt: string | null;
+    indexStatus: string | null;
+  } | null;
 }
 
 export default function SeoDashboardPage() {
@@ -459,6 +467,49 @@ export default function SeoDashboardPage() {
               {credResult.ok ? "✓ " : "✗ "}
             </span>
             {credResult.message}
+            {credResult.ok && (
+              <span className="block mt-1 text-[11px] text-green-700/80">
+                Test ini hanya cek JWT auth — <strong>tidak</strong> cek apakah service account sudah jadi Owner di Google Search Console untuk domain ini.
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Failure diagnostic banner — surfaces top error reason from Article.indexLastError */}
+        {indexStatus && indexStatus.counts.failed > 0 && indexStatus.topErrors && indexStatus.topErrors.length > 0 && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs">
+            <p className="font-bold text-amber-800 mb-2 flex items-center gap-1.5">
+              <AlertTriangle size={12} /> Penyebab kegagalan submit ({indexStatus.counts.failed} artikel)
+            </p>
+            <ul className="space-y-1.5 mb-2">
+              {indexStatus.topErrors.map((e, i) => (
+                <li key={i} className="text-amber-900">
+                  <span className="font-mono bg-amber-100 px-1.5 py-0.5 rounded text-[10px] mr-1.5">{e.count}×</span>
+                  <span className="font-mono text-[11px]">{e.message}</span>
+                </li>
+              ))}
+            </ul>
+            {indexStatus.topErrors.some((e) =>
+              /Permission denied|verify the URL ownership|Forbidden|PERMISSION_DENIED/i.test(e.message),
+            ) && (
+              <div className="mt-3 pt-3 border-t border-amber-200 text-amber-900">
+                <p className="font-bold mb-1">⚠ Service account belum jadi Owner di Google Search Console</p>
+                <p className="leading-relaxed">
+                  Buka{" "}
+                  <a
+                    href="https://search.google.com/search-console/users"
+                    target="_blank"
+                    rel="noopener"
+                    className="underline font-semibold"
+                  >
+                    Search Console → Users and permissions
+                  </a>
+                  {" "}→ Add user → masukkan email service account dari{" "}
+                  <Link href="/panel/pengaturan" className="underline font-semibold">Pengaturan</Link>
+                  {" "}(`google_credentials_json` → field `client_email`) → permission <strong>Owner</strong>. Setelah itu klik <strong>Re-index Semua</strong> di atas.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -498,6 +549,18 @@ export default function SeoDashboardPage() {
         {sorotanStatus && (
           <div className="mt-4 pt-4 border-t border-border">
             <p className="text-xs font-semibold text-txt-secondary mb-2">Sorotan index</p>
+            {sorotanStatus.counts.failed > 0 && sorotanStatus.topErrors && sorotanStatus.topErrors.length > 0 && (
+              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px]">
+                <p className="font-bold text-amber-800 mb-1 flex items-center gap-1">
+                  <AlertTriangle size={10} /> Sorotan gagal: {sorotanStatus.counts.failed}
+                </p>
+                {sorotanStatus.topErrors.slice(0, 2).map((e, i) => (
+                  <p key={i} className="font-mono text-amber-900 truncate">
+                    <span className="bg-amber-100 px-1 rounded mr-1">{e.count}×</span>{e.message}
+                  </p>
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="rounded-xl bg-surface-secondary p-3">
                 <p className="text-xs text-txt-muted mb-1">Total</p>
