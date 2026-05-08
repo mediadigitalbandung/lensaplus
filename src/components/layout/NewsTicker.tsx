@@ -150,7 +150,37 @@ function StockCard({ s }: { s: StockItem }) {
 function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate: string }) {
   const [paused, setPaused] = useState(false);
 
-  if (stocks.length === 0) return null;
+  // Empty-state skeleton: render the Market chrome immediately so SSR + the
+  // first paint after hydration still show "Market • Live …" even before
+  // the /api/stocks call resolves. Without this, the entire ticker is
+  // invisible until the first fetch completes (and stays invisible if the
+  // API call fails for any reason).
+  if (stocks.length === 0) {
+    return (
+      <div className="bg-gray-50/30 border-b border-gray-100 overflow-hidden">
+        <div className="container-main py-2 sm:py-3">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-label-sm sm:text-label-md font-bold uppercase tracking-widest text-gray-500">Market</span>
+              <span className="hidden sm:inline text-label-sm text-gray-400">Live</span>
+            </div>
+            <span className="text-[10px] sm:text-label-sm text-gray-400 font-mono">Memuat…</span>
+          </div>
+        </div>
+        <div className="relative">
+          <div className="flex gap-2 sm:gap-2.5 pl-5 sm:pl-8 pr-5 sm:pr-8 pb-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="shrink-0 rounded-[10px] sm:rounded-[12px] min-w-[120px] sm:min-w-[170px] h-[68px] sm:h-[88px] bg-gray-100/70 animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const duration = stocks.length * 12; // ~12s per card
 
@@ -215,18 +245,25 @@ export default function NewsTicker() {
 
   return (
     <>
-      {/* ═══ TRENDING INDONESIA ═══ */}
-      {looped.length > 0 && (
-        <div className="bg-primary border-b border-[#001530] overflow-hidden">
-          <div className="flex items-center py-2 sm:py-2.5 relative">
-            <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 z-10 bg-primary shadow-[8px_0_12px_-2px_#002045]">
-              <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-secondary animate-pulse shrink-0" />
-              <span className="text-label-sm sm:text-label-md font-bold tracking-widest text-white uppercase whitespace-nowrap">
-                Trending
-              </span>
+      {/* ═══ TRENDING INDONESIA ═══
+          Selalu render shell-nya (Trending pill + bar gelap) supaya
+          chrome ticker langsung kelihatan di SSR + first paint, walau
+          /api/trending belum balas atau kosong. Konten geser baru
+          aktif setelah trendingItems terisi. */}
+      <div className="bg-primary border-b border-[#001530] overflow-hidden">
+        <div className="flex items-center py-2 sm:py-2.5 relative">
+          <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 z-10 bg-primary shadow-[8px_0_12px_-2px_#002045]">
+            <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-secondary animate-pulse shrink-0" />
+            <span className="text-label-sm sm:text-label-md font-bold tracking-widest text-white uppercase whitespace-nowrap">
+              Trending
+            </span>
+          </div>
+          {looped.length === 0 ? (
+            <div className="flex-1 overflow-hidden pl-2 pr-3 sm:pr-6">
+              <span className="text-body-sm sm:text-body-md font-medium text-white/40 whitespace-nowrap">Memuat trending…</span>
             </div>
-
-            {/* CSS infinite scroll */}
+          ) : (
+            // CSS infinite scroll
             <div className="flex-1 overflow-hidden">
               <div
                 className="flex w-max hover:[animation-play-state:paused]"
@@ -266,16 +303,16 @@ export default function NewsTicker() {
                 </div>
               </div>
             </div>
-          </div>
-
-          <style jsx>{`
-            @keyframes trendScroll {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
-            }
-          `}</style>
+          )}
         </div>
-      )}
+
+        <style jsx>{`
+          @keyframes trendScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+        `}</style>
+      </div>
 
       {/* ═══ MARKET CAROUSEL ═══ */}
       <StockCarousel stocks={stocks} lastUpdate={lastUpdate} />
