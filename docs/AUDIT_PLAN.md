@@ -177,9 +177,51 @@ Pelajaran untuk audit cycle berikutnya: db-auditor agent harus pre-flight `SELEC
 | Sprint 1 | HIGH | 35/44 | 470188d, a173412 |
 | Sprint 2 | MEDIUM | 30/52 | 8297446 |
 | Sprint 3 | LOW + sisa | 29+ | 96d683e, 2ba8ac0, 6f13b9f |
-| **Total** | — | **110/151 (73%)** | 9 commits + audit infra |
+| Quality Gates 1-5 | misc | 5 | 4490e6a (HSTS) + .env line 21 fix |
+| Sprint 4 | next.js 14→16 + tests | 5 (4 high CVE + 44 unit tests) | 04b8e5b |
+| **Total** | — | **120/151 (79%)** | 12 commits + audit infra |
 
 (Sprint 3 dikurangi 1 dari sebelumnya: SorotanAngle.FAQ drop di-rollback karena 114 valid rows. CtaTemplate drop tetap berhasil — itu beneran zero rows.)
+
+#### Sprint 4 — Next.js Major Upgrade + Test Coverage (DEPLOYED 2026-05-08)
+2 paralel agent (general-purpose × 2):
+
+**Framework upgrade** (commit `04b8e5b`, 61 files):
+- next: 14.2.35 → ^16.2.6 (closes 4 high CVE chain — Image Optimizer DoS, RSC DoS, request smuggling, Server Components DoS, image cache exhaustion)
+- react/react-dom: 18.3.1 → ^19.2.6
+- eslint: 8.57.x → ^9.39.4 (peer of eslint-config-next@16)
+- 46 files migrated to async params pattern via `tools/next16-codemod.mjs`
+- ESLint flat config migration (`eslint.config.mjs` baru, `.eslintrc.json` deleted)
+- TipTap, Sentry, recharts, NextAuth verified React-19 compat (peer warnings only)
+- Newsletter page flipped sync→async after codemod injection
+
+**Test coverage** (combined commit), 44 new test cases (129→173 total):
+- seo-json-ld.test.ts (6) — articleJsonLd, websiteJsonLd, howToJsonLd, qaJsonLd
+- seo-sorotan.test.ts (5) — generateSorotan happy + 4 edge cases
+- social-types.test.ts (5) — PLATFORM_DIMENSIONS, CAPTION_MAX_LENGTH
+- social-caption.test.ts (4) — generateSocialCaption with hashtags+CTA
+- social-template.test.ts (4) — findTemplateForPlatform fallback
+- scraper-fetch.test.ts (11) — isPrivateHost (cloud metadata, IPv6, RFC1918), SSRF
+- scraper-robots.test.ts (5) — fail-open, disallow logic
+- storage-local.test.ts (4) — localFsDriver basics
+
+**Quality Gates** (pre-Sprint 4):
+- QG1 Sentry breadcrumb: 76 errors pre-hotfix#2 (FAQ enum read fail) → **0 errors post-hotfix** ✓
+- QG2 PM2 logs: clean post-hotfix#2
+- QG3 Cron schedule: 6 lines installed pre-first-fire window
+- QG4 Backup restore drill: diagnosed `.env` line 21 orphan `n#` (auto-cleaned) + DB privilege gap (drill needs CREATEDB grant)
+- QG5 HSTS missing: ADDED `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` (commit `4490e6a`)
+
+**Production Verified Sprint 4**:
+- BUILD_ID: 6VU_mozTZOowV8SlkQLje (fresh)
+- PM2 version: 16.2.6 (upgraded from 14.2.35)
+- 8 routes HTTP 200 — homepage, berita, sorotan, jadwal-sidang, lokasi, api/health, sitemap.xml, privasi
+- Dynamic route async params: `/sorotan/{slug}-faq` HTTP 200 (codemod working)
+- HSTS active in production
+- /api/health latency: 1ms
+
+#### Hotfix #3 — VPS .env line 21 + HSTS gap (Quality Gate sprint)
+Commit `4490e6a`. Pre-Sprint 4 quality gate menemukan: (a) `.env` baris 21 berisi orphan `n#` text yang break `source` command di `safe-db-push.sh` + `backup-restore-drill.sh` (sed cleaned), (b) HSTS header missing dari production response (added max-age=31536000 + includeSubDomains + preload directive di `next.config.js` `headers()`).
 
 #### Deferred — Tidak Akan Dikerjakan di Audit Cycle Ini
 - **next.js CVE chain (4 high)** — butuh major upgrade Next 14→16 (breaking, scheduled separately)
