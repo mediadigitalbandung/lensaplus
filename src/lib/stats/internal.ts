@@ -3,11 +3,26 @@
  *
  * Provides the baseline numbers for `/panel/statistik` (Phase 8 UI):
  * article pipeline, user/role distribution, top-viewed articles,
- * 7-day publishing/view trend, moderation queues (comments/polls),
- * AI usage, and feature funnel counts (sorotan / social posts).
+ * publishing/view trend, moderation queues (comments/polls),
+ * AI usage, feature funnel counts (sorotan / social posts), Glossary,
+ * Ad performance, NewsSource scraping health.
+ *
+ * IMPORTANT — date-range semantics:
+ *   - `articles`, `users`, `top10` are SNAPSHOT (lifetime totals): they
+ *     describe the current state of the catalogue, not "things that
+ *     happened in this range". Range filter would make these unreadable.
+ *   - `weeklyTrend`, `comments`, `polls.totalVotes`, `ai.*`, `sorotan`,
+ *     `social`, `glossary.viewsTotal`, `ads.*`, `scraping.*`, `auditLog.*`
+ *     are RANGE-SCOPED — they answer "what happened between from and to".
+ *   - `views.total` is range-scoped only when there's a measurable proxy
+ *     (Article.viewCount is monotonic, so we approximate range views by
+ *     summing per-article viewCount of articles published in range —
+ *     which represents "lifetime views of articles published in range",
+ *     a useful editorial metric).
  *
  * All queries are DB-local (no external calls). Results are cached
- * in-memory with a 5-minute TTL to keep panel dashboards snappy.
+ * in-memory with a 5-minute TTL keyed by from+to so different ranges
+ * don't collide.
  */
 
 import { prisma } from "@/lib/prisma";
@@ -22,16 +37,20 @@ export interface InternalStats {
     inReview: number;
     rejected: number;
     archived: number;
+    publishedInRange: number; // NEW: count of articles published within from..to
   };
   users: {
     total: number;
     byRole: Record<string, number>;
+    newInRange: number; // NEW: signups within range
   };
   views: {
-    total: number;
+    total: number; // lifetime sum across all PUBLISHED
+    inRange: number; // NEW: lifetime view sum of articles published in range
     top10: Array<{ slug: string; title: string; viewCount: number }>;
+    top10InRange: Array<{ slug: string; title: string; viewCount: number; publishedAt: string | null }>;
   };
-  weeklyTrend: Array<{
+  trend: Array<{
     date: string; // YYYY-MM-DD
     publishedCount: number;
     viewCount: number;
@@ -40,32 +59,66 @@ export interface InternalStats {
     total: number;
     pending: number;
     approved: number;
+    inRange: number; // NEW: created within range
   };
   polls: {
     total: number;
     active: number;
     totalVotes: number;
+    votesInRange: number; // NEW
   };
   ai: {
-    last30dTokens: number;
-    last30dCalls: number;
-    topFeatures: Array<{ feature: string; calls: number }>;
+    rangeTokens: number;
+    rangeCalls: number;
+    topFeatures: Array<{ feature: string; calls: number; tokens: number }>;
   };
   sorotan: {
     total: number;
     indexed: number;
     pending: number;
+    submitted: number;
     failed: number;
+    createdInRange: number;
   };
   social: {
     total: number;
     published: number;
     draft: number;
+    publishedInRange: number;
+  };
+  glossary: {
+    total: number;
+    viewsTotal: number;
+    top5: Array<{ slug: string; istilah: string; viewCount: number }>;
+  };
+  ads: {
+    activeCount: number;
+    totalImpressions: number;
+    totalClicks: number;
+    ctr: number; // 0..1 (clicks / impressions)
+    top5: Array<{ id: string; name: string; impressions: number; clicks: number; ctr: number }>;
+  };
+  scraping: {
+    sources: number;
+    activeSources: number;
+    articlesScrapedInRange: number;
+    lastSuccessAt: string | null;
+  };
+  newsletter: {
+    subscribers: number;
+    confirmed: number;
+    newInRange: number;
+  };
+  audit: {
+    totalInRange: number;
+    topActions: Array<{ action: string; count: number }>;
+    topUsers: Array<{ userId: string; userName: string | null; count: number }>;
   };
   _meta: {
     from: string;
     to: string;
     cacheHit: boolean;
+    generatedAt: string;
   };
 }
 
@@ -101,6 +154,13 @@ function setCached(key: string, data: InternalStats) {
   cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
 }
 
+/** Invalidate every cached internal-stats range. Called by `onArticlePublished` so
+ *  freshly published articles show up immediately on the dashboard instead of
+ *  being hidden behind the 5-minute TTL. */
+export function invalidateInternalStatsCache(): void {
+  cache.clear();
+}
+
 // ---------- Helpers ----------
 
 function ymd(d: Date) {
@@ -109,8 +169,40 @@ function ymd(d: Date) {
 
 function defaultRange(opts?: InternalStatsOptions): { from: Date; to: Date } {
   const to = opts?.to ?? new Date();
-  const from = opts?.from ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  // Default window: last 30 days
+  const from = opts?.from ?? new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
   return { from, to };
+}
+
+/** Build an array of { date, publishedCount, viewCount } covering every day
+ *  in [from, to] inclusive. The trend always shows the full range so the
+ *  chart x-axis is consistent even on days with zero publishing. */
+function buildTrendBuckets(
+  from: Date,
+  to: Date,
+  rows: Array<{ publishedAt: Date | null; viewCount: number }>,
+): Array<{ date: string; publishedCount: number; viewCount: number }> {
+  const trendMap = new Map<string, { publishedCount: number; viewCount: number }>();
+  // Walk from the start day to end day at UTC midnight.
+  const start = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
+  const end = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()));
+  for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    trendMap.set(ymd(d), { publishedCount: 0, viewCount: 0 });
+  }
+  for (const r of rows) {
+    if (!r.publishedAt) continue;
+    const k = ymd(r.publishedAt);
+    const existing = trendMap.get(k);
+    if (existing) {
+      existing.publishedCount += 1;
+      existing.viewCount += r.viewCount ?? 0;
+    }
+  }
+  return Array.from(trendMap.entries()).map(([date, v]) => ({
+    date,
+    publishedCount: v.publishedCount,
+    viewCount: v.viewCount,
+  }));
 }
 
 // ---------- Main ----------
@@ -125,11 +217,16 @@ export async function getInternalStats(
     return { ...cached, _meta: { ...cached._meta, cacheHit: true } };
   }
 
-  // --- Articles by status ---
-  const articleGroups = await prisma.article.groupBy({
-    by: ["status"],
-    _count: { _all: true },
-  });
+  // ─────────────────── ARTICLES ───────────────────
+  const [articleGroups, publishedInRange] = await Promise.all([
+    prisma.article.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+    }),
+    prisma.article.count({
+      where: { status: "PUBLISHED", publishedAt: { gte: from, lte: to } },
+    }),
+  ]);
   const articles = {
     total: 0,
     published: 0,
@@ -137,6 +234,7 @@ export async function getInternalStats(
     inReview: 0,
     rejected: 0,
     archived: 0,
+    publishedInRange,
   };
   for (const g of articleGroups) {
     articles.total += g._count._all;
@@ -159,12 +257,17 @@ export async function getInternalStats(
     }
   }
 
-  // --- Users by role ---
-  const userGroups = await prisma.user.groupBy({
-    by: ["role"],
-    _count: { _all: true },
-    where: { isActive: true },
-  });
+  // ─────────────────── USERS ───────────────────
+  const [userGroups, newUsersInRange] = await Promise.all([
+    prisma.user.groupBy({
+      by: ["role"],
+      _count: { _all: true },
+      where: { isActive: true },
+    }),
+    prisma.user.count({
+      where: { isActive: true, createdAt: { gte: from, lte: to } },
+    }),
+  ]);
   const byRole: Record<string, number> = {};
   let totalUsers = 0;
   for (const g of userGroups) {
@@ -172,134 +275,279 @@ export async function getInternalStats(
     totalUsers += g._count._all;
   }
 
-  // --- Views & top articles ---
-  const viewAgg = await prisma.article.aggregate({
-    _sum: { viewCount: true },
-    where: { status: "PUBLISHED" },
-  });
-  const top10Raw = await prisma.article.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { viewCount: "desc" },
-    take: 10,
-    select: { slug: true, title: true, viewCount: true },
-  });
+  // ─────────────────── VIEWS ───────────────────
+  const [viewAgg, top10Raw, viewsRangeAgg, top10InRangeRaw] = await Promise.all([
+    prisma.article.aggregate({
+      _sum: { viewCount: true },
+      where: { status: "PUBLISHED" },
+    }),
+    prisma.article.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { viewCount: "desc" },
+      take: 10,
+      select: { slug: true, title: true, viewCount: true },
+    }),
+    prisma.article.aggregate({
+      _sum: { viewCount: true },
+      where: { status: "PUBLISHED", publishedAt: { gte: from, lte: to } },
+    }),
+    prisma.article.findMany({
+      where: { status: "PUBLISHED", publishedAt: { gte: from, lte: to } },
+      orderBy: { viewCount: "desc" },
+      take: 10,
+      select: { slug: true, title: true, viewCount: true, publishedAt: true },
+    }),
+  ]);
 
-  // --- Weekly trend (last 7 days of publishedAt) ---
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const weekly = await prisma.article.findMany({
+  // ─────────────────── TREND ───────────────────
+  const trendRows = await prisma.article.findMany({
     where: {
       status: "PUBLISHED",
-      publishedAt: { gte: sevenDaysAgo, lte: to },
+      publishedAt: { gte: from, lte: to },
     },
     select: { publishedAt: true, viewCount: true },
   });
-  const trendMap = new Map<string, { publishedCount: number; viewCount: number }>();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-    trendMap.set(ymd(d), { publishedCount: 0, viewCount: 0 });
-  }
-  for (const a of weekly) {
-    if (!a.publishedAt) continue;
-    const k = ymd(a.publishedAt);
-    const existing = trendMap.get(k);
-    if (existing) {
-      existing.publishedCount += 1;
-      existing.viewCount += a.viewCount ?? 0;
-    }
-  }
-  const weeklyTrend = Array.from(trendMap.entries()).map(([date, v]) => ({
-    date,
-    publishedCount: v.publishedCount,
-    viewCount: v.viewCount,
-  }));
+  const trend = buildTrendBuckets(from, to, trendRows);
 
-  // --- Comments ---
-  const [commentTotal, commentPending, commentApproved] = await Promise.all([
+  // ─────────────────── COMMENTS ───────────────────
+  const [commentTotal, commentPending, commentApproved, commentInRange] = await Promise.all([
     prisma.comment.count(),
     prisma.comment.count({ where: { isApproved: false } }),
     prisma.comment.count({ where: { isApproved: true } }),
+    prisma.comment.count({ where: { createdAt: { gte: from, lte: to } } }),
   ]);
 
-  // --- Polls ---
-  const [pollTotal, pollActive, voteAgg] = await Promise.all([
+  // ─────────────────── POLLS ───────────────────
+  const [pollTotal, pollActive, voteAgg, votesInRangeAgg] = await Promise.all([
     prisma.poll.count(),
     prisma.poll.count({ where: { isActive: true } }),
     prisma.pollOption.aggregate({ _sum: { votes: true } }),
+    prisma.pollVote.count({ where: { createdAt: { gte: from, lte: to } } }),
   ]);
 
-  // --- AI usage (last 30 days) ---
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const aiAgg = await prisma.aIUsageLog.aggregate({
-    where: { createdAt: { gte: thirtyDaysAgo } },
-    _sum: { totalTokens: true },
-    _count: { _all: true },
-  });
-  const aiFeatureGroups = await prisma.aIUsageLog.groupBy({
-    by: ["feature"],
-    where: { createdAt: { gte: thirtyDaysAgo } },
-    _count: { _all: true },
-    orderBy: { _count: { feature: "desc" } },
-    take: 5,
-  });
+  // ─────────────────── AI USAGE ───────────────────
+  const [aiAgg, aiFeatureGroups] = await Promise.all([
+    prisma.aIUsageLog.aggregate({
+      where: { createdAt: { gte: from, lte: to } },
+      _sum: { totalTokens: true },
+      _count: { _all: true },
+    }),
+    prisma.aIUsageLog.groupBy({
+      by: ["feature"],
+      where: { createdAt: { gte: from, lte: to } },
+      _count: { _all: true },
+      _sum: { totalTokens: true },
+      orderBy: { _count: { feature: "desc" } },
+      take: 10,
+    }),
+  ]);
 
-  // --- Sorotan ---
-  const sorotanGroups = await prisma.sorotan.groupBy({
-    by: ["indexStatus"],
-    _count: { _all: true },
-  });
-  const sorotan = { total: 0, indexed: 0, pending: 0, failed: 0 };
+  // ─────────────────── SOROTAN ───────────────────
+  const [sorotanGroups, sorotanInRange] = await Promise.all([
+    prisma.sorotan.groupBy({
+      by: ["indexStatus"],
+      _count: { _all: true },
+    }),
+    prisma.sorotan.count({ where: { createdAt: { gte: from, lte: to } } }),
+  ]);
+  const sorotan = { total: 0, indexed: 0, pending: 0, submitted: 0, failed: 0, createdInRange: sorotanInRange };
   for (const g of sorotanGroups) {
     sorotan.total += g._count._all;
     const k = g.indexStatus ?? "pending";
     if (k === "indexed") sorotan.indexed = g._count._all;
+    else if (k === "submitted") sorotan.submitted = g._count._all;
     else if (k === "failed") sorotan.failed = g._count._all;
-    else sorotan.pending += g._count._all; // includes null/"pending"/"submitted"
+    else sorotan.pending += g._count._all; // null + "pending"
   }
 
-  // --- Social posts ---
-  const socialGroups = await prisma.socialPost.groupBy({
-    by: ["status"],
-    _count: { _all: true },
-  });
-  const social = { total: 0, published: 0, draft: 0 };
+  // ─────────────────── SOCIAL ───────────────────
+  const [socialGroups, socialPublishedInRange] = await Promise.all([
+    prisma.socialPost.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+    }),
+    prisma.socialPost.count({
+      where: { status: "PUBLISHED", publishedAt: { gte: from, lte: to } },
+    }),
+  ]);
+  const social = { total: 0, published: 0, draft: 0, publishedInRange: socialPublishedInRange };
   for (const g of socialGroups) {
     social.total += g._count._all;
     if (g.status === "PUBLISHED") social.published = g._count._all;
     else if (g.status === "DRAFT") social.draft = g._count._all;
   }
 
+  // ─────────────────── GLOSSARY ───────────────────
+  const [glossaryTotal, glossaryViewAgg, glossaryTop5] = await Promise.all([
+    prisma.glossary.count(),
+    prisma.glossary.aggregate({ _sum: { viewCount: true } }),
+    prisma.glossary.findMany({
+      where: { viewCount: { gt: 0 } },
+      orderBy: { viewCount: "desc" },
+      take: 5,
+      select: { slug: true, istilah: true, viewCount: true },
+    }),
+  ]);
+
+  // ─────────────────── ADS ───────────────────
+  const [adsActive, adsAgg, adsTop5] = await Promise.all([
+    prisma.ad.count({ where: { isActive: true } }),
+    prisma.ad.aggregate({
+      _sum: { impressions: true, clicks: true },
+    }),
+    prisma.ad.findMany({
+      where: { impressions: { gt: 0 } },
+      orderBy: { impressions: "desc" },
+      take: 5,
+      select: { id: true, name: true, impressions: true, clicks: true },
+    }),
+  ]);
+  const totalImpressions = adsAgg._sum.impressions ?? 0;
+  const totalClicks = adsAgg._sum.clicks ?? 0;
+
+  // ─────────────────── SCRAPING ───────────────────
+  const [scrapingSources, scrapingActive, scrapingInRange, lastScrapedSource] = await Promise.all([
+    prisma.newsSource.count(),
+    prisma.newsSource.count({ where: { isActive: true } }),
+    prisma.article.count({
+      where: {
+        sourceArticleId: { not: null },
+        createdAt: { gte: from, lte: to },
+      },
+    }),
+    prisma.newsSource.findFirst({
+      where: { lastSuccessAt: { not: null } },
+      orderBy: { lastSuccessAt: "desc" },
+      select: { lastSuccessAt: true },
+    }),
+  ]);
+
+  // ─────────────────── NEWSLETTER ───────────────────
+  const [newsletterTotal, newsletterConfirmed, newsletterInRange] = await Promise.all([
+    prisma.newsletterSubscriber.count(),
+    prisma.newsletterSubscriber.count({ where: { confirmedAt: { not: null } } }),
+    prisma.newsletterSubscriber.count({
+      where: { createdAt: { gte: from, lte: to } },
+    }),
+  ]);
+
+  // ─────────────────── AUDIT LOG ───────────────────
+  const [auditTotalInRange, auditActionGroups, auditUserGroups] = await Promise.all([
+    prisma.auditLog.count({ where: { createdAt: { gte: from, lte: to } } }),
+    prisma.auditLog.groupBy({
+      by: ["action"],
+      where: { createdAt: { gte: from, lte: to } },
+      _count: { _all: true },
+      orderBy: { _count: { action: "desc" } },
+      take: 8,
+    }),
+    prisma.auditLog.groupBy({
+      by: ["userId"],
+      where: { createdAt: { gte: from, lte: to }, userId: { not: null } },
+      _count: { _all: true },
+      orderBy: { _count: { userId: "desc" } },
+      take: 5,
+    }),
+  ]);
+  const userIds = auditUserGroups.map((g) => g.userId).filter((u): u is string => !!u);
+  const userMap = userIds.length
+    ? Object.fromEntries(
+        (
+          await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true },
+          })
+        ).map((u) => [u.id, u.name]),
+      )
+    : {};
+
+  // ─────────────────── ASSEMBLE ───────────────────
   const result: InternalStats = {
     articles,
-    users: { total: totalUsers, byRole },
+    users: { total: totalUsers, byRole, newInRange: newUsersInRange },
     views: {
       total: viewAgg._sum.viewCount ?? 0,
+      inRange: viewsRangeAgg._sum.viewCount ?? 0,
       top10: top10Raw,
+      top10InRange: top10InRangeRaw.map((a) => ({
+        slug: a.slug,
+        title: a.title,
+        viewCount: a.viewCount,
+        publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null,
+      })),
     },
-    weeklyTrend,
+    trend,
     comments: {
       total: commentTotal,
       pending: commentPending,
       approved: commentApproved,
+      inRange: commentInRange,
     },
     polls: {
       total: pollTotal,
       active: pollActive,
       totalVotes: voteAgg._sum.votes ?? 0,
+      votesInRange: votesInRangeAgg,
     },
     ai: {
-      last30dTokens: aiAgg._sum.totalTokens ?? 0,
-      last30dCalls: aiAgg._count._all ?? 0,
+      rangeTokens: aiAgg._sum.totalTokens ?? 0,
+      rangeCalls: aiAgg._count._all ?? 0,
       topFeatures: aiFeatureGroups.map((g) => ({
         feature: g.feature,
         calls: g._count._all,
+        tokens: g._sum.totalTokens ?? 0,
       })),
     },
     sorotan,
     social,
+    glossary: {
+      total: glossaryTotal,
+      viewsTotal: glossaryViewAgg._sum.viewCount ?? 0,
+      top5: glossaryTop5,
+    },
+    ads: {
+      activeCount: adsActive,
+      totalImpressions,
+      totalClicks,
+      ctr: totalImpressions > 0 ? totalClicks / totalImpressions : 0,
+      top5: adsTop5.map((a) => ({
+        id: a.id,
+        name: a.name,
+        impressions: a.impressions,
+        clicks: a.clicks,
+        ctr: a.impressions > 0 ? a.clicks / a.impressions : 0,
+      })),
+    },
+    scraping: {
+      sources: scrapingSources,
+      activeSources: scrapingActive,
+      articlesScrapedInRange: scrapingInRange,
+      lastSuccessAt: lastScrapedSource?.lastSuccessAt
+        ? lastScrapedSource.lastSuccessAt.toISOString()
+        : null,
+    },
+    newsletter: {
+      subscribers: newsletterTotal,
+      confirmed: newsletterConfirmed,
+      newInRange: newsletterInRange,
+    },
+    audit: {
+      totalInRange: auditTotalInRange,
+      topActions: auditActionGroups.map((g) => ({
+        action: g.action,
+        count: g._count._all,
+      })),
+      topUsers: auditUserGroups.map((g) => ({
+        userId: g.userId ?? "",
+        userName: userMap[g.userId ?? ""] ?? null,
+        count: g._count._all,
+      })),
+    },
     _meta: {
       from: from.toISOString(),
       to: to.toISOString(),
       cacheHit: false,
+      generatedAt: new Date().toISOString(),
     },
   };
 

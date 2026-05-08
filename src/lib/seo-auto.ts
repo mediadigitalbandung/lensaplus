@@ -15,12 +15,16 @@ import { generateSorotanIfMissing } from "./seo/sorotan-generator";
 import { publishArticleToSocial } from "./social/orchestrator";
 import { purgeCache } from "./cloudflare/purge";
 import { invalidateCachePrefix } from "./cache";
+import { invalidateInternalStatsCache } from "./stats/internal";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
 
 // ─── Ping Search Engines ───────────────────────────────────────────
 
-/** Ping Google & Bing sitemap update (legacy sitemap ping — kept for backward compat). */
+/** Ping Google & Bing sitemap update (legacy sitemap ping — kept for backward compat).
+ *  Also persists `sitemap_last_pinged_at` in SystemSetting so the SEO panel can
+ *  show "Sitemap ping terakhir" without us having to re-derive that timestamp
+ *  from logs. */
 export async function pingSitemaps() {
   const sitemapUrl = encodeURIComponent(`${SITE_URL}/sitemap.xml`);
   const newsSitemapUrl = encodeURIComponent(`${SITE_URL}/sitemap-news.xml`);
@@ -36,6 +40,19 @@ export async function pingSitemaps() {
       fetch(url, { method: "GET", signal: AbortSignal.timeout(5000) }).catch(() => {})
     )
   );
+
+  // Best-effort timestamp record. Never fails the ping — if the DB is
+  // unreachable the panel just won't show the "last pinged" hint.
+  try {
+    const now = new Date().toISOString();
+    await prisma.systemSetting.upsert({
+      where: { key: "sitemap_last_pinged_at" },
+      create: { key: "sitemap_last_pinged_at", value: now },
+      update: { value: now },
+    });
+  } catch {
+    /* swallow — telemetry only */
+  }
 }
 
 // ─── Auto-Generate SEO Fields ──────────────────────────────────────
@@ -155,9 +172,14 @@ export async function onArticlePublished(
   // In-process cache (src/lib/cache.ts) holds homepage / trending data
   // independently from Next.js ISR. Drop those keys so readers see the
   // new article on the next request, not after the in-process TTL expires.
+  // Also drop the internal-stats cache (src/lib/stats/internal.ts) so the
+  // /panel/statistik dashboard reflects the new article immediately —
+  // otherwise editors see stale "Artikel Terbit (Periode)" numbers for up
+  // to 5 minutes after a publish.
   try {
     invalidateCachePrefix("home:");
     invalidateCachePrefix("trending:");
+    invalidateInternalStatsCache();
   } catch {
     /* swallow */
   }

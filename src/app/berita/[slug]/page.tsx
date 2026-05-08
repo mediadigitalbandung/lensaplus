@@ -242,12 +242,20 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
     }
   }
 
-  // Increment view count only for published articles
+  // Increment view count only for published articles. Fire-and-forget — never
+  // block SSR rendering on a counter write. Errors are swallowed because the
+  // counter is non-critical (used for trending/Top, not for paywall, audit,
+  // or revenue). Awaiting this would add ~30–60 ms to TTFB per article hit
+  // and propagate Prisma transient errors to the reader as a 500.
   if (isPublished) {
-    await prisma.article.update({
-      where: { slug: params.slug },
-      data: { viewCount: { increment: 1 } },
-    });
+    prisma.article
+      .update({
+        where: { slug: params.slug },
+        data: { viewCount: { increment: 1 } },
+      })
+      .catch(() => {
+        /* non-critical: swallow transient DB error so the page still renders */
+      });
   }
 
   // Status label mapping for non-published preview

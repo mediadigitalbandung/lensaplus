@@ -14,15 +14,39 @@ interface SeoData {
     articlesWithSeo: number;
     articlesWithImage: number;
     articlesWithExcerpt: number;
+    articlesWithSorotan: number;
+    sorotanCoverage: number;
+    sorotanTotal: number;
+    sorotanIndexed: number;
     categories: number;
     tags: number;
+    topicCount: number;
+    glossaryCount: number;
     sitemapPages: number;
+    newsSitemapCount: number;
+    indexedRatio: number;
   };
-  coverage: { seoTitle: number; image: number; excerpt: number };
-  urls: { sitemap: string; newsSitemap: string; robots: string; searchConsole: string; publisherCenter: string };
+  coverage: { seoTitle: number; image: number; excerpt: number; sorotan: number };
+  indexing: {
+    counts: { pending: number; submitted: number; indexed: number; failed: number; unknown: number };
+    lastSubmitted: { slug: string; title: string; at: string | null; status: string | null } | null;
+    sitemapLastPingedAt: string | null;
+    googleQuota: { used: number; limit: number; remaining: number; percentUsed: number; date: string };
+  };
+  urls: {
+    sitemap: string;
+    newsSitemap: string;
+    sitemapGlossary: string;
+    sitemapSorotan: string;
+    robots: string;
+    searchConsole: string;
+    publisherCenter: string;
+  };
   articleAudit: {
     id: string; title: string; slug: string; url: string; seoTitle: string | null; seoDescription: string | null;
-    hasImage: boolean; hasExcerpt: boolean; category: string; issues: string[]; score: number; views: number; publishedAt: string;
+    hasImage: boolean; hasExcerpt: boolean; sorotanCount: number; indexStatus: string;
+    lastIndexedAt: string | null;
+    category: string; issues: string[]; score: number; views: number; publishedAt: string | null;
   }[];
 }
 
@@ -182,7 +206,7 @@ export default function SeoDashboardPage() {
 
   if (!data) return <p className="text-txt-muted">Gagal memuat data SEO.</p>;
 
-  const { overview, coverage, urls, articleAudit } = data;
+  const { overview, coverage, urls, indexing, articleAudit } = data;
 
   return (
     <div>
@@ -222,6 +246,7 @@ export default function SeoDashboardPage() {
           <CoverageBar label="SEO Title" value={coverage.seoTitle} icon={Type} />
           <CoverageBar label="Gambar" value={coverage.image} icon={Image} />
           <CoverageBar label="Excerpt" value={coverage.excerpt} icon={FileText} />
+          <CoverageBar label="Sorotan" value={coverage.sorotan} icon={Sparkles} />
         </div>
 
         {/* Sitemap & Links */}
@@ -229,17 +254,121 @@ export default function SeoDashboardPage() {
           <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><Globe size={14} className="text-primary" /> Sitemap & Tools</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between items-center">
-              <span className="text-txt-secondary">Halaman di Sitemap</span>
-              <span className="font-bold">{overview.sitemapPages}</span>
+              <span className="text-txt-secondary">Halaman sitemap.xml</span>
+              <span className="font-bold">{overview.sitemapPages.toLocaleString("id-ID")}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-txt-secondary">News sitemap (2 hari)</span>
+              <span className="font-bold">{overview.newsSitemapCount}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-txt-secondary">Glossary</span>
+              <span className="font-bold">{overview.glossaryCount}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-txt-secondary">Sorotan</span>
+              <span className="font-bold">{overview.sorotanTotal}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-txt-secondary">Topik</span>
+              <span className="font-bold">{overview.topicCount}</span>
             </div>
           </div>
           <div className="space-y-1.5 pt-1">
             <a href={urls.sitemap} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> sitemap.xml</a>
             <a href={urls.newsSitemap} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> news-sitemap.xml</a>
+            <a href={urls.sitemapGlossary} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> sitemap-glossary.xml</a>
+            <a href={urls.sitemapSorotan} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> sitemap-sorotan.xml</a>
             <a href={urls.robots} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> robots.txt</a>
             <a href={urls.searchConsole} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> Google Search Console</a>
             <a href={urls.publisherCenter} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> Google News Publisher</a>
           </div>
+        </div>
+      </div>
+
+      {/* Indexing Health — Google API quota + last submission */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
+            <Zap size={14} className="text-primary" /> Google Indexing API — Kuota Hari Ini
+          </h3>
+          <div className="flex items-baseline gap-2 mb-3">
+            <span className="text-3xl font-extrabold text-txt-primary">{indexing.googleQuota.used}</span>
+            <span className="text-sm text-txt-muted">/ {indexing.googleQuota.limit}</span>
+            <span className="ml-auto text-xs font-mono text-txt-muted">{indexing.googleQuota.date}</span>
+          </div>
+          <div className="h-2 rounded-full bg-surface-tertiary overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                indexing.googleQuota.percentUsed >= 90
+                  ? "bg-red-500"
+                  : indexing.googleQuota.percentUsed >= 70
+                  ? "bg-yellow-500"
+                  : "bg-green-500"
+              }`}
+              style={{ width: `${Math.min(100, indexing.googleQuota.percentUsed)}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-txt-muted">
+            Tersisa {indexing.googleQuota.remaining} URL hari ini. Counter reset otomatis tengah malam UTC.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
+            <Activity size={14} className="text-primary" /> Submission Terakhir
+          </h3>
+          {indexing.lastSubmitted ? (
+            <>
+              <a
+                href={`${urls.sitemap.replace("/sitemap.xml", "")}/berita/${indexing.lastSubmitted.slug}`}
+                target="_blank"
+                rel="noopener"
+                className="block text-sm font-semibold text-txt-primary hover:text-primary line-clamp-2 mb-2"
+              >
+                {indexing.lastSubmitted.title}
+              </a>
+              <div className="flex items-center gap-2 text-xs">
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide ${
+                    indexing.lastSubmitted.status === "indexed"
+                      ? "bg-primary-light text-primary"
+                      : indexing.lastSubmitted.status === "submitted"
+                      ? "bg-blue-50 text-blue-700"
+                      : indexing.lastSubmitted.status === "failed"
+                      ? "bg-red-50 text-red-700"
+                      : "bg-yellow-50 text-yellow-700"
+                  }`}
+                >
+                  {indexing.lastSubmitted.status ?? "pending"}
+                </span>
+                <span className="text-txt-muted">
+                  {indexing.lastSubmitted.at
+                    ? new Date(indexing.lastSubmitted.at).toLocaleString("id-ID", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })
+                    : "—"}
+                </span>
+              </div>
+              <p className="mt-3 text-xs text-txt-muted">
+                Indexed ratio: <span className="font-bold text-txt-primary">{overview.indexedRatio}%</span> dari {overview.publishedArticles} artikel terbit.
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-txt-muted">Belum ada submission ke Google Indexing API.</p>
+          )}
+          {indexing.sitemapLastPingedAt && (
+            <p className="mt-3 pt-3 border-t border-border text-xs text-txt-muted">
+              Sitemap ping terakhir:{" "}
+              <span className="font-mono">
+                {new Date(indexing.sitemapLastPingedAt).toLocaleString("id-ID", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </span>
+            </p>
+          )}
         </div>
       </div>
 

@@ -38,7 +38,7 @@ import {
 } from "recharts";
 import { EDITOR_ROLES } from "@/lib/roles";
 
-// --- Types ---
+// --- Types (mirror src/lib/stats/internal.ts InternalStats) ---
 interface InternalStats {
   articles: {
     total: number;
@@ -47,31 +47,65 @@ interface InternalStats {
     inReview: number;
     rejected: number;
     archived: number;
+    publishedInRange: number;
   };
-  users: { total: number; byRole: Record<string, number> };
+  users: { total: number; byRole: Record<string, number>; newInRange: number };
   views: {
     total: number;
+    inRange: number;
     top10: Array<{ slug: string; title: string; viewCount: number }>;
+    top10InRange: Array<{ slug: string; title: string; viewCount: number; publishedAt: string | null }>;
   };
-  weeklyTrend: Array<{
+  trend: Array<{
     date: string;
     publishedCount: number;
     viewCount: number;
   }>;
-  comments: { total: number; pending: number; approved: number };
-  polls: { total: number; active: number; totalVotes: number };
+  comments: { total: number; pending: number; approved: number; inRange: number };
+  polls: { total: number; active: number; totalVotes: number; votesInRange: number };
   ai: {
-    last30dTokens: number;
-    last30dCalls: number;
-    topFeatures: Array<{ feature: string; calls: number }>;
+    rangeTokens: number;
+    rangeCalls: number;
+    topFeatures: Array<{ feature: string; calls: number; tokens: number }>;
   };
   sorotan: {
     total: number;
     indexed: number;
     pending: number;
+    submitted: number;
     failed: number;
+    createdInRange: number;
   };
-  social: { total: number; published: number; draft: number };
+  social: { total: number; published: number; draft: number; publishedInRange: number };
+  glossary: {
+    total: number;
+    viewsTotal: number;
+    top5: Array<{ slug: string; istilah: string; viewCount: number }>;
+  };
+  ads: {
+    activeCount: number;
+    totalImpressions: number;
+    totalClicks: number;
+    ctr: number;
+    top5: Array<{ id: string; name: string; impressions: number; clicks: number; ctr: number }>;
+  };
+  scraping: {
+    sources: number;
+    activeSources: number;
+    articlesScrapedInRange: number;
+    lastSuccessAt: string | null;
+  };
+  newsletter: {
+    subscribers: number;
+    confirmed: number;
+    newInRange: number;
+  };
+  audit: {
+    totalInRange: number;
+    topActions: Array<{ action: string; count: number }>;
+    topUsers: Array<{ userId: string; userName: string | null; count: number }>;
+  };
+  _meta: { from: string; to: string; cacheHit: boolean; generatedAt: string };
 }
 
 interface GA4Stats {
@@ -252,10 +286,48 @@ function InternalTab({ from, to }: { from: string; to: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Summary cards */}
+      {/* ── Range header — semua kartu di bawah dipisah jelas: BARU ada di rentang yang dipilih, vs lifetime totals ── */}
+      <div className="rounded-2xl bg-primary-light/40 border border-primary/20 px-4 py-3 text-xs text-primary/90 flex flex-wrap items-center gap-2">
+        <Activity size={12} />
+        <span className="font-semibold">Periode:</span>
+        <span className="font-mono">{from}</span>
+        <span>→</span>
+        <span className="font-mono">{to}</span>
+        <span className="ml-auto text-primary/60">Angka &quot;Periode&quot; mengikuti rentang. Angka &quot;Total&quot; bersifat lifetime.</span>
+      </div>
+
+      {/* Summary cards — IN-RANGE first (paling relevan untuk filter), lifetime ditarik ke kartu Total Artikel/Pengguna */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard
-          label="Total Artikel"
+          label={`Artikel Terbit (Periode)`}
+          value={formatNumber(data.articles.publishedInRange)}
+          icon={FileText}
+          color="text-blue-500 bg-blue-50"
+        />
+        <StatCard
+          label="Views (Periode)"
+          value={formatNumber(data.views.inRange)}
+          icon={Eye}
+          color="text-primary bg-primary-light"
+        />
+        <StatCard
+          label="Komentar (Periode)"
+          value={formatNumber(data.comments.inRange)}
+          icon={Activity}
+          color="text-yellow-500 bg-yellow-50"
+        />
+        <StatCard
+          label="Vote Polling (Periode)"
+          value={formatNumber(data.polls.votesInRange)}
+          icon={TrendingUp}
+          color="text-green-600 bg-green-50"
+        />
+      </div>
+
+      {/* Lifetime summary — secondary row */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard
+          label="Total Artikel (Lifetime)"
           value={formatNumber(data.articles.total)}
           icon={FileText}
           color="text-blue-500 bg-blue-50"
@@ -267,27 +339,30 @@ function InternalTab({ from, to }: { from: string; to: string }) {
           color="text-purple-500 bg-purple-50"
         />
         <StatCard
-          label="Total Views"
+          label="Total Views (Lifetime)"
           value={formatNumber(data.views.total)}
           icon={Eye}
           color="text-primary bg-primary-light"
         />
         <StatCard
-          label="Komentar"
+          label="Total Komentar (Lifetime)"
           value={formatNumber(data.comments.total)}
           icon={Activity}
           color="text-yellow-500 bg-yellow-50"
         />
       </div>
 
-      {/* Weekly trend */}
+      {/* Trend over selected range */}
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
-        <h3 className="text-base font-bold text-txt-primary mb-4">
-          Trend 7 Hari
+        <h3 className="text-base font-bold text-txt-primary mb-1">
+          Trend Publikasi & Views
         </h3>
+        <p className="text-xs text-txt-muted mb-4">
+          Setiap titik = jumlah artikel terbit + total view kumulatif di hari itu (range yang dipilih).
+        </p>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.weeklyTrend}>
+            <LineChart data={data.trend}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e8eaeb" />
               <XAxis dataKey="date" fontSize={11} />
               <YAxis yAxisId="left" fontSize={11} />
@@ -334,20 +409,23 @@ function InternalTab({ from, to }: { from: string; to: string }) {
           </div>
         </div>
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
-          <h3 className="text-base font-bold text-txt-primary mb-4">
-            AI Usage (30 hari)
+          <h3 className="text-base font-bold text-txt-primary mb-1">
+            AI Usage (Periode)
           </h3>
+          <p className="text-xs text-txt-muted mb-4">
+            Konsumsi token Claude/DeepSeek dalam rentang yang dipilih.
+          </p>
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-sm">
               <span className="text-txt-secondary">Total Calls</span>
               <span className="font-bold">
-                {formatNumber(data.ai.last30dCalls)}
+                {formatNumber(data.ai.rangeCalls)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-txt-secondary">Total Tokens</span>
               <span className="font-bold">
-                {formatNumber(data.ai.last30dTokens)}
+                {formatNumber(data.ai.rangeTokens)}
               </span>
             </div>
           </div>
@@ -356,7 +434,7 @@ function InternalTab({ from, to }: { from: string; to: string }) {
           </p>
           <div className="space-y-1.5">
             {data.ai.topFeatures.length === 0 ? (
-              <p className="text-xs text-txt-muted">Belum ada aktivitas AI.</p>
+              <p className="text-xs text-txt-muted">Belum ada aktivitas AI di rentang ini.</p>
             ) : (
               data.ai.topFeatures.map((f) => (
                 <div
@@ -364,7 +442,7 @@ function InternalTab({ from, to }: { from: string; to: string }) {
                   className="flex justify-between text-xs text-txt-secondary"
                 >
                   <span className="font-mono">{f.feature}</span>
-                  <span className="font-bold text-txt-primary">{f.calls}</span>
+                  <span className="font-bold text-txt-primary">{formatNumber(f.calls)} <span className="text-txt-muted font-normal">/ {formatNumber(f.tokens)} tok</span></span>
                 </div>
               ))
             )}
@@ -372,58 +450,233 @@ function InternalTab({ from, to }: { from: string; to: string }) {
         </div>
       </div>
 
-      {/* Top articles */}
-      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
-        <div className="border-b border-border bg-surface-secondary px-5 py-4">
-          <h3 className="text-base font-bold text-txt-primary">
-            Top 10 Artikel
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border bg-surface-secondary">
-              <tr>
-                <th className="px-5 py-3 text-left font-medium text-txt-secondary">
-                  #
-                </th>
-                <th className="px-5 py-3 text-left font-medium text-txt-secondary">
-                  Judul
-                </th>
-                <th className="px-5 py-3 text-right font-medium text-txt-secondary">
-                  Views
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {data.views.top10.map((a, i) => (
-                <tr key={a.slug} className="hover:bg-surface-secondary/50">
-                  <td className="px-5 py-3 text-txt-muted">{i + 1}</td>
-                  <td className="px-5 py-3 font-medium text-txt-primary max-w-[400px] truncate">
-                    <Link
-                      href={`/berita/${a.slug}`}
-                      target="_blank"
-                      className="hover:text-primary"
-                    >
-                      {a.title}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3 text-right font-bold">
-                    {formatNumber(a.viewCount)}
-                  </td>
-                </tr>
-              ))}
-              {data.views.top10.length === 0 && (
+      {/* Top articles — split: in-range vs lifetime */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+          <div className="border-b border-border bg-surface-secondary px-5 py-4">
+            <h3 className="text-base font-bold text-txt-primary">
+              Top Artikel — Periode
+            </h3>
+            <p className="text-xs text-txt-muted mt-0.5">Artikel yang terbit dalam rentang, diurut by views</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border bg-surface-secondary">
                 <tr>
-                  <td
-                    colSpan={3}
-                    className="px-5 py-8 text-center text-txt-muted"
-                  >
-                    Belum ada data.
-                  </td>
+                  <th className="px-5 py-3 text-left font-medium text-txt-secondary">#</th>
+                  <th className="px-5 py-3 text-left font-medium text-txt-secondary">Judul</th>
+                  <th className="px-5 py-3 text-right font-medium text-txt-secondary">Views</th>
                 </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {data.views.top10InRange.map((a, i) => (
+                  <tr key={a.slug} className="hover:bg-surface-secondary/50">
+                    <td className="px-5 py-3 text-txt-muted">{i + 1}</td>
+                    <td className="px-5 py-3 font-medium text-txt-primary max-w-[400px] truncate">
+                      <Link href={`/berita/${a.slug}`} target="_blank" className="hover:text-primary">
+                        {a.title}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3 text-right font-bold">{formatNumber(a.viewCount)}</td>
+                  </tr>
+                ))}
+                {data.views.top10InRange.length === 0 && (
+                  <tr><td colSpan={3} className="px-5 py-8 text-center text-txt-muted">Belum ada artikel terbit di periode ini.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+          <div className="border-b border-border bg-surface-secondary px-5 py-4">
+            <h3 className="text-base font-bold text-txt-primary">
+              Top Artikel — Lifetime
+            </h3>
+            <p className="text-xs text-txt-muted mt-0.5">10 artikel paling banyak dibaca seluruh waktu</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border bg-surface-secondary">
+                <tr>
+                  <th className="px-5 py-3 text-left font-medium text-txt-secondary">#</th>
+                  <th className="px-5 py-3 text-left font-medium text-txt-secondary">Judul</th>
+                  <th className="px-5 py-3 text-right font-medium text-txt-secondary">Views</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {data.views.top10.map((a, i) => (
+                  <tr key={a.slug} className="hover:bg-surface-secondary/50">
+                    <td className="px-5 py-3 text-txt-muted">{i + 1}</td>
+                    <td className="px-5 py-3 font-medium text-txt-primary max-w-[400px] truncate">
+                      <Link href={`/berita/${a.slug}`} target="_blank" className="hover:text-primary">
+                        {a.title}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3 text-right font-bold">{formatNumber(a.viewCount)}</td>
+                  </tr>
+                ))}
+                {data.views.top10.length === 0 && (
+                  <tr><td colSpan={3} className="px-5 py-8 text-center text-txt-muted">Belum ada data.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Pipeline funnel: Sorotan + Social — kontekstual ke editorial workflow */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <h3 className="text-base font-bold text-txt-primary mb-1">Sorotan SEO</h3>
+          <p className="text-xs text-txt-muted mb-3">9-angle reframing untuk long-tail SEO</p>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between"><span className="text-txt-secondary">Total</span><span className="font-bold">{formatNumber(data.sorotan.total)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Indexed</span><span className="font-bold text-primary">{formatNumber(data.sorotan.indexed)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Submitted</span><span className="font-bold text-blue-600">{formatNumber(data.sorotan.submitted)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Pending</span><span className="font-bold text-yellow-600">{formatNumber(data.sorotan.pending)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Failed</span><span className="font-bold text-red-600">{formatNumber(data.sorotan.failed)}</span></div>
+            <div className="border-t border-border my-2" />
+            <div className="flex justify-between"><span className="text-txt-secondary">Dibuat di periode</span><span className="font-bold">{formatNumber(data.sorotan.createdInRange)}</span></div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <h3 className="text-base font-bold text-txt-primary mb-1">Social Media</h3>
+          <p className="text-xs text-txt-muted mb-3">Auto-publish ke IG/FB/Twitter</p>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between"><span className="text-txt-secondary">Total post</span><span className="font-bold">{formatNumber(data.social.total)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Published</span><span className="font-bold text-primary">{formatNumber(data.social.published)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Draft</span><span className="font-bold text-txt-muted">{formatNumber(data.social.draft)}</span></div>
+            <div className="border-t border-border my-2" />
+            <div className="flex justify-between"><span className="text-txt-secondary">Terbit di periode</span><span className="font-bold">{formatNumber(data.social.publishedInRange)}</span></div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <h3 className="text-base font-bold text-txt-primary mb-1">Newsletter</h3>
+          <p className="text-xs text-txt-muted mb-3">Pelanggan mailing list</p>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between"><span className="text-txt-secondary">Total subscriber</span><span className="font-bold">{formatNumber(data.newsletter.subscribers)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Confirmed</span><span className="font-bold text-primary">{formatNumber(data.newsletter.confirmed)}</span></div>
+            <div className="border-t border-border my-2" />
+            <div className="flex justify-between"><span className="text-txt-secondary">Daftar di periode</span><span className="font-bold">{formatNumber(data.newsletter.newInRange)}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Glossary + Ads + Scraping */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <h3 className="text-base font-bold text-txt-primary mb-1">Glossary</h3>
+          <p className="text-xs text-txt-muted mb-3">Istilah hukum yang dilihat pembaca</p>
+          <div className="flex justify-between text-sm mb-3">
+            <span className="text-txt-secondary">Total istilah</span>
+            <span className="font-bold">{formatNumber(data.glossary.total)}</span>
+          </div>
+          <div className="flex justify-between text-sm mb-4">
+            <span className="text-txt-secondary">Total views</span>
+            <span className="font-bold">{formatNumber(data.glossary.viewsTotal)}</span>
+          </div>
+          <p className="text-xs font-semibold text-txt-secondary mb-2">Top 5</p>
+          <div className="space-y-1.5">
+            {data.glossary.top5.length === 0 ? (
+              <p className="text-xs text-txt-muted">Belum ada data view.</p>
+            ) : (
+              data.glossary.top5.map((g) => (
+                <div key={g.slug} className="flex justify-between text-xs">
+                  <Link href={`/glossary/${g.slug}`} target="_blank" className="text-txt-secondary hover:text-primary truncate max-w-[200px]">{g.istilah}</Link>
+                  <span className="font-bold text-txt-primary shrink-0">{formatNumber(g.viewCount)}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <h3 className="text-base font-bold text-txt-primary mb-1">Iklan</h3>
+          <p className="text-xs text-txt-muted mb-3">Performance lifetime semua slot</p>
+          <div className="space-y-1.5 text-sm mb-4">
+            <div className="flex justify-between"><span className="text-txt-secondary">Aktif</span><span className="font-bold">{formatNumber(data.ads.activeCount)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Impressions</span><span className="font-bold">{formatNumber(data.ads.totalImpressions)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Clicks</span><span className="font-bold">{formatNumber(data.ads.totalClicks)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">CTR</span><span className="font-bold">{(data.ads.ctr * 100).toFixed(2)}%</span></div>
+          </div>
+          <p className="text-xs font-semibold text-txt-secondary mb-2">Top 5</p>
+          <div className="space-y-1.5">
+            {data.ads.top5.length === 0 ? (
+              <p className="text-xs text-txt-muted">Belum ada impression.</p>
+            ) : (
+              data.ads.top5.map((a) => (
+                <div key={a.id} className="flex justify-between text-xs">
+                  <span className="text-txt-secondary truncate max-w-[180px]">{a.name}</span>
+                  <span className="text-txt-primary shrink-0">
+                    <span className="font-bold">{formatNumber(a.clicks)}</span>
+                    <span className="text-txt-muted"> / {formatNumber(a.impressions)} </span>
+                    <span className="text-txt-muted">({(a.ctr * 100).toFixed(1)}%)</span>
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <h3 className="text-base font-bold text-txt-primary mb-1">Auto-Scraping</h3>
+          <p className="text-xs text-txt-muted mb-3">Sumber berita & artikel hasil paraphrase</p>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between"><span className="text-txt-secondary">Sumber terdaftar</span><span className="font-bold">{formatNumber(data.scraping.sources)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Sumber aktif</span><span className="font-bold text-primary">{formatNumber(data.scraping.activeSources)}</span></div>
+            <div className="flex justify-between"><span className="text-txt-secondary">Artikel scrape (periode)</span><span className="font-bold">{formatNumber(data.scraping.articlesScrapedInRange)}</span></div>
+            <div className="border-t border-border my-2" />
+            <div className="flex justify-between"><span className="text-txt-secondary">Scrape sukses terakhir</span>
+              <span className="font-mono text-[10px] text-txt-muted">
+                {data.scraping.lastSuccessAt
+                  ? new Date(data.scraping.lastSuccessAt).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })
+                  : "—"}
+              </span>
+            </div>
+          </div>
+          <Link href="/panel/sumber-berita" className="mt-4 inline-flex items-center gap-1 text-xs text-primary hover:underline">
+            Kelola sumber <ExternalLink size={10} />
+          </Link>
+        </div>
+      </div>
+
+      {/* Audit log activity */}
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <h3 className="text-base font-bold text-txt-primary mb-1">Aktivitas Sistem (Periode)</h3>
+        <p className="text-xs text-txt-muted mb-4">Total {formatNumber(data.audit.totalInRange)} aksi tercatat di AuditLog dalam rentang dipilih.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <p className="text-xs font-semibold text-txt-secondary mb-2">Top Aksi</p>
+            <div className="space-y-1.5">
+              {data.audit.topActions.length === 0 ? (
+                <p className="text-xs text-txt-muted">Tidak ada aktivitas.</p>
+              ) : (
+                data.audit.topActions.map((a) => (
+                  <div key={a.action} className="flex justify-between text-xs">
+                    <span className="font-mono text-txt-secondary">{a.action}</span>
+                    <span className="font-bold text-txt-primary">{formatNumber(a.count)}</span>
+                  </div>
+                ))
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-txt-secondary mb-2">Pengguna Paling Aktif</p>
+            <div className="space-y-1.5">
+              {data.audit.topUsers.length === 0 ? (
+                <p className="text-xs text-txt-muted">Tidak ada aktivitas user.</p>
+              ) : (
+                data.audit.topUsers.map((u) => (
+                  <div key={u.userId} className="flex justify-between text-xs">
+                    <span className="text-txt-secondary truncate max-w-[200px]">{u.userName ?? u.userId.slice(0, 8)}</span>
+                    <span className="font-bold text-txt-primary">{formatNumber(u.count)}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
