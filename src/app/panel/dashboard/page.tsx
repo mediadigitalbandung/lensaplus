@@ -836,10 +836,13 @@ export default function DashboardPage() {
         setLoading(true);
         setError(null);
 
-        // Creators fetch only their articles; editors/admins fetch all
+        // Creators fetch only their articles; editors/admins fetch all.
+        // limit=200 is enough for the 6-month chart + ranking widgets, while
+        // cutting payload ~5x vs the legacy limit=1000 (which transferred
+        // every article every dashboard load).
         const articlesUrl = isCreator
-          ? `/api/articles?limit=1000&status=ALL&authorId=${userId}`
-          : `/api/articles?limit=1000&status=ALL`;
+          ? `/api/articles?limit=200&status=ALL&authorId=${userId}`
+          : `/api/articles?limit=200&status=ALL`;
 
         const fetches: Promise<Response>[] = [fetch(articlesUrl)];
         // Only admins/editors see reports + aggregated dashboard stats
@@ -905,10 +908,19 @@ export default function DashboardPage() {
                 ? `${(aiTokens / 1000).toFixed(1)}K`
                 : formatNumber(aiTokens);
 
+            const faqPercent = dashStats.faqCoverage?.percent ?? 0;
+            const faqHint =
+              dashStats.faqCoverage?.published > 0
+                ? `${dashStats.faqCoverage.withFaq}/${dashStats.faqCoverage.published} artikel`
+                : "Belum ada artikel published";
+
             setExtraStats([
               { label: "Total Komentar", value: formatNumber(dashStats.comments?.total || 0), icon: MessageSquare, color: "text-blue-500 bg-blue-50", href: "/panel/komentar", accent: "info", hint: "Total semua komentar" },
               { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50", href: "/panel/komentar", accent: "warn", hint: "Belum disetujui" },
               { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), icon: Highlighter, color: "text-amber-500 bg-amber-50", href: "/panel/sorotan", accent: "primary", hint: "Variasi SEO artikel" },
+              { label: "Topic Cluster", value: formatNumber(dashStats.topics?.total || 0), icon: Layers, color: "text-emerald-600 bg-emerald-50", href: "/panel/topik", accent: "ok", hint: `${dashStats.topics?.published || 0} aktif` },
+              { label: "Coverage FAQ", value: `${faqPercent}%`, icon: BookOpen, color: "text-violet-600 bg-violet-50", href: "/panel/artikel", accent: faqPercent >= 50 ? "ok" : "warn", hint: faqHint },
+              { label: "Newsletter", value: formatNumber(dashStats.newsletter?.confirmed || 0), icon: Mail, color: "text-indigo-600 bg-indigo-50", href: "/panel/newsletter-subscribers", accent: "primary", hint: `${dashStats.newsletter?.total || 0} pendaftar total` },
               { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50", href: "/panel/polling", accent: "info", hint: `${dashStats.polls?.active || 0} aktif` },
               { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50", href: "/panel/dokumentasi", accent: "ok", hint: `${dashStats.glossary?.published || 0} dipublikasi` },
               { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50", href: "/panel/social", accent: "primary", hint: "Bulan ini" },
@@ -1177,9 +1189,11 @@ export default function DashboardPage() {
             subtitle: "Sebar ke pembaca, mesin pencari, dan sosmed",
             actions: [
               { href: "/panel/sorotan", label: "Sorotan SEO", icon: Highlighter, color: "text-amber-600", bg: "bg-amber-50", show: !isCreator },
+              { href: "/panel/topik", label: "Topic Cluster", icon: Layers, color: "text-emerald-600", bg: "bg-emerald-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
               { href: "/panel/seo", label: "SEO Panel", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", show: !isCreator },
               { href: "/panel/social", label: "Sosial Media", icon: Share2, color: "text-pink-600", bg: "bg-pink-50", show: !isCreator },
               { href: "/panel/tiktok", label: "TikTok", icon: Music, color: "text-fuchsia-600", bg: "bg-fuchsia-50", show: !isCreator },
+              { href: "/panel/newsletter-subscribers", label: "Newsletter", icon: Mail, color: "text-indigo-600", bg: "bg-indigo-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
               { href: "/panel/statistik", label: "Statistik", icon: BarChart3, color: "text-green-600", bg: "bg-green-50", show: !isCreator },
               { href: "/panel/polling", label: "Polling", icon: Vote, color: "text-purple-600", bg: "bg-purple-50", show: !isCreator },
               { href: "/panel/jadwal-sidang", label: "Jadwal Sidang", icon: Gavel, color: "text-stone-700", bg: "bg-stone-100", show: !isCreator },

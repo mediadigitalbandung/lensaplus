@@ -24,6 +24,15 @@ export async function GET() {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+    // PrismaClient cast for Topic model (regenerate Prisma client after
+     // schema migration — newer pages use `topic` directly).
+    const prismaAny = prisma as unknown as {
+      topic: { count: (args?: { where?: { isPublished?: boolean } }) => Promise<number> };
+      newsletterSubscriber: {
+        count: (args?: { where?: { confirmedAt?: object | null; unsubscribedAt?: object | null } }) => Promise<number>;
+      };
+    };
+
     const [
       totalCategories,
       totalTags,
@@ -45,6 +54,12 @@ export async function GET() {
       aiUsageMonth,
       totalNewsSources,
       activeNewsSources,
+      totalTopics,
+      publishedTopics,
+      totalSubscribers,
+      confirmedSubscribers,
+      articlesWithFaq,
+      totalPublishedArticles,
     ] = await Promise.all([
       prisma.category.count(),
       prisma.tag.count(),
@@ -73,6 +88,24 @@ export async function GET() {
       }),
       prisma.newsSource.count(),
       prisma.newsSource.count({ where: { isActive: true } }),
+      // Topic + Newsletter — cast through prismaAny because Prisma client
+      // type may lag DB schema until `prisma generate` runs at build time.
+      prismaAny.topic.count().catch(() => 0),
+      prismaAny.topic.count({ where: { isPublished: true } }).catch(() => 0),
+      prismaAny.newsletterSubscriber.count().catch(() => 0),
+      prismaAny.newsletterSubscriber
+        .count({ where: { confirmedAt: { not: null }, unsubscribedAt: null } })
+        .catch(() => 0),
+      // Articles with non-empty faqData — drives "FAQ coverage" metric so
+      // editors can see how many published articles still need FAQ.
+      prisma.article.count({
+        where: {
+          status: "PUBLISHED",
+          faqData: { not: null },
+          NOT: { faqData: "" },
+        },
+      }),
+      prisma.article.count({ where: { status: "PUBLISHED" } }),
     ]);
 
     return successResponse({
@@ -88,6 +121,17 @@ export async function GET() {
       ads: { total: totalAds, active: activeAds },
       aiUsage: { totalTokens30d: aiUsageMonth._sum.totalTokens || 0 },
       newsSources: { total: totalNewsSources, active: activeNewsSources },
+      topics: { total: totalTopics, published: publishedTopics },
+      newsletter: { total: totalSubscribers, confirmed: confirmedSubscribers },
+      faqCoverage: {
+        withFaq: articlesWithFaq,
+        published: totalPublishedArticles,
+        // Percent rounded to nearest integer for stat-card display.
+        percent:
+          totalPublishedArticles > 0
+            ? Math.round((articlesWithFaq / totalPublishedArticles) * 100)
+            : 0,
+      },
     });
   } catch (error) {
     return errorResponse(error);
