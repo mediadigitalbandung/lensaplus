@@ -21,14 +21,15 @@ import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export function generateStaticParams() {
   return courtLocations.map((c) => ({ slug: c.slug }));
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: PageProps): Promise<Metadata> {
+  const params = await paramsPromise;
   const court = getCourtLocationBySlug(params.slug);
   if (!court) return { title: "Lokasi Tidak Ditemukan" };
   const ogImage = `/api/og?title=${encodeURIComponent(court.name)}&type=lokasi`;
@@ -62,7 +63,8 @@ const TYPE_LABEL: Record<string, string> = {
   MA: "Mahkamah Agung",
 };
 
-export default async function LokasiDetailPage({ params }: PageProps) {
+export default async function LokasiDetailPage({ params: paramsPromise }: PageProps) {
+  const params = await paramsPromise;
   const court = getCourtLocationBySlug(params.slug);
   if (!court) notFound();
 

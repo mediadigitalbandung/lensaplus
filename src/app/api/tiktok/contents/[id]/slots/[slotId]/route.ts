@@ -26,8 +26,9 @@ const patchSchema = z.object({
 // PATCH /api/tiktok/contents/:id/slots/:slotId — edit slot timing/caption
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; slotId: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string; slotId: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);
@@ -61,8 +62,9 @@ export async function PATCH(
 // DELETE /api/tiktok/contents/:id/slots/:slotId — remove + compact orders
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string; slotId: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string; slotId: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);

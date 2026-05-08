@@ -44,7 +44,8 @@ const updateSchema = z.object({
 });
 
 // GET /api/tiktok/contents/:id
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);
@@ -66,7 +67,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 // PUT /api/tiktok/contents/:id
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);
@@ -113,7 +115,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/tiktok/contents/:id
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);

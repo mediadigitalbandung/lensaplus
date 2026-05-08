@@ -15,8 +15,9 @@ const updateCategorySchema = z.object({
 // PUT /api/categories/[id]
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
     const body = await request.json();
@@ -51,8 +52,9 @@ export async function PUT(
 // DELETE /api/categories/[id]
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
 

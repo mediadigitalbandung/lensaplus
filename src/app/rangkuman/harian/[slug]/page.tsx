@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -41,7 +41,8 @@ function fmtDay(d: Date): string {
   });
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: PageProps): Promise<Metadata> {
+  const params = await paramsPromise;
   const range = parseSlugDate(params.slug);
   if (!range) return { title: "Rangkuman Harian Tidak Ditemukan" };
   const dateStr = fmtDay(range.from);
@@ -57,7 +58,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function RangkumanHarianDetailPage({ params }: PageProps) {
+export default async function RangkumanHarianDetailPage({ params: paramsPromise }: PageProps) {
+  const params = await paramsPromise;
   const range = parseSlugDate(params.slug);
   if (!range) notFound();
 

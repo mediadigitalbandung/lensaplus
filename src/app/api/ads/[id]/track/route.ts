@@ -5,8 +5,9 @@ import { successResponse, errorResponse } from "@/lib/api-utils";
 // POST /api/ads/:id/track?type=impression|click
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "impression";

@@ -11,8 +11,8 @@ import { notFound } from "next/navigation";
 const PER_PAGE = 12;
 
 interface PageProps {
-  params: { slug: string };
-  searchParams: { page?: string };
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
 // High-priority tag overrides — hand-tuned meta for hub pages we want to push.
@@ -25,7 +25,8 @@ const TAG_META_OVERRIDES: Record<string, { title: string; description: string }>
   },
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: PageProps): Promise<Metadata> {
+  const params = await paramsPromise;
   const tag = await prisma.tag.findUnique({ where: { slug: params.slug } });
   if (!tag) return { title: "Tag Tidak Ditemukan" };
   const override = TAG_META_OVERRIDES[params.slug];
@@ -44,7 +45,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function TagPage({ params, searchParams }: PageProps) {
+export default async function TagPage({ params: paramsPromise, searchParams: searchParamsPromise }: PageProps) {
+  const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   const tag = await prisma.tag.findUnique({
     where: { slug: params.slug },
   });

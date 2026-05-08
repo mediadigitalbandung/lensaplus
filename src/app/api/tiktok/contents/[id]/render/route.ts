@@ -30,7 +30,8 @@ export const dynamic = "force-dynamic";
  *
  * For now this returns 501 with a clear message so the UI can show "coming soon".
  */
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_req: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);

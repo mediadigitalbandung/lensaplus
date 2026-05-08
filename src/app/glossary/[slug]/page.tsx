@@ -16,7 +16,8 @@ const RANAH_LABEL: Record<string, string> = {
   UMUM: "Umum",
 };
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await paramsPromise;
   const item = await prisma.glossary.findUnique({
     where: { slug: params.slug },
     select: { istilah: true, singkatan: true, ranah: true, bodyHtml: true },
@@ -44,7 +45,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function GlossaryDetailPage({ params }: { params: { slug: string } }) {
+export default async function GlossaryDetailPage({ params: paramsPromise }: { params: Promise<{ slug: string }> }) {
+  const params = await paramsPromise;
   const item = await prisma.glossary.findUnique({
     where: { slug: params.slug, isPublished: true },
   });

@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 interface ResolvedDigest {
@@ -52,7 +52,8 @@ async function resolveDigest(slug: string): Promise<ResolvedDigest | null> {
   };
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: PageProps): Promise<Metadata> {
+  const params = await paramsPromise;
   const digest = await resolveDigest(params.slug);
   if (!digest) return { title: "Rangkuman Tidak Ditemukan" };
   const ogImage = `/api/og?title=${encodeURIComponent(digest.title)}&type=rangkuman`;
@@ -75,7 +76,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function RangkumanDetailPage({ params }: PageProps) {
+export default async function RangkumanDetailPage({ params: paramsPromise }: PageProps) {
+  const params = await paramsPromise;
   const digest = await resolveDigest(params.slug);
   if (!digest || !digest.range) notFound();
 

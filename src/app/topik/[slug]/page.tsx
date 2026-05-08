@@ -70,11 +70,10 @@ async function getArticlesForTopic(tagIds: string[], page: number) {
   return { articles, total, totalPages: Math.ceil(total / ARTICLES_PER_PAGE) };
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
+export async function generateMetadata({ params: paramsPromise }: {
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
+  const params = await paramsPromise;
   const topic = await getTopic(params.slug);
 
   if (!topic) return {};
@@ -106,13 +105,12 @@ export async function generateMetadata({
   };
 }
 
-export default async function TopikDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { slug: string };
-  searchParams: { page?: string };
+export default async function TopikDetailPage({ params: paramsPromise, searchParams: searchParamsPromise }: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
+  const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   const topic = await getTopic(params.slug);
 
   // No topic cluster found — fall back to the original kategori redirect.

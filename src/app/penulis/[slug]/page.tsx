@@ -12,7 +12,8 @@ async function getAuthorBySlug(slug: string) {
   return users.find((u) => slugify(u.name) === slug) || null;
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await paramsPromise;
   const author = await getAuthorBySlug(params.slug);
   if (!author) return { title: "Penulis Tidak Ditemukan" };
 
@@ -25,7 +26,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function PenulisPage({ params }: { params: { slug: string } }) {
+export default async function PenulisPage({ params: paramsPromise }: { params: Promise<{ slug: string }> }) {
+  const params = await paramsPromise;
   const author = await getAuthorBySlug(params.slug);
   if (!author) notFound();
 

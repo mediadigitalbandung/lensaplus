@@ -8,11 +8,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/newsletter" },
 };
 
-export default function NewsletterPage({
-  searchParams,
-}: {
-  searchParams: { status?: string };
+export default async function NewsletterPage({ searchParams: searchParamsPromise }: {
+  searchParams: Promise<{ status?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const status = searchParams.status;
   const messages: Record<string, { tone: "success" | "error" | "info"; title: string; body: string }> = {
     confirmed: {

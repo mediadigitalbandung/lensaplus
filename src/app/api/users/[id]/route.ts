@@ -24,8 +24,9 @@ const updateUserSchema = z.object({
 // PUT /api/users/:id
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
 
@@ -86,8 +87,9 @@ export async function PUT(
 // DELETE /api/users/:id
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(["SUPER_ADMIN"]);
 

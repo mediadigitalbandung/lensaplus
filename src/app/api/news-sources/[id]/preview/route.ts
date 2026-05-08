@@ -24,8 +24,9 @@ export const maxDuration = 60;
 
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     await requireRole([...ADMIN_ROLES]);
     const source = await prisma.newsSource.findUnique({

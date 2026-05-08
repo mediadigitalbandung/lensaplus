@@ -30,8 +30,9 @@ const patchSchema = z.object({
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     await requireRole([...EDITOR_ROLES]);
     const row = await prisma.targetKeyword.findUnique({
@@ -49,8 +50,9 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole([...EDITOR_ROLES]);
     const body = await req.json();
@@ -91,8 +93,9 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(["SUPER_ADMIN"]);
     const existing = await prisma.targetKeyword.findUnique({

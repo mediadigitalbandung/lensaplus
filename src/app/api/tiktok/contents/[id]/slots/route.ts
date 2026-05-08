@@ -30,7 +30,8 @@ const createSlotSchema = z.object({
 });
 
 // POST /api/tiktok/contents/:id/slots — append a slot
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);
@@ -76,7 +77,8 @@ const reorderSchema = z.object({
 });
 
 // PUT /api/tiktok/contents/:id/slots — bulk reorder by id list
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);

@@ -18,8 +18,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
     const result = await takedownPost(params.id);

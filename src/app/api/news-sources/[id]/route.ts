@@ -43,8 +43,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     await requireRole([...ADMIN_ROLES]);
     const source = await prisma.newsSource.findUnique({
@@ -60,8 +61,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole([...ADMIN_ROLES]);
     const existing = await prisma.newsSource.findUnique({
@@ -98,8 +100,9 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole([...ADMIN_ROLES]);
     const existing = await prisma.newsSource.findUnique({

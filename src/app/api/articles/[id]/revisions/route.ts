@@ -10,8 +10,9 @@ import {
 // GET /api/articles/:id/revisions
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     await requireAuth();
 

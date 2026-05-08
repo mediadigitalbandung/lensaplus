@@ -36,13 +36,14 @@ const ANGLE_COLOR: Record<string, string> = {
 };
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     angle?: string;
-  };
+  }>;
 }
 
-export default async function SorotanListPage({ searchParams }: PageProps) {
+export default async function SorotanListPage({ searchParams: searchParamsPromise }: PageProps) {
+  const searchParams = await searchParamsPromise;
   const page = Math.max(1, parseInt(searchParams.page || "1"));
   const angleParam = searchParams.angle?.toUpperCase();
   const validAngle =

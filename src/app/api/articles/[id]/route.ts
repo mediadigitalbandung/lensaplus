@@ -39,8 +39,9 @@ const updateArticleSchema = z.object({
 // GET /api/articles/:id
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const article = await prisma.article.findUnique({
       where: { id: params.id },
@@ -86,8 +87,9 @@ export async function GET(
 // PUT /api/articles/:id
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     const article = await prisma.article.findUnique({
@@ -803,8 +805,9 @@ export async function PUT(
 // PATCH /api/articles/:id — assign editor
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "CHIEF_EDITOR";
@@ -893,8 +896,9 @@ export async function PATCH(
 // DELETE /api/articles/:id
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
     const article = await prisma.article.findUnique({

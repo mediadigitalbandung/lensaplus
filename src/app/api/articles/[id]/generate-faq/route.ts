@@ -75,8 +75,9 @@ function parseFaqResponse(raw: string): FaqItem[] | null {
 
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(EDITOR_ROLES);
 

@@ -42,8 +42,9 @@ export const maxDuration = 300;
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   const started = Date.now();
   try {
     const session = await requireRole([...ADMIN_ROLES]);

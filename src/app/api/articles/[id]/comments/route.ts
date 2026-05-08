@@ -22,8 +22,9 @@ const createCommentSchema = z.object({
 // GET /api/articles/:id/comments — public: approved only, admin/editor: all
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const article = await prisma.article.findUnique({
       where: { id: params.id },
@@ -66,8 +67,9 @@ export async function GET(
 // POST /api/articles/:id/comments — public, creates unapproved comment
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     // Rate limit by IP
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";

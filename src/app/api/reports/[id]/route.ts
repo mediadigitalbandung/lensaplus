@@ -16,8 +16,9 @@ const updateReportSchema = z.object({
 // PATCH /api/reports/:id
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
 

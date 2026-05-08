@@ -13,8 +13,9 @@ const ALLOWED_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"] as const;
 // PUT /api/comments/:id — approve/reject (admin/editor only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole([...ALLOWED_ROLES]);
 
@@ -45,8 +46,9 @@ export async function PUT(
 // DELETE /api/comments/:id — delete comment (admin/editor only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole([...ALLOWED_ROLES]);
 

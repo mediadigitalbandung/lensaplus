@@ -52,11 +52,10 @@ async function getSorotan(slug: string) {
   });
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
+export async function generateMetadata({ params: paramsPromise }: {
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
+  const params = await paramsPromise;
   const sorotan = await getSorotan(params.slug);
   if (!sorotan) return { title: "Sorotan Tidak Ditemukan" };
 
@@ -99,11 +98,10 @@ export async function generateMetadata({
   };
 }
 
-export default async function SorotanDetailPage({
-  params,
-}: {
-  params: { slug: string };
+export default async function SorotanDetailPage({ params: paramsPromise }: {
+  params: Promise<{ slug: string }>;
 }) {
+  const params = await paramsPromise;
   const sorotan = await getSorotan(params.slug);
   if (!sorotan) notFound();
 

@@ -13,7 +13,8 @@ const updateSchema = z.object({
 });
 
 // PUT /api/redaksi/:id
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
     const existing = await prisma.redaksiMember.findUnique({ where: { id: params.id } });
@@ -35,7 +36,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/redaksi/:id
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
     const existing = await prisma.redaksiMember.findUnique({ where: { id: params.id } });

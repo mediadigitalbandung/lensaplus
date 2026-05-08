@@ -28,15 +28,16 @@ export const metadata: Metadata = {
 const PER_PAGE = 12;
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     sort?: string;
     category?: string;
     q?: string;
-  };
+  }>;
 }
 
-export default async function BeritaPage({ searchParams }: PageProps) {
+export default async function BeritaPage({ searchParams: searchParamsPromise }: PageProps) {
+  const searchParams = await searchParamsPromise;
   const page = Math.max(1, parseInt(searchParams.page || "1"));
   const sort = searchParams.sort || "latest";
   const categorySlug = searchParams.category || "all";

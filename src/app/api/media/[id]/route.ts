@@ -18,8 +18,9 @@ const updateMediaSchema = z.object({
 // PATCH /api/media/:id — update title/caption/credit
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireAuth();
 

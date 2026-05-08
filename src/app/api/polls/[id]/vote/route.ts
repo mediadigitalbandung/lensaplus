@@ -10,7 +10,8 @@ const voteSchema = z.object({
 });
 
 // POST /api/polls/:id/vote — public, 1 vote per IP per poll
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     // Get IP from headers
     const forwarded = request.headers.get("x-forwarded-for");
@@ -93,7 +94,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 }
 
 // GET /api/polls/:id/vote — check if current IP already voted
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   try {
     const forwarded = request.headers.get("x-forwarded-for");
     const ip = forwarded ? forwarded.split(",")[0].trim() : request.headers.get("x-real-ip") || "unknown";
