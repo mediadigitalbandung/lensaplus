@@ -211,7 +211,12 @@ export default function AutoArtikelPage() {
       const res = await fetch("/api/target-keywords");
       if (res.ok) {
         const json = await res.json();
-        setKeywords(Array.isArray(json.data) ? json.data : []);
+        const list = Array.isArray(json.data?.keywords)
+          ? json.data.keywords
+          : Array.isArray(json.data)
+          ? json.data // backward-compat if API shape changes
+          : [];
+        setKeywords(list);
       }
     } catch {
       /* */

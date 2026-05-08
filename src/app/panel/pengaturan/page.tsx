@@ -444,8 +444,8 @@ export default function PengaturanPage() {
         setEmailFrom(map.notification_email_from || "");
 
         setAutoEnabled(map.auto_article_enabled === "true");
-        setAutoCount(parseInt(map.auto_article_count || "1") || 1);
-        setAutoInterval(parseInt(map.auto_article_interval || "60") || 60);
+        setAutoCount(parseInt(map.auto_article_batch_size || "1") || 1);
+        setAutoInterval(parseInt(map.auto_article_interval_minutes || "60") || 60);
 
         setEnableComments(map.enable_comments !== "false");
         setMaintenanceMode(map.maintenance_mode === "true");
@@ -1546,8 +1546,8 @@ export default function PengaturanPage() {
             onSave={() =>
               saveSection("auto", [
                 ["auto_article_enabled", autoEnabled ? "true" : "false"],
-                ["auto_article_count", String(autoCount)],
-                ["auto_article_interval", String(autoInterval)],
+                ["auto_article_batch_size", String(autoCount)],
+                ["auto_article_interval_minutes", String(autoInterval)],
               ])
             }
             saving={!!saving.auto}

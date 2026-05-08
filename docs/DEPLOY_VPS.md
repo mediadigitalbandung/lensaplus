@@ -45,8 +45,9 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 */5 * * * * curl -sS -X POST https://kartawarta.com/api/cron/publish \
   -H "Authorization: Bearer ${CRON_SECRET}" >> /var/log/kartawarta-cron.log 2>&1
 
-# Auto-generate an AI article draft from a target keyword (every 1 hour)
-0 * * * * curl -sS -X POST https://kartawarta.com/api/cron/auto-article \
+# Auto-generate an AI article draft from a target keyword (every 5 min — internal
+# throttle via auto_article_interval_minutes SystemSetting controls actual cadence)
+*/5 * * * * curl -sS -X POST https://kartawarta.com/api/cron/auto-article \
   -H "Authorization: Bearer ${CRON_SECRET}" >> /var/log/kartawarta-cron.log 2>&1
 
 # Generate Sorotan (3-angle SEO summaries) for new published articles (every 6 hours)

@@ -9,6 +9,7 @@ import {
   logAudit,
   ApiError,
 } from "@/lib/api-utils";
+import { onArticlePublished } from "@/lib/seo-auto";
 
 const bulkActionSchema = z.object({
   action: z.enum(["archive", "delete", "publish"]),
@@ -73,12 +74,7 @@ export async function POST(request: NextRequest) {
         `Bulk publish ${result.count} dari ${ids.length} artikel`,
       );
 
-      // Bulk skips the per-article publish-chain (Sorotan/Cloudflare/social),
-      // but the ISR cache invalidation is essential — without it the homepage
-      // and listings keep serving the pre-publish snapshot until the next
-      // 30s revalidate, which feels like "berita terkini tidak update". Fire
-      // once per bulk; per-slug paths aren't worth iterating since the
-      // article slug pages are dynamic anyway.
+      // ISR cache invalidation — essential so homepage/listings reflect new articles.
       try {
         revalidatePath("/");
         revalidatePath("/berita");
@@ -86,7 +82,47 @@ export async function POST(request: NextRequest) {
         /* revalidatePath may be a no-op outside a route handler — harmless */
       }
 
-      return successResponse({ count: result.count, requested: ids.length, action: "publish" });
+      // Trigger SEO chain (Indexing API / IndexNow / Sorotan / CF purge) for
+      // each newly published article. Fire-and-forget: caller does not wait so
+      // bulk response is immediate even for 200-article batches. Failures are
+      // logged but do not affect the HTTP response.
+      // Concurrency cap: 3 workers to avoid overwhelming external APIs.
+      void (async () => {
+        try {
+          const publishedArticles = await prisma.article.findMany({
+            where: { id: { in: ids }, status: "PUBLISHED" },
+            select: { id: true, slug: true },
+          });
+          const queue = [...publishedArticles];
+          const CONCURRENCY = 3;
+          const workers: Promise<void>[] = [];
+          for (let i = 0; i < CONCURRENCY; i++) {
+            workers.push(
+              (async () => {
+                while (queue.length > 0) {
+                  const a = queue.shift();
+                  if (!a) break;
+                  try {
+                    await onArticlePublished(a.slug, a.id);
+                  } catch (e) {
+                    console.error("[bulk-publish-seo] fail for", a.slug, e);
+                  }
+                }
+              })(),
+            );
+          }
+          await Promise.all(workers);
+        } catch (e) {
+          console.error("[bulk-publish-seo] fan-out error:", e);
+        }
+      })();
+
+      return successResponse({
+        count: result.count,
+        requested: ids.length,
+        action: "publish",
+        seoChain: "queued-background",
+      });
     }
 
     if (action === "delete") {

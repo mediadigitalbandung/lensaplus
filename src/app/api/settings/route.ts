@@ -42,10 +42,13 @@ const ALLOWED_KEYS = [
   "twitter_access_token",
   "twitter_access_secret",
   "twitter_bearer_token",
-  // Auto-article cron knobs
+  // Auto-article cron knobs (auto_article_author_id configures the draft author)
   "auto_article_enabled",
   "auto_article_interval_minutes",
   "auto_article_batch_size",
+  "auto_article_author_id",
+  // Deprecated keys kept so existing DB rows remain readable via GET,
+  // but the UI no longer writes them (uses batch_size/interval_minutes).
   "auto_article_count",
   "auto_article_interval",
   // Sorotan cron knobs
