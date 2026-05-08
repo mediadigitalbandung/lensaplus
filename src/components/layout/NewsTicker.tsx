@@ -53,7 +53,15 @@ function useStocks() {
       const res = await fetch("/api/stocks", { cache: "no-store" });
       if (!res.ok) throw new Error("err");
       const json = await res.json();
-      const data = json.data || [];
+      // /api/stocks returns { success, data: { stocks, updatedAt, usdIdrRate } }.
+      // Older shape was { data: [...] } directly, so tolerate both: prefer
+      // the nested .stocks, fall back to a bare array if the API ever
+      // reverts to the legacy shape.
+      const data: StockItem[] = Array.isArray(json.data?.stocks)
+        ? json.data.stocks
+        : Array.isArray(json.data)
+        ? json.data
+        : [];
       if (data.length > 0) {
         setStocks(data.map((s: StockItem) => ({
           ...s,

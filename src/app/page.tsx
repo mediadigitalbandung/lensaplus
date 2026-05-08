@@ -6,7 +6,6 @@ export const revalidate = 30;
 
 import Link from "next/link";
 import Image from "next/image";
-import NewsTicker from "@/components/layout/NewsTicker";
 import HeroCarousel from "@/components/slider/HeroCarousel";
 import PollingCarousel from "@/components/slider/PollingCarousel";
 import BannerAd, { SidebarAd, InlineAd, NativeAd } from "@/components/ads/BannerAd";
@@ -197,7 +196,6 @@ export default async function HomePage() {
         }}
       />
 
-      <NewsTicker />
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           HERO â€” Auto-rotating carousel + side stories

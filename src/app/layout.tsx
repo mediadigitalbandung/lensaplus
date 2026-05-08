@@ -5,6 +5,7 @@ import Providers from "@/components/Providers";
 import { Suspense } from "react";
 import TopLoader from "@/components/layout/TopLoader";
 import PublicNav from "@/components/layout/PublicNav";
+import PublicTicker from "@/components/layout/PublicTicker";
 import PublicFooter from "@/components/layout/PublicFooter";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import SideRailAds from "@/components/ads/SideRailAds";
@@ -141,6 +142,7 @@ export default function RootLayout({
             <TopLoader />
           </Suspense>
           <PublicNav />
+          <PublicTicker />
           <main id="main-content" className="flex-1">{children}</main>
           <PublicFooter />
           <SideRailAds />
