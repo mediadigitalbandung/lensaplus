@@ -35,6 +35,12 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: [
+          // HSTS — force HTTPS, preload-eligible (max-age 1 year + includeSubDomains)
+          // Production-only; reverse proxy / dev environment doesn't get HSTS.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
+          },
           // Prevent clickjacking
           { key: "X-Frame-Options", value: "DENY" },
           // Prevent MIME type sniffing
