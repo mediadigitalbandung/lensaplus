@@ -18,8 +18,12 @@ import {
   sendArticlePublishedEmail,
   sendNewReviewEmail,
 } from "@/lib/email";
-import { onArticlePublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
+import { onArticlePublished, onArticleUnpublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
 import { extractFirstImageUrl } from "@/lib/image-extract";
+import { revalidatePath } from "next/cache";
+import { invalidateCachePrefix } from "@/lib/cache";
+import { purgeCache } from "@/lib/cloudflare/purge";
+import { getStorageDriver } from "@/lib/storage";
 
 const updateArticleSchema = z.object({
   title: z.string().min(5).max(255).optional(),
@@ -630,34 +634,12 @@ export async function PUT(
           `Admin takedown artikel ke ${data.status}: ${article.title}${data.reviewNote ? ` — Catatan: ${data.reviewNote}` : ""}`
         );
 
-        return successResponse(updated);
-      }
-
-      // Admin return to editor: APPROVED -> IN_REVIEW (with optional note)
-      if (data.status === "IN_REVIEW" && article.status === "APPROVED") {
-        const updated = await prisma.article.update({
-          where: { id: params.id },
-          data: {
-            status: "IN_REVIEW",
-            verificationLabel: "UNVERIFIED",
-            reviewNote: data.reviewNote || null,
-            reviewedAt: null,
-          },
-          include: {
-            author: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true, slug: true } },
-            tags: true,
-            sources: true,
-          },
-        });
-
-        await logAudit(
-          session.user.id,
-          "STATUS_CHANGE",
-          "article",
-          article.id,
-          `Admin mengembalikan artikel ke editor: ${article.title}${data.reviewNote ? ` — Catatan: ${data.reviewNote}` : ""}`
-        );
+        onArticleUnpublished({
+          articleId: article.id,
+          slug: article.slug,
+          categorySlug: updated.category?.slug ?? "",
+          permanent: false,
+        }).catch(() => {});
 
         return successResponse(updated);
       }
@@ -703,6 +685,22 @@ export async function PUT(
             sources: true,
           },
         });
+
+        // Auto-resolve PENDING reports (Report has only status field — no resolvedAt/By)
+        await prisma.report.updateMany({
+          where: { articleId: article.id, status: "PENDING" },
+          data: { status: "RESOLVED" },
+        }).catch(() => {});
+
+        // If was published, fire SEO/cache invalidation chain
+        if (article.status === "PUBLISHED") {
+          onArticleUnpublished({
+            articleId: article.id,
+            slug: article.slug,
+            categorySlug: updated.category?.slug ?? "",
+            permanent: false,
+          }).catch(() => {});
+        }
 
         await logAudit(
           session.user.id,
@@ -790,6 +788,28 @@ export async function PUT(
           sources: true,
         },
       });
+
+      // Clean up old featured image if replaced
+      if (
+        data.featuredImage !== undefined &&
+        article.featuredImage !== data.featuredImage &&
+        article.featuredImage?.startsWith("/uploads/")
+      ) {
+        const key = article.featuredImage.substring("/uploads/".length);
+        const storage = getStorageDriver();
+        storage.delete(key).catch(() => {});
+      }
+
+      if (updated.status === "PUBLISHED") {
+        try {
+          revalidatePath("/");
+          revalidatePath(`/berita/${updated.slug}`);
+          invalidateCachePrefix("home:");
+          invalidateCachePrefix("trending:");
+          const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+          purgeCache([`${SITE}/berita/${updated.slug}`]).catch(() => {});
+        } catch {/* swallow */}
+      }
 
       await logAudit(session.user.id, "UPDATE", "article", article.id, `Admin mengedit artikel: ${article.title}`);
       return successResponse(updated);
@@ -903,6 +923,7 @@ export async function DELETE(
     const session = await requireAuth();
     const article = await prisma.article.findUnique({
       where: { id: params.id },
+      include: { category: { select: { slug: true } } },
     });
 
     if (!article) {
@@ -914,6 +935,23 @@ export async function DELETE(
 
     if (!isOwner && !isAdmin) {
       throw new ApiError("Tidak memiliki akses untuk menghapus artikel ini", 403);
+    }
+
+    // Fire SEO/cache invalidation chain (with URL_DELETED to Google)
+    if (article.status === "PUBLISHED") {
+      await onArticleUnpublished({
+        articleId: article.id,
+        slug: article.slug,
+        categorySlug: article.category?.slug ?? "",
+        permanent: true,
+      }).catch(() => {});
+    }
+
+    // Clean up featured image from local storage
+    if (article.featuredImage?.startsWith("/uploads/")) {
+      const key = article.featuredImage.substring("/uploads/".length);
+      const storage = getStorageDriver();
+      await storage.delete(key).catch(() => {});
     }
 
     await prisma.article.delete({ where: { id: params.id } });

@@ -53,18 +53,32 @@ export async function POST(request: NextRequest) {
       // Cloudflare purge) — a 200-article fan-out would be too slow inline.
       // The next ISR refresh + nightly indexing cron picks them up.
       const now = new Date();
-      const result = await prisma.article.updateMany({
-        where: {
-          id: { in: ids },
-          status: { in: ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED"] },
-        },
-        data: {
-          status: "PUBLISHED",
-          publishedAt: now,
-          verificationLabel: "VERIFIED",
-          scheduledAt: null,
-        },
-      });
+      // VERIFIED only for APPROVED articles (editor-reviewed).
+      // DRAFT/IN_REVIEW/REJECTED → UNVERIFIED (skipped editor review).
+      const [approvedResult, draftResult] = await Promise.all([
+        prisma.article.updateMany({
+          where: { id: { in: ids }, status: "APPROVED" },
+          data: {
+            status: "PUBLISHED",
+            publishedAt: now,
+            verificationLabel: "VERIFIED",
+            scheduledAt: null,
+          },
+        }),
+        prisma.article.updateMany({
+          where: {
+            id: { in: ids },
+            status: { in: ["DRAFT", "IN_REVIEW", "REJECTED"] },
+          },
+          data: {
+            status: "PUBLISHED",
+            publishedAt: now,
+            verificationLabel: "UNVERIFIED",
+            scheduledAt: null,
+          },
+        }),
+      ]);
+      const result = { count: approvedResult.count + draftResult.count };
 
       await logAudit(
         session.user.id,

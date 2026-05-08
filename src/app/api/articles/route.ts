@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest) {
     let slug = slugify(data.title);
     const existingSlug = await prisma.article.findUnique({ where: { slug } });
     if (existingSlug) {
-      slug = `${slug}-${Date.now().toString(36)}`;
+      slug = `${slug}-${randomBytes(4).toString("hex")}`;
     }
 
     // Jurnalis/Senior Journalist can only create DRAFT or IN_REVIEW

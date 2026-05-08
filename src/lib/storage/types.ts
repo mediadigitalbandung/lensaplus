@@ -11,4 +11,5 @@ export type PutObjectResult = {
 export type StorageDriver = {
   name: string;
   put(input: PutObjectInput): Promise<PutObjectResult>;
+  delete(key: string): Promise<void>;
 };

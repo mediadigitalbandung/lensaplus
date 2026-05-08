@@ -238,7 +238,7 @@ export async function onArticlePublished(
     try {
       await prisma.auditLog.create({
         data: {
-          userId: "system",
+          userId: null, // system actor — AuditLog.userId is nullable
           action: "ARTICLE_PUBLISHED_SEO_CHAIN",
           entity: "article",
           entityId: resolvedId,
@@ -248,5 +248,95 @@ export async function onArticlePublished(
     } catch {
       // swallow — AuditLog requires a valid user FK; 'system' may not exist.
     }
+  }
+}
+
+// ─── All-in-one: call after unpublish / archive / delete ───────────
+
+/**
+ * Invoked when a PUBLISHED article transitions out of PUBLISHED status
+ * (takedown → DRAFT, archive, or permanent delete).
+ *
+ * Side effects (fan-out via Promise.allSettled, never throws):
+ *   1. revalidatePath (Next.js ISR) for article URL, homepage, category
+ *   2. In-process cache invalidation (home: + trending: prefixes)
+ *   3. Cloudflare cache purge for article URL + surrounding pages
+ *   4. Google Indexing URL_DELETED (only when permanent=true — hard delete)
+ *
+ * @param permanent - true for hard DELETE (submit URL_DELETED to Google).
+ *                    false for archive/takedown (article may be re-published).
+ */
+export async function onArticleUnpublished(params: {
+  articleId: string;
+  slug: string;
+  categorySlug: string;
+  permanent?: boolean;
+}): Promise<void> {
+  const { articleId, slug, categorySlug, permanent = false } = params;
+  const url = `${SITE_URL}/berita/${slug}`;
+
+  // 1. ISR cache invalidation
+  try {
+    revalidatePath("/");
+    revalidatePath("/berita");
+    revalidatePath(`/berita/${slug}`);
+    if (categorySlug) revalidatePath(`/kategori/${categorySlug}`);
+  } catch {
+    // revalidatePath only valid in route handler context.
+  }
+
+  // 2. In-process cache invalidation
+  try {
+    invalidateCachePrefix("home:");
+    invalidateCachePrefix("trending:");
+  } catch {
+    /* swallow */
+  }
+
+  // URLs to purge from Cloudflare
+  const purgeUrls = [
+    url,
+    `${SITE_URL}/`,
+    `${SITE_URL}/berita`,
+    `${SITE_URL}/sitemap.xml`,
+    `${SITE_URL}/sitemap-news.xml`,
+    ...(categorySlug ? [`${SITE_URL}/kategori/${categorySlug}`] : []),
+  ];
+
+  // 3 + 4. Cloudflare purge + conditional Google URL_DELETED
+  const [cloudflareRes, googleRes] = await Promise.allSettled([
+    purgeCache(purgeUrls),
+    permanent
+      ? submitUrlToGoogle(url, "URL_DELETED")
+      : Promise.resolve(null),
+  ]);
+
+  // Audit log — system actor (userId = null since AuditLog.userId is nullable)
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId: null,
+        action: permanent ? "ARTICLE_DELETED_SEO_CHAIN" : "ARTICLE_UNPUBLISHED_SEO_CHAIN",
+        entity: "article",
+        entityId: articleId,
+        detail: JSON.stringify({
+          url,
+          permanent,
+          cloudflare:
+            cloudflareRes.status === "fulfilled"
+              ? { ok: cloudflareRes.value.success, purgedCount: cloudflareRes.value.purgedCount }
+              : { ok: false, error: String(cloudflareRes.reason) },
+          googleIndexing: permanent
+            ? googleRes.status === "fulfilled"
+              ? googleRes.value !== null
+                ? { ok: googleRes.value.success, error: googleRes.value.error }
+                : { ok: true }
+              : { ok: false, error: String((googleRes as PromiseRejectedResult).reason) }
+            : null,
+        }),
+      },
+    });
+  } catch {
+    // swallow
   }
 }
