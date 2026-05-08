@@ -34,6 +34,7 @@ import {
   Newspaper,
   Music,
   Mail,
+  Activity,
 } from "lucide-react";
 
 interface Article {
@@ -64,6 +65,7 @@ interface StatsItem {
 
 import { CREATOR_ROLES, EDITOR_ROLES } from "@/lib/roles";
 import CronHealthWidget from "@/components/dashboard/CronHealthWidget";
+import PowerWidgets from "@/components/dashboard/PowerWidgets";
 
 const statusColors: Record<string, string> = {
   PUBLISHED: "bg-primary-light text-primary",
@@ -1003,6 +1005,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
+    // Auto-refresh every 60s so leadership-pinned dashboards stay fresh
+    // without manual reload. Visibility check skips refresh when tab is
+    // backgrounded — saves bandwidth + DB load.
+    const i = setInterval(() => {
+      if (typeof document === "undefined" || document.visibilityState === "visible") {
+        fetchData();
+      }
+    }, 60_000);
+    return () => clearInterval(i);
   }, [fetchData]);
 
   if (loading) {
@@ -1352,6 +1363,18 @@ export default function DashboardPage() {
       {!isCreator && (
         <div className="mt-6">
           <CronHealthWidget />
+        </div>
+      )}
+
+      {/* Power Widgets — pipeline, pending, AI, top authors, backup */}
+      {!isCreator && (
+        <div className="mt-6">
+          <SectionHeader
+            icon={Activity}
+            title="Operasional Realtime"
+            subtitle="Pipeline, item butuh tindakan, leaderboard, dan health"
+          />
+          <PowerWidgets isAdmin={isAdmin} />
         </div>
       )}
 
