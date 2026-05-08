@@ -215,11 +215,11 @@ export default async function HomePage() {
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           TERKINI + TERPOPULER + SIDEBAR AD
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      <section className="bg-surface-container-low py-10 sm:py-12 lg:py-14">
+      <section className="bg-surface-container-low py-8 sm:py-10 md:py-12 lg:py-14 2xl:py-20">
         <div className="container-main">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-10">
             {/* Berita Terkini â€” 7 cols */}
-            <div className="lg:col-span-7">
+            <div className="md:col-span-7">
               <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
                 <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                   <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20 shrink-0">
@@ -298,7 +298,7 @@ export default async function HomePage() {
             </div>
 
             {/* Sidebar â€” 5 cols: Terpopuler + Ads */}
-            <aside className="lg:col-span-5">
+            <aside className="md:col-span-5">
               {/* Terpopuler */}
               <div className="mb-8">
                 <div className="flex items-center gap-2.5 sm:gap-3 mb-5 sm:mb-6">
@@ -347,7 +347,7 @@ export default async function HomePage() {
           EDITOR'S PICK â€” 4 cards horizontal
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {editorsPickArticles.length > 0 && (
-        <section className="bg-surface py-10 sm:py-12 lg:py-14">
+        <section className="bg-surface py-8 sm:py-10 md:py-12 lg:py-14 2xl:py-20">
           <div className="container-main">
             <div className="flex items-start sm:items-center justify-between gap-3 mb-6 sm:mb-8">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -365,7 +365,7 @@ export default async function HomePage() {
                 Semua Berita <ArrowRight size={14} />
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 sm:gap-6">
               {editorsPickArticles.map((a) => (
                 <article key={a.slug} className="group">
                   <Link href={`/berita/${a.slug}`} className="block">
@@ -401,7 +401,7 @@ export default async function HomePage() {
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           POLLING
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      <section className="bg-surface py-10 sm:py-12 lg:py-14">
+      <section className="bg-surface py-8 sm:py-10 md:py-12 lg:py-14 2xl:py-20">
         <div className="container-main">
           <div className="flex items-center gap-2.5 sm:gap-3 mb-6 sm:mb-8">
             <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
@@ -429,7 +429,7 @@ export default async function HomePage() {
 
         return (
           <div key={catSlug}>
-            <section className={`py-10 sm:py-12 lg:py-14 ${isEven ? "bg-surface" : "bg-surface-container-low"}`}>
+            <section className={`py-8 sm:py-10 md:py-12 lg:py-14 2xl:py-20 ${isEven ? "bg-surface" : "bg-surface-container-low"}`}>
               <div className="container-main">
                 {/* Header */}
                 <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
@@ -452,9 +452,9 @@ export default async function HomePage() {
 
                 {/* Layout A (even): Large left + list right */}
                 {isEven ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8">
                     {main && (
-                      <div className="lg:col-span-7">
+                      <div className="md:col-span-7">
                         <Link href={`/berita/${main.slug}`} className="group block">
                           <div className="relative aspect-[16/9] overflow-hidden rounded-sm">
                             {main.featuredImage ? (
@@ -478,7 +478,7 @@ export default async function HomePage() {
                       </div>
                     )}
                     {side.length > 0 && (
-                      <div className="lg:col-span-5 flex flex-col gap-4 sm:gap-5">
+                      <div className="md:col-span-5 flex flex-col gap-4 sm:gap-5">
                         {side.map((a) => (
                           <article key={a.slug} className="group flex gap-3 sm:gap-4">
                             {a.featuredImage && (
@@ -501,7 +501,7 @@ export default async function HomePage() {
                   </div>
                 ) : (
                   /* Layout B (odd): Grid of cards */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6">
                     {catArticles.slice(0, 3).map((a) => (
                       <article key={a.slug} className="group">
                         <Link href={`/berita/${a.slug}`} className="block">
@@ -550,7 +550,7 @@ export default async function HomePage() {
         );
 
         return (
-          <section className="bg-primary py-10 sm:py-12 lg:py-14">
+          <section className="bg-primary py-8 sm:py-10 md:py-12 lg:py-14 2xl:py-20">
             <div className="container-main">
               {/* Header — flat, editorial, no chrome */}
               <div className="mb-6 sm:mb-8 flex items-end justify-between gap-4 border-b border-white/15 pb-4 sm:pb-5">
@@ -564,7 +564,7 @@ export default async function HomePage() {
               </div>
 
               {/* Uniform grid — square tiles, single bold treatment */}
-              <div className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+              <div className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                 {sortedCategories.map((cat) => {
                   const Icon = categoryIconMap[cat.slug] || Scale;
                   const isEmpty = cat._count.articles === 0;

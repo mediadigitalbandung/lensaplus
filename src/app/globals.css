@@ -24,7 +24,11 @@
 }
 
 @layer components {
-  /* ── Container ── */
+  /* ── Container ──
+     Locked at max-w-6xl (1152px) on every viewport. The intentional whitespace
+     on widescreen displays leaves room for the side-rail skyscraper ads
+     (160px × 600px each, fixed left-4 / right-4 from 2xl up). Bumping the
+     container at 2xl: would crash into those rails — see SideRailAds.tsx. */
   .container-main {
     @apply mx-auto max-w-6xl px-5 sm:px-8 lg:px-8;
   }

@@ -10,6 +10,7 @@ Saat user minta sesuatu ke Claude Code:
 - **Mau rilis ke production** → panggil `release-lead`
 - **Eksekusi migrasi fitur** (samakan dengan `docs/FEATURE_REFERENCE.md`) → panggil `migration-lead`
 - **Audit menyeluruh project** (security + perf + SEO + a11y + DB + …) → panggil `audit-lead`
+- **Audit responsiveness di semua device** (320px hingga 4K) → panggil `responsive-lead`
 - **Tugas tunggal** — panggil specialist langsung (mis. `copy-editor` untuk proofread saja)
 
 Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, atau manual dengan:
@@ -17,7 +18,7 @@ Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, a
 > gunakan fact-checker untuk verifikasi artikel ini
 ```
 
-## Struktur (40 Agent: 18 Core + 10 Migration + 12 Audit)
+## Struktur (48 Agent: 18 Core + 10 Migration + 12 Audit + 8 Responsive)
 
 ### 🗞️ Domain Editorial — Produksi Konten
 | Agent | Fokus Tunggal |
@@ -68,6 +69,18 @@ Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, a
 | (existing) auth-guardian | Layer 1 #2 audit-mode — RBAC coverage di /panel/* & /api/* |
 | (existing) build-test-validator | Layer 1 #3-4 — typecheck/lint/build/vitest |
 | (existing) design-guardian | Layer 5 #15 — token consistency, legacy `goto.green` purge |
+
+### 📐 Domain Responsive — Audit + Fix Layout di Semua Device (320px–4K)
+| Agent | Fokus Tunggal |
+|---|---|
+| **responsive-lead** | Orchestrator: paralel-spawn 6 viewport sub-agent, konsolidasi finding per file, delegasi fix-applier |
+| viewport-mobile-small | 320–380px (iPhone SE 1st gen, Galaxy Fold folded) |
+| viewport-mobile-large | 381–640px (iPhone 12/13/14, Pixel, Galaxy S22) — mayoritas traffic |
+| viewport-tablet-portrait | 641–768px (iPad mini portrait, Surface Duo) — transisi `sm:`/`md:` |
+| viewport-tablet-landscape | 769–1024px (iPad landscape, Surface Pro) — transisi `md:`/`lg:` |
+| viewport-desktop | 1025–1440px (MacBook 13"–16", monitor 1080p/1440p) |
+| viewport-widescreen | 1441px+ (iMac 24"/27", ultrawide, 4K) |
+| responsive-fix-applier | Konsolidasi finding multi-tier per file → Edit class Tailwind responsif |
 
 ### 🚧 Domain Feature Migration — Samakan Kartawarta dengan `docs/FEATURE_REFERENCE.md`
 | Agent | Fokus Tunggal |
@@ -157,6 +170,24 @@ Loop sampai fase selesai → build-test-validator → release-lead → user dipa
   - fase selesai dan siap commit
 ```
 
+### G. Audit Responsiveness Semua Device
+```
+User: "Audit responsiveness di semua device" / "perbaiki tampilan di hp/tablet/layar besar"
+         ↓
+responsive-lead
+         ↓ (paralel SATU pesan, 6 sub-agent)
+viewport-mobile-small (320-380)   ┐
+viewport-mobile-large (381-640)   │
+viewport-tablet-portrait (641-768)├─→ konsolidasi per file (P0/P1/P2/P3)
+viewport-tablet-landscape (769-1024)│
+viewport-desktop (1025-1440)      │
+viewport-widescreen (1441+)       ┘
+         ↓
+responsive-fix-applier (Edit class Tailwind per file, semua tier issue sekaligus)
+         ↓
+build-test-validator → git-release-specialist
+```
+
 ### F. Audit Menyeluruh (18 Dimensi)
 ```
 User: "Audit project ini" / "audit menyeluruh" / "kepala audit"
@@ -217,6 +248,15 @@ Report final ke user → kalau ada CRITICAL/HIGH → delegasi tech-lead untuk fi
 ├── cron-engineer.md
 ├── integration-secrets-ui.md
 ├── doc-panel-builder.md
+│
+├── responsive-lead.md                orchestrator (audit responsiveness 6 viewport tier)
+├── viewport-mobile-small.md
+├── viewport-mobile-large.md
+├── viewport-tablet-portrait.md
+├── viewport-tablet-landscape.md
+├── viewport-desktop.md
+├── viewport-widescreen.md
+├── responsive-fix-applier.md
 │
 ├── audit-lead.md                     orchestrator (18-dimension audit menyeluruh)
 ├── perf-auditor.md

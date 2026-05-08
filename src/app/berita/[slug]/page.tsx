@@ -32,7 +32,8 @@ async function getArticle(slug: string) {
   return article;
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await paramsPromise;
   const article = await getArticle(params.slug);
   if (!article) return { title: "Artikel Tidak Ditemukan" };
 
@@ -218,7 +219,9 @@ function splitContentIntoPages(html: string): string[] {
   return pages.length > 0 ? pages : [html];
 }
 
-export default async function ArticlePage({ params, searchParams }: { params: { slug: string }; searchParams: { page?: string } }) {
+export default async function ArticlePage({ params: paramsPromise, searchParams: searchParamsPromise }: { params: Promise<{ slug: string }>; searchParams: Promise<{ page?: string }> }) {
+  const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   const article = await getArticle(params.slug);
   if (!article) notFound();
 
@@ -719,7 +722,7 @@ export default async function ArticlePage({ params, searchParams }: { params: { 
                       Lihat Semua &rarr;
                     </Link>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                     {bacaLainnyaGrid.map((related) => (
                       <ArticleCard
                         key={related.slug}

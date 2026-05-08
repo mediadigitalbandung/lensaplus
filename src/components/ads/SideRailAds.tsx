@@ -164,14 +164,23 @@ export default function SideRailAds() {
   const cap =
     "shrink-0 border-b border-primary/10 bg-primary/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary/60";
 
-  const railStyle = { top: `${top}px` };
+  // Anchor rails to the outside edge of the 1152-px container, not to the
+  // screen edge. At 2xl/1536px the formula falls back to ~16 px from the
+  // viewport edge (the original layout); at 1920+/2560/4K the rails follow
+  // the content column, so they always sit ~24 px outside the article gutter
+  // instead of drifting away into empty desktop space.
+  // Math: container max-w = 1152 → half-width 576. Rail width 160 + 24 px
+  // gap = 184. Rail-left = 50% − (576 + 184) = 50% − 760 px, clamped to a
+  // 16 px minimum so the rail never crashes into the viewport edge.
+  const railLeftStyle = { top: `${top}px`, left: "max(1rem, calc(50% - 760px))" };
+  const railRightStyle = { top: `${top}px`, right: "max(1rem, calc(50% - 760px))" };
 
   return (
     <>
       <aside
         aria-label="Iklan kiri"
-        className="pointer-events-none fixed left-4 z-10 hidden 2xl:block"
-        style={railStyle}
+        className="pointer-events-none fixed z-10 hidden 2xl:block"
+        style={railLeftStyle}
       >
         <div className={shell}>
           <div className={cap}>Iklan</div>
@@ -182,8 +191,8 @@ export default function SideRailAds() {
       </aside>
       <aside
         aria-label="Iklan kanan"
-        className="pointer-events-none fixed right-4 z-10 hidden 2xl:block"
-        style={railStyle}
+        className="pointer-events-none fixed z-10 hidden 2xl:block"
+        style={railRightStyle}
       >
         <div className={shell}>
           <div className={cap}>Iklan</div>

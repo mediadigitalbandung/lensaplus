@@ -200,7 +200,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                     </div>
-                    <div className="relative p-3 sm:p-7 flex flex-col justify-end h-full min-h-[6rem] sm:min-h-[8rem]">
+                    <div className="relative p-3 sm:p-4 lg:p-6 flex flex-col justify-end h-full min-h-[6rem] sm:min-h-[8rem]">
                       <span className="text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-secondary mb-0.5 sm:mb-1">
                         {a.category.name}
                       </span>

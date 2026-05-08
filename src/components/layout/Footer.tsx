@@ -28,10 +28,10 @@ const footerLinks = {
 export default function Footer() {
   return (
     <footer className="bg-white text-on-surface border-t border-border" role="contentinfo" aria-label="Footer situs">
-      <div className="container-main py-10 sm:py-12 lg:py-14">
-        <div className="grid grid-cols-1 gap-8 sm:gap-10 sm:grid-cols-2 lg:grid-cols-12">
+      <div className="container-main py-10 sm:py-12 lg:py-14 2xl:py-20">
+        <div className="grid grid-cols-1 gap-8 sm:gap-10 sm:grid-cols-2 md:grid-cols-12">
           {/* Brand + Badge — takes more space */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-5">
+          <div className="col-span-1 sm:col-span-2 md:col-span-5">
             <div className="flex items-center gap-2">
               <span className="font-serif text-2xl font-bold text-on-surface tracking-tight">
                 Kartawarta
@@ -83,7 +83,7 @@ export default function Footer() {
           </div>
 
           {/* Tentang — shifted right */}
-          <div className="lg:col-span-3 lg:col-start-7">
+          <div className="md:col-span-3 md:col-start-7">
             <h4 id="footer-tentang-heading" className="mb-4 text-label-md font-semibold uppercase tracking-wider text-txt-muted">
               Tentang
             </h4>
@@ -102,7 +102,7 @@ export default function Footer() {
           </div>
 
           {/* Kontak — shifted right */}
-          <div className="lg:col-span-3 lg:col-start-10">
+          <div className="md:col-span-3 md:col-start-10">
             <h4 id="footer-kontak-heading" className="mb-4 text-label-md font-semibold uppercase tracking-wider text-txt-muted">
               Kontak
             </h4>

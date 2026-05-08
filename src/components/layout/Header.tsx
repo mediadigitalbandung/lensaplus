@@ -89,7 +89,7 @@ export default function Header() {
                 priority
               />
               <span className="flex items-baseline gap-1.5 sm:gap-2">
-                <span className="font-serif text-sm font-bold text-primary sm:text-2xl lg:text-3xl tracking-tight">
+                <span className="font-serif text-lg font-bold text-primary sm:text-2xl lg:text-3xl tracking-tight">
                   Kartawarta
                 </span>
               </span>
