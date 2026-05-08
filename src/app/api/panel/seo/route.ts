@@ -51,6 +51,8 @@ export async function GET() {
       quotaCountRow,
       quotaDateRow,
       sitemapLastSubmitRow,
+      googleIndexingEnabledRow,
+      indexNowEnabledRow,
       recentArticles,
     ] = await Promise.all([
       prisma.article.count(),
@@ -83,6 +85,8 @@ export async function GET() {
       prisma.systemSetting.findUnique({ where: { key: "google_indexing_daily_count" } }),
       prisma.systemSetting.findUnique({ where: { key: "google_indexing_daily_count_date" } }),
       prisma.systemSetting.findUnique({ where: { key: "sitemap_last_pinged_at" } }),
+      prisma.systemSetting.findUnique({ where: { key: "google_indexing_enabled" } }),
+      prisma.systemSetting.findUnique({ where: { key: "indexnow_enabled" } }),
       prisma.article.findMany({
         where: { status: "PUBLISHED" },
         select: {
@@ -132,6 +136,11 @@ export async function GET() {
     const quotaActiveToday = quotaDateRow?.value === today;
     const quotaUsed = quotaActiveToday ? parseInt(quotaCountRow?.value || "0", 10) : 0;
     const QUOTA_LIMIT = 200;
+
+    // Integration toggles — UI shows different banner / disables actions
+    // when Google Indexing API is off (site still indexed via sitemap).
+    const googleIndexingEnabled = googleIndexingEnabledRow?.value !== "false"; // default true
+    const indexNowEnabled = indexNowEnabledRow?.value !== "false"; // default true
 
     // ─────────────────── Article audit ───────────────────
     const articleAudit = recentArticles.map((a) => {
@@ -207,6 +216,8 @@ export async function GET() {
       },
       indexing: {
         counts: indexCounts,
+        googleIndexingEnabled,
+        indexNowEnabled,
         lastSubmitted: lastSubmittedRow
           ? {
               slug: lastSubmittedRow.slug,

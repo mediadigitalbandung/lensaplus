@@ -29,6 +29,8 @@ interface SeoData {
   coverage: { seoTitle: number; image: number; excerpt: number; sorotan: number };
   indexing: {
     counts: { pending: number; submitted: number; indexed: number; failed: number; unknown: number };
+    googleIndexingEnabled: boolean;
+    indexNowEnabled: boolean;
     lastSubmitted: { slug: string; title: string; at: string | null; status: string | null } | null;
     sitemapLastPingedAt: string | null;
     googleQuota: { used: number; limit: number; remaining: number; percentUsed: number; date: string };
@@ -228,6 +230,66 @@ export default function SeoDashboardPage() {
         </button>
       </div>
 
+      {/* Banner: Google Indexing API status (informational, NOT alarming) */}
+      {!indexing.googleIndexingEnabled && (
+        <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:p-5 text-sm">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+            <Globe size={22} className="text-blue-600 shrink-0 mt-0.5" />
+            <div className="flex-1 space-y-3">
+              <div>
+                <p className="font-bold text-blue-900 mb-1">
+                  Google Indexing API: <span className="font-mono">disabled</span>
+                </p>
+                <p className="text-blue-800 leading-relaxed">
+                  Site Anda <strong>tetap ter-indexed normal Google</strong> via 3 mekanisme lain yang aktif. Counter di bawah ini hanya track <strong>Indexing API submission</strong>, BUKAN status real indexing di Google search.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <div className="rounded-lg border border-blue-200 bg-white px-3 py-2">
+                  <p className="font-semibold text-blue-900">✓ sitemap-news.xml</p>
+                  <p className="text-blue-700">Google News, polling ~5 menit</p>
+                </div>
+                <div className="rounded-lg border border-blue-200 bg-white px-3 py-2">
+                  <p className="font-semibold text-blue-900">✓ Sitemap + crawl</p>
+                  <p className="text-blue-700">Googlebot natural, daily</p>
+                </div>
+                <div className="rounded-lg border border-blue-200 bg-white px-3 py-2">
+                  <p className="font-semibold text-blue-900">{indexing.indexNowEnabled ? "✓" : "✗"} IndexNow</p>
+                  <p className="text-blue-700">Bing/Yandex, instant ping</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-blue-800">Cek status indexing real:</span>
+                <a
+                  href="https://search.google.com/search-console"
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                >
+                  <ExternalLink size={11} /> GSC URL Inspection
+                </a>
+                <a
+                  href="https://www.google.com/search?q=site%3Akartawarta.com"
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                >
+                  <Search size={11} /> site:kartawarta.com
+                </a>
+                <Link
+                  href="/panel/pengaturan"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                >
+                  Re-enable di Pengaturan →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Score + Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
         {/* SEO Score */}
@@ -296,31 +358,51 @@ export default function SeoDashboardPage() {
 
       {/* Indexing Health — Google API quota + last submission */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
-          <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
-            <Zap size={14} className="text-primary" /> Google Indexing API — Kuota Hari Ini
-          </h3>
-          <div className="flex items-baseline gap-2 mb-3">
-            <span className="text-3xl font-extrabold text-txt-primary">{indexing.googleQuota.used}</span>
-            <span className="text-sm text-txt-muted">/ {indexing.googleQuota.limit}</span>
-            <span className="ml-auto text-xs font-mono text-txt-muted">{indexing.googleQuota.date}</span>
+        {indexing.googleIndexingEnabled ? (
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+            <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
+              <Zap size={14} className="text-primary" /> Google Indexing API — Kuota Hari Ini
+            </h3>
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-3xl font-extrabold text-txt-primary">{indexing.googleQuota.used}</span>
+              <span className="text-sm text-txt-muted">/ {indexing.googleQuota.limit}</span>
+              <span className="ml-auto text-xs font-mono text-txt-muted">{indexing.googleQuota.date}</span>
+            </div>
+            <div className="h-2 rounded-full bg-surface-tertiary overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  indexing.googleQuota.percentUsed >= 90
+                    ? "bg-red-500"
+                    : indexing.googleQuota.percentUsed >= 70
+                    ? "bg-yellow-500"
+                    : "bg-green-500"
+                }`}
+                style={{ width: `${Math.min(100, indexing.googleQuota.percentUsed)}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-txt-muted">
+              Tersisa {indexing.googleQuota.remaining} URL hari ini. Counter reset otomatis tengah malam UTC.
+            </p>
           </div>
-          <div className="h-2 rounded-full bg-surface-tertiary overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                indexing.googleQuota.percentUsed >= 90
-                  ? "bg-red-500"
-                  : indexing.googleQuota.percentUsed >= 70
-                  ? "bg-yellow-500"
-                  : "bg-green-500"
-              }`}
-              style={{ width: `${Math.min(100, indexing.googleQuota.percentUsed)}%` }}
-            />
+        ) : (
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+            <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
+              <Zap size={14} className="text-txt-muted" /> Google Indexing API
+            </h3>
+            <div className="rounded-lg bg-surface-secondary p-4 text-center">
+              <p className="text-2xl font-bold text-txt-muted mb-1">DISABLED</p>
+              <p className="text-xs text-txt-muted">
+                Site indexed via sitemap (lihat banner atas).
+              </p>
+              <Link
+                href="/panel/pengaturan"
+                className="mt-3 inline-block text-xs text-primary font-semibold hover:underline"
+              >
+                Re-enable di Pengaturan →
+              </Link>
+            </div>
           </div>
-          <p className="mt-2 text-xs text-txt-muted">
-            Tersisa {indexing.googleQuota.remaining} URL hari ini. Counter reset otomatis tengah malam UTC.
-          </p>
-        </div>
+        )}
 
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
@@ -438,22 +520,32 @@ export default function SeoDashboardPage() {
           <div className="flex gap-2">
             <button
               onClick={handleTestCredentials}
-              disabled={testingCreds}
-              className="btn-ghost flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+              disabled={testingCreds || !indexing.googleIndexingEnabled}
+              className="btn-ghost flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!indexing.googleIndexingEnabled ? "Google Indexing API disabled" : undefined}
             >
               {testingCreds ? <Loader2 size={12} className="animate-spin" /> : <KeyRound size={12} />}
               Test Credentials
             </button>
             <button
               onClick={handleBulkReindex}
-              disabled={reindexing}
-              className="btn-secondary flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+              disabled={reindexing || !indexing.googleIndexingEnabled}
+              className="btn-secondary flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!indexing.googleIndexingEnabled ? "Google Indexing API disabled" : undefined}
             >
               {reindexing ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
               Re-index Semua
             </button>
           </div>
         </div>
+
+        {!indexing.googleIndexingEnabled && (
+          <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-xs text-blue-800">
+            <p className="leading-relaxed">
+              <strong>Catatan:</strong> Counter Pending/Submitted/Indexed/Failed di bawah hanya tracking <strong>Google Indexing API submissions</strong>. Site sebenarnya ter-indexed Google via sitemap-news.xml + natural crawl (lihat banner atas). Cek status real di GSC URL Inspection.
+            </p>
+          </div>
+        )}
 
         {credResult && (
           <div
