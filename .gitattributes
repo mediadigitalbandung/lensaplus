@@ -1,0 +1,4 @@
+# Enforce LF on shell scripts so they execute cleanly on the Linux VPS
+# regardless of the developer's OS (Windows core.autocrlf would otherwise
+# rewrite them to CRLF and break /bin/bash with "bad interpreter").
+*.sh text eol=lf

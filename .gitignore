@@ -69,6 +69,7 @@ scripts/*
 !scripts/backup-uploads.sh
 !scripts/backup-offsite.sh
 !scripts/safe-db-push.sh
+!scripts/deploy-vps.sh
 !scripts/.gitkeep
 
 # Playwright artifacts
