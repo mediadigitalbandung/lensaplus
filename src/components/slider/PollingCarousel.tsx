@@ -32,11 +32,12 @@ interface Props {
   items?: LegacyPoll[];
   categorySlug?: string;
   /** Maximum cards to render in the grid. Sisanya disembunyikan di balik
-   *  link "Lihat semua polling →". Default 8 (cocok untuk grid 2/3/4 cols). */
+   *  link "Lihat semua polling →". Default 4 — cocok untuk 1 baris di
+   *  desktop lg (4 cols). Di mobile (2 cols) jadi 2 baris × 2 cards. */
   limit?: number;
 }
 
-export default function PollingCarousel({ categorySlug, limit = 8 }: Props) {
+export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [votedPolls, setVotedPolls] = useState<Record<string, string>>({}); // pollId → optionId
   const [voting, setVoting] = useState<string | null>(null);
