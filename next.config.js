@@ -1,5 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Skip TypeScript checking during Next.js build phase. Reason:
+  //   Next.js 16 runs `tsc --noEmit` in a forked worker that allocates ~1 GB
+  //   per file batch. On the VPS (16 GB RAM, ~10 GB free during build) the
+  //   kernel OOM-killer routinely hits the worker mid-typecheck → SIGKILL →
+  //   `required-server-files.json` never written → pm2 crash loop with
+  //   "Could not find a production build".
+  //   We already run `npx tsc --noEmit` locally in the pre-commit pipeline
+  //   plus in CI workflow .github/workflows/deploy.yml validate-job, so the
+  //   TS contract is verified BEFORE the VPS build kicks off. Skipping the
+  //   redundant in-build typecheck cuts peak memory roughly in half and
+  //   removes the OOM failure mode without sacrificing type safety.
+  typescript: { ignoreBuildErrors: true },
+  // Same reasoning for ESLint — already enforced in CI + locally.
+  eslint: { ignoreDuringBuilds: true },
   images: {
     // Disable Next.js's image optimizer entirely. Reasons:
     //   1. The /_next/image proxy fetches /uploads/* from Next.js itself,
