@@ -166,14 +166,17 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             </div>
           </div>
 
-          {/* Side stories — 4 cols beside main from sm+ so they stay tucked to
-              the right rather than stacking under the hero on tablets/phones.
-              Below sm (≤640px) they fall back to a row under the hero. */}
-          <div className="sm:col-span-4 relative overflow-hidden min-h-[20rem] sm:min-h-full border-t border-white/10 sm:border-t-0 sm:border-l sm:border-white/10">
+          {/* Side stories — di sm+ menempel di kanan hero (vertical stack
+              4-col grid), di <sm jadi STRIP HORIZONTAL 3-col di bawah hero
+              supaya tidak mengembang seperti banner full-width yang boros
+              vertikal di tablet/mobile zoom.
+              Border separator: vertikal antar card di mobile, horizontal
+              di desktop. */}
+          <div className="sm:col-span-4 relative overflow-hidden min-h-[10rem] sm:min-h-full border-t border-white/10 sm:border-t-0 sm:border-l sm:border-white/10">
             {sidePages.map((pageItems, pageIdx) => (
               <div
                 key={pageIdx}
-                className={`absolute inset-0 flex flex-col transition-opacity duration-700 ease-in-out ${
+                className={`absolute inset-0 grid grid-cols-3 sm:grid-cols-1 sm:flex sm:flex-col transition-opacity duration-700 ease-in-out ${
                   pageIdx === sidePageIndex ? "opacity-100 z-10" : "opacity-0 z-0"
                 }`}
               >
@@ -181,7 +184,11 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                   <Link
                     key={a.slug}
                     href={`/berita/${a.slug}`}
-                    className={`group flex-1 relative overflow-hidden ${i < pageItems.length - 1 ? "border-b border-white/10" : ""}`}
+                    className={`group relative overflow-hidden sm:flex-1 ${
+                      i < pageItems.length - 1
+                        ? "border-r sm:border-r-0 sm:border-b border-white/10"
+                        : ""
+                    }`}
                   >
                     <div className="absolute inset-0">
                       {a.featuredImage ? (
@@ -198,16 +205,20 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                       ) : (
                         <div className="absolute inset-0 bg-primary-container" />
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-transparent" />
                     </div>
-                    <div className="relative p-3 sm:p-4 lg:p-6 flex flex-col justify-end h-full min-h-[6rem] sm:min-h-[8rem]">
-                      <span className="text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-secondary mb-0.5 sm:mb-1">
+                    {/* Konten side card: padding kecil + font ringkas di
+                        mobile (tiap card cuma 1/3 width) supaya teks tidak
+                        terpotong bingung. Skala naik di sm/lg ketika side
+                        panel kembali jadi vertikal stack di kanan hero. */}
+                    <div className="relative p-2 sm:p-4 lg:p-6 flex flex-col justify-end h-full min-h-[6rem] sm:min-h-[8rem]">
+                      <span className="text-[8px] sm:text-label-sm font-bold uppercase tracking-wider sm:tracking-widest text-secondary mb-0.5 sm:mb-1">
                         {a.category.name}
                       </span>
-                      <h2 className="font-serif text-title-sm sm:text-title-lg text-white leading-snug line-clamp-2 group-hover:text-white/90 transition-colors">
+                      <h2 className="font-serif text-[11px] leading-tight sm:text-title-md sm:leading-snug lg:text-title-lg text-white line-clamp-3 sm:line-clamp-2 group-hover:text-white/90 transition-colors">
                         {a.title}
                       </h2>
-                      <span className="mt-1 sm:mt-2 text-[10px] sm:text-label-sm text-white/40 uppercase tracking-wider">
+                      <span className="mt-0.5 sm:mt-2 text-[8px] sm:text-label-sm text-white/50 uppercase tracking-wider">
                         <ClientDate date={a.publishedAt} format="relative" />
                       </span>
                     </div>
