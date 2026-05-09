@@ -203,8 +203,10 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile search bar */}
-        <div className={`overflow-hidden md:hidden transition-all duration-500 ease-in-out container-main ${scrolled || mobileMenuOpen ? "max-h-0 pb-0 opacity-0 -translate-y-2" : "max-h-16 pb-3 opacity-100 translate-y-0"}`}>
+        {/* Mobile search bar — add pt-3 so it doesn't visually fuse with
+            the brand row above (no breathing room between the white logo
+            block and the white search input on the dark navy backdrop). */}
+        <div className={`overflow-hidden md:hidden transition-all duration-500 ease-in-out container-main ${scrolled || mobileMenuOpen ? "max-h-0 pt-0 pb-0 opacity-0 -translate-y-2" : "max-h-24 pt-3 pb-3 opacity-100 translate-y-0"}`}>
           <form action="/search" className="relative" role="search" aria-label="Pencarian artikel (mobile)">
             <Search
               size={16}
@@ -216,7 +218,7 @@ export default function Header() {
               name="q"
               placeholder="Cari berita..."
               aria-label="Cari artikel"
-              className="w-full rounded-md bg-white border border-transparent py-2.5 pl-10 pr-4 text-body-sm text-gray-900 placeholder:text-gray-400 transition-all shadow-inner focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="w-full rounded-md bg-white border border-transparent py-2 pl-10 pr-4 text-body-sm text-gray-900 placeholder:text-gray-400 transition-all shadow-inner focus:outline-none focus:ring-2 focus:ring-white/50"
             />
           </form>
         </div>
