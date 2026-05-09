@@ -486,7 +486,7 @@ export default async function HomePage() {
                                           {a.title}
                                         </h3>
                                       </Link>
-                                      <p className="mt-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
+                                      <p className="mt-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-on-surface-variant">
                                         {timeAgo(a.publishedAt)}
                                       </p>
                                     </div>
@@ -509,7 +509,7 @@ export default async function HomePage() {
                                       <Link href={`/berita/${a.slug}`}>
                                         <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h4>
                                       </Link>
-                                      <p className="mt-1 text-[10px] uppercase tracking-wider text-on-surface-variant">{timeAgo(a.publishedAt)}</p>
+                                      <p className="mt-1 text-[10px] sm:text-label-sm uppercase tracking-wider text-on-surface-variant">{timeAgo(a.publishedAt)}</p>
                                     </div>
                                   </article>
                                 ))}

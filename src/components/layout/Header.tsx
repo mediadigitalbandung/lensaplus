@@ -97,7 +97,7 @@ export default function Header() {
           </div>
 
           {/* Right side: Date, Search, Actions */}
-          <div className="flex flex-1 items-center justify-end gap-3 py-3 pl-12 sm:pl-16 relative z-10">
+          <div className="flex flex-1 items-center justify-end gap-3 py-3 pl-8 sm:pl-12 md:pl-16 relative z-10">
             {/* Live date — deferred to client to avoid hydration mismatch
                 between VPS (UTC) and visitor (Asia/Jakarta) timezones */}
             <span className="hidden text-label-sm text-white/50 md:block uppercase tracking-wider">

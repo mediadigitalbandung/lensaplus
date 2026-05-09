@@ -129,10 +129,10 @@ export default async function BeritaPage({ searchParams: searchParamsPromise }: 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
       />
-      <div className="container-main py-8">
+      <div className="container-main py-6 sm:py-8 lg:py-10 2xl:py-14">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="flex items-center gap-3 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
+          <h1 className="flex items-center gap-3 font-serif text-headline-sm font-bold text-txt-primary sm:text-headline-md lg:text-headline-lg">
             <span className="block h-7 w-[3px] rounded-full bg-primary" />
             Semua Berita
           </h1>

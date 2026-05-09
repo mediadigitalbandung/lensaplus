@@ -35,7 +35,7 @@
 
   /* ── Section headers ── */
   .section-header {
-    @apply flex items-center justify-between mb-10;
+    @apply flex items-center justify-between mb-6 sm:mb-8 lg:mb-10;
   }
   .section-title {
     @apply font-serif text-headline-md text-on-surface tracking-tight;
@@ -193,7 +193,7 @@
 
 /* ── Article content typography ── */
 .article-content h2 {
-  @apply mt-12 mb-5 font-serif text-headline-md text-on-surface;
+  @apply mt-8 sm:mt-12 mb-4 sm:mb-5 font-serif text-headline-sm sm:text-headline-md text-on-surface;
 }
 .article-content h3 {
   @apply mt-10 mb-4 font-serif text-headline-sm text-on-surface;

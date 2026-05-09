@@ -171,7 +171,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
       />
 
       <div className="bg-surface min-h-screen">
-        <div className="container-main py-8">
+        <div className="container-main py-6 sm:py-8 lg:py-10 2xl:py-14">
           {/* Breadcrumb */}
           <nav
             className="mb-6 flex items-center gap-2 text-sm text-txt-secondary"
@@ -215,7 +215,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
               </div>
 
               {/* Title */}
-              <h1 className="text-2xl font-extrabold leading-tight text-txt-primary tracking-tight sm:text-3xl lg:text-4xl">
+              <h1 className="font-serif text-headline-sm font-extrabold leading-tight text-txt-primary tracking-tight sm:text-headline-md lg:text-display-sm">
                 {sorotan.title}
               </h1>
 

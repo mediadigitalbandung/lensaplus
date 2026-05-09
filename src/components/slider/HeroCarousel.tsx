@@ -92,7 +92,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
           aria-roledescription="carousel"
           aria-label="Hero artikel utama"
           aria-live="polite"
-          className="grid grid-cols-1 sm:grid-cols-12 min-h-[30rem] sm:min-h-[28rem] lg:min-h-[36rem]"
+          className="grid grid-cols-1 sm:grid-cols-12 min-h-[22rem] sm:min-h-[28rem] lg:min-h-[36rem]"
         >
           {/* Main story — 8 cols on sm+, full width below sm. Crossfade. */}
           <div className="sm:col-span-8 relative overflow-hidden">
@@ -139,7 +139,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             ))}
 
             {/* First item static for layout height */}
-            <div className="relative h-full min-h-[26rem] sm:min-h-full invisible">
+            <div className="relative h-full min-h-[18rem] sm:min-h-full invisible">
               <div className="absolute inset-0" />
             </div>
 

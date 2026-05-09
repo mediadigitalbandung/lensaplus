@@ -491,8 +491,8 @@ function SearchContent() {
 export default function SearchPage() {
   return (
     <div className="bg-surface min-h-screen">
-      <div className="container-main py-8">
-        <h1 className="flex items-center gap-3 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
+      <div className="container-main py-6 sm:py-8 lg:py-10 2xl:py-14">
+        <h1 className="flex items-center gap-3 font-serif text-headline-sm font-bold text-txt-primary sm:text-headline-md lg:text-headline-lg">
           <span className="block h-7 w-[3px] rounded-full bg-primary" />
           Pencarian
         </h1>

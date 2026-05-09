@@ -158,7 +158,7 @@ function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate
   if (stocks.length === 0) {
     return (
       <div className="bg-gray-50/30 border-b border-gray-100 overflow-hidden">
-        <div className="container-main py-2 sm:py-3">
+        <div className="container-main py-2 sm:py-3 lg:py-4">
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <div className="flex items-center gap-2 sm:gap-2.5">
               <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -192,7 +192,7 @@ function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate
       onTouchStart={() => setPaused(true)}
       onTouchEnd={() => setPaused(false)}
     >
-      <div className="container-main py-2 sm:py-3">
+      <div className="container-main py-2 sm:py-3 lg:py-4">
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <div className="flex items-center gap-2 sm:gap-2.5">
             <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -251,7 +251,7 @@ export default function NewsTicker() {
           /api/trending belum balas atau kosong. Konten geser baru
           aktif setelah trendingItems terisi. */}
       <div className="bg-primary border-b border-[#001530] overflow-hidden">
-        <div className="flex items-center py-2 sm:py-2.5 relative">
+        <div className="flex items-center py-2 sm:py-2.5 lg:py-3 relative">
           <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 z-10 bg-primary shadow-[8px_0_12px_-2px_#002045]">
             <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-secondary animate-pulse shrink-0" />
             <span className="text-label-sm sm:text-label-md font-bold tracking-widest text-white uppercase whitespace-nowrap">

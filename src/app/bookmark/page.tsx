@@ -63,7 +63,7 @@ export default function BookmarkPage() {
 
   return (
     <div className="bg-surface min-h-screen">
-      <div className="container-main py-8">
+      <div className="container-main py-6 sm:py-8 lg:py-10 2xl:py-14">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -73,7 +73,7 @@ export default function BookmarkPage() {
             <ArrowLeft size={14} />
             Beranda
           </Link>
-          <h1 className="flex items-center gap-3 text-2xl font-extrabold text-txt-primary sm:text-3xl">
+          <h1 className="flex items-center gap-3 font-serif text-headline-sm font-extrabold text-txt-primary sm:text-headline-md lg:text-headline-lg">
             <Bookmark size={28} className="text-primary" />
             Bookmark Saya
           </h1>
