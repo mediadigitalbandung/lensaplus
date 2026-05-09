@@ -37,7 +37,13 @@ export async function GET(request: NextRequest) {
         prisma.user.count(),
       ]);
 
-      return successResponse({ data: users, total, page, limit });
+      // Bug fix: previously wrapped as { data: users, ... } which gave the
+      // outer success envelope shape `{ success: true, data: { data: [...] } }`
+      // — a double-nested `data` that broke any client doing `json.data.filter`.
+      // Now return the array directly under `.data` and put pagination meta in
+      // a sibling `pagination` object on the same envelope, matching how every
+      // other paginated endpoint in this app shapes its response.
+      return successResponse({ users, pagination: { total, page, limit } });
     } else {
       // Non-admin: return only id, name, role for active users (small set, no pagination needed)
       const users = await prisma.user.findMany({

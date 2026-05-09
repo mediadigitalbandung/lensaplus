@@ -112,7 +112,21 @@ export default function PenggunaPage() {
 
       if (!resUsers.ok) throw new Error("Gagal memuat pengguna");
       const json = await resUsers.json();
-      setUsers(json.data || []);
+      // /api/users returns three possible shapes depending on role + history:
+      //   - admin (current):  { data: { users: [...], pagination: {...} } }
+      //   - admin (legacy):   { data: { data: [...], total, page, limit } }
+      //   - non-admin:        { data: [...] }  (flat array)
+      // Defensive parse handles all three so a deploy window mismatch between
+      // server and client never blanks the user list.
+      const payload = json.data;
+      const list: User[] = Array.isArray(payload)
+        ? (payload as User[])
+        : Array.isArray(payload?.users)
+        ? (payload.users as User[])
+        : Array.isArray(payload?.data)
+        ? (payload.data as User[])
+        : [];
+      setUsers(list);
 
       if (resEmails?.ok) {
         const emailJson = await resEmails.json();
