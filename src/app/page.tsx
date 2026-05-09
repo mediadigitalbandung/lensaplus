@@ -448,55 +448,122 @@ export default async function HomePage() {
                   </Link>
                 </div>
 
-                {/* Layout A (even): Large left + list right */}
+                {/* Layout A (even): Large left + list right on desktop;
+                    on mobile, two side-by-side cards on top + list below.
+                    The single full-width hero on mobile was overpowering and
+                    pushed the rest of the section below the fold — readers
+                    reported it felt like only one article per category. */}
                 {isEven ? (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8">
-                    {main && (
-                      <div className="md:col-span-7">
-                        <Link href={`/berita/${main.slug}`} className="group block">
-                          <div className="relative aspect-[16/9] overflow-hidden rounded-sm">
-                            {main.featuredImage ? (
-                              <Image src={main.featuredImage} alt={main.title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
-                            ) : (
-                              <div className="h-full w-full bg-surface-container" />
+                  <>
+                    {/* ── Mobile: 2 cards berdampingan, sisa list ── */}
+                    <div className="md:hidden">
+                      {(() => {
+                        const top2 = catArticles.slice(0, 2);
+                        const rest = catArticles.slice(2);
+                        return (
+                          <>
+                            {top2.length > 0 && (
+                              <div className="grid grid-cols-2 gap-3 mb-5">
+                                {top2.map((a) => (
+                                  <article key={a.slug} className="group">
+                                    <Link href={`/berita/${a.slug}`} className="block">
+                                      <div className="relative aspect-[4/3] overflow-hidden rounded-sm">
+                                        {a.featuredImage ? (
+                                          <Image src={a.featuredImage} alt={a.title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" sizes="(max-width: 768px) 50vw, 25vw" />
+                                        ) : (
+                                          <div className="h-full w-full bg-surface-container" />
+                                        )}
+                                      </div>
+                                    </Link>
+                                    <div className="mt-2.5">
+                                      <Link href={`/berita/${a.slug}`}>
+                                        <h3 className="font-serif text-title-sm leading-snug text-on-surface line-clamp-3 group-hover:text-primary transition-colors">
+                                          {a.title}
+                                        </h3>
+                                      </Link>
+                                      <p className="mt-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
+                                        {timeAgo(a.publishedAt)}
+                                      </p>
+                                    </div>
+                                  </article>
+                                ))}
+                              </div>
                             )}
-                          </div>
-                        </Link>
-                        <div className="mt-4 sm:mt-5">
-                          <Link href={`/berita/${main.slug}`}>
-                            <h3 className="font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
-                              {main.title}
-                            </h3>
-                          </Link>
-                          {main.excerpt && <p className="mt-2 sm:mt-3 text-body-sm sm:text-body-md text-on-surface-variant line-clamp-2">{main.excerpt}</p>}
-                          <p className="mt-2 sm:mt-3 flex items-center gap-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
-                            {main.author.name} <span className="mx-0.5 text-on-surface-variant/20">/</span> <Clock size={10} className="text-on-surface-variant/50" /> {timeAgo(main.publishedAt)}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {side.length > 0 && (
-                      <div className="md:col-span-5 flex flex-col gap-4 sm:gap-5">
-                        {side.map((a) => (
-                          <article key={a.slug} className="group flex gap-3 sm:gap-4">
-                            {a.featuredImage && (
-                              <Link href={`/berita/${a.slug}`} className="shrink-0">
-                                <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-sm">
-                                  <Image src={a.featuredImage} alt={a.title} fill className="object-cover" />
-                                </div>
-                              </Link>
+                            {rest.length > 0 && (
+                              <div className="flex flex-col gap-3 border-t border-border pt-4">
+                                {rest.map((a) => (
+                                  <article key={a.slug} className="group flex gap-3">
+                                    {a.featuredImage && (
+                                      <Link href={`/berita/${a.slug}`} className="shrink-0">
+                                        <div className="relative h-16 w-24 overflow-hidden rounded-sm">
+                                          <Image src={a.featuredImage} alt={a.title} fill className="object-cover" sizes="96px" />
+                                        </div>
+                                      </Link>
+                                    )}
+                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                      <Link href={`/berita/${a.slug}`}>
+                                        <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h4>
+                                      </Link>
+                                      <p className="mt-1 text-[10px] uppercase tracking-wider text-on-surface-variant">{timeAgo(a.publishedAt)}</p>
+                                    </div>
+                                  </article>
+                                ))}
+                              </div>
                             )}
-                            <div className="flex-1 min-w-0 flex flex-col justify-center">
-                              <Link href={`/berita/${a.slug}`}>
-                                <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h4>
-                              </Link>
-                              <p className="mt-1 text-label-sm uppercase tracking-wider text-on-surface-variant">{timeAgo(a.publishedAt)}</p>
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {/* ── Desktop / tablet: layout asli (lead besar + list samping) ── */}
+                    <div className="hidden md:grid md:grid-cols-12 gap-6 sm:gap-8">
+                      {main && (
+                        <div className="md:col-span-7">
+                          <Link href={`/berita/${main.slug}`} className="group block">
+                            <div className="relative aspect-[16/9] overflow-hidden rounded-sm">
+                              {main.featuredImage ? (
+                                <Image src={main.featuredImage} alt={main.title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.02]" sizes="(max-width: 1024px) 60vw, 50vw" />
+                              ) : (
+                                <div className="h-full w-full bg-surface-container" />
+                              )}
                             </div>
-                          </article>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                          </Link>
+                          <div className="mt-4 sm:mt-5">
+                            <Link href={`/berita/${main.slug}`}>
+                              <h3 className="font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
+                                {main.title}
+                              </h3>
+                            </Link>
+                            {main.excerpt && <p className="mt-2 sm:mt-3 text-body-sm sm:text-body-md text-on-surface-variant line-clamp-2">{main.excerpt}</p>}
+                            <p className="mt-2 sm:mt-3 flex items-center gap-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
+                              {main.author.name} <span className="mx-0.5 text-on-surface-variant/20">/</span> <Clock size={10} className="text-on-surface-variant/50" /> {timeAgo(main.publishedAt)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {side.length > 0 && (
+                        <div className="md:col-span-5 flex flex-col gap-4 sm:gap-5">
+                          {side.map((a) => (
+                            <article key={a.slug} className="group flex gap-3 sm:gap-4">
+                              {a.featuredImage && (
+                                <Link href={`/berita/${a.slug}`} className="shrink-0">
+                                  <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-sm">
+                                    <Image src={a.featuredImage} alt={a.title} fill className="object-cover" sizes="112px" />
+                                  </div>
+                                </Link>
+                              )}
+                              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                <Link href={`/berita/${a.slug}`}>
+                                  <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h4>
+                                </Link>
+                                <p className="mt-1 text-label-sm uppercase tracking-wider text-on-surface-variant">{timeAgo(a.publishedAt)}</p>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
                 ) : (
                   /* Layout B (odd): Grid of cards */
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6">
