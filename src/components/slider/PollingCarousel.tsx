@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
+import { CheckCircle, ArrowRight } from "lucide-react";
 
 interface PollOption {
   id: string;
@@ -30,12 +31,12 @@ interface LegacyPoll {
 interface Props {
   items?: LegacyPoll[];
   categorySlug?: string;
+  /** Maximum cards to render in the grid. Sisanya disembunyikan di balik
+   *  link "Lihat semua polling →". Default 8 (cocok untuk grid 2/3/4 cols). */
+  limit?: number;
 }
 
-export default function PollingCarousel({ items, categorySlug }: Props) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+export default function PollingCarousel({ categorySlug, limit = 8 }: Props) {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [votedPolls, setVotedPolls] = useState<Record<string, string>>({}); // pollId → optionId
   const [voting, setVoting] = useState<string | null>(null);
@@ -105,33 +106,22 @@ export default function PollingCarousel({ items, categorySlug }: Props) {
     }
   }
 
-  // If no polls from API and legacy items provided, show nothing (legacy data removed)
-  const displayPolls = polls;
-
-  const checkScroll = () => {
-    if (!scrollRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    setCanScrollLeft(scrollLeft > 10);
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-  };
-
-  const scroll = (direction: "left" | "right") => {
-    if (!scrollRef.current) return;
-    const cardWidth = scrollRef.current.querySelector("div")?.offsetWidth || 300;
-    const amount = (cardWidth + 16) * (direction === "left" ? -1 : 1);
-    scrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
-    setTimeout(checkScroll, 400);
-  };
+  // Cap to `limit` cards. Sisanya bisa diakses via /polling listing page.
+  const displayPolls = polls.slice(0, limit);
+  const hasMore = polls.length > limit;
 
   if (loading) {
     return (
-      <div className="flex gap-4 overflow-hidden">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="shrink-0 w-[300px] rounded-xl border border-border bg-surface-secondary p-5 animate-pulse">
-            <div className="h-4 w-3/4 rounded bg-surface-tertiary mb-4" />
-            <div className="space-y-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-xl border border-border bg-surface-secondary p-3 sm:p-4 animate-pulse">
+            <div className="h-3 w-3/4 rounded bg-surface-tertiary mb-3" />
+            <div className="space-y-2">
               {[1, 2, 3].map((j) => (
-                <div key={j}><div className="h-3 w-full rounded bg-surface-tertiary" /><div className="h-1.5 rounded-full bg-surface-tertiary mt-1" /></div>
+                <div key={j}>
+                  <div className="h-2 w-full rounded bg-surface-tertiary" />
+                  <div className="h-1 rounded-full bg-surface-tertiary mt-1" />
+                </div>
               ))}
             </div>
           </div>
@@ -143,52 +133,58 @@ export default function PollingCarousel({ items, categorySlug }: Props) {
   if (displayPolls.length === 0) return null;
 
   return (
-    <div className="relative group">
-      {canScrollLeft && (
-        <button onClick={() => scroll("left")} className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface shadow-lg border border-border text-txt-primary hover:bg-surface-secondary transition-all opacity-0 group-hover:opacity-100" aria-label="Geser kiri">
-          <ChevronLeft size={20} />
-        </button>
-      )}
-      {canScrollRight && (
-        <button onClick={() => scroll("right")} className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface shadow-lg border border-border text-txt-primary hover:bg-surface-secondary transition-all opacity-0 group-hover:opacity-100" aria-label="Geser kanan">
-          <ChevronRight size={20} />
-        </button>
-      )}
-
-      <div ref={scrollRef} onScroll={checkScroll} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2">
+    <div>
+      {/* Grid layout — split jadi 2 cols di mobile, 3 di tablet, 4 di desktop.
+          Drop horizontal carousel: lebih readable + scan-friendly + tidak boros
+          horizontal space saat poll cuma 2-3 buah. */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {displayPolls.map((poll) => {
           const hasVoted = !!votedPolls[poll.id];
           const votedOptionId = votedPolls[poll.id];
           const isVoting = voting === poll.id;
+          const maxPercent = poll.totalVotes > 0
+            ? Math.max(...poll.options.map((o) => o.percentage))
+            : 0;
 
           return (
-            <div key={poll.id} className="shrink-0 w-[calc(100vw-48px)] sm:w-[300px] md:w-[340px] rounded-xl border border-border bg-surface-secondary overflow-hidden hover:shadow-card-hover transition-shadow">
+            <div
+              key={poll.id}
+              className="flex flex-col rounded-xl border border-border bg-surface-secondary overflow-hidden hover:shadow-card-hover transition-shadow"
+            >
               {poll.image && (
-                <div className="relative w-full aspect-[2/1]">
-                  <Image src={poll.image} alt={poll.question} fill className="object-cover" sizes="340px" />
+                <div className="relative w-full aspect-[16/9]">
+                  <Image
+                    src={poll.image}
+                    alt={poll.question}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  />
                 </div>
               )}
-              <div className="p-5">
-                <p className="text-sm font-semibold text-txt-primary mb-4 leading-snug">{poll.question}</p>
+              <div className="flex flex-col flex-1 p-3 sm:p-4">
+                <p className="text-xs sm:text-sm font-semibold text-txt-primary mb-3 leading-snug line-clamp-3">
+                  {poll.question}
+                </p>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2 flex-1">
                   {poll.options.map((opt) => {
-                    const isTop = opt.percentage === Math.max(...poll.options.map((o) => o.percentage)) && poll.totalVotes > 0;
+                    const isTop = opt.percentage === maxPercent && poll.totalVotes > 0;
                     const isSelected = votedOptionId === opt.id;
 
                     return hasVoted ? (
                       // After voting — show results
                       <div key={opt.id}>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className={`text-xs flex items-center gap-1 ${isSelected ? "font-bold text-primary" : "text-txt-primary"}`}>
-                            {isSelected && <CheckCircle size={12} />}
-                            {opt.label}
+                        <div className="flex items-center justify-between gap-1 text-xs mb-0.5 sm:mb-1">
+                          <span className={`text-[11px] sm:text-xs flex items-center gap-1 truncate ${isSelected ? "font-bold text-primary" : "text-txt-primary"}`}>
+                            {isSelected && <CheckCircle size={10} className="shrink-0" />}
+                            <span className="truncate">{opt.label}</span>
                           </span>
-                          <span className={`font-bold text-xs ${isTop ? "text-primary" : "text-txt-primary"}`}>
+                          <span className={`shrink-0 font-bold text-[11px] sm:text-xs ${isTop ? "text-primary" : "text-txt-primary"}`}>
                             {opt.percentage}%
                           </span>
                         </div>
-                        <div className="h-2 rounded-full bg-border overflow-hidden">
+                        <div className="h-1.5 sm:h-2 rounded-full bg-border overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-700 ${isSelected ? "bg-primary" : isTop ? "bg-primary/60" : "bg-primary/30"}`}
                             style={{ width: `${opt.percentage}%` }}
@@ -201,7 +197,7 @@ export default function PollingCarousel({ items, categorySlug }: Props) {
                         key={opt.id}
                         onClick={() => handleVote(poll.id, opt.id)}
                         disabled={isVoting}
-                        className={`w-full text-left rounded-lg border px-4 py-2.5 text-sm font-medium transition-all ${
+                        className={`w-full text-left rounded-md sm:rounded-lg border px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-medium transition-all line-clamp-2 ${
                           isVoting
                             ? "opacity-50 cursor-not-allowed border-border text-txt-muted"
                             : "border-border text-txt-primary hover:border-primary hover:bg-primary-light/30 hover:text-primary active:scale-[0.98]"
@@ -213,9 +209,9 @@ export default function PollingCarousel({ items, categorySlug }: Props) {
                   })}
                 </div>
 
-                <p className="text-xs text-txt-muted mt-3">
+                <p className="text-[10px] sm:text-xs text-txt-muted mt-2 sm:mt-3">
                   {poll.totalVotes.toLocaleString("id-ID")} suara
-                  {hasVoted && <span className="text-primary ml-1">· Terima kasih telah voting!</span>}
+                  {hasVoted && <span className="text-primary ml-1">✓</span>}
                 </p>
               </div>
             </div>
@@ -223,22 +219,16 @@ export default function PollingCarousel({ items, categorySlug }: Props) {
         })}
       </div>
 
-      {displayPolls.length > 1 && (
-        <div className="flex justify-center gap-1.5 mt-4">
-          {displayPolls.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                if (!scrollRef.current) return;
-                const card = scrollRef.current.querySelector("div");
-                const cardWidth = (card?.offsetWidth || 300) + 16;
-                scrollRef.current.scrollTo({ left: idx * cardWidth, behavior: "smooth" });
-                setTimeout(checkScroll, 400);
-              }}
-              className="h-1.5 w-1.5 rounded-full bg-border hover:bg-primary transition-colors"
-              aria-label={`Polling ${idx + 1}`}
-            />
-          ))}
+      {/* "Lihat semua" CTA hanya muncul kalau ada poll lebih dari `limit` */}
+      {hasMore && (
+        <div className="mt-5 sm:mt-6 flex justify-center">
+          <Link
+            href="/polling"
+            className="group inline-flex items-center gap-2 rounded-full bg-secondary/10 px-5 py-2 text-label-sm font-bold uppercase tracking-wider text-secondary transition-all hover:bg-secondary hover:text-white"
+          >
+            Lihat Semua Polling
+            <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
       )}
     </div>
