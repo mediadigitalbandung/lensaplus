@@ -8,7 +8,7 @@ export default function Loading() {
       <div className="skeleton h-8 w-48 mb-6" />
 
       {/* Article row skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="card p-0 overflow-hidden">
             <div className="skeleton h-40 w-full rounded-none" />
@@ -24,7 +24,7 @@ export default function Loading() {
 
       {/* Second section */}
       <div className="skeleton h-8 w-40 mt-10 mb-6" />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="card p-0 overflow-hidden">
             <div className="skeleton h-40 w-full rounded-none" />

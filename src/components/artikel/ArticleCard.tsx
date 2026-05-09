@@ -150,7 +150,11 @@ export default function ArticleCard({
     );
   }
 
-  /* ── Standard / Default variant ── */
+  /* ── Standard / Default variant ──
+     Ukuran scale 2-tahap: di mobile sempit (<sm) card biasanya 2-per-baris
+     dengan lebar ~140-180px, jadi font dan padding kecil supaya konten
+     terbaca utuh tanpa overflow. Di sm+ (≥640px) card lebih lebar (~280px+)
+     jadi naik ke ukuran title-lg yang generous. */
   return (
     <article className="group">
       <Link href={`/berita/${slug}`} className="block">
@@ -167,21 +171,21 @@ export default function ArticleCard({
           )}
         </div>
       </Link>
-      <div className="mt-3">
+      <div className="mt-2 sm:mt-3">
         <Link
           href={`/kategori/${category.slug}`}
-          className="text-label-md font-bold uppercase tracking-wider text-primary"
+          className="text-[10px] sm:text-label-md font-bold uppercase tracking-wider text-primary"
         >
           {category.name}
         </Link>
         <Link href={`/berita/${slug}`}>
-          <h3 className="mt-1.5 line-clamp-2 font-serif text-title-lg leading-snug text-on-surface hover:text-primary transition-colors">
+          <h3 className="mt-1 sm:mt-1.5 line-clamp-2 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface hover:text-primary transition-colors">
             {title}
           </h3>
         </Link>
-        <p className="mt-2.5 text-label-md uppercase tracking-wider text-on-surface-variant">
+        <p className="mt-1.5 sm:mt-2.5 text-[10px] sm:text-label-md uppercase tracking-wider text-on-surface-variant truncate">
           {formatTime(publishedAt)}
-          <span className="mx-1.5">&middot;</span>
+          <span className="mx-1 sm:mx-1.5">&middot;</span>
           {author.name}
         </p>
       </div>

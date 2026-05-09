@@ -5,7 +5,7 @@ export default function Loading() {
       <div className="skeleton h-10 w-64 mb-8" />
 
       {/* Article grid skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
         {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="card p-0 overflow-hidden">
             <div className="skeleton h-48 w-full rounded-none" />

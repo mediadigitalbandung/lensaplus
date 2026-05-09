@@ -730,7 +730,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                       Lihat Semua &rarr;
                     </Link>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
                     {bacaLainnyaGrid.map((related) => (
                       <ArticleCard
                         key={related.slug}

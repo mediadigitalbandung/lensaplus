@@ -124,7 +124,7 @@ export default async function PenulisPage({ params: paramsPromise }: { params: P
             <span className="block h-6 w-[3px] rounded-full bg-primary" />
             Artikel oleh {author.name}
           </h2>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
             {articles.map((article) => (
               <ArticleCard key={article.slug} {...article} />
             ))}

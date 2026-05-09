@@ -3,7 +3,7 @@ export default function Loading() {
     <div className="container-main py-8">
       <div className="skeleton h-10 w-56 mb-2" />
       <div className="skeleton h-5 w-96 mb-8" />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="card p-0 overflow-hidden">
             <div className="skeleton h-48 w-full rounded-none" />

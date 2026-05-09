@@ -368,7 +368,7 @@ export default async function HomePage() {
                 Semua Berita <ArrowRight size={14} />
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
               {editorsPickArticles.map((a) => (
                 <article key={a.slug} className="group">
                   <Link href={`/berita/${a.slug}`} className="block">
@@ -380,15 +380,15 @@ export default async function HomePage() {
                       )}
                     </div>
                   </Link>
-                  <div className="mt-3">
-                    <span className="text-label-sm font-bold uppercase tracking-widest text-primary">{a.category.name}</span>
+                  <div className="mt-2 sm:mt-3">
+                    <span className="text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-primary">{a.category.name}</span>
                     <Link href={`/berita/${a.slug}`}>
-                      <h3 className="mt-1 font-serif text-title-lg leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
+                      <h3 className="mt-1 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-primary transition-colors">
                         {a.title}
                       </h3>
                     </Link>
-                    <p className="mt-2 flex items-center gap-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
-                      {a.author.name} <span className="text-on-surface-variant/30 mx-0.5">/</span> <Clock size={10} className="text-on-surface-variant/50" /> {timeAgo(a.publishedAt)}
+                    <p className="mt-1.5 sm:mt-2 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-on-surface-variant truncate">
+                      <span className="truncate">{a.author.name}</span> <span className="text-on-surface-variant/30 mx-0.5 shrink-0">/</span> <Clock size={10} className="text-on-surface-variant/50 shrink-0" /> {timeAgo(a.publishedAt)}
                     </p>
                   </div>
                 </article>
@@ -570,8 +570,10 @@ export default async function HomePage() {
                     </div>
                   </>
                 ) : (
-                  /* Layout B (odd): Grid of cards */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6">
+                  /* Layout B (odd): Grid of cards. 2-col bahkan di viewport
+                     paling kecil supaya gambar tidak jadi banner full-width
+                     dominan; di sm+ tetap 2-col, naik 3-col di md+. */
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 lg:gap-6">
                     {catArticles.slice(0, 3).map((a) => (
                       <article key={a.slug} className="group">
                         <Link href={`/berita/${a.slug}`} className="block">
@@ -583,12 +585,12 @@ export default async function HomePage() {
                             )}
                           </div>
                         </Link>
-                        <div className="mt-3">
+                        <div className="mt-2 sm:mt-3">
                           <Link href={`/berita/${a.slug}`}>
-                            <h3 className="font-serif text-title-lg leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
+                            <h3 className="font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
                           </Link>
-                          <p className="mt-2 flex items-center gap-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
-                            {a.author.name} <span className="mx-0.5 text-on-surface-variant/20">/</span> <Clock size={10} className="text-on-surface-variant/50" /> {timeAgo(a.publishedAt)}
+                          <p className="mt-1.5 sm:mt-2 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-on-surface-variant truncate">
+                            <span className="truncate">{a.author.name}</span> <span className="mx-0.5 text-on-surface-variant/20 shrink-0">/</span> <Clock size={10} className="text-on-surface-variant/50 shrink-0" /> {timeAgo(a.publishedAt)}
                           </p>
                         </div>
                       </article>
