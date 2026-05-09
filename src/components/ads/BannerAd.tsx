@@ -26,7 +26,18 @@ interface BannerAdProps {
   showPlaceholder?: boolean;
 }
 
-function useAd(adSlot: string) {
+/**
+ * Picks an ad for the given slot.
+ *
+ * `index` lets the caller deterministically pick a specific ad from the
+ * available list (useful when a parent renders multiple `SidebarAd`s in a
+ * row and wants each one to show a *different* creative — e.g. ad[0],
+ * ad[1] — instead of relying on Math.random which can pick the same ad
+ * twice and look like a duplicate render).
+ *
+ * When `index` is undefined, falls back to random pick (legacy behavior).
+ */
+function useAd(adSlot: string, index?: number) {
   const [ad, setAd] = useState<Ad | null>(null);
   const tracked = useRef(false);
 
@@ -36,10 +47,15 @@ function useAd(adSlot: string) {
       .then((r) => r.json())
       .then((json) => {
         const ads: Ad[] = json.data || [];
-        if (ads.length > 0) setAd(ads[Math.floor(Math.random() * ads.length)]);
+        if (ads.length === 0) return;
+        const pick =
+          typeof index === "number"
+            ? ads[index % ads.length]
+            : ads[Math.floor(Math.random() * ads.length)];
+        setAd(pick);
       })
       .catch(() => {});
-  }, [adSlot]);
+  }, [adSlot, index]);
 
   useEffect(() => {
     if (ad && !tracked.current) {
@@ -104,9 +120,11 @@ export default function BannerAd({ size = "banner", slot, className = "", noWrap
 }
 
 /* ── Sidebar Ad ──
-   Fills the sidebar column width (100%) */
-export function SidebarAd({ slot = "SIDEBAR" }: { slot?: string }) {
-  const ad = useAd(slot);
+   Fills the sidebar column width (100%).
+   `index` lets the caller dedupe when rendering multiple SidebarAd instances
+   in a row (e.g. <SidebarAd index={0} /> + <SidebarAd index={1} />). */
+export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: number }) {
+  const ad = useAd(slot, index);
 
   const wrapper = "w-full overflow-hidden";
 

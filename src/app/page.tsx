@@ -329,12 +329,17 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              {/* AD: Sidebar */}
-              <SidebarAd />
-
-              {/* AD: 2nd sidebar */}
-              <div className="mt-6">
-                <SidebarAd />
+              {/* AD: Sidebar pair — responsive layout
+                  - Mobile (< sm): 1 ad only (compact, less vertical space)
+                  - Tablet (sm to md): 2 ads side-by-side
+                  - Desktop (md+, sidebar 5/12 cols): 2 ads stacked vertically
+                  Index prop ensures the two slots show DIFFERENT ads
+                  (instead of random pick that can yield duplicates). */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-4 md:gap-6">
+                <SidebarAd index={0} />
+                <div className="hidden sm:block">
+                  <SidebarAd index={1} />
+                </div>
               </div>
             </aside>
           </div>
