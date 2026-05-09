@@ -122,7 +122,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Kartawarta" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        {/* Dedicated 180x180 with white background — iOS doesn't apply
+            mask shapes but does benefit from a non-transparent BG so the
+            logo reads on any home-screen wallpaper. */}
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
