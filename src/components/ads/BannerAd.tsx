@@ -122,26 +122,53 @@ export default function BannerAd({ size = "banner", slot, className = "", noWrap
 /* ── Sidebar Ad ──
    Fills the sidebar column width (100%).
    `index` lets the caller dedupe when rendering multiple SidebarAd instances
-   in a row (e.g. <SidebarAd index={0} /> + <SidebarAd index={1} />). */
+   in a row (e.g. <SidebarAd index={0} /> + <SidebarAd index={1} />).
+
+   IMPORTANT — wrapper class beda untuk HTML vs IMAGE ad:
+     - HTML ad (htmlCode dari DB): WAJIB pakai `w-full` saja TANPA
+       overflow-hidden. Creative kreatif sering punya tombol CTA di
+       bagian bawah card; kalau wrapper `overflow-hidden` + content
+       lebih tinggi dari box normal flow (mis. ada padding/margin
+       inline-style), bagian bawah ke-clip dan tombol "Langganan
+       Gratis" / "Hubungi Kami" hilang separuh.
+     - Image ad (imageUrl): tetap pakai `overflow-hidden` + `object-cover`
+       supaya banner 300×250 ter-crop rapi ke kotak ratio walau
+       resolusi sumber ad bervariasi.
+   `min-w-0` di wrapper image diperlukan supaya flex/grid parent tidak
+   memaksa lebar minimum dari intrinsic image dimension. */
 export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: number }) {
   const ad = useAd(slot, index);
-
-  const wrapper = "w-full overflow-hidden";
 
   if (ad) {
     const content =
       ad.type === "HTML" && ad.htmlCode ? (
-        <div dangerouslySetInnerHTML={{ __html: ad.htmlCode }} className={wrapper} />
+        <div
+          dangerouslySetInnerHTML={{ __html: ad.htmlCode }}
+          className="w-full"
+        />
       ) : ad.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- external advertiser-supplied URL, domain not known ahead of time
-        <img src={ad.imageUrl} alt="Iklan" width={300} height={250} className={`${wrapper} object-cover`} loading="lazy" />
+        <img
+          src={ad.imageUrl}
+          alt="Iklan"
+          width={300}
+          height={250}
+          className="block w-full h-auto rounded-md"
+          loading="lazy"
+        />
       ) : null;
 
     if (!content) return null;
 
     if (ad.targetUrl) {
       return (
-        <a href={ad.targetUrl} target="_blank" rel="noopener noreferrer sponsored" onClick={() => handleClick(ad)} className="block w-full">
+        <a
+          href={ad.targetUrl}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          onClick={() => handleClick(ad)}
+          className="block w-full"
+        >
           {content}
         </a>
       );
