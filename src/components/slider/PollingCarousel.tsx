@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PollOption {
   id: string;
@@ -20,7 +19,6 @@ interface Poll {
   totalVotes: number;
 }
 
-// Legacy support for hardcoded polls
 interface LegacyPoll {
   question: string;
   image?: string;
@@ -31,17 +29,16 @@ interface LegacyPoll {
 interface Props {
   items?: LegacyPoll[];
   categorySlug?: string;
-  /** Maximum cards to render in the grid. Sisanya disembunyikan di balik
-   *  link "Lihat semua polling →". Default 4 — cocok untuk 1 baris di
-   *  desktop lg (4 cols). Di mobile (2 cols) jadi 2 baris × 2 cards. */
-  limit?: number;
 }
 
-export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
+export default function PollingCarousel({ categorySlug }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [polls, setPolls] = useState<Poll[]>([]);
-  const [votedPolls, setVotedPolls] = useState<Record<string, string>>({}); // pollId → optionId
+  const [votedPolls, setVotedPolls] = useState<Record<string, string>>({});
   const [voting, setVoting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const fetchPolls = useCallback(async () => {
     try {
@@ -53,7 +50,6 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
       const fetchedPolls: Poll[] = json.data || [];
       setPolls(fetchedPolls);
 
-      // Check which polls user already voted on
       const voteChecks = await Promise.all(
         fetchedPolls.map(async (p) => {
           try {
@@ -80,6 +76,21 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
 
   useEffect(() => { fetchPolls(); }, [fetchPolls]);
 
+  // Compute initial scroll-affordance state once polls + DOM are ready.
+  // Updated on user scroll via the container's onScroll handler below.
+  useEffect(() => {
+    if (!scrollRef.current || polls.length === 0) return;
+    const el = scrollRef.current;
+    const update = () => {
+      setCanScrollLeft(el.scrollLeft > 4);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    };
+    update();
+    // Also re-check on viewport resize because card width is responsive.
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [polls]);
+
   async function handleVote(pollId: string, optionId: string) {
     if (votedPolls[pollId] || voting) return;
     try {
@@ -91,7 +102,6 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
       });
       const json = await res.json();
       if (res.ok && json.data) {
-        // Update poll with new results
         setPolls((prev) =>
           prev.map((p) =>
             p.id === pollId
@@ -107,15 +117,30 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
     }
   }
 
-  // Cap to `limit` cards. Sisanya bisa diakses via /polling listing page.
-  const displayPolls = polls.slice(0, limit);
-  const hasMore = polls.length > limit;
+  function handleScroll() {
+    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }
+
+  function scrollByPage(direction: "left" | "right") {
+    if (!scrollRef.current) return;
+    const containerWidth = scrollRef.current.clientWidth;
+    scrollRef.current.scrollBy({
+      left: direction === "left" ? -containerWidth : containerWidth,
+      behavior: "smooth",
+    });
+  }
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="flex gap-3 sm:gap-4 overflow-hidden">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-xl border border-border bg-surface-secondary p-3 sm:p-4 animate-pulse">
+          <div
+            key={i}
+            className="shrink-0 w-[calc(50%-6px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] rounded-xl border border-border bg-surface-secondary p-3 sm:p-4 animate-pulse"
+          >
             <div className="h-3 w-3/4 rounded bg-surface-tertiary mb-3" />
             <div className="space-y-2">
               {[1, 2, 3].map((j) => (
@@ -131,15 +156,48 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
     );
   }
 
-  if (displayPolls.length === 0) return null;
+  if (polls.length === 0) return null;
 
   return (
-    <div>
-      {/* Grid layout — split jadi 2 cols di mobile, 3 di tablet, 4 di desktop.
-          Drop horizontal carousel: lebih readable + scan-friendly + tidak boros
-          horizontal space saat poll cuma 2-3 buah. */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-        {displayPolls.map((poll) => {
+    <div className="relative group">
+      {/* Prev arrow — only visible when there's content to scroll back to.
+          Group hover used so arrow muncul saat hover container (desktop UX).
+          Mobile: arrow tetap visible kalau bisa di-scroll (karena no hover). */}
+      {canScrollLeft && (
+        <button
+          onClick={() => scrollByPage("left")}
+          aria-label="Polling sebelumnya"
+          className="absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-surface shadow-lg border border-border text-txt-primary hover:bg-surface-secondary transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+        >
+          <ChevronLeft size={18} />
+        </button>
+      )}
+
+      {canScrollRight && (
+        <button
+          onClick={() => scrollByPage("right")}
+          aria-label="Polling berikutnya"
+          className="absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-surface shadow-lg border border-border text-txt-primary hover:bg-surface-secondary transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+        >
+          <ChevronRight size={18} />
+        </button>
+      )}
+
+      {/*
+        Strict 1-row carousel with snap. Card widths:
+          - Mobile (<md):  2 cards visible — w = (100% - 1×gap) / 2 ≈ 50% − 6px
+          - Tablet (md):   3 cards visible — w = (100% - 2×gap) / 3 ≈ 33.33% − 11px
+          - Desktop (lg):  4 cards visible — w = (100% - 3×gap) / 4 ≈ 25% − 12px
+
+        snap-x snap-mandatory + snap-start ensures swipe lands on card edge.
+        scrollbar-hide untuk no native scrollbar (still scrollable touch + arrows).
+      */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2"
+      >
+        {polls.map((poll) => {
           const hasVoted = !!votedPolls[poll.id];
           const votedOptionId = votedPolls[poll.id];
           const isVoting = voting === poll.id;
@@ -150,7 +208,7 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
           return (
             <div
               key={poll.id}
-              className="flex flex-col rounded-xl border border-border bg-surface-secondary overflow-hidden hover:shadow-card-hover transition-shadow"
+              className="snap-start shrink-0 w-[calc(50%-6px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] flex flex-col rounded-xl border border-border bg-surface-secondary overflow-hidden hover:shadow-card-hover transition-shadow"
             >
               {poll.image && (
                 <div className="relative w-full aspect-[16/9]">
@@ -159,7 +217,7 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
                     alt={poll.question}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   />
                 </div>
               )}
@@ -174,7 +232,6 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
                     const isSelected = votedOptionId === opt.id;
 
                     return hasVoted ? (
-                      // After voting — show results
                       <div key={opt.id}>
                         <div className="flex items-center justify-between gap-1 text-xs mb-0.5 sm:mb-1">
                           <span className={`text-[11px] sm:text-xs flex items-center gap-1 truncate ${isSelected ? "font-bold text-primary" : "text-txt-primary"}`}>
@@ -193,7 +250,6 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
                         </div>
                       </div>
                     ) : (
-                      // Before voting — clickable options
                       <button
                         key={opt.id}
                         onClick={() => handleVote(poll.id, opt.id)}
@@ -219,19 +275,6 @@ export default function PollingCarousel({ categorySlug, limit = 4 }: Props) {
           );
         })}
       </div>
-
-      {/* "Lihat semua" CTA hanya muncul kalau ada poll lebih dari `limit` */}
-      {hasMore && (
-        <div className="mt-5 sm:mt-6 flex justify-center">
-          <Link
-            href="/polling"
-            className="group inline-flex items-center gap-2 rounded-full bg-secondary/10 px-5 py-2 text-label-sm font-bold uppercase tracking-wider text-secondary transition-all hover:bg-secondary hover:text-white"
-          >
-            Lihat Semua Polling
-            <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-          </Link>
-        </div>
-      )}
     </div>
   );
 }
