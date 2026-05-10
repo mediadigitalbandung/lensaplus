@@ -40,6 +40,7 @@ import {
   Gavel,
   BookOpen,
   Video,
+  BarChart2,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -73,6 +74,7 @@ const menuItems: MenuItem[] = [
   { name: "TikTok", href: "/panel/tiktok", icon: Video, editorOnly: true },
   { name: "Sorotan", href: "/panel/sorotan", icon: Lightbulb, editorOnly: true },
   { name: "Jadwal Sidang", href: "/panel/jadwal-sidang", icon: Gavel, editorOnly: true },
+  { name: "Kalender Emiten", href: "/panel/kalender-emiten", icon: BarChart2, editorOnly: true },
   { name: "Pengguna", href: "/panel/pengguna", icon: Users, adminOnly: true },
   { name: "Analytics", href: "/panel/analytics", icon: BarChart3, adminOnly: true },
   { name: "Statistik", href: "/panel/statistik", icon: TrendingUp, editorOnly: true },

@@ -98,6 +98,18 @@ const nextConfig = {
   },
   // Disable x-powered-by header
   poweredByHeader: false,
+  async redirects() {
+    return [
+      // Browser standard (.well-known/change-password) — password managers
+      // and Safari point users here when they want to change their pass.
+      // Trust signal weighed by Chrome Safe Browsing & Apple ITP.
+      {
+        source: "/.well-known/change-password",
+        destination: "/login",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 // Wrap with Sentry only when SENTRY_DSN is configured.

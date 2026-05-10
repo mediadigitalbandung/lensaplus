@@ -930,3 +930,39 @@ model ArticleReaction {
   @@index([articleId, type])
   @@map("article_reactions")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Earnings & IPO Calendar — kalender event emiten Indonesia (Sprint 2B)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum MarketEventType {
+  EARNINGS // Release laporan keuangan kuartalan / tahunan
+  IPO // Initial Public Offering
+  RUPS // Rapat Umum Pemegang Saham
+  DIVIDEND // Pengumuman dividen / cum-dividend / ex-dividend
+  STOCK_SPLIT // Stock split / reverse split
+  RIGHTS_ISSUE // Hak memesan efek terlebih dahulu
+  OTHER
+}
+
+model MarketEvent {
+  id          String          @id @default(cuid())
+  type        MarketEventType
+  ticker      String? // emiten code, e.g. BBRI, BMRI (null untuk macro event)
+  companyName String // nama lengkap, e.g. "Bank Rakyat Indonesia"
+  title       String // headline event, e.g. "Release Laporan Q1 2026"
+  description String?         @db.Text
+  scheduledAt DateTime // tanggal/waktu event
+  endsAt      DateTime? // optional end time (untuk RUPS multi-day)
+  source      String? // URL source kalau ada (IDX press release, etc)
+  articleId   String? // optional link ke artikel coverage
+  isPublished Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([scheduledAt])
+  @@index([type, scheduledAt])
+  @@index([ticker])
+  @@index([isPublished, scheduledAt])
+  @@map("market_events")
+}

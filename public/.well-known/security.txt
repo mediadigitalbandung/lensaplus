@@ -1,0 +1,11 @@
+# RFC 9116 — Security disclosure for kartawarta.com
+# Browser/security tooling that finds this file knows we have a real
+# vuln-disclosure channel — one of the trust signals Safe Browsing weighs.
+
+Contact: mailto:security@kartawarta.com
+Contact: mailto:owenjacobn@gmail.com
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: id, en
+Canonical: https://kartawarta.com/.well-known/security.txt
+Policy: https://kartawarta.com/kode-etik
+Acknowledgments: https://kartawarta.com/kode-etik
