@@ -77,6 +77,7 @@ const menuItems: MenuItem[] = [
   { name: "Sorotan", href: "/panel/sorotan", icon: Lightbulb, editorOnly: true },
   { name: "Live Blog", href: "/panel/live-blogs", icon: RadioTower, editorOnly: true },
   { name: "Jadwal Sidang", href: "/panel/jadwal-sidang", icon: Gavel, editorOnly: true },
+  { name: "Emiten", href: "/panel/emiten", icon: BarChart2, editorOnly: true },
   { name: "Kalender Emiten", href: "/panel/kalender-emiten", icon: BarChart2, editorOnly: true },
   { name: "Regulasi", href: "/panel/regulasi", icon: Scale, editorOnly: true },
   { name: "Pejabat", href: "/panel/pejabat", icon: UserCircle, editorOnly: true },

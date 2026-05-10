@@ -1136,3 +1136,49 @@ model LiveBlogEntry {
   @@index([liveBlogId, isPinned, postedAt(sort: Desc)])
   @@map("live_blog_entries")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Company Profile Cards — emiten Indonesia (Sprint 5A)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum CompanySector {
+  KEUANGAN
+  ENERGI
+  KONSUMER
+  PROPERTI
+  TELEKOMUNIKASI
+  INFRASTRUKTUR
+  PERTAMBANGAN
+  PERTANIAN_PERKEBUNAN
+  TRANSPORTASI
+  TEKNOLOGI
+  KESEHATAN_FARMASI
+  MANUFAKTUR
+  PARIWISATA
+  OTHER
+}
+
+model PublicCompany {
+  id          String        @id @default(cuid())
+  ticker      String        @unique // e.g. BBRI, BMRI, GOTO
+  name        String
+  shortName   String?
+  sector      CompanySector
+  description String?       @db.Text
+  founded     Int? // tahun pendirian
+  ipoDate     DateTime?
+  marketCap   BigInt? // dalam IDR
+  website     String?
+  logoUrl     String?
+  ceo         String?
+  hq          String? // kantor pusat
+  employees   Int?
+  isActive    Boolean       @default(true)
+  viewCount   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([sector, isActive])
+  @@index([isActive, marketCap(sort: Desc)])
+  @@map("public_companies")
+}
