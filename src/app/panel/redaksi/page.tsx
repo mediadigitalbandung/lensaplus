@@ -78,15 +78,23 @@ export default function RedaksiPanelPage() {
       setLoading(true);
       const [resMembers, resUsers] = await Promise.all([
         fetch("/api/redaksi"),
-        fetch("/api/users"),
+        fetch("/api/users?limit=100"),
       ]);
       if (resMembers.ok) {
         const json = await resMembers.json();
         setMembers(json.data || []);
       }
       if (resUsers.ok) {
+        // /api/users sejak Sprint 0 CRIT-03 return paginated shape:
+        //   json.data = { users: [...], total, page, limit, totalPages }
+        // Backward-compat fallback ke array kalau API berubah.
         const json = await resUsers.json();
-        setUsers((json.data || []).filter((u: UserOption & { isActive: boolean }) => u.isActive !== false));
+        const list = Array.isArray(json.data?.users)
+          ? json.data.users
+          : Array.isArray(json.data)
+          ? json.data
+          : [];
+        setUsers(list.filter((u: UserOption & { isActive: boolean }) => u.isActive !== false));
       }
     } catch {
       showError("Gagal memuat data");

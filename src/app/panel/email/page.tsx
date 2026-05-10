@@ -46,15 +46,23 @@ export default function EmailRoutingPage() {
       setLoading(true);
       const [resEmails, resUsers] = await Promise.all([
         fetch("/api/email-routing"),
-        fetch("/api/users"),
+        fetch("/api/users?limit=100"),
       ]);
       if (resEmails.ok) {
         const json = await resEmails.json();
         setEmails(json.data || []);
       }
       if (resUsers.ok) {
+        // /api/users sejak Sprint 0 CRIT-03 return paginated shape:
+        //   json.data = { users: [...], total, page, limit, totalPages }
+        // Backward-compat fallback ke array kalau API berubah.
         const json = await resUsers.json();
-        setUsers((json.data || []).map((u: { id: string; name: string; email: string }) => ({ id: u.id, name: u.name, email: u.email })));
+        const list = Array.isArray(json.data?.users)
+          ? json.data.users
+          : Array.isArray(json.data)
+          ? json.data
+          : [];
+        setUsers(list.map((u: { id: string; name: string; email: string }) => ({ id: u.id, name: u.name, email: u.email })));
       }
     } catch {
       showError("Gagal memuat data");

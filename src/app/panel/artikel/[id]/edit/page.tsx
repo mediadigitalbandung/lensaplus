@@ -539,10 +539,18 @@ export default function EditArticlePage() {
   useEffect(() => {
     async function fetchUsers() {
       try {
-        const res = await fetch("/api/users");
+        // /api/users sejak Sprint 0 CRIT-03 return paginated shape:
+        //   json.data = { users: [...], total, page, limit, totalPages }
+        // Backward-compat fallback ke json.data array kalau API berubah.
+        const res = await fetch("/api/users?limit=100");
         if (res.ok) {
           const json = await res.json();
-          setAllUsers(json.data || []);
+          const list = Array.isArray(json.data?.users)
+            ? json.data.users
+            : Array.isArray(json.data)
+            ? json.data
+            : [];
+          setAllUsers(list);
         }
       } catch { /* ignore */ }
     }
