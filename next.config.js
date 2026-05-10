@@ -12,8 +12,9 @@ const nextConfig = {
   //   redundant in-build typecheck cuts peak memory roughly in half and
   //   removes the OOM failure mode without sacrificing type safety.
   typescript: { ignoreBuildErrors: true },
-  // Same reasoning for ESLint — already enforced in CI + locally.
-  eslint: { ignoreDuringBuilds: true },
+  // ESLint config key removed — Next.js 16 deprecated `eslint` in next.config.js
+  // (see https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options).
+  // Lint sudah jalan di CI + local pre-commit, jadi tidak perlu di-build phase.
   images: {
     // Disable Next.js's image optimizer entirely. Reasons:
     //   1. The /_next/image proxy fetches /uploads/* from Next.js itself,
