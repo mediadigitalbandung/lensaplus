@@ -49,10 +49,10 @@ export async function POST(req: NextRequest) {
       try {
         const plainContent = article.content.replace(/<[^>]*>/g, "").slice(0, 1500);
 
-        const prompt = `Berikan 8-10 tag SEO-friendly dalam Bahasa Indonesia untuk artikel berita hukum berikut.
+        const prompt = `Berikan 8-10 tag SEO-friendly dalam Bahasa Indonesia untuk artikel berita Kartawarta berikut (media berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, dan topik general lain).
 Tag harus:
 - Kata kunci yang orang mungkin cari di Google
-- Campuran: topik spesifik + lokasi + hukum umum
+- Campuran: topik spesifik + lokasi + topik umum sesuai kategori artikel
 - Huruf kecil, pisahkan dengan koma
 - Jangan ulangi tag yang sudah ada: ${article.tags.map((t) => t.name).join(", ")}
 
@@ -79,7 +79,7 @@ Format jawaban HANYA tag dipisah koma, tanpa penjelasan.`;
                 {
                   role: "system",
                   content:
-                    "Kamu adalah SEO specialist untuk media berita hukum Indonesia. Jawab HANYA dengan daftar tag dipisah koma.",
+                    "Kamu adalah SEO specialist untuk Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain. Jawab HANYA dengan daftar tag dipisah koma.",
                 },
                 { role: "user", content: prompt },
               ],

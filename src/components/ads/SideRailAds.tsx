@@ -108,7 +108,7 @@ function RailContent() {
           Newsletter Kartawarta
         </h3>
         <p className="mt-2 text-xs leading-relaxed text-white/70">
-          Ringkasan berita hukum & Bandung — langsung ke inbox Anda.
+          Ringkasan berita Bandung & Indonesia — langsung ke inbox Anda.
         </p>
       </div>
       <div>

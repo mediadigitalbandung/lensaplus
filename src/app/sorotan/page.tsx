@@ -32,11 +32,11 @@ export async function generateMetadata({
   return {
     title,
     description:
-      "Sorotan — sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita hukum pilihan Kartawarta.",
+      "Sorotan — sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita pilihan Kartawarta (bisnis, ekonomi, pemerintahan, hukum, olahraga, dan topik lainnya).",
     openGraph: {
       title: `${title} - Kartawarta`,
       description:
-        "Sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita hukum pilihan Kartawarta.",
+        "Sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita pilihan Kartawarta.",
       type: "website",
     },
     alternates: { canonical },

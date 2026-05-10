@@ -126,7 +126,7 @@ function PrintPreviewContent() {
         <Image src="/kartawarta-icon.png" alt="Kartawarta" width={40} height={40} />
         <div>
           <div style={{ fontSize: 16, fontWeight: 800 }}>Kartawarta</div>
-          <div style={{ fontSize: 9, color: "#6B7280" }}>Media Hukum Digital Terpercaya &mdash; kartawarta.com</div>
+          <div style={{ fontSize: 9, color: "#6B7280" }}>Media Berita Digital Bandung &mdash; kartawarta.com</div>
         </div>
       </div>
 

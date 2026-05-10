@@ -33,11 +33,11 @@ export async function generateMetadata({
   return {
     title: `Semua Berita${titleSuffix}`,
     description:
-      "Daftar berita hukum terbaru dari Kartawarta — putusan pengadilan, regulasi, advokasi, dan kasus hukum di Bandung & Jawa Barat.",
+      "Daftar berita terbaru dari Kartawarta — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal di Bandung, Jawa Barat & Indonesia.",
     openGraph: {
       title: `Semua Berita${titleSuffix} | Kartawarta`,
       description:
-        "Daftar berita hukum terbaru dari Kartawarta — putusan pengadilan, regulasi, advokasi, dan kasus hukum di Bandung & Jawa Barat.",
+        "Daftar berita terbaru dari Kartawarta — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal di Bandung, Jawa Barat & Indonesia.",
       type: "website",
       locale: "id_ID",
       siteName: "Kartawarta",

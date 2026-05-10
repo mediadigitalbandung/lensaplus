@@ -16,7 +16,7 @@ import { Metadata } from "next";
  */
 export const metadata: Metadata = {
   title: "Cari Artikel | Kartawarta",
-  description: "Cari berita hukum, putusan, dan analisis di Kartawarta.",
+  description: "Cari berita Bandung & Indonesia — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi — di Kartawarta.",
   robots: {
     index: false,
     follow: true,

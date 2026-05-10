@@ -206,7 +206,7 @@ function buildSvgOverlay({
 async function renderFallbackImage(): Promise<Buffer> {
   const bg = await loadBackground(null);
   const svg = buildSvgOverlay({
-    title: "Media Hukum Digital Tepercaya",
+    title: "Media Berita Digital Bandung",
     category: "Kartawarta",
     hasImage: false,
   });

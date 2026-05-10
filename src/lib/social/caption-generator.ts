@@ -14,7 +14,7 @@ import {
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
 
 const SYSTEM_PROMPT =
-  "Kamu adalah copywriter media sosial untuk media berita hukum Indonesia (Kartawarta). Tulis caption natural, informatif, tidak clickbait, memakai bahasa Indonesia baku yang mudah dibaca. Jangan gunakan markdown/heading/emoji berlebihan. Keluarkan hanya teks caption mentah tanpa pembungkus.";
+  "Kamu adalah copywriter media sosial untuk Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). Tulis caption natural, informatif, tidak clickbait, memakai bahasa Indonesia baku yang mudah dibaca. Jangan gunakan markdown/heading/emoji berlebihan. Keluarkan hanya teks caption mentah tanpa pembungkus.";
 
 function stripHtml(html: string): string {
   return html

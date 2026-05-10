@@ -148,7 +148,7 @@ export default async function HomePage() {
               logo: { "@type": "ImageObject", url: "https://kartawarta.com/kartawarta-icon.png", width: 512, height: 512 },
               image: { "@type": "ImageObject", url: "https://kartawarta.com/kartawarta-icon.png" },
               description:
-                "Portal berita hukum digital terpercaya untuk Bandung dan Jawa Barat. Putusan pengadilan, regulasi, advokasi, dan analisis ahli.",
+                "Portal berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia.",
               foundingDate: "2024",
               sameAs,
               publishingPrinciples: "https://kartawarta.com/pedoman-media",
@@ -162,9 +162,11 @@ export default async function HomePage() {
                 { "@type": "Country", name: "Indonesia" },
               ],
               knowsAbout: [
-                "Hukum Indonesia", "Putusan Pengadilan", "UU ITE", "Tipikor",
-                "Hukum Pidana", "Hukum Perdata", "Hukum Tata Negara",
-                "Berita Bandung", "Jurnalisme Hukum",
+                "Bisnis Indonesia", "Ekonomi", "Pemerintahan", "Kebijakan Publik",
+                "APBD/APBN", "Hukum Indonesia", "Putusan Pengadilan", "UU/Regulasi",
+                "Politik", "Pemilu", "Olahraga", "Hiburan", "Teknologi",
+                "Pendidikan", "Kesehatan", "Lingkungan",
+                "Berita Bandung", "Berita Jawa Barat", "Berita Indonesia",
               ],
               contactPoint: [
                 { "@type": "ContactPoint", contactType: "customer service", url: "https://kartawarta.com/kontak", areaServed: "ID", availableLanguage: ["Indonesian"] },
@@ -182,7 +184,7 @@ export default async function HomePage() {
               "@type": "WebSite",
               "@id": "https://kartawarta.com/#website",
               name: "Kartawarta",
-              alternateName: "Kartawarta — Media Hukum Digital",
+              alternateName: "Kartawarta — Media Berita Digital Bandung",
               url: "https://kartawarta.com",
               inLanguage: "id-ID",
               publisher: { "@id": "https://kartawarta.com/#organization" },
@@ -202,7 +204,7 @@ export default async function HomePage() {
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {/* AD: Banner di bawah ticker market, di atas hero — visibility tinggi */}
       {/* Single h1 for screen readers and search engines — HeroCarousel uses h2 per slide */}
-      <h1 className="sr-only">Kartawarta — Media Hukum Bandung</h1>
+      <h1 className="sr-only">Kartawarta — Media Berita Digital Bandung</h1>
       <BannerAd size="leaderboard" slot="HEADER" className="bg-surface" />
 
       <HeroCarousel

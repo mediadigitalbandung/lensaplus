@@ -462,7 +462,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                 <Image src="/kartawarta-icon.png" alt="Kartawarta" width={40} height={40} />
                 <div>
                   <div className="print-title">Kartawarta</div>
-                  <div className="print-subtitle">Media Hukum Digital Terpercaya — kartawarta.com</div>
+                  <div className="print-subtitle">Media Berita Digital Bandung — kartawarta.com</div>
                 </div>
               </div>
 

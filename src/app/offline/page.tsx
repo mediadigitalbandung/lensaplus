@@ -52,7 +52,7 @@ export default function OfflinePage() {
 
       {/* Footer hint */}
       <p className="mt-10 text-label-md text-on-surface-variant/60">
-        kartawarta.com — Media Hukum Digital Bandung
+        kartawarta.com — Media Berita Digital Bandung
       </p>
     </div>
   );

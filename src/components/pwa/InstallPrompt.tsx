@@ -108,7 +108,7 @@ export default function InstallPrompt() {
             Pasang Kartawarta
           </p>
           <p className="text-label-md text-on-surface-variant mt-0.5 leading-snug">
-            Baca berita hukum lebih cepat dari layar utama Anda.
+            Baca berita Bandung & Indonesia lebih cepat dari layar utama Anda.
           </p>
 
           {/* CTA buttons */}

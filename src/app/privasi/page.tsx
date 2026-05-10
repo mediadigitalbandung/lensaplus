@@ -67,10 +67,12 @@ export default function PrivasiPage() {
           <section id="section-1">
             <h2 className={SECTION_HEADING}>1. Pendahuluan &amp; Dasar Hukum</h2>
             <p>
-              <strong>Kartawarta</strong> adalah platform media hukum digital untuk
-              Kota Bandung yang dioperasikan oleh redaksi Kartawarta. Kebijakan ini
-              menetapkan cara kami mengumpulkan, menggunakan, menyimpan, dan
-              melindungi data pribadi sesuai:
+              <strong>Kartawarta</strong> adalah platform media berita digital untuk
+              Kota Bandung dan Indonesia (fokus bisnis, ekonomi, pemerintahan, hukum,
+              dan topik general lain seperti olahraga, hiburan, teknologi) yang
+              dioperasikan oleh redaksi Kartawarta. Kebijakan ini menetapkan cara
+              kami mengumpulkan, menggunakan, menyimpan, dan melindungi data pribadi
+              sesuai:
             </p>
             <ul className="ml-6 mt-3 list-disc space-y-2">
               <li>
@@ -465,7 +467,7 @@ export default function PrivasiPage() {
             <div className="mt-4 rounded-sm border border-border-default bg-surface-container p-6">
               <div className="space-y-2 text-base">
                 <p>
-                  <strong>Kartawarta — Redaksi Hukum Digital Bandung</strong>
+                  <strong>Kartawarta — Redaksi Media Berita Digital Bandung</strong>
                 </p>
                 <p>
                   <strong>Email DPO:</strong>{" "}

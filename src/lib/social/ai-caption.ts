@@ -8,7 +8,7 @@ import { callAI } from "@/lib/ai-client";
 import type { ArticleForPublish } from "./types";
 
 const SYSTEM_PROMPT =
-  "Kamu adalah editor media sosial untuk media berita hukum Indonesia (Kartawarta). Tugasmu mem-paraphrase judul artikel menjadi headline overlay gambar yang singkat, kuat, dan mudah dibaca, plus ringkasan satu kalimat. Jawab hanya dalam format JSON, tanpa markdown, tanpa komentar.";
+  "Kamu adalah editor media sosial untuk Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain. Tugasmu mem-paraphrase judul artikel menjadi headline overlay gambar yang singkat, kuat, dan mudah dibaca, plus ringkasan satu kalimat. Jawab hanya dalam format JSON, tanpa markdown, tanpa komentar.";
 
 function stripHtml(html: string | null | undefined): string {
   if (!html) return "";

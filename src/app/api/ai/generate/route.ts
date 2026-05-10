@@ -6,13 +6,13 @@ import { cleanAIShortText } from "@/lib/sanitize";
 
 const PROMPTS: Record<string, (title: string, content: string) => string> = {
   tags: (title, content) =>
-    `Berikan 5-8 tag relevan untuk artikel berita hukum berikut. Format: tag1, tag2, tag3. Judul: ${title}. Konten: ${content.slice(0, 1000)}`,
+    `Berikan 5-8 tag relevan untuk artikel berita Kartawarta berikut (media berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, dan topik general lain). Format: tag1, tag2, tag3. Judul: ${title}. Konten: ${content.slice(0, 1000)}`,
   summary: (title, content) =>
-    `Buatkan ringkasan 2-3 kalimat untuk artikel berita hukum berikut. Judul: ${title}. Konten: ${content.slice(0, 2000)}`,
+    `Buatkan ringkasan 2-3 kalimat untuk artikel berita Kartawarta berikut. Judul: ${title}. Konten: ${content.slice(0, 2000)}`,
   seo_title: (title) =>
-    `Buatkan SEO title (maks 60 karakter) untuk artikel berita hukum berikut. Judul: ${title}`,
+    `Buatkan SEO title (maks 60 karakter) untuk artikel berita Kartawarta berikut. Judul: ${title}`,
   meta_description: (title, content) =>
-    `Buatkan meta description (maks 155 karakter) untuk artikel berita hukum berikut. Judul: ${title}. Konten: ${content.slice(0, 1000)}`,
+    `Buatkan meta description (maks 155 karakter) untuk artikel berita Kartawarta berikut. Judul: ${title}. Konten: ${content.slice(0, 1000)}`,
 };
 
 // Map request `feature` string to the canonical AIFeature used for logging.

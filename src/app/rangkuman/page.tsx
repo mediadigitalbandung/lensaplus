@@ -9,11 +9,11 @@ import { prisma } from "@/lib/prisma";
 export const metadata: Metadata = {
   title: "Rangkuman",
   description:
-    "Rangkuman berita hukum Kartawarta — kumpulan ringkasan harian, mingguan, dan tematik untuk pembaca yang ingin update cepat.",
+    "Rangkuman berita Kartawarta — kumpulan ringkasan harian, mingguan, dan tematik (bisnis, ekonomi, pemerintahan, hukum, olahraga, dan topik lainnya) untuk pembaca yang ingin update cepat.",
   openGraph: {
     title: "Rangkuman - Kartawarta",
     description:
-      "Kumpulan ringkasan harian, mingguan, dan tematik berita hukum.",
+      "Kumpulan ringkasan harian, mingguan, dan tematik berita Bandung & Indonesia.",
     type: "website",
   },
   alternates: { canonical: "/rangkuman" },
@@ -94,7 +94,7 @@ export default async function RangkumanIndexPage() {
   cards.push({
     slug: "pekan-ini",
     title: "Rangkuman Pekan Ini",
-    description: "Sorotan berita hukum sepekan terakhir di Bandung dan nasional.",
+    description: "Sorotan berita sepekan terakhir di Bandung dan nasional — bisnis, pemerintahan, hukum, dan peristiwa lainnya.",
     href: "/rangkuman/pekan-ini",
     image: weekArticles[1]?.featuredImage ?? weekArticles[0]?.featuredImage ?? null,
     count: weekArticles.length,
@@ -104,7 +104,7 @@ export default async function RangkumanIndexPage() {
   cards.push({
     slug: "bulan-ini",
     title: "Rangkuman Bulan Ini",
-    description: "Ringkasan agenda hukum dan peristiwa penting bulan berjalan.",
+    description: "Ringkasan agenda dan peristiwa penting bulan berjalan dari berbagai topik.",
     href: "/rangkuman/bulan-ini",
     image: monthArticles[0]?.featuredImage ?? null,
     count: monthArticles.length,
@@ -144,7 +144,7 @@ export default async function RangkumanIndexPage() {
             </h1>
           </div>
           <p className="mt-2 max-w-2xl text-sm text-txt-secondary">
-            Kumpulan ringkasan berita hukum Kartawarta — pilih per periode atau per topik untuk
+            Kumpulan ringkasan berita Kartawarta — pilih per periode atau per topik untuk
             membaca cepat tanpa kehilangan konteks penting.
           </p>
         </div>

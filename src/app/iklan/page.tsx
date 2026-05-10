@@ -18,7 +18,7 @@ import {
 export const metadata: Metadata = {
   title: "Beriklan di Kartawarta",
   description:
-    "Paket iklan, tarif, spesifikasi, dan kontak pemasangan iklan di Kartawarta — media hukum digital tepercaya di Bandung.",
+    "Paket iklan, tarif, spesifikasi, dan kontak pemasangan iklan di Kartawarta — media berita digital tepercaya di Bandung (bisnis, ekonomi, pemerintahan, hukum, dan topik general lain).",
   openGraph: {
     title: "Beriklan di Kartawarta",
     description:
@@ -134,9 +134,10 @@ export default function IklanPage() {
             Beriklan di Kartawarta
           </h1>
           <p className="mt-4 max-w-2xl text-base text-on-surface-variant">
-            Jangkau pembaca berita hukum di Bandung dan nasional melalui platform editorial yang
-            terpercaya. Pilih paket yang sesuai kebutuhan kampanye Anda — dari banner singkat
-            hingga sponsored article dengan permanent archive.
+            Jangkau pembaca berita Bandung dan nasional — bisnis, ekonomi, pemerintahan, hukum,
+            olahraga, hiburan, dan teknologi — melalui platform editorial yang terpercaya. Pilih
+            paket yang sesuai kebutuhan kampanye Anda — dari banner singkat hingga sponsored
+            article dengan permanent archive.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <a

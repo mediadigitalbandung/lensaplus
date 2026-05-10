@@ -26,7 +26,7 @@ async function resolveDigest(slug: string): Promise<ResolvedDigest | null> {
     return {
       title: "Rangkuman Pekan Ini",
       intro:
-        "Sorotan berita hukum sepekan terakhir — kasus, putusan, regulasi, dan dinamika peradilan di Bandung dan nasional.",
+        "Sorotan berita sepekan terakhir — bisnis, ekonomi, pemerintahan, hukum, olahraga, dan peristiwa penting lainnya di Bandung dan nasional.",
       range: { from, to: now },
     };
   }
@@ -35,7 +35,7 @@ async function resolveDigest(slug: string): Promise<ResolvedDigest | null> {
     return {
       title: "Rangkuman Bulan Ini",
       intro:
-        "Ringkasan agenda hukum dan peristiwa penting yang terjadi sepanjang bulan berjalan.",
+        "Ringkasan agenda dan peristiwa penting yang terjadi sepanjang bulan berjalan dari berbagai topik.",
       range: { from, to: now },
     };
   }

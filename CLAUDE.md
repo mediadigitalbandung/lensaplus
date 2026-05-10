@@ -1,7 +1,7 @@
 # CLAUDE.md — Instruksi untuk Claude Code
 
 ## Project
-- **Nama:** Kartawarta v2.0 — Platform Media Hukum Digital untuk Kota Bandung
+- **Nama:** Kartawarta v2.0 — Media Berita Digital Bandung (general news, prioritas bisnis-ekonomi, pemerintahan, hukum + topik general lain: olahraga, hiburan, teknologi, dsb.)
 - **Stack:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Prisma, PostgreSQL, NextAuth
 - **Deploy:** VPS Hostinger (Ubuntu 24.04, `145.79.15.99`, PM2 process `kartawarta`)
 - **Repo:** github.com/mediadigitalbandung/kartawarta

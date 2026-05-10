@@ -269,7 +269,7 @@ export async function paraphraseAndCreateDraft(
     ? `Sumber dalam Bahasa Inggris — terjemahkan SEKALIGUS parafrase ke Bahasa Indonesia jurnalistik yang baik dan benar.`
     : `Sumber dalam Bahasa Indonesia — parafrase ulang dengan kalimat yang berbeda namun mempertahankan fakta.`;
 
-  const userPrompt = `Anda menulis ulang sebuah artikel berita untuk Kartawarta (media hukum digital Bandung) dengan gaya jurnalistik objektif.
+  const userPrompt = `Anda menulis ulang sebuah artikel berita untuk Kartawarta (media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain) dengan gaya jurnalistik objektif.
 
 ${langInstruction}
 

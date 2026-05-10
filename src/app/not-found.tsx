@@ -25,7 +25,7 @@ export default function NotFound() {
             <input
               type="text"
               name="q"
-              placeholder="Cari berita hukum..."
+              placeholder="Cari berita..."
               className="input w-full py-3 pl-12 pr-4 text-base"
               autoFocus
             />

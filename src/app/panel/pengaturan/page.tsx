@@ -799,7 +799,7 @@ export default function PengaturanPage() {
                 markDirty("umum");
               }}
               className="input resize-none"
-              placeholder="Portal media hukum digital untuk Bandung..."
+              placeholder="Portal berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, dan topik general lain..."
             />
           </Field>
           <Field label="Email Kontak" error={contactEmailErr}>

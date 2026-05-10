@@ -54,7 +54,7 @@ const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
   REAKSI:
     "Rangkum artikel berikut dari sudut REAKSI — bagaimana publik, pakar, atau pihak terkait merespons peristiwa ini. Tulis 300–500 kata bahasa Indonesia. Kutip-ulang reaksi yang ada di artikel (parafrase, bukan copy). Kalau artikel tidak menyebut reaksi konkret, sajikan reaksi yang lazim untuk peristiwa serupa berdasarkan konteks artikel — tetap netral, jangan mengada-ada.",
   HUKUM:
-    "Rangkum artikel berikut dari sudut HUKUM — pasal, regulasi, prosedur peradilan, atau aspek legal yang relevan. Tulis 300–500 kata bahasa Indonesia. Kartawarta adalah media hukum, jadi sudut ini wajib akurat: hanya sebut UU/pasal/putusan yang DISEBUT di artikel sumber. Kalau artikel tidak menyebut detail hukum spesifik, fokus pada implikasi hukum umum yang dapat ditarik dari peristiwa.",
+    "Rangkum artikel berikut dari sudut HUKUM — pasal, regulasi, prosedur peradilan, atau aspek legal yang relevan. Tulis 300–500 kata bahasa Indonesia. Sudut ini wajib akurat: hanya sebut UU/pasal/putusan yang DISEBUT di artikel sumber. Kalau artikel tidak menyebut detail hukum spesifik, fokus pada implikasi hukum umum yang dapat ditarik dari peristiwa.",
   EKONOMI:
     "Rangkum artikel berikut dari sudut EKONOMI — angka, transaksi, kerugian/keuntungan, sektor industri, dampak fiskal/moneter. Tulis 300–500 kata bahasa Indonesia. Hanya gunakan angka dan klaim ekonomi yang ada di artikel. Kalau artikel tidak punya sudut ekonomi langsung, fokus pada implikasi ekonomi tidak langsung dari peristiwa.",
   PROYEKSI:
@@ -66,7 +66,7 @@ const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
 };
 
 const SYSTEM_PROMPT =
-  "Kamu adalah editor senior media hukum Indonesia (Kartawarta). Tugasmu menulis ringkasan sudut-pandang (sorotan) yang akurat, profesional, dan tidak menambah fakta baru. Output hanya teks artikel (tanpa judul, tanpa markdown header, tanpa list bullet kecuali ditulis dalam prosa).";
+  "Kamu adalah editor senior Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). Tugasmu menulis ringkasan sudut-pandang (sorotan) yang akurat, profesional, dan tidak menambah fakta baru. Output hanya teks artikel (tanpa judul, tanpa markdown header, tanpa list bullet kecuali ditulis dalam prosa).";
 
 export interface GenerateSorotanResult {
   articleId: string;

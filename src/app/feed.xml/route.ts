@@ -79,7 +79,7 @@ export async function GET() {
   <channel>
     <title>Kartawarta</title>
     <link>${siteUrl}</link>
-    <description>Portal berita hukum digital tepercaya dari Bandung — putusan pengadilan, regulasi, advokasi, dan analisis.</description>
+    <description>Portal berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia.</description>
     <language>id-ID</language>
     <copyright>Copyright ${new Date().getFullYear()} Kartawarta</copyright>
     <pubDate>${lastBuildDate}</pubDate>

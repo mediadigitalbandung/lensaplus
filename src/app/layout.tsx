@@ -34,20 +34,24 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com"
   ),
   title: {
-    default: "Kartawarta — Media Hukum Digital Bandung",
+    default: "Kartawarta — Media Berita Digital Bandung",
     template: "%s | Kartawarta",
   },
   description:
-    "Portal berita hukum Bandung & Jawa Barat — putusan pengadilan, regulasi, advokasi, dan analisis ahli. Terverifikasi Dewan Pers.",
+    "Portal berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia. Terverifikasi Dewan Pers.",
   keywords: [
-    "berita hukum Bandung",
-    "berita hukum Jawa Barat",
+    "berita Bandung",
+    "berita Jawa Barat",
+    "berita Indonesia",
+    "bisnis ekonomi",
+    "pemerintahan",
+    "kebijakan publik",
+    "berita hukum",
     "putusan pengadilan",
-    "kasus hukum Bandung",
-    "media hukum digital",
-    "berita pengadilan",
-    "regulasi hukum",
-    "advokasi hukum",
+    "olahraga",
+    "hiburan",
+    "teknologi",
+    "media digital Bandung",
     "Kartawarta",
     "berita terverifikasi Dewan Pers",
   ],
@@ -56,16 +60,16 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
     siteName: "Kartawarta",
-    title: "Kartawarta — Media Hukum Digital Bandung",
+    title: "Kartawarta — Media Berita Digital Bandung",
     description:
-      "Berita hukum Bandung & Jawa Barat — putusan pengadilan, regulasi, advokasi, dan analisis ahli. Terverifikasi Dewan Pers.",
+      "Berita Bandung & Indonesia — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal. Terverifikasi Dewan Pers.",
     images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kartawarta — Media Hukum Digital Bandung",
+    title: "Kartawarta — Media Berita Digital Bandung",
     description:
-      "Berita hukum Bandung & Jawa Barat — putusan pengadilan, regulasi, advokasi, dan analisis ahli.",
+      "Berita Bandung & Indonesia — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal.",
     images: ["/kartawarta-icon.png"],
   },
   verification: {
@@ -112,7 +116,7 @@ export default function RootLayout({
         <link
           rel="alternate"
           type="application/rss+xml"
-          title="Kartawarta — Media Hukum Digital Bandung"
+          title="Kartawarta — Media Berita Digital Bandung"
           href="/feed.xml"
         />
         <meta name="theme-color" content="#002045" />
