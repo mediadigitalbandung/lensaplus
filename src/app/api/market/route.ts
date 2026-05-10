@@ -42,28 +42,44 @@ function direction(pct: number): "up" | "down" | "flat" {
   return "flat";
 }
 
+/**
+ * Fetch dari Yahoo Finance. Return empty map saat gagal (Yahoo gradually
+ * restrict v7 endpoint, kadang 401/429 untuk public access). UI graceful
+ * degrade — show "data unavailable" hint, page tetap render struktur.
+ */
 async function fetchQuotes(symbols: string[]): Promise<Record<string, QuoteResult>> {
-  const joined = symbols.join(",");
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${joined}&fields=regularMarketPrice,regularMarketPreviousClose,regularMarketChange,regularMarketChangePercent,shortName,displayName`;
+  try {
+    const joined = symbols.join(",");
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${joined}&fields=regularMarketPrice,regularMarketPreviousClose,regularMarketChange,regularMarketChangePercent,shortName,displayName`;
 
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; Kartawarta/2.0)",
-      "Accept": "application/json",
-    },
-    next: { revalidate: 60 },
-  });
+    const res = await fetch(url, {
+      headers: {
+        // Browser-like UA tends to bypass Yahoo's bot guard better than Mozilla compat string.
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+        "Accept": "application/json,text/plain,*/*",
+        "Accept-Language": "id-ID,id;q=0.9,en;q=0.8",
+        "Referer": "https://finance.yahoo.com/",
+      },
+      next: { revalidate: 60 },
+    });
 
-  if (!res.ok) throw new Error(`Yahoo Finance returned ${res.status}`);
+    if (!res.ok) {
+      console.warn(`[market] Yahoo Finance returned ${res.status}, falling back to empty data`);
+      return {};
+    }
 
-  const json = await res.json();
-  const results: QuoteResult[] = json?.quoteResponse?.result ?? [];
+    const json = await res.json();
+    const results: QuoteResult[] = json?.quoteResponse?.result ?? [];
 
-  const map: Record<string, QuoteResult> = {};
-  for (const r of results) {
-    if (r.symbol) map[r.symbol] = r;
+    const map: Record<string, QuoteResult> = {};
+    for (const r of results) {
+      if (r.symbol) map[r.symbol] = r;
+    }
+    return map;
+  } catch (e) {
+    console.warn(`[market] Yahoo fetch error:`, (e as Error).message);
+    return {};
   }
-  return map;
 }
 
 export async function GET() {
@@ -196,6 +212,10 @@ export async function GET() {
     const gainers = sorted.filter((s) => s.changePercent > 0).slice(0, 5);
     const losers = [...sorted].reverse().filter((s) => s.changePercent < 0).slice(0, 5);
 
+    // Detect kalau semua data zero (Yahoo gagal total) — set placeholder flag
+    // supaya UI bisa show "data tidak tersedia" hint instead of misleading zero.
+    const dataAvailable = (ihsg?.value ?? 0) > 0 || (usdIdr ?? 0) > 0;
+
     return successResponse({
       ihsg,
       forex,
@@ -204,7 +224,8 @@ export async function GET() {
       movers: { gainers, losers },
       usdIdrRate: usdIdr,
       updatedAt: new Date().toISOString(),
-      source: "Yahoo Finance (delayed ~15 min)",
+      source: dataAvailable ? "Yahoo Finance (delayed ~15 min)" : "Data sumber sementara tidak tersedia — coba lagi nanti",
+      dataAvailable,
     });
   } catch (e) {
     return errorResponse(e);

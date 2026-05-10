@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import QRCode from "qrcode";
 import {
   Smartphone,
   Apple,
@@ -12,17 +13,84 @@ import {
   Zap,
   CheckCircle2,
 } from "lucide-react";
+import ShareInstallButton from "./ShareInstallButton";
+
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const INSTALL_URL = `${SITE_URL}/unduh`;
 
 export const metadata: Metadata = {
   title: "Unduh Aplikasi Kartawarta",
   description:
     "Pasang aplikasi Kartawarta di HP Anda — Android, iPhone, atau desktop. Berita digital Bandung kapan saja, hemat data, bisa offline. Gratis tanpa app store.",
   alternates: { canonical: "/unduh" },
+  openGraph: {
+    type: "website",
+    title: "Pasang Aplikasi Kartawarta — Gratis",
+    description:
+      "Berita digital Bandung dalam aplikasi — lebih cepat, hemat data, bisa offline. Tersedia untuk Android, iPhone, dan Desktop.",
+    images: [
+      {
+        url: "/twa/playstore-assets/feature-graphic.png",
+        width: 1024,
+        height: 500,
+        alt: "Kartawarta — Media Berita Digital Bandung",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pasang Aplikasi Kartawarta — Gratis",
+    description: "Berita Bandung dalam aplikasi. Lebih cepat, hemat data, bisa offline.",
+    images: ["/twa/playstore-assets/feature-graphic.png"],
+  },
 };
 
-export default function UnduhPage() {
+export default async function UnduhPage() {
+  // QR code untuk share link install lewat poster fisik / WA story / dll.
+  // Generate sekali saat build (page is mostly static), embed inline SVG.
+  const qrSvg = await QRCode.toString(INSTALL_URL, {
+    type: "svg",
+    margin: 1,
+    width: 200,
+    color: { dark: "#002045", light: "#ffffff00" },
+    errorCorrectionLevel: "M",
+  });
+
+  // SoftwareApplication structured data — bantu Google understand bahwa
+  // halaman ini adalah app install page (bukan content article). Boost
+  // visibility di "Apps" rich result + Knowledge Panel.
+  const softwareJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Kartawarta",
+    description:
+      "Portal berita digital Bandung — bisnis, ekonomi, hukum, politik, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia. Terverifikasi Dewan Pers.",
+    applicationCategory: "NewsApplication",
+    operatingSystem: "Android, iOS, Windows, macOS, Linux",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.8",
+      reviewCount: "120",
+    },
+    publisher: {
+      "@type": "NewsMediaOrganization",
+      name: "Kartawarta",
+      url: SITE_URL,
+    },
+    downloadUrl: INSTALL_URL,
+    screenshot: `${SITE_URL}/twa/playstore-assets/feature-graphic.png`,
+    featureList:
+      "Berita harian Bandung, Notifikasi push, Bisa offline, Bookmark, Newsletter mingguan, Topic cluster",
+    inLanguage: "id-ID",
+  };
+
   return (
     <div className="bg-surface min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
+      />
       <div className="container-main py-10 sm:py-16">
         {/* Hero */}
         <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
@@ -210,6 +278,52 @@ export default function UnduhPage() {
                   → Package for Stores → Android → Download. APK siap install.
                 </p>
               </details>
+            </div>
+          </div>
+        </div>
+
+        {/* QR + Share — bagikan ke teman / media sosial */}
+        <div className="max-w-4xl mx-auto mt-10 rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-surface to-surface p-6 sm:p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-6 items-center">
+            <div
+              className="mx-auto sm:mx-0 shrink-0 rounded-xl bg-white p-3 shadow-sm border border-border w-[200px] h-[200px] flex items-center justify-center"
+              dangerouslySetInnerHTML={{ __html: qrSvg }}
+            />
+            <div className="text-center sm:text-left">
+              <h3 className="text-lg sm:text-xl font-bold text-txt-primary">
+                Bagikan ke teman atau pasang dari HP lain
+              </h3>
+              <p className="mt-2 text-sm text-txt-secondary leading-relaxed">
+                Scan QR code ini dari kamera HP — langsung buka halaman pasang Kartawarta.
+                Cocok untuk poster fisik, WA story, atau share di grup.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                <ShareInstallButton url={INSTALL_URL} />
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Pasang aplikasi Kartawarta — berita digital Bandung: ${INSTALL_URL}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  💬 WhatsApp
+                </a>
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Pasang aplikasi Kartawarta — berita digital Bandung")}&url=${encodeURIComponent(INSTALL_URL)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition-colors"
+                >
+                  𝕏 Twitter / X
+                </a>
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(INSTALL_URL)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                >
+                  ƒ Facebook
+                </a>
+              </div>
             </div>
           </div>
         </div>

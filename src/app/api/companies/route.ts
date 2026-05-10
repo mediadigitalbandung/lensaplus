@@ -80,8 +80,16 @@ export async function GET(req: NextRequest) {
       prismaAny.publicCompany.count({ where }),
     ]);
 
+    // BigInt (marketCap) tidak bisa JSON.stringify — convert ke string per row.
+    const companiesSerialized = (companies as Array<Record<string, unknown>>).map((c) => ({
+      ...c,
+      marketCap: c.marketCap === null || c.marketCap === undefined
+        ? null
+        : String(c.marketCap),
+    }));
+
     return successResponse({
-      companies,
+      companies: companiesSerialized,
       total,
       page,
       limit,

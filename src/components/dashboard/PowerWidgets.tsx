@@ -19,11 +19,13 @@ import {
   CheckCircle2,
   Clock,
   Database,
+  Download,
   FileText,
   Flag,
   GitBranch,
   Highlighter,
   MessageSquare,
+  Smartphone,
   Trophy,
   Users,
   XCircle,
@@ -61,6 +63,15 @@ interface ExtrasResponse {
     lastSuccessAt: string | null;
     lastError: string | null;
     lastDurationMs: number | null;
+  };
+  install: {
+    pwaInstall: number;
+    pwaLaunch: number;
+    apkDownload: number;
+    total: number;
+    lastPwaInstallAt: string | null;
+    lastPwaLaunchAt: string | null;
+    lastApkDownloadAt: string | null;
   };
 }
 
@@ -133,7 +144,96 @@ export default function PowerWidgets({ isAdmin }: { isAdmin: boolean }) {
       <PipelineWidget data={data.pipeline} />
       <AIBreakdownWidget data={data.aiBreakdown} />
       <TopAuthorsWidget data={data.topAuthors} />
+      <InstallStatsWidget data={data.install} />
       {isAdmin && <BackupWidget data={data.backup} />}
+    </div>
+  );
+}
+
+/* ─── Install Attribution ───────────────────────────────────────────────── */
+function InstallStatsWidget({ data }: { data: ExtrasResponse["install"] }) {
+  const channels = [
+    {
+      label: "PWA Install",
+      hint: "Pasang via Chrome / Edge",
+      count: data.pwaInstall,
+      lastAt: data.lastPwaInstallAt,
+      icon: Smartphone,
+      color: "text-emerald-700",
+      bg: "bg-emerald-50",
+    },
+    {
+      label: "PWA Launch",
+      hint: "Buka dari home screen",
+      count: data.pwaLaunch,
+      lastAt: data.lastPwaLaunchAt,
+      icon: CheckCircle2,
+      color: "text-blue-700",
+      bg: "bg-blue-50",
+    },
+    {
+      label: "APK Download",
+      hint: "Klik unduh APK manual",
+      count: data.apkDownload,
+      lastAt: data.lastApkDownloadAt,
+      icon: Download,
+      color: "text-amber-700",
+      bg: "bg-amber-50",
+    },
+  ];
+  const max = Math.max(...channels.map((c) => c.count), 1);
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
+            <Smartphone size={14} />
+          </div>
+          Atribusi Pasang Aplikasi
+        </h2>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">
+          Total: {(data.pwaInstall + data.apkDownload).toLocaleString("id-ID")}
+        </span>
+      </div>
+      <div className="p-5 space-y-3">
+        {channels.map((c) => {
+          const Icon = c.icon;
+          const pct = (c.count / max) * 100;
+          return (
+            <div key={c.label}>
+              <div className="flex items-center gap-3 mb-1">
+                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${c.bg} ${c.color} shrink-0`}>
+                  <Icon size={14} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-txt-primary">{c.label}</p>
+                  <p className="text-[10px] text-txt-muted">
+                    {c.hint}
+                    {c.lastAt ? ` · Terakhir ${relativeTime(c.lastAt)}` : ""}
+                  </p>
+                </div>
+                <span className="text-base font-bold text-txt-primary tabular-nums">
+                  {c.count.toLocaleString("id-ID")}
+                </span>
+              </div>
+              <div className="ml-11 h-2 rounded-full bg-surface-tertiary overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${c.bg.replace("bg-", "bg-").replace("-50", "-500")}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+        {data.pwaInstall + data.apkDownload === 0 && (
+          <p className="text-xs text-txt-muted text-center pt-2">
+            Belum ada install tercatat. Promote{" "}
+            <Link href="/unduh" className="text-primary underline">/unduh</Link>{" "}
+            di sosial media untuk mulai dapat install.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

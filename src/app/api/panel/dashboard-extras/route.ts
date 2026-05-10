@@ -48,6 +48,8 @@ export async function GET() {
       authorsThisMonth,
       // Backup status (read SystemSetting written by cron-tracker)
       backupSettings,
+      // Install attribution counters (written by /api/install-tracking)
+      installSettings,
     ] = await Promise.all([
       prisma.article.count({ where: { status: "DRAFT" } }),
       prisma.article.count({ where: { status: "IN_REVIEW" } }),
@@ -107,6 +109,22 @@ export async function GET() {
               "cron_backup_last_success_at",
               "cron_backup_last_error",
               "cron_backup_last_duration_ms",
+            ],
+          },
+        },
+        select: { key: true, value: true },
+      }),
+      // Install attribution counters (written by /api/install-tracking)
+      prisma.systemSetting.findMany({
+        where: {
+          key: {
+            in: [
+              "install_count_pwa-install",
+              "install_count_pwa-launch",
+              "install_count_apk-download",
+              "install_last_pwa-install_at",
+              "install_last_pwa-launch_at",
+              "install_last_apk-download_at",
             ],
           },
         },
@@ -201,6 +219,21 @@ export async function GET() {
         lastError: lastBackupError && lastBackupError.length > 0 ? lastBackupError : null,
         lastDurationMs: lastBackupDurationMs ? parseInt(lastBackupDurationMs, 10) : null,
       },
+      install: (() => {
+        const ix = new Map(installSettings.map((s) => [s.key, s.value]));
+        const pwaInstall = parseInt(ix.get("install_count_pwa-install") || "0", 10);
+        const pwaLaunch = parseInt(ix.get("install_count_pwa-launch") || "0", 10);
+        const apkDownload = parseInt(ix.get("install_count_apk-download") || "0", 10);
+        return {
+          pwaInstall,
+          pwaLaunch,
+          apkDownload,
+          total: pwaInstall + apkDownload,
+          lastPwaInstallAt: ix.get("install_last_pwa-install_at") || null,
+          lastPwaLaunchAt: ix.get("install_last_pwa-launch_at") || null,
+          lastApkDownloadAt: ix.get("install_last_apk-download_at") || null,
+        };
+      })(),
     });
   } catch (error) {
     return errorResponse(error);
