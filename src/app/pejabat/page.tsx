@@ -72,7 +72,8 @@ interface PageProps {
   }>;
 }
 
-export default async function PejabatPage({ searchParams }: PageProps) {
+export default async function PejabatPage({ searchParams: searchParamsPromise }: PageProps) {
+  const searchParams = await searchParamsPromise;
   const sp = await searchParams;
   const levelParam = ALL_LEVELS.includes(sp.level as OfficialLevel)
     ? (sp.level as OfficialLevel)

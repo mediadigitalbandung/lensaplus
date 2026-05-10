@@ -61,7 +61,8 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: PageProps): Promise<Metadata> {
+  const params = await paramsPromise;
   const { id } = await params;
   const reg = await prisma.regulation.findFirst({
     where: { id, isPublished: true },
@@ -85,7 +86,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function RegulasiDetailPage({ params }: PageProps) {
+export default async function RegulasiDetailPage({ params: paramsPromise }: PageProps) {
+  const params = await paramsPromise;
   const { id } = await params;
 
   const regulation = await prisma.regulation.findFirst({

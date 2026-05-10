@@ -56,7 +56,8 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: PageProps): Promise<Metadata> {
+  const params = await paramsPromise;
   const { slug } = await params;
   const official = await prisma.publicOfficial.findFirst({
     where: { slug, isPublished: true },
@@ -76,7 +77,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function PejabatDetailPage({ params }: PageProps) {
+export default async function PejabatDetailPage({ params: paramsPromise }: PageProps) {
+  const params = await paramsPromise;
   const { slug } = await params;
 
   const official = await prisma.publicOfficial.findFirst({

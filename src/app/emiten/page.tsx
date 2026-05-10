@@ -56,11 +56,10 @@ interface CompanyRow {
   hq: string | null;
 }
 
-export default async function EmitenPage({
-  searchParams,
-}: {
+export default async function EmitenPage({ searchParams: searchParamsPromise }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const searchParams = await searchParamsPromise;
   const sp = await searchParams;
   const sectorFilter = sp.sector as CompanySector | undefined;
   const searchQuery = sp.search ?? "";

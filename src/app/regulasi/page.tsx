@@ -91,7 +91,8 @@ interface PageProps {
   searchParams: Promise<{ type?: string; search?: string; page?: string; topic?: string }>;
 }
 
-export default async function RegulasiPage({ searchParams }: PageProps) {
+export default async function RegulasiPage({ searchParams: searchParamsPromise }: PageProps) {
+  const searchParams = await searchParamsPromise;
   const sp = await searchParams;
   const typeParam = ALL_TYPES.includes(sp.type as RegulationType)
     ? (sp.type as RegulationType)

@@ -36,8 +36,9 @@ const updateEntrySchema = z.object({
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string; entryId: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string; entryId: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole([...WRITE_ROLES]);
 
@@ -92,8 +93,9 @@ export async function PUT(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string; entryId: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string; entryId: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await requireRole([...WRITE_ROLES]);
 

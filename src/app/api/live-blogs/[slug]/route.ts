@@ -12,8 +12,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params: paramsPromise }: { params: Promise<{ slug: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const blog = await prisma.liveBlog.findUnique({
       where: { slug: params.slug, isPublished: true },

@@ -10,10 +10,11 @@ import { Radio, Clock, ArrowLeft, ExternalLink } from "lucide-react";
 export const revalidate = 30;
 
 interface Props {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: Props): Promise<Metadata> {
+  const params = await paramsPromise;
   const blog = await prisma.liveBlog.findUnique({
     where: { slug: params.slug, isPublished: true },
     select: { title: true, description: true, coverImage: true, status: true },
@@ -118,7 +119,8 @@ function buildJsonLd(blog: {
   };
 }
 
-export default async function LiveBlogDetailPage({ params }: Props) {
+export default async function LiveBlogDetailPage({ params: paramsPromise }: Props) {
+  const params = await paramsPromise;
   const blog = await prisma.liveBlog.findUnique({
     where: { slug: params.slug, isPublished: true },
     select: {

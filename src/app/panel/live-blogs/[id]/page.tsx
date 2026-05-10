@@ -73,8 +73,9 @@ function formatTime(iso: string): string {
   });
 }
 
-export default function LiveBlogEditorPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function LiveBlogEditorPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  // Client component pakai React.use() hook untuk unwrap params Promise.
+  const { id } = use(paramsPromise);
   const { data: session } = useSession();
   const { success: showSuccess, error: showError } = useToast();
   const { confirm } = useConfirm();

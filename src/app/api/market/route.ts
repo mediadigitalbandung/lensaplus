@@ -214,7 +214,7 @@ export async function GET() {
 
     // Detect kalau semua data zero (Yahoo gagal total) — set placeholder flag
     // supaya UI bisa show "data tidak tersedia" hint instead of misleading zero.
-    const dataAvailable = (ihsg?.value ?? 0) > 0 || (usdIdr ?? 0) > 0;
+    const dataAvailable = (ihsg?.price ?? 0) > 0 || (usdIdr ?? 0) > 0;
 
     return successResponse({
       ihsg,

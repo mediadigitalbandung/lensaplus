@@ -29,10 +29,11 @@ const EMPTY_COUNTS = (): Record<string, number> => ({
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
-    const { id: articleId } = await params;
+    const { id: articleId } = params;
 
     const groups = await prisma.articleReaction.groupBy({
       by: ["type"],
@@ -64,10 +65,11 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
+  const params = await paramsPromise;
   try {
-    const { id: articleId } = await params;
+    const { id: articleId } = params;
     const ip = getIp(req);
 
     const rl = rateLimit(`reaction:${ip}`, 30, 60_000);
