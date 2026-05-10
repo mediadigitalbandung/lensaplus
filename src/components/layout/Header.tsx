@@ -20,6 +20,8 @@ import {
   CalendarDays,
   Scale,
   Users,
+  Radio,
+  Sparkles,
 } from "lucide-react";
 
 const categoryNav = [
@@ -38,6 +40,7 @@ const categoryNav = [
   { name: "Pasar", href: "/pasar" },
   { name: "Regulasi", href: "/regulasi" },
   { name: "Pejabat", href: "/pejabat" },
+  { name: "Live", href: "/live" },
 ];
 
 export default function Header() {
@@ -127,6 +130,16 @@ export default function Header() {
                 className="w-full rounded-md bg-white border border-transparent py-2 pl-10 pr-4 text-body-sm text-gray-900 placeholder:text-gray-400 transition-all shadow-inner focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
               />
             </form>
+
+            {/* Untuk Anda link */}
+            <Link
+              href="/untuk-anda"
+              className="hidden md:flex items-center gap-1.5 rounded-md px-3 py-1.5 text-label-sm font-medium text-white/70 transition-colors hover:text-white hover:bg-white/10"
+              title="Untuk Anda — Feed Personal"
+            >
+              <Sparkles size={14} />
+              <span className="hidden lg:inline">Untuk Anda</span>
+            </Link>
 
             {/* Bookmark link */}
             <Link
@@ -318,6 +331,16 @@ export default function Header() {
             <ul className="space-y-0.5 px-3 pb-3">
               <li>
                 <Link
+                  href="/untuk-anda"
+                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Sparkles size={16} className="text-secondary" />
+                  Untuk Anda
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/bookmark"
                   className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
                   onClick={() => setMobileMenuOpen(false)}
@@ -364,6 +387,16 @@ export default function Header() {
                 >
                   <Users size={16} className="text-primary" />
                   Pejabat
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/live"
+                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Radio size={16} className="text-secondary" />
+                  Siaran Langsung
                 </Link>
               </li>
               {session && (

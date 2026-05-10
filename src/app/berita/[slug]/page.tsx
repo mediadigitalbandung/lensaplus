@@ -24,6 +24,7 @@ import { notFound } from "next/navigation";
 // Note: DOMPurify removed — content sanitized at input via API validation
 import { slugify } from "@/lib/utils";
 import { faqJsonLd, newsArticleJsonLd } from "@/lib/seo/json-ld";
+import ReadTracker from "@/components/personalization/ReadTracker";
 
 async function getArticle(slug: string) {
   const article = await prisma.article.findUnique({
@@ -418,6 +419,9 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <ReadingProgress />
+      {isPublished && (
+        <ReadTracker slug={article.slug} categorySlug={article.category.slug} />
+      )}
       <CopyProtection
         authorName={article.author.name}
         articleUrl={articleUrl}

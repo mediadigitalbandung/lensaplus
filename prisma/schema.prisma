@@ -128,6 +128,7 @@ model User {
   updatedAt        DateTime   @updatedAt
   articles         Article[]
   auditLogs        AuditLog[]
+  liveBlogs        LiveBlog[]
 
   @@map("users")
 }
@@ -1078,4 +1079,60 @@ model Regulation {
   @@index([topic])
   @@index([isPublished, enactedAt(sort: Desc)])
   @@map("regulations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Live Blog — siaran langsung peristiwa (Sprint 4A)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum LiveBlogStatus {
+  SCHEDULED // belum mulai
+  LIVE // sedang berjalan
+  ENDED // sudah selesai
+  CANCELLED // dibatalkan
+}
+
+model LiveBlog {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  title       String
+  description String?        @db.Text
+  category    String? // e.g. "Sidang", "Demo", "Konferensi"
+  status      LiveBlogStatus @default(SCHEDULED)
+  scheduledAt DateTime
+  startedAt   DateTime?
+  endedAt     DateTime?
+  coverImage  String?
+  authorId    String // siapa yang liput
+  articleId   String? // optional link ke artikel terkait
+  isPublished Boolean        @default(true)
+  viewCount   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  entries LiveBlogEntry[]
+  author  User            @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([status, scheduledAt(sort: Desc)])
+  @@index([isPublished, status])
+  @@index([authorId])
+  @@map("live_blogs")
+}
+
+model LiveBlogEntry {
+  id          String   @id @default(cuid())
+  liveBlogId  String
+  content     String   @db.Text // konten update (HTML allowed, sanitized)
+  postedAt    DateTime @default(now())
+  authorId    String?
+  isPinned    Boolean  @default(false)
+  isHighlight Boolean  @default(false)
+  imageUrl    String?
+  videoUrl    String?
+
+  liveBlog LiveBlog @relation(fields: [liveBlogId], references: [id], onDelete: Cascade)
+
+  @@index([liveBlogId, postedAt(sort: Desc)])
+  @@index([liveBlogId, isPinned, postedAt(sort: Desc)])
+  @@map("live_blog_entries")
 }

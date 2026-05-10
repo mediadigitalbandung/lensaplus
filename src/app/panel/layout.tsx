@@ -42,6 +42,7 @@ import {
   Video,
   BarChart2,
   Scale,
+  RadioTower,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -74,6 +75,7 @@ const menuItems: MenuItem[] = [
   { name: "Sosial Media", href: "/panel/social", icon: Share2, adminOnly: true },
   { name: "TikTok", href: "/panel/tiktok", icon: Video, editorOnly: true },
   { name: "Sorotan", href: "/panel/sorotan", icon: Lightbulb, editorOnly: true },
+  { name: "Live Blog", href: "/panel/live-blogs", icon: RadioTower, editorOnly: true },
   { name: "Jadwal Sidang", href: "/panel/jadwal-sidang", icon: Gavel, editorOnly: true },
   { name: "Kalender Emiten", href: "/panel/kalender-emiten", icon: BarChart2, editorOnly: true },
   { name: "Regulasi", href: "/panel/regulasi", icon: Scale, editorOnly: true },
