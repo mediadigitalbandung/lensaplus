@@ -142,9 +142,17 @@ export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: 
   if (ad) {
     const content =
       ad.type === "HTML" && ad.htmlCode ? (
+        // The HTML creatives in the DB lock the outer card to
+        // `aspect-ratio:6/5; overflow:hidden;` (= 300×250 box). On narrow
+        // sidebars the inner content (badge + headline + description +
+        // checks + CTA) overflows that 6:5 box and the bottom CTA gets
+        // clipped. We override BOTH props on the immediate child via
+        // `[&>div]:!…` so the card grows to fit content with a tasteful
+        // min-height floor — overriding inline `style=""` requires the
+        // !important that Tailwind's `!` prefix adds.
         <div
           dangerouslySetInnerHTML={{ __html: ad.htmlCode }}
-          className="w-full"
+          className="w-full [&>div]:!aspect-auto [&>div]:!overflow-visible [&>div]:!min-h-[16rem]"
         />
       ) : ad.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- external advertiser-supplied URL, domain not known ahead of time
