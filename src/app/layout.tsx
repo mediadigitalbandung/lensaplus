@@ -10,6 +10,8 @@ import PublicFooter from "@/components/layout/PublicFooter";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import SideRailAds from "@/components/ads/SideRailAds";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
+import InstallTracker from "@/components/pwa/InstallTracker";
+import InstallTeaser from "@/components/pwa/InstallTeaser";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
 
 const newsreader = Newsreader({
@@ -155,6 +157,8 @@ export default function RootLayout({
           <SideRailAds />
           <ServiceWorkerRegistration />
           <InstallPrompt />
+          <InstallTeaser />
+          <InstallTracker />
         </Providers>
       </body>
     </html>

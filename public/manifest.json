@@ -1,15 +1,20 @@
 {
-  "name": "Kartawarta — Media Hukum Digital Bandung",
+  "id": "/",
+  "name": "Kartawarta — Media Berita Digital Bandung",
   "short_name": "Kartawarta",
-  "description": "Portal berita hukum digital terpercaya untuk Bandung dan Jawa Barat — putusan pengadilan, regulasi, advokasi, dan analisis ahli.",
-  "start_url": "/",
+  "description": "Portal berita digital Bandung — bisnis, ekonomi, hukum, politik, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia. Terverifikasi Dewan Pers.",
+  "start_url": "/?utm_source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#002045",
   "orientation": "portrait-primary",
   "lang": "id-ID",
+  "dir": "ltr",
   "categories": ["news", "magazines"],
+  "iarc_rating_id": "",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -35,5 +40,79 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/twa/playstore-assets/feature-graphic.png",
+      "sizes": "1024x500",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Kartawarta — Media Berita Digital Bandung"
+    },
+    {
+      "src": "/twa/playstore-assets/phone-screenshot-1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Beranda Kartawarta"
+    },
+    {
+      "src": "/twa/playstore-assets/phone-screenshot-2.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Detail artikel"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Berita Terkini",
+      "short_name": "Terkini",
+      "description": "Daftar artikel terbaru",
+      "url": "/berita?utm_source=pwa-shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Bisnis & Ekonomi",
+      "short_name": "Bisnis",
+      "description": "Berita bisnis dan ekonomi",
+      "url": "/kategori/bisnis-ekonomi?utm_source=pwa-shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Hukum",
+      "short_name": "Hukum",
+      "description": "Berita hukum",
+      "url": "/kategori/hukum?utm_source=pwa-shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Cari Berita",
+      "short_name": "Cari",
+      "description": "Pencarian artikel",
+      "url": "/search?utm_source=pwa-shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "share_target": {
+    "action": "/search",
+    "method": "GET",
+    "params": {
+      "title": "q",
+      "text": "q",
+      "url": "q"
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+kartawarta",
+      "url": "/?ref=%s"
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }

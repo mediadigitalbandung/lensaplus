@@ -190,6 +190,26 @@ export default function UnduhPage() {
                   ke domain kartawarta.com.
                 </p>
               </details>
+              <details className="mt-3 text-sm">
+                <summary className="cursor-pointer font-semibold text-txt-primary">
+                  Generate APK sendiri (developer)
+                </summary>
+                <p className="mt-2 text-txt-secondary leading-relaxed">
+                  Anda bisa generate APK Kartawarta sendiri secara gratis tanpa install
+                  tooling lokal — pakai{" "}
+                  <a
+                    href="https://www.pwabuilder.com/?url=https%3A%2F%2Fkartawarta.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-primary underline"
+                  >
+                    PWABuilder.com
+                  </a>{" "}
+                  (web tool resmi Microsoft + Google). Input{" "}
+                  <code className="rounded bg-surface-tertiary px-1.5 py-0.5 text-xs font-mono">https://kartawarta.com</code>{" "}
+                  → Package for Stores → Android → Download. APK siap install.
+                </p>
+              </details>
             </div>
           </div>
         </div>
