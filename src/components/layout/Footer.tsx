@@ -19,6 +19,9 @@ const footerLinks = {
   ],
   kontak: [
     { name: "Kontak Redaksi", href: "/kontak" },
+    { name: "Siaran Langsung", href: "/live" },
+    { name: "Pasang Aplikasi", href: "/unduh" },
+    { name: "Newsletter", href: "/newsletter" },
     { name: "Bookmark Saya", href: "/bookmark" },
     { name: "Pasar & Bursa", href: "/pasar" },
     { name: "Kalender Emiten", href: "/kalender-emiten" },

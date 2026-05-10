@@ -62,6 +62,8 @@ export async function GET() {
     url(`${SITE_URL}/tentang`, now, "monthly", 0.3),
     url(`${SITE_URL}/redaksi`, now, "monthly", 0.3),
     url(`${SITE_URL}/kontak`, now, "monthly", 0.3),
+    url(`${SITE_URL}/unduh`, now, "monthly", 0.6),
+    url(`${SITE_URL}/newsletter`, now, "monthly", 0.5),
     url(`${SITE_URL}/privasi`, now, "yearly", 0.2),
     url(`${SITE_URL}/syarat-ketentuan`, now, "yearly", 0.2),
     url(`${SITE_URL}/kode-etik`, now, "yearly", 0.2),
