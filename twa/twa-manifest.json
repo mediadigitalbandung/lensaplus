@@ -1,0 +1,64 @@
+{
+  "packageId": "com.kartawarta.app",
+  "host": "kartawarta.com",
+  "name": "Kartawarta",
+  "launcherName": "Kartawarta",
+  "display": "standalone",
+  "themeColor": "#002045",
+  "themeColorDark": "#001530",
+  "navigationColor": "#002045",
+  "navigationColorDark": "#001530",
+  "navigationDividerColor": "#002045",
+  "navigationDividerColorDark": "#001530",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://kartawarta.com/icons/icon-512.png",
+  "maskableIconUrl": "https://kartawarta.com/icons/icon-512-maskable.png",
+  "monochromeIconUrl": "https://kartawarta.com/icons/icon-512.png",
+  "shortcuts": [
+    {
+      "name": "Berita Terkini",
+      "shortName": "Terkini",
+      "url": "/berita",
+      "iconUrl": "https://kartawarta.com/icons/icon-192.png"
+    },
+    {
+      "name": "Hukum",
+      "shortName": "Hukum",
+      "url": "/kategori/hukum",
+      "iconUrl": "https://kartawarta.com/icons/icon-192.png"
+    },
+    {
+      "name": "Bisnis & Ekonomi",
+      "shortName": "Bisnis",
+      "url": "/kategori/bisnis-ekonomi",
+      "iconUrl": "https://kartawarta.com/icons/icon-192.png"
+    },
+    {
+      "name": "Cari Berita",
+      "shortName": "Cari",
+      "url": "/search",
+      "iconUrl": "https://kartawarta.com/icons/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://kartawarta.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": { "enabled": false },
+    "playBilling": { "enabled": false }
+  },
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "orientation": "default",
+  "fullScopeUrl": "https://kartawarta.com/",
+  "minSdkVersion": 23,
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  }
+}

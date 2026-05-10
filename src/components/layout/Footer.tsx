@@ -22,6 +22,8 @@ const footerLinks = {
     { name: "Bookmark Saya", href: "/bookmark" },
     { name: "Pasar & Bursa", href: "/pasar" },
     { name: "Kalender Emiten", href: "/kalender-emiten" },
+    { name: "Regulasi", href: "/regulasi" },
+    { name: "Pejabat", href: "/pejabat" },
     { name: "Kebijakan Privasi", href: "/privasi" },
     { name: "Syarat & Ketentuan", href: "/syarat-ketentuan" },
     { name: "Pasang Iklan", href: "/kontak" },

@@ -18,6 +18,8 @@ import {
   User,
   TrendingUp,
   CalendarDays,
+  Scale,
+  Users,
 } from "lucide-react";
 
 const categoryNav = [
@@ -34,6 +36,8 @@ const categoryNav = [
   { name: "Gaya Hidup", href: "/kategori/gaya-hidup" },
   { name: "Opini", href: "/kategori/opini" },
   { name: "Pasar", href: "/pasar" },
+  { name: "Regulasi", href: "/regulasi" },
+  { name: "Pejabat", href: "/pejabat" },
 ];
 
 export default function Header() {
@@ -340,6 +344,26 @@ export default function Header() {
                 >
                   <CalendarDays size={16} className="text-primary" />
                   Kalender Emiten
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/regulasi"
+                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Scale size={16} className="text-primary" />
+                  Regulasi
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/pejabat"
+                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Users size={16} className="text-primary" />
+                  Pejabat
                 </Link>
               </li>
               {session && (

@@ -966,3 +966,116 @@ model MarketEvent {
   @@index([isPublished, scheduledAt])
   @@map("market_events")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pejabat Publik Database — direktori pejabat daerah & nasional (Sprint 3B)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum OfficialLevel {
+  NASIONAL // Presiden, Menteri, DPR-RI
+  PROVINSI // Gubernur, DPRD Provinsi
+  KOTA_KABUPATEN // Walikota, Bupati, DPRD Kab/Kota
+  KECAMATAN // Camat, Lurah
+  YUDIKATIF // Hakim, Jaksa, Polisi (regional)
+  LEMBAGA // Komisioner KPK, KPU, dll
+  OTHER
+}
+
+enum OfficialStatus {
+  AKTIF
+  PURNA // sudah selesai jabatan
+  CUTI // cuti tertentu
+  NONAKTIF // diberhentikan
+}
+
+model PublicOfficial {
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  name            String
+  fullName        String? // versi lengkap (gelar)
+  position        String // jabatan saat ini, e.g. "Walikota Bandung"
+  institution     String // institusi, e.g. "Pemerintah Kota Bandung"
+  level           OfficialLevel
+  region          String? // wilayah, e.g. "Kota Bandung", "Jawa Barat"
+  status          OfficialStatus @default(AKTIF)
+  termStart       DateTime? // mulai jabatan
+  termEnd         DateTime? // berakhir jabatan
+  bio             String?        @db.Text
+  birthplace      String?
+  birthdate       DateTime?
+  education       String?        @db.Text // CSV / multi-line
+  career          String?        @db.Text
+  party           String? // partai politik (kalau ada)
+  photoUrl        String?
+  websiteUrl      String?
+  twitterHandle   String?
+  instagramHandle String?
+  isPublished     Boolean        @default(true)
+  viewCount       Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([level, status])
+  @@index([region])
+  @@index([institution])
+  @@index([isPublished, level])
+  @@map("public_officials")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Regulasi Tracker — UU, PP, Perpres, Permen, Perda Indonesia (Sprint 3A)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum RegulationType {
+  UU // Undang-Undang
+  PERPPU // Peraturan Pemerintah Pengganti UU
+  PP // Peraturan Pemerintah
+  PERPRES // Peraturan Presiden
+  KEPPRES // Keputusan Presiden
+  INPRES // Instruksi Presiden
+  PERMEN // Peraturan Menteri
+  KEPMEN // Keputusan Menteri
+  PERDA_PROV // Perda Provinsi
+  PERDA_KAB // Perda Kabupaten/Kota
+  PERGUB // Peraturan Gubernur
+  PERWAL // Peraturan Walikota / Bupati
+  PUTUSAN_MK // Putusan Mahkamah Konstitusi
+  PUTUSAN_MA // Putusan Mahkamah Agung
+  OTHER
+}
+
+enum RegulationStatus {
+  DRAFT_RUU // Masih RUU
+  ENACTED // Sudah diundangkan, berlaku
+  AMENDED // Sudah diubah / direvisi
+  REVOKED // Dicabut / dibatalkan
+}
+
+model Regulation {
+  id          String           @id @default(cuid())
+  type        RegulationType
+  number      String // e.g. "27/2022", "13 Tahun 2003"
+  year        Int
+  title       String           @db.Text
+  shortTitle  String? // e.g. "UU PDP"
+  topic       String? // e.g. "Privasi", "Tenaga Kerja", "Pajak"
+  description String?          @db.Text
+  enactedAt   DateTime? // tanggal diundangkan
+  effectiveAt DateTime? // tanggal mulai berlaku
+  issuedBy    String? // institusi penerbit, e.g. "Pemerintah", "MK"
+  status      RegulationStatus @default(ENACTED)
+  sourceUrl   String? // link ke peraturan.go.id atau JDIH
+  pdfUrl      String? // link langsung ke PDF
+  articleId   String? // optional link ke artikel coverage
+  isPublished Boolean          @default(true)
+  viewCount   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([type, number, year])
+  @@index([type, year(sort: Desc)])
+  @@index([status])
+  @@index([topic])
+  @@index([isPublished, enactedAt(sort: Desc)])
+  @@map("regulations")
+}
