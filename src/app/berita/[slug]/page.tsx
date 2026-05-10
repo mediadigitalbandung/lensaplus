@@ -18,6 +18,7 @@ import ArticleCard from "@/components/artikel/ArticleCard";
 import BannerAd, { SidebarAd } from "@/components/ads/BannerAd";
 import CommentSection from "@/components/artikel/CommentSection";
 import BookmarkButton from "@/components/artikel/BookmarkButton";
+import ReactionBar from "@/components/artikel/ReactionBar";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 // Note: DOMPurify removed — content sanitized at input via API validation
@@ -597,12 +598,15 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
 
               {/* Share bar + bookmark */}
               <div className="mt-8">
-                <ShareBar articleUrl={articleUrl} articleTitle={article.title} />
+                <ShareBar articleUrl={articleUrl} articleTitle={article.title} slug={params.slug} />
                 <div className="mt-3 flex items-center justify-end gap-2">
                   <PrintButton />
                   <BookmarkButton slug={params.slug} />
                 </div>
               </div>
+
+              {/* Reactions — engagement emoji bar */}
+              {isPublished && <ReactionBar articleId={article.id} />}
 
               {/* Sources */}
               {article.sources.length > 0 && (

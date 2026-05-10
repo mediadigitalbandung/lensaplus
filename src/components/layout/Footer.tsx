@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import PushSubscribeButton from "@/components/push/PushSubscribeButton";
 
 function ClientYear() {
   const [year, setYear] = useState<number | null>(null);
@@ -40,6 +41,14 @@ export default function Footer() {
             <p className="mt-4 max-w-sm text-body-md leading-relaxed text-txt-muted">
               Media digital terpercaya. Menyajikan berita terkini dengan standar jurnalistik tertinggi.
             </p>
+
+            {/* Push Notification subscribe */}
+            <div className="mt-6">
+              <p className="mb-2 text-body-sm text-txt-muted">
+                Dapatkan notifikasi artikel terbaru langsung di browser Anda.
+              </p>
+              <PushSubscribeButton />
+            </div>
 
             {/* Badge Dewan Pers — open layout, no container box */}
             <div className="mt-8 flex items-start gap-3.5">

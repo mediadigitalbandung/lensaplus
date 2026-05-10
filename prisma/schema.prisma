@@ -178,6 +178,7 @@ model Article {
   lastIndexedAt      DateTime?
   sorotan            Sorotan[]
   socialPosts        SocialPost[]
+  reactions          ArticleReaction[]
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
@@ -490,18 +491,18 @@ model NewsletterSubscriber {
 }
 
 model Sorotan {
-  id            String       @id @default(cuid())
-  slug          String       @unique
-  article       Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  articleId     String
-  angle         SorotanAngle
-  title         String
-  content       String       @db.Text
-  indexStatus   String?      @default("pending")
+  id             String       @id @default(cuid())
+  slug           String       @unique
+  article        Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleId      String
+  angle          SorotanAngle
+  title          String
+  content        String       @db.Text
+  indexStatus    String?      @default("pending")
   indexLastError String?
-  lastIndexedAt DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  lastIndexedAt  DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([articleId])
   @@index([indexStatus])
@@ -878,4 +879,54 @@ model TiktokRenderJob {
   @@index([contentId])
   @@index([status])
   @@map("tiktok_render_jobs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Push Notifications — Web Push API subscriptions
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PushSubscription {
+  id            String    @id @default(cuid())
+  endpoint      String    @unique @db.Text // unique URL dari browser push service
+  p256dh        String    @db.Text // public key untuk encryption
+  auth          String    @db.Text // auth secret
+  userAgent     String?   @db.Text // browser/device info untuk debug
+  ip            String? // for rate limit
+  categorySlugs String?   @db.Text // CSV: "hukum,bisnis-ekonomi" — kategori yang di-subscribe. Null = semua.
+  isActive      Boolean   @default(true)
+  lastNotifAt   DateTime?
+  failureCount  Int       @default(0) // increment kalau push fail; auto-disable kalau >5
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isActive])
+  @@map("push_subscriptions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Article Reactions — emoji engagement bar (Sprint 1B)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ReactionType {
+  LIKE
+  LOVE
+  SAD
+  ANGRY
+  THINKING
+}
+
+model ArticleReaction {
+  id          String       @id @default(cuid())
+  articleId   String
+  type        ReactionType
+  ip          String
+  fingerprint String?
+  createdAt   DateTime     @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, ip, type])
+  @@index([articleId])
+  @@index([articleId, type])
+  @@map("article_reactions")
 }

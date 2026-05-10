@@ -16,6 +16,7 @@ import { publishArticleToSocial } from "./social/orchestrator";
 import { purgeCache } from "./cloudflare/purge";
 import { invalidateCachePrefix } from "./cache";
 import { invalidateInternalStatsCache } from "./stats/internal";
+import { sendPushToSubscribers } from "./push/send";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
 
@@ -103,6 +104,7 @@ interface PublishChainSummary {
   sorotan: { ok: boolean; error?: string };
   social: { ok: boolean; error?: string; platforms?: string[] };
   cloudflare: { ok: boolean; purgedCount?: number; error?: string };
+  push: { ok: boolean; sent?: number; failed?: number; skipped?: number; error?: string };
 }
 
 /**
@@ -131,14 +133,25 @@ export async function onArticlePublished(
   // Resolve articleId if caller didn't pass it — needed for Sorotan + status
   let resolvedId = articleId;
   let categorySlug: string | null = null;
+  let articleTitle: string = slug;
+  let articleExcerpt: string | null = null;
   if (!resolvedId) {
     try {
       const article = await prisma.article.findUnique({
         where: { slug },
-        select: { id: true, category: { select: { slug: true } } },
+        select: {
+          id: true,
+          title: true,
+          excerpt: true,
+          category: { select: { slug: true } },
+        },
       });
       resolvedId = article?.id;
       categorySlug = article?.category.slug ?? null;
+      if (article) {
+        articleTitle = article.title;
+        articleExcerpt = article.excerpt ?? null;
+      }
     } catch {
       // DB unreachable — continue with indexing-only path
     }
@@ -146,9 +159,17 @@ export async function onArticlePublished(
     try {
       const article = await prisma.article.findUnique({
         where: { id: resolvedId },
-        select: { category: { select: { slug: true } } },
+        select: {
+          title: true,
+          excerpt: true,
+          category: { select: { slug: true } },
+        },
       });
       categorySlug = article?.category.slug ?? null;
+      if (article) {
+        articleTitle = article.title;
+        articleExcerpt = article.excerpt ?? null;
+      }
     } catch {
       // ignore
     }
@@ -202,12 +223,22 @@ export async function onArticlePublished(
     ...(categorySlug ? [`${SITE_URL}/kategori/${categorySlug}`] : []),
   ];
 
-  const [googleRes, indexNowRes, sorotanRes, socialRes, cloudflareRes] = await Promise.allSettled([
+  const [googleRes, indexNowRes, sorotanRes, socialRes, cloudflareRes, pushRes] = await Promise.allSettled([
     submitUrlToGoogle(url, "URL_UPDATED"),
     pingIndexNow(indexNowUrls),
     resolvedId ? generateSorotanIfMissing(resolvedId) : Promise.resolve(),
     resolvedId ? publishArticleToSocial(resolvedId) : Promise.resolve({ results: [] }),
     purgeCache(purgeUrls),
+    sendPushToSubscribers(
+      {
+        title: articleTitle,
+        body: articleExcerpt || articleTitle,
+        url,
+        icon: "/kartawarta-icon-192.png",
+        tag: resolvedId || slug,
+      },
+      { categorySlug: categorySlug ?? undefined },
+    ),
   ]);
 
   const summary: PublishChainSummary = {
@@ -240,6 +271,10 @@ export async function onArticlePublished(
       cloudflareRes.status === "fulfilled"
         ? { ok: cloudflareRes.value.success, purgedCount: cloudflareRes.value.purgedCount, error: cloudflareRes.value.error }
         : { ok: false, error: String(cloudflareRes.reason) },
+    push:
+      pushRes.status === "fulfilled"
+        ? { ok: true, sent: pushRes.value.sent, failed: pushRes.value.failed, skipped: pushRes.value.skipped }
+        : { ok: false, error: String(pushRes.reason) },
   };
 
   // Update Article.indexStatus based on Google Indexing result. Capture the

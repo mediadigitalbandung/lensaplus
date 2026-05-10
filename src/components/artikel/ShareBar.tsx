@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Share2, Link2, Check } from "lucide-react";
+import { Share2, Link2, Check, Image } from "lucide-react";
 
 interface ShareBarProps {
   articleUrl: string;
   articleTitle: string;
+  /** Article slug — used to build the Story Card download link. Optional for backward compatibility. */
+  slug?: string;
 }
 
 interface SharePlatform {
@@ -16,7 +18,7 @@ interface SharePlatform {
   hoverBg: string;
 }
 
-export default function ShareBar({ articleUrl, articleTitle }: ShareBarProps) {
+export default function ShareBar({ articleUrl, articleTitle, slug }: ShareBarProps) {
   const [copied, setCopied] = useState(false);
 
   const platforms: SharePlatform[] = [
@@ -118,6 +120,23 @@ export default function ShareBar({ articleUrl, articleTitle }: ShareBarProps) {
               {copied ? "Tersalin!" : "Salin Link"}
             </span>
           </button>
+
+          {/* Story Card Button — opens portrait JPEG for WA Status / IG Story */}
+          {slug && (
+            <a
+              href={`/api/og/story?slug=${encodeURIComponent(slug)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-xs font-medium text-white transition-all hover:bg-primary-dark active:scale-95"
+              title="Unduh Story Card untuk WA Status / IG Story"
+              aria-label="Unduh Story Card untuk WA Status / IG Story"
+            >
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
+                <Image size={10} />
+              </span>
+              <span className="hidden sm:inline">Story Card</span>
+            </a>
+          )}
         </div>
       </div>
 
