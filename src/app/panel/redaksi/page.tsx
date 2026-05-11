@@ -81,8 +81,18 @@ export default function RedaksiPanelPage() {
         fetch("/api/users?limit=100"),
       ]);
       if (resMembers.ok) {
+        // /api/redaksi GET returns paginated shape:
+        //   json.data = { members: [...], total, page, limit, totalPages }
+        // The previous legacy shape was `json.data = [...]` directly.
+        // Tolerate both — pulling json.data straight into setMembers crashed
+        // with "g.map is not a function" because the object isn't iterable.
         const json = await resMembers.json();
-        setMembers(json.data || []);
+        const list = Array.isArray(json.data?.members)
+          ? json.data.members
+          : Array.isArray(json.data)
+          ? json.data
+          : [];
+        setMembers(list);
       }
       if (resUsers.ok) {
         // /api/users sejak Sprint 0 CRIT-03 return paginated shape:
