@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { sanitizeHtml, cleanAIShortText } from "@/lib/sanitize";
 import { extractFirstImageUrl } from "@/lib/image-extract";
 import {
   successResponse,
@@ -227,18 +227,22 @@ export async function POST(request: NextRequest) {
 
     const article = await prisma.article.create({
       data: {
-        title: data.title,
+        title: cleanAIShortText(data.title) || data.title,
         slug,
         content: sanitizedContent,
-        excerpt: data.excerpt || data.content.replace(/<[^>]*>/g, "").slice(0, 200),
+        excerpt: cleanAIShortText(data.excerpt || data.content.replace(/<[^>]*>/g, "").slice(0, 200)),
         featuredImage: resolvedFeaturedImage,
         status: finalStatus as "DRAFT" | "IN_REVIEW",
         verificationLabel: "UNVERIFIED",
         readTime,
         authorId: effectiveAuthorId,
         categoryId: data.categoryId,
-        seoTitle: data.seoTitle || data.title,
-        seoDescription: data.seoDescription || data.content.replace(/<[^>]*>/g, "").slice(0, 160),
+        // Always sanitize SEO fields — strip AI artifact prefixes like
+        // "**SEO Title:**", "Berikut..." dll yang sometimes leak dari panel
+        // form atau auto-fill. Tanpa ini, browser tab title bisa show
+        // markdown artifact yang ugly.
+        seoTitle: cleanAIShortText(data.seoTitle) || cleanAIShortText(data.title) || data.title,
+        seoDescription: cleanAIShortText(data.seoDescription) || cleanAIShortText(data.content.replace(/<[^>]*>/g, "").slice(0, 160)),
         publishedAt: null,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
         tags: { connect: tagConnections },

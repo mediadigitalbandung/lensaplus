@@ -97,8 +97,13 @@ export function cleanAIShortText(raw: string | null | undefined): string {
   // so we land on the actual content.
   for (let i = 0; i < 8; i++) {
     const before = s;
-    // Strip "Berikut..." / "Here is..." / "Inilah..." preface up to first colon
-    s = s.replace(/^(?:berikut|here is|inilah|ini adalah|silakan|terlampir)[^:\n]{0,80}:\s*\n?/i, "").trim();
+    // Strip "Berikut..."/"Here is..." preface ending with ":" OR newline.
+    // Notes:
+    //   - "Inilah"/"Ini adalah" REMOVED dari preface list — too commonly
+    //     used in legit Indonesian headlines ("Inilah Dirut BJB yang…").
+    //   - Match also without colon when preface ends with newline (AI often
+    //     writes "Berikut usulan SEO title untuk artikel ini\n\nKartawarta…").
+    s = s.replace(/^(?:berikut|here is|silakan|terlampir)[^\n:]{0,150}[:\n]\s*\n?/i, "").trim();
     // Markdown bold label with colon: "**SEO Title:**" or "**Judul SEO (60 karakter):**"
     s = s.replace(/^\*\*[^*\n:]{1,80}:\*\*\s*\n?/i, "").trim();
     // Plain label with colon: "SEO Title:" / "Judul SEO:" / "Meta Description:" / "Deskripsi:" / "Title:"
@@ -132,6 +137,12 @@ export function cleanAIShortText(raw: string | null | undefined): string {
 
   // Collapse multiple newlines/whitespace into single space (for one-line fields)
   s = s.replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+
+  // Last resort: kalau hasil masih start dengan "Berikut..." berarti seluruh
+  // value adalah meta-preamble dari AI ("Berikut usulan SEO title untuk
+  // artikel ini...") tanpa konten substantif. Return empty — caller harus
+  // fallback ke nilai default (mis. article.title untuk seoTitle).
+  if (/^(?:berikut|here is)\s/i.test(s)) return "";
 
   return s;
 }

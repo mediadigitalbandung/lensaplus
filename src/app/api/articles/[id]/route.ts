@@ -10,7 +10,7 @@ import {
 } from "@/lib/api-utils";
 import { calculateReadTime, slugify } from "@/lib/utils";
 import { canApproveArticles } from "@/lib/auth";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { sanitizeHtml, cleanAIShortText } from "@/lib/sanitize";
 import { notifyArticleStatusChange } from "@/lib/notifications";
 import {
   sendArticleApprovedEmail,
@@ -122,6 +122,13 @@ export async function PUT(
     if (data.content) {
       data.content = sanitizeHtml(data.content);
     }
+    // Strip AI artifact prefixes ("**SEO Title:**", "Berikut...", "(60 char)")
+    // dari short fields. Penting karena beberapa flow (panel save, AI auto-fill)
+    // pass raw input ke DB — browser tab title langsung tampil markdown ugly.
+    if (data.title) data.title = cleanAIShortText(data.title) || data.title;
+    if (data.seoTitle) data.seoTitle = cleanAIShortText(data.seoTitle);
+    if (data.seoDescription) data.seoDescription = cleanAIShortText(data.seoDescription);
+    if (data.excerpt) data.excerpt = cleanAIShortText(data.excerpt);
 
     // Featured image is now derived from the article body's first image — if the
     // client doesn't send a value but content was edited, re-extract from content.

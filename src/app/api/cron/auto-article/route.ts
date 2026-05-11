@@ -35,7 +35,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { callAI } from "@/lib/ai-client";
 import { slugify } from "@/lib/utils";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { sanitizeHtml, cleanAIShortText } from "@/lib/sanitize";
 import { verifyCronSecret, errorResponse, logAudit } from "@/lib/api-utils";
 import { trackCron } from "@/lib/cron-tracker";
 import { checkArticle } from "@/lib/ai-guardrail";
@@ -215,9 +215,14 @@ function tryParseJson(raw: string): GeneratedArticle | null {
       typeof parsed.content === "string"
     ) {
       return {
-        title: parsed.title.trim(),
+        // Strip AI prefix artifacts ("**Judul:**", "Berikut..." dll) sebelum
+        // simpan ke DB. AI sering balas dengan wrapper meta walaupun
+        // prompt-nya jelas minta plain text.
+        title: cleanAIShortText(parsed.title) || parsed.title.trim(),
         excerpt:
-          typeof parsed.excerpt === "string" ? parsed.excerpt.trim() : "",
+          typeof parsed.excerpt === "string"
+            ? cleanAIShortText(parsed.excerpt)
+            : "",
         content: parsed.content.trim(),
         suggestedTags: Array.isArray(parsed.suggestedTags)
           ? parsed.suggestedTags
