@@ -14,12 +14,17 @@ interface AuditLog {
   entityId: string;
   detail: string | null;
   createdAt: string;
+  // `user` bisa NULL — schema AuditLog.user optional dengan onDelete: SetNull,
+  // jadi cron job (CRON_PUBLISH, CRON_SOROTAN, dsb) yang ga jalan atas nama
+  // user dapat user=null, plus user yang sudah dihapus juga jadi null.
+  // Render WAJIB defensive — sebelum-nya `log.user.name` throw "Cannot read
+  // properties of null (reading 'name')" di /panel/aktivitas.
   user: {
     id: string;
     name: string;
     email: string;
     role: string;
-  };
+  } | null;
 }
 
 interface Pagination {
@@ -129,8 +134,8 @@ export default function AktivitasPage() {
       const headers = ["Tanggal", "User", "Email", "Aksi", "Entitas", "ID Entitas", "Detail"];
       const rows = allLogs.map((log) => [
         formatDateTime(log.createdAt),
-        log.user.name,
-        log.user.email,
+        log.user?.name ?? "Sistem",
+        log.user?.email ?? "",
         actionLabels[log.action]?.label || log.action,
         entityLabels[log.entity] || log.entity,
         log.entityId,
@@ -258,8 +263,17 @@ export default function AktivitasPage() {
                         {formatDateTime(log.createdAt)}
                       </td>
                       <td className="px-5 py-4">
-                        <div className="text-sm font-medium text-txt-primary">{log.user.name}</div>
-                        <div className="text-sm text-txt-secondary">{log.user.email}</div>
+                        {log.user ? (
+                          <>
+                            <div className="text-sm font-medium text-txt-primary">{log.user.name}</div>
+                            <div className="text-sm text-txt-secondary">{log.user.email}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-sm font-medium text-txt-muted italic">Sistem</div>
+                            <div className="text-sm text-txt-muted/70">cron / automation</div>
+                          </>
+                        )}
                       </td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium ${actionInfo.color}`}>
