@@ -5,6 +5,7 @@
  */
 
 import { callAI } from "@/lib/ai-client";
+import { cleanAILongText } from "@/lib/sanitize";
 import {
   ArticleForPublish,
   CAPTION_MAX_LENGTH,
@@ -102,7 +103,7 @@ Aturan:
       temperature: 0.7,
       articleTitle: article.title,
     });
-    body = result.text.trim();
+    body = cleanAILongText(result.text);
     if (!body) throw new Error("empty AI response");
   } catch {
     body = `${article.title}. ${excerpt}`.trim();

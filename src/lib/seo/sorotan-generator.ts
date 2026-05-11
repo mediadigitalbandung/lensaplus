@@ -12,6 +12,7 @@
 import { SorotanAngle } from "@prisma/client";
 import { callAI } from "@/lib/ai-client";
 import { prisma } from "@/lib/prisma";
+import { cleanAILongText } from "@/lib/sanitize";
 
 // ANGLES = angle yang aktif diproduksi oleh generator. FAQ legacy enum
 // value tetap valid untuk read tapi tidak digenerate baru.
@@ -116,7 +117,7 @@ ${context}`;
       articleTitle: article.title,
     });
 
-    const content = result.text.trim();
+    const content = cleanAILongText(result.text);
     if (content.length < 200) {
       return { error: `Content too short (${content.length} chars)`, angle };
     }

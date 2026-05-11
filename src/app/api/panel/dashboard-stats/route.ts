@@ -108,6 +108,38 @@ export async function GET() {
       prisma.article.count({ where: { status: "PUBLISHED" } }),
     ]);
 
+    // ─── Modul Bisnis & Pemerintahan (Sprint 2-5) ──────────────────
+    // Tambahan stats untuk fitur yang baru di-add — cast prismaAny supaya
+    // tidak break kalau prisma client lag di build pipeline.
+    const prismaModul = prisma as unknown as {
+      publicCompany: { count: (args?: { where?: { isActive?: boolean } }) => Promise<number> };
+      regulation: { count: (args?: { where?: { isPublished?: boolean } }) => Promise<number> };
+      publicOfficial: { count: (args?: { where?: { isPublished?: boolean; status?: string } }) => Promise<number> };
+      marketEvent: { count: (args?: { where?: { isPublished?: boolean; scheduledAt?: object } }) => Promise<number> };
+      liveBlog: { count: (args?: { where?: { isPublished?: boolean; status?: string } }) => Promise<number> };
+      pushSubscription: { count: (args?: { where?: { isActive?: boolean } }) => Promise<number> };
+    };
+    const [
+      totalCompanies, activeCompanies,
+      totalRegulations, publishedRegulations,
+      totalOfficials, activeOfficials,
+      totalMarketEvents, upcomingMarketEvents,
+      totalLiveBlogs, liveLiveBlogs,
+      totalPushSubscribers,
+    ] = await Promise.all([
+      prismaModul.publicCompany.count().catch(() => 0),
+      prismaModul.publicCompany.count({ where: { isActive: true } }).catch(() => 0),
+      prismaModul.regulation.count().catch(() => 0),
+      prismaModul.regulation.count({ where: { isPublished: true } }).catch(() => 0),
+      prismaModul.publicOfficial.count().catch(() => 0),
+      prismaModul.publicOfficial.count({ where: { isPublished: true, status: "AKTIF" } }).catch(() => 0),
+      prismaModul.marketEvent.count().catch(() => 0),
+      prismaModul.marketEvent.count({ where: { isPublished: true, scheduledAt: { gte: today } } }).catch(() => 0),
+      prismaModul.liveBlog.count().catch(() => 0),
+      prismaModul.liveBlog.count({ where: { status: "LIVE" } }).catch(() => 0),
+      prismaModul.pushSubscription.count({ where: { isActive: true } }).catch(() => 0),
+    ]);
+
     return successResponse({
       categories: { total: totalCategories },
       tags: { total: totalTags },
@@ -132,6 +164,13 @@ export async function GET() {
             ? Math.round((articlesWithFaq / totalPublishedArticles) * 100)
             : 0,
       },
+      // Sprint 2-5 modul baru — biar dashboard juga show stats-nya:
+      companies: { total: totalCompanies, active: activeCompanies },
+      regulations: { total: totalRegulations, published: publishedRegulations },
+      officials: { total: totalOfficials, active: activeOfficials },
+      marketEvents: { total: totalMarketEvents, upcoming: upcomingMarketEvents },
+      liveBlogs: { total: totalLiveBlogs, live: liveLiveBlogs },
+      pushSubscribers: { active: totalPushSubscribers },
     });
   } catch (error) {
     return errorResponse(error);

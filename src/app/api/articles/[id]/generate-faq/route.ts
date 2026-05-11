@@ -14,6 +14,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { callAI } from "@/lib/ai-client";
+import { cleanAIShortText } from "@/lib/sanitize";
 import { requireRole, successResponse, errorResponse, logAudit, ApiError } from "@/lib/api-utils";
 import { Role } from "@prisma/client";
 
@@ -57,15 +58,21 @@ function parseFaqResponse(raw: string): FaqItem[] | null {
     const parsed = JSON.parse(cleaned) as FaqAIResponse;
     if (!parsed || !Array.isArray(parsed.items)) return null;
 
-    const valid = parsed.items.filter(
-      (item): item is FaqItem =>
-        item &&
-        typeof item === "object" &&
-        typeof item.question === "string" &&
-        item.question.trim().length > 0 &&
-        typeof item.answer === "string" &&
-        item.answer.trim().length > 0,
-    );
+    const valid = parsed.items
+      .filter(
+        (item): item is FaqItem =>
+          item &&
+          typeof item === "object" &&
+          typeof item.question === "string" &&
+          item.question.trim().length > 0 &&
+          typeof item.answer === "string" &&
+          item.answer.trim().length > 0,
+      )
+      .map((item) => ({
+        question: cleanAIShortText(item.question) || item.question.trim(),
+        answer: cleanAIShortText(item.answer) || item.answer.trim(),
+      }))
+      .filter((item) => item.question.length > 0 && item.answer.length > 0);
 
     return valid.length >= 3 ? valid : null;
   } catch {

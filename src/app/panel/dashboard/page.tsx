@@ -35,6 +35,12 @@ import {
   Music,
   Mail,
   Activity,
+  Building2,
+  ScrollText,
+  UserCircle2,
+  CalendarDays,
+  Radio,
+  Bell,
 } from "lucide-react";
 
 interface Article {
@@ -893,7 +899,7 @@ export default function DashboardPage() {
           setStats([
             { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50", href: "/panel/artikel", accent: "info", hint: "Semua status" },
             { label: "Total Tayangan", value: formatNumber(totalViews), icon: Eye, color: "text-primary bg-primary-light", href: "/panel/statistik", accent: "primary", hint: "Akumulasi semua artikel" },
-            { label: "Tayangan Hari Ini", value: formatNumber(todayViews), icon: TrendingUp, color: "text-purple-500 bg-purple-50", href: "/panel/statistik", accent: "primary", hint: "Artikel published hari ini" },
+            { label: "Tayangan Artikel Hari Ini", value: formatNumber(todayViews), icon: TrendingUp, color: "text-purple-500 bg-purple-50", href: "/panel/statistik", accent: "primary", hint: "Akumulasi view artikel yang publish hari ini" },
             { label: "Menunggu Review", value: pendingReview.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50", href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: pendingReview > 0 ? "Perlu tindakan editor" : "Antrean kosong" },
             { label: "Dipublikasi", value: formatNumber(published), icon: CheckCircle, color: "text-primary bg-primary-light", href: "/panel/artikel?status=PUBLISHED", accent: "ok", hint: "Live di website" },
             { label: "Dijadwalkan", value: scheduled.toString(), icon: CalendarClock, color: "text-blue-500 bg-blue-50", href: "/panel/artikel?status=APPROVED", accent: "info", hint: "Menunggu auto-publish" },
@@ -933,6 +939,13 @@ export default function DashboardPage() {
               { label: "Iklan Aktif", value: formatNumber(dashStats.ads?.active || 0), icon: Megaphone, color: "text-rose-500 bg-rose-50", href: "/panel/iklan", accent: "danger", hint: `${dashStats.ads?.total || 0} total` },
               { label: "Sumber Berita Aktif", value: formatNumber(dashStats.newsSources?.active || 0), icon: Newspaper, color: "text-cyan-600 bg-cyan-50", href: "/panel/sumber-berita", accent: "info", hint: "Untuk auto-artikel" },
               { label: "Sidang Mendatang", value: formatNumber(dashStats.courtSchedules?.upcoming || 0), icon: Gavel, color: "text-stone-500 bg-stone-100", href: "/panel/jadwal-sidang", accent: "muted", hint: "Terjadwal" },
+              // ─── Modul Bisnis & Pemerintahan (Sprint 2-5) ───────────────
+              { label: "Total Emiten", value: formatNumber(dashStats.companies?.total || 0), icon: Building2, color: "text-blue-600 bg-blue-50", href: "/panel/emiten", accent: "info", hint: `${dashStats.companies?.active || 0} aktif` },
+              { label: "Total Regulasi", value: formatNumber(dashStats.regulations?.total || 0), icon: ScrollText, color: "text-amber-600 bg-amber-50", href: "/panel/regulasi", accent: "primary", hint: `${dashStats.regulations?.published || 0} dipublikasi` },
+              { label: "Total Pejabat", value: formatNumber(dashStats.officials?.total || 0), icon: UserCircle2, color: "text-teal-600 bg-teal-50", href: "/panel/pejabat", accent: "info", hint: `${dashStats.officials?.active || 0} aktif` },
+              { label: "Kalender Emiten", value: formatNumber(dashStats.marketEvents?.total || 0), icon: CalendarDays, color: "text-orange-600 bg-orange-50", href: "/panel/kalender-emiten", accent: "primary", hint: `${dashStats.marketEvents?.upcoming || 0} mendatang` },
+              { label: "Live Blog", value: formatNumber(dashStats.liveBlogs?.total || 0), icon: Radio, color: "text-red-500 bg-red-50", href: "/panel/live-blogs", accent: dashStats.liveBlogs?.live ? "danger" : "muted", hint: dashStats.liveBlogs?.live ? `${dashStats.liveBlogs.live} LIVE saat ini` : "Tidak ada yang live" },
+              { label: "Subscriber Push", value: formatNumber(dashStats.pushSubscribers?.active || 0), icon: Bell, color: "text-violet-500 bg-violet-50", href: "/panel/pengaturan", accent: "muted", hint: "Push notification" },
             ]);
           }
 
@@ -1187,10 +1200,24 @@ export default function DashboardPage() {
             actions: [
               { href: "/panel/artikel/baru", label: "Tulis Artikel", icon: FileText, color: "text-primary", bg: "bg-primary-light", show: true },
               { href: "/panel/auto-artikel", label: "Auto Artikel AI", icon: Sparkles, color: "text-indigo-600", bg: "bg-indigo-50", show: !isCreator },
+              { href: "/panel/material-artikel", label: "Material Artikel", icon: BookOpen, color: "text-emerald-600", bg: "bg-emerald-50", show: !isCreator },
               { href: "/panel/sumber-berita", label: "Sumber Berita", icon: Newspaper, color: "text-cyan-600", bg: "bg-cyan-50", show: !isCreator },
               { href: "/panel/artikel", label: isCreator ? "Artikel Saya" : "Review Artikel", icon: isCreator ? Send : Clock, color: isCreator ? "text-blue-600" : "text-yellow-600", bg: isCreator ? "bg-blue-50" : "bg-yellow-50", show: true },
               { href: "/panel/komentar", label: "Komentar", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50", show: !isCreator },
               { href: "/panel/laporan", label: "Laporan", icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50", show: !isCreator },
+              { href: "/panel/live-blogs", label: "Live Blog", icon: Radio, color: "text-red-600", bg: "bg-red-50", show: !isCreator },
+            ],
+          },
+          {
+            id: "bisnis-pemerintahan",
+            title: "Bisnis & Pemerintahan",
+            icon: Building2,
+            subtitle: "Modul data emiten, regulasi, pejabat, dan kalender pasar",
+            actions: [
+              { href: "/panel/emiten", label: "Direktori Emiten", icon: Building2, color: "text-blue-600", bg: "bg-blue-50", show: !isCreator },
+              { href: "/panel/kalender-emiten", label: "Kalender Emiten", icon: CalendarDays, color: "text-orange-600", bg: "bg-orange-50", show: !isCreator },
+              { href: "/panel/regulasi", label: "Regulasi", icon: ScrollText, color: "text-amber-600", bg: "bg-amber-50", show: !isCreator },
+              { href: "/panel/pejabat", label: "Pejabat", icon: UserCircle2, color: "text-teal-600", bg: "bg-teal-50", show: !isCreator },
             ],
           },
           {

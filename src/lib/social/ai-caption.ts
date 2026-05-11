@@ -5,6 +5,7 @@
  */
 
 import { callAI } from "@/lib/ai-client";
+import { cleanAIShortText } from "@/lib/sanitize";
 import type { ArticleForPublish } from "./types";
 
 const SYSTEM_PROMPT =
@@ -83,10 +84,14 @@ EXCERPT: ${excerpt}`;
     }>(result.text);
 
     if (parsed?.paraphrasedTitle && parsed?.shortSummary) {
-      return {
-        paraphrasedTitle: parsed.paraphrasedTitle.trim(),
-        shortSummary: parsed.shortSummary.trim(),
-      };
+      const cleanTitle = cleanAIShortText(parsed.paraphrasedTitle);
+      const cleanSummary = cleanAIShortText(parsed.shortSummary);
+      if (cleanTitle && cleanSummary) {
+        return {
+          paraphrasedTitle: cleanTitle,
+          shortSummary: cleanSummary,
+        };
+      }
     }
   } catch {
     // swallow — caller gets fallback below

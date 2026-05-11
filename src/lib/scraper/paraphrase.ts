@@ -20,7 +20,7 @@
 import * as cheerio from "cheerio";
 import { prisma } from "@/lib/prisma";
 import { callAI } from "@/lib/ai-client";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { sanitizeHtml, cleanAIShortText, cleanAILongText } from "@/lib/sanitize";
 import { slugify } from "@/lib/utils";
 import { downloadImageToUploads } from "./download-image";
 import type { ScrapedArticle } from "./types";
@@ -190,11 +190,16 @@ function tryParseAi(raw: string): AiParaphrase | null {
       typeof parsed.title === "string" &&
       typeof parsed.content === "string"
     ) {
+      const cleanedTitle = cleanAIShortText(parsed.title) || parsed.title.trim();
+      const cleanedExcerpt =
+        typeof parsed.excerpt === "string"
+          ? cleanAIShortText(parsed.excerpt) || parsed.excerpt.trim()
+          : "";
+      const cleanedContent = cleanAILongText(parsed.content) || parsed.content.trim();
       return {
-        title: parsed.title.trim(),
-        excerpt:
-          typeof parsed.excerpt === "string" ? parsed.excerpt.trim() : "",
-        content: parsed.content.trim(),
+        title: cleanedTitle,
+        excerpt: cleanedExcerpt,
+        content: cleanedContent,
         suggestedTags: Array.isArray(parsed.suggestedTags)
           ? parsed.suggestedTags
               .filter((t: unknown): t is string => typeof t === "string")

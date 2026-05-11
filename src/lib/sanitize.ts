@@ -146,3 +146,40 @@ export function cleanAIShortText(raw: string | null | undefined): string {
 
   return s;
 }
+
+/**
+ * Clean AI text output for LONG fields (sorotan content, caption body,
+ * paraphrased article content). Unlike `cleanAIShortText`, this PRESERVES
+ * paragraph breaks and intentional newlines — only strips the preamble /
+ * label markers that AI providers sometimes prepend.
+ *
+ * Examples cleaned:
+ *  - "Berikut sorotan KRONOLOGI:\n\nPada tahun 2024..." → "Pada tahun 2024..."
+ *  - "**Sorotan Kronologi:**\n\nPara pihak..." → "Para pihak..."
+ *  - "```\n<p>Lorem ipsum</p>\n```" → "<p>Lorem ipsum</p>"
+ */
+export function cleanAILongText(raw: string | null | undefined): string {
+  if (!raw) return "";
+  let s = String(raw).trim();
+
+  // Strip wrapping code fences ```...```
+  s = s.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "");
+
+  // Repeatedly strip leading prefaces / "**Label:**" / "Label:" markers
+  // until we reach the actual paragraphed body.
+  for (let i = 0; i < 8; i++) {
+    const before = s;
+    // "Berikut..."/"Here is..." preface — terminated by colon or newline.
+    s = s.replace(/^(?:berikut|here is|silakan|terlampir)[^\n:]{0,200}[:\n]\s*\n?/i, "").trim();
+    // Markdown bold label with colon: "**Sorotan Kronologi:**"
+    s = s.replace(/^\*\*[^*\n:]{1,80}:\*\*\s*\n?/i, "").trim();
+    // Plain label with colon at start
+    s = s.replace(/^(?:\*\*)?(?:caption|sorotan|kronologi|analisis|dampak|latar belakang|profil|reaksi|hukum|ekonomi|proyeksi|ringkasan|artikel|content|isi|body)[^:\n]{0,40}:(?:\*\*)?\s*\n?/i, "").trim();
+    if (s === before) break;
+  }
+
+  // Last resort: kalau seluruh konten masih meta-preamble, return empty.
+  if (/^(?:berikut|here is)\s/i.test(s) && s.length < 200) return "";
+
+  return s;
+}
