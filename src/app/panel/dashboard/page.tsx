@@ -72,6 +72,7 @@ interface StatsItem {
 import { CREATOR_ROLES, EDITOR_ROLES } from "@/lib/roles";
 import CronHealthWidget from "@/components/dashboard/CronHealthWidget";
 import PowerWidgets from "@/components/dashboard/PowerWidgets";
+import CountUp from "@/components/panel/CountUp";
 
 const statusColors: Record<string, string> = {
   PUBLISHED: "bg-primary-light text-primary",
@@ -154,30 +155,34 @@ function SectionHeader({
   action?: { label: string; href: string };
 }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-3">
-      <div className="flex items-center gap-2.5 min-w-0">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary ring-1 ring-primary/10">
-          <Icon size={14} />
+    <div className="mb-4 group">
+      <div className="flex items-end justify-between gap-3 mb-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/20 transition-transform group-hover:scale-110 group-hover:rotate-3">
+            <Icon size={16} strokeWidth={2.5} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm sm:text-base font-bold text-txt-primary tracking-tight truncate">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="text-[10px] sm:text-[11px] text-txt-muted truncate font-medium">
+                {subtitle}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="min-w-0">
-          <h2 className="text-[13px] sm:text-sm font-bold text-txt-primary tracking-tight truncate">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="text-[10px] sm:text-[11px] text-txt-muted truncate font-medium">
-              {subtitle}
-            </p>
-          )}
-        </div>
+        {action && (
+          <Link
+            href={action.href}
+            className="text-xs font-semibold text-primary hover:text-primary-dark transition-all hover:gap-1.5 inline-flex items-center gap-1 whitespace-nowrap"
+          >
+            {action.label} <span className="transition-transform group-hover:translate-x-0.5">&rarr;</span>
+          </Link>
+        )}
       </div>
-      {action && (
-        <Link
-          href={action.href}
-          className="text-xs font-semibold text-primary hover:text-primary-dark transition-colors whitespace-nowrap"
-        >
-          {action.label} &rarr;
-        </Link>
-      )}
+      {/* Gradient underline yang shimmer on section hover */}
+      <div className="kw-section-bar h-[2px] w-12 rounded-full opacity-80" />
     </div>
   );
 }
@@ -189,34 +194,47 @@ function PremiumStatCard({ stat }: { stat: StatsItem }) {
   const wrapperProps = isClickable ? { href: stat.href! } : {};
   const accent = stat.accent ?? "info";
 
+  // Detect special "live" state pada Live Blog card supaya bisa pulse-glow
+  const isLiveAlert = stat.label === "Live Blog" && accent === "danger" && stat.value !== "0";
+
   return (
     <Wrapper
       {...wrapperProps}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface to-surface-secondary/30 p-3 sm:p-4 shadow-card transition-all duration-200 ${
-        isClickable ? "hover:-translate-y-0.5 hover:shadow-ambient hover:border-primary/30 cursor-pointer" : ""
-      }`}
+      className={`kw-card-glow kw-fade-in-up group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface to-surface-secondary/30 p-3 sm:p-4 shadow-card transition-all duration-300 ${
+        isClickable ? "hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 cursor-pointer" : ""
+      } ${isLiveAlert ? "kw-pulse-live border-secondary/40" : ""}`}
       aria-label={isClickable ? `Buka ${stat.label}` : undefined}
     >
-      {/* Top accent bar */}
-      <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${accentBar[accent]} opacity-60 group-hover:opacity-100 transition-opacity`} />
+      {/* Top accent bar — gradient yang lebih bold + shimmer on hover */}
+      <div
+        className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${accentBar[accent]} opacity-70 group-hover:opacity-100 transition-opacity`}
+      />
 
-      <div className="flex items-start justify-between gap-2">
-        <div className={`inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl ${stat.color} shadow-sm ring-1 ring-inset ring-black/5`}>
-          <Icon size={16} />
+      {/* Decorative blob — subtle background per accent supaya tiap card punya identitas warna */}
+      <div
+        className={`pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-gradient-to-br ${accentBar[accent]} opacity-[0.05] group-hover:opacity-[0.10] transition-opacity blur-2xl`}
+        aria-hidden="true"
+      />
+
+      <div className="relative flex items-start justify-between gap-2">
+        <div
+          className={`inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl ${stat.color} shadow-sm ring-1 ring-inset ring-black/5 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-md`}
+        >
+          <Icon size={18} />
         </div>
         {isClickable && (
           <ChevronRight
-            size={14}
-            className="text-txt-muted opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all -translate-x-1 group-hover:translate-x-0"
+            size={16}
+            className="text-txt-muted opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all duration-300 -translate-x-2 group-hover:translate-x-0"
           />
         )}
       </div>
 
-      <div className="mt-2.5">
-        <p className="text-xl sm:text-2xl xl:text-[28px] font-extrabold leading-none text-txt-primary tabular-nums tracking-tight">
-          {stat.value}
+      <div className="relative mt-3">
+        <p className="kw-stat-number text-2xl sm:text-3xl xl:text-[32px] font-extrabold leading-none text-txt-primary tracking-tight">
+          <CountUp value={stat.value} duration={800} />
         </p>
-        <p className="mt-1.5 text-[11px] sm:text-xs font-semibold text-txt-secondary truncate">
+        <p className="mt-2 text-[11px] sm:text-xs font-semibold text-txt-secondary truncate group-hover:text-txt-primary transition-colors">
           {stat.label}
         </p>
         {stat.hint && (
@@ -1143,7 +1161,7 @@ export default function DashboardPage() {
         title="Ikhtisar Editorial"
         subtitle="Ringkasan status artikel dan trafik"
       />
-      <div className={`mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 ${isAdmin ? "md:grid-cols-4 xl:grid-cols-7" : "md:grid-cols-4"}`}>
+      <div className={`kw-stagger mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 ${isAdmin ? "md:grid-cols-4 xl:grid-cols-7" : "md:grid-cols-4"}`}>
         {stats.map((stat) => (
           <PremiumStatCard key={stat.label} stat={stat} />
         ))}
@@ -1157,7 +1175,7 @@ export default function DashboardPage() {
             title="Konten & Engagement"
             subtitle="Komentar, sorotan, polling, dan distribusi sosial"
           />
-          <div className={`mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 ${isAdmin ? "xl:grid-cols-6" : "xl:grid-cols-6"}`}>
+          <div className={`kw-stagger mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 ${isAdmin ? "xl:grid-cols-6" : "xl:grid-cols-6"}`}>
             {contentStats.map((stat) => (
               <PremiumStatCard key={stat.label} stat={stat} />
             ))}
@@ -1173,7 +1191,7 @@ export default function DashboardPage() {
             title="Operasional & Sistem"
             subtitle="Pengguna, taksonomi, AI, dan integrasi"
           />
-          <div className="mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
+          <div className="kw-stagger mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
             {operasionalStats.map((stat) => (
               <PremiumStatCard key={stat.label} stat={stat} />
             ))}
@@ -1291,20 +1309,22 @@ export default function DashboardPage() {
                         <p className="text-[10px] text-txt-muted truncate">{group.subtitle}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-3">
+                    <div className="kw-stagger grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-3">
                       {group.actions.map((a) => {
                         const Icon = a.icon;
                         return (
                           <Link
                             key={a.href}
                             href={a.href}
-                            className="group/action flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-center transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
+                            className="kw-fade-in-up group/action relative flex flex-col items-center gap-2 rounded-xl border border-border bg-surface p-3 text-center transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md overflow-hidden"
                             aria-label={a.label}
                           >
-                            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${a.bg} ${a.color} ring-1 ring-inset ring-black/5 transition-transform group-hover/action:scale-110`}>
-                              <Icon size={16} />
+                            {/* Hover gradient overlay */}
+                            <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${a.bg} opacity-0 group-hover/action:opacity-30 transition-opacity`} aria-hidden="true" />
+                            <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl ${a.bg} ${a.color} ring-1 ring-inset ring-black/5 transition-all duration-300 group-hover/action:scale-110 group-hover/action:rotate-3 group-hover/action:shadow-md`}>
+                              <Icon size={18} strokeWidth={2.2} />
                             </div>
-                            <span className="text-[11px] sm:text-xs font-semibold text-txt-secondary leading-tight">
+                            <span className="relative text-[11px] sm:text-xs font-semibold text-txt-secondary leading-tight group-hover/action:text-txt-primary transition-colors">
                               {a.label}
                             </span>
                           </Link>

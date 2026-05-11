@@ -396,3 +396,90 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────
+ * Dashboard Panel — animations & micro-interactions (Sprint UX polish)
+ * Wrapped per @media prefers-reduced-motion above sehingga reader yang
+ * minta reduced motion otomatis dapat versi static.
+ * ─────────────────────────────────────────────────────────────────── */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(183, 16, 42, 0.6); }
+  50%      { box-shadow: 0 0 0 8px rgba(183, 16, 42, 0); }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+.kw-fade-in-up {
+  animation: fadeInUp 0.5s ease-out backwards;
+}
+
+/* Stagger delays untuk grid cards — 8 step cycle, lebih ringan dari per-index inline style */
+.kw-stagger > *:nth-child(8n+1) { animation-delay: 0.00s; }
+.kw-stagger > *:nth-child(8n+2) { animation-delay: 0.04s; }
+.kw-stagger > *:nth-child(8n+3) { animation-delay: 0.08s; }
+.kw-stagger > *:nth-child(8n+4) { animation-delay: 0.12s; }
+.kw-stagger > *:nth-child(8n+5) { animation-delay: 0.16s; }
+.kw-stagger > *:nth-child(8n+6) { animation-delay: 0.20s; }
+.kw-stagger > *:nth-child(8n+7) { animation-delay: 0.24s; }
+.kw-stagger > *:nth-child(8n+8) { animation-delay: 0.28s; }
+
+.kw-pulse-live {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.kw-float-icon {
+  animation: floatY 3s ease-in-out infinite;
+}
+
+/* Section header dengan gradient underline yang shimmer subtle on hover */
+.kw-section-bar {
+  background: linear-gradient(90deg, #002045 0%, #b7102a 50%, #002045 100%);
+  background-size: 200% 100%;
+  transition: opacity 0.3s;
+}
+.kw-section-bar:hover {
+  animation: shimmer 2s linear infinite;
+}
+
+/* Card hover: subtle radial gradient di latar saat hover */
+.kw-card-glow {
+  position: relative;
+  isolation: isolate;
+}
+.kw-card-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 0%, rgba(0, 32, 69, 0.04) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -1;
+  border-radius: inherit;
+}
+.kw-card-glow:hover::before {
+  opacity: 1;
+}
+
+/* Number tabular nums + smooth color shift on hover */
+.kw-stat-number {
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s, transform 0.2s;
+}
+.kw-card-glow:hover .kw-stat-number {
+  color: var(--primary, #002045);
+  transform: scale(1.02);
+}
