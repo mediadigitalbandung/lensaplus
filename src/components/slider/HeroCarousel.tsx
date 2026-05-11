@@ -176,19 +176,15 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
             {sidePages.map((pageItems, pageIdx) => (
               <div
                 key={pageIdx}
-                className={`absolute inset-0 grid grid-cols-3 sm:grid-cols-1 sm:flex sm:flex-col transition-opacity duration-700 ease-in-out ${
+                className={`absolute inset-0 grid grid-cols-3 gap-px sm:grid-cols-1 sm:flex sm:flex-col sm:gap-1.5 transition-opacity duration-700 ease-in-out ${
                   pageIdx === sidePageIndex ? "opacity-100 z-10" : "opacity-0 z-0"
                 }`}
               >
-                {pageItems.map((a, i) => (
+                {pageItems.map((a) => (
                   <Link
                     key={a.slug}
                     href={`/berita/${a.slug}`}
-                    className={`group relative overflow-hidden sm:flex-1 ${
-                      i < pageItems.length - 1
-                        ? "border-r sm:border-r-0 sm:border-b border-white/10"
-                        : ""
-                    }`}
+                    className="group relative overflow-hidden sm:flex-1"
                   >
                     <div className="absolute inset-0">
                       {a.featuredImage ? (
