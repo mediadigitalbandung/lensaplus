@@ -22,7 +22,52 @@ export async function GET() {
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
     const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // ─── Article stats (akurat dari DB, BUKAN dari fetched array) ─────
+    // Dashboard sebelumnya pakai `fetchedArticles.length` dari
+    // /api/articles?limit=200 yang ke-cap di 200 → angka salah saat DB
+    // punya lebih dari 200 artikel. Sekarang count langsung dari prisma.
+    const [
+      articleTotalAll,
+      articleDraft,
+      articleInReview,
+      articleApproved,
+      articlePublished,
+      articleRejected,
+      articleScheduled,
+      articleViewsSum,
+      articlePublishedToday,
+      articleViewsTodayAgg,
+    ] = await Promise.all([
+      prisma.article.count(),
+      prisma.article.count({ where: { status: "DRAFT" } }),
+      prisma.article.count({ where: { status: "IN_REVIEW" } }),
+      prisma.article.count({ where: { status: "APPROVED" } }),
+      prisma.article.count({ where: { status: "PUBLISHED" } }),
+      prisma.article.count({ where: { status: "REJECTED" } }),
+      prisma.article.count({
+        where: { status: "APPROVED", scheduledAt: { not: null, gte: now } },
+      }),
+      prisma.article.aggregate({
+        where: { status: "PUBLISHED" },
+        _sum: { viewCount: true },
+      }),
+      prisma.article.count({
+        where: {
+          status: "PUBLISHED",
+          publishedAt: { gte: today, lt: tomorrow },
+        },
+      }),
+      prisma.article.aggregate({
+        where: {
+          status: "PUBLISHED",
+          publishedAt: { gte: today, lt: tomorrow },
+        },
+        _sum: { viewCount: true },
+      }),
+    ]);
 
     // PrismaClient cast for Topic model (regenerate Prisma client after
      // schema migration — newer pages use `topic` directly).
@@ -141,6 +186,21 @@ export async function GET() {
     ]);
 
     return successResponse({
+      // Article stats akurat (count langsung dari DB, BUKAN fetched array)
+      articles: {
+        total: articleTotalAll,
+        byStatus: {
+          DRAFT: articleDraft,
+          IN_REVIEW: articleInReview,
+          APPROVED: articleApproved,
+          PUBLISHED: articlePublished,
+          REJECTED: articleRejected,
+        },
+        scheduled: articleScheduled,
+        totalViews: articleViewsSum._sum.viewCount || 0,
+        publishedToday: articlePublishedToday,
+        viewsToday: articleViewsTodayAgg._sum.viewCount || 0,
+      },
       categories: { total: totalCategories },
       tags: { total: totalTags },
       comments: { total: totalComments, pending: pendingComments },

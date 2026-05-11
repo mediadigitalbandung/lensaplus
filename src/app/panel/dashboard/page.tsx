@@ -886,15 +886,22 @@ export default function DashboardPage() {
         // Build stats based on role (check isAdmin first since SUPER_ADMIN is also in EDITOR_ROLES)
         if (isAdmin) {
           // Admin (SUPER_ADMIN): full stats
-          const totalArticles = fetchedArticles.length;
-          const totalViews = fetchedArticles.reduce((sum, a) => sum + (a.viewCount || 0), 0);
-          const pendingReview = fetchedArticles.filter((a) => a.status === "IN_REVIEW").length;
-          const published = fetchedArticles.filter((a) => a.status === "PUBLISHED").length;
-          const scheduled = fetchedArticles.filter((a) => a.scheduledAt && a.status === "APPROVED").length;
-          const today = new Date().toDateString();
-          const todayViews = fetchedArticles
-            .filter((a) => a.publishedAt && new Date(a.publishedAt).toDateString() === today)
-            .reduce((sum, a) => sum + (a.viewCount || 0), 0);
+          //
+          // PREFER dashStats (count langsung dari DB via prisma) supaya angka
+          // akurat dan tidak ke-cap di pagination limit /api/articles?limit=200.
+          // Fallback ke fetchedArticles.length hanya kalau dashStats belum
+          // termuat (race kondisi awal load).
+          const totalArticles = dashStats?.articles?.total ?? fetchedArticles.length;
+          const totalViews = dashStats?.articles?.totalViews ?? fetchedArticles.reduce((sum, a) => sum + (a.viewCount || 0), 0);
+          const pendingReview = dashStats?.articles?.byStatus?.IN_REVIEW ?? fetchedArticles.filter((a) => a.status === "IN_REVIEW").length;
+          const published = dashStats?.articles?.byStatus?.PUBLISHED ?? fetchedArticles.filter((a) => a.status === "PUBLISHED").length;
+          const scheduled = dashStats?.articles?.scheduled ?? fetchedArticles.filter((a) => a.scheduledAt && a.status === "APPROVED").length;
+          const todayViews = dashStats?.articles?.viewsToday ?? (() => {
+            const today = new Date().toDateString();
+            return fetchedArticles
+              .filter((a) => a.publishedAt && new Date(a.publishedAt).toDateString() === today)
+              .reduce((sum, a) => sum + (a.viewCount || 0), 0);
+          })();
 
           setStats([
             { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50", href: "/panel/artikel", accent: "info", hint: "Semua status" },
