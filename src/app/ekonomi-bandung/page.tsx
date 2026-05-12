@@ -32,6 +32,11 @@ export default function EkonomiBandungPage() {
     0
   );
 
+  // Schema.org Dataset requires `description` and recommends `license`,
+  // `creator.url`, `url`, `temporalCoverage`, `isAccessibleForFree`,
+  // `inLanguage`, and `variableMeasured`. The earlier minimal form was
+  // flagged in Google Search Console as "Missing field description"
+  // (critical) and "Missing field license" (improve appearance).
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
@@ -42,8 +47,36 @@ export default function EkonomiBandungPage() {
     about: [
       {
         "@type": "Dataset",
+        "@id": "https://kartawarta.com/ekonomi-bandung#dataset",
         name: "Indikator Ekonomi Bandung 2026",
-        creator: { "@type": "Organization", name: "BPS Jawa Barat" },
+        description:
+          "Indikator ekonomi Kota Bandung dan Jawa Barat 2026 — PDRB, inflasi, tingkat pengangguran, kemiskinan, dan kunjungan wisatawan — dirangkum dari publikasi resmi BPS Jawa Barat dan instansi pemerintah daerah.",
+        url: "https://kartawarta.com/ekonomi-bandung",
+        creator: {
+          "@type": "Organization",
+          name: "BPS Jawa Barat",
+          url: "https://jabar.bps.go.id/",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "Kartawarta",
+          url: "https://kartawarta.com",
+        },
+        license: "https://creativecommons.org/licenses/by/4.0/",
+        isAccessibleForFree: true,
+        inLanguage: "id",
+        temporalCoverage: "2024/..",
+        spatialCoverage: {
+          "@type": "Place",
+          name: "Bandung, Jawa Barat, Indonesia",
+        },
+        variableMeasured: [
+          "PDRB",
+          "Inflasi",
+          "Tingkat Pengangguran Terbuka",
+          "Tingkat Kemiskinan",
+          "Kunjungan Wisatawan",
+        ],
       },
     ],
   };
