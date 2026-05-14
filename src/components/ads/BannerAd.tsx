@@ -72,9 +72,17 @@ function handleClick(ad: Ad) {
 }
 
 function AdContent({ ad }: { ad: Ad }) {
+  // Safety wrapper: ad HTML kadang punya `aspect-ratio:728/100` yang di mobile
+  // (360px width) → height cuma ~49px, kepotong-potong. Wrapper kasih
+  // min-height responsive sebagai floor supaya konten tidak ke-clip walaupun
+  // ad-nya pakai aspect ratio sempit.
   const content =
     ad.type === "HTML" && ad.htmlCode ? (
-      <div dangerouslySetInnerHTML={{ __html: ad.htmlCode }} />
+      <div
+        className="w-full min-h-[80px] sm:min-h-[100px]"
+        style={{ minHeight: "clamp(80px, 18vw, 160px)" }}
+        dangerouslySetInnerHTML={{ __html: ad.htmlCode }}
+      />
     ) : ad.imageUrl ? (
       // eslint-disable-next-line @next/next/no-img-element -- external advertiser-supplied URL, domain not known ahead of time
       <img src={ad.imageUrl} alt="Iklan" width={728} height={90} className="w-full h-auto block" loading="lazy" />
