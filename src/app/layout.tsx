@@ -149,6 +149,8 @@ export default function RootLayout({
           crossOrigin="anonymous"
           data-cfasync="false"
         />
+        {/* Google AdSense Meta Tag Verification */}
+        <meta name="google-adsense-account" content={adsenseClientId} />
       </head>
       <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased">
         <Providers>
