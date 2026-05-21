@@ -962,24 +962,20 @@ function TemplatesTab() {
                       <label className="block text-xs font-semibold text-slate-400 mb-1.5">
                         Background Template (PNG transparan di area foto)
                       </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          className="flex-1 bg-[#020c1b]/60 border border-[#1e293b] text-slate-400 text-xs rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-mono"
-                          placeholder="/uploads/frame.png"
-                          value={form.backgroundUrl}
-                          onChange={(e) =>
-                            setForm({ ...form, backgroundUrl: e.target.value })
-                          }
-                        />
+                      <div className="flex items-center gap-3">
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-all flex items-center gap-1 shrink-0"
+                          className="bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 border border-[#1e293b] hover:border-slate-600 shadow-sm"
                         >
                           <Plus size={12} />
                           Ganti
                         </button>
+                        <span className="text-xs text-slate-400 font-mono truncate max-w-[280px]">
+                          {form.backgroundUrl
+                            ? form.backgroundUrl.substring(form.backgroundUrl.lastIndexOf("/") + 1)
+                            : "Belum ada file dipilih"}
+                        </span>
                         <input
                           ref={fileInputRef}
                           type="file"
