@@ -1499,38 +1499,6 @@ function TemplatesTab() {
                         />
                       )}
 
-                      {/* Jurnalishukum Bandung brand details at the bottom of the overlay preview card */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-white p-3.5 border-t border-slate-100 flex items-center justify-between text-slate-800 z-30 select-none pointer-events-none">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px] font-bold font-serif shadow-sm">
-                            JH
-                          </div>
-                          <div>
-                            <p className="text-[8px] font-extrabold tracking-tight text-emerald-950 leading-none">
-                              JURNALISHUKUM
-                            </p>
-                            <p className="text-[6px] text-emerald-600 font-bold leading-none mt-0.5">
-                              Bandung
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 text-slate-500 text-[6px]">
-                          <div className="flex items-center gap-1 font-sans">
-                            <div className="w-3.5 h-3.5 rounded-full border border-emerald-500 flex items-center justify-center text-emerald-600 font-bold text-[6px]">
-                              ✓
-                            </div>
-                            <div>
-                              <p className="font-extrabold text-slate-700 leading-none">
-                                Sertifikasi Dewan Pers
-                              </p>
-                              <p className="leading-none mt-0.5 text-[5px]">
-                                No. 600/DP-Verifikasi/X/xi/2026
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
 
                       {/* 3. Text Layers rendered dynamically */}
                       {layers
@@ -1574,7 +1542,7 @@ function TemplatesTab() {
                             >
                               {/* If category layer, let's wrap it in a beautiful badge matching the mockup */}
                               {layer.text === "{{category}}" ? (
-                                <span className="bg-emerald-600 text-white font-extrabold px-3 py-1 rounded inline-block text-center uppercase tracking-wider mx-auto shadow-sm">
+                                <span className="bg-[#002045] text-white font-extrabold px-3 py-1 rounded inline-block text-center uppercase tracking-wider mx-auto shadow-sm">
                                   {resolvedText}
                                 </span>
                               ) : (
