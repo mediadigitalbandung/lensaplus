@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Newsreader, Work_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
@@ -13,6 +13,8 @@ import InstallPrompt from "@/components/pwa/InstallPrompt";
 import InstallTracker from "@/components/pwa/InstallTracker";
 import InstallTeaser from "@/components/pwa/InstallTeaser";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
+import Script from "next/script";
+
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -108,6 +110,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-5936356841993880";
+
   return (
     <html lang="id" className={`${newsreader.variable} ${workSans.variable}`}>
       <head>
@@ -140,6 +144,12 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased">
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <Providers>
           <a
             href="#main-content"

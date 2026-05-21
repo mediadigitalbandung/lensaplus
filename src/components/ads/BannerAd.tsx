@@ -72,6 +72,19 @@ function handleClick(ad: Ad) {
 }
 
 function AdContent({ ad }: { ad: Ad }) {
+  useEffect(() => {
+    if (typeof window !== "undefined" && ad.type === "HTML") {
+      try {
+        const adsbygoogle = (window as any).adsbygoogle;
+        if (adsbygoogle) {
+          adsbygoogle.push({});
+        }
+      } catch (err) {
+        console.error("Error pushing to adsbygoogle:", err);
+      }
+    }
+  }, [ad]);
+
   // Safety wrapper: ad HTML kadang punya `aspect-ratio:728/100` yang di mobile
   // (360px width) → height cuma ~49px, kepotong-potong. Wrapper kasih
   // min-height responsive sebagai floor supaya konten tidak ke-clip walaupun
@@ -89,6 +102,7 @@ function AdContent({ ad }: { ad: Ad }) {
     ) : null;
 
   if (!content) return null;
+
 
   if (ad.targetUrl) {
     return (
@@ -146,6 +160,19 @@ export default function BannerAd({ size = "banner", slot, className = "", noWrap
    memaksa lebar minimum dari intrinsic image dimension. */
 export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: number }) {
   const ad = useAd(slot, index);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && ad && ad.type === "HTML") {
+      try {
+        const adsbygoogle = (window as any).adsbygoogle;
+        if (adsbygoogle) {
+          adsbygoogle.push({});
+        }
+      } catch (err) {
+        console.error("Error pushing to adsbygoogle:", err);
+      }
+    }
+  }, [ad]);
 
   if (ad) {
     const content =
