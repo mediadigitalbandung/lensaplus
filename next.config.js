@@ -77,12 +77,15 @@ const nextConfig = {
               // Cloudflare auto-injects analytics beacon (`static.cloudflareinsights.com/beacon.min.js`)
               // at the edge for any site behind Cloudflare. Whitelist it alongside Turnstile
               // (challenges.cloudflare.com) so the console doesn't log CSP violations on every page.
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+              // Whitelist Google AdSense: https://pagead2.googlesyndication.com, https://adservice.google.com, https://partner.googleadservices.com
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://adservice.google.com https://partner.googleadservices.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: http:",
-              "connect-src 'self' https://api.deepseek.com https://api.anthropic.com https://trends.google.com https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://cloudflareinsights.com",
-              "frame-src https://challenges.cloudflare.com",
+              // Whitelist Google AdSense connections: https://pagead2.googlesyndication.com, https://adservice.google.com, https://*.doubleclick.net
+              "connect-src 'self' https://api.deepseek.com https://api.anthropic.com https://trends.google.com https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://cloudflareinsights.com https://pagead2.googlesyndication.com https://adservice.google.com https://*.doubleclick.net https://*.googlesyndication.com",
+              // Whitelist Google AdSense frames: https://challenges.cloudflare.com, https://googleads.g.doubleclick.net, https://tpc.googlesyndication.com, https://*.safeframe.googlesyndication.com, https://pagead2.googlesyndication.com
+              "frame-src 'self' https://challenges.cloudflare.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.safeframe.googlesyndication.com https://pagead2.googlesyndication.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
