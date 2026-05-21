@@ -276,6 +276,45 @@ export async function PUT(
 
     // --- EDITOR (assigned editor reviewing) ---
     if (isEditor && !isAdmin) {
+      // Editor publish: APPROVED -> PUBLISHED
+      if (data.status === "PUBLISHED" && article.status === "APPROVED") {
+        if (!isAssignedEditor) {
+          throw new ApiError("Hanya editor yang ditugaskan yang dapat mempublikasikan artikel ini", 403);
+        }
+
+        await prisma.revision.create({
+          data: { articleId: article.id, title: article.title, content: article.content, changedBy: session.user.name || session.user.email },
+        });
+
+        const updated = await prisma.article.update({
+          where: { id: params.id },
+          data: { status: "PUBLISHED", verificationLabel: "VERIFIED", publishedAt: new Date(), scheduledAt: null },
+          include: { author: { select: { id: true, name: true } }, category: { select: { id: true, name: true, slug: true } }, tags: true, sources: true },
+        });
+
+        await logAudit(session.user.id, "STATUS_CHANGE", "article", article.id, `Editor mempublikasi artikel: ${article.title}`);
+        await notifyArticleStatusChange(article.id, article.title, "PUBLISHED", article.authorId);
+        const authorPub = await prisma.user.findUnique({ where: { id: article.authorId }, select: { email: true } });
+        if (authorPub) await sendArticlePublishedEmail(authorPub.email, article.title, updated.slug);
+
+        // SEO: auto-fill seoTitle/seoDescription if empty, ping search engines
+        if (!article.seoTitle || !article.seoDescription) {
+          await prisma.article.update({
+            where: { id: article.id },
+            data: {
+              ...(!article.seoTitle && { seoTitle: generateSeoTitle(article.title) }),
+              ...(!article.seoDescription && { seoDescription: generateSeoDescription(article.excerpt, article.content) }),
+            },
+          });
+        }
+        // AWAITED so cache invalidation + revalidatePath finish before the
+        // PUT response returns — fire-and-forget here causes a window where
+        // the client refreshes the homepage and still sees stale data.
+        await onArticlePublished(updated.slug, updated.id);
+
+        return successResponse(updated);
+      }
+
       // Editor "Batalkan Persetujuan": APPROVED -> IN_REVIEW (only by assigned editor)
       if (data.status === "IN_REVIEW" && article.status === "APPROVED") {
         if (!isAssignedEditor) {
@@ -397,41 +436,6 @@ export async function PUT(
           await sendArticleRejectedEmail(authorForEmail.email, article.title, data.reviewNote || undefined);
         }
       }
-
-      return successResponse(updated);
-    }
-
-    // --- EDITOR publish: APPROVED -> PUBLISHED ---
-    if (isEditor && !isAdmin && data.status === "PUBLISHED" && article.status === "APPROVED") {
-      await prisma.revision.create({
-        data: { articleId: article.id, title: article.title, content: article.content, changedBy: session.user.name || session.user.email },
-      });
-
-      const updated = await prisma.article.update({
-        where: { id: params.id },
-        data: { status: "PUBLISHED", verificationLabel: "VERIFIED", publishedAt: new Date(), scheduledAt: null },
-        include: { author: { select: { id: true, name: true } }, category: { select: { id: true, name: true, slug: true } }, tags: true, sources: true },
-      });
-
-      await logAudit(session.user.id, "STATUS_CHANGE", "article", article.id, `Editor mempublikasi artikel: ${article.title}`);
-      await notifyArticleStatusChange(article.id, article.title, "PUBLISHED", article.authorId);
-      const authorPub = await prisma.user.findUnique({ where: { id: article.authorId }, select: { email: true } });
-      if (authorPub) await sendArticlePublishedEmail(authorPub.email, article.title, updated.slug);
-
-      // SEO: auto-fill seoTitle/seoDescription if empty, ping search engines
-      if (!article.seoTitle || !article.seoDescription) {
-        await prisma.article.update({
-          where: { id: article.id },
-          data: {
-            ...(!article.seoTitle && { seoTitle: generateSeoTitle(article.title) }),
-            ...(!article.seoDescription && { seoDescription: generateSeoDescription(article.excerpt, article.content) }),
-          },
-        });
-      }
-      // AWAITED so cache invalidation + revalidatePath finish before the
-      // PUT response returns — fire-and-forget here causes a window where
-      // the client refreshes the homepage and still sees stale data.
-      await onArticlePublished(updated.slug, updated.id);
 
       return successResponse(updated);
     }
