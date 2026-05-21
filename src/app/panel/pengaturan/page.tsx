@@ -101,6 +101,13 @@ function isValidUrl(s: string): boolean {
 
 function isValidServiceAccountJson(text: string): { ok: boolean; error?: string } {
   if (!text || text.trim().length === 0) return { ok: true }; // empty allowed (clear)
+  
+  // Biarkan nilai yang di-mask lolos validasi (karena sudah tersimpan secara aman di DB)
+  const trimmed = text.trim();
+  if (trimmed.startsWith("•") || trimmed.startsWith("·") || trimmed.startsWith("*")) {
+    return { ok: true };
+  }
+
   try {
     const obj = JSON.parse(text);
     if (typeof obj !== "object" || obj === null) {

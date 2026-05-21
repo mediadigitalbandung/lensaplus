@@ -80,7 +80,7 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
   if (!category) return { title: "Kategori Tidak Ditemukan" };
 
   const title = `${category.name} - Berita Terkini`;
-  const description = `Kumpulan berita ${category.name.toLowerCase()} terbaru dari Kartawarta — media berita digital Bandung & Indonesia (bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi). Terverifikasi Dewan Pers.`;
+  const description = `Kumpulan berita ${category.name.toLowerCase()} terbaru dari Kartawarta — portal berita digital Bandung & Jawa Barat. Menyajikan liputan terpercaya dan terverifikasi Dewan Pers.`;
 
   return {
     title,

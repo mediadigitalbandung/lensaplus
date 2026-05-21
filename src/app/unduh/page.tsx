@@ -150,8 +150,8 @@ export default async function UnduhPage() {
             <ol className="space-y-2.5 text-sm text-txt-secondary">
               <Step n={1}>Buka kartawarta.com di Chrome</Step>
               <Step n={2}>
-                Tap menu ⋮ pojok kanan atas → <b className="text-txt-primary">"Pasang aplikasi"</b> /
-                "Add to Home screen"
+                Tap menu ⋮ pojok kanan atas → <b className="text-txt-primary">&quot;Pasang aplikasi&quot;</b> /
+                &quot;Add to Home screen&quot;
               </Step>
               <Step n={3}>Konfirmasi → ikon Kartawarta muncul di home screen</Step>
               <Step n={4}>Tap ikon → langsung fullscreen tanpa browser</Step>
@@ -176,8 +176,8 @@ export default async function UnduhPage() {
             <ol className="space-y-2.5 text-sm text-txt-secondary">
               <Step n={1}>Buka kartawarta.com di <b className="text-txt-primary">Safari</b> (bukan Chrome — iOS hanya support PWA dari Safari)</Step>
               <Step n={2}>Tap ikon Share di bawah (kotak dengan panah ke atas)</Step>
-              <Step n={3}>Scroll & tap <b className="text-txt-primary">"Add to Home Screen"</b></Step>
-              <Step n={4}>Tap "Add" → ikon muncul di home screen</Step>
+              <Step n={3}>Scroll &amp; tap <b className="text-txt-primary">&quot;Add to Home Screen&quot;</b></Step>
+              <Step n={4}>Tap &quot;Add&quot; → ikon muncul di home screen</Step>
             </ol>
             <div className="mt-4 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800">
               <CheckCircle2 size={12} className="inline mr-1 -mt-0.5" />
@@ -199,9 +199,9 @@ export default async function UnduhPage() {
             <ol className="space-y-2.5 text-sm text-txt-secondary">
               <Step n={1}>Buka kartawarta.com di Chrome / Edge</Step>
               <Step n={2}>
-                Klik ikon <b className="text-txt-primary">"Install"</b> di address bar (sebelah bookmark)
+                Klik ikon <b className="text-txt-primary">&quot;Install&quot;</b> di address bar (sebelah bookmark)
               </Step>
-              <Step n={3}>Atau menu ⋮ → "Install Kartawarta..."</Step>
+              <Step n={3}>Atau menu ⋮ → &quot;Install Kartawarta...&quot;</Step>
               <Step n={4}>App muncul di Start Menu / Launchpad / Apps</Step>
             </ol>
             <div className="mt-4 rounded-lg bg-purple-50 px-3 py-2 text-xs text-purple-800">
@@ -244,13 +244,13 @@ export default async function UnduhPage() {
                 </summary>
                 <ol className="mt-3 space-y-2 text-txt-secondary list-decimal list-inside">
                   <li>Download file APK ke HP Android (atau transfer dari komputer)</li>
-                  <li>Buka file → Android akan minta izin "Install unknown apps" → izinkan untuk browser/file manager</li>
-                  <li>Tap "Install" → tunggu beberapa detik</li>
+                  <li>Buka file → Android akan minta izin &quot;Install unknown apps&quot; → izinkan untuk browser/file manager</li>
+                  <li>Tap &quot;Install&quot; → tunggu beberapa detik</li>
                   <li>Buka Kartawarta dari home screen / app drawer</li>
                 </ol>
                 <p className="mt-3 text-xs text-txt-muted">
-                  ⚠️ Pesan "Pemindaian Play Protect" mungkin muncul karena APK belum lewat Play Store —
-                  tap "Tetap install" / "Install anyway". Aman karena APK ditandatangani oleh kami
+                  ⚠️ Pesan &quot;Pemindaian Play Protect&quot; mungkin muncul karena APK belum lewat Play Store —
+                  tap &quot;Tetap install&quot; / &quot;Install anyway&quot;. Aman karena APK ditandatangani oleh kami
                   dan terverifikasi via{" "}
                   <Link href="/.well-known/assetlinks.json" className="underline">
                     Digital Asset Links

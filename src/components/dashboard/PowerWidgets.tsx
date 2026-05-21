@@ -111,7 +111,6 @@ export default function PowerWidgets({ isAdmin }: { isAdmin: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
-    let timer: ReturnType<typeof setInterval> | undefined;
     async function load() {
       try {
         const res = await fetch("/api/panel/dashboard-extras", {
@@ -128,10 +127,10 @@ export default function PowerWidgets({ isAdmin }: { isAdmin: boolean }) {
       }
     }
     load();
-    timer = setInterval(load, REFRESH_INTERVAL_MS);
+    const timer = setInterval(load, REFRESH_INTERVAL_MS);
     return () => {
       cancelled = true;
-      if (timer) clearInterval(timer);
+      clearInterval(timer);
     };
   }, []);
 

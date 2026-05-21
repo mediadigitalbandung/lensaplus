@@ -3,7 +3,7 @@ export const revalidate = 300;
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { Layers } from "lucide-react";
@@ -115,7 +115,7 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
 
   // No topic cluster found — fall back to the original kategori redirect.
   if (!topic) {
-    redirect(`/kategori/${params.slug}`);
+    permanentRedirect(`/kategori/${params.slug}`);
   }
 
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10));
