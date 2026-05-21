@@ -5,7 +5,7 @@
  * Tabs: Posts | Templates | Settings
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import {
@@ -13,7 +13,6 @@ import {
   Instagram,
   Facebook,
   Twitter,
-  CheckCircle,
   XCircle,
   Loader2,
   RefreshCw,
@@ -28,6 +27,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PLATFORM_DIMENSIONS, type TextLayer } from "@/lib/social/types";
 
 type Platform = "INSTAGRAM" | "FACEBOOK" | "TWITTER";
 type PostStatus = "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "DELETED";
@@ -366,28 +366,33 @@ const EMPTY_TEMPLATE: TemplateFormData = {
   platform: "INSTAGRAM",
   categoryId: "",
   backgroundUrl: "",
-  textLayersJson: JSON.stringify(
-    [
-      {
-        text: "{{title}}",
-        x: 60,
-        y: 540,
-        width: 960,
-        height: 360,
-        fontSize: 64,
-        fontFamily: "Newsreader",
-        weight: 700,
-        color: "#ffffff",
-        lineHeight: 1.2,
-        maxLines: 3,
-        align: "left",
-      },
-    ],
-    null,
-    2,
-  ),
+  textLayersJson: "",
   isActive: true,
 };
+
+const ASPECT_RATIO_LABELS: Record<Platform, string> = {
+  INSTAGRAM: "Instagram Portrait 4:5 (1080 × 1350)",
+  FACEBOOK: "Facebook Link Share 1.91:1 (1200 × 630)",
+  TWITTER: "Twitter/X Feed 16:9 (1200 × 675)",
+};
+
+const getPlatformDims = (platform: Platform) => {
+  return PLATFORM_DIMENSIONS[platform] || { width: 1080, height: 1350 };
+};
+
+const FONT_OPTIONS = [
+  { value: "'Newsreader', 'Georgia', serif", label: "Newsreader (Serif)" },
+  { value: "Arial, sans-serif", label: "Arial (default)" },
+  { value: "'Georgia', serif", label: "Georgia" },
+  { value: "system-ui, sans-serif", label: "System Sans" },
+];
+
+const WEIGHT_OPTIONS = ["Regular", "Bold", "Medium", "Light"];
+const ALIGN_OPTIONS = [
+  { value: "left", label: "Kiri" },
+  { value: "center", label: "Tengah" },
+  { value: "right", label: "Kanan" },
+];
 
 function TemplatesTab() {
   const { success: showSuccess, error: showError } = useToast();
@@ -400,7 +405,24 @@ function TemplatesTab() {
   const [form, setForm] = useState<TemplateFormData>(EMPTY_TEMPLATE);
   const [saving, setSaving] = useState(false);
 
-  // Preview modal
+  // Live visual editor state
+  const [layers, setLayers] = useState<TextLayer[]>([]);
+  const [selectedLayerIndex, setSelectedLayerIndex] = useState<number | null>(null);
+  const [draggedLayer, setDraggedLayer] = useState<{
+    index: number;
+    type: "drag" | "resize";
+    startX: number;
+    startY: number;
+    startLeft: number;
+    startTop: number;
+    startWidth: number;
+    startHeight: number;
+  } | null>(null);
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Preview state
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewArticleId, setPreviewArticleId] = useState("");
@@ -444,14 +466,124 @@ function TemplatesTab() {
     fetchCategories();
   }, [fetchTemplates, fetchCategories]);
 
+  // Drag and resize handlers
+  useEffect(() => {
+    if (!draggedLayer) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const platformDims = getPlatformDims(form.platform);
+
+      const dx_px = e.clientX - draggedLayer.startX;
+      const dy_px = e.clientY - draggedLayer.startY;
+
+      const dx_pct = (dx_px / rect.width) * 100;
+      const dy_pct = (dy_px / rect.height) * 100;
+
+      const updatedLayers = [...layers];
+      const layer = { ...updatedLayers[draggedLayer.index] };
+
+      if (draggedLayer.type === "drag") {
+        const newX_pct = Math.min(100 - draggedLayer.startWidth, Math.max(0, draggedLayer.startLeft + dx_pct));
+        const newY_pct = Math.min(100 - draggedLayer.startHeight, Math.max(0, draggedLayer.startTop + dy_pct));
+        layer.x = Math.round((newX_pct / 100) * platformDims.width);
+        layer.y = Math.round((newY_pct / 100) * platformDims.height);
+      } else if (draggedLayer.type === "resize") {
+        const newW_pct = Math.min(100 - draggedLayer.startLeft, Math.max(5, draggedLayer.startWidth + dx_pct));
+        const newH_pct = Math.min(100 - draggedLayer.startTop, Math.max(5, draggedLayer.startHeight + dy_pct));
+        layer.width = Math.round((newW_pct / 100) * platformDims.width);
+        layer.height = Math.round((newH_pct / 100) * platformDims.height);
+      }
+
+      updatedLayers[draggedLayer.index] = layer;
+      setLayers(updatedLayers);
+    };
+
+    const handleMouseUp = () => {
+      setDraggedLayer(null);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [draggedLayer, layers, form.platform]);
+
+  function handleCanvasMouseDown(e: React.MouseEvent, index: number, type: "drag" | "resize") {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const layer = layers[index];
+    const platformDims = getPlatformDims(form.platform);
+
+    const layerX = (layer.x / platformDims.width) * 100;
+    const layerY = (layer.y / platformDims.height) * 100;
+    const layerW = (layer.width / platformDims.width) * 100;
+    const layerH = (layer.height / platformDims.height) * 100;
+
+    setDraggedLayer({
+      index,
+      type,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: layerX,
+      startTop: layerY,
+      startWidth: layerW,
+      startHeight: layerH,
+    });
+    setSelectedLayerIndex(index);
+  }
+
   function openCreate() {
     setEditing(null);
-    setForm(EMPTY_TEMPLATE);
+    const defaultLayers = [
+      { text: "{{photo}}", x: 0, y: 0, width: 1080, height: 680, fontSize: 0 },
+      { text: "{{category}}", x: 60, y: 720, width: 250, height: 60, fontSize: 44, color: "#ffffff", align: "center" as const, weight: "Bold", fontFamily: "'Newsreader', 'Georgia', serif" },
+      { text: "{{paraphrased_title}}", x: 60, y: 840, width: 960, height: 200, fontSize: 64, color: "#1f2937", align: "left" as const, weight: "Bold", fontFamily: "'Newsreader', 'Georgia', serif" },
+      { text: "{{short_summary}}", x: 60, y: 1060, width: 960, height: 180, fontSize: 40, color: "#4b5563", align: "left" as const, weight: "Regular", fontFamily: "Arial, sans-serif" },
+      { text: "{{date}}", x: 800, y: 720, width: 220, height: 50, fontSize: 32, color: "#4b5563", align: "right" as const, weight: "Regular", fontFamily: "Arial, sans-serif" }
+    ];
+    setLayers(defaultLayers);
+    setSelectedLayerIndex(0);
+    setForm({
+      ...EMPTY_TEMPLATE,
+      textLayersJson: JSON.stringify(defaultLayers, null, 2)
+    });
     setShowForm(true);
   }
 
   function openEdit(t: SocialTemplate) {
     setEditing(t);
+    let parsedLayers: TextLayer[] = [];
+    try {
+      if (Array.isArray(t.textLayers)) {
+        parsedLayers = t.textLayers as unknown as TextLayer[];
+      } else if (typeof t.textLayers === "string") {
+        parsedLayers = JSON.parse(t.textLayers);
+      }
+    } catch {
+      parsedLayers = [];
+    }
+
+    // Append {{photo}} layer if missing
+    if (!parsedLayers.find((l) => l.text === "{{photo}}")) {
+      parsedLayers = [
+        { text: "{{photo}}", x: 0, y: 0, width: 1080, height: 600, fontSize: 0 },
+        ...parsedLayers
+      ];
+    }
+
+    setLayers(parsedLayers);
+    setSelectedLayerIndex(0);
+
     setForm({
       name: t.name,
       platform: t.platform,
@@ -463,20 +595,34 @@ function TemplatesTab() {
     setShowForm(true);
   }
 
+  async function handleBgUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("title", `Template Background ${Date.now()}`);
+      formData.append("caption", "Social media template overlay cutout frame");
+      formData.append("credit", "Jurnalishukum Bandung");
+
+      showSuccess("Mengupload background...");
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Upload gagal");
+      }
+      setForm((prev) => ({ ...prev, backgroundUrl: data.url }));
+      showSuccess("Background berhasil diupload!");
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal upload background");
+    }
+  }
+
   async function handleSave() {
     try {
-      // Validate JSON
-      let textLayers: unknown;
-      try {
-        textLayers = JSON.parse(form.textLayersJson);
-      } catch {
-        showError("Text Layers JSON tidak valid.");
-        return;
-      }
-      if (!Array.isArray(textLayers)) {
-        showError("Text Layers harus array.");
-        return;
-      }
       if (!form.name.trim() || !form.backgroundUrl.trim()) {
         showError("Nama dan Background URL wajib diisi.");
         return;
@@ -488,7 +634,7 @@ function TemplatesTab() {
         platform: form.platform,
         categoryId: form.categoryId || null,
         backgroundUrl: form.backgroundUrl,
-        textLayers,
+        textLayers: layers,
         isActive: form.isActive,
       };
 
@@ -569,6 +715,42 @@ function TemplatesTab() {
     setPreviewUrl(null);
     setPreviewOpen(true);
   }
+
+  function addTextLayer() {
+    const newIndex = layers.length;
+
+    const newLayer: TextLayer = {
+      text: `Layer #${newIndex}`,
+      x: 100,
+      y: 500,
+      width: 400,
+      height: 100,
+      fontSize: 40,
+      color: "#ffffff",
+      align: "left",
+      weight: "Regular",
+      fontFamily: "Arial, sans-serif",
+    };
+    setLayers([...layers, newLayer]);
+    setSelectedLayerIndex(layers.length);
+  }
+
+  function deleteLayer(index: number) {
+    if (layers[index].text === "{{photo}}") {
+      showError("Area Foto tidak dapat dihapus.");
+      return;
+    }
+    const updated = layers.filter((_, idx) => idx !== index);
+    setLayers(updated);
+    if (selectedLayerIndex === index) {
+      setSelectedLayerIndex(null);
+    } else if (selectedLayerIndex !== null && selectedLayerIndex > index) {
+      setSelectedLayerIndex(selectedLayerIndex - 1);
+    }
+  }
+
+  const activeLayer = selectedLayerIndex !== null ? layers[selectedLayerIndex] : null;
+  const dims = getPlatformDims(form.platform);
 
   return (
     <div>
@@ -661,117 +843,44 @@ function TemplatesTab() {
         </div>
       )}
 
-      {/* Form modal */}
+      {/* Premium Visual Template Editor Panel */}
       {showForm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-surface rounded-2xl shadow-2xl border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <h3 className="text-xl font-bold text-txt-primary mb-4">
-              {editing ? "Edit Template" : "Template Baru"}
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-txt-secondary mb-1">
-                  Nama
-                </label>
-                <input
-                  type="text"
-                  className="input w-full py-2 text-sm"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-txt-secondary mb-1">
-                    Platform
-                  </label>
-                  <select
-                    className="input w-full py-2 text-sm"
-                    value={form.platform}
-                    onChange={(e) =>
-                      setForm({ ...form, platform: e.target.value as Platform })
-                    }
-                  >
-                    <option value="INSTAGRAM">Instagram</option>
-                    <option value="FACEBOOK">Facebook</option>
-                    <option value="TWITTER">Twitter</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-txt-secondary mb-1">
-                    Kategori (opsional)
-                  </label>
-                  <select
-                    className="input w-full py-2 text-sm"
-                    value={form.categoryId}
-                    onChange={(e) =>
-                      setForm({ ...form, categoryId: e.target.value })
-                    }
-                  >
-                    <option value="">Semua kategori</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-txt-secondary mb-1">
-                  Background URL
-                </label>
-                <input
-                  type="text"
-                  className="input w-full py-2 text-sm"
-                  placeholder="https://... atau /uploads/..."
-                  value={form.backgroundUrl}
-                  onChange={(e) =>
-                    setForm({ ...form, backgroundUrl: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-txt-secondary mb-1">
-                  Text Layers (JSON)
-                </label>
-                <textarea
-                  rows={10}
-                  className="input w-full py-2 text-xs font-mono"
-                  value={form.textLayersJson}
-                  onChange={(e) =>
-                    setForm({ ...form, textLayersJson: e.target.value })
-                  }
-                />
-                <p className="mt-1 text-[10px] text-txt-muted">
-                  Format: array of{" "}
-                  {"{text, x, y, width, height, fontSize, color, ...}"}.
-                  Template variables: {"{{title}}, {{category}}, {{author}}"}.
-                </p>
-              </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.isActive}
-                  onChange={(e) =>
-                    setForm({ ...form, isActive: e.target.checked })
-                  }
-                  className="h-4 w-4 rounded border-border"
-                />
-                Aktif
-              </label>
+        <div className="fixed inset-0 z-[9999] bg-[#001025] flex flex-col overflow-y-auto text-slate-100 font-sans">
+          {/* Top Navbar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1e293b] px-6 py-4 bg-[#020c1b]/80 backdrop-blur-md sticky top-0 z-50">
+            <div className="space-y-0.5">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                {editing ? "Edit Template" : "Template Baru"}
+              </h2>
+              <p className="text-xs text-slate-400">
+                Placeholder: <span className="font-mono text-emerald-400">{"{{paraphrased_title}}"}</span>{" "}
+                <span className="font-mono text-emerald-400">{"{{short_summary}}"}</span>{" "}
+                <span className="font-mono text-emerald-400">{"{{category}}"}</span>{" "}
+                <span className="font-mono text-emerald-400">{"{{date}}"}</span> · AI auto-fill
+              </p>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+
+            <div className="flex items-center gap-2.5">
+              {editing && (
+                <button
+                  onClick={() => {
+                    handleDelete(editing.id);
+                  }}
+                  className="border border-red-500/30 hover:bg-red-500/10 text-red-400 font-semibold text-sm px-4 py-2 rounded-lg transition-all"
+                >
+                  Hapus
+                </button>
+              )}
               <button
                 onClick={() => setShowForm(false)}
-                className="btn-ghost rounded-md px-4 py-2 text-sm"
+                className="border border-[#1e293b] hover:bg-slate-800 text-slate-300 font-semibold text-sm px-4 py-2 rounded-lg transition-all"
               >
                 Batal
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="btn-primary flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-6 py-2 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-lg shadow-emerald-950/20"
               >
                 {saving ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -780,6 +889,699 @@ function TemplatesTab() {
                 )}
                 Simpan
               </button>
+            </div>
+          </div>
+
+          {/* Grid Content */}
+          <div className="flex-1 px-6 py-8 max-w-7xl mx-auto w-full">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+              {/* Left Column: Canvas and Layers Editor */}
+              <div className="xl:col-span-7 space-y-6">
+                {/* Form Settings */}
+                <div className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-5 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        Nama Template
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-medium"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        placeholder="contoh: IG Portrait Berita Terkini"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        Platform
+                      </label>
+                      <select
+                        className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-medium"
+                        value={form.platform}
+                        onChange={(e) =>
+                          setForm({ ...form, platform: e.target.value as Platform })
+                        }
+                      >
+                        <option value="INSTAGRAM">Instagram</option>
+                        <option value="FACEBOOK">Facebook</option>
+                        <option value="TWITTER">Twitter</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        Aspek Rasio
+                      </label>
+                      <div className="w-full bg-[#020c1b]/60 border border-[#1e293b] text-slate-300 text-sm rounded-lg px-3 py-2.5 font-medium select-none truncate">
+                        {ASPECT_RATIO_LABELS[form.platform]}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        Kategori (opsional)
+                      </label>
+                      <select
+                        className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-medium"
+                        value={form.categoryId}
+                        onChange={(e) =>
+                          setForm({ ...form, categoryId: e.target.value })
+                        }
+                      >
+                        <option value="">Semua kategori</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        Background Template (PNG transparan di area foto)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          className="flex-1 bg-[#020c1b]/60 border border-[#1e293b] text-slate-400 text-xs rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-mono"
+                          placeholder="/uploads/frame.png"
+                          value={form.backgroundUrl}
+                          onChange={(e) =>
+                            setForm({ ...form, backgroundUrl: e.target.value })
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-all flex items-center gap-1 shrink-0"
+                        >
+                          <Plus size={12} />
+                          Ganti
+                        </button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/png"
+                          className="hidden"
+                          onChange={handleBgUpload}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-2 text-sm select-none pt-1">
+                    <input
+                      type="checkbox"
+                      checked={form.isActive}
+                      onChange={(e) =>
+                        setForm({ ...form, isActive: e.target.checked })
+                      }
+                      className="h-4 w-4 rounded border-[#1e293b] bg-[#020c1b] accent-emerald-500"
+                    />
+                    Template Aktif
+                  </label>
+                </div>
+
+                {/* Drag-and-resize Visual Canvas Box */}
+                <div className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-200">
+                      Area Foto Artikel (drag untuk pindah, pojok kanan-bawah untuk resize)
+                    </h3>
+                  </div>
+
+                  <div className="flex justify-center bg-[#020612] p-6 rounded-lg border border-[#1e293b] shadow-inner">
+                    <div
+                      ref={canvasRef}
+                      className="relative border-2 border-slate-700 bg-slate-950 overflow-hidden shadow-2xl container-type-inline-size select-none"
+                      style={{
+                        aspectRatio: `${dims.width} / ${dims.height}`,
+                        width: "100%",
+                        maxWidth: "420px",
+                      }}
+                    >
+                      {/* Background transparent overlay frame */}
+                      {form.backgroundUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={form.backgroundUrl}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
+                        />
+                      )}
+
+                      {/* Render layers */}
+                      {layers.map((layer, idx) => {
+                        const pctX = (layer.x / dims.width) * 100;
+                        const pctY = (layer.y / dims.height) * 100;
+                        const pctW = (layer.width / dims.width) * 100;
+                        const pctH = (layer.height / dims.height) * 100;
+                        const isPhoto = layer.text === "{{photo}}";
+                        const isSelected = selectedLayerIndex === idx;
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`absolute select-none ${
+                              isPhoto
+                                ? isSelected
+                                  ? "border-2 border-dashed border-[#10b981] bg-[#10b981]/25 z-20"
+                                  : "border border-dashed border-[#10b981]/70 bg-[#10b981]/15 z-0"
+                                : isSelected
+                                  ? "border-2 border-dashed border-[#3b82f6] bg-[#3b82f6]/20 z-30"
+                                  : "border border-dashed border-[#3b82f6]/50 bg-[#3b82f6]/5 z-20 hover:border-[#3b82f6]/80"
+                            }`}
+                            style={{
+                              left: `${pctX}%`,
+                              top: `${pctY}%`,
+                              width: `${pctW}%`,
+                              height: `${pctH}%`,
+                              cursor: "move",
+                            }}
+                            onMouseDown={(e) => handleCanvasMouseDown(e, idx, "drag")}
+                          >
+                            {/* Inner label / representation */}
+                            {isPhoto ? (
+                              <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                                <span className="bg-[#022c16]/90 border border-[#10b981] text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                                  AREA FOTO
+                                </span>
+                              </div>
+                            ) : (
+                              <div
+                                className="absolute inset-0 p-1 pointer-events-none text-white truncate text-[9px] font-mono leading-none"
+                                style={{
+                                  fontFamily: layer.fontFamily?.includes("Newsreader") ? "serif" : "sans-serif",
+                                  fontWeight: layer.weight === "Bold" ? "bold" : "normal",
+                                  textAlign: layer.align || "left",
+                                  color: layer.color || "#ffffff",
+                                }}
+                              >
+                                <span className="bg-[#02183d]/95 border border-[#3b82f6]/80 text-[#3b82f6] px-1 py-0.5 rounded text-[8px] mr-1 font-sans select-none">
+                                  {`T${idx}: ${layer.text.replace(/[{}]/g, "")}`}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Resize handle */}
+                            {isSelected && (
+                              <div
+                                className={`absolute bottom-0 right-0 w-3 h-3 translate-x-1/2 translate-y-1/2 rounded-full shadow-lg border border-white cursor-se-resize z-40 ${
+                                  isPhoto ? "bg-[#10b981]" : "bg-[#3b82f6]"
+                                }`}
+                                onMouseDown={(e) => handleCanvasMouseDown(e, idx, "resize")}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {activeLayer && (
+                    <div className="text-center text-xs font-semibold text-slate-400 font-mono select-none pt-1">
+                      {`Posisi: ${Math.round((activeLayer.x / dims.width) * 100)}%, ${Math.round(
+                        (activeLayer.y / dims.height) * 100
+                      )}% · Ukuran: ${Math.round((activeLayer.width / dims.width) * 100)}% × ${Math.round(
+                        (activeLayer.height / dims.height) * 100
+                      )}%`}
+                    </div>
+                  )}
+                </div>
+
+                {/* Layer Cards Form Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between select-none">
+                    <h3 className="text-sm font-bold text-slate-200">
+                      Text Layers ({layers.length})
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={addTextLayer}
+                      className="text-emerald-400 hover:text-emerald-300 font-bold text-xs flex items-center gap-1 transition-all"
+                    >
+                      <Plus size={12} />
+                      Tambah Teks
+                    </button>
+                  </div>
+
+                  {layers.map((layer, idx) => {
+                    const isPhoto = layer.text === "{{photo}}";
+                    const isSelected = selectedLayerIndex === idx;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`rounded-xl border transition-all ${
+                          isSelected
+                            ? isPhoto
+                              ? "border-[#10b981]/50 bg-emerald-950/15"
+                              : "border-[#3b82f6]/50 bg-[#001c3d]/20"
+                            : "border-[#1e293b] bg-slate-900/25 hover:border-slate-800"
+                        }`}
+                      >
+                        {/* Header card click selector */}
+                        <div
+                          className="flex items-center justify-between px-5 py-3.5 cursor-pointer select-none"
+                          onClick={() => setSelectedLayerIndex(isSelected ? null : idx)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-2.5 h-2.5 rounded-full ${
+                                isPhoto ? "bg-[#10b981]" : "bg-[#3b82f6]"
+                              }`}
+                            />
+                            <span className="text-sm font-bold text-slate-200">
+                              {isPhoto ? "Layer #1 (Area Foto)" : `Layer #${idx} (${layer.text})`}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {!isPhoto && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteLayer(idx);
+                                }}
+                                className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                title="Hapus Layer"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                            <span className="text-xs text-slate-500 font-mono">
+                              {isSelected ? "Tutup" : "Edit"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Collapsible content editor */}
+                        {isSelected && (
+                          <div className="px-5 pb-5 pt-1 border-t border-[#1e293b]/60 space-y-4">
+                            {!isPhoto && (
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                  Teks / Placeholder
+                                </label>
+                                <textarea
+                                  rows={1.5}
+                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500 font-medium font-mono"
+                                  value={layer.text}
+                                  onChange={(e) => {
+                                    const updated = [...layers];
+                                    updated[idx].text = e.target.value;
+                                    setLayers(updated);
+                                  }}
+                                  placeholder="Teks atau {{paraphrased_title}}"
+                                />
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                  X (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                  value={Math.round((layer.x / dims.width) * 100)}
+                                  onChange={(e) => {
+                                    const pct = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                    const updated = [...layers];
+                                    updated[idx].x = Math.round((pct / 100) * dims.width);
+                                    setLayers(updated);
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                  Y (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                  value={Math.round((layer.y / dims.height) * 100)}
+                                  onChange={(e) => {
+                                    const pct = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                    const updated = [...layers];
+                                    updated[idx].y = Math.round((pct / 100) * dims.height);
+                                    setLayers(updated);
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                  Lebar (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                  value={Math.round((layer.width / dims.width) * 100)}
+                                  onChange={(e) => {
+                                    const pct = Math.min(100, Math.max(5, parseInt(e.target.value) || 5));
+                                    const updated = [...layers];
+                                    updated[idx].width = Math.round((pct / 100) * dims.width);
+                                    setLayers(updated);
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                  Tinggi (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                  value={Math.round((layer.height / dims.height) * 100)}
+                                  onChange={(e) => {
+                                    const pct = Math.min(100, Math.max(5, parseInt(e.target.value) || 5));
+                                    const updated = [...layers];
+                                    updated[idx].height = Math.round((pct / 100) * dims.height);
+                                    setLayers(updated);
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            {!isPhoto && (
+                              <>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                      Font Family
+                                    </label>
+                                    <select
+                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-xs rounded-lg px-2.5 py-2 outline-none font-medium focus:border-emerald-500"
+                                      value={layer.fontFamily || FONT_OPTIONS[0].value}
+                                      onChange={(e) => {
+                                        const updated = [...layers];
+                                        updated[idx].fontFamily = e.target.value;
+                                        setLayers(updated);
+                                      }}
+                                    >
+                                      {FONT_OPTIONS.map((f) => (
+                                        <option key={f.value} value={f.value}>
+                                          {f.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                      Font Size (px)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                      value={layer.fontSize}
+                                      onChange={(e) => {
+                                        const val = Math.max(1, parseInt(e.target.value) || 12);
+                                        const updated = [...layers];
+                                        updated[idx].fontSize = val;
+                                        setLayers(updated);
+                                      }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                      Warna (Hex)
+                                    </label>
+                                    <div className="flex gap-1.5 items-center">
+                                      <input
+                                        type="color"
+                                        className="w-8 h-8 rounded border border-[#1e293b] cursor-pointer bg-transparent p-0"
+                                        value={layer.color || "#ffffff"}
+                                        onChange={(e) => {
+                                          const updated = [...layers];
+                                          updated[idx].color = e.target.value;
+                                          setLayers(updated);
+                                        }}
+                                      />
+                                      <input
+                                        type="text"
+                                        className="flex-1 bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2 py-1.5 outline-none font-medium font-mono"
+                                        value={layer.color || "#ffffff"}
+                                        onChange={(e) => {
+                                          const updated = [...layers];
+                                          updated[idx].color = e.target.value;
+                                          setLayers(updated);
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                      Alignment
+                                    </label>
+                                    <select
+                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-xs rounded-lg px-2.5 py-2 outline-none font-medium focus:border-emerald-500"
+                                      value={layer.align || "left"}
+                                      onChange={(e) => {
+                                        const updated = [...layers];
+                                        updated[idx].align = e.target.value as "left" | "center" | "right";
+                                        setLayers(updated);
+                                      }}
+                                    >
+                                      {ALIGN_OPTIONS.map((o) => (
+                                        <option key={o.value} value={o.value}>
+                                          {o.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                      Weight
+                                    </label>
+                                    <select
+                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-xs rounded-lg px-2.5 py-2 outline-none font-medium focus:border-emerald-500"
+                                      value={layer.weight || "Regular"}
+                                      onChange={(e) => {
+                                        const updated = [...layers];
+                                        updated[idx].weight = e.target.value;
+                                        setLayers(updated);
+                                      }}
+                                    >
+                                      {WEIGHT_OPTIONS.map((w) => (
+                                        <option key={w} value={w}>
+                                          {w}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                      Line Height
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                      value={layer.lineHeight || 1.2}
+                                      onChange={(e) => {
+                                        const val = Math.max(0.5, parseFloat(e.target.value) || 1.2);
+                                        const updated = [...layers];
+                                        updated[idx].lineHeight = val;
+                                        setLayers(updated);
+                                      }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                      Max Lines
+                                    </label>
+                                    <input
+                                      type="number"
+                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                      value={layer.maxLines || 3}
+                                      onChange={(e) => {
+                                        const val = Math.max(1, parseInt(e.target.value) || 3);
+                                        const updated = [...layers];
+                                        updated[idx].maxLines = val;
+                                        setLayers(updated);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right Column: High-Fidelity Responsive Preview Container */}
+              <div className="xl:col-span-5 xl:sticky xl:top-[90px] space-y-6">
+                <div className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-5 space-y-4">
+                  <div className="flex items-center justify-between select-none">
+                    <h3 className="text-sm font-bold text-slate-200">
+                      Preview Template
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        showSuccess("Preview di-refresh");
+                      }}
+                      className="text-emerald-400 hover:text-emerald-300 font-bold text-xs flex items-center gap-1 transition-all"
+                    >
+                      <RefreshCw size={12} className="animate-pulse" />
+                      Refresh
+                    </button>
+                  </div>
+
+                  {/* Responsive high fidelity HTML mockup preview block */}
+                  <div className="bg-[#020612] p-6 rounded-lg border border-[#1e293b] flex justify-center shadow-inner">
+                    <div
+                      className="relative rounded-lg overflow-hidden bg-white text-slate-800 shadow-2xl container-type-inline-size select-none"
+                      style={{
+                        aspectRatio: `${dims.width} / ${dims.height}`,
+                        width: "100%",
+                        maxWidth: "360px",
+                      }}
+                    >
+                      {/* 1. Article photo inside its cutout at absolute coordinates */}
+                      {(() => {
+                        const photoLayer = layers.find((l) => l.text === "{{photo}}");
+                        if (!photoLayer) return null;
+
+                        const pctX = (photoLayer.x / dims.width) * 100;
+                        const pctY = (photoLayer.y / dims.height) * 100;
+                        const pctW = (photoLayer.width / dims.width) * 100;
+                        const pctH = (photoLayer.height / dims.height) * 100;
+
+                        return (
+                          <div
+                            className="absolute pointer-events-none z-0"
+                            style={{
+                              left: `${pctX}%`,
+                              top: `${pctY}%`,
+                              width: `${pctW}%`,
+                              height: `${pctH}%`,
+                            }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=1080"
+                              alt="Court"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        );
+                      })()}
+
+                      {/* 2. Transparent background template cutout frame overlaid ON TOP */}
+                      {form.backgroundUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={form.backgroundUrl}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
+                        />
+                      )}
+
+                      {/* Jurnalishukum Bandung brand details at the bottom of the overlay preview card */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-white p-3.5 border-t border-slate-100 flex items-center justify-between text-slate-800 z-30 select-none pointer-events-none">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px] font-bold font-serif shadow-sm">
+                            JH
+                          </div>
+                          <div>
+                            <p className="text-[8px] font-extrabold tracking-tight text-emerald-950 leading-none">
+                              JURNALISHUKUM
+                            </p>
+                            <p className="text-[6px] text-emerald-600 font-bold leading-none mt-0.5">
+                              Bandung
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-slate-500 text-[6px]">
+                          <div className="flex items-center gap-1 font-sans">
+                            <div className="w-3.5 h-3.5 rounded-full border border-emerald-500 flex items-center justify-center text-emerald-600 font-bold text-[6px]">
+                              ✓
+                            </div>
+                            <div>
+                              <p className="font-extrabold text-slate-700 leading-none">
+                                Sertifikasi Dewan Pers
+                              </p>
+                              <p className="leading-none mt-0.5 text-[5px]">
+                                No. 600/DP-Verifikasi/X/xi/2026
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. Text Layers rendered dynamically */}
+                      {layers
+                        .filter((l) => l.text !== "{{photo}}")
+                        .map((layer, idx) => {
+                          const pctX = (layer.x / dims.width) * 100;
+                          const pctY = (layer.y / dims.height) * 100;
+                          const pctW = (layer.width / dims.width) * 100;
+                          const pctH = (layer.height / dims.height) * 100;
+
+                          // Dynamic content resolution
+                          let resolvedText = layer.text;
+                          resolvedText = resolvedText
+                            .replace(/\{\{category\}\}/g, "TIPIKOR")
+                            .replace(/\{\{paraphrased_title\}\}/g, "Eks Dirut Pertamina Dituntut 4 Tahun Bui Kasus Korupsi Katalis")
+                            .replace(/\{\{short_summary\}\}/g, "Mantan Direktur Pengolahan PT Pertamina Chrisna Damayanto dituntut 4 tahun penjara akibat korupsi pengadaan katalis di Kilang Balongan senilai Rp176,4 Miliar.")
+                            .replace(/\{\{date\}\}/g, "21 Mei 2026")
+                            .replace(/\{\{title\}\}/g, "Eks Dirut Pertamina Dituntut 4 Tahun Bui Kasus Korupsi Katalis")
+                            .replace(/\{\{summary\}\}/g, "Mantan Direktur Pengolahan PT Pertamina Chrisna Damayanto dituntut 4 tahun penjara akibat korupsi pengadaan katalis di Kilang Balongan senilai Rp176,4 Miliar.");
+
+                          // Custom style compilation
+                          const fontSerif = layer.fontFamily?.includes("Newsreader") || layer.fontFamily?.includes("Georgia");
+
+                          return (
+                            <div
+                              key={idx}
+                              className="absolute pointer-events-none z-20 overflow-hidden text-ellipsis leading-tight flex flex-col justify-start"
+                              style={{
+                                left: `${pctX}%`,
+                                top: `${pctY}%`,
+                                width: `${pctW}%`,
+                                height: `${pctH}%`,
+                                color: layer.color || "#ffffff",
+                                textAlign: layer.align || "left",
+                                fontSize: `calc((${layer.fontSize} / ${dims.width}) * 100cqw)`,
+                                fontFamily: fontSerif ? "'Newsreader', 'Georgia', serif" : "Arial, sans-serif",
+                                fontWeight: layer.weight === "Bold" ? "bold" : "normal",
+                                fontStyle: layer.weight === "Italic" ? "italic" : "normal",
+                                lineHeight: layer.lineHeight || 1.2,
+                              }}
+                            >
+                              {/* If category layer, let's wrap it in a beautiful badge matching the mockup */}
+                              {layer.text === "{{category}}" ? (
+                                <span className="bg-emerald-600 text-white font-extrabold px-3 py-1 rounded inline-block text-center uppercase tracking-wider mx-auto shadow-sm">
+                                  {resolvedText}
+                                </span>
+                              ) : (
+                                <p className="m-0 select-none line-clamp-3">
+                                  {resolvedText}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-slate-500 text-center select-none mt-1">
+                    Preview menggunakan artikel terbaru yang dipublish sebagai sample.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

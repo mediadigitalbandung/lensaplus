@@ -235,8 +235,12 @@ export async function renderTemplate(
     layers = [];
   }
 
-  // 3. Build SVG overlay.
-  const textElements = layers
+  // Find if there is a special photo layer ({{photo}})
+  const photoLayer = layers.find((l) => l.text === "{{photo}}");
+  const textLayersOnly = layers.filter((l) => l.text !== "{{photo}}");
+
+  // 3. Build SVG overlay for text layers only.
+  const textElements = textLayersOnly
     .map((layer) => {
       const resolved = resolvePlaceholders(layer.text, article, enrichedData);
       return renderLayerSvg(layer, resolved);
@@ -248,8 +252,71 @@ export async function renderTemplate(
   ${textElements}
 </svg>`;
 
-  // 4. Composite + encode.
-  const buffer = await sharp(normalizedBg)
+  // 4. Composite photo + template background + text layers.
+  let compositeBase: Buffer;
+
+  if (photoLayer) {
+    let photoBuffer: Buffer | null = null;
+    if (article.featuredImage) {
+      try {
+        photoBuffer = await loadBackground(article.featuredImage);
+      } catch (err) {
+        console.error("Gagal memuat article featured image:", err);
+      }
+    }
+
+    // Fallback if no featured image or failed to load
+    if (!photoBuffer) {
+      photoBuffer = await sharp({
+        create: {
+          width: photoLayer.width || 400,
+          height: photoLayer.height || 400,
+          channels: 4,
+          background: { r: 229, g: 231, b: 235, alpha: 1 }, // solid grey
+        },
+      })
+        .png()
+        .toBuffer();
+    }
+
+    // Crop & resize article photo to fit the layer exactly
+    const resizedPhoto = await sharp(photoBuffer)
+      .resize(photoLayer.width, photoLayer.height, {
+        fit: "cover",
+        position: "centre",
+      })
+      .toBuffer();
+
+    // Create a base transparent canvas of platform dimensions and composite the photo
+    const transparentCanvas = await sharp({
+      create: {
+        width: dims.width,
+        height: dims.height,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    })
+      .composite([
+        {
+          input: resizedPhoto,
+          left: photoLayer.x,
+          top: photoLayer.y,
+        },
+      ])
+      .png()
+      .toBuffer();
+
+    // Place the template background (frame overlay) ON TOP of the transparent canvas containing the photo
+    compositeBase = await sharp(transparentCanvas)
+      .composite([{ input: normalizedBg, top: 0, left: 0 }])
+      .toBuffer();
+  } else {
+    // Fallback to old behavior if no photo layer is defined
+    compositeBase = normalizedBg;
+  }
+
+  // Composite the text SVG layers ON TOP of everything
+  const buffer = await sharp(compositeBase)
     .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
     .jpeg({ quality: 85 })
     .toBuffer();
