@@ -614,7 +614,8 @@ function TemplatesTab() {
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Upload gagal");
       }
-      setForm((prev) => ({ ...prev, backgroundUrl: data.url }));
+      const uploadedUrl = data.data?.url || data.url || data.data;
+      setForm((prev) => ({ ...prev, backgroundUrl: uploadedUrl }));
       showSuccess("Background berhasil diupload!");
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal upload background");
