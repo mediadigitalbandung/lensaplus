@@ -1435,7 +1435,7 @@ function TemplatesTab() {
                 <div className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-5 space-y-4">
                   <div className="flex items-center justify-between select-none">
                     <h3 className="text-sm font-bold text-slate-200">
-                      Preview Template
+                      Preview Template <span className="text-xs text-slate-500 font-normal ml-1">({dims.width}×{dims.height} @ 50%)</span>
                     </h3>
                     <button
                       type="button"
@@ -1449,110 +1449,114 @@ function TemplatesTab() {
                     </button>
                   </div>
 
-                  {/* Responsive high fidelity HTML mockup preview block */}
-                  <div className="bg-[#020612] p-6 rounded-lg border border-[#1e293b] flex justify-center shadow-inner">
-                    <div
-                      className="relative rounded-lg overflow-hidden bg-white text-slate-800 shadow-2xl container-type-inline-size select-none"
-                      style={{
-                        aspectRatio: `${dims.width} / ${dims.height}`,
-                        width: "100%",
-                        maxWidth: "360px",
-                      }}
-                    >
-                      {/* 1. Article photo inside its cutout at absolute coordinates */}
-                      {(() => {
-                        const photoLayer = layers.find((l) => l.text === "{{photo}}");
-                        if (!photoLayer) return null;
+                  {/* Fixed-size preview — scrollable, pixel-perfect at 50% scale */}
+                  <div className="bg-[#020612] p-4 rounded-lg border border-[#1e293b] shadow-inner overflow-auto max-h-[75vh]">
+                    <div className="flex justify-center min-w-fit">
+                      <div
+                        className="relative rounded-lg overflow-hidden bg-white text-slate-800 shadow-2xl select-none shrink-0"
+                        style={{
+                          width: `${dims.width * 0.5}px`,
+                          height: `${dims.height * 0.5}px`,
+                        }}
+                      >
+                        {/* 1. Article photo inside its cutout at absolute coordinates */}
+                        {(() => {
+                          const photoLayer = layers.find((l) => l.text === "{{photo}}");
+                          if (!photoLayer) return null;
 
-                        const pctX = (photoLayer.x / dims.width) * 100;
-                        const pctY = (photoLayer.y / dims.height) * 100;
-                        const pctW = (photoLayer.width / dims.width) * 100;
-                        const pctH = (photoLayer.height / dims.height) * 100;
-
-                        return (
-                          <div
-                            className="absolute pointer-events-none z-0"
-                            style={{
-                              left: `${pctX}%`,
-                              top: `${pctY}%`,
-                              width: `${pctW}%`,
-                              height: `${pctH}%`,
-                            }}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=1080"
-                              alt="Court"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        );
-                      })()}
-
-                      {/* 2. Transparent background template cutout frame overlaid ON TOP */}
-                      {form.backgroundUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={form.backgroundUrl}
-                          alt=""
-                          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
-                        />
-                      )}
-
-
-                      {/* 3. Text Layers rendered dynamically */}
-                      {layers
-                        .filter((l) => l.text !== "{{photo}}")
-                        .map((layer, idx) => {
-                          const pctX = (layer.x / dims.width) * 100;
-                          const pctY = (layer.y / dims.height) * 100;
-                          const pctW = (layer.width / dims.width) * 100;
-                          const pctH = (layer.height / dims.height) * 100;
-
-                          // Dynamic content resolution
-                          let resolvedText = layer.text;
-                          resolvedText = resolvedText
-                            .replace(/\{\{category\}\}/g, "TIPIKOR")
-                            .replace(/\{\{paraphrased_title\}\}/g, "Eks Dirut Pertamina Dituntut 4 Tahun Bui Kasus Korupsi Katalis")
-                            .replace(/\{\{short_summary\}\}/g, "Mantan Direktur Pengolahan PT Pertamina Chrisna Damayanto dituntut 4 tahun penjara akibat korupsi pengadaan katalis di Kilang Balongan senilai Rp176,4 Miliar.")
-                            .replace(/\{\{date\}\}/g, "21 Mei 2026")
-                            .replace(/\{\{title\}\}/g, "Eks Dirut Pertamina Dituntut 4 Tahun Bui Kasus Korupsi Katalis")
-                            .replace(/\{\{summary\}\}/g, "Mantan Direktur Pengolahan PT Pertamina Chrisna Damayanto dituntut 4 tahun penjara akibat korupsi pengadaan katalis di Kilang Balongan senilai Rp176,4 Miliar.");
-
-                          // Custom style compilation
-                          const fontSerif = layer.fontFamily?.includes("Newsreader") || layer.fontFamily?.includes("Georgia");
+                          const pctX = (photoLayer.x / dims.width) * 100;
+                          const pctY = (photoLayer.y / dims.height) * 100;
+                          const pctW = (photoLayer.width / dims.width) * 100;
+                          const pctH = (photoLayer.height / dims.height) * 100;
 
                           return (
                             <div
-                              key={idx}
-                              className="absolute pointer-events-none z-20 overflow-hidden text-ellipsis leading-tight flex flex-col justify-start"
+                              className="absolute pointer-events-none z-0"
                               style={{
                                 left: `${pctX}%`,
                                 top: `${pctY}%`,
                                 width: `${pctW}%`,
                                 height: `${pctH}%`,
-                                color: layer.color || "#ffffff",
-                                textAlign: layer.align || "left",
-                                fontSize: `calc((${layer.fontSize} / ${dims.width}) * 100cqw)`,
-                                fontFamily: fontSerif ? "'Newsreader', 'Georgia', serif" : "Arial, sans-serif",
-                                fontWeight: layer.weight === "Bold" ? "bold" : "normal",
-                                fontStyle: layer.weight === "Italic" ? "italic" : "normal",
-                                lineHeight: layer.lineHeight || 1.2,
                               }}
                             >
-                              {/* If category layer, let's wrap it in a beautiful badge matching the mockup */}
-                              {layer.text === "{{category}}" ? (
-                                <span className="bg-[#002045] text-white font-extrabold px-3 py-1 rounded inline-block text-center uppercase tracking-wider mx-auto shadow-sm">
-                                  {resolvedText}
-                                </span>
-                              ) : (
-                                <p className="m-0 select-none line-clamp-3">
-                                  {resolvedText}
-                                </p>
-                              )}
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=1080"
+                                alt="Court"
+                                className="w-full h-full object-cover"
+                              />
                             </div>
                           );
-                        })}
+                        })()}
+
+                        {/* 2. Transparent background template cutout frame overlaid ON TOP */}
+                        {form.backgroundUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={form.backgroundUrl}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
+                          />
+                        )}
+
+
+                        {/* 3. Text Layers rendered dynamically — fixed px sizes */}
+                        {layers
+                          .filter((l) => l.text !== "{{photo}}")
+                          .map((layer, idx) => {
+                            const pctX = (layer.x / dims.width) * 100;
+                            const pctY = (layer.y / dims.height) * 100;
+                            const pctW = (layer.width / dims.width) * 100;
+                            const pctH = (layer.height / dims.height) * 100;
+
+                            // Dynamic content resolution
+                            let resolvedText = layer.text;
+                            resolvedText = resolvedText
+                              .replace(/\{\{category\}\}/g, "TIPIKOR")
+                              .replace(/\{\{paraphrased_title\}\}/g, "Eks Dirut Pertamina Dituntut 4 Tahun Bui Kasus Korupsi Katalis")
+                              .replace(/\{\{short_summary\}\}/g, "Mantan Direktur Pengolahan PT Pertamina Chrisna Damayanto dituntut 4 tahun penjara akibat korupsi pengadaan katalis di Kilang Balongan senilai Rp176,4 Miliar.")
+                              .replace(/\{\{date\}\}/g, "21 Mei 2026")
+                              .replace(/\{\{title\}\}/g, "Eks Dirut Pertamina Dituntut 4 Tahun Bui Kasus Korupsi Katalis")
+                              .replace(/\{\{summary\}\}/g, "Mantan Direktur Pengolahan PT Pertamina Chrisna Damayanto dituntut 4 tahun penjara akibat korupsi pengadaan katalis di Kilang Balongan senilai Rp176,4 Miliar.");
+
+                            // Custom style compilation
+                            const fontSerif = layer.fontFamily?.includes("Newsreader") || layer.fontFamily?.includes("Georgia");
+
+                            // Fixed pixel font size at 50% scale
+                            const scaledFontSize = Math.round(layer.fontSize * 0.5);
+
+                            return (
+                              <div
+                                key={idx}
+                                className="absolute pointer-events-none z-20 overflow-hidden text-ellipsis leading-tight flex flex-col justify-start"
+                                style={{
+                                  left: `${pctX}%`,
+                                  top: `${pctY}%`,
+                                  width: `${pctW}%`,
+                                  height: `${pctH}%`,
+                                  color: layer.color || "#ffffff",
+                                  textAlign: layer.align || "left",
+                                  fontSize: `${scaledFontSize}px`,
+                                  fontFamily: fontSerif ? "'Newsreader', 'Georgia', serif" : "Arial, sans-serif",
+                                  fontWeight: layer.weight === "Bold" ? "bold" : "normal",
+                                  fontStyle: layer.weight === "Italic" ? "italic" : "normal",
+                                  lineHeight: layer.lineHeight || 1.2,
+                                }}
+                              >
+                                {/* If category layer, let's wrap it in a beautiful badge matching the mockup */}
+                                {layer.text === "{{category}}" ? (
+                                  <span className="bg-[#002045] text-white font-extrabold px-3 py-1 rounded inline-block text-center uppercase tracking-wider mx-auto shadow-sm">
+                                    {resolvedText}
+                                  </span>
+                                ) : (
+                                  <p className="m-0 select-none line-clamp-3">
+                                    {resolvedText}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
                   </div>
 
