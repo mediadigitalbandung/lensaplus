@@ -142,14 +142,14 @@ export default function RootLayout({
             __html: JSON.stringify([organizationJsonLd(), websiteJsonLd()]),
           }}
         />
-      </head>
-      <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased">
-        <Script
+        {/* Google AdSense Verification Script in Head */}
+        <script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
           crossOrigin="anonymous"
-          strategy="afterInteractive"
         />
+      </head>
+      <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased">
         <Providers>
           <a
             href="#main-content"
