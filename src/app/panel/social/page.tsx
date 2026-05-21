@@ -599,27 +599,41 @@ function TemplatesTab() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("title", `Template Background ${Date.now()}`);
-      formData.append("caption", "Social media template overlay cutout frame");
-      formData.append("credit", "Jurnalishukum Bandung");
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("title", `Template Background ${Date.now()}`);
+      fd.append("caption", "Social media template overlay cutout frame");
+      fd.append("credit", "Jurnalishukum Bandung");
 
       showSuccess("Mengupload background...");
       const res = await fetch("/api/upload", {
         method: "POST",
-        body: formData,
+        body: fd,
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Upload gagal");
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Upload gagal");
       }
-      const uploadedUrl = data.data?.url || data.url || data.data;
+
+      // Exhaustive extraction — the successResponse wrapper nests under json.data
+      const uploadedUrl: string =
+        json.data?.url ??
+        json.data?.media?.url ??
+        json.url ??
+        (typeof json.data === "string" ? json.data : "");
+
+      if (!uploadedUrl) {
+        showError(`Upload OK tapi URL kosong. Keys: ${JSON.stringify(Object.keys(json))} / data keys: ${JSON.stringify(json.data ? Object.keys(json.data) : "null")}`);
+        return;
+      }
+
       setForm((prev) => ({ ...prev, backgroundUrl: uploadedUrl }));
-      showSuccess("Background berhasil diupload!");
+      showSuccess(`Background diupload: ${uploadedUrl.substring(uploadedUrl.lastIndexOf("/") + 1)}`);
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal upload background");
     }
+    // Reset file input so re-uploading the same file triggers onChange
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleSave() {
