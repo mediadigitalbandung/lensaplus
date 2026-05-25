@@ -92,7 +92,13 @@ function ToolbarButton({
   );
 }
 
-type AiFeature = "seo_title" | "meta_description" | "social_caption";
+type AiFeature =
+  | "seo_title"
+  | "meta_description"
+  | "social_caption"
+  | "content_ideas"
+  | "write_article"
+  | "high_ctr_meta";
 
 export default function RichTextEditor({
   content,
@@ -207,20 +213,41 @@ export default function RichTextEditor({
   const callAi = useCallback(
     async (feature: AiFeature) => {
       if (!editor) return;
+      
+      const isAutomation = ["content_ideas", "write_article", "high_ctr_meta"].includes(feature);
+      const needsExistingContent = ["seo_title", "meta_description", "social_caption"].includes(feature);
+      
       const html = editor.getHTML();
       const plain = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-      if (plain.length < 30) {
+      
+      if (needsExistingContent && plain.length < 30) {
         window.alert("Tulis konten artikel terlebih dahulu (minimal 30 karakter).");
         return;
       }
 
+      let topic = "";
+      if (feature === "content_ideas") {
+        const input = window.prompt("bantu saya membuat beberapa ide artikel untuk kartawarta.com. terkait topik [[SPMB Jabar 2026]]...\n\nMasukkan topik/keyword untuk ide konten (contoh: SPMB Jabar 2026):");
+        if (!input?.trim()) return;
+        topic = input.trim();
+      } else if (feature === "write_article") {
+        const input = window.prompt("buat draft artikel lengkap siap tayang ramah google discover...\n\nMasukkan topik atau arahan lengkap untuk draf artikel:");
+        if (!input?.trim()) return;
+        topic = input.trim();
+      } else if (feature === "high_ctr_meta") {
+        const input = window.prompt("Masukkan judul dasar, topik, atau ide untuk variasi CTR tinggi:");
+        if (!input?.trim()) return;
+        topic = input.trim();
+      }
+
       // Derive a title-ish hint
-      const hint =
-        articleTitle?.trim() ||
-        (() => {
-          const m = html.match(/<h[1-3][^>]*>([^<]+)<\/h[1-3]>/i);
-          return m ? m[1].trim() : plain.slice(0, 80);
-        })();
+      const hint = isAutomation
+        ? topic
+        : (articleTitle?.trim() ||
+          (() => {
+            const m = html.match(/<h[1-3][^>]*>([^<]+)<\/h[1-3]>/i);
+            return m ? m[1].trim() : plain.slice(0, 80);
+          })());
 
       // Map the editor's AI feature to the /api/ai/generate route's feature param
       const apiFeature =
@@ -228,7 +255,9 @@ export default function RichTextEditor({
           ? "seo_title"
           : feature === "meta_description"
           ? "meta_description"
-          : "summary"; // social caption uses summary path; below we tweak the prompt-side via title hint
+          : feature === "social_caption"
+          ? "summary" // social caption uses summary path
+          : feature;
 
       setAiLoading(feature);
       try {
@@ -251,13 +280,16 @@ export default function RichTextEditor({
         }
         const suggestion = String(data.data.result).trim();
 
-        // Dispatch via callback if provided, else prompt to copy
+        // Dispatch via callback if provided, else insert directly in editor
         if (feature === "seo_title" && onAiTitle) {
           onAiTitle(suggestion);
         } else if (feature === "meta_description" && onAiMeta) {
           onAiMeta(suggestion);
         } else if (feature === "social_caption" && onAiCaption) {
           onAiCaption(suggestion);
+        } else if (["content_ideas", "write_article", "high_ctr_meta"].includes(feature)) {
+          // Insert the generated HTML directly into the TipTap editor at cursor
+          editor.chain().focus().insertContent(suggestion).run();
         } else {
           // Fallback: show & let user copy
           window.prompt("Hasil AI (Ctrl+C untuk salin):", suggestion);
@@ -583,6 +615,48 @@ export default function RichTextEditor({
                   <Sparkles size={12} className="text-primary" />
                 )}
                 Generate Caption Sosmed
+              </button>
+              <div className="border-t border-b border-border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-txt-muted bg-surface-secondary">
+                Automation Penulisan
+              </div>
+              <button
+                type="button"
+                onClick={() => callAi("content_ideas")}
+                disabled={aiLoading !== null}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-txt-primary hover:bg-surface-secondary disabled:opacity-50"
+              >
+                {aiLoading === "content_ideas" ? (
+                  <Loader2 size={12} className="animate-spin text-primary" />
+                ) : (
+                  <Sparkles size={12} className="text-primary" />
+                )}
+                Buat Ide Konten
+              </button>
+              <button
+                type="button"
+                onClick={() => callAi("write_article")}
+                disabled={aiLoading !== null}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-txt-primary hover:bg-surface-secondary disabled:opacity-50"
+              >
+                {aiLoading === "write_article" ? (
+                  <Loader2 size={12} className="animate-spin text-primary" />
+                ) : (
+                  <Sparkles size={12} className="text-primary" />
+                )}
+                Tulis Artikel Lengkap
+              </button>
+              <button
+                type="button"
+                onClick={() => callAi("high_ctr_meta")}
+                disabled={aiLoading !== null}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-txt-primary hover:bg-surface-secondary disabled:opacity-50"
+              >
+                {aiLoading === "high_ctr_meta" ? (
+                  <Loader2 size={12} className="animate-spin text-primary" />
+                ) : (
+                  <Sparkles size={12} className="text-primary" />
+                )}
+                Variasi Judul & Meta (High CTR)
               </button>
             </div>
           )}

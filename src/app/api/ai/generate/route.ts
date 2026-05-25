@@ -13,6 +13,12 @@ const PROMPTS: Record<string, (title: string, content: string) => string> = {
     `Buatkan SEO title (maks 60 karakter) untuk artikel berita Kartawarta berikut. Judul: ${title}`,
   meta_description: (title, content) =>
     `Buatkan meta description (maks 155 karakter) untuk artikel berita Kartawarta berikut. Judul: ${title}. Konten: ${content.slice(0, 1000)}`,
+  content_ideas: (title) =>
+    `bantu saya membuat beberapa ide artikel untuk kartawarta.com. terkait topik [[${title}]]. cek semua LSI relevan kompetitor dengan posisi terbaik di hasil pencarian google dan discover. Ide tidak hanya tentang angle lain yang belum tergarap kompetitor, tapi juga ikut berkompetisi untuk hasil maksimal di hasil pencarian dan discover. Pastikan data terbaru di 30 hari terakhir 2026. Format output sebagai list HTML (<ul> atau <ol>) yang terstruktur dengan sub-headings (<h2>/<h3>) dan penjelasan singkat per ide agar langsung siap dipakai di editor.`,
+  write_article: (title, content) =>
+    `buat draft artikel lengkap siap tayang  menjadi artikel ramah google discover dengan optimasi SEO, kombinasikan penggunaan LSI informasional dengan LSI transaksional yang relevan. gunakan tone kartawarta.com. cek kompetitor untuk hasil SEO lebih optimal. bebas kanibalisasi dengan artikel di kartawarta.com. Pastikan dari sumber kredibel dan autoritatif. Topik artikel: ${title}. ${content ? `Catatan/arahan tambahan: ${content}` : ""}. Format output sebagai HTML rich-text menggunakan tag <p> untuk paragraf, <h2>/<h3> untuk sub-headings, <blockquote> untuk kutipan penting, dan list (<ul>/<li>) untuk poin penting. Jangan sertakan tag <html>, <body>, atau markdown code fence.`,
+  high_ctr_meta: (title, content) =>
+    `Buat 5 variasi judul artikel berita dengan CTR tinggi (high CTR) dan 3 variasi meta deskripsi dengan CTR tinggi untuk kartawarta.com. Gaya bahasa harus ramah Google Discover, menarik rasa penasaran pembaca tanpa clickbait berlebihan. Topik/judul dasar: ${title}. ${content ? `Konten pendukung: ${content.slice(0, 1000)}` : ""}. Format output sebagai HTML terstruktur yang rapi dengan headings (<h2>/<h3>) dan paragraf agar mudah dibaca di dalam editor.`,
 };
 
 // Map request `feature` string to the canonical AIFeature used for logging.
@@ -21,6 +27,9 @@ const FEATURE_MAP: Record<string, AIFeature> = {
   summary: "article_draft",
   seo_title: "seo_title",
   meta_description: "seo_description",
+  content_ideas: "article_draft",
+  write_article: "article_draft",
+  high_ctr_meta: "article_draft",
 };
 
 export async function POST(req: NextRequest) {
@@ -45,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!PROMPTS[feature]) {
-      throw new ApiError("Feature tidak valid. Gunakan: tags, summary, seo_title, meta_description", 400);
+      throw new ApiError("Feature tidak valid. Gunakan: tags, summary, seo_title, meta_description, content_ideas, write_article, high_ctr_meta", 400);
     }
 
     const prompt = PROMPTS[feature](title, content);
