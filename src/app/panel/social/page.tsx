@@ -404,6 +404,7 @@ function TemplatesTab() {
   const [editing, setEditing] = useState<SocialTemplate | null>(null);
   const [form, setForm] = useState<TemplateFormData>(EMPTY_TEMPLATE);
   const [saving, setSaving] = useState(false);
+  const dims = getPlatformDims(form.platform);
 
   // Live visual editor state
   const [layers, setLayers] = useState<TextLayer[]>([]);
@@ -782,7 +783,6 @@ function TemplatesTab() {
   }
 
   const activeLayer = selectedLayerIndex !== null ? layers[selectedLayerIndex] : null;
-  const dims = getPlatformDims(form.platform);
 
   return (
     <div>
