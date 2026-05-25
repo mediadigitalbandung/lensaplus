@@ -18,7 +18,29 @@ const INDEXING_SCOPE = "https://www.googleapis.com/auth/indexing";
 
 const QUOTA_KEY = "google_indexing_daily_count";
 const QUOTA_DATE_KEY = "google_indexing_daily_count_date";
-const QUOTA_LIMIT = 200;
+export async function getQuotaLimit(): Promise<number> {
+  try {
+    const limitRow = await prisma.systemSetting.findUnique({
+      where: { key: "google_indexing_quota_limit" },
+    });
+    if (limitRow?.value) {
+      const parsed = parseInt(limitRow.value.trim(), 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+  } catch {
+    // DB unavailable
+  }
+  const envVal = process.env.GOOGLE_INDEXING_QUOTA_LIMIT;
+  if (envVal) {
+    const parsed = parseInt(envVal.trim(), 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+  return 200; // default fallback
+}
 
 async function getDailyCount(): Promise<number> {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -51,10 +73,11 @@ async function incrementDailyCount(): Promise<void> {
 }
 
 async function saturateDailyCount(): Promise<void> {
+  const limit = await getQuotaLimit();
   await prisma.systemSetting.upsert({
     where: { key: QUOTA_KEY },
-    create: { key: QUOTA_KEY, value: String(QUOTA_LIMIT) },
-    update: { value: String(QUOTA_LIMIT) },
+    create: { key: QUOTA_KEY, value: String(limit) },
+    update: { value: String(limit) },
   });
 }
 
@@ -141,15 +164,16 @@ export async function submitUrlToGoogle(
     };
   }
 
-  // Daily quota gate — Google's free quota is ~200/day. If we've already
-  // hit the limit, fail fast without burning an API call.
+  // Daily quota gate — Google's free quota is ~200/day (unless increased).
+  // If we've already hit the limit, fail fast without burning an API call.
+  const quotaLimit = await getQuotaLimit();
   try {
     const count = await getDailyCount();
-    if (count >= QUOTA_LIMIT) {
+    if (count >= quotaLimit) {
       return {
         success: false,
         error: "QUOTA_EXCEEDED_DAILY",
-        reason: `Daily Google Indexing API quota (${QUOTA_LIMIT}) reached`,
+        reason: `Daily Google Indexing API quota (${quotaLimit}) reached`,
       };
     }
   } catch {

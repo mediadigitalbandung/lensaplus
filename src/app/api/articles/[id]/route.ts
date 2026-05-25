@@ -107,7 +107,10 @@ export async function PUT(
 
     const isOwner = article.authorId === session.user.id;
     const isEditor = canApproveArticles(session.user.role);
-    const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "CHIEF_EDITOR";
+    const isAdmin =
+      session.user.role === "SUPER_ADMIN" ||
+      session.user.role === "CHIEF_EDITOR" ||
+      session.user.role === "EDITOR";
     const isAssignedEditor = isEditor && article.reviewedBy === session.user.id;
 
     if (!isOwner && !isEditor) {

@@ -421,6 +421,8 @@ function TemplatesTab() {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(0.35);
 
   // Preview state
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -428,6 +430,21 @@ function TemplatesTab() {
   const [previewArticleId, setPreviewArticleId] = useState("");
   const [previewTemplateId, setPreviewTemplateId] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Auto-calculate preview scale to fit container
+  useEffect(() => {
+    const container = previewContainerRef.current;
+    if (!container) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const availableWidth = entry.contentRect.width - 32; // subtract padding
+        const scale = Math.min(1, availableWidth / dims.width);
+        setPreviewScale(scale);
+      }
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [dims.width, showForm]);
 
   const fetchTemplates = useCallback(async () => {
     try {
@@ -1435,7 +1452,7 @@ function TemplatesTab() {
                 <div className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-5 space-y-4">
                   <div className="flex items-center justify-between select-none">
                     <h3 className="text-sm font-bold text-slate-200">
-                      Preview Template <span className="text-xs text-slate-500 font-normal ml-1">({dims.width}×{dims.height} @ 50%)</span>
+                      Preview Template <span className="text-xs text-slate-500 font-normal ml-1">({dims.width}×{dims.height} · {Math.round(previewScale * 100)}%)</span>
                     </h3>
                     <button
                       type="button"
@@ -1449,14 +1466,24 @@ function TemplatesTab() {
                     </button>
                   </div>
 
-                  {/* Fixed-size preview — scrollable, pixel-perfect at 50% scale */}
-                  <div className="bg-[#020612] p-4 rounded-lg border border-[#1e293b] shadow-inner overflow-auto max-h-[75vh]">
-                    <div className="flex justify-center min-w-fit">
+                  {/* Pixel-perfect preview — rendered at full resolution, CSS-scaled to fit container */}
+                  <div
+                    ref={previewContainerRef}
+                    className="bg-[#020612] p-4 rounded-lg border border-[#1e293b] shadow-inner overflow-hidden"
+                  >
+                    <div
+                      className="mx-auto"
+                      style={{
+                        width: `${dims.width * previewScale}px`,
+                        height: `${dims.height * previewScale}px`,
+                      }}
+                    >
                       <div
-                        className="relative rounded-lg overflow-hidden bg-white text-slate-800 shadow-2xl select-none shrink-0"
+                        className="relative rounded-lg overflow-hidden bg-white text-slate-800 shadow-2xl select-none origin-top-left"
                         style={{
-                          width: `${dims.width * 0.5}px`,
-                          height: `${dims.height * 0.5}px`,
+                          width: `${dims.width}px`,
+                          height: `${dims.height}px`,
+                          transform: `scale(${previewScale})`,
                         }}
                       >
                         {/* 1. Article photo inside its cutout at absolute coordinates */}
@@ -1464,19 +1491,14 @@ function TemplatesTab() {
                           const photoLayer = layers.find((l) => l.text === "{{photo}}");
                           if (!photoLayer) return null;
 
-                          const pctX = (photoLayer.x / dims.width) * 100;
-                          const pctY = (photoLayer.y / dims.height) * 100;
-                          const pctW = (photoLayer.width / dims.width) * 100;
-                          const pctH = (photoLayer.height / dims.height) * 100;
-
                           return (
                             <div
                               className="absolute pointer-events-none z-0"
                               style={{
-                                left: `${pctX}%`,
-                                top: `${pctY}%`,
-                                width: `${pctW}%`,
-                                height: `${pctH}%`,
+                                left: `${photoLayer.x}px`,
+                                top: `${photoLayer.y}px`,
+                                width: `${photoLayer.width}px`,
+                                height: `${photoLayer.height}px`,
                               }}
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1499,16 +1521,10 @@ function TemplatesTab() {
                           />
                         )}
 
-
-                        {/* 3. Text Layers rendered dynamically — fixed px sizes */}
+                        {/* 3. Text Layers rendered dynamically — absolute px at full resolution */}
                         {layers
                           .filter((l) => l.text !== "{{photo}}")
                           .map((layer, idx) => {
-                            const pctX = (layer.x / dims.width) * 100;
-                            const pctY = (layer.y / dims.height) * 100;
-                            const pctW = (layer.width / dims.width) * 100;
-                            const pctH = (layer.height / dims.height) * 100;
-
                             // Dynamic content resolution
                             let resolvedText = layer.text;
                             resolvedText = resolvedText
@@ -1519,31 +1535,26 @@ function TemplatesTab() {
                               .replace(/\{\{title\}\}/g, "Eks Dirut Pertamina Dituntut 4 Tahun Bui Kasus Korupsi Katalis")
                               .replace(/\{\{summary\}\}/g, "Mantan Direktur Pengolahan PT Pertamina Chrisna Damayanto dituntut 4 tahun penjara akibat korupsi pengadaan katalis di Kilang Balongan senilai Rp176,4 Miliar.");
 
-                            // Custom style compilation
                             const fontSerif = layer.fontFamily?.includes("Newsreader") || layer.fontFamily?.includes("Georgia");
-
-                            // Fixed pixel font size at 50% scale
-                            const scaledFontSize = Math.round(layer.fontSize * 0.5);
 
                             return (
                               <div
                                 key={idx}
                                 className="absolute pointer-events-none z-20 overflow-hidden text-ellipsis leading-tight flex flex-col justify-start"
                                 style={{
-                                  left: `${pctX}%`,
-                                  top: `${pctY}%`,
-                                  width: `${pctW}%`,
-                                  height: `${pctH}%`,
+                                  left: `${layer.x}px`,
+                                  top: `${layer.y}px`,
+                                  width: `${layer.width}px`,
+                                  height: `${layer.height}px`,
                                   color: layer.color || "#ffffff",
                                   textAlign: layer.align || "left",
-                                  fontSize: `${scaledFontSize}px`,
+                                  fontSize: `${layer.fontSize}px`,
                                   fontFamily: fontSerif ? "'Newsreader', 'Georgia', serif" : "Arial, sans-serif",
                                   fontWeight: layer.weight === "Bold" ? "bold" : "normal",
                                   fontStyle: layer.weight === "Italic" ? "italic" : "normal",
                                   lineHeight: layer.lineHeight || 1.2,
                                 }}
                               >
-                                {/* If category layer, let's wrap it in a beautiful badge matching the mockup */}
                                 {layer.text === "{{category}}" ? (
                                   <span className="bg-[#002045] text-white font-extrabold px-3 py-1 rounded inline-block text-center uppercase tracking-wider mx-auto shadow-sm">
                                     {resolvedText}

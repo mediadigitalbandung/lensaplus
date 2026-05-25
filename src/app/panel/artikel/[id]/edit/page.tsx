@@ -100,7 +100,7 @@ export default function EditArticlePage() {
   const userRole = session?.user?.role || "";
   const userId = session?.user?.id || "";
   const isEditor = EDITOR_ROLES.includes(userRole);
-  const isAdmin = ADMIN_ROLES.includes(userRole);
+  const isAdmin = ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"].includes(userRole);
 
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -1151,6 +1151,70 @@ export default function EditArticlePage() {
         </div>
 
         {/* Admin Actions */}
+        {["DRAFT", "REJECTED"].includes(currentStatus) && (
+          <div className="mb-6 rounded-[12px] border-2 border-border bg-surface p-5">
+            <h3 className="flex items-center gap-2 text-base font-bold text-txt-primary">
+              <FileText size={18} className="text-primary" />
+              Artikel Masih Berupa Draf
+            </h3>
+            <p className="mt-1 text-sm text-txt-secondary">
+              Artikel ini belum dipublikasikan. Anda dapat mempublikasikannya sekarang atau menjadwalkan publikasinya.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={handleAdminPublish}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 rounded-[12px] bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+                >
+                  <Upload size={16} />
+                  Publikasikan Sekarang
+                </button>
+                <button
+                  onClick={() => { setShowSchedule(!showSchedule); setShowReturnNote(false); }}
+                  className="flex items-center gap-1.5 rounded-[12px] border border-blue-300 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                >
+                  <CalendarClock size={16} />
+                  Jadwalkan Publikasi
+                </button>
+              </div>
+
+              {/* Schedule picker */}
+              {showSchedule && (
+                <div className="rounded-[12px] border border-blue-300 bg-blue-50 p-4 mt-3">
+                  <label className="mb-2 block text-sm font-medium text-blue-800">
+                    Pilih tanggal & waktu publikasi
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    min={new Date().toISOString().slice(0, 16)}
+                    className="input w-full max-w-xs text-sm"
+                  />
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      onClick={handleAdminSchedule}
+                      disabled={saving || !scheduleDate}
+                      className="flex items-center gap-1.5 rounded-[12px] bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      <CalendarClock size={14} />
+                      Konfirmasi Jadwal
+                    </button>
+                    <button
+                      onClick={() => { setShowSchedule(false); setScheduleDate(""); }}
+                      className="rounded-[12px] px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {currentStatus === "APPROVED" && (
           <div className="mb-6 rounded-[12px] border-2 border-primary/30 bg-primary-50 p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">

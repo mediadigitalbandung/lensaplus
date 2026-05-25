@@ -292,6 +292,39 @@ export async function fetchListing(
       });
   const $ = cheerio.load(html);
 
+  // Auto-detect and parse RSS/XML feeds (bypasses HTML card selector logic completely)
+  const isRss = html.includes("<rss") || html.includes("<channel") || html.includes("<feed") || html.includes("<?xml");
+  if (isRss) {
+    const rssItems: ListingItem[] = [];
+    const seen = new Set<string>();
+    const $xml = cheerio.load(html, { xml: true });
+    
+    $xml("item, entry").each((_, el) => {
+      const $el = $xml(el);
+      let href = $el.find("link").text().trim() || $el.find("link").attr("href")?.trim();
+      let title = $el.find("title").text().trim();
+      let description = $el.find("description, summary").text().trim();
+      
+      if (href) {
+        const url = absolutise(href, finalUrl);
+        if (url && !seen.has(url)) {
+          seen.add(url);
+          title = title.replace(/<[^>]*>/g, "").trim();
+          description = description.replace(/<[^>]*>/g, "").slice(0, 240).trim();
+          rssItems.push({
+            url,
+            title: title.slice(0, 250),
+            snippet: description || undefined,
+          });
+        }
+      }
+    });
+    
+    if (rssItems.length > 0) {
+      return { items: rssItems, selectorUsed: "rss-feed" };
+    }
+  }
+
   let cards: cheerio.Cheerio<DomElement>;
   let selectorUsed: string;
   if (options.articleSelector) {

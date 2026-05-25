@@ -151,10 +151,12 @@ export default function ArtikelPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
-  // Only SUPER_ADMIN / CHIEF_EDITOR see direct Publish + Takedown buttons.
+  // Only SUPER_ADMIN / CHIEF_EDITOR / EDITOR see direct Publish + Takedown buttons.
   const userRoleForActions = (session?.user as { role?: string } | undefined)?.role || "";
   const canPublishDirect =
-    userRoleForActions === "SUPER_ADMIN" || userRoleForActions === "CHIEF_EDITOR";
+    userRoleForActions === "SUPER_ADMIN" ||
+    userRoleForActions === "CHIEF_EDITOR" ||
+    userRoleForActions === "EDITOR";
   // Default to ALL for everyone — editors prefer to see the full pipeline
   // at a glance and switch to "Menunggu Review" only when actively triaging.
   const [filterStatus, setFilterStatus] = useState("ALL");

@@ -1,5 +1,6 @@
 import { successResponse, errorResponse, requireRole } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { getQuotaLimit } from "@/lib/seo/google-indexing";
 
 export const dynamic = "force-dynamic";
 
@@ -135,7 +136,7 @@ export async function GET() {
     const today = new Date().toISOString().slice(0, 10);
     const quotaActiveToday = quotaDateRow?.value === today;
     const quotaUsed = quotaActiveToday ? parseInt(quotaCountRow?.value || "0", 10) : 0;
-    const QUOTA_LIMIT = 200;
+    const QUOTA_LIMIT = await getQuotaLimit();
 
     // Integration toggles — UI shows different banner / disables actions
     // when Google Indexing API is off (site still indexed via sitemap).
