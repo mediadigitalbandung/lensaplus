@@ -64,10 +64,12 @@ export interface GenerateCaptionOptions {
   includeLink?: boolean; // default true
 }
 
+import { prisma } from "@/lib/prisma";
+
 /**
  * Produce a platform-ready caption string. Calls `callAI` for the main body
- * then appends CTA + hashtags + link. Falls back to title + excerpt on AI
- * failure so the publish path never dead-locks on the copywriter step.
+ * then appends CTA + hashtags + link according to the caption template in settings.
+ * Falls back to title + excerpt on AI failure.
  */
 export async function generateSocialCaption(
   opts: GenerateCaptionOptions,
@@ -109,25 +111,39 @@ Aturan:
     body = `${article.title}. ${excerpt}`.trim();
   }
 
-  // Append CTA
-  if (cta && cta.trim().length > 0) {
-    body = `${body}\n\n${cta.trim()}`;
+  // Load global settings for captionTemplate
+  let captionTemplate: string | null = null;
+  try {
+    const globalSettings = await prisma.socialMediaSettings.findUnique({
+      where: { id: "global" },
+    });
+    captionTemplate = globalSettings?.captionTemplate || null;
+  } catch (dbErr) {
+    console.error("[caption-generator] Failed to load captionTemplate from DB:", dbErr);
   }
 
-  // Append link
-  if (includeLink && article.slug) {
-    const link = `${SITE_URL.replace(/\/+$/, "")}/berita/${article.slug}`;
-    // Twitter: we need to keep the caption under 280 chars with the link.
-    body = `${body}\n${link}`;
-  }
+  // Define default structured template
+  const defaultTemplate = `{{title}}\n\n{{summary}}\n\nBaca selengkapnya di: {{link}}\n\n{{cta}}\n\n{{hashtags}}`;
+  const template = (captionTemplate && captionTemplate.trim()) || defaultTemplate;
 
-  // Append hashtags
-  const tags = hashtags
+  // Build values for replacement
+  const link = (includeLink && article.slug) ? `${SITE_URL.replace(/\/+$/, "")}/berita/${article.slug}` : "";
+  
+  const tagsList = hashtags
     .map(normalizeHashtag)
     .filter((t): t is string => Boolean(t));
-  if (tags.length > 0) {
-    body = `${body}\n\n${tags.join(" ")}`;
-  }
+  const tags = tagsList.join(" ");
 
-  return enforceMaxLength(body, platform);
+  // Resolve placeholders in the custom template
+  const resolvedCaption = template
+    .replace(/\{\{title\}\}/g, article.title || "")
+    .replace(/\{\{summary\}\}/g, body || "")
+    .replace(/\{\{link\}\}/g, link)
+    .replace(/\{\{cta\}\}/g, (cta && cta.trim()) || "")
+    .replace(/\{\{hashtags\}\}/g, tags)
+    // Clean up empty lines or double line breaks that occurred due to missing fields
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return enforceMaxLength(resolvedCaption, platform);
 }

@@ -72,6 +72,7 @@ interface SocialSettings {
     autoPublishTwitter: boolean;
     defaultHashtags: string | null;
     defaultCTA: string | null;
+    captionTemplate?: string | null;
   };
   instagram: {
     accessToken: string | null;
@@ -1939,7 +1940,7 @@ function SettingsTab() {
           <div className="p-5 border-t border-border bg-surface-secondary/40 space-y-4 text-xs leading-relaxed text-txt-secondary">
             <div className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-blue-950 space-y-1.5 backdrop-blur-sm">
               <strong className="text-blue-950 font-bold block text-xs">💡 Info Penting Tentang Tipe Token:</strong>
-              Sangat direkomendasikan menggunakan <strong>Page Access Token</strong> yang didapatkan melalui proses "Scan Akun" di bawah. Token ini <strong>tidak akan pernah kedaluwarsa (Never Expires)</strong> selama Anda tidak mengubah password akun Facebook Anda atau mencabut izin aplikasi.
+              Sangat direkomendasikan menggunakan <strong>Page Access Token</strong> yang didapatkan melalui proses &quot;Scan Akun&quot; di bawah. Token ini <strong>tidak akan pernah kedaluwarsa (Never Expires)</strong> selama Anda tidak mengubah password akun Facebook Anda atau mencabut izin aplikasi.
             </div>
 
             <div className="space-y-2">
@@ -1961,11 +1962,11 @@ function SettingsTab() {
             </div>
 
             <div className="space-y-2">
-              <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 2: Menghasilkan Token Page "Never Expires" Secara Otomatis</h4>
+              <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 2: Menghasilkan Token Page &quot;Never Expires&quot; Secara Otomatis</h4>
               <ol className="list-decimal list-inside space-y-1.5 ml-1">
                 <li>Copy token hasil generate di Graph API Explorer (berupa teks panjang diawali <code>EAA...</code>).</li>
                 <li>Tempelkan token tersebut pada input <strong>Access Token</strong> di bagian <strong>Instagram</strong> di bawah ini.</li>
-                <li>Klik tombol <strong>"Scan Akun & Page Terhubung dari Meta Token"</strong>.</li>
+                <li>Klik tombol <strong>&quot;Scan Akun & Page Terhubung dari Meta Token&quot;</strong>.</li>
                 <li>Daftar Facebook Page dan Akun Instagram Business yang terhubung akan muncul di bawah tombol.</li>
                 <li><strong>Klik pada kartu akun Anda di daftar hasil scan.</strong></li>
                 <li>Sistem akan mendeteksi token dan otomatis mengisi <strong>IG User ID</strong>, <strong>Page ID</strong>, serta menghasilkan <strong>Page Access Token yang Never Expires</strong> pada kolom token Instagram & Facebook secara bersamaan!</li>
@@ -2055,6 +2056,58 @@ function SettingsTab() {
               }
             />
           </div>
+          <div className="md:col-span-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-txt-secondary">
+                Template Caption Global
+              </label>
+              <span className="text-[10px] text-txt-muted bg-surface-secondary px-2 py-0.5 rounded-full border border-border">
+                Customizable Layout
+              </span>
+            </div>
+            <textarea
+              rows={5}
+              className="input w-full py-2 text-sm font-mono leading-relaxed"
+              placeholder="Contoh: {{title}}&#10;&#10;{{summary}}&#10;&#10;Baca selengkapnya di: {{link}}&#10;&#10;{{cta}}&#10;&#10;{{hashtags}}"
+              value={global.captionTemplate || ""}
+              onChange={(e) =>
+                setGlobal({ ...global, captionTemplate: e.target.value })
+              }
+            />
+            <div className="rounded-xl border border-border bg-surface-secondary/40 p-3.5 space-y-2">
+              <span className="text-[11px] font-bold text-txt-primary block">
+                Placeholders yang didukung:
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="flex flex-col p-2 rounded-lg bg-surface border border-border">
+                  <code className="text-pink-500 font-mono text-[10px] font-bold mb-0.5">{"{{title}}"}</code>
+                  <span className="text-[10px] text-txt-muted">Judul artikel asli</span>
+                </div>
+                <div className="flex flex-col p-2 rounded-lg bg-surface border border-border">
+                  <code className="text-blue-500 font-mono text-[10px] font-bold mb-0.5">{"{{summary}}"}</code>
+                  <span className="text-[10px] text-txt-muted">Konten ringkasan hasil AI</span>
+                </div>
+                <div className="flex flex-col p-2 rounded-lg bg-surface border border-border">
+                  <code className="text-emerald-500 font-mono text-[10px] font-bold mb-0.5">{"{{link}}"}</code>
+                  <span className="text-[10px] text-txt-muted">Link artikel berita</span>
+                </div>
+                <div className="flex flex-col p-2 rounded-lg bg-surface border border-border">
+                  <code className="text-purple-500 font-mono text-[10px] font-bold mb-0.5">{"{{cta}}"}</code>
+                  <span className="text-[10px] text-txt-muted">Teks CTA Default di atas</span>
+                </div>
+                <div className="flex flex-col p-2 rounded-lg bg-surface border border-border col-span-2 sm:col-span-1">
+                  <code className="text-amber-500 font-mono text-[10px] font-bold mb-0.5">{"{{hashtags}}"}</code>
+                  <span className="text-[10px] text-txt-muted">Hashtag default & kategori</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-txt-muted leading-relaxed mt-1">
+                * Kosongkan field ini jika ingin menggunakan template bawaan sistem:<br />
+                <code className="bg-surface px-1.5 py-0.5 rounded border border-border font-mono text-[9px]">
+                  {"{{title}} \n\n {{summary}} \n\n Baca selengkapnya di: {{link}} \n\n {{cta}} \n\n {{hashtags}}"}
+                </code>
+              </p>
+            </div>
+          </div>
         </div>
         <div className="mt-4 flex justify-end">
           <button
@@ -2066,6 +2119,7 @@ function SettingsTab() {
                 autoPublishTwitter: global.autoPublishTwitter,
                 defaultHashtags: global.defaultHashtags,
                 defaultCTA: global.defaultCTA,
+                captionTemplate: global.captionTemplate || null,
               })
             }
             disabled={saving === "global"}

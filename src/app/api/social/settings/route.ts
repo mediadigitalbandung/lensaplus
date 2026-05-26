@@ -56,6 +56,7 @@ const globalSchema = z.object({
   autoPublishTwitter: z.boolean().optional(),
   defaultHashtags: z.string().nullable().optional(),
   defaultCTA: z.string().nullable().optional(),
+  captionTemplate: z.string().nullable().optional(),
 });
 
 const instagramSchema = z.object({
