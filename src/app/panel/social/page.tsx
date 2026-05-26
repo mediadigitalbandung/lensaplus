@@ -1556,7 +1556,7 @@ function TemplatesTab() {
                                 }}
                               >
                                 {layer.text === "{{category}}" ? (
-                                  <span className="bg-[#002045] text-white font-extrabold px-3 py-1 rounded inline-block text-center uppercase tracking-wider mx-auto shadow-sm">
+                                  <span className="text-white font-extrabold rounded inline-block text-center uppercase tracking-wider mx-auto">
                                     {resolvedText}
                                   </span>
                                 ) : (
