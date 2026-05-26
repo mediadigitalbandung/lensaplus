@@ -1763,6 +1763,7 @@ function SettingsTab() {
   const { success: showSuccess, error: showError } = useToast();
   const [settings, setSettings] = useState<SocialSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -1825,9 +1826,10 @@ function SettingsTab() {
   const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch("/api/social/settings");
-      if (res.ok) {
-        const json = await res.json();
+      const json = await res.json();
+      if (res.ok && json.success) {
         const s = json.data as SocialSettings;
         setSettings(s);
         setGlobal({ ...s.global });
@@ -1844,13 +1846,17 @@ function SettingsTab() {
           postMode: s.facebook.postMode || "link",
           enabled: s.facebook.enabled,
         });
+      } else {
+        setError(json.error || `HTTP error ${res.status}: Gagal memuat pengaturan.`);
+        showError(json.error || "Gagal memuat pengaturan sosial media.");
       }
-    } catch {
-      /* */
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan koneksi.");
+      showError("Gagal menghubungkan ke server.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showError]);
 
   useEffect(() => {
     fetchSettings();
@@ -1876,6 +1882,29 @@ function SettingsTab() {
     } finally {
       setSaving(null);
     }
+  }
+
+  if (error && !loading) {
+    return (
+      <div className="py-16 text-center max-w-md mx-auto space-y-4">
+        <div className="p-6 rounded-2xl border border-red-500/20 bg-red-950/10 backdrop-blur-sm space-y-3">
+          <span className="text-3xl">⚠️</span>
+          <h4 className="font-bold text-slate-200 text-sm">
+            Gagal Memuat Pengaturan
+          </h4>
+          <p className="text-xs text-red-400 font-mono break-all leading-relaxed max-h-[150px] overflow-y-auto">
+            {error}
+          </p>
+        </div>
+        <button
+          onClick={fetchSettings}
+          className="btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
+        >
+          <RefreshCw size={14} />
+          Coba Lagi
+        </button>
+      </div>
+    );
   }
 
   if (loading || !settings || !global || !instagram || !facebook) {
