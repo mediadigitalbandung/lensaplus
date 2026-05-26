@@ -148,6 +148,9 @@ function PostsTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
+      if (!res.ok) {
+        throw new Error(`Server Error (HTTP ${res.status}). Silakan periksa koneksi database Anda.`);
+      }
       const json = await res.json();
       if (!json.success) {
         throw new Error(json.error || "Gagal memicu uji coba.");
@@ -762,6 +765,9 @@ function TemplatesTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      if (!res.ok) {
+        throw new Error(`Server Error (HTTP ${res.status}). Silakan periksa koneksi database Anda.`);
+      }
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Gagal menyimpan");
       showSuccess(editing ? "Template diperbarui." : "Template dibuat.");
@@ -785,6 +791,9 @@ function TemplatesTab() {
       const res = await fetch(`/api/social/templates/${id}`, {
         method: "DELETE",
       });
+      if (!res.ok) {
+        throw new Error(`Server Error (HTTP ${res.status}). Silakan periksa koneksi database Anda.`);
+      }
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Gagal menghapus");
       showSuccess("Template dihapus.");
