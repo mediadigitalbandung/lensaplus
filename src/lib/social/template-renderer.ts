@@ -90,35 +90,72 @@ function resolvePlaceholders(
  * Uses a rough character-width heuristic (0.55 × fontSize per char for
  * Latin sans). Not perfectly accurate but good enough for overlay composition.
  */
+/**
+ * Estimate the exact width of a word in pixels using character-weighted values
+ * tailored for typical web serif/sans-serif fonts (Georgia, Times, Newsreader, etc.).
+ */
+function estimateWordWidth(word: string, fontSize: number): number {
+  let widthFactor = 0;
+  for (let i = 0; i < word.length; i++) {
+    const char = word[i];
+    if (/[il1|!,.;:'"()\[\]\s]/.test(char)) {
+      widthFactor += 0.23; // extremely narrow (i, l, 1, space, punctuation)
+    } else if (/[tfjrI\-]/.test(char)) {
+      widthFactor += 0.32; // narrow (t, f, j, r)
+    } else if (/[mwWM]/.test(char)) {
+      widthFactor += 0.85; // extra wide (m, w)
+    } else if (/[A-Z]/.test(char)) {
+      widthFactor += 0.68; // standard uppercase
+    } else {
+      widthFactor += 0.52; // standard lowercase, numbers, and others
+    }
+  }
+  return widthFactor * fontSize;
+}
+
+/**
+ * Split a text into lines that fit `width` pixels at `fontSize`.
+ * Uses our precise character-weighted pixel-width estimation.
+ */
 function wrapText(
   text: string,
   width: number,
   fontSize: number,
   maxLines?: number,
 ): string[] {
-  const approxCharWidth = fontSize * 0.55;
-  const charsPerLine = Math.max(6, Math.floor(width / approxCharWidth));
-
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
+  let currentWidth = 0;
+  const spaceWidth = estimateWordWidth(" ", fontSize);
 
   for (const word of words) {
-    const next = current ? `${current} ${word}` : word;
-    if (next.length <= charsPerLine) {
-      current = next;
+    const wordWidth = estimateWordWidth(word, fontSize);
+    const nextWidth = current ? currentWidth + spaceWidth + wordWidth : wordWidth;
+
+    if (nextWidth <= width) {
+      current = current ? `${current} ${word}` : word;
+      currentWidth = nextWidth;
     } else {
       if (current) lines.push(current);
-      // If single word longer than line, hard-break it
-      if (word.length > charsPerLine) {
+      
+      // If a single word is wider than the allowed width, we have to hard-break it
+      if (wordWidth > width) {
         let w = word;
-        while (w.length > charsPerLine) {
-          lines.push(w.slice(0, charsPerLine));
-          w = w.slice(charsPerLine);
+        while (estimateWordWidth(w, fontSize) > width) {
+          // Find how many characters can fit
+          let fitChars = 1;
+          while (fitChars < w.length && estimateWordWidth(w.slice(0, fitChars), fontSize) <= width) {
+            fitChars++;
+          }
+          lines.push(w.slice(0, fitChars - 1));
+          w = w.slice(fitChars - 1);
         }
         current = w;
+        currentWidth = estimateWordWidth(w, fontSize);
       } else {
         current = word;
+        currentWidth = wordWidth;
       }
     }
     if (maxLines && lines.length >= maxLines) break;
@@ -151,7 +188,6 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
   // y in the input is the layer top-left. Baseline for first line = y + fontSize.
   const baseY = layer.y + fontSize;
 
-  const approxCharWidth = fontSize * 0.55;
   const isJustify = align === "justify";
 
   let anchorX: number;
@@ -177,17 +213,23 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
       // (librsvg does NOT support textLength/lengthAdjust on tspan)
       if (isJustify && !isLast && line.includes(" ")) {
         const words = line.split(/\s+/);
-        const totalChars = words.reduce((sum, w) => sum + w.length, 0);
-        const totalTextWidth = totalChars * approxCharWidth;
+        
+        // Calculate the precise estimated width of each word
+        const wordWidths = words.map((w) => estimateWordWidth(w, fontSize));
+        const totalTextWidth = wordWidths.reduce((sum, w) => sum + w, 0);
+        
         const remainingSpace = layer.width - totalTextWidth;
         const gaps = words.length - 1;
-        const spacePerGap = gaps > 0 ? remainingSpace / gaps : 0;
+        
+        // Enforce a physical minimum gap of 0.22 * fontSize to absolutely prevent words from overlapping/merging
+        const minGap = fontSize * 0.22;
+        const spacePerGap = gaps > 0 ? Math.max(minGap, remainingSpace / gaps) : minGap;
 
         let currentX = layer.x;
         const wordSpans = words.map((word, wi) => {
           const dyAttr = wi === 0 ? ` dy="${dy}"` : "";
           const span = `<tspan x="${Math.round(currentX)}"${dyAttr}>${escapeXml(word)}</tspan>`;
-          currentX += word.length * approxCharWidth + spacePerGap;
+          currentX += wordWidths[wi] + spacePerGap;
           return span;
         });
         return wordSpans.join("");
