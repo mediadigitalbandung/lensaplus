@@ -94,20 +94,58 @@ function resolvePlaceholders(
  * Estimate the exact width of a word in pixels using character-weighted values
  * tailored for typical web serif/sans-serif fonts (Georgia, Times, Newsreader, etc.).
  */
-function estimateWordWidth(word: string, fontSize: number): number {
+function estimateWordWidth(
+  word: string,
+  fontSize: number,
+  fontFamily: string = "",
+  weight: string = "",
+): number {
   let widthFactor = 0;
+
+  const isSerif = fontFamily.toLowerCase().includes("serif") || 
+                  fontFamily.toLowerCase().includes("georgia") || 
+                  fontFamily.toLowerCase().includes("newsreader");
+  const isBold = weight.toLowerCase().includes("bold") || 
+                 weight === "700" || 
+                 weight === "Bold";
+
+  // Base multipliers for typical web serif/sans-serif fonts
+  let narrowFactor = 0.23;
+  let narrowLetterFactor = 0.32;
+  let wideFactor = 0.85;
+  let upperFactor = 0.68;
+  let stdFactor = 0.52;
+
+  // Serif fonts have slightly wider proportions
+  if (isSerif) {
+    narrowFactor = 0.28;
+    narrowLetterFactor = 0.38;
+    wideFactor = 0.95;
+    upperFactor = 0.74;
+    stdFactor = 0.58;
+  }
+
+  // Bold variants occupy more horizontal spacing
+  if (isBold) {
+    narrowFactor *= 1.15;
+    narrowLetterFactor *= 1.15;
+    wideFactor *= 1.12;
+    upperFactor *= 1.12;
+    stdFactor *= 1.12;
+  }
+
   for (let i = 0; i < word.length; i++) {
     const char = word[i];
     if (/[il1|!,.;:'"()\[\]\s]/.test(char)) {
-      widthFactor += 0.23; // extremely narrow (i, l, 1, space, punctuation)
+      widthFactor += narrowFactor;
     } else if (/[tfjrI\-]/.test(char)) {
-      widthFactor += 0.32; // narrow (t, f, j, r)
+      widthFactor += narrowLetterFactor;
     } else if (/[mwWM]/.test(char)) {
-      widthFactor += 0.85; // extra wide (m, w)
+      widthFactor += wideFactor;
     } else if (/[A-Z]/.test(char)) {
-      widthFactor += 0.68; // standard uppercase
+      widthFactor += upperFactor;
     } else {
-      widthFactor += 0.52; // standard lowercase, numbers, and others
+      widthFactor += stdFactor;
     }
   }
   return widthFactor * fontSize;
@@ -122,15 +160,17 @@ function wrapText(
   width: number,
   fontSize: number,
   maxLines?: number,
+  fontFamily: string = "",
+  weight: string = "",
 ): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
   let currentWidth = 0;
-  const spaceWidth = estimateWordWidth(" ", fontSize);
+  const spaceWidth = estimateWordWidth(" ", fontSize, fontFamily, weight);
 
   for (const word of words) {
-    const wordWidth = estimateWordWidth(word, fontSize);
+    const wordWidth = estimateWordWidth(word, fontSize, fontFamily, weight);
     const nextWidth = current ? currentWidth + spaceWidth + wordWidth : wordWidth;
 
     if (nextWidth <= width) {
@@ -142,17 +182,17 @@ function wrapText(
       // If a single word is wider than the allowed width, we have to hard-break it
       if (wordWidth > width) {
         let w = word;
-        while (estimateWordWidth(w, fontSize) > width) {
+        while (estimateWordWidth(w, fontSize, fontFamily, weight) > width) {
           // Find how many characters can fit
           let fitChars = 1;
-          while (fitChars < w.length && estimateWordWidth(w.slice(0, fitChars), fontSize) <= width) {
+          while (fitChars < w.length && estimateWordWidth(w.slice(0, fitChars), fontSize, fontFamily, weight) <= width) {
             fitChars++;
           }
           lines.push(w.slice(0, fitChars - 1));
           w = w.slice(fitChars - 1);
         }
         current = w;
-        currentWidth = estimateWordWidth(w, fontSize);
+        currentWidth = estimateWordWidth(w, fontSize, fontFamily, weight);
       } else {
         current = word;
         currentWidth = wordWidth;
@@ -182,7 +222,7 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
   const lineHeight = layer.lineHeight || 1.2;
   const align = layer.align || "left";
 
-  const lines = wrapText(resolvedText, layer.width, fontSize, layer.maxLines);
+  const lines = wrapText(resolvedText, layer.width, fontSize, layer.maxLines, fontFamily, weight);
 
   const lineStep = fontSize * lineHeight;
   // y in the input is the layer top-left. Baseline for first line = y + fontSize.
@@ -215,14 +255,15 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
         const words = line.split(/\s+/);
         
         // Calculate the precise estimated width of each word
-        const wordWidths = words.map((w) => estimateWordWidth(w, fontSize));
+        const wordWidths = words.map((w) => estimateWordWidth(w, fontSize, fontFamily, weight));
         const totalTextWidth = wordWidths.reduce((sum, w) => sum + w, 0);
         
         const remainingSpace = layer.width - totalTextWidth;
         const gaps = words.length - 1;
         
-        // Enforce a physical minimum gap of 0.22 * fontSize to absolutely prevent words from overlapping/merging
-        const minGap = fontSize * 0.22;
+        // Enforce a physical minimum gap of 0.28 * fontSize for bold/serif to absolutely prevent words from overlapping/merging
+        const isSerifOrBold = fontFamily.toLowerCase().includes("serif") || fontFamily.toLowerCase().includes("georgia") || fontFamily.toLowerCase().includes("newsreader") || weight.toLowerCase().includes("bold") || weight === "700" || weight === "Bold";
+        const minGap = fontSize * (isSerifOrBold ? 0.28 : 0.22);
         const spacePerGap = gaps > 0 ? Math.max(minGap, remainingSpace / gaps) : minGap;
 
         let currentX = layer.x;
