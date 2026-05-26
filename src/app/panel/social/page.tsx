@@ -80,6 +80,7 @@ interface SocialSettings {
     enabled: boolean;
     captionMaxLen: number;
     hashtagCount: number;
+    tokenExpiresAt?: string | null;
   };
   facebook: {
     accessToken: string | null;
@@ -87,6 +88,7 @@ interface SocialSettings {
     pageId: string | null;
     postMode: string;
     enabled: boolean;
+    tokenExpiresAt?: string | null;
   };
 }
 
@@ -1738,6 +1740,7 @@ function SettingsTab() {
   const [settings, setSettings] = useState<SocialSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   // editable forms mirror settings
   const [global, setGlobal] = useState<SocialSettings["global"] | null>(null);
@@ -1859,8 +1862,97 @@ function SettingsTab() {
     );
   }
 
+  const now = new Date();
+  
+  const igExpiresAt = settings?.instagram?.tokenExpiresAt ? new Date(settings.instagram.tokenExpiresAt) : null;
+  const isIgExpired = igExpiresAt ? igExpiresAt < now : false;
+  const igDaysLeft = igExpiresAt ? Math.ceil((igExpiresAt.getTime() - now.getTime()) / 86400000) : null;
+  const isIgExpiringSoon = igDaysLeft !== null && igDaysLeft >= 0 && igDaysLeft < 14;
+
+  const fbExpiresAt = settings?.facebook?.tokenExpiresAt ? new Date(settings.facebook.tokenExpiresAt) : null;
+  const isFbExpired = fbExpiresAt ? fbExpiresAt < now : false;
+  const fbDaysLeft = fbExpiresAt ? Math.ceil((fbExpiresAt.getTime() - now.getTime()) / 86400000) : null;
+  const isFbExpiringSoon = fbDaysLeft !== null && fbDaysLeft >= 0 && fbDaysLeft < 14;
+
   return (
     <div className="space-y-6">
+      {/* Expiry Warning Alert Banner */}
+      {(isIgExpired || isFbExpired || isIgExpiringSoon || isFbExpiringSoon) && (
+        <div className="rounded-2xl border border-red-200 bg-red-50/70 backdrop-blur p-5 text-sm text-red-800">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl mt-0.5">⚠️</span>
+            <div className="space-y-1">
+              <h4 className="font-bold text-red-950 text-sm">
+                Perhatian: Status Token Meta Anda Bermasalah!
+              </h4>
+              <p className="text-xs leading-relaxed text-red-800 font-medium">
+                {isIgExpired && "• Access token Instagram Anda telah kedaluwarsa. "}
+                {isFbExpired && "• Access token Facebook Anda telah kedaluwarsa. "}
+                {isIgExpiringSoon && `• Access token Instagram Anda akan habis dalam ${igDaysLeft} hari. `}
+                {isFbExpiringSoon && `• Access token Facebook Anda akan habis dalam ${fbDaysLeft} hari. `}
+                Hal ini menyebabkan posting otomatis gagal dilakukan. Silakan ikuti panduan di bawah untuk memperbarui token Anda menggunakan token baru dari Meta Developers.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Guide Accordion */}
+      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+        <button
+          onClick={() => setShowGuide(!showGuide)}
+          className="w-full flex items-center justify-between p-5 text-left font-bold text-txt-primary hover:bg-surface-secondary/50 transition-all duration-300"
+        >
+          <div className="flex items-center gap-2.5 text-primary">
+            <Share2 size={18} className="text-primary animate-pulse" />
+            <span className="text-sm font-bold">📖 Panduan Mendapatkan & Memperbarui Meta Token (Instagram / Facebook)</span>
+          </div>
+          <span className="text-xs text-primary font-bold bg-primary/5 hover:bg-primary/10 px-3 py-1 rounded-full transition-all">
+            {showGuide ? "▲ Sembunyikan" : "▼ Tampilkan Panduan"}
+          </span>
+        </button>
+
+        {showGuide && (
+          <div className="p-5 border-t border-border bg-surface-secondary/40 space-y-4 text-xs leading-relaxed text-txt-secondary">
+            <div className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-blue-950 space-y-1.5 backdrop-blur-sm">
+              <strong className="text-blue-950 font-bold block text-xs">💡 Info Penting Tentang Tipe Token:</strong>
+              Sangat direkomendasikan menggunakan <strong>Page Access Token</strong> yang didapatkan melalui proses "Scan Akun" di bawah. Token ini <strong>tidak akan pernah kedaluwarsa (Never Expires)</strong> selama Anda tidak mengubah password akun Facebook Anda atau mencabut izin aplikasi.
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 1: Hubungkan & Generate Short-Lived Token</h4>
+              <ol className="list-decimal list-inside space-y-1.5 ml-1">
+                <li>Buka <a href="https://developers.facebook.com/tools/explorer" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold hover:text-primary-dark inline-flex items-center gap-0.5">Meta Graph API Explorer <ExternalLink size={10} /></a>.</li>
+                <li>Di sudut kanan atas, pada pilihan <strong>Meta App</strong>, pilih App yang terhubung (contoh: <code>Kartawarta</code>).</li>
+                <li>Pada bagian <strong>User or Page</strong>, pilih <strong>User Access Token</strong>.</li>
+                <li>Di kolom <strong>Permissions</strong> (sisi kanan), tambahkan minimal 4 izin wajib berikut:
+                  <div className="flex flex-wrap gap-1.5 mt-1.5 mb-1.5">
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-pink-600">instagram_basic</code>
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-pink-600">instagram_content_publish</code>
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-blue-600">pages_read_engagement</code>
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-blue-600">pages_show_list</code>
+                  </div>
+                </li>
+                <li>Klik tombol biru <strong>Generate Access Token</strong>. Setujui login Facebook dan pastikan Anda mencentang Page Facebook & Akun Instagram Business Anda yang ingin diposting.</li>
+              </ol>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 2: Menghasilkan Token Page "Never Expires" Secara Otomatis</h4>
+              <ol className="list-decimal list-inside space-y-1.5 ml-1">
+                <li>Copy token hasil generate di Graph API Explorer (berupa teks panjang diawali <code>EAA...</code>).</li>
+                <li>Tempelkan token tersebut pada input <strong>Access Token</strong> di bagian <strong>Instagram</strong> di bawah ini.</li>
+                <li>Klik tombol <strong>"Scan Akun & Page Terhubung dari Meta Token"</strong>.</li>
+                <li>Daftar Facebook Page dan Akun Instagram Business yang terhubung akan muncul di bawah tombol.</li>
+                <li><strong>Klik pada kartu akun Anda di daftar hasil scan.</strong></li>
+                <li>Sistem akan mendeteksi token dan otomatis mengisi <strong>IG User ID</strong>, <strong>Page ID</strong>, serta menghasilkan <strong>Page Access Token yang Never Expires</strong> pada kolom token Instagram & Facebook secara bersamaan!</li>
+                <li>Terakhir, klik <strong>Simpan Instagram</strong> dan <strong>Simpan Facebook</strong> di bawah untuk menyimpan konfigurasi baru Anda.</li>
+              </ol>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Global */}
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
         <h3 className="text-base font-bold text-txt-primary mb-4">Global</h3>
@@ -1968,10 +2060,35 @@ function SettingsTab() {
 
       {/* Instagram */}
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
-        <h3 className="text-base font-bold text-txt-primary mb-1 flex items-center gap-2">
-          <Instagram size={16} className="text-pink-500" />
-          Instagram
-        </h3>
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <h3 className="text-base font-bold text-txt-primary flex items-center gap-2">
+            <Instagram size={16} className="text-pink-500" />
+            Instagram
+          </h3>
+          {settings.instagram.hasAccessToken ? (
+            isIgExpired ? (
+              <span className="inline-flex items-center rounded-md bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/10">
+                ❌ Expired ({igExpiresAt?.toLocaleDateString("id-ID")})
+              </span>
+            ) : isIgExpiringSoon ? (
+              <span className="inline-flex items-center rounded-md bg-yellow-50 px-2.5 py-0.5 text-xs font-semibold text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+                ⚠️ Expiring Soon ({igDaysLeft} hari lagi)
+              </span>
+            ) : igExpiresAt ? (
+              <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
+                ✅ Aktif (Sampai: {igExpiresAt?.toLocaleDateString("id-ID")})
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                ✨ Never Expires / Long-lived
+              </span>
+            )
+          ) : (
+            <span className="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+              Belum Terkoneksi
+            </span>
+          )}
+        </div>
         <p className="text-xs text-txt-muted mb-4">
           {settings.instagram.hasAccessToken
             ? `Token ter-set (masked: ${settings.instagram.accessToken}). Kosongkan untuk mempertahankan.`
@@ -2052,8 +2169,9 @@ function SettingsTab() {
                           setInstagram({
                             ...instagram,
                             igUserId: acc.instagramId,
+                            accessToken: acc.pageAccessToken || "",
                           });
-                          showSuccess(`ID Instagram '${acc.instagramUsername}' terpilih.`);
+                          showSuccess(`ID Instagram '${acc.instagramUsername}' & Token terpilih.`);
                         }
                         if (acc.pageId) {
                           setFacebook({
@@ -2061,7 +2179,7 @@ function SettingsTab() {
                             pageId: acc.pageId,
                             accessToken: acc.pageAccessToken || "",
                           });
-                          showSuccess(`Page Facebook '${acc.pageName}' terpilih.`);
+                          showSuccess(`Page Facebook '${acc.pageName}' & Token terpilih.`);
                         }
                       }}
                       className="p-2.5 bg-surface border border-border hover:border-primary rounded-lg cursor-pointer transition-all text-xs space-y-1 hover:shadow-card"
@@ -2161,10 +2279,35 @@ function SettingsTab() {
 
       {/* Facebook */}
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
-        <h3 className="text-base font-bold text-txt-primary mb-1 flex items-center gap-2">
-          <Facebook size={16} className="text-blue-600" />
-          Facebook
-        </h3>
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <h3 className="text-base font-bold text-txt-primary flex items-center gap-2">
+            <Facebook size={16} className="text-blue-600" />
+            Facebook
+          </h3>
+          {settings.facebook.hasAccessToken ? (
+            isFbExpired ? (
+              <span className="inline-flex items-center rounded-md bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/10">
+                ❌ Expired ({fbExpiresAt?.toLocaleDateString("id-ID")})
+              </span>
+            ) : isFbExpiringSoon ? (
+              <span className="inline-flex items-center rounded-md bg-yellow-50 px-2.5 py-0.5 text-xs font-semibold text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+                ⚠️ Expiring Soon ({fbDaysLeft} hari lagi)
+              </span>
+            ) : fbExpiresAt ? (
+              <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
+                ✅ Aktif (Sampai: {fbExpiresAt?.toLocaleDateString("id-ID")})
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                ✨ Never Expires / Long-lived
+              </span>
+            )
+          ) : (
+            <span className="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+              Belum Terkoneksi
+            </span>
+          )}
+        </div>
         <p className="text-xs text-txt-muted mb-4">
           {settings.facebook.hasAccessToken
             ? `Token ter-set (masked: ${settings.facebook.accessToken}). Kosongkan untuk mempertahankan.`
