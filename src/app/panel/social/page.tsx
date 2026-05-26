@@ -129,6 +129,41 @@ function PostsTab() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [filterPlatform, setFilterPlatform] = useState<Platform | "ALL">("ALL");
   const [filterStatus, setFilterStatus] = useState<PostStatus | "ALL">("ALL");
+  const [testingPublish, setTestingPublish] = useState(false);
+
+  async function handleTestPublish() {
+    const ok = await confirm({
+      title: "Uji Coba Publikasi (Test Publish)",
+      message: "Apakah Anda yakin ingin memicu uji coba publikasi menggunakan artikel terbaru yang baru diterbitkan? Ini akan merender gambar kustom dan langsung mempostingnya ke Instagram & Facebook jika diaktifkan.",
+      variant: "default",
+    });
+    if (!ok) return;
+
+    try {
+      setTestingPublish(true);
+      const res = await fetch("/api/social/test-publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || "Gagal memicu uji coba.");
+      }
+      
+      const results = json.data?.results || [];
+      const summary = results
+        .map((r: any) => `${r.platform}: ${r.status}${r.error ? ` (${r.error})` : ""}`)
+        .join("\n");
+      
+      showSuccess(`Uji coba publikasi selesai!\nHasil:\n${summary}`);
+      fetchPosts();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal memicu uji coba");
+    } finally {
+      setTestingPublish(false);
+    }
+  }
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -213,6 +248,18 @@ function PostsTab() {
         >
           <RefreshCw size={14} />
           Refresh
+        </button>
+        <button
+          onClick={handleTestPublish}
+          disabled={testingPublish}
+          className="btn-primary flex items-center gap-1.5 px-3 py-2 text-sm ml-auto rounded-lg disabled:opacity-50"
+        >
+          {testingPublish ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Send size={14} />
+          )}
+          Test Publish (Artikel Terbaru)
         </button>
       </div>
 
