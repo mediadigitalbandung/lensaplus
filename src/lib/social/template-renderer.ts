@@ -59,7 +59,7 @@ function resolvePlaceholders(
   article: ArticleForPublish,
   enriched?: EnrichedData,
 ): string {
-  const titleVal = enriched?.paraphrasedTitle || article.title;
+  const titleVal = article.title;
   const summaryVal = enriched?.shortSummary || article.excerpt || "";
   const categoryVal = article.category?.name || "";
   const dateVal = formatDate(article.publishedAt);
