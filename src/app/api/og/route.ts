@@ -26,8 +26,7 @@ import { prisma } from "@/lib/prisma";
 // Dropping force-dynamic lets Next.js skip its dynamic-rendering machinery
 // when the response is already memoised at the edge — origin sees only
 // uncached cold-starts (article changes invalidate via og: URL versioning).
-export const dynamic = "force-static";
-export const revalidate = false; // immutable per response Cache-Control header
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const WIDTH = 1200;

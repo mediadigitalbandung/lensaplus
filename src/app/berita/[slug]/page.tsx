@@ -41,7 +41,7 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
 
   const title = article.seoTitle || article.title;
   const description = article.seoDescription || article.excerpt || "";
-  const ogImageUrl = `/api/og?slug=${encodeURIComponent(params.slug)}`;
+  const ogImageUrl = `/api/og?slug=${encodeURIComponent(params.slug)}&v=${article.updatedAt.getTime()}`;
 
   return {
     title,
