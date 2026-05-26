@@ -113,13 +113,16 @@ export class InstagramPublisher {
       while (retries > 0 && !statusFinished) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
 
-        const statusUrl = `${GRAPH_BASE}/${encodeURIComponent(createRes.id)}?fields=status_code&access_token=${encodeURIComponent(accessToken)}`;
+        // Workaround for Meta Graph API regression (May 23, 2026): Hitting /{container-id} directly
+        // with a Page Access Token returns an unexpected "Authorization Error" (code 100, subcode 33).
+        // Using the root query with ?ids={container-id} successfully bypasses this permissions bug!
+        const statusUrl = `${GRAPH_BASE}/?ids=${encodeURIComponent(createRes.id)}&fields=status_code&access_token=${encodeURIComponent(accessToken)}`;
         try {
-          const statusRes = await graphRequest<{ status_code?: string }>(statusUrl, {
+          const statusRes = await graphRequest<Record<string, { status_code?: string }>>(statusUrl, {
             method: "GET",
           });
           
-          const code = statusRes?.status_code;
+          const code = statusRes?.[createRes.id]?.status_code;
           console.log(`[instagram] Polled container ${createRes.id} status_code: ${code} (retries left: ${retries - 1})`);
           
           if (code === "FINISHED") {
