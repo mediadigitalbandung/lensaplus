@@ -70,6 +70,7 @@ scripts/*
 !scripts/backup-offsite.sh
 !scripts/safe-db-push.sh
 !scripts/deploy-vps.sh
+!scripts/test-instagram.js
 !scripts/.gitkeep
 
 # Playwright artifacts
