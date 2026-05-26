@@ -1717,6 +1717,44 @@ function SettingsTab() {
   } | null>(null);
   const [showFbToken, setShowFbToken] = useState(false);
 
+  const [scanningAccounts, setScanningAccounts] = useState(false);
+  const [scannedAccounts, setScannedAccounts] = useState<Array<{
+    pageId: string;
+    pageName: string;
+    pageAccessToken: string;
+    instagramId?: string;
+    instagramUsername?: string;
+    instagramName?: string;
+  }>>([]);
+
+  async function handleScanAccounts() {
+    if (!instagram) return;
+    try {
+      setScanningAccounts(true);
+      setScannedAccounts([]);
+      const res = await fetch("/api/social/scan-accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken: instagram.accessToken }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || "Gagal melakukan scan akun.");
+      }
+      const accounts = json.data?.accounts || [];
+      if (accounts.length === 0) {
+        showError("Tidak ditemukan akun Instagram Business yang terhubung ke Facebook Page di bawah token ini.");
+      } else {
+        setScannedAccounts(accounts);
+        showSuccess(`Ditemukan ${accounts.length} akun terhubung! Silakan pilih dari daftar.`);
+      }
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal scan akun");
+    } finally {
+      setScanningAccounts(false);
+    }
+  }
+
   const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
@@ -1944,6 +1982,71 @@ function SettingsTab() {
                 setInstagram({ ...instagram, igUserId: e.target.value })
               }
             />
+          </div>
+          <div className="md:col-span-2">
+            <button
+              type="button"
+              onClick={handleScanAccounts}
+              disabled={scanningAccounts}
+              className="btn-ghost flex items-center gap-1.5 px-3 py-1.5 text-xs text-primary font-semibold border border-primary/20 rounded-lg hover:bg-primary/5 disabled:opacity-50"
+            >
+              {scanningAccounts ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <RefreshCw size={12} />
+              )}
+              Scan Akun & Page Terhubung dari Meta Token
+            </button>
+
+            {scannedAccounts.length > 0 && (
+              <div className="mt-3 p-3 bg-surface-secondary border border-border rounded-xl space-y-2">
+                <p className="text-xs font-bold text-txt-secondary">
+                  Pilih Akun Terhubung untuk mengisi ID secara otomatis:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {scannedAccounts.map((acc, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        if (acc.instagramId) {
+                          setInstagram({
+                            ...instagram,
+                            igUserId: acc.instagramId,
+                          });
+                          showSuccess(`ID Instagram '${acc.instagramUsername}' terpilih.`);
+                        }
+                        if (acc.pageId) {
+                          setFacebook({
+                            ...facebook,
+                            pageId: acc.pageId,
+                            accessToken: acc.pageAccessToken || "",
+                          });
+                          showSuccess(`Page Facebook '${acc.pageName}' terpilih.`);
+                        }
+                      }}
+                      className="p-2.5 bg-surface border border-border hover:border-primary rounded-lg cursor-pointer transition-all text-xs space-y-1 hover:shadow-card"
+                    >
+                      <div className="font-bold text-txt-primary">
+                        🚩 Page: {acc.pageName}
+                      </div>
+                      {acc.instagramId ? (
+                        <div className="text-pink-500 font-semibold flex items-center gap-1">
+                          <Instagram size={10} />
+                          IG: @{acc.instagramUsername} ({acc.instagramName})
+                        </div>
+                      ) : (
+                        <div className="text-txt-muted italic">
+                          (Tidak ada IG Business terhubung)
+                        </div>
+                      )}
+                      <div className="text-[10px] text-txt-muted">
+                        Klik untuk pilih & isi ID secara otomatis.
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-xs font-semibold text-txt-secondary mb-1">
