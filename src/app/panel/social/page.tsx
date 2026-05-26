@@ -1912,7 +1912,7 @@ function SettingsTab() {
                 placeholder={
                   settings.instagram.hasAccessToken
                     ? "(tidak berubah)"
-                    : "IGQV..."
+                    : "EAA..."
                 }
                 value={instagram.accessToken}
                 onChange={(e) =>
