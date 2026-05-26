@@ -102,6 +102,48 @@ export class InstagramPublisher {
         return { success: false, error: "Instagram media container creation returned no id" };
       }
 
+      // Wait for the container to finish processing (polling status_code)
+      // This solves the common Meta 9007 (Media ID is not available) race condition error
+      let statusFinished = false;
+      let retries = 15; // 15 attempts
+      const delayMs = 3000; // 3 seconds delay between polls
+
+      console.log(`[instagram] Media container ${createRes.id} created, polling status to ensure it is ready...`);
+
+      while (retries > 0 && !statusFinished) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+        const statusUrl = `${GRAPH_BASE}/${encodeURIComponent(createRes.id)}?fields=status_code&access_token=${encodeURIComponent(accessToken)}`;
+        try {
+          const statusRes = await graphRequest<{ status_code?: string }>(statusUrl, {
+            method: "GET",
+          });
+          
+          const code = statusRes?.status_code;
+          console.log(`[instagram] Polled container ${createRes.id} status_code: ${code} (retries left: ${retries - 1})`);
+          
+          if (code === "FINISHED") {
+            statusFinished = true;
+          } else if (code === "ERROR") {
+            throw new Error("Meta container processing failed (status_code: ERROR). The image dimensions, aspect ratio, or format may be invalid.");
+          } else if (code === "EXPIRED") {
+            throw new Error("Meta container expired during processing.");
+          }
+        } catch (pollErr) {
+          const errMsg = pollErr instanceof Error ? pollErr.message : String(pollErr);
+          // If we hit a terminal error from our graphRequest helper (like permission or expired), throw immediately
+          if (errMsg.includes("code 190") || errMsg.includes("code 10") || errMsg.includes("code 200")) {
+            throw pollErr;
+          }
+          console.warn(`[instagram] Polling container status attempt failed, retrying...`, pollErr);
+        }
+        retries--;
+      }
+
+      if (!statusFinished) {
+        console.warn(`[instagram] Container ${createRes.id} still in processing state after 45 seconds, attempting fallback publish...`);
+      }
+
       // Step 2: publish.
       const publishUrl = `${GRAPH_BASE}/${encodeURIComponent(igUserId)}/media_publish`;
       const publishBody = new URLSearchParams({
