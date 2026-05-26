@@ -68,7 +68,7 @@ export interface TextLayer {
   color?: string;
   lineHeight?: number;
   maxLines?: number;
-  align?: "left" | "center" | "right";
+  align?: "left" | "center" | "right" | "justify";
 }
 
 export interface PlatformDimensions {
