@@ -480,6 +480,37 @@ function TemplatesTab() {
   const [previewTemplateId, setPreviewTemplateId] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  // Latest article for inline preview
+  const [latestArticle, setLatestArticle] = useState<{
+    title: string;
+    excerpt: string;
+    featuredImage: string | null;
+    categoryName: string;
+    publishedAt: string | null;
+  } | null>(null);
+
+  const fetchLatestArticle = useCallback(async () => {
+    try {
+      const res = await fetch("/api/articles?status=PUBLISHED&limit=1");
+      if (res.ok) {
+        const json = await res.json();
+        const articles = json.data?.articles || [];
+        if (articles.length > 0) {
+          const a = articles[0];
+          setLatestArticle({
+            title: a.title || "",
+            excerpt: a.excerpt || "",
+            featuredImage: a.featuredImage || null,
+            categoryName: a.category?.name || "",
+            publishedAt: a.publishedAt || null,
+          });
+        }
+      }
+    } catch {
+      /* silent */
+    }
+  }, []);
+
   // Auto-calculate preview scale to fit container
   useEffect(() => {
     const container = previewContainerRef.current;
@@ -530,7 +561,8 @@ function TemplatesTab() {
   useEffect(() => {
     fetchTemplates();
     fetchCategories();
-  }, [fetchTemplates, fetchCategories]);
+    fetchLatestArticle();
+  }, [fetchTemplates, fetchCategories, fetchLatestArticle]);
 
   // Drag and resize handlers
   useEffect(() => {
@@ -1505,7 +1537,8 @@ function TemplatesTab() {
                     <button
                       type="button"
                       onClick={() => {
-                        showSuccess("Preview di-refresh");
+                        fetchLatestArticle();
+                        showSuccess("Preview di-refresh dengan artikel terbaru");
                       }}
                       className="text-emerald-400 hover:text-emerald-300 font-bold text-xs flex items-center gap-1 transition-all"
                     >
@@ -1551,8 +1584,8 @@ function TemplatesTab() {
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=1080"
-                                alt="Court"
+                                src={latestArticle?.featuredImage || "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=1080"}
+                                alt={latestArticle?.title || "Preview"}
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -1575,13 +1608,19 @@ function TemplatesTab() {
                           .map((layer, idx) => {
                             // Dynamic content resolution
                             let resolvedText = layer.text;
+                            const previewTitle = latestArticle?.title || "Judul Artikel Terbaru";
+                            const previewSummary = latestArticle?.excerpt || "Ringkasan artikel terbaru akan tampil di sini.";
+                            const previewCategory = latestArticle?.categoryName || "KATEGORI";
+                            const previewDate = latestArticle?.publishedAt
+                              ? new Date(latestArticle.publishedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+                              : new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
                             resolvedText = resolvedText
-                              .replace(/\{\{category\}\}/g, "TIPIKOR")
-                              .replace(/\{\{paraphrased_title\}\}/g, "Eks Dirut Pertamina Dituntut 4 Tahun Bui Kasus Korupsi Katalis")
-                              .replace(/\{\{short_summary\}\}/g, "Mantan Direktur Pengolahan PT Pertamina Chrisna Damayanto dituntut 4 tahun penjara akibat korupsi pengadaan katalis di Kilang Balongan senilai Rp176,4 Miliar.")
-                              .replace(/\{\{date\}\}/g, "21 Mei 2026")
-                              .replace(/\{\{title\}\}/g, "Eks Dirut Pertamina Dituntut 4 Tahun Bui Kasus Korupsi Katalis")
-                              .replace(/\{\{summary\}\}/g, "Mantan Direktur Pengolahan PT Pertamina Chrisna Damayanto dituntut 4 tahun penjara akibat korupsi pengadaan katalis di Kilang Balongan senilai Rp176,4 Miliar.");
+                              .replace(/\{\{category\}\}/g, previewCategory.toUpperCase())
+                              .replace(/\{\{paraphrased_title\}\}/g, previewTitle)
+                              .replace(/\{\{short_summary\}\}/g, previewSummary)
+                              .replace(/\{\{date\}\}/g, previewDate)
+                              .replace(/\{\{title\}\}/g, previewTitle)
+                              .replace(/\{\{summary\}\}/g, previewSummary);
 
                             const fontSerif = layer.fontFamily?.includes("Newsreader") || layer.fontFamily?.includes("Georgia");
 
