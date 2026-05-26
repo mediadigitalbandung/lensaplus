@@ -1907,7 +1907,11 @@ function SettingsTab() {
             </label>
             <div className="relative">
               <input
-                type={showIgToken ? "text" : "password"}
+                type="text"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                style={{ WebkitTextSecurity: showIgToken ? "none" : "disc" } as React.CSSProperties}
                 className="input w-full py-2 text-sm pr-16"
                 placeholder={
                   settings.instagram.hasAccessToken
@@ -2043,7 +2047,11 @@ function SettingsTab() {
             </label>
             <div className="relative">
               <input
-                type={showFbToken ? "text" : "password"}
+                type="text"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                style={{ WebkitTextSecurity: showFbToken ? "none" : "disc" } as React.CSSProperties}
                 className="input w-full py-2 text-sm pr-16"
                 placeholder={
                   settings.facebook.hasAccessToken
