@@ -1420,7 +1420,7 @@ function TemplatesTab() {
                                       value={layer.align || "left"}
                                       onChange={(e) => {
                                         const updated = [...layers];
-                                        updated[idx].align = e.target.value as "left" | "center" | "right";
+                                        updated[idx].align = e.target.value as "left" | "center" | "right" | "justify";
                                         setLayers(updated);
                                       }}
                                     >

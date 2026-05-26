@@ -31,7 +31,7 @@ const textLayerSchema = z.object({
   color: z.string().optional(),
   lineHeight: z.number().optional(),
   maxLines: z.number().int().optional(),
-  align: z.enum(["left", "center", "right"]).optional(),
+  align: z.enum(["left", "center", "right", "justify"]).optional(),
 });
 
 const createSchema = z.object({
