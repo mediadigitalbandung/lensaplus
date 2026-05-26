@@ -191,14 +191,11 @@ async function loadBackground(urlOrPath: string): Promise<Buffer> {
   }
 
   // Local path — may be "/uploads/foo.png" or "public/uploads/foo.png"
-  let rel = urlOrPath.replace(/^\/+/, "");
-  if (!rel.startsWith("public/") && !rel.startsWith("public\\")) {
-    rel = path.join("public", rel);
-  }
-  const abs = path.isAbsolute(urlOrPath)
-    ? urlOrPath
-    : path.join(process.cwd(), rel);
-  return fs.readFile(abs);
+  const rel = urlOrPath.replace(/^\/+/, "");
+  const localPath = rel.startsWith("public/")
+    ? path.join(process.cwd(), rel)
+    : path.join(process.cwd(), "public", rel);
+  return fs.readFile(localPath);
 }
 
 /**
