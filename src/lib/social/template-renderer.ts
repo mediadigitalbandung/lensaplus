@@ -54,18 +54,35 @@ function formatDate(d: Date | null | undefined): string {
   }
 }
 
-/** Resolve placeholders in a string template. */
 function resolvePlaceholders(
   text: string,
   article: ArticleForPublish,
   enriched?: EnrichedData,
 ): string {
+  const titleVal = enriched?.paraphrasedTitle || article.title;
+  const summaryVal = enriched?.shortSummary || article.excerpt || "";
+  const categoryVal = article.category?.name || "";
+  const dateVal = formatDate(article.publishedAt);
+  const authorVal = article.author?.name || "";
+
   return text
-    .replace(/\{title\}/g, enriched?.paraphrasedTitle || article.title)
-    .replace(/\{summary\}/g, enriched?.shortSummary || article.excerpt || "")
-    .replace(/\{category\}/g, article.category?.name || "")
-    .replace(/\{date\}/g, formatDate(article.publishedAt))
-    .replace(/\{author\}/g, article.author?.name || "");
+    // Double curly braces variations
+    .replace(/\{\{paraphrased_title\}\}/g, titleVal)
+    .replace(/\{\{short_summary\}\}/g, summaryVal)
+    .replace(/\{\{title\}\}/g, titleVal)
+    .replace(/\{\{summary\}\}/g, summaryVal)
+    .replace(/\{\{category\}\}/g, categoryVal)
+    .replace(/\{\{date\}\}/g, dateVal)
+    .replace(/\{\{author\}\}/g, authorVal)
+    
+    // Single curly braces variations
+    .replace(/\{paraphrased_title\}/g, titleVal)
+    .replace(/\{short_summary\}/g, summaryVal)
+    .replace(/\{title\}/g, titleVal)
+    .replace(/\{summary\}/g, summaryVal)
+    .replace(/\{category\}/g, categoryVal)
+    .replace(/\{date\}/g, dateVal)
+    .replace(/\{author\}/g, authorVal);
 }
 
 /**
