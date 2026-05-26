@@ -196,7 +196,7 @@ function PostsTab() {
   async function doAction(id: string, action: "approve" | "reject" | "takedown") {
     const labels: Record<string, string> = {
       approve: "mempublikasi",
-      reject: "menolak",
+      reject: "menghapus",
       takedown: "men-takedown",
     };
     const ok = await confirm({
@@ -379,6 +379,20 @@ function PostsTab() {
                           <Trash2 size={12} />
                         )}
                         Takedown
+                      </button>
+                    )}
+                    {(p.status === "REJECTED" || p.status === "DELETED") && (
+                      <button
+                        onClick={() => doAction(p.id, "reject")}
+                        disabled={processing === p.id}
+                        className="btn-ghost flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold text-red-500 disabled:opacity-50 hover:bg-red-50"
+                      >
+                        {processing === p.id ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={12} />
+                        )}
+                        Hapus Post
                       </button>
                     )}
                     {p.article && (
