@@ -60,7 +60,7 @@ export async function generateCaptionForTemplate(
 
   const userPrompt = `Dari judul + excerpt berikut, buat:
 (1) paraphrasedTitle — 50 sampai 80 karakter, bahasa Indonesia natural, cocok untuk overlay pada gambar sosial media. Hindari clickbait berlebihan. Hindari tanda baca akhir seperti titik.
-(2) shortSummary — satu kalimat 80 sampai 120 karakter, memberi konteks yang jelas kepada pembaca.
+(2) shortSummary — satu sampai dua kalimat padat berisi, sekitar 140 sampai 180 karakter, memberi konteks yang jelas kepada pembaca (dioptimalkan agar pas mengisi sekitar 4 baris teks poster).
 
 Format jawaban WAJIB JSON murni (tanpa markdown), persis:
 {"paraphrasedTitle":"...","shortSummary":"..."}
@@ -99,6 +99,6 @@ EXCERPT: ${excerpt}`;
 
   return {
     paraphrasedTitle: article.title,
-    shortSummary: (article.excerpt || stripHtml(article.content)).slice(0, 120),
+    shortSummary: (article.excerpt || stripHtml(article.content)).slice(0, 180),
   };
 }

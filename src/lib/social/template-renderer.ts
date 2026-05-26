@@ -167,6 +167,12 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
   const tspans = lines
     .map((line, i) => {
       const dy = i === 0 ? 0 : lineStep;
+      const isLast = i === lines.length - 1;
+      const isJustify = align === "justify";
+
+      if (isJustify && !isLast) {
+        return `<tspan x="${layer.x}" dy="${dy}" textLength="${layer.width}" lengthAdjust="spacing">${escapeXml(line)}</tspan>`;
+      }
       return `<tspan x="${anchorX}" dy="${dy}">${escapeXml(line)}</tspan>`;
     })
     .join("");

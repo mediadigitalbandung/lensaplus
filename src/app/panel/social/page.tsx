@@ -439,6 +439,7 @@ const ALIGN_OPTIONS = [
   { value: "left", label: "Kiri" },
   { value: "center", label: "Tengah" },
   { value: "right", label: "Kanan" },
+  { value: "justify", label: "Rata Kiri-Kanan (Justify)" },
 ];
 
 function TemplatesTab() {
