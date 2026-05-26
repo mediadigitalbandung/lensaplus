@@ -151,6 +151,9 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
   // y in the input is the layer top-left. Baseline for first line = y + fontSize.
   const baseY = layer.y + fontSize;
 
+  const approxCharWidth = fontSize * 0.55;
+  const isJustify = align === "justify";
+
   let anchorX: number;
   let textAnchor: "start" | "middle" | "end";
   if (align === "center") {
@@ -160,6 +163,7 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
     anchorX = layer.x + layer.width;
     textAnchor = "end";
   } else {
+    // left and justify both anchor from start
     anchorX = layer.x;
     textAnchor = "start";
   }
@@ -168,16 +172,32 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
     .map((line, i) => {
       const dy = i === 0 ? 0 : lineStep;
       const isLast = i === lines.length - 1;
-      const isJustify = align === "justify";
 
-      if (isJustify && !isLast) {
-        return `<tspan x="${layer.x}" dy="${dy}" textLength="${layer.width}" lengthAdjust="spacing">${escapeXml(line)}</tspan>`;
+      // Justify: manually position each word across the full width
+      // (librsvg does NOT support textLength/lengthAdjust on tspan)
+      if (isJustify && !isLast && line.includes(" ")) {
+        const words = line.split(/\s+/);
+        const totalChars = words.reduce((sum, w) => sum + w.length, 0);
+        const totalTextWidth = totalChars * approxCharWidth;
+        const remainingSpace = layer.width - totalTextWidth;
+        const gaps = words.length - 1;
+        const spacePerGap = gaps > 0 ? remainingSpace / gaps : 0;
+
+        let currentX = layer.x;
+        const wordSpans = words.map((word, wi) => {
+          const dyAttr = wi === 0 ? ` dy="${dy}"` : "";
+          const span = `<tspan x="${Math.round(currentX)}"${dyAttr}>${escapeXml(word)}</tspan>`;
+          currentX += word.length * approxCharWidth + spacePerGap;
+          return span;
+        });
+        return wordSpans.join("");
       }
+
       return `<tspan x="${anchorX}" dy="${dy}">${escapeXml(line)}</tspan>`;
     })
     .join("");
 
-  return `<text x="${anchorX}" y="${baseY}" fill="${escapeXml(color)}" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}" font-weight="${weight}" text-anchor="${textAnchor}">${tspans}</text>`;
+  return `<text x="${anchorX}" y="${baseY}" fill="${escapeXml(color)}" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}" font-weight="${weight}" text-anchor="${isJustify ? "start" : textAnchor}">${tspans}</text>`;
 }
 
 // SSRF guard for template background fetches

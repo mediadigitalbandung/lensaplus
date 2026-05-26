@@ -60,7 +60,7 @@ export async function generateCaptionForTemplate(
 
   const userPrompt = `Dari judul + excerpt berikut, buat:
 (1) paraphrasedTitle — 50 sampai 80 karakter, bahasa Indonesia natural, cocok untuk overlay pada gambar sosial media. Hindari clickbait berlebihan. Hindari tanda baca akhir seperti titik.
-(2) shortSummary — ringkasan padat berisi sebanyak 2 sampai 3 kalimat pendek (total panjang WAJIB di rentang 240 sampai 280 karakter), dirangkum langsung dari konten artikel untuk memberi penjelasan yang jelas kepada pembaca (dioptimalkan secara presisi agar pas mengisi ruang 4 baris teks pada poster).
+(2) shortSummary — ringkasan padat berisi sebanyak 2 sampai 3 kalimat pendek. TOTAL PANJANG shortSummary WAJIB ANTARA 200 SAMPAI 260 KARAKTER (termasuk spasi). TIDAK BOLEH LEBIH DARI 260 KARAKTER. Jika melebihi, kurangi kata-kata yang tidak penting. Dirangkum langsung dari konten artikel untuk memberi penjelasan yang jelas kepada pembaca.
 
 Format jawaban WAJIB JSON murni (tanpa markdown), persis:
 {"paraphrasedTitle":"...","shortSummary":"..."}
@@ -85,7 +85,11 @@ EXCERPT: ${excerpt}`;
 
     if (parsed?.paraphrasedTitle && parsed?.shortSummary) {
       const cleanTitle = cleanAIShortText(parsed.paraphrasedTitle);
-      const cleanSummary = cleanAIShortText(parsed.shortSummary);
+      let cleanSummary = cleanAIShortText(parsed.shortSummary);
+      // Hard enforce max length: truncate at word boundary if AI exceeded limit
+      if (cleanSummary && cleanSummary.length > 260) {
+        cleanSummary = truncateAtWord(cleanSummary, 260);
+      }
       if (cleanTitle && cleanSummary) {
         return {
           paraphrasedTitle: cleanTitle,
@@ -99,6 +103,17 @@ EXCERPT: ${excerpt}`;
 
   return {
     paraphrasedTitle: article.title,
-    shortSummary: (article.excerpt || stripHtml(article.content)).slice(0, 260),
+    shortSummary: truncateAtWord((article.excerpt || stripHtml(article.content)), 260),
   };
+}
+
+/** Truncate text at word boundary, ensuring it doesn't exceed maxLen chars. */
+function truncateAtWord(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  const truncated = text.slice(0, maxLen);
+  const lastSpace = truncated.lastIndexOf(" ");
+  const cut = lastSpace > maxLen * 0.6 ? truncated.slice(0, lastSpace) : truncated;
+  // End with period if the last char isn't already punctuation
+  const trimmed = cut.replace(/[,;:\s]+$/, "");
+  return trimmed.endsWith(".") ? trimmed : trimmed + ".";
 }
