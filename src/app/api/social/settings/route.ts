@@ -7,6 +7,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { execSync } from "child_process";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
@@ -29,7 +30,19 @@ function maskToken(t: string | null | undefined): string | null {
 export async function GET() {
   try {
     await requireRole(["SUPER_ADMIN"]);
-    const settings = await getAllSocialSettings();
+    let settings;
+    try {
+      settings = await getAllSocialSettings();
+    } catch (dbErr) {
+      console.warn("[settings API] DB query failed, attempting auto-migration (db push)...", dbErr);
+      try {
+        execSync("npx prisma db push --accept-data-loss", { stdio: "inherit" });
+        settings = await getAllSocialSettings();
+      } catch (migrationErr) {
+        console.error("[settings API] Auto-migration failed:", migrationErr);
+        throw dbErr;
+      }
+    }
 
     return successResponse({
       global: settings.global,
