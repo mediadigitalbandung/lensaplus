@@ -1860,7 +1860,8 @@ function SettingsTab() {
 
   useEffect(() => {
     fetchSettings();
-  }, [fetchSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function saveScope(
     scope: "global" | "instagram" | "facebook",
@@ -1953,6 +1954,7 @@ function SettingsTab() {
       {/* Guide Accordion */}
       <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
         <button
+          type="button"
           onClick={() => setShowGuide(!showGuide)}
           className="w-full flex items-center justify-between p-5 text-left font-bold text-txt-primary hover:bg-surface-secondary/50 transition-all duration-300"
         >
