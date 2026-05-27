@@ -116,6 +116,13 @@ export async function GET(request: NextRequest) {
           author: { select: { id: true, name: true, avatar: true } },
           category: { select: { id: true, name: true, slug: true } },
           tags: { select: { id: true, name: true, slug: true } },
+          socialPosts: {
+            select: {
+              id: true,
+              platform: true,
+              status: true,
+            },
+          },
         },
         orderBy,
         skip: (page - 1) * limit,
