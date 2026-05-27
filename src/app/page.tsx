@@ -1,4 +1,4 @@
-﻿// Revalidate window. Articles published via /api/articles or the cron route
+// Revalidate window. Articles published via /api/articles or the cron route
 // also call revalidatePath("/") via seo-auto.onArticlePublished — so new posts
 // appear instantly. This 30s window is the fallback when that path-revalidate
 // fails (e.g. AI auto-publish at scale, or cache cold-start after deploy).
@@ -69,14 +69,44 @@ export default async function HomePage() {
         orderBy: { order: "asc" },
       }),
     ),
-    getCached("home:trending:10", 60_000, () =>
-      prisma.article.findMany({
-        where: { status: "PUBLISHED" },
+    getCached("home:trending:10", 60_000, async () => {
+      const past24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      let trending = await prisma.article.findMany({
+        where: {
+          status: "PUBLISHED",
+          publishedAt: { gte: past24Hours },
+        },
         select: articleSelect,
         orderBy: { viewCount: "desc" },
         take: 10,
-      }),
-    ),
+      });
+
+      // Fallback 1: If fewer than 6 articles, try past 7 days
+      if (trending.length < 6) {
+        const past7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        trending = await prisma.article.findMany({
+          where: {
+            status: "PUBLISHED",
+            publishedAt: { gte: past7Days },
+          },
+          select: articleSelect,
+          orderBy: { viewCount: "desc" },
+          take: 10,
+        });
+      }
+
+      // Fallback 2: If still fewer than 6, get all time
+      if (trending.length < 6) {
+        trending = await prisma.article.findMany({
+          where: { status: "PUBLISHED" },
+          select: articleSelect,
+          orderBy: { viewCount: "desc" },
+          take: 10,
+        });
+      }
+
+      return trending;
+    }),
   ]);
 
   // Dedup by source article — auto-articles that paraphrase the same
@@ -303,7 +333,7 @@ export default async function HomePage() {
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
                     <TrendingUp size={16} strokeWidth={2.5} />
                   </div>
-                  <h2 className="font-serif text-headline-sm text-on-surface">Terpopuler</h2>
+                  <h2 className="font-serif text-headline-sm text-on-surface">Terpopuler 24 Jam</h2>
                 </div>
                 <div className="flex flex-col">
                   {trendingArticles.slice(0, 6).map((a, i) => (
