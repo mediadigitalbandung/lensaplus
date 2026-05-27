@@ -30,6 +30,7 @@ export interface PreparedPost {
   caption: string;
   articleId: string;
   templateId?: string;
+  mediaType?: "FEED" | "STORIES";
 }
 
 /**

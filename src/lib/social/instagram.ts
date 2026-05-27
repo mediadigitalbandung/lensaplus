@@ -88,11 +88,16 @@ export class InstagramPublisher {
     try {
       // Step 1: create media container.
       const createUrl = `${GRAPH_BASE}/${encodeURIComponent(igUserId)}/media`;
-      const createBody = new URLSearchParams({
+      const params: Record<string, string> = {
         image_url: post.imageUrl,
-        caption: post.caption,
         access_token: accessToken,
-      });
+      };
+      if (post.mediaType === "STORIES") {
+        params.media_type = "STORIES";
+      } else {
+        params.caption = post.caption;
+      }
+      const createBody = new URLSearchParams(params);
       const createRes = await graphRequest<{ id?: string }>(createUrl, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },

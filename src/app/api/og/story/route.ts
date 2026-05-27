@@ -131,11 +131,13 @@ function buildSvgOverlay({
   title,
   category,
   slug,
+  excerpt,
   hasImage,
 }: {
   title: string;
   category: string;
   slug: string;
+  excerpt: string;
   hasImage: boolean;
 }): string {
   // Portrait layout: image occupies top 1080px, text below starting ~920px
@@ -154,9 +156,33 @@ function buildSvgOverlay({
     })
     .join("");
 
-  // Slug display: strip leading slash, truncate
+  // Excerpt / Summary block
+  const excerptLines = excerpt ? wrapText(excerpt, 50, 3) : [];
+  const titleHeight = (titleLines.length - 1) * lineHeight;
+  const titleEndY = titleY + titleHeight;
+  const excerptY = titleEndY + 50; // 50px gap after title
+
+  const excerptTspans = excerptLines
+    .map((line, i) => {
+      const dy = i === 0 ? 0 : 42;
+      return `<tspan x="60" dy="${dy}">${escapeXml(line)}</tspan>`;
+    })
+    .join("");
+
+  const excerptSvg = excerptLines.length > 0
+    ? `<text font-family="'Work Sans','Helvetica',sans-serif" font-size="28" font-weight="400" fill="#ffffff" fill-opacity="0.8" letter-spacing="0">
+        <tspan x="60" y="${excerptY}">${excerptTspans}</tspan>
+      </text>`
+    : "";
+
+  // Slug display: strip leading slash and get full link
   const slugClean = slug.replace(/^\/+/, "");
-  const slugDisplay = slugClean.length > 30 ? slugClean.slice(0, 27) + "..." : slugClean;
+  const linkText = `kartawarta.com/${slugClean}`;
+
+  // Dynamically calculate font size so it fits perfectly without truncation
+  // Average character width is roughly 0.53 of font size. Max width is 960px.
+  const maxLinkWidth = WIDTH - 120;
+  const linkFontSize = Math.min(32, Math.floor(maxLinkWidth / (linkText.length * 0.53)));
 
   // Category badge width: estimate 18px per char + 32px padding
   const badgeWidth = Math.max(120, category.length * 18 + 32);
@@ -199,6 +225,9 @@ function buildSvgOverlay({
     <tspan x="60" y="${titleY}">${titleTspans}</tspan>
   </text>
 
+  <!-- Excerpt / Summary -->
+  ${excerptSvg}
+
   <!-- Divider -->
   <line x1="60" y1="${dividerY}" x2="${WIDTH - 60}" y2="${dividerY}" stroke="#ffffff" stroke-opacity="0.25" stroke-width="2" />
 
@@ -206,8 +235,8 @@ function buildSvgOverlay({
   <text x="60" y="${readMoreLabelY}" font-family="'Work Sans','Helvetica',sans-serif" font-size="24" font-weight="500" fill="#ffffff" fill-opacity="0.6" letter-spacing="2">
     BACA SELENGKAPNYA
   </text>
-  <text x="60" y="${urlY}" font-family="'Work Sans','Helvetica',sans-serif" font-size="32" font-weight="600" fill="#ffffff">
-    kartawarta.com/${escapeXml(slugDisplay)}
+  <text x="60" y="${urlY}" font-family="'Work Sans','Helvetica',sans-serif" font-size="${linkFontSize}" font-weight="600" fill="#ffffff">
+    ${escapeXml(linkText)}
   </text>
 
   <!-- Bottom brand bar -->
@@ -237,6 +266,7 @@ export async function GET(req: NextRequest) {
       select: {
         title: true,
         slug: true,
+        excerpt: true,
         featuredImage: true,
         category: { select: { name: true } },
       },
@@ -248,6 +278,8 @@ export async function GET(req: NextRequest) {
 
     const title = article.title;
     const category = article.category?.name ?? "BERITA";
+    const excerptRaw = article.excerpt ?? "";
+    const excerpt = excerptRaw.replace(/<[^>]*>/g, "").slice(0, 150);
 
     // Load and resize featured image to top-half dimensions (1080×1080)
     const imageBuffer = await loadFeaturedImage(article.featuredImage);
@@ -262,6 +294,7 @@ export async function GET(req: NextRequest) {
       title,
       category,
       slug: article.slug,
+      excerpt,
       hasImage: imageBuffer !== null,
     });
     composites.push({ input: Buffer.from(svg), top: 0, left: 0 });

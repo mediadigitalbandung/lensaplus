@@ -168,52 +168,60 @@ async function runPlatform(
   global: SocialMediaSettings,
   ig: InstagramSettings,
   fb: FacebookSettings,
+  isStory: boolean = false,
 ): Promise<OrchestratorPlatformResult> {
-  // 1. Find template.
-  let template: SocialTemplate | null;
-  try {
-    template = await findTemplateForPlatform(platform, article.categoryId);
-  } catch (err) {
-    return {
-      platform,
-      status: "REJECTED",
-      error: `Template lookup failed: ${err instanceof Error ? err.message : String(err)}`,
-    };
-  }
-  if (!template) {
-    return {
-      platform,
-      status: "REJECTED",
-      error: `No active SocialTemplate found for platform ${platform}`,
-    };
-  }
-
-  // 2. Enrich + render.
   let publicUrl: string;
-  try {
-    const enriched = await enrichArticleForTemplate(article);
-    const stored = await renderAndStoreTemplate(template, article, enriched);
-    publicUrl = stored.publicUrl;
-  } catch (err) {
-    return {
-      platform,
-      status: "REJECTED",
-      error: `Render failed: ${err instanceof Error ? err.message : String(err)}`,
-    };
-  }
-
-  // 3. Build caption.
   let caption: string;
-  try {
-    caption = await generateSocialCaption({
-      article,
-      platform,
-      hashtags: parseHashtags(global.defaultHashtags),
-      cta: global.defaultCTA || undefined,
-    });
-  } catch (err) {
-    caption = `${article.title}. ${article.excerpt || ""}`.trim();
-    void err;
+
+  if (isStory) {
+    // Stories bypass templateHelper and use dynamic OG image
+    publicUrl = `${SITE_URL}/api/og/story?slug=${article.slug}`;
+    caption = `Snapgram: ${article.title}`;
+  } else {
+    // 1. Find template.
+    let template: SocialTemplate | null;
+    try {
+      template = await findTemplateForPlatform(platform, article.categoryId);
+    } catch (err) {
+      return {
+        platform,
+        status: "REJECTED",
+        error: `Template lookup failed: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+    if (!template) {
+      return {
+        platform,
+        status: "REJECTED",
+        error: `No active SocialTemplate found for platform ${platform}`,
+      };
+    }
+
+    // 2. Enrich + render.
+    try {
+      const enriched = await enrichArticleForTemplate(article);
+      const stored = await renderAndStoreTemplate(template, article, enriched);
+      publicUrl = stored.publicUrl;
+    } catch (err) {
+      return {
+        platform,
+        status: "REJECTED",
+        error: `Render failed: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+
+    // 3. Build caption.
+    try {
+      caption = await generateSocialCaption({
+        article,
+        platform,
+        hashtags: parseHashtags(global.defaultHashtags),
+        cta: global.defaultCTA || undefined,
+      });
+    } catch (err) {
+      caption = `${article.title}. ${article.excerpt || ""}`.trim();
+      void err;
+    }
   }
 
   // 4. Draft mode → just persist a DRAFT row and bail.
@@ -243,7 +251,7 @@ async function runPlatform(
 
   let publishResult: PublishResult;
   try {
-    publishResult = await runPublisher(platform, article, publicUrl, caption, ig, fb);
+    publishResult = await runPublisher(platform, article, publicUrl, caption, ig, fb, isStory);
   } catch (err) {
     publishResult = {
       success: false,
@@ -291,6 +299,7 @@ async function runPublisher(
   caption: string,
   ig: InstagramSettings,
   fb: FacebookSettings,
+  isStory: boolean = false,
 ): Promise<PublishResult> {
   if (platform === "INSTAGRAM") {
     if (!ig.accessToken || !ig.igUserId) {
@@ -305,6 +314,7 @@ async function runPublisher(
       imageUrl,
       caption,
       articleId: article.id,
+      mediaType: isStory ? "STORIES" : "FEED",
     });
   }
 
@@ -381,9 +391,14 @@ export async function publishArticleToSocial(
     };
   }
 
-  const platforms: Platform[] = ["INSTAGRAM", "FACEBOOK"];
+  const targets = [
+    { platform: "INSTAGRAM" as Platform, isStory: false },
+    { platform: "INSTAGRAM" as Platform, isStory: true },
+    { platform: "FACEBOOK" as Platform, isStory: false },
+  ];
 
-  for (const platform of platforms) {
+  for (const target of targets) {
+    const platform = target.platform;
     const platformEnabled = platform === "INSTAGRAM" ? ig.enabled : fb.enabled;
     const gate = shouldPublishToPlatform(platform, article, global, platformEnabled);
     if (!gate.publish) {
@@ -392,7 +407,7 @@ export async function publishArticleToSocial(
     }
 
     try {
-      const r = await runPlatform(platform, article, global, ig, fb);
+      const r = await runPlatform(platform, article, global, ig, fb, target.isStory);
       results.push(r);
     } catch (err) {
       results.push({
@@ -449,6 +464,8 @@ export async function approveDraft(postId: string): Promise<PublishResult> {
     data: { status: "PENDING", errorMessage: null },
   });
 
+  const isStory = post.imageUrl ? post.imageUrl.includes("/api/og/story") : false;
+
   let result: PublishResult;
   try {
     result = await runPublisher(
@@ -458,6 +475,7 @@ export async function approveDraft(postId: string): Promise<PublishResult> {
       post.caption,
       ig,
       fb,
+      isStory,
     );
   } catch (err) {
     result = { success: false, error: err instanceof Error ? err.message : String(err) };
