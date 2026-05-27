@@ -267,9 +267,9 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
         const spacePerGap = gaps > 0 ? Math.max(minGap, remainingSpace / gaps) : minGap;
 
         let currentX = layer.x;
+        const lineY = baseY + i * lineStep;
         const wordSpans = words.map((word, wi) => {
-          const dyAttr = wi === 0 ? ` dy="${dy}"` : "";
-          const span = `<tspan x="${Math.round(currentX)}"${dyAttr}>${escapeXml(word)}</tspan>`;
+          const span = `<tspan x="${Math.round(currentX)}" y="${Math.round(lineY)}">${escapeXml(word)}</tspan>`;
           currentX += wordWidths[wi] + spacePerGap;
           return span;
         });
