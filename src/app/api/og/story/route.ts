@@ -140,14 +140,14 @@ function buildSvgOverlay({
   excerpt: string;
   hasImage: boolean;
 }): string {
-  // Portrait layout: image occupies top 1080px, text below starting ~920px
+  // Portrait layout: image occupies top 1080px, text below starting ~900px
   // When no image, shift text to vertical center
   const titleLines = wrapText(title, 22, 6);
   const lineHeight = 78;
   const titleFontSize = titleLines.length > 4 ? 64 : 72;
 
   // Title block starts here (y of first line baseline)
-  const titleY = hasImage ? 940 : 480;
+  const titleY = hasImage ? 900 : 480;
 
   const titleTspans = titleLines
     .map((line, i) => {
@@ -160,11 +160,11 @@ function buildSvgOverlay({
   const excerptLines = excerpt ? wrapText(excerpt, 50, 3) : [];
   const titleHeight = (titleLines.length - 1) * lineHeight;
   const titleEndY = titleY + titleHeight;
-  const excerptY = titleEndY + 50; // 50px gap after title
+  const excerptY = titleEndY + 90; // Expanded baseline gap: 90px gap after title for spacing
 
   const excerptTspans = excerptLines
     .map((line, i) => {
-      const dy = i === 0 ? 0 : 42;
+      const dy = i === 0 ? 0 : 48; // Expanded line height: 48px for better breathing room
       return `<tspan x="60" dy="${dy}">${escapeXml(line)}</tspan>`;
     })
     .join("");
@@ -186,13 +186,13 @@ function buildSvgOverlay({
 
   // Category badge width: estimate 18px per char + 32px padding
   const badgeWidth = Math.max(120, category.length * 18 + 32);
-  const badgeY = titleY - 100;
+  const badgeY = titleY - 120; // Expanded gap: 120px above title (was 100px)
 
-  // Divider and footer positions
-  const dividerY = HEIGHT - 290;
-  const readMoreLabelY = HEIGHT - 240;
-  const urlY = HEIGHT - 190;
-  const brandBarY = HEIGHT - 110;
+  // Divider and footer positions (raised significantly to avoid Snapgram comment box overlay)
+  const dividerY = HEIGHT - 460;
+  const readMoreLabelY = HEIGHT - 410;
+  const urlY = HEIGHT - 350;
+  const brandBarY = HEIGHT - 260; // Raised from 110 to 260
 
   // Background: if image present, gradient over image area + solid navy for text area
   // If no image, solid navy full height
@@ -239,15 +239,12 @@ function buildSvgOverlay({
     ${escapeXml(linkText)}
   </text>
 
-  <!-- Bottom brand bar -->
-  <rect x="0" y="${brandBarY}" width="${WIDTH}" height="110" fill="#000000" fill-opacity="0.35" />
+  <!-- Bottom brand bar (KARTAWARTA brand bar raised by 150px to prevent Snapgram overlap. "Bandung & Indonesia" label removed) -->
+  <rect x="0" y="${brandBarY}" width="${WIDTH}" height="260" fill="#000000" fill-opacity="0.35" />
   <!-- Crimson accent bar -->
-  <rect x="60" y="${brandBarY + 24}" width="6" height="40" fill="#b7102a" />
-  <text x="82" y="${brandBarY + 55}" font-family="'Newsreader','Georgia',serif" font-size="40" font-weight="800" fill="#ffffff" letter-spacing="1">
+  <rect x="60" y="${brandBarY + 45}" width="6" height="40" fill="#b7102a" />
+  <text x="82" y="${brandBarY + 78}" font-family="'Newsreader','Georgia',serif" font-size="40" font-weight="800" fill="#ffffff" letter-spacing="1">
     KARTAWARTA
-  </text>
-  <text x="${WIDTH - 60}" y="${brandBarY + 55}" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="22" font-weight="500" fill="#ffffff" fill-opacity="0.55">
-    Bandung &amp; Indonesia
   </text>
 </svg>`;
 }
