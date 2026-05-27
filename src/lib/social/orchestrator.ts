@@ -212,10 +212,14 @@ async function runPlatform(
 
     // 3. Build caption.
     try {
+      const defaultTags = parseHashtags(global.defaultHashtags);
+      const articleTags = article.tags ? article.tags.map((t) => t.name) : [];
+      const combinedTags = Array.from(new Set([...defaultTags, ...articleTags]));
+
       caption = await generateSocialCaption({
         article,
         platform,
-        hashtags: parseHashtags(global.defaultHashtags),
+        hashtags: combinedTags,
         cta: global.defaultCTA || undefined,
       });
     } catch (err) {
