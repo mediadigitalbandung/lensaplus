@@ -23,6 +23,8 @@ import {
   ImageOff,
   Send,
   EyeOff,
+  Loader2,
+  Share2,
 } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-utils";
 
@@ -151,6 +153,7 @@ export default function ArtikelPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
+  const [publishingSocial, setPublishingSocial] = useState<string | null>(null);
   // Only SUPER_ADMIN / CHIEF_EDITOR / EDITOR see direct Publish + Takedown buttons.
   const userRoleForActions = (session?.user as { role?: string } | undefined)?.role || "";
   const canPublishDirect =
@@ -281,6 +284,42 @@ export default function ArtikelPage() {
       showError(err instanceof Error ? err.message : "Gagal takedown");
     } finally {
       setActioning(null);
+    }
+  }
+
+  async function handlePublishToSocial(article: Article) {
+    const ok = await confirm({
+      title: "Bagikan ke Sosial Media?",
+      message: `Artikel "${article.title}" akan diposting ke Instagram & Facebook secara otomatis menggunakan template gambar sosial media yang aktif.`,
+      variant: "default",
+    });
+    if (!ok) return;
+
+    try {
+      setPublishingSocial(article.id);
+      const res = await fetch("/api/social/test-publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ articleId: article.id }),
+      });
+      if (!res.ok) {
+        throw new Error(`Server Error (HTTP ${res.status}).`);
+      }
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || "Gagal membagikan ke sosial media.");
+      }
+
+      const results = json.data?.results || [];
+      const summary = results
+        .map((r: any) => `${r.platform}: ${r.status}${r.error ? ` (${r.error})` : ""}`)
+        .join("\n");
+
+      success(`Artikel berhasil dibagikan!\nHasil:\n${summary}`);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal membagikan ke sosial media");
+    } finally {
+      setPublishingSocial(null);
     }
   }
 
@@ -729,6 +768,22 @@ export default function ArtikelPage() {
                                 aria-label="Takedown artikel"
                               >
                                 <EyeOff size={16} />
+                              </button>
+                            )}
+                            {/* Share to Social Media — for PUBLISHED articles */}
+                            {canPublishDirect && article.status === "PUBLISHED" && (
+                              <button
+                                onClick={() => handlePublishToSocial(article)}
+                                disabled={publishingSocial === article.id}
+                                className="btn-ghost rounded p-2 text-pink-500 hover:bg-pink-50 disabled:opacity-50"
+                                title="Bagikan ke Sosial Media"
+                                aria-label="Bagikan ke Sosial Media"
+                              >
+                                {publishingSocial === article.id ? (
+                                  <Loader2 size={16} className="animate-spin text-pink-500" />
+                                ) : (
+                                  <Share2 size={16} />
+                                )}
                               </button>
                             )}
                             <button
