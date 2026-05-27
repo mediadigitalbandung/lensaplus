@@ -25,6 +25,29 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Exchange short-lived token for long-lived token if App ID & Secret are available
+    const appId = process.env.META_APP_ID;
+    const appSecret = process.env.META_APP_SECRET;
+
+    if (appId && appSecret && token !== "(tidak berubah)" && !token.includes("...")) {
+      try {
+        console.log("[scan-accounts] Found META_APP_ID and META_APP_SECRET. Exchanging token for a long-lived one...");
+        const EXCHANGE_URL = `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${encodeURIComponent(token)}`;
+        const exchangeRes = await fetch(EXCHANGE_URL);
+        const exchangeData = await exchangeRes.json();
+        if (exchangeData.access_token) {
+          token = exchangeData.access_token;
+          console.log("[scan-accounts] Successfully exchanged for long-lived User Access Token.");
+        } else if (exchangeData.error) {
+          console.warn("[scan-accounts] Token exchange returned error from Meta:", exchangeData.error);
+        } else {
+          console.warn("[scan-accounts] Token exchange response did not contain access_token:", exchangeData);
+        }
+      } catch (exchangeErr) {
+        console.error("[scan-accounts] Token exchange failed:", exchangeErr);
+      }
+    }
+
     const accountsMap = new Map<string, {
       pageId: string;
       pageName: string;

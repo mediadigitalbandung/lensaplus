@@ -301,7 +301,7 @@ export async function fetchListing(
     
     $xml("item, entry").each((_, el) => {
       const $el = $xml(el);
-      let href = $el.find("link").text().trim() || $el.find("link").attr("href")?.trim();
+      const href = $el.find("link").text().trim() || $el.find("link").attr("href")?.trim();
       let title = $el.find("title").text().trim();
       let description = $el.find("description, summary").text().trim();
       

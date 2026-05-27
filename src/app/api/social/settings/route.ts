@@ -1,6 +1,9 @@
 /**
  * GET  /api/social/settings  — return { global, instagram, facebook } singletons.
  * PUT  /api/social/settings  — body { scope: "global"|"instagram"|"facebook", data: {...} }
+/**
+ * GET  /api/social/settings  — return { global, instagram, facebook } singletons.
+ * PUT  /api/social/settings  — body { scope: "global"|"instagram"|"facebook", data: {...} }
  * Auth: SUPER_ADMIN
  *
  * Access tokens are returned masked on GET.
@@ -25,6 +28,26 @@ function maskToken(t: string | null | undefined): string | null {
   if (!t) return null;
   if (t.length <= 8) return "***";
   return `${t.slice(0, 4)}...${t.slice(-4)}`;
+}
+
+const GRAPH_BASE = "https://graph.facebook.com/v21.0";
+
+async function getMetaTokenExpiry(token: string): Promise<Date | null> {
+  try {
+    const url = `${GRAPH_BASE}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(token)}`;
+    const res = await fetch(url, { method: "GET" });
+    if (!res.ok) {
+      console.warn(`[getMetaTokenExpiry] debug_token API returned HTTP ${res.status}`);
+      return null;
+    }
+    const json = await res.json();
+    const expiresAtUnix = json?.data?.expires_at ?? 0;
+    if (expiresAtUnix === 0) return null; // Never expires
+    return new Date(expiresAtUnix * 1000);
+  } catch (e) {
+    console.error("[getMetaTokenExpiry] Error debugging token:", e);
+    return null;
+  }
 }
 
 export async function GET() {
@@ -113,9 +136,13 @@ export async function PUT(req: NextRequest) {
       });
     } else if (parsed.scope === "instagram") {
       const data = instagramSchema.parse(parsed.data);
+      let tokenExpiresAt = data.tokenExpiresAt ? new Date(data.tokenExpiresAt) : data.tokenExpiresAt;
+      if (data.accessToken && data.accessToken !== "(tidak berubah)" && !data.accessToken.includes("...")) {
+        tokenExpiresAt = await getMetaTokenExpiry(data.accessToken);
+      }
       const prepared = {
         ...data,
-        tokenExpiresAt: data.tokenExpiresAt ? new Date(data.tokenExpiresAt) : data.tokenExpiresAt,
+        tokenExpiresAt,
       };
       updatedRow = await prisma.instagramSettings.upsert({
         where: { id: "global" },
@@ -124,9 +151,13 @@ export async function PUT(req: NextRequest) {
       });
     } else if (parsed.scope === "facebook") {
       const data = facebookSchema.parse(parsed.data);
+      let tokenExpiresAt = data.tokenExpiresAt ? new Date(data.tokenExpiresAt) : data.tokenExpiresAt;
+      if (data.accessToken && data.accessToken !== "(tidak berubah)" && !data.accessToken.includes("...")) {
+        tokenExpiresAt = await getMetaTokenExpiry(data.accessToken);
+      }
       const prepared = {
         ...data,
-        tokenExpiresAt: data.tokenExpiresAt ? new Date(data.tokenExpiresAt) : data.tokenExpiresAt,
+        tokenExpiresAt,
       };
       updatedRow = await prisma.facebookSettings.upsert({
         where: { id: "global" },

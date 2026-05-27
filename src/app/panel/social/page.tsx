@@ -1969,11 +1969,13 @@ function SettingsTab() {
           <div className="p-5 border-t border-border bg-surface-secondary/40 space-y-4 text-xs leading-relaxed text-txt-secondary">
             <div className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-blue-950 space-y-1.5 backdrop-blur-sm">
               <strong className="text-blue-950 font-bold block text-xs">💡 Info Penting Tentang Tipe Token:</strong>
-              Sangat direkomendasikan menggunakan <strong>Page Access Token</strong> yang didapatkan melalui proses &quot;Scan Akun&quot; di bawah. Token ini <strong>tidak akan pernah kedaluwarsa (Never Expires)</strong> selama Anda tidak mengubah password akun Facebook Anda atau mencabut izin aplikasi.
+              Sangat direkomendasikan menggunakan <strong>Page Access Token</strong> yang didapatkan melalui proses &quot;Scan Akun&quot; di bawah. Token ini <strong>tidak akan pernah kedaluwarsa (Never Expires)</strong> jika Anda melakukan scan menggunakan <strong>User Access Token Jangka Panjang (Long-Lived, 60 hari)</strong>. 
+              <br/>
+              Jika server Anda telah dikonfigurasi dengan App ID &amp; Secret, sistem akan otomatis mengubah token jangka pendek menjadi jangka panjang saat di-scan! Jika belum, harap ikuti langkah perpanjangan manual di bawah.
             </div>
 
             <div className="space-y-2">
-              <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 1: Hubungkan & Generate Short-Lived Token</h4>
+              <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 1: Hubungkan &amp; Generate Short-Lived Token</h4>
               <ol className="list-decimal list-inside space-y-1.5 ml-1">
                 <li>Buka <a href="https://developers.facebook.com/tools/explorer" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold hover:text-primary-dark inline-flex items-center gap-0.5">Meta Graph API Explorer <ExternalLink size={10} /></a>.</li>
                 <li>Di sudut kanan atas, pada pilihan <strong>Meta App</strong>, pilih App yang terhubung (contoh: <code>Kartawarta</code>).</li>
@@ -1986,19 +1988,31 @@ function SettingsTab() {
                     <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-blue-600">pages_show_list</code>
                   </div>
                 </li>
-                <li>Klik tombol biru <strong>Generate Access Token</strong>. Setujui login Facebook dan pastikan Anda mencentang Page Facebook & Akun Instagram Business Anda yang ingin diposting.</li>
+                <li>Klik tombol biru <strong>Generate Access Token</strong>. Setujui login Facebook dan pastikan Anda mencentang Page Facebook &amp; Akun Instagram Business Anda yang ingin diposting.</li>
               </ol>
             </div>
 
             <div className="space-y-2">
-              <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 2: Menghasilkan Token Page &quot;Never Expires&quot; Secara Otomatis</h4>
+              <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 2 (Opsional / Manual): Perpanjang Token Menjadi Jangka Panjang (60 Hari)</h4>
+              <p className="ml-1 text-[11px] text-txt-secondary leading-relaxed">
+                Jika sistem server Anda tidak melakukan pertukaran otomatis, Anda wajib memperpanjang User Access Token secara manual agar mendapatkan Page Token yang <strong>Never Expires</strong>:
+              </p>
               <ol className="list-decimal list-inside space-y-1.5 ml-1">
-                <li>Copy token hasil generate di Graph API Explorer (berupa teks panjang diawali <code>EAA...</code>).</li>
-                <li>Tempelkan token tersebut pada input <strong>Access Token</strong> di bagian <strong>Instagram</strong> di bawah ini.</li>
-                <li>Klik tombol <strong>&quot;Scan Akun & Page Terhubung dari Meta Token&quot;</strong>.</li>
+                <li>Pada Meta Graph API Explorer, di samping token yang baru saja di-generate, klik ikon informasi kecil (berbentuk bulat dengan huruf <strong className="font-bold font-mono">i</strong>) bertuliskan <strong>&quot;Access Token Info&quot;</strong>.</li>
+                <li>Pada pop-up yang muncul, klik tombol <strong>&quot;Open in Access Token Tool&quot;</strong> (Buka di Alat Access Token).</li>
+                <li>Di bagian bawah halaman alat tersebut, klik tombol biru <strong>&quot;Extend Access Token&quot;</strong> (Perpanjang Access Token) dan masukkan password Facebook Anda jika diminta.</li>
+                <li>Copy token baru berdurasi 60 hari yang ditampilkan di kolom hasil perpanjangan tersebut.</li>
+              </ol>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 3: Menghasilkan Token Page &quot;Never Expires&quot; Secara Otomatis</h4>
+              <ol className="list-decimal list-inside space-y-1.5 ml-1">
+                <li>Tempelkan token (baik token jangka panjang dari Langkah 2, atau token jangka pendek dari Langkah 1 jika server Anda mendukung auto-extend) pada input <strong>Access Token</strong> di bagian <strong>Instagram</strong> di bawah ini.</li>
+                <li>Klik tombol <strong>&quot;Scan Akun &amp; Page Terhubung dari Meta Token&quot;</strong>.</li>
                 <li>Daftar Facebook Page dan Akun Instagram Business yang terhubung akan muncul di bawah tombol.</li>
                 <li><strong>Klik pada kartu akun Anda di daftar hasil scan.</strong></li>
-                <li>Sistem akan mendeteksi token dan otomatis mengisi <strong>IG User ID</strong>, <strong>Page ID</strong>, serta menghasilkan <strong>Page Access Token yang Never Expires</strong> pada kolom token Instagram & Facebook secara bersamaan!</li>
+                <li>Sistem akan mendeteksi token dan otomatis mengisi <strong>IG User ID</strong>, <strong>Page ID</strong>, serta menghasilkan <strong>Page Access Token yang Never Expires</strong> pada kolom token Instagram &amp; Facebook secara bersamaan!</li>
                 <li>Terakhir, klik <strong>Simpan Instagram</strong> dan <strong>Simpan Facebook</strong> di bawah untuk menyimpan konfigurasi baru Anda.</li>
               </ol>
             </div>
