@@ -1823,9 +1823,9 @@ function SettingsTab() {
     }
   }
 
-  const fetchSettings = useCallback(async () => {
+  const fetchSettings = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const res = await fetch("/api/social/settings");
       const json = await res.json();
@@ -1854,7 +1854,7 @@ function SettingsTab() {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan koneksi.");
       showError("Gagal menghubungkan ke server.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [showError]);
 
@@ -1876,7 +1876,7 @@ function SettingsTab() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Gagal menyimpan");
       showSuccess(`Pengaturan ${scope} disimpan.`);
-      fetchSettings();
+      fetchSettings(true);
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal menyimpan");
     } finally {
