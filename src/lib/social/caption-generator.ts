@@ -12,7 +12,21 @@ import {
   Platform,
 } from "./types";
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = (() => {
+  const url = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  try {
+    const parsed = new URL(url);
+    if (
+      parsed.hostname.includes("nip.io") ||
+      parsed.hostname.includes("localhost") ||
+      parsed.hostname.includes("127.0.0.1") ||
+      /^[0-9.]+$/.test(parsed.hostname)
+    ) {
+      return "https://kartawarta.com";
+    }
+  } catch {}
+  return url;
+})();
 
 const SYSTEM_PROMPT =
   "Kamu adalah copywriter media sosial untuk Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). Tulis caption natural, informatif, tidak clickbait, memakai bahasa Indonesia baku yang mudah dibaca. Tulis sesuai format yang diminta secara ketat.";

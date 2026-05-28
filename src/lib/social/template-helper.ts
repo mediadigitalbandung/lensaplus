@@ -15,7 +15,21 @@ import { renderTemplate } from "./template-renderer";
 import type { ArticleForPublish, Platform } from "./types";
 
 const SOCIAL_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "social");
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const APP_URL = (() => {
+  const url = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  try {
+    const parsed = new URL(url);
+    if (
+      parsed.hostname.includes("nip.io") ||
+      parsed.hostname.includes("localhost") ||
+      parsed.hostname.includes("127.0.0.1") ||
+      /^[0-9.]+$/.test(parsed.hostname)
+    ) {
+      return "https://kartawarta.com";
+    }
+  } catch {}
+  return url;
+})();
 
 /**
  * Find the best active template for a platform. Prefers a template that

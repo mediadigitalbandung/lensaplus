@@ -40,7 +40,28 @@ import type {
   PublishStatus,
 } from "./types";
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+export function sanitizeSocialImageUrl(urlStr: string): string {
+  try {
+    const url = new URL(urlStr);
+    if (
+      url.hostname.includes("nip.io") ||
+      url.hostname.includes("localhost") ||
+      url.hostname.includes("127.0.0.1") ||
+      /^[0-9.]+$/.test(url.hostname)
+    ) {
+      url.hostname = "kartawarta.com";
+      url.protocol = "https:";
+    }
+    return url.toString();
+  } catch {
+    return urlStr;
+  }
+}
+
+const SITE_URL = (() => {
+  const raw = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  return sanitizeSocialImageUrl(raw);
+})();
 
 export interface OrchestratorPlatformResult {
   platform: Platform;
@@ -458,6 +479,15 @@ export async function approveDraft(postId: string): Promise<PublishResult> {
   }
   if (!post.imageUrl || !post.caption) {
     return { success: false, error: "SocialPost is missing imageUrl or caption" };
+  }
+
+  let sanitizedImageUrl = sanitizeSocialImageUrl(post.imageUrl);
+  if (sanitizedImageUrl !== post.imageUrl) {
+    await prisma.socialPost.update({
+      where: { id: postId },
+      data: { imageUrl: sanitizedImageUrl },
+    });
+    post.imageUrl = sanitizedImageUrl;
   }
 
   const { instagram: ig, facebook: fb } = await getAllSocialSettings();
