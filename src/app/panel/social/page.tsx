@@ -460,6 +460,20 @@ const ASPECT_RATIO_LABELS: Record<Platform, string> = {
   TWITTER: "Twitter/X Feed 16:9 (1200 × 675)",
 };
 
+const PLATFORM_ASPECT_RATIOS: Record<Platform, { label: string; width: number; height: number }[]> = {
+  INSTAGRAM: [
+    { label: "Instagram Portrait 4:5 (1080 × 1350)", width: 1080, height: 1350 },
+    { label: "Instagram Square 1:1 (1080 × 1080)", width: 1080, height: 1080 },
+  ],
+  FACEBOOK: [
+    { label: "Facebook Link Share 1.91:1 (1200 × 630)", width: 1200, height: 630 },
+    { label: "Facebook Portrait 4:5 (1080 × 1350)", width: 1080, height: 1350 },
+  ],
+  TWITTER: [
+    { label: "Twitter/X Feed 16:9 (1200 × 675)", width: 1200, height: 675 },
+  ],
+};
+
 const getPlatformDims = (platform: Platform) => {
   return PLATFORM_DIMENSIONS[platform] || { width: 1080, height: 1350 };
 };
@@ -489,7 +503,9 @@ function TemplatesTab() {
   const [editing, setEditing] = useState<SocialTemplate | null>(null);
   const [form, setForm] = useState<TemplateFormData>(EMPTY_TEMPLATE);
   const [saving, setSaving] = useState(false);
-  const dims = getPlatformDims(form.platform);
+  const [canvasWidth, setCanvasWidth] = useState(1080);
+  const [canvasHeight, setCanvasHeight] = useState(1350);
+  const dims = { width: canvasWidth, height: canvasHeight };
 
   // Live visual editor state
   const [layers, setLayers] = useState<TextLayer[]>([]);
@@ -609,7 +625,7 @@ function TemplatesTab() {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const platformDims = getPlatformDims(form.platform);
+      const platformDims = dims;
 
       const dx_px = e.clientX - draggedLayer.startX;
       const dy_px = e.clientY - draggedLayer.startY;
@@ -647,7 +663,7 @@ function TemplatesTab() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [draggedLayer, layers, form.platform]);
+  }, [draggedLayer, layers, dims]);
 
   function handleCanvasMouseDown(e: React.MouseEvent, index: number, type: "drag" | "resize") {
     e.preventDefault();
@@ -657,7 +673,7 @@ function TemplatesTab() {
     if (!canvas) return;
 
     const layer = layers[index];
-    const platformDims = getPlatformDims(form.platform);
+    const platformDims = dims;
 
     const layerX = (layer.x / platformDims.width) * 100;
     const layerY = (layer.y / platformDims.height) * 100;
@@ -688,6 +704,8 @@ function TemplatesTab() {
     ];
     setLayers(defaultLayers);
     setSelectedLayerIndex(0);
+    setCanvasWidth(1080);
+    setCanvasHeight(1350);
     setForm({
       ...EMPTY_TEMPLATE,
       textLayersJson: JSON.stringify(defaultLayers, null, 2)
@@ -708,6 +726,21 @@ function TemplatesTab() {
       parsedLayers = [];
     }
 
+    // Extract canvas metadata if present
+    const metadataLayer = parsedLayers.find((l) => l.text === "{{canvas_metadata}}");
+    if (metadataLayer) {
+      setCanvasWidth(metadataLayer.x);
+      setCanvasHeight(metadataLayer.y);
+    } else {
+      // Fallback to platform default
+      const defaultRatio = PLATFORM_ASPECT_RATIOS[t.platform]?.[0];
+      setCanvasWidth(defaultRatio ? defaultRatio.width : 1080);
+      setCanvasHeight(defaultRatio ? defaultRatio.height : 1350);
+    }
+
+    // Filter out the canvas metadata layer from the layers editor state
+    parsedLayers = parsedLayers.filter((l) => l.text !== "{{canvas_metadata}}");
+
     // Append {{photo}} layer if missing
     if (!parsedLayers.find((l) => l.text === "{{photo}}")) {
       parsedLayers = [
@@ -724,7 +757,7 @@ function TemplatesTab() {
       platform: t.platform,
       categoryId: t.categoryId || "",
       backgroundUrl: t.backgroundUrl,
-      textLayersJson: JSON.stringify(t.textLayers, null, 2),
+      textLayersJson: JSON.stringify(parsedLayers, null, 2),
       isActive: t.isActive,
     });
     setShowForm(true);
@@ -779,12 +812,18 @@ function TemplatesTab() {
       }
 
       setSaving(true);
+
+      const layersToSave = [
+        ...layers.filter((l) => l.text !== "{{canvas_metadata}}"),
+        { text: "{{canvas_metadata}}", x: canvasWidth, y: canvasHeight, width: 0, height: 0, fontSize: 0 }
+      ];
+
       const body = {
         name: form.name,
         platform: form.platform,
         categoryId: form.categoryId || null,
         backgroundUrl: form.backgroundUrl,
-        textLayers: layers,
+        textLayers: layersToSave,
         isActive: form.isActive,
       };
 
@@ -1074,9 +1113,15 @@ function TemplatesTab() {
                       <select
                         className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-medium"
                         value={form.platform}
-                        onChange={(e) =>
-                          setForm({ ...form, platform: e.target.value as Platform })
-                        }
+                        onChange={(e) => {
+                          const p = e.target.value as Platform;
+                          setForm({ ...form, platform: p });
+                          const defaultRatio = PLATFORM_ASPECT_RATIOS[p]?.[0];
+                          if (defaultRatio) {
+                            setCanvasWidth(defaultRatio.width);
+                            setCanvasHeight(defaultRatio.height);
+                          }
+                        }}
                       >
                         <option value="INSTAGRAM">Instagram</option>
                         <option value="FACEBOOK">Facebook</option>
@@ -1087,9 +1132,21 @@ function TemplatesTab() {
                       <label className="block text-xs font-semibold text-slate-400 mb-1.5">
                         Aspek Rasio
                       </label>
-                      <div className="w-full bg-[#020c1b]/60 border border-[#1e293b] text-slate-300 text-sm rounded-lg px-3 py-2.5 font-medium select-none truncate">
-                        {ASPECT_RATIO_LABELS[form.platform]}
-                      </div>
+                      <select
+                        className="w-full bg-[#020c1b] border border-[#1e293b] text-slate-300 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-medium"
+                        value={`${canvasWidth}x${canvasHeight}`}
+                        onChange={(e) => {
+                          const [w, h] = e.target.value.split("x").map(Number);
+                          setCanvasWidth(w);
+                          setCanvasHeight(h);
+                        }}
+                      >
+                        {PLATFORM_ASPECT_RATIOS[form.platform]?.map((ratio) => (
+                          <option key={`${ratio.width}x${ratio.height}`} value={`${ratio.width}x${ratio.height}`}>
+                            {ratio.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 

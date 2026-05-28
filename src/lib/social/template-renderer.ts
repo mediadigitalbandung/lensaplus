@@ -333,15 +333,8 @@ export async function renderTemplate(
   enrichedData?: EnrichedData,
 ): Promise<RenderResult> {
   const platform = template.platform as Platform;
-  const dims = PLATFORM_DIMENSIONS[platform] ?? PLATFORM_DIMENSIONS.INSTAGRAM;
 
-  // 1. Load + normalise background.
-  const bgBuffer = await loadBackground(template.backgroundUrl);
-  const normalizedBg = await sharp(bgBuffer)
-    .resize(dims.width, dims.height, { fit: "cover", position: "centre" })
-    .toBuffer();
-
-  // 2. Parse text layers.
+  // 1. Parse text layers.
   let layers: TextLayer[] = [];
   try {
     const raw = template.textLayers;
@@ -358,9 +351,23 @@ export async function renderTemplate(
     layers = [];
   }
 
+  // Detect custom canvas dimensions if canvas_metadata layer is present
+  const canvasMetadataLayer = layers.find((l) => l.text === "{{canvas_metadata}}");
+  const dims = canvasMetadataLayer
+    ? { width: canvasMetadataLayer.x, height: canvasMetadataLayer.y }
+    : (PLATFORM_DIMENSIONS[platform] ?? PLATFORM_DIMENSIONS.INSTAGRAM);
+
+  // 2. Load + normalise background.
+  const bgBuffer = await loadBackground(template.backgroundUrl);
+  const normalizedBg = await sharp(bgBuffer)
+    .resize(dims.width, dims.height, { fit: "cover", position: "centre" })
+    .toBuffer();
+
   // Find if there is a special photo layer ({{photo}})
   const photoLayer = layers.find((l) => l.text === "{{photo}}");
-  const textLayersOnly = layers.filter((l) => l.text !== "{{photo}}");
+  const textLayersOnly = layers.filter(
+    (l) => l.text !== "{{photo}}" && l.text !== "{{canvas_metadata}}"
+  );
 
   // 3. Build SVG overlay for text layers only.
   const textElements = textLayersOnly
