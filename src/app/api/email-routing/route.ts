@@ -48,7 +48,20 @@ export async function POST(request: NextRequest) {
     await addDestinationAddress(destinationEmail);
 
     // Create the forwarding rule
-    const rule = await createEmailForward(localPart, destinationEmail);
+    let rule;
+    try {
+      rule = await createEmailForward(localPart, destinationEmail);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("not verified") || msg.includes("verified")) {
+        return successResponse({
+          pendingVerification: true,
+          to: destinationEmail,
+          message: `Email tujuan ${destinationEmail} berhasil didaftarkan ke Cloudflare. PENTING: Silakan cek inbox/spam ${destinationEmail} dan klik tautan verifikasi dari Cloudflare, lalu buat kembali email ini setelah diverifikasi!`,
+        });
+      }
+      throw err;
+    }
 
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
     await logAudit(session.user.id, "EMAIL_ROUTING_CREATE", "EmailRouting", rule.id ?? localPart, JSON.stringify({ localPart, destinationEmail }), ip);
