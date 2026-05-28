@@ -195,8 +195,11 @@ function PostsTab() {
   }, [fetchPosts]);
 
   async function doAction(id: string, action: "approve" | "reject" | "takedown") {
+    const post = posts.find(p => p.id === id);
+    const isRetry = post?.status === "REJECTED" && action === "approve";
+
     const labels: Record<string, string> = {
-      approve: "mempublikasi",
+      approve: isRetry ? "mengirim ulang" : "mempublikasi",
       reject: "menghapus",
       takedown: "men-takedown",
     };
@@ -380,6 +383,20 @@ function PostsTab() {
                           <Trash2 size={12} />
                         )}
                         Takedown
+                      </button>
+                    )}
+                    {p.status === "REJECTED" && (
+                      <button
+                        onClick={() => doAction(p.id, "approve")}
+                        disabled={processing === p.id}
+                        className="btn-primary flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                      >
+                        {processing === p.id ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <RefreshCw size={12} />
+                        )}
+                        Coba Lagi
                       </button>
                     )}
                     {(p.status === "REJECTED" || p.status === "DELETED") && (

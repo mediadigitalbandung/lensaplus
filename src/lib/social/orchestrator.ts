@@ -453,8 +453,8 @@ async function loadPostWithArticle(postId: string): Promise<
 export async function approveDraft(postId: string): Promise<PublishResult> {
   const post = await loadPostWithArticle(postId);
   if (!post) return { success: false, error: "SocialPost not found" };
-  if (post.status !== "DRAFT") {
-    return { success: false, error: `SocialPost is not in DRAFT state (is ${post.status})` };
+  if (post.status !== "DRAFT" && post.status !== "REJECTED") {
+    return { success: false, error: `SocialPost is not in DRAFT or REJECTED state (is ${post.status})` };
   }
   if (!post.imageUrl || !post.caption) {
     return { success: false, error: "SocialPost is missing imageUrl or caption" };
