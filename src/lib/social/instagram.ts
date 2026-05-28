@@ -39,6 +39,8 @@ function mapErrorCode(code?: number): string {
       return "Application does not have permission (code 10). Check Instagram API permissions.";
     case 200:
       return "Permission denied (code 200). The user/page may have revoked access.";
+    case 9:
+      return "Rate limit reached or temporary block (code 9). Meta says: User is performing too many actions. Please stop posting and wait a few hours to 24 hours for Meta to reset the limit.";
     default:
       return code ? `Meta Graph error code ${code}` : "Unknown Meta Graph error";
   }
