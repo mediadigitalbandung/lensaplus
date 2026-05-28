@@ -71,6 +71,7 @@ scripts/*
 !scripts/safe-db-push.sh
 !scripts/deploy-vps.sh
 !scripts/test-instagram.js
+!scripts/exchange-threads.js
 !scripts/.gitkeep
 
 # Playwright artifacts

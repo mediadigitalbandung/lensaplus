@@ -24,6 +24,7 @@ import {
   Save,
   Image as ImageIcon,
   ExternalLink,
+  Link2,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -1934,6 +1935,9 @@ function SettingsTab() {
     enabled: boolean;
   } | null>(null);
   const [showThreadsToken, setShowThreadsToken] = useState(false);
+  const [threadsAuthCode, setThreadsAuthCode] = useState("");
+  const [exchangingThreadsCode, setExchangingThreadsCode] = useState(false);
+
 
   const [scanningAccounts, setScanningAccounts] = useState(false);
   const [scannedAccounts, setScannedAccounts] = useState<Array<{
@@ -1970,6 +1974,32 @@ function SettingsTab() {
       showError(err instanceof Error ? err.message : "Gagal scan akun");
     } finally {
       setScanningAccounts(false);
+    }
+  }
+
+  async function handleExchangeThreads() {
+    if (!threadsAuthCode.trim()) {
+      showError("Harap masukkan kode otorisasi Threads terlebih dahulu.");
+      return;
+    }
+    try {
+      setExchangingThreadsCode(true);
+      const res = await fetch("/api/social/settings/exchange-threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: threadsAuthCode.trim() }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || "Gagal menghubungkan Threads.");
+      }
+      showSuccess("Koneksi Threads Berhasil! Akun terhubung dan Auto-Publish diaktifkan.");
+      setThreadsAuthCode("");
+      fetchSettings(true); // reload all settings
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Terjadi kesalahan saat menghubungkan Threads.");
+    } finally {
+      setExchangingThreadsCode(false);
     }
   }
 
@@ -2779,6 +2809,67 @@ function SettingsTab() {
             ? `Token ter-set (masked: ${settings.threads.accessToken}). Kosongkan untuk mempertahankan.`
             : "Belum ada access token."}
         </p>
+
+        {/* Quick Connect Section */}
+        <div className="mb-6 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-4">
+          <div>
+            <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+              ⚡ Cara Cepat: Hubungkan Threads Otomatis (Rekomendasi)
+            </h4>
+            <p className="text-[11px] text-txt-secondary leading-relaxed">
+              Dapatkan token dan User ID Threads secara otomatis tanpa perlu mengisi kolom-kolom di bawah secara manual:
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1 w-full">
+              <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
+                Langkah 1: Klik tombol untuk otorisasi di browser Anda
+              </label>
+              <a
+                href={`https://threads.net/oauth/authorize?client_id=4402452543382960&redirect_uri=${encodeURIComponent("https://kartawarta.com/")}&scope=threads_basic,threads_content_publish&response_type=code`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold transition-all w-full text-center"
+              >
+                <ExternalLink size={14} />
+                Buka Link Otorisasi Threads
+              </a>
+            </div>
+            
+            <div className="flex-1 w-full">
+              <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
+                Langkah 2: Tempel Kode Otorisasi (?code=...)
+              </label>
+              <input
+                type="text"
+                placeholder="Tempel kode di sini..."
+                className="input w-full py-2 text-sm border-emerald-300 focus:border-emerald-500"
+                value={threadsAuthCode}
+                onChange={(e) => setThreadsAuthCode(e.target.value)}
+              />
+            </div>
+
+            <div className="w-full sm:w-auto font-sans">
+              <button
+                onClick={handleExchangeThreads}
+                disabled={exchangingThreadsCode || !threadsAuthCode.trim()}
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 text-sm font-semibold disabled:opacity-50 transition-all w-full min-w-[130px]"
+              >
+                {exchangingThreadsCode ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Link2 size={14} />
+                )}
+                Hubungkan
+              </button>
+            </div>
+          </div>
+          <p className="text-[10px] text-txt-muted leading-relaxed">
+            *Setelah Anda memberikan izin di Threads, Anda akan dialihkan kembali ke kartawarta.com. Salin parameter kode (semua karakter setelah <code>?code=</code> di bilah alamat browser Anda) dan tempel di atas.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-txt-secondary mb-1">
