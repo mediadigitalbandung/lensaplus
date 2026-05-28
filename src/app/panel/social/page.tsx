@@ -2056,12 +2056,13 @@ function SettingsTab() {
                 <li>Buka <a href="https://developers.facebook.com/tools/explorer" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold hover:text-primary-dark inline-flex items-center gap-0.5">Meta Graph API Explorer <ExternalLink size={10} /></a>.</li>
                 <li>Di sudut kanan atas, pada pilihan <strong>Meta App</strong>, pilih App yang terhubung (contoh: <code>Kartawarta</code>).</li>
                 <li>Pada bagian <strong>User or Page</strong>, pilih <strong>User Access Token</strong>.</li>
-                <li>Di kolom <strong>Permissions</strong> (sisi kanan), tambahkan minimal 4 izin wajib berikut:
+                <li>Di kolom <strong>Permissions</strong> (sisi kanan), tambahkan minimal 5 izin wajib berikut:
                   <div className="flex flex-wrap gap-1.5 mt-1.5 mb-1.5">
                     <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-pink-600">instagram_basic</code>
                     <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-pink-600">instagram_content_publish</code>
                     <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-blue-600">pages_read_engagement</code>
                     <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-blue-600">pages_show_list</code>
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-blue-600">pages_manage_posts</code>
                   </div>
                 </li>
                 <li>Klik tombol biru <strong>Generate Access Token</strong>. Setujui login Facebook dan pastikan Anda mencentang Page Facebook &amp; Akun Instagram Business Anda yang ingin diposting.</li>
