@@ -156,14 +156,65 @@ export class FacebookPublisher {
       }
       return { success: false, error };
     }
+  async publishStory(post: PreparedPost): Promise<PublishResult> {
+    const { accessToken, pageId } = this.config;
+    if (!accessToken || !pageId) {
+      return { success: false, error: "Facebook not configured (missing accessToken or pageId)" };
+    }
+    try {
+      // Step 1: Upload the photo as unpublished to /{page-id}/photos
+      const uploadUrl = `${GRAPH_BASE}/${encodeURIComponent(pageId)}/photos`;
+      const uploadBody = new URLSearchParams({
+        url: post.imageUrl,
+        published: "false",
+        access_token: accessToken,
+      });
+      const uploadRes = await graphRequest<{ id?: string }>(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: uploadBody.toString(),
+      });
+      const photoId = uploadRes.id;
+      if (!photoId) {
+        return { success: false, error: "Facebook photo upload returned no id" };
+      }
+
+      // Step 2: Publish the uploaded photo to /{page-id}/photo_stories
+      const storyUrl = `${GRAPH_BASE}/${encodeURIComponent(pageId)}/photo_stories`;
+      const storyBody = new URLSearchParams({
+        photo_id: photoId,
+        access_token: accessToken,
+      });
+      const storyRes = await graphRequest<{ id?: string }>(storyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: storyBody.toString(),
+      });
+      if (!storyRes.id) {
+        return { success: false, error: "Facebook story publish returned no id" };
+      }
+      return { success: true, externalId: storyRes.id };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isTokenExpired = /code 190/i.test(msg);
+      const error = isTokenExpired ? `TOKEN_EXPIRED — ${msg}` : msg;
+      if (isTokenExpired) {
+        console.error("[facebook] TOKEN_EXPIRED error 190 — pipeline blocked until token is refreshed");
+      }
+      return { success: false, error };
+    }
   }
 
   /**
-   * Dispatcher that chooses between link and photo based on config.postMode.
+   * Dispatcher that chooses between link, photo, or story based on post config and parameters.
    * If a linkUrl is not provided for link mode, one is derived from the
    * article slug by callers (orchestrator does this).
    */
   async publish(post: PreparedFacebookPost): Promise<PublishResult> {
+    if (post.mediaType === "STORIES") {
+      return this.publishStory(post);
+    }
+
     if (this.config.postMode === "link") {
       const linkUrl =
         post.linkUrl ||

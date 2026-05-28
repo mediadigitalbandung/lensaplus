@@ -139,7 +139,7 @@ function PostsTab() {
     if (targetPlatform === "INSTAGRAM") {
       platformLabel = isStory ? "Instagram Story" : "Instagram Feed";
     } else if (targetPlatform === "FACEBOOK") {
-      platformLabel = "Facebook";
+      platformLabel = isStory ? "Facebook Story" : "Facebook Feed";
     }
 
     const ok = await confirm({
@@ -300,7 +300,19 @@ function PostsTab() {
             ) : (
               <Facebook size={12} />
             )}
-            Test Facebook
+            Test FB Feed
+          </button>
+          <button
+            onClick={() => handleTestPublish("FACEBOOK", true)}
+            disabled={testingPublish}
+            className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+          >
+            {testingPublish ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Facebook size={12} />
+            )}
+            Test FB Story
           </button>
         </div>
       </div>

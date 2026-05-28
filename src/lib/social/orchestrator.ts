@@ -201,7 +201,9 @@ async function runPlatform(
   if (isStory) {
     // Stories bypass templateHelper and use dynamic OG image
     publicUrl = `${SITE_URL}/api/og/story?slug=${article.slug}`;
-    caption = `Snapgram: ${article.title}`;
+    caption = platform === "INSTAGRAM" 
+      ? `Snapgram: ${article.title}`
+      : `Facebook Story: ${article.title}`;
   } else {
     // 1. Find template.
     let template: SocialTemplate | null;
@@ -362,6 +364,7 @@ async function runPublisher(
       caption,
       articleId: article.id,
       linkUrl: articleUrl(article.slug),
+      mediaType: isStory ? "STORIES" : "FEED",
     });
   }
 
@@ -426,6 +429,7 @@ export async function publishArticleToSocial(
     { platform: "INSTAGRAM" as Platform, isStory: false },
     { platform: "INSTAGRAM" as Platform, isStory: true },
     { platform: "FACEBOOK" as Platform, isStory: false },
+    { platform: "FACEBOOK" as Platform, isStory: true },
   ];
 
   if (targetPlatform && targetPlatform !== "ALL") {
