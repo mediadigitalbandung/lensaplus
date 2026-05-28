@@ -170,6 +170,9 @@ function shouldPublishToPlatform(
   // Explicit true on article → always publish (if platform enabled).
   if (perArticle === true) return { publish: true };
 
+  // If in draft mode, we always generate the draft for enabled platforms.
+  if (globalSettings.draftMode) return { publish: true };
+
   // null/undefined → fall through to global auto-publish flag.
   const autoFlag =
     platform === "INSTAGRAM"
