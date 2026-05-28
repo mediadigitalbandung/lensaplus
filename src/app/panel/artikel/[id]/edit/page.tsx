@@ -638,7 +638,7 @@ export default function EditArticlePage() {
     ((isOwner || isAdmin) && currentStatus === "PUBLISHED");
 
   // --- JURNALIS HANDLERS ---
-  const handleJurnalisSubmit = async (status: "DRAFT" | "IN_REVIEW") => {
+  const handleJurnalisSubmit = async (status: "DRAFT" | "IN_REVIEW" | "PUBLISHED", schedTime?: string) => {
     setError("");
 
     if (!title.trim()) return setError("Judul wajib diisi");
@@ -654,6 +654,20 @@ export default function EditArticlePage() {
     if (status === "IN_REVIEW") {
       const ok = await confirm({ message: "Artikel akan dikirim untuk review oleh editor. Lanjutkan?", variant: "warning", title: "Konfirmasi" });
       if (!ok) return;
+    }
+
+    if (status === "PUBLISHED") {
+      if (schedTime) {
+        const scheduledTime = new Date(schedTime);
+        if (scheduledTime <= new Date()) {
+          return setError("Jadwal publikasi harus di masa depan");
+        }
+        const ok = await confirm({ message: `Jadwalkan publikasi pada ${scheduledTime.toLocaleString("id-ID")}?`, variant: "warning", title: "Konfirmasi" });
+        if (!ok) return;
+      } else {
+        const ok = await confirm({ message: "Publikasi artikel ini sekarang? Artikel akan tampil di halaman publik.", variant: "warning", title: "Konfirmasi" });
+        if (!ok) return;
+      }
     }
 
     setSaving(true);
@@ -674,6 +688,7 @@ export default function EditArticlePage() {
           seoTitle: seoTitle || undefined,
           seoDescription: seoDescription || undefined,
           status,
+          scheduledAt: schedTime || undefined,
           sources: validSources.length > 0 ? validSources : undefined,
           assignedEditorId: selectedEditorId || null,
         }),
@@ -687,7 +702,11 @@ export default function EditArticlePage() {
       }
 
       clearAutosave();
-      success(status === "IN_REVIEW" ? "Artikel dikirim untuk review" : "Artikel disimpan sebagai draf");
+      if (status === "PUBLISHED") {
+        success(schedTime ? `Publikasi dijadwalkan pada ${new Date(schedTime).toLocaleString("id-ID")}` : "Artikel berhasil dipublikasikan!");
+      } else {
+        success(status === "IN_REVIEW" ? "Artikel dikirim untuk review" : "Artikel disimpan sebagai draf");
+      }
       router.push("/panel/artikel");
       router.refresh();
     } catch {
@@ -695,8 +714,6 @@ export default function EditArticlePage() {
       setSaving(false);
     }
   };
-
-  // --- PUBLISHED ARTICLE HANDLERS (post-publish edit + admin actions) ---
 
   // Save edits to a PUBLISHED article without changing its status (stays live).
   const handlePublishedSave = async () => {
@@ -2015,6 +2032,25 @@ export default function EditArticlePage() {
                   <Save size={16} />
                   Simpan Draf
                 </button>
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => handleJurnalisSubmit("PUBLISHED")}
+                      disabled={saving}
+                      className="btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                    >
+                      <Upload size={16} />
+                      Publikasikan Sekarang
+                    </button>
+                    <button
+                      onClick={() => { setShowSchedule(!showSchedule); }}
+                      className="flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                    >
+                      <CalendarClock size={16} />
+                      Jadwalkan Publikasi
+                    </button>
+                  </>
+                )}
                 {CAN_SUBMIT_REVIEW.includes(userRole) && (
                   <button
                     onClick={() => handleJurnalisSubmit("IN_REVIEW")}
@@ -2056,6 +2092,38 @@ export default function EditArticlePage() {
         <div className="mb-4 flex items-center gap-2 rounded-[12px] bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertCircle size={16} />
           {error}
+        </div>
+      )}
+
+      {/* Journalist Direct Schedule Picker */}
+      {viewMode === "journalist" && showSchedule && (
+        <div className="mb-4 rounded-[12px] border border-blue-300 bg-blue-50 p-4 shadow-sm">
+          <label className="mb-2 block text-sm font-medium text-blue-800">
+            Pilih tanggal & waktu publikasi draf ini
+          </label>
+          <input
+            type="datetime-local"
+            value={scheduleDate}
+            onChange={(e) => setScheduleDate(e.target.value)}
+            min={new Date().toISOString().slice(0, 16)}
+            className="input w-full max-w-xs text-sm"
+          />
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              onClick={() => handleJurnalisSubmit("PUBLISHED", scheduleDate)}
+              disabled={saving || !scheduleDate}
+              className="flex items-center gap-1.5 rounded-[12px] bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              <CalendarClock size={14} />
+              Konfirmasi Jadwal
+            </button>
+            <button
+              onClick={() => { setShowSchedule(false); setScheduleDate(""); }}
+              className="rounded-[12px] px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
+            >
+              Batal
+            </button>
+          </div>
         </div>
       )}
 
