@@ -72,12 +72,14 @@ export async function GET(request: NextRequest) {
       where.sourceArticleId = null;
     }
 
+    let targetUserId: string | null = null;
+
     if (status === "ALL") {
       // Fetch all statuses — requires auth (admin panel)
       const session = await requireAuth();
       // Non-editor roles can only see their own articles
       if (!canApproveArticles(session.user.role)) {
-        where.authorId = session.user.id;
+        targetUserId = session.user.id;
       }
       // No status filter — return all
     } else if (status === "PUBLISHED") {
@@ -87,7 +89,7 @@ export async function GET(request: NextRequest) {
       const session = await requireAuth();
       // Non-editor roles can only see their own articles
       if (!canApproveArticles(session.user.role)) {
-        where.authorId = session.user.id;
+        targetUserId = session.user.id;
       }
       where.status = status;
     }
@@ -96,7 +98,15 @@ export async function GET(request: NextRequest) {
       where.category = { slug: category };
     }
     if (authorId) {
-      where.authorId = authorId;
+      targetUserId = authorId;
+    }
+
+    if (targetUserId) {
+      where.OR = [
+        { authorId: targetUserId },
+        { reviewedBy: targetUserId },
+        { assignedEditorId: targetUserId },
+      ];
     }
     if (reviewedBy) {
       where.reviewedBy = reviewedBy;
