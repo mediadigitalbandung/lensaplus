@@ -79,6 +79,11 @@ export async function GET() {
         accessToken: maskToken(settings.facebook.accessToken),
         hasAccessToken: Boolean(settings.facebook.accessToken),
       },
+      threads: {
+        ...settings.threads,
+        accessToken: maskToken(settings.threads.accessToken),
+        hasAccessToken: Boolean(settings.threads.accessToken),
+      },
     });
   } catch (err) {
     return errorResponse(err);
@@ -90,6 +95,7 @@ const globalSchema = z.object({
   autoPublishIG: z.boolean().optional(),
   autoPublishFB: z.boolean().optional(),
   autoPublishTwitter: z.boolean().optional(),
+  autoPublishThreads: z.boolean().optional(),
   defaultHashtags: z.string().nullable().optional(),
   defaultCTA: z.string().nullable().optional(),
   captionTemplate: z.string().nullable().optional(),
@@ -114,8 +120,16 @@ const facebookSchema = z.object({
   tokenExpiresAt: z.string().datetime().nullable().optional(),
 });
 
+const threadsSchema = z.object({
+  accessToken: z.string().nullable().optional(),
+  threadsUserId: z.string().nullable().optional(),
+  templateDefaultId: z.string().nullable().optional(),
+  enabled: z.boolean().optional(),
+  tokenExpiresAt: z.string().datetime().nullable().optional(),
+});
+
 const putSchema = z.object({
-  scope: z.enum(["global", "instagram", "facebook"]),
+  scope: z.enum(["global", "instagram", "facebook", "threads"]),
   data: z.record(z.unknown()),
 });
 
@@ -160,6 +174,21 @@ export async function PUT(req: NextRequest) {
         tokenExpiresAt,
       };
       updatedRow = await prisma.facebookSettings.upsert({
+        where: { id: "global" },
+        update: prepared,
+        create: { id: "global", ...prepared },
+      });
+    } else if (parsed.scope === "threads") {
+      const data = threadsSchema.parse(parsed.data);
+      let tokenExpiresAt = data.tokenExpiresAt ? new Date(data.tokenExpiresAt) : data.tokenExpiresAt;
+      if (data.accessToken && data.accessToken !== "(tidak berubah)" && !data.accessToken.includes("...")) {
+        tokenExpiresAt = await getMetaTokenExpiry(data.accessToken);
+      }
+      const prepared = {
+        ...data,
+        tokenExpiresAt,
+      };
+      updatedRow = await prisma.threadsSettings.upsert({
         where: { id: "global" },
         update: prepared,
         create: { id: "global", ...prepared },

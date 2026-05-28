@@ -23,11 +23,13 @@ import type {
   SocialMediaSettings,
   SocialPost,
   SocialTemplate,
+  ThreadsSettings,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { generateSocialCaption } from "./caption-generator";
 import { FacebookPublisher, type FacebookPostMode } from "./facebook";
 import { InstagramPublisher } from "./instagram";
+import { ThreadsPublisher } from "./threads";
 import {
   enrichArticleForTemplate,
   findTemplateForPlatform,
@@ -96,7 +98,6 @@ async function getOrCreateInstagramSettings(): Promise<InstagramSettings> {
   }
   return row;
 }
-
 async function getOrCreateFacebookSettings(): Promise<FacebookSettings> {
   let row = await prisma.facebookSettings.findUnique({ where: { id: "global" } });
   if (!row) {
@@ -105,17 +106,27 @@ async function getOrCreateFacebookSettings(): Promise<FacebookSettings> {
   return row;
 }
 
+async function getOrCreateThreadsSettings(): Promise<ThreadsSettings> {
+  let row = await prisma.threadsSettings.findUnique({ where: { id: "global" } });
+  if (!row) {
+    row = await prisma.threadsSettings.create({ data: { id: "global" } });
+  }
+  return row;
+}
+
 export async function getAllSocialSettings(): Promise<{
   global: SocialMediaSettings;
   instagram: InstagramSettings;
   facebook: FacebookSettings;
+  threads: ThreadsSettings;
 }> {
-  const [global, instagram, facebook] = await Promise.all([
+  const [global, instagram, facebook, threads] = await Promise.all([
     getOrCreateGlobalSettings(),
     getOrCreateInstagramSettings(),
     getOrCreateFacebookSettings(),
+    getOrCreateThreadsSettings(),
   ]);
-  return { global, instagram, facebook };
+  return { global, instagram, facebook, threads };
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────
@@ -179,7 +190,9 @@ function shouldPublishToPlatform(
       ? globalSettings.autoPublishIG
       : platform === "FACEBOOK"
         ? globalSettings.autoPublishFB
-        : globalSettings.autoPublishTwitter;
+        : platform === "TWITTER"
+          ? globalSettings.autoPublishTwitter
+          : (globalSettings as any).autoPublishThreads;
 
   if (!autoFlag) return { publish: false, reason: "auto-publish disabled in global settings" };
   return { publish: true };
@@ -193,6 +206,7 @@ async function runPlatform(
   global: SocialMediaSettings,
   ig: InstagramSettings,
   fb: FacebookSettings,
+  threads: ThreadsSettings,
   isStory: boolean = false,
 ): Promise<OrchestratorPlatformResult> {
   let publicUrl: string;
@@ -282,7 +296,7 @@ async function runPlatform(
 
   let publishResult: PublishResult;
   try {
-    publishResult = await runPublisher(platform, article, publicUrl, caption, ig, fb, isStory);
+    publishResult = await runPublisher(platform, article, publicUrl, caption, ig, fb, threads, isStory);
   } catch (err) {
     publishResult = {
       success: false,
@@ -330,6 +344,7 @@ async function runPublisher(
   caption: string,
   ig: InstagramSettings,
   fb: FacebookSettings,
+  threads: ThreadsSettings,
   isStory: boolean = false,
 ): Promise<PublishResult> {
   if (platform === "INSTAGRAM") {
@@ -365,6 +380,22 @@ async function runPublisher(
       articleId: article.id,
       linkUrl: articleUrl(article.slug),
       mediaType: isStory ? "STORIES" : "FEED",
+    });
+  }
+
+  if (platform === "THREADS") {
+    if (!threads.accessToken || !threads.threadsUserId) {
+      return { success: false, error: "Threads not configured (accessToken/threadsUserId)" };
+    }
+    const pub = new ThreadsPublisher({
+      accessToken: threads.accessToken,
+      threadsUserId: threads.threadsUserId,
+    });
+    return pub.publish({
+      platform,
+      imageUrl,
+      caption,
+      articleId: article.id,
     });
   }
 
@@ -411,8 +442,9 @@ export async function publishArticleToSocial(
   let global: SocialMediaSettings;
   let ig: InstagramSettings;
   let fb: FacebookSettings;
+  let threads: ThreadsSettings;
   try {
-    ({ global, instagram: ig, facebook: fb } = await getAllSocialSettings());
+    ({ global, instagram: ig, facebook: fb, threads } = await getAllSocialSettings());
   } catch (err) {
     return {
       results: [
@@ -430,6 +462,7 @@ export async function publishArticleToSocial(
     { platform: "INSTAGRAM" as Platform, isStory: true },
     { platform: "FACEBOOK" as Platform, isStory: false },
     { platform: "FACEBOOK" as Platform, isStory: true },
+    { platform: "THREADS" as Platform, isStory: false },
   ];
 
   if (targetPlatform && targetPlatform !== "ALL") {
@@ -449,7 +482,7 @@ export async function publishArticleToSocial(
     }
 
     try {
-      const r = await runPlatform(platform, article, global, ig, fb, target.isStory);
+      const r = await runPlatform(platform, article, global, ig, fb, threads, target.isStory);
       r.isStory = target.isStory;
       results.push(r);
     } catch (err) {
@@ -509,7 +542,7 @@ export async function approveDraft(postId: string): Promise<PublishResult> {
     post.imageUrl = sanitizedImageUrl;
   }
 
-  const { instagram: ig, facebook: fb } = await getAllSocialSettings();
+  const { instagram: ig, facebook: fb, threads } = await getAllSocialSettings();
 
   // Mark pending first so observers see the state transition.
   await prisma.socialPost.update({
@@ -528,6 +561,7 @@ export async function approveDraft(postId: string): Promise<PublishResult> {
       post.caption,
       ig,
       fb,
+      threads,
       isStory,
     );
   } catch (err) {
@@ -623,6 +657,17 @@ export async function takedownPost(
       data: { status: "DELETED", deletedAt: new Date() },
     });
     return { success: true };
+  }
+
+  if (post.platform === "THREADS") {
+    await prisma.socialPost.update({
+      where: { id: postId },
+      data: { status: "DELETED", deletedAt: new Date() },
+    });
+    return {
+      success: true,
+      note: "Threads API does not support programmatic delete. Remove the post manually in the Threads app; the row has been marked DELETED locally.",
+    };
   }
 
   if (post.platform === "INSTAGRAM") {

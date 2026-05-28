@@ -91,18 +91,27 @@ interface SocialSettings {
     enabled: boolean;
     tokenExpiresAt?: string | null;
   };
+  threads: {
+    accessToken: string | null;
+    hasAccessToken: boolean;
+    threadsUserId: string | null;
+    enabled: boolean;
+    tokenExpiresAt?: string | null;
+  };
 }
 
 const PLATFORM_ICONS: Record<Platform, React.ElementType> = {
   INSTAGRAM: Instagram,
   FACEBOOK: Facebook,
   TWITTER: Twitter,
+  THREADS: Share2,
 };
 
 const PLATFORM_COLORS: Record<Platform, string> = {
   INSTAGRAM: "text-pink-500 bg-pink-50",
   FACEBOOK: "text-blue-600 bg-blue-50",
   TWITTER: "text-sky-500 bg-sky-50",
+  THREADS: "text-emerald-600 bg-emerald-50",
 };
 
 const STATUS_COLORS: Record<PostStatus, string> = {
@@ -140,6 +149,8 @@ function PostsTab() {
       platformLabel = isStory ? "Instagram Story" : "Instagram Feed";
     } else if (targetPlatform === "FACEBOOK") {
       platformLabel = isStory ? "Facebook Story" : "Facebook Feed";
+    } else if (targetPlatform === "THREADS") {
+      platformLabel = "Threads";
     }
 
     const ok = await confirm({
@@ -244,6 +255,7 @@ function PostsTab() {
           <option value="ALL">Semua Platform</option>
           <option value="INSTAGRAM">Instagram</option>
           <option value="FACEBOOK">Facebook</option>
+          <option value="THREADS">Threads</option>
           <option value="TWITTER">Twitter</option>
         </select>
         <select
@@ -313,6 +325,18 @@ function PostsTab() {
               <Facebook size={12} />
             )}
             Test FB Story
+          </button>
+          <button
+            onClick={() => handleTestPublish("THREADS", false)}
+            disabled={testingPublish}
+            className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+          >
+            {testingPublish ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Share2 size={12} />
+            )}
+            Test Threads
           </button>
         </div>
       </div>
@@ -1904,6 +1928,13 @@ function SettingsTab() {
   } | null>(null);
   const [showFbToken, setShowFbToken] = useState(false);
 
+  const [threads, setThreads] = useState<{
+    accessToken: string;
+    threadsUserId: string;
+    enabled: boolean;
+  } | null>(null);
+  const [showThreadsToken, setShowThreadsToken] = useState(false);
+
   const [scanningAccounts, setScanningAccounts] = useState(false);
   const [scannedAccounts, setScannedAccounts] = useState<Array<{
     pageId: string;
@@ -1965,6 +1996,11 @@ function SettingsTab() {
           postMode: s.facebook.postMode || "link",
           enabled: s.facebook.enabled,
         });
+        setThreads({
+          accessToken: "",
+          threadsUserId: s.threads?.threadsUserId || "",
+          enabled: s.threads?.enabled || false,
+        });
       } else {
         setError(json.error || `HTTP error ${res.status}: Gagal memuat pengaturan.`);
         showError(json.error || "Gagal memuat pengaturan sosial media.");
@@ -1983,7 +2019,7 @@ function SettingsTab() {
   }, []);
 
   async function saveScope(
-    scope: "global" | "instagram" | "facebook",
+    scope: "global" | "instagram" | "facebook" | "threads",
     data: Record<string, unknown>,
   ) {
     try {
@@ -2027,7 +2063,7 @@ function SettingsTab() {
     );
   }
 
-  if (loading || !settings || !global || !instagram || !facebook) {
+  if (loading || !settings || !global || !instagram || !facebook || !threads) {
     return (
       <div className="py-16 text-center">
         <Loader2 size={24} className="mx-auto animate-spin text-primary" />
@@ -2178,6 +2214,17 @@ function SettingsTab() {
               className="h-4 w-4 rounded border-border"
             />
             Auto-publish Facebook
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={global.autoPublishThreads}
+              onChange={(e) =>
+                setGlobal({ ...global, autoPublishThreads: e.target.checked })
+              }
+              className="h-4 w-4 rounded border-border"
+            />
+            Auto-publish Threads
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -2706,6 +2753,110 @@ function SettingsTab() {
               <Save size={14} />
             )}
             Simpan Facebook
+          </button>
+        </div>
+      </div>
+
+      {/* Threads */}
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <h3 className="text-base font-bold text-txt-primary flex items-center gap-2">
+            <Share2 size={16} className="text-emerald-500" />
+            Threads
+          </h3>
+          {settings.threads?.hasAccessToken ? (
+            <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
+              ✅ Terkoneksi
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+              Belum Terkoneksi
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-txt-muted mb-4">
+          {settings.threads?.hasAccessToken
+            ? `Token ter-set (masked: ${settings.threads.accessToken}). Kosongkan untuk mempertahankan.`
+            : "Belum ada access token."}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-txt-secondary mb-1">
+              Threads User ID
+            </label>
+            <input
+              type="text"
+              className="input w-full py-2 text-sm"
+              value={threads.threadsUserId}
+              onChange={(e) =>
+                setThreads({ ...threads, threadsUserId: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-txt-secondary mb-1">
+              Access Token
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                style={{ WebkitTextSecurity: showThreadsToken ? "none" : "disc" } as React.CSSProperties}
+                className="input w-full py-2 text-sm pr-16"
+                placeholder={
+                  settings.threads?.hasAccessToken
+                    ? "(tidak berubah)"
+                    : "THAB..."
+                }
+                value={threads.accessToken}
+                onChange={(e) =>
+                  setThreads({ ...threads, accessToken: e.target.value })
+                }
+              />
+              <button
+                type="button"
+                onClick={() => setShowThreadsToken(!showThreadsToken)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-primary"
+              >
+                {showThreadsToken ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={threads.enabled}
+              onChange={(e) =>
+                setThreads({ ...threads, enabled: e.target.checked })
+              }
+              className="h-4 w-4 rounded border-border"
+            />
+            Enabled
+          </label>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={() => {
+              const payload: Record<string, unknown> = {
+                threadsUserId: threads.threadsUserId || null,
+                enabled: threads.enabled,
+              };
+              if (threads.accessToken.trim()) {
+                payload.accessToken = threads.accessToken;
+              }
+              saveScope("threads", payload);
+            }}
+            disabled={saving === "threads"}
+            className="btn-primary flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          >
+            {saving === "threads" ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Save size={14} />
+            )}
+            Simpan Threads
           </button>
         </div>
       </div>

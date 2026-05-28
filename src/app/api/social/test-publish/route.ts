@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
   articleId: z.string().optional(),
-  platform: z.enum(["INSTAGRAM", "FACEBOOK", "ALL"]).optional(),
+  platform: z.enum(["INSTAGRAM", "FACEBOOK", "THREADS", "ALL"]).optional(),
   isStory: z.boolean().optional(),
 });
 

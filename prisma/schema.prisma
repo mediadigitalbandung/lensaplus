@@ -85,6 +85,7 @@ enum SocialPlatform {
   INSTAGRAM
   FACEBOOK
   TWITTER
+  THREADS
 }
 
 enum SocialPostStatus {
@@ -553,6 +554,7 @@ model SocialMediaSettings {
   autoPublishIG      Boolean  @default(false)
   autoPublishFB      Boolean  @default(false)
   autoPublishTwitter Boolean  @default(false)
+  autoPublishThreads Boolean  @default(false)
   defaultHashtags    String?  @db.Text
   defaultCTA         String?  @db.Text
   captionTemplate    String?  @db.Text
@@ -586,6 +588,18 @@ model FacebookSettings {
   updatedAt         DateTime  @updatedAt
 
   @@map("facebook_settings")
+}
+
+model ThreadsSettings {
+  id                String    @id @default("global")
+  accessToken       String?   @db.Text
+  threadsUserId     String?
+  templateDefaultId String?
+  enabled           Boolean   @default(false)
+  tokenExpiresAt    DateTime?
+  updatedAt         DateTime  @updatedAt
+
+  @@map("threads_settings")
 }
 
 model CourtSchedule {

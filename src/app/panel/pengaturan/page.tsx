@@ -76,6 +76,12 @@ interface SocialSettings {
     postMode: "link" | "photo" | "both";
     enabled: boolean;
   };
+  threads: {
+    accessToken: string | null;
+    hasAccessToken: boolean;
+    threadsUserId: string | null;
+    enabled: boolean;
+  };
 }
 
 interface TestResult {
@@ -382,6 +388,12 @@ export default function PengaturanPage() {
   const [fbEnabled, setFbEnabled] = useState(false);
   const [fbHasToken, setFbHasToken] = useState(false);
 
+  // Meta — Threads
+  const [threadsAccessToken, setThreadsAccessToken] = useState("");
+  const [threadsUserId, setThreadsUserId] = useState("");
+  const [threadsEnabled, setThreadsEnabled] = useState(false);
+  const [threadsHasToken, setThreadsHasToken] = useState(false);
+
   // Twitter
   const [twBearer, setTwBearer] = useState("");
   const [twAccessToken, setTwAccessToken] = useState("");
@@ -471,6 +483,11 @@ export default function PengaturanPage() {
         setFbEnabled(Boolean(s.facebook?.enabled));
         setFbHasToken(Boolean(s.facebook?.hasAccessToken));
         setFbAccessToken("");
+
+        setThreadsUserId(s.threads?.threadsUserId || "");
+        setThreadsEnabled(Boolean(s.threads?.enabled));
+        setThreadsHasToken(Boolean(s.threads?.hasAccessToken));
+        setThreadsAccessToken("");
       }
     } catch {
       /* ignore */
@@ -1295,6 +1312,80 @@ export default function PengaturanPage() {
                   <Save size={14} />
                 )}
                 Simpan Facebook
+              </button>
+            </div>
+          </div>
+
+          {/* Threads */}
+          <div className="rounded-xl border border-border bg-surface-secondary/40 p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Share2 size={16} className="text-primary" />
+              <h3 className="text-sm font-bold text-txt-primary">Threads</h3>
+              {threadsHasToken && !threadsAccessToken && (
+                <span className="ml-auto text-[10px] text-txt-muted">
+                  (token sudah disimpan — kosongkan untuk pertahankan)
+                </span>
+              )}
+            </div>
+            <Field
+              label="Threads Access Token"
+              hint="Long-lived token dari Meta Developers / Threads API Explorer."
+            >
+              <SecretInput
+                value={threadsAccessToken}
+                onChange={(v) => {
+                  setThreadsAccessToken(v);
+                  markDirty("social_threads");
+                }}
+                placeholder={
+                  threadsHasToken ? "(tetap pakai token tersimpan)" : "THAB..."
+                }
+              />
+            </Field>
+            <Field label="Threads User ID">
+              <input
+                type="text"
+                value={threadsUserId}
+                onChange={(e) => {
+                  setThreadsUserId(e.target.value.trim());
+                  markDirty("social_threads");
+                }}
+                className="input font-mono text-sm"
+                placeholder="100012345678901"
+              />
+            </Field>
+            <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3">
+              <p className="text-sm font-medium text-txt-primary">
+                Aktifkan Threads
+              </p>
+              <ToggleSwitch
+                checked={threadsEnabled}
+                onChange={(v) => {
+                  setThreadsEnabled(v);
+                  markDirty("social_threads");
+                }}
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() =>
+                  saveSocialScope("threads", {
+                    ...(threadsAccessToken
+                      ? { accessToken: threadsAccessToken }
+                      : {}),
+                    threadsUserId: threadsUserId || null,
+                    enabled: threadsEnabled,
+                  })
+                }
+                disabled={!!saving.social_threads || !dirty.social_threads}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+              >
+                {saving.social_threads ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Save size={14} />
+                )}
+                Simpan Threads
               </button>
             </div>
           </div>
