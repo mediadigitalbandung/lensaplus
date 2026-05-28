@@ -774,9 +774,9 @@ export default function ArtikelPage() {
                             >
                               <Edit size={16} />
                             </button>
-                            {/* Quick Publish — admin/chief only, for DRAFT/IN_REVIEW/APPROVED */}
+                            {/* Quick Publish — admin/chief only, for DRAFT/IN_REVIEW/APPROVED/REJECTED */}
                             {canPublishDirect &&
-                              ["DRAFT", "IN_REVIEW", "APPROVED"].includes(article.status) && (
+                              ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED"].includes(article.status) && (
                                 <button
                                   onClick={() => handlePublish(article)}
                                   disabled={actioning === article.id}

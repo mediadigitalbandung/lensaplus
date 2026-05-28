@@ -533,13 +533,13 @@ export async function PUT(
         return successResponse(updated);
       }
 
-      // Admin publish: DRAFT/IN_REVIEW/APPROVED -> PUBLISHED (or schedule)
+      // Admin publish: DRAFT/IN_REVIEW/APPROVED/REJECTED -> PUBLISHED (or schedule)
       // Admin can publish directly from any pre-published state. DRAFT is
       // the common entry point for auto-generated articles where the editor
       // wants one-click "approve & publish" from the auto-artikel panel.
       if (
         data.status === "PUBLISHED" &&
-        ["DRAFT", "IN_REVIEW", "APPROVED"].includes(article.status)
+        ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED"].includes(article.status)
       ) {
         // Save revision before publish
         await prisma.revision.create({
