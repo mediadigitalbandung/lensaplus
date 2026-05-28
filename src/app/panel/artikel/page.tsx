@@ -720,16 +720,18 @@ export default function ArtikelPage() {
                               );
                               return (
                                 <div className="flex items-center gap-2 mt-1.5 pl-1">
-                                  <Instagram
-                                    size={13}
-                                    className={hasInstagram ? "text-pink-500" : "text-txt-muted opacity-30"}
-                                    title={hasInstagram ? "Sudah dipublikasikan ke Instagram" : "Belum dipublikasikan ke Instagram"}
-                                  />
-                                  <Facebook
-                                    size={13}
-                                    className={hasFacebook ? "text-blue-600" : "text-txt-muted opacity-30"}
-                                    title={hasFacebook ? "Sudah dipublikasikan ke Facebook" : "Belum dipublikasikan ke Facebook"}
-                                  />
+                                  <span title={hasInstagram ? "Sudah dipublikasikan ke Instagram" : "Belum dipublikasikan ke Instagram"}>
+                                    <Instagram
+                                      size={13}
+                                      className={hasInstagram ? "text-pink-500" : "text-txt-muted opacity-30"}
+                                    />
+                                  </span>
+                                  <span title={hasFacebook ? "Sudah dipublikasikan ke Facebook" : "Belum dipublikasikan ke Facebook"}>
+                                    <Facebook
+                                      size={13}
+                                      className={hasFacebook ? "text-blue-600" : "text-txt-muted opacity-30"}
+                                    />
+                                  </span>
                                 </div>
                               );
                             })()}

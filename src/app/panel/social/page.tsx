@@ -1898,7 +1898,7 @@ function SettingsTab() {
           </p>
         </div>
         <button
-          onClick={fetchSettings}
+          onClick={() => fetchSettings()}
           className="btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
         >
           <RefreshCw size={14} />

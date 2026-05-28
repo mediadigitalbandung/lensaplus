@@ -222,7 +222,7 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
   const lineHeight = layer.lineHeight || 1.2;
   const align = layer.align || "left";
 
-  const lines = wrapText(resolvedText, layer.width, fontSize, layer.maxLines, fontFamily, weight);
+  const lines = wrapText(resolvedText, layer.width, fontSize, layer.maxLines, fontFamily, String(weight));
 
   const lineStep = fontSize * lineHeight;
   // y in the input is the layer top-left. Baseline for first line = y + fontSize.
@@ -255,14 +255,14 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
         const words = line.split(/\s+/);
         
         // Calculate the precise estimated width of each word
-        const wordWidths = words.map((w) => estimateWordWidth(w, fontSize, fontFamily, weight));
+        const wordWidths = words.map((w) => estimateWordWidth(w, fontSize, fontFamily, String(weight)));
         const totalTextWidth = wordWidths.reduce((sum, w) => sum + w, 0);
         
         const remainingSpace = layer.width - totalTextWidth;
         const gaps = words.length - 1;
         
         // Enforce a physical minimum gap of 0.28 * fontSize for bold/serif to absolutely prevent words from overlapping/merging
-        const isSerifOrBold = fontFamily.toLowerCase().includes("serif") || fontFamily.toLowerCase().includes("georgia") || fontFamily.toLowerCase().includes("newsreader") || weight.toLowerCase().includes("bold") || weight === "700" || weight === "Bold";
+        const isSerifOrBold = fontFamily.toLowerCase().includes("serif") || fontFamily.toLowerCase().includes("georgia") || fontFamily.toLowerCase().includes("newsreader") || String(weight).toLowerCase().includes("bold") || String(weight) === "700" || String(weight) === "Bold";
         const minGap = fontSize * (isSerifOrBold ? 0.28 : 0.22);
         const spacePerGap = gaps > 0 ? Math.max(minGap, remainingSpace / gaps) : minGap;
 
