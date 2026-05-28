@@ -227,6 +227,16 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
   const article = await getArticle(params.slug);
   if (!article) notFound();
 
+  // Fetch featured image credit if present
+  let featuredImageCredit: string | null = null;
+  if (article.featuredImage) {
+    const media = await prisma.media.findFirst({
+      where: { url: article.featuredImage },
+      select: { credit: true },
+    });
+    featuredImageCredit = media?.credit || null;
+  }
+
   // Non-published articles are private — only visible to author/editors/admins
   const isPublished = article.status === "PUBLISHED";
 
@@ -527,7 +537,14 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
 
               {/* Featured Image */}
               {article.featuredImage && (
-                <FeaturedImage src={article.featuredImage} alt={article.title} priority />
+                <div className="group relative">
+                  <FeaturedImage src={article.featuredImage} alt={article.title} priority />
+                  {featuredImageCredit && (
+                    <p className="mt-2 text-right text-xs italic text-txt-muted">
+                      Foto: {featuredImageCredit}
+                    </p>
+                  )}
+                </div>
               )}
 
               {/* Article content with inline ads */}

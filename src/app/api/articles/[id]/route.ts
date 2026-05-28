@@ -184,19 +184,30 @@ export async function PUT(
       }
 
       // If sending for review, assign an editor (use provided or random)
-      let assignedReviewerId: string | null = data.assignedEditorId || article.reviewedBy;
-      if (data.status === "IN_REVIEW" && !data.assignedEditorId) {
-        const editors = await prisma.user.findMany({
-          where: {
-            role: { in: ["EDITOR", "CHIEF_EDITOR"] },
-            isActive: true,
-          },
-          select: { id: true },
-        });
-        if (editors.length > 0) {
-          const randomIndex = Math.floor(Math.random() * editors.length);
-          assignedReviewerId = editors[randomIndex].id;
+      let assignedReviewerId: string | null = null;
+      if (data.status === "IN_REVIEW") {
+        if (data.assignedEditorId && data.assignedEditorId !== "") {
+          // Explicit editor assigned by user
+          assignedReviewerId = data.assignedEditorId;
+        } else {
+          // Otomatis (random) selected by user or no editor chosen (null or empty)
+          const editors = await prisma.user.findMany({
+            where: {
+              role: { in: ["EDITOR", "CHIEF_EDITOR"] },
+              isActive: true,
+            },
+            select: { id: true },
+          });
+          if (editors.length > 0) {
+            const randomIndex = Math.floor(Math.random() * editors.length);
+            assignedReviewerId = editors[randomIndex].id;
+          } else {
+            assignedReviewerId = article.reviewedBy;
+          }
         }
+      } else {
+        // Not sending for review (e.g. saving draft), keep current reviewer or whatever was assigned
+        assignedReviewerId = data.assignedEditorId !== undefined ? (data.assignedEditorId || null) : article.reviewedBy;
       }
 
       // Save revision if content changed

@@ -64,10 +64,14 @@ export async function POST(req: NextRequest) {
     const stored = await renderAndStoreTemplate(template, articleForPublish, enriched);
 
     const { global } = await getAllSocialSettings();
+    const defaultTags = parseHashtags(global.defaultHashtags);
+    const articleTags = article.tags ? article.tags.map((t) => t.name) : [];
+    const combinedTags = Array.from(new Set([...defaultTags, ...articleTags]));
+
     const caption = await generateSocialCaption({
       article: articleForPublish,
       platform,
-      hashtags: parseHashtags(global.defaultHashtags),
+      hashtags: combinedTags,
       cta: global.defaultCTA || undefined,
     });
 

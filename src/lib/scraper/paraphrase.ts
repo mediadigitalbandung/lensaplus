@@ -101,8 +101,13 @@ function injectImagesIntoBody(
   bodyHtml: string,
   imageUrls: string[],
   altText: string,
+  sourceName?: string,
 ): string {
   if (imageUrls.length === 0) return bodyHtml;
+
+  const captionHtml = sourceName
+    ? `<figcaption class="text-xs text-txt-muted mt-1.5 text-center">Foto: ${escapeAttr(sourceName)}</figcaption>`
+    : "";
 
   // Split on closing </p> so we keep paragraph integrity.
   const parts = bodyHtml.split(/(<\/p>)/i);
@@ -116,7 +121,7 @@ function injectImagesIntoBody(
     const figures = imageUrls
       .map(
         (url) =>
-          `<figure><img src="${url}" alt="${escapeAttr(altText)}" /></figure>`,
+          `<figure><img src="${url}" alt="${escapeAttr(altText)}" />${captionHtml}</figure>`,
       )
       .join("\n");
     return `${bodyHtml}\n${figures}`;
@@ -136,7 +141,7 @@ function injectImagesIntoBody(
     const url = imageUrls[k];
     insertSet.set(
       idx,
-      `<figure><img src="${url}" alt="${escapeAttr(altText)}" /></figure>`,
+      `<figure><img src="${url}" alt="${escapeAttr(altText)}" />${captionHtml}</figure>`,
     );
   });
 
@@ -146,7 +151,7 @@ function injectImagesIntoBody(
     const firstClose = paragraphCloses[0];
     insertSet.set(
       firstClose,
-      `<figure><img src="${imageUrls[0]}" alt="${escapeAttr(altText)}" /></figure>`,
+      `<figure><img src="${imageUrls[0]}" alt="${escapeAttr(altText)}" />${captionHtml}</figure>`,
     );
   }
 
@@ -365,6 +370,7 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
     parsed.content,
     localBodyImageUrls,
     parsed.title,
+    sourceName,
   );
   const finalContent = sanitizeHtml(bodyWithImages);
 

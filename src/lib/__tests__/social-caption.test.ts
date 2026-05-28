@@ -5,6 +5,18 @@ vi.mock("@/lib/ai-client", () => ({
   callAI: (...a: unknown[]) => mockCallAI(...a),
 }));
 
+const mockFindUnique = vi.fn();
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    socialMediaSettings: {
+      findUnique: (...a: unknown[]) => mockFindUnique(...a),
+    },
+  },
+}));
+
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
 import { generateSocialCaption } from "../social/caption-generator";
 import { CAPTION_MAX_LENGTH } from "../social/types";
 import type { ArticleForPublish } from "../social/types";
@@ -32,6 +44,30 @@ function makeArticle(over: Partial<ArticleForPublish> = {}): ArticleForPublish {
 describe("generateSocialCaption", () => {
   beforeEach(() => {
     mockCallAI.mockReset();
+    mockFindUnique.mockReset();
+    mockFetch.mockReset();
+
+    mockFindUnique.mockResolvedValue({
+      id: "global",
+      captionTemplate: "{{title}}\n\n{{summary}}\n\nBaca selengkapnya di: {{link}}\n\n{{cta}}\n\n{{hashtags}}",
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(`
+        <rss>
+          <channel>
+            <item>
+              <title>Trend Satu</title>
+            </item>
+            <item>
+              <title>Trend Dua</title>
+            </item>
+          </channel>
+        </rss>
+      `),
+    });
+
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
   });
 

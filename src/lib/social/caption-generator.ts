@@ -15,7 +15,7 @@ import {
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
 
 const SYSTEM_PROMPT =
-  "Kamu adalah copywriter media sosial untuk Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). Tulis caption natural, informatif, tidak clickbait, memakai bahasa Indonesia baku yang mudah dibaca. Jangan gunakan markdown/heading/emoji berlebihan. Keluarkan hanya teks caption mentah tanpa pembungkus.";
+  "Kamu adalah copywriter media sosial untuk Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). Tulis caption natural, informatif, tidak clickbait, memakai bahasa Indonesia baku yang mudah dibaca. Tulis sesuai format yang diminta secara ketat.";
 
 function stripHtml(html: string): string {
   return html
@@ -56,6 +56,32 @@ function enforceMaxLength(text: string, platform: Platform): string {
   return `${stopped}...`;
 }
 
+async function getActiveTrendingKeywords(): Promise<string[]> {
+  try {
+    const googleRes = await fetch(
+      "https://trends.google.com/trending/rss?geo=ID",
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!googleRes.ok) return [];
+    const xml = await googleRes.text();
+    const itemTitles = xml.match(/<item>[\s\S]*?<title>([\s\S]*?)<\/title>/g);
+    if (!itemTitles) return [];
+    return itemTitles
+      .map((t) => {
+        const titleMatch = t.match(/<title>([\s\S]*?)<\/title>/);
+        if (!titleMatch) return "";
+        return titleMatch[1]
+          .replace(/&amp;/g, "&")
+          .replace(/&apos;/g, "'")
+          .replace(/&quot;/g, '"')
+          .trim();
+      })
+      .filter((t) => t.length > 0 && t.length <= 40);
+  } catch {
+    return [];
+  }
+}
+
 export interface GenerateCaptionOptions {
   article: ArticleForPublish;
   platform: Platform;
@@ -80,6 +106,9 @@ export async function generateSocialCaption(
   const excerpt = article.excerpt || stripHtml(article.content).slice(0, 600);
   const categoryName = article.category?.name || "";
 
+  // Fetch active Google Trends in Indonesia to feed the AI context
+  const trendingKeywords = await getActiveTrendingKeywords();
+
   const userPrompt = `Buat caption sosial media untuk artikel berita berikut.
 Platform: ${platform}
 Panjang target: ${targetLengthHint(platform)}
@@ -88,14 +117,28 @@ Kategori: ${categoryName}
 JUDUL: ${article.title}
 RINGKASAN: ${excerpt}
 
+TREN TERKINI DI INDONESIA SAAT INI (Google Trends):
+${trendingKeywords.length > 0 ? trendingKeywords.slice(0, 15).join(", ") : "Tidak ada data tren langsung"}
+
 Aturan:
-- Bahasa Indonesia baku, natural, tidak kaku.
-- Sebutkan inti berita dalam 1-2 kalimat pertama.
-- Jangan sertakan hashtag atau link — itu akan di-append oleh sistem.
-- Jangan tulis tanda "Caption:" atau pembungkus lain.
-- Keluarkan hanya teks captionnya.`;
+1. Bahasa Indonesia baku, natural, tidak kaku.
+2. Sebutkan inti berita dalam 1-2 kalimat pertama.
+3. Lakukan Analisis Bobot Relevansi (Word Weight Relevance Analysis) secara mendalam antara artikel ini dengan daftar TREN TERKINI (Google Trends) di atas:
+   a. Evaluasi setiap kata kunci/topik dalam TREN TERKINI. Berikan "bobot keterkaitan" (relevance weight) berdasarkan kecocokan konsep, kategori, nama tokoh, lokasi, atau instansi yang sedang viral dengan isi berita Kartawarta ini.
+   b. Prioritaskan 3-5 kata kunci/topik yang memiliki bobot keterkaitan tertinggi, lalu ubah kata kunci tersebut menjadi hashtag viral yang bersih (CamelCase, tanpa spasi/simbol, contoh: jika trennya "persib vs madura united", ubah menjadi #Persib atau #MaduraUnited).
+   c. Jika tidak ada topik dalam TREN TERKINI yang memiliki bobot keterkaitan yang kuat dengan berita (bobot rendah), jangan memaksakan memakai tren yang tidak relevan. Sebagai gantinya, ciptakan 3-5 hashtag kreatif/spesifik bertema viral yang berkaitan langsung dengan berita tersebut (misalnya, nama tempat/isu di Bandung/Jawa Barat seperti #KulinerBandung, #InfoJabar, atau topik berita spesifik seperti #PajakKini, #EkonomiBandung).
+4. Format output Anda wajib terbagi menjadi dua bagian seperti di bawah ini secara persis:
+
+[CAPTION]
+(Tulis teks caption di sini tanpa hashtag atau link)
+
+[HASHTAGS]
+(Tulis 3-5 hashtag tambahan yang sedang viral/trending berkaitan dengan berita di sini, pisahkan dengan spasi, contoh: #TimnasDay #Pilkada2026)
+`;
 
   let body: string;
+  let aiHashtags: string[] = [];
+
   try {
     const result = await callAI({
       feature: "social_caption",
@@ -105,7 +148,25 @@ Aturan:
       temperature: 0.7,
       articleTitle: article.title,
     });
-    body = cleanAILongText(result.text);
+    
+    const resultText = result.text || "";
+    const captionMatch = resultText.match(/\[CAPTION\]([\s\S]*?)\[HASHTAGS\]/i);
+    const hashtagsMatch = resultText.match(/\[HASHTAGS\]([\s\S]*)/i);
+
+    if (captionMatch) {
+      body = cleanAILongText(captionMatch[1]);
+    } else {
+      body = cleanAILongText(resultText);
+    }
+
+    if (hashtagsMatch) {
+      aiHashtags = hashtagsMatch[1]
+        .split(/[,\s\n]+/)
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0)
+        .map((t) => t.replace(/^#+/, ""));
+    }
+
     if (!body) throw new Error("empty AI response");
   } catch {
     body = `${article.title}. ${excerpt}`.trim();
@@ -129,10 +190,16 @@ Aturan:
   // Build values for replacement
   const link = (includeLink && article.slug) ? `${SITE_URL.replace(/\/+$/, "")}/berita/${article.slug}` : "";
   
-  const tagsList = hashtags
+  // Combine user-provided tags (default + article tags) with AI-generated trending tags
+  const combinedTagsList = [
+    ...hashtags,
+    ...aiHashtags,
+  ];
+
+  const tagsList = combinedTagsList
     .map(normalizeHashtag)
     .filter((t): t is string => Boolean(t));
-  const tags = tagsList.join(" ");
+  const tags = Array.from(new Set(tagsList)).join(" ");
 
   // Resolve placeholders in the custom template
   const resolvedCaption = template

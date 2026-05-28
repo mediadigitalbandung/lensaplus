@@ -35,6 +35,8 @@ import {
   ExternalLink,
   Archive,
   ArrowDownToLine,
+  TrendingUp,
+  Lightbulb,
 } from "lucide-react";
 import { stripHtml, downloadTextFile, exportArticlePdf } from "@/lib/export-utils";
 import DOMPurify from "isomorphic-dompurify";
@@ -160,6 +162,10 @@ export default function EditArticlePage() {
   const [researchNotes, setResearchNotes] = useState("");
   const [notesOpen, setNotesOpen] = useState(false);
 
+  // Trending Suggestions state
+  const [trendingSuggestions, setTrendingSuggestions] = useState<{ label: string; hot: boolean }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+
   // Word counter calculations
   const plainText = content.replace(/<[^>]*>/g, "").trim();
   const wordCount = plainText ? plainText.split(/\s+/).length : 0;
@@ -178,8 +184,9 @@ export default function EditArticlePage() {
       seoTitle,
       seoDescription,
       sources,
+      assignedEditorId: selectedEditorId,
     });
-  }, [title, content, excerpt, categoryId, tags, featuredImage, seoTitle, seoDescription, sources]);
+  }, [title, content, excerpt, categoryId, tags, featuredImage, seoTitle, seoDescription, sources, selectedEditorId]);
 
   // Mark snapshot as clean when article first loads
   useEffect(() => {
@@ -219,6 +226,7 @@ export default function EditArticlePage() {
           seoTitle: seoTitle || undefined,
           seoDescription: seoDescription || undefined,
           sources: validSources.length > 0 ? validSources : undefined,
+          assignedEditorId: selectedEditorId || null,
         };
         if (allowStatusWrite) body.status = "DRAFT";
 
@@ -262,6 +270,7 @@ export default function EditArticlePage() {
       showError,
       tags,
       title,
+      selectedEditorId,
       AUTOSAVE_KEY,
     ]
   );
@@ -302,6 +311,7 @@ export default function EditArticlePage() {
     tags,
     featuredImage,
     sources,
+    selectedEditorId,
     AUTOSAVE_KEY,
   ]);
 
@@ -511,7 +521,7 @@ export default function EditArticlePage() {
       setArticleAuthorName(article.author?.name || "");
       setArticleCreatedAt(article.createdAt || "");
       setSelectedAuthorId(article.authorId || article.author?.id || "");
-      setSelectedEditorId(article.reviewedBy || article.assignedEditorId || "");
+      setSelectedEditorId(article.assignedEditorId || "");
 
       if (article.sources && article.sources.length > 0) {
         setSources(
@@ -534,6 +544,21 @@ export default function EditArticlePage() {
     fetchCategories();
     fetchArticle();
   }, [fetchCategories, fetchArticle]);
+
+  // Fetch trending suggestions on mount
+  useEffect(() => {
+    async function fetchTrending() {
+      try {
+        const res = await fetch("/api/trending");
+        if (res.ok) {
+          const json = await res.json();
+          const data = json.data || [];
+          setTrendingSuggestions(data);
+        }
+      } catch { /* ignore */ }
+    }
+    fetchTrending();
+  }, []);
 
   // Fetch users for author/editor dropdowns
   useEffect(() => {
@@ -650,7 +675,7 @@ export default function EditArticlePage() {
           seoDescription: seoDescription || undefined,
           status,
           sources: validSources.length > 0 ? validSources : undefined,
-          assignedEditorId: selectedEditorId || undefined,
+          assignedEditorId: selectedEditorId || null,
         }),
       });
 
@@ -1989,6 +2014,45 @@ export default function EditArticlePage() {
         <div className="mb-4 flex items-center gap-2 rounded-[12px] bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertCircle size={16} />
           {error}
+        </div>
+      )}
+
+      {/* Trending Suggestions */}
+      {canJurnalisEdit && ["DRAFT", "REJECTED"].includes(currentStatus) && trendingSuggestions.length > 0 && showSuggestions && (
+        <div className="mb-4 rounded-[12px] border border-border bg-surface p-4 shadow-card">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-light">
+                <Lightbulb size={14} className="text-primary" />
+              </div>
+              <h3 className="text-sm font-bold text-txt-primary">Ide Berita dari Trending</h3>
+              <span className="text-xs text-txt-muted">— klik untuk pakai sebagai judul</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSuggestions(false)}
+              className="text-xs text-txt-muted hover:text-txt-secondary"
+            >
+              Tutup
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {trendingSuggestions.map((item, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setTitle(item.label)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary hover:text-primary ${
+                  item.hot
+                    ? "border-red-200 bg-red-50 text-red-600 hover:bg-red-50"
+                    : "border-border bg-surface-secondary text-txt-secondary"
+                }`}
+              >
+                {item.hot && <TrendingUp size={11} />}
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
