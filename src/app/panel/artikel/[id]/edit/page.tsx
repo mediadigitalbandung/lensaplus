@@ -1054,6 +1054,8 @@ export default function EditArticlePage() {
           seoTitle: seoTitle || undefined,
           seoDescription: seoDescription || undefined,
           sources: validSources.length > 0 ? validSources : undefined,
+          authorId: selectedAuthorId || undefined,
+          assignedEditorId: selectedEditorId || null,
         }),
       });
 
@@ -1502,6 +1504,46 @@ export default function EditArticlePage() {
               <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input w-full">
                 <option value="">Pilih kategori</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            {/* Pilih Penulis — Admins only */}
+            <div className="rounded-[12px] border border-border bg-surface p-4">
+              <label htmlFor="admin-edit-penulis" className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">
+                Penulis
+              </label>
+              <select
+                id="admin-edit-penulis"
+                value={selectedAuthorId}
+                onChange={(e) => setSelectedAuthorId(e.target.value)}
+                className="input w-full"
+              >
+                <option value="">Saya sendiri</option>
+                {allUsers
+                  .filter(u => ["JOURNALIST", "SENIOR_JOURNALIST", "CONTRIBUTOR", "EDITOR", "CHIEF_EDITOR", "SUPER_ADMIN"].includes(u.role))
+                  .map(u => (
+                    <option key={u.id} value={u.id}>{u.name} ({roleLabelsMap[u.role] || u.role})</option>
+                  ))
+                }
+              </select>
+            </div>
+            {/* Pilih Editor — Admins only */}
+            <div className="rounded-[12px] border border-border bg-surface p-4">
+              <label htmlFor="admin-edit-editor" className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">
+                Editor
+              </label>
+              <select
+                id="admin-edit-editor"
+                value={selectedEditorId}
+                onChange={(e) => setSelectedEditorId(e.target.value)}
+                className="input w-full"
+              >
+                <option value="">Otomatis (random)</option>
+                {allUsers
+                  .filter(u => ["EDITOR", "CHIEF_EDITOR", "SUPER_ADMIN"].includes(u.role))
+                  .map(u => (
+                    <option key={u.id} value={u.id}>{u.name} ({roleLabelsMap[u.role] || u.role})</option>
+                  ))
+                }
               </select>
             </div>
             <div className="rounded-[12px] border border-border bg-surface p-4">

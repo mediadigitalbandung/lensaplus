@@ -786,6 +786,27 @@ export async function PUT(
       if (adminEditData.seoTitle !== undefined) updateData.seoTitle = adminEditData.seoTitle;
       if (adminEditData.seoDescription !== undefined) updateData.seoDescription = adminEditData.seoDescription;
       if (adminEditData.authorId) updateData.authorId = adminEditData.authorId;
+      if (adminEditData.assignedEditorId !== undefined) {
+        updateData.assignedEditorId = adminEditData.assignedEditorId;
+        if (adminEditData.assignedEditorId) {
+          updateData.reviewedBy = adminEditData.assignedEditorId;
+        } else {
+          if (article.status === "IN_REVIEW") {
+            const editors = await prisma.user.findMany({
+              where: { role: { in: ["EDITOR", "CHIEF_EDITOR"] }, isActive: true },
+              select: { id: true },
+            });
+            if (editors.length > 0) {
+              const randomIndex = Math.floor(Math.random() * editors.length);
+              updateData.reviewedBy = editors[randomIndex].id;
+            } else {
+              updateData.reviewedBy = null;
+            }
+          } else {
+            updateData.reviewedBy = null;
+          }
+        }
+      }
       if (readTime) updateData.readTime = readTime;
       if (tagNames && Array.isArray(tagNames)) {
         updateData.tags = {
