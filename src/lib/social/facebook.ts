@@ -187,15 +187,16 @@ export class FacebookPublisher {
         photo_id: photoId,
         access_token: accessToken,
       });
-      const storyRes = await graphRequest<{ id?: string }>(storyUrl, {
+      const storyRes = await graphRequest<{ id?: string; post_id?: string; success?: boolean }>(storyUrl, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: storyBody.toString(),
       });
-      if (!storyRes.id) {
-        return { success: false, error: "Facebook story publish returned no id" };
+      const externalId = storyRes.post_id || storyRes.id || (storyRes.success ? "success" : undefined);
+      if (!externalId) {
+        return { success: false, error: "Facebook story publish returned no id or success status" };
       }
-      return { success: true, externalId: storyRes.id };
+      return { success: true, externalId };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const isTokenExpired = /code 190/i.test(msg);
