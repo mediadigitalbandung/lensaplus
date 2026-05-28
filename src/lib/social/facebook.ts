@@ -25,7 +25,7 @@ const SITE_URL = (() => {
   return url;
 })();
 
-export type FacebookPostMode = "link" | "photo";
+export type FacebookPostMode = "link" | "photo" | "both";
 
 interface FacebookConfig {
   accessToken: string;
@@ -170,11 +170,50 @@ export class FacebookPublisher {
         `${SITE_URL.replace(/\/+$/, "")}/berita/${post.articleId}`;
       return this.publishLinkShare({ ...post, linkUrl });
     }
-    return this.publishPhoto(post);
+    if (this.config.postMode === "photo") {
+      return this.publishPhoto(post);
+    }
+
+    // both mode: Publish both a link share and a photo post
+    const linkUrl =
+      post.linkUrl ||
+      `${SITE_URL.replace(/\/+$/, "")}/berita/${post.articleId}`;
+
+    const [resLink, resPhoto] = await Promise.allSettled([
+      this.publishLinkShare({ ...post, linkUrl }),
+      this.publishPhoto(post),
+    ]);
+
+    const linkSuccess = resLink.status === "fulfilled" && resLink.value.success;
+    const photoSuccess = resPhoto.status === "fulfilled" && resPhoto.value.success;
+
+    if (linkSuccess && photoSuccess) {
+      const id1 = (resLink as any).value.externalId;
+      const id2 = (resPhoto as any).value.externalId;
+      return { success: true, externalId: `${id1},${id2}` };
+    }
+
+    if (linkSuccess || photoSuccess) {
+      const id = linkSuccess
+        ? (resLink as any).value.externalId
+        : (resPhoto as any).value.externalId;
+      const err = linkSuccess
+        ? (resPhoto.status === "fulfilled" ? resPhoto.value.error : "Photo publish rejected")
+        : (resLink.status === "fulfilled" ? resLink.value.error : "Link publish rejected");
+      return {
+        success: true,
+        externalId: id,
+        error: `Partially successful. ${err}`
+      };
+    }
+
+    const errLink = resLink.status === "fulfilled" ? resLink.value.error : "Link failed";
+    const errPhoto = resPhoto.status === "fulfilled" ? resPhoto.value.error : "Photo failed";
+    return { success: false, error: `Both failed: Link(${errLink}), Photo(${errPhoto})` };
   }
 
   /**
-   * Delete a previously-published post by its externalId.
+   * Delete a previously-published post by its externalId (supports comma-separated list of IDs for 'both' mode).
    * Graph API: DELETE /{post_id}?access_token=...
    */
   async deletePost(externalId: string): Promise<{ success: boolean; error?: string }> {
@@ -183,13 +222,28 @@ export class FacebookPublisher {
       return { success: false, error: "Facebook not configured (missing accessToken)" };
     }
     try {
-      const url = `${GRAPH_BASE}/${encodeURIComponent(externalId)}?access_token=${encodeURIComponent(
-        accessToken,
-      )}`;
-      const res = await graphRequest<{ success?: boolean }>(url, {
-        method: "DELETE",
-      });
-      return { success: res.success !== false };
+      const ids = externalId.split(",");
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const url = `${GRAPH_BASE}/${encodeURIComponent(id)}?access_token=${encodeURIComponent(
+              accessToken,
+            )}`;
+            const res = await graphRequest<{ success?: boolean }>(url, {
+              method: "DELETE",
+            });
+            return res.success !== false;
+          } catch (err) {
+            console.error(`[facebook] Failed to delete post ID ${id}:`, err);
+            return false;
+          }
+        })
+      );
+      const allSuccess = results.every(Boolean);
+      return {
+        success: allSuccess,
+        error: allSuccess ? undefined : "Failed to delete one or more Facebook posts",
+      };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : String(err) };
     }

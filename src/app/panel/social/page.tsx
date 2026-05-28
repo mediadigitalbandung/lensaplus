@@ -2592,7 +2592,7 @@ function SettingsTab() {
             <label className="block text-xs font-semibold text-txt-secondary mb-2.5">
               Facebook Post Mode
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <label 
                 className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
                   facebook.postMode === "link" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
@@ -2608,10 +2608,10 @@ function SettingsTab() {
                       setFacebook({ ...facebook, postMode: "link" })
                     }
                   />
-                  <span className="text-sm font-semibold text-txt-primary">Link (Tautan)</span>
+                  <span className="text-sm font-semibold text-txt-primary">Link Share</span>
                 </div>
                 <span className="text-xs text-txt-secondary leading-relaxed pl-6">
-                  Membagikan artikel menggunakan kartu pratinjau (*link preview card*) bawaan Facebook. Gambar diambil otomatis dari metadata OG (*Open Graph*) artikel.
+                  Membagikan artikel dengan kartu pratinjau (*link card*) standard Facebook. Gambar diambil otomatis dari Open Graph artikel.
                 </span>
               </label>
 
@@ -2630,10 +2630,32 @@ function SettingsTab() {
                       setFacebook({ ...facebook, postMode: "photo" })
                     }
                   />
-                  <span className="text-sm font-semibold text-txt-primary">Photo &amp; Link (Keduanya)</span>
+                  <span className="text-sm font-semibold text-txt-primary">Single Photo</span>
                 </div>
                 <span className="text-xs text-txt-secondary leading-relaxed pl-6">
-                  Mengunggah gambar templat kustom Anda yang cantik sebagai **Foto** utama, dan **otomatis mencantumkan tautan baca** di bagian bawah teks caption. Sangat direkomendasikan untuk meningkatkan interaksi.
+                  Mengunggah gambar templat kustom Anda yang cantik sebagai **Foto** tunggal, dengan tautan baca otomatis tersemat di teks caption.
+                </span>
+              </label>
+
+              <label 
+                className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                  facebook.postMode === "both" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <input
+                    type="radio"
+                    name="fbPostMode"
+                    className="accent-primary h-4 w-4 shrink-0"
+                    checked={facebook.postMode === "both"}
+                    onChange={() =>
+                      setFacebook({ ...facebook, postMode: "both" })
+                    }
+                  />
+                  <span className="text-sm font-semibold text-txt-primary">Keduanya (Dua Post)</span>
+                </div>
+                <span className="text-xs text-txt-secondary leading-relaxed pl-6">
+                  Menerbitkan **dua postingan terpisah sekaligus** sekali klik: 1 post Link Share bawaan, dan 1 post Foto kustom templat Anda.
                 </span>
               </label>
             </div>

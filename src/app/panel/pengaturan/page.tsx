@@ -73,7 +73,7 @@ interface SocialSettings {
     accessToken: string | null;
     hasAccessToken: boolean;
     pageId: string | null;
-    postMode: "link" | "photo";
+    postMode: "link" | "photo" | "both";
     enabled: boolean;
   };
 }
@@ -378,7 +378,7 @@ export default function PengaturanPage() {
   // Meta — FB
   const [fbAccessToken, setFbAccessToken] = useState("");
   const [fbPageId, setFbPageId] = useState("");
-  const [fbPostMode, setFbPostMode] = useState<"link" | "photo">("link");
+  const [fbPostMode, setFbPostMode] = useState<"link" | "photo" | "both">("link");
   const [fbEnabled, setFbEnabled] = useState(false);
   const [fbHasToken, setFbHasToken] = useState(false);
 
@@ -1187,22 +1187,81 @@ export default function PengaturanPage() {
                 placeholder="100012345678901"
               />
             </Field>
-            <Field
-              label="Mode Posting"
-              hint="link = link share dengan auto-OG; photo = upload foto + caption."
-            >
-              <select
-                value={fbPostMode}
-                onChange={(e) => {
-                  setFbPostMode(e.target.value as "link" | "photo");
-                  markDirty("social_facebook");
-                }}
-                className="input"
-              >
-                <option value="link">Link Share</option>
-                <option value="photo">Photo Post</option>
-              </select>
-            </Field>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-txt-primary">
+                Mode Posting Facebook
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label 
+                  className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                    fbPostMode === "link" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <input
+                      type="radio"
+                      name="fbPostMode"
+                      className="accent-primary h-4 w-4 shrink-0"
+                      checked={fbPostMode === "link"}
+                      onChange={() => {
+                        setFbPostMode("link");
+                        markDirty("social_facebook");
+                      }}
+                    />
+                    <span className="text-sm font-semibold text-txt-primary">Link Share</span>
+                  </div>
+                  <span className="text-xs text-txt-secondary leading-relaxed pl-6">
+                    Membagikan artikel dengan kartu pratinjau (*link card*) standard Facebook. Gambar diambil otomatis dari Open Graph artikel.
+                  </span>
+                </label>
+
+                <label 
+                  className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                    fbPostMode === "photo" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <input
+                      type="radio"
+                      name="fbPostMode"
+                      className="accent-primary h-4 w-4 shrink-0"
+                      checked={fbPostMode === "photo"}
+                      onChange={() => {
+                        setFbPostMode("photo");
+                        markDirty("social_facebook");
+                      }}
+                    />
+                    <span className="text-sm font-semibold text-txt-primary">Single Photo</span>
+                  </div>
+                  <span className="text-xs text-txt-secondary leading-relaxed pl-6">
+                    Mengunggah gambar templat kustom Anda yang cantik sebagai **Foto** tunggal, dengan tautan baca otomatis tersemat di teks caption.
+                  </span>
+                </label>
+
+                <label 
+                  className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                    fbPostMode === "both" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <input
+                      type="radio"
+                      name="fbPostMode"
+                      className="accent-primary h-4 w-4 shrink-0"
+                      checked={fbPostMode === "both"}
+                      onChange={() => {
+                        setFbPostMode("both");
+                        markDirty("social_facebook");
+                      }}
+                    />
+                    <span className="text-sm font-semibold text-txt-primary">Keduanya (Dua Post)</span>
+                  </div>
+                  <span className="text-xs text-txt-secondary leading-relaxed pl-6">
+                    Menerbitkan **dua postingan terpisah sekaligus** sekali klik: 1 post Link Share bawaan, dan 1 post Foto kustom templat Anda.
+                  </span>
+                </label>
+              </div>
+            </div>
             <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3">
               <p className="text-sm font-medium text-txt-primary">
                 Aktifkan Facebook

@@ -108,7 +108,7 @@ const instagramSchema = z.object({
 const facebookSchema = z.object({
   accessToken: z.string().nullable().optional(),
   pageId: z.string().nullable().optional(),
-  postMode: z.enum(["link", "photo"]).optional(),
+  postMode: z.enum(["link", "photo", "both"]).optional(),
   templateDefaultId: z.string().nullable().optional(),
   enabled: z.boolean().optional(),
   tokenExpiresAt: z.string().datetime().nullable().optional(),
