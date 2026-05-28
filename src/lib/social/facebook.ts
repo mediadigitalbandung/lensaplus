@@ -156,6 +156,8 @@ export class FacebookPublisher {
       }
       return { success: false, error };
     }
+  }
+
   async publishStory(post: PreparedPost): Promise<PublishResult> {
     const { accessToken, pageId } = this.config;
     if (!accessToken || !pageId) {
