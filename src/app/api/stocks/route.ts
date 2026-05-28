@@ -38,15 +38,31 @@ export async function GET() {
     // Resolve USD→IDR rate first so we can convert USD-denominated commodities
     // (gold, oil, BTC) into Rupiah for the local audience.
     const usdIdrQuote = data["USDIDR=X"];
-    const usdIdrRate =
-      (usdIdrQuote?.close?.[usdIdrQuote.close.length - 1] as number | undefined) || 0;
+    let usdIdrRate = 0;
+    if (usdIdrQuote) {
+      const validUsdClose = Array.isArray(usdIdrQuote.close)
+        ? usdIdrQuote.close.filter((v: any) => v !== null && v !== undefined)
+        : [];
+      const closeRate = validUsdClose.length > 0 ? validUsdClose[validUsdClose.length - 1] : 0;
+      const prevRate = usdIdrQuote.chartPreviousClose || usdIdrQuote.previousClose || closeRate;
+      usdIdrRate = closeRate > 0 ? closeRate : prevRate || 16000;
+    }
     const USD_QUOTED = new Set(["EMAS", "MINYAK", "BTC"]);
 
     const stocks = SYMBOLS.map((s) => {
       const q = data[s.id];
       if (!q) return null;
-      let close = q.close?.[q.close.length - 1] || 0;
-      let prev = q.chartPreviousClose || close;
+
+      const validCloseArray = Array.isArray(q.close)
+        ? q.close.filter((v: any) => v !== null && v !== undefined)
+        : [];
+
+      let close = validCloseArray.length > 0 ? validCloseArray[validCloseArray.length - 1] : 0;
+      let prev = q.chartPreviousClose || q.previousClose || close;
+
+      if (close === 0 && prev > 0) {
+        close = prev;
+      }
 
       // Convert USD-quoted commodities to IDR (price + prevClose).
       // Change/percent are derived from the converted values so the deltas
