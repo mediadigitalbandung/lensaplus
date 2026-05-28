@@ -2589,31 +2589,52 @@ function SettingsTab() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-txt-secondary mb-1">
-              Post Mode
+            <label className="block text-xs font-semibold text-txt-secondary mb-2.5">
+              Facebook Post Mode
             </label>
-            <div className="flex items-center gap-4 py-2">
-              <label className="flex items-center gap-1.5 text-sm">
-                <input
-                  type="radio"
-                  name="fbPostMode"
-                  checked={facebook.postMode === "link"}
-                  onChange={() =>
-                    setFacebook({ ...facebook, postMode: "link" })
-                  }
-                />
-                Link
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label 
+                className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                  facebook.postMode === "link" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <input
+                    type="radio"
+                    name="fbPostMode"
+                    className="accent-primary h-4 w-4 shrink-0"
+                    checked={facebook.postMode === "link"}
+                    onChange={() =>
+                      setFacebook({ ...facebook, postMode: "link" })
+                    }
+                  />
+                  <span className="text-sm font-semibold text-txt-primary">Link (Tautan)</span>
+                </div>
+                <span className="text-xs text-txt-secondary leading-relaxed pl-6">
+                  Membagikan artikel menggunakan kartu pratinjau (*link preview card*) bawaan Facebook. Gambar diambil otomatis dari metadata OG (*Open Graph*) artikel.
+                </span>
               </label>
-              <label className="flex items-center gap-1.5 text-sm">
-                <input
-                  type="radio"
-                  name="fbPostMode"
-                  checked={facebook.postMode === "photo"}
-                  onChange={() =>
-                    setFacebook({ ...facebook, postMode: "photo" })
-                  }
-                />
-                Photo
+
+              <label 
+                className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                  facebook.postMode === "photo" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <input
+                    type="radio"
+                    name="fbPostMode"
+                    className="accent-primary h-4 w-4 shrink-0"
+                    checked={facebook.postMode === "photo"}
+                    onChange={() =>
+                      setFacebook({ ...facebook, postMode: "photo" })
+                    }
+                  />
+                  <span className="text-sm font-semibold text-txt-primary">Photo &amp; Link (Keduanya)</span>
+                </div>
+                <span className="text-xs text-txt-secondary leading-relaxed pl-6">
+                  Mengunggah gambar templat kustom Anda yang cantik sebagai **Foto** utama, dan **otomatis mencantumkan tautan baca** di bagian bawah teks caption. Sangat direkomendasikan untuk meningkatkan interaksi.
+                </span>
               </label>
             </div>
           </div>
