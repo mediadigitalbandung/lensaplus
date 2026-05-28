@@ -70,6 +70,7 @@ export interface OrchestratorPlatformResult {
   externalId?: string;
   error?: string;
   note?: string;
+  isStory?: boolean;
 }
 
 export interface OrchestratorResult {
@@ -374,6 +375,8 @@ async function runPublisher(
  */
 export async function publishArticleToSocial(
   articleId: string,
+  targetPlatform?: "INSTAGRAM" | "FACEBOOK" | "ALL",
+  targetIsStory?: boolean,
 ): Promise<OrchestratorResult> {
   const results: OrchestratorPlatformResult[] = [];
 
@@ -416,29 +419,38 @@ export async function publishArticleToSocial(
     };
   }
 
-  const targets = [
+  let targets = [
     { platform: "INSTAGRAM" as Platform, isStory: false },
     { platform: "INSTAGRAM" as Platform, isStory: true },
     { platform: "FACEBOOK" as Platform, isStory: false },
   ];
+
+  if (targetPlatform && targetPlatform !== "ALL") {
+    targets = targets.filter((t) => t.platform === targetPlatform);
+  }
+  if (targetIsStory !== undefined) {
+    targets = targets.filter((t) => t.isStory === targetIsStory);
+  }
 
   for (const target of targets) {
     const platform = target.platform;
     const platformEnabled = platform === "INSTAGRAM" ? ig.enabled : fb.enabled;
     const gate = shouldPublishToPlatform(platform, article, global, platformEnabled);
     if (!gate.publish) {
-      results.push({ platform, status: "SKIPPED", note: gate.reason });
+      results.push({ platform, status: "SKIPPED", note: gate.reason, isStory: target.isStory });
       continue;
     }
 
     try {
       const r = await runPlatform(platform, article, global, ig, fb, target.isStory);
+      r.isStory = target.isStory;
       results.push(r);
     } catch (err) {
       results.push({
         platform,
         status: "REJECTED",
         error: err instanceof Error ? err.message : String(err),
+        isStory: target.isStory,
       });
     }
   }

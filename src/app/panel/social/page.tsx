@@ -134,10 +134,17 @@ function PostsTab() {
   const [filterStatus, setFilterStatus] = useState<PostStatus | "ALL">("ALL");
   const [testingPublish, setTestingPublish] = useState(false);
 
-  async function handleTestPublish() {
+  async function handleTestPublish(targetPlatform?: "INSTAGRAM" | "FACEBOOK" | "ALL", isStory?: boolean) {
+    let platformLabel = "Semua Platform";
+    if (targetPlatform === "INSTAGRAM") {
+      platformLabel = isStory ? "Instagram Story" : "Instagram Feed";
+    } else if (targetPlatform === "FACEBOOK") {
+      platformLabel = "Facebook";
+    }
+
     const ok = await confirm({
-      title: "Uji Coba Publikasi (Test Publish)",
-      message: "Apakah Anda yakin ingin memicu uji coba publikasi menggunakan artikel terbaru yang baru diterbitkan? Ini akan merender gambar kustom dan langsung mempostingnya ke Instagram & Facebook jika diaktifkan.",
+      title: `Uji Coba Publikasi (${platformLabel})`,
+      message: `Apakah Anda yakin ingin memicu uji coba publikasi ke ${platformLabel} menggunakan artikel terbaru yang baru diterbitkan? Ini akan merender gambar kustom dan langsung mempostingnya jika diaktifkan.`,
       variant: "default",
     });
     if (!ok) return;
@@ -147,7 +154,7 @@ function PostsTab() {
       const res = await fetch("/api/social/test-publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ platform: targetPlatform, isStory }),
       });
       if (!res.ok) {
         throw new Error(`Server Error (HTTP ${res.status}). Silakan periksa koneksi database Anda.`);
@@ -159,10 +166,10 @@ function PostsTab() {
       
       const results = json.data?.results || [];
       const summary = results
-        .map((r: any) => `${r.platform}: ${r.status}${r.error ? ` (${r.error})` : ""}`)
+        .map((r: any) => `${r.platform}${r.isStory ? " Story" : " Feed"}${r.note ? ` (${r.note})` : ""}: ${r.status}${r.error ? ` (${r.error})` : ""}`)
         .join("\n");
       
-      showSuccess(`Uji coba publikasi selesai!\nHasil:\n${summary}`);
+      showSuccess(`Uji coba publikasi ${platformLabel} selesai!\nHasil:\n${summary}`);
       fetchPosts();
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal memicu uji coba");
@@ -258,18 +265,44 @@ function PostsTab() {
           <RefreshCw size={14} />
           Refresh
         </button>
-        <button
-          onClick={handleTestPublish}
-          disabled={testingPublish}
-          className="btn-primary flex items-center gap-1.5 px-3 py-2 text-sm ml-auto rounded-lg disabled:opacity-50"
-        >
-          {testingPublish ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Send size={14} />
-          )}
-          Test Publish (Artikel Terbaru)
-        </button>
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
+          <button
+            onClick={() => handleTestPublish("INSTAGRAM", false)}
+            disabled={testingPublish}
+            className="bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+          >
+            {testingPublish ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Instagram size={12} />
+            )}
+            Test IG Feed
+          </button>
+          <button
+            onClick={() => handleTestPublish("INSTAGRAM", true)}
+            disabled={testingPublish}
+            className="bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-700 hover:to-indigo-600 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+          >
+            {testingPublish ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Instagram size={12} />
+            )}
+            Test IG Story
+          </button>
+          <button
+            onClick={() => handleTestPublish("FACEBOOK", false)}
+            disabled={testingPublish}
+            className="bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+          >
+            {testingPublish ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Facebook size={12} />
+            )}
+            Test Facebook
+          </button>
+        </div>
       </div>
 
       {loading ? (

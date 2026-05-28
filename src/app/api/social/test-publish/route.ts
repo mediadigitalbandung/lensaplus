@@ -23,13 +23,15 @@ export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
   articleId: z.string().optional(),
+  platform: z.enum(["INSTAGRAM", "FACEBOOK", "ALL"]).optional(),
+  isStory: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const session = await requireRole(["SUPER_ADMIN"]);
     const raw = await req.json().catch(() => ({}));
-    const { articleId } = bodySchema.parse(raw || {});
+    const { articleId, platform, isStory } = bodySchema.parse(raw || {});
 
     let targetId = articleId;
     if (!targetId) {
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
       targetId = latest.id;
     }
 
-    const result = await publishArticleToSocial(targetId);
+    const result = await publishArticleToSocial(targetId, platform, isStory);
 
     await logAudit(
       session.user.id,
