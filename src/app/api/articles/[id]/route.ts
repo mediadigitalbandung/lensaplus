@@ -418,7 +418,7 @@ export async function PUT(
       const updated = await prisma.article.update({
         where: { id: params.id },
         data: {
-          status: data.status as "APPROVED" | "REJECTED",
+          status: data.status === "REJECTED" ? "DRAFT" : (data.status as "APPROVED" | "REJECTED"),
           verificationLabel,
           reviewNote: data.reviewNote || null,
           reviewedBy: session.user.id,
@@ -497,7 +497,7 @@ export async function PUT(
         const updated = await prisma.article.update({
           where: { id: params.id },
           data: {
-            status: data.status as "APPROVED" | "REJECTED",
+            status: data.status === "REJECTED" ? "DRAFT" : (data.status as "APPROVED" | "REJECTED"),
             verificationLabel,
             reviewNote: data.reviewNote || null,
             reviewedBy: session.user.id,

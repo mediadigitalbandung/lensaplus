@@ -2099,7 +2099,7 @@ export default function EditArticlePage() {
       )}
 
       {/* REJECTED: Show editor's rejection note */}
-      {currentStatus === "REJECTED" && existingReviewNote && (
+      {(currentStatus === "REJECTED" || currentStatus === "DRAFT") && existingReviewNote && (
         <div className="mb-4 rounded-[12px] border-2 border-red-300 bg-red-50 p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-red-700">
             <XCircle size={16} />
