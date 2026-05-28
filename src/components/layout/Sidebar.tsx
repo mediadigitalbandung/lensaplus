@@ -36,7 +36,7 @@ export default function Sidebar({ trending = [], recent = [], popular = [] }: Si
       {trending.length > 0 && (
         <section aria-labelledby="sidebar-trending-heading">
           <div className="flex items-center justify-between">
-            <h3 id="sidebar-trending-heading" className="border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wide text-txt-primary">Trending</h3>
+            <h3 id="sidebar-trending-heading" className="border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wide text-txt-primary">Terpopuler 24 Jam</h3>
             <Link href="/search?q=trending" className="text-xs font-medium text-primary hover:underline">
               Lihat Lainnya &rarr;
             </Link>
