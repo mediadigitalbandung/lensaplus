@@ -41,6 +41,8 @@ function mapErrorCode(code?: number): string {
       return "Permission denied (code 200). The user/page may have revoked access.";
     case 9:
       return "Rate limit reached or temporary block (code 9). Meta says: User is performing too many actions. Please stop posting and wait a few hours to 24 hours for Meta to reset the limit.";
+    case 4:
+      return "Application request limit reached (code 4). Meta is rate-limiting the app. Please wait 15-30 minutes for the limit to reset, or check that your Meta App is set to Live Mode.";
     default:
       return code ? `Meta Graph error code ${code}` : "Unknown Meta Graph error";
   }
@@ -112,8 +114,8 @@ export class InstagramPublisher {
       // Wait for the container to finish processing (polling status_code)
       // This solves the common Meta 9007 (Media ID is not available) race condition error
       let statusFinished = false;
-      let retries = 15; // 15 attempts
-      const delayMs = 3000; // 3 seconds delay between polls
+      let retries = 5; // 5 attempts
+      const delayMs = 10000; // 10 seconds delay between polls
 
       console.log(`[instagram] Media container ${createRes.id} created, polling status to ensure it is ready...`);
 

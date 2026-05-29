@@ -55,6 +55,8 @@ function mapErrorCode(code?: number): string {
       return "Temporarily blocked by Meta spam filter (code 368).";
     case 506:
       return "Duplicate status (code 506). Facebook rejects identical posts within short window.";
+    case 4:
+      return "Application request limit reached (code 4). Meta is rate-limiting the app. Please wait 15-30 minutes for the limit to reset, or check that your Meta App is set to Live Mode.";
     default:
       return code ? `Meta Graph error code ${code}` : "Unknown Meta Graph error";
   }

@@ -31,6 +31,8 @@ function mapErrorCode(code?: number): string {
       return "Access token expired or invalid (code 190). Regenerate Threads token.";
     case 100:
       return "Invalid parameter (code 100). Check image URL or caption.";
+    case 4:
+      return "Application request limit reached (code 4). Meta is rate-limiting the app. Please wait 15-30 minutes for the limit to reset, or check that your Meta App is set to Live Mode.";
     default:
       return code ? `Threads API error code ${code}` : "Unknown Threads API error";
   }
@@ -98,8 +100,8 @@ export class ThreadsPublisher {
 
       // Wait for the container to finish processing (polling status_code)
       let statusFinished = false;
-      let retries = 15; // 15 attempts
-      const delayMs = 3000; // 3 seconds delay between polls
+      let retries = 5; // 5 attempts
+      const delayMs = 10000; // 10 seconds delay between polls
 
       console.log(`[threads] Media container ${createRes.id} created, polling status to ensure it is ready...`);
 
