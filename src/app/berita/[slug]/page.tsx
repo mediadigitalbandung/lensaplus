@@ -21,6 +21,7 @@ import BookmarkButton from "@/components/artikel/BookmarkButton";
 import ReactionBar from "@/components/artikel/ReactionBar";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { getCached } from "@/lib/cache";
 // Note: DOMPurify removed — content sanitized at input via API validation
 import { slugify } from "@/lib/utils";
 import { faqJsonLd, newsArticleJsonLd } from "@/lib/seo/json-ld";
@@ -320,11 +321,41 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
   });
 
   // Fetch trending for sidebar
-  const trendingArticles = await prisma.article.findMany({
-    where: { status: "PUBLISHED" },
-    include: { category: true },
-    orderBy: { viewCount: "desc" },
-    take: 5,
+  const trendingArticles = await getCached("home:trending:10", 60_000, async () => {
+    const past24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    let trending = await prisma.article.findMany({
+      where: {
+        status: "PUBLISHED",
+        publishedAt: { gte: past24Hours },
+      },
+      include: { category: true },
+      orderBy: { viewCount: "desc" },
+      take: 10,
+    });
+
+    if (trending.length < 6) {
+      const past7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      trending = await prisma.article.findMany({
+        where: {
+          status: "PUBLISHED",
+          publishedAt: { gte: past7Days },
+        },
+        include: { category: true },
+        orderBy: { viewCount: "desc" },
+        take: 10,
+      });
+    }
+
+    if (trending.length < 6) {
+      trending = await prisma.article.findMany({
+        where: { status: "PUBLISHED" },
+        include: { category: true },
+        orderBy: { viewCount: "desc" },
+        take: 10,
+      });
+    }
+
+    return trending;
   });
 
   const sidebarTrending = trendingArticles.map((a) => ({
