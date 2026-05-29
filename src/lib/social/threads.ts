@@ -79,7 +79,7 @@ export class ThreadsPublisher {
 
     try {
       // Step 1: create media container.
-      const createUrl = `${GRAPH_BASE}/${encodeURIComponent(threadsUserId)}/threads`;
+      const createUrl = `${GRAPH_BASE}/me/threads`;
       const params: Record<string, string> = {
         media_type: "IMAGE",
         image_url: post.imageUrl,
@@ -137,7 +137,7 @@ export class ThreadsPublisher {
       }
 
       // Step 2: publish.
-      const publishUrl = `${GRAPH_BASE}/${encodeURIComponent(threadsUserId)}/threads_publish`;
+      const publishUrl = `${GRAPH_BASE}/me/threads_publish`;
       const publishBody = new URLSearchParams({
         creation_id: createRes.id,
         access_token: accessToken,
