@@ -17,7 +17,7 @@ import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const ALLOWED_PLATFORMS = new Set(["INSTAGRAM", "FACEBOOK", "TWITTER"]);
+const ALLOWED_PLATFORMS = new Set(["INSTAGRAM", "FACEBOOK", "TWITTER", "THREADS"]);
 
 const textLayerSchema = z.object({
   text: z.string(),
@@ -36,7 +36,7 @@ const textLayerSchema = z.object({
 
 const createSchema = z.object({
   name: z.string().min(1).max(120),
-  platform: z.enum(["INSTAGRAM", "FACEBOOK", "TWITTER"]),
+  platform: z.enum(["INSTAGRAM", "FACEBOOK", "TWITTER", "THREADS"]),
   categoryId: z.string().nullable().optional(),
   backgroundUrl: z.string().min(1),
   textLayers: z.array(textLayerSchema),

@@ -36,7 +36,7 @@ const textLayerSchema = z.object({
 
 const updateSchema = z.object({
   name: z.string().min(1).max(120).optional(),
-  platform: z.enum(["INSTAGRAM", "FACEBOOK", "TWITTER"]).optional(),
+  platform: z.enum(["INSTAGRAM", "FACEBOOK", "TWITTER", "THREADS"]).optional(),
   categoryId: z.string().nullable().optional(),
   backgroundUrl: z.string().min(1).optional(),
   textLayers: z.array(textLayerSchema).optional(),
