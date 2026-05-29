@@ -120,4 +120,35 @@ describe("generateSocialCaption", () => {
     // Should at least contain the title; should not throw.
     expect(result).toContain("Judul");
   });
+
+  it("formats Threads captions with title, short summary, and link, without hashtags, enforcing 500-char limits safely", async () => {
+    const summary = "Ini adalah ringkasan berita dari AI.";
+    mockCallAI.mockResolvedValue({ text: `[CAPTION]\n${summary}\n[HASHTAGS]\n#ignored1 #ignored2` });
+    
+    const result = await generateSocialCaption({
+      article: makeArticle(),
+      platform: "THREADS",
+    });
+
+    expect(result).toContain("[ Putusan PN Bandung ]");
+    expect(result).toContain("Ini adalah ringkasan berita dari AI.");
+    expect(result).toContain("Baca selengkapnya di: https://kartawarta.com/berita/putusan-pn-bandung");
+    expect(result).not.toContain("#ignored1");
+    expect(result).not.toContain("#ignored2");
+  });
+
+  it("truncates summary for Threads when total length exceeds 500 characters, keeping title and link intact", async () => {
+    const veryLongSummary = "a".repeat(450);
+    mockCallAI.mockResolvedValue({ text: `[CAPTION]\n${veryLongSummary}\n[HASHTAGS]\n` });
+    
+    const result = await generateSocialCaption({
+      article: makeArticle(),
+      platform: "THREADS",
+    });
+
+    expect(result.length).toBeLessThanOrEqual(500);
+    expect(result).toContain("[ Putusan PN Bandung ]");
+    expect(result).toContain("Baca selengkapnya di: https://kartawarta.com/berita/putusan-pn-bandung");
+    expect(result).toContain("...");
+  });
 });

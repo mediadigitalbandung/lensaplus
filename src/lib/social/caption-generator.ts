@@ -54,6 +54,8 @@ function targetLengthHint(platform: Platform): string {
       return "150-300 karakter (Instagram — pendek, punchy)";
     case "TWITTER":
       return "sekitar 180-220 karakter (Twitter — sangat pendek, sisakan ruang untuk link + hashtag dalam batas 280 karakter)";
+    case "THREADS":
+      return "100-250 karakter (Threads — sangat pendek, sisakan ruang untuk link dalam batas 500 karakter)";
     case "FACEBOOK":
     default:
       return "300-600 karakter (Facebook — bisa lebih panjang, gaya berita)";
@@ -216,8 +218,24 @@ Aturan:
   const tags = Array.from(new Set(tagsList)).join(" ");
 
   if (platform === "THREADS") {
-    const resolvedCaption = `[ ${article.title} ]\n\nBaca selengkapnya di: ${link}\n\n${tags}`.trim();
-    return enforceMaxLength(resolvedCaption, "THREADS");
+    const titlePart = `[ ${article.title} ]`;
+    const linkPart = link ? `Baca selengkapnya di: ${link}` : "";
+    const titleSpacing = body ? "\n\n" : "";
+    const linkSpacing = (body && linkPart) ? "\n\n" : (titlePart && linkPart) ? "\n\n" : "";
+    
+    const staticLength = titlePart.length + titleSpacing.length + linkSpacing.length + linkPart.length;
+    const allowedBodyLength = 500 - staticLength;
+    
+    let processedBody = body || "";
+    if (processedBody.length > allowedBodyLength) {
+      const cut = processedBody.slice(0, Math.max(10, allowedBodyLength - 3));
+      const boundary = cut.lastIndexOf(" ");
+      const stopped = boundary > 40 ? cut.slice(0, boundary) : cut;
+      processedBody = `${stopped}...`;
+    }
+    
+    const resolvedCaption = `${titlePart}${titleSpacing}${processedBody}${linkSpacing}${linkPart}`.trim();
+    return resolvedCaption;
   }
 
   // Resolve placeholders in the custom template
