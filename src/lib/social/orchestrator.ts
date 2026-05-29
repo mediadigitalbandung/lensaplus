@@ -220,9 +220,13 @@ async function runPlatform(
       : `Facebook Story: ${article.title}`;
   } else {
     // 1. Find template.
-    let template: SocialTemplate | null;
+    let template: SocialTemplate | null = null;
     try {
       template = await findTemplateForPlatform(platform, article.categoryId);
+      if (!template && platform === "THREADS") {
+        console.log("[orchestrator] No active Threads template found. Falling back to Instagram template...");
+        template = await findTemplateForPlatform("INSTAGRAM", article.categoryId);
+      }
     } catch (err) {
       return {
         platform,

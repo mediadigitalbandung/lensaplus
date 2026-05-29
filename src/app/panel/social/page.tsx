@@ -30,7 +30,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { PLATFORM_DIMENSIONS, type TextLayer } from "@/lib/social/types";
 
-type Platform = "INSTAGRAM" | "FACEBOOK" | "TWITTER";
+type Platform = "INSTAGRAM" | "FACEBOOK" | "TWITTER" | "THREADS";
 type PostStatus = "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "DELETED";
 
 interface SocialPost {
@@ -541,6 +541,10 @@ const PLATFORM_ASPECT_RATIOS: Record<Platform, { label: string; width: number; h
   ],
   TWITTER: [
     { label: "Twitter/X Feed 16:9 (1200 × 675)", width: 1200, height: 675 },
+  ],
+  THREADS: [
+    { label: "Threads Feed Portrait 4:5 (1080 × 1350)", width: 1080, height: 1350 },
+    { label: "Threads Feed Square 1:1 (1080 × 1080)", width: 1080, height: 1080 },
   ],
 };
 
@@ -1196,6 +1200,7 @@ function TemplatesTab() {
                         <option value="INSTAGRAM">Instagram</option>
                         <option value="FACEBOOK">Facebook</option>
                         <option value="TWITTER">Twitter</option>
+                        <option value="THREADS">Threads</option>
                       </select>
                     </div>
                     <div>

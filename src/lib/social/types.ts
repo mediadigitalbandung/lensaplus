@@ -81,10 +81,13 @@ export const PLATFORM_DIMENSIONS: Record<Platform, PlatformDimensions> = {
   INSTAGRAM: { width: 1080, height: 1350 }, // 4:5 feed
   FACEBOOK: { width: 1200, height: 630 }, // 1.91:1 link share
   TWITTER: { width: 1200, height: 675 }, // 16:9
+  THREADS: { width: 1080, height: 1350 }, // 4:5 portrait
 };
 
 export const CAPTION_MAX_LENGTH: Record<Platform, number> = {
   INSTAGRAM: 2200,
   FACEBOOK: 63_206,
   TWITTER: 280,
+  THREADS: 500, // Threads official API post character limit
 };
+
