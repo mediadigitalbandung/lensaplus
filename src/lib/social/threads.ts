@@ -124,10 +124,17 @@ export class ThreadsPublisher {
           }
         } catch (pollErr) {
           const errMsg = pollErr instanceof Error ? pollErr.message : String(pollErr);
-          if (errMsg.includes("code 190") || errMsg.includes("code 10") || errMsg.includes("code 200")) {
+          // Use word-boundary regex to prevent false matches (like code 100 matching code 10)
+          if (/\bcode 190\b/.test(errMsg) || /\bcode 10\b/.test(errMsg) || /\bcode 200\b/.test(errMsg)) {
             throw pollErr;
           }
           console.warn(`[threads] Polling Threads container status attempt failed, retrying...`, pollErr);
+          
+          // If status_code is not supported or returns a field access error, break immediately to attempt direct publishing
+          if (errMsg.includes("nonexisting field") || errMsg.includes("status_code")) {
+            console.log("[threads] status_code is not supported or accessible. Skipping polling and proceeding directly to publish fallback.");
+            break;
+          }
         }
         retries--;
       }
