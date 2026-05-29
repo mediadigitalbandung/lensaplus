@@ -24,6 +24,11 @@ import {
   Settings,
   Pencil,
   Sparkles,
+  Scissors,
+  Play,
+  Pause,
+  X,
+  Check,
 } from "lucide-react";
 
 interface Slot {
@@ -104,6 +109,10 @@ export default function TiktokEditorPage() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [tab, setTab] = useState<TabKey>("caption");
+
+  // Clipper Modal states
+  const [isClipperOpen, setIsClipperOpen] = useState(false);
+  const [selectedSlotForEdit, setSelectedSlotForEdit] = useState<Slot | null>(null);
 
   // Editable fields
   const [title, setTitle] = useState("");
@@ -488,19 +497,33 @@ export default function TiktokEditorPage() {
         {/* Left — slot list (4 cols) */}
         <div className="lg:col-span-4">
           <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
                 <Layers size={14} className="text-primary" />
                 Slot Media
               </h2>
-              <button
-                type="button"
-                onClick={() => slotInputRef.current?.click()}
-                className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark"
-              >
-                <Plus size={12} />
-                Tambah
-              </button>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSlotForEdit(null);
+                    setIsClipperOpen(true);
+                  }}
+                  className="flex items-center gap-1 rounded-md bg-surface-tertiary border border-border px-2.5 py-1.5 text-xs font-semibold text-txt-primary hover:bg-surface-secondary"
+                  title="Potong Video Master menjadi Clip"
+                >
+                  <Scissors size={12} className="text-primary" />
+                  Clipper
+                </button>
+                <button
+                  type="button"
+                  onClick={() => slotInputRef.current?.click()}
+                  className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark"
+                >
+                  <Plus size={12} />
+                  Tambah
+                </button>
+              </div>
               <input
                 ref={slotInputRef}
                 type="file"
@@ -516,7 +539,7 @@ export default function TiktokEditorPage() {
 
             {content.slots.length === 0 ? (
               <p className="rounded-md border border-dashed border-border bg-surface-container-low p-6 text-center text-xs text-txt-muted">
-                Belum ada slot. Klik <strong>Tambah</strong> untuk upload foto atau video.
+                Belum ada slot. Klik <strong>Tambah</strong> untuk upload foto atau video, atau gunakan <strong>Clipper</strong>.
               </p>
             ) : (
               <ul className="space-y-2">
@@ -540,7 +563,19 @@ export default function TiktokEditorPage() {
                       <p className="truncate text-xs font-medium text-txt-primary">
                         #{idx + 1} · {s.filename || s.url.split("/").pop()}
                       </p>
-                      <p className="text-[10px] text-txt-muted">{humanSize(s.size)}</p>
+                      <p className="text-[10px] text-txt-muted flex flex-wrap items-center gap-1.5">
+                        <span>{humanSize(s.size)}</span>
+                        {s.kind === "VIDEO" && (s.trimStartMs > 0 || s.trimEndMs !== null) && (
+                          <span className="inline-flex items-center rounded bg-primary-light px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                            Trim: {(s.trimStartMs / 1000).toFixed(1)}s - {s.trimEndMs !== null ? `${(s.trimEndMs / 1000).toFixed(1)}s` : "end"}
+                          </span>
+                        )}
+                      </p>
+                      {s.caption && (
+                        <p className="text-[10px] text-txt-secondary italic mt-0.5 truncate" title={s.caption}>
+                          &quot;{s.caption}&quot;
+                        </p>
+                      )}
                       <div className="mt-1 flex items-center gap-1.5">
                         <label className="text-[10px] text-txt-muted">Durasi</label>
                         <input
@@ -579,6 +614,18 @@ export default function TiktokEditorPage() {
                       >
                         <ChevronDown size={12} />
                       </button>
+                      {s.kind === "VIDEO" && (
+                        <button
+                          onClick={() => {
+                            setSelectedSlotForEdit(s);
+                            setIsClipperOpen(true);
+                          }}
+                          className="rounded p-1 text-blue-600 hover:bg-blue-50"
+                          title="Edit Trim Video"
+                        >
+                          <Scissors size={12} />
+                        </button>
+                      )}
                       <button
                         onClick={() => removeSlot(s.id)}
                         className="rounded p-1 text-red-500 hover:bg-red-50"
@@ -873,6 +920,569 @@ export default function TiktokEditorPage() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <VideoClipperModal
+        isOpen={isClipperOpen}
+        onClose={() => {
+          setIsClipperOpen(false);
+          setSelectedSlotForEdit(null);
+        }}
+        contentId={id}
+        onSuccess={fetchContent}
+        editingSlot={selectedSlotForEdit}
+      />
+    </div>
+  );
+}
+
+interface VideoClipperModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  contentId: string;
+  onSuccess: () => Promise<void>;
+  editingSlot: Slot | null;
+}
+
+function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot }: VideoClipperModalProps) {
+  const [videoFile, setVideoFile] = useState<{
+    url: string;
+    filename: string;
+    mimeType: string;
+    size: number;
+  } | null>(null);
+
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const [trimStart, setTrimStart] = useState(0); // in seconds
+  const [trimEnd, setTrimEnd] = useState(10); // in seconds
+  const [videoDuration, setVideoDuration] = useState(0); // in seconds
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [caption, setCaption] = useState("");
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewTimerRef = useRef<number | null>(null);
+
+  // Pre-load if editing
+  useEffect(() => {
+    if (editingSlot && isOpen) {
+      setVideoFile({
+        url: editingSlot.url,
+        filename: editingSlot.filename || "video.mp4",
+        mimeType: editingSlot.mimeType || "video/mp4",
+        size: editingSlot.size || 0,
+      });
+      setTrimStart(editingSlot.trimStartMs / 1000);
+      setTrimEnd(editingSlot.trimEndMs !== null ? editingSlot.trimEndMs / 1000 : editingSlot.durationMs / 1000);
+      setCaption(editingSlot.caption || "");
+      setError("");
+      setSuccessMsg("");
+    } else if (isOpen) {
+      // resetting
+      setVideoFile(null);
+      setTrimStart(0);
+      setTrimEnd(10);
+      setVideoDuration(0);
+      setCurrentTime(0);
+      setIsPlaying(false);
+      setPreviewing(false);
+      setCaption("");
+      setError("");
+      setSuccessMsg("");
+    }
+  }, [editingSlot, isOpen]);
+
+  // Cleanup timers on unmount or close
+  useEffect(() => {
+    return () => {
+      if (previewTimerRef.current) {
+        window.clearInterval(previewTimerRef.current);
+      }
+    };
+  }, []);
+
+  if (!isOpen) return null;
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    setError("");
+    setSuccessMsg("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("target", "slot");
+      const res = await fetch("/api/tiktok/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Upload gagal");
+
+      setVideoFile({
+        url: json.data.url,
+        filename: json.data.filename,
+        mimeType: json.data.mimeType,
+        size: json.data.size,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal mengunggah video");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      const dur = videoRef.current.duration || 0;
+      setVideoDuration(dur);
+      // only set trimEnd to full duration if we are NOT editing
+      if (!editingSlot) {
+        setTrimEnd(Math.min(dur, 10)); // default to 10s or full duration
+      }
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        if (videoRef.current.currentTime >= trimEnd || videoRef.current.currentTime < trimStart) {
+          videoRef.current.currentTime = trimStart;
+        }
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  const startPreview = () => {
+    if (videoRef.current) {
+      if (previewTimerRef.current) window.clearInterval(previewTimerRef.current);
+
+      videoRef.current.currentTime = trimStart;
+      videoRef.current.play();
+      setIsPlaying(true);
+      setPreviewing(true);
+
+      const interval = window.setInterval(() => {
+        if (videoRef.current) {
+          if (videoRef.current.currentTime >= trimEnd) {
+            videoRef.current.pause();
+            setIsPlaying(false);
+            setPreviewing(false);
+            window.clearInterval(interval);
+          }
+        }
+      }, 50);
+      previewTimerRef.current = interval;
+    }
+  };
+
+  const handleSaveClip = async () => {
+    if (!videoFile) return;
+    if (trimStart < 0 || trimEnd <= trimStart) {
+      setError("Rentang waktu tidak valid");
+      return;
+    }
+    const durationMs = Math.round((trimEnd - trimStart) * 1000);
+    if (durationMs > 30000) {
+      setError("Durasi clip tidak boleh lebih dari 30 detik");
+      return;
+    }
+    if (durationMs < 500) {
+      setError("Durasi clip minimal 0.5 detik");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccessMsg("");
+
+    try {
+      if (editingSlot) {
+        const res = await fetch(`/api/tiktok/contents/${contentId}/slots/${editingSlot.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            durationMs,
+            trimStartMs: Math.round(trimStart * 1000),
+            trimEndMs: Math.round(trimEnd * 1000),
+            caption: caption || null,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || "Gagal memperbarui clip");
+
+        setSuccessMsg("Clip berhasil diperbarui");
+        await onSuccess();
+        setTimeout(onClose, 1500);
+      } else {
+        const res = await fetch(`/api/tiktok/contents/${contentId}/slots`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: "VIDEO",
+            url: videoFile.url,
+            filename: videoFile.filename,
+            mimeType: videoFile.mimeType,
+            size: videoFile.size,
+            durationMs,
+            trimStartMs: Math.round(trimStart * 1000),
+            trimEndMs: Math.round(trimEnd * 1000),
+            caption: caption || null,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || "Gagal membuat clip");
+
+        setSuccessMsg(`Clip berhasil ditambahkan sebagai Slot!`);
+        await onSuccess();
+        setCaption("");
+        setTrimStart(Math.min(trimEnd, videoDuration));
+        setTrimEnd(Math.min(trimEnd + 10, videoDuration));
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal memproses clip");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clipDuration = Math.max(0, trimEnd - trimStart);
+  const isDurationValid = clipDuration >= 0.5 && clipDuration <= 30;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl rounded-lg border border-border bg-surface p-6 shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border pb-3">
+          <h3 className="text-lg font-bold text-txt-primary flex items-center gap-2">
+            <Scissors size={18} className="text-primary" />
+            {editingSlot ? "Edit Trim Slot" : "Clipper Video TikTok"}
+          </h3>
+          <button onClick={onClose} className="rounded p-1 text-txt-muted hover:bg-surface-secondary">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto py-4 space-y-4">
+          {error && (
+            <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <AlertTriangle size={14} className="shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+              <Check size={14} className="shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          {!videoFile ? (
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-12 bg-surface-container-low">
+              {uploading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="animate-spin text-primary" size={32} />
+                  <p className="text-sm font-medium text-txt-secondary">Mengunggah video master...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <VideoIcon size={48} className="text-txt-muted" />
+                  <div>
+                    <p className="text-sm font-semibold text-txt-primary">Pilih Video Master untuk Dipotong</p>
+                    <p className="text-xs text-txt-muted mt-1">Mendukung MP4, MOV, WebM (Maks 100MB)</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-primary text-sm px-4 py-2"
+                  >
+                    Unggah Video
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/webm"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleUpload(f);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Interactive Player */}
+              <div className="relative overflow-hidden rounded-md border border-border bg-black">
+                <video
+                  ref={videoRef}
+                  src={videoFile.url}
+                  className="mx-auto max-h-[260px] w-full object-contain"
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onTimeUpdate={handleTimeUpdate}
+                  onClick={togglePlay}
+                />
+                
+                {/* Visual playback time overlay */}
+                <div className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white">
+                  {currentTime.toFixed(1)}s / {videoDuration.toFixed(1)}s
+                </div>
+              </div>
+
+              {/* Player Timeline Click-to-Seek / Progress bar */}
+              <div className="space-y-1">
+                <div 
+                  className="h-2 w-full bg-surface-secondary rounded cursor-pointer relative overflow-hidden"
+                  onClick={(e) => {
+                    if (videoRef.current && videoDuration) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const clickX = e.clientX - rect.left;
+                      const percent = clickX / rect.width;
+                      const seekTime = percent * videoDuration;
+                      videoRef.current.currentTime = seekTime;
+                    }
+                  }}
+                >
+                  {videoDuration > 0 && (
+                    <div 
+                      className="absolute top-0 bottom-0 bg-primary/20 border-l border-r border-primary/40"
+                      style={{
+                        left: `${(trimStart / videoDuration) * 100}%`,
+                        width: `${((trimEnd - trimStart) / videoDuration) * 100}%`
+                      }}
+                    />
+                  )}
+                  {videoDuration > 0 && (
+                    <div 
+                      className="absolute top-0 bottom-0 bg-primary w-0.5"
+                      style={{ left: `${(currentTime / videoDuration) * 100}%` }}
+                    />
+                  )}
+                </div>
+                <div className="flex justify-between text-[10px] text-txt-muted">
+                  <span>0.0s</span>
+                  <span>{videoDuration.toFixed(1)}s</span>
+                </div>
+              </div>
+
+              {/* Controls Bar */}
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={togglePlay}
+                    className="flex items-center gap-1 rounded bg-surface-secondary px-3 py-1.5 text-xs font-semibold hover:bg-surface-tertiary"
+                  >
+                    {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+                    {isPlaying ? "Pause" : "Play"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startPreview}
+                    disabled={previewing}
+                    className="flex items-center gap-1 rounded bg-blue-50 text-blue-700 px-3 py-1.5 text-xs font-semibold hover:bg-blue-100 disabled:opacity-50"
+                  >
+                    <Play size={12} className="text-blue-700" />
+                    Preview Clip
+                  </button>
+                </div>
+
+                <div className="text-right">
+                  <p className="text-xs text-txt-muted">Video Master: {videoFile.filename}</p>
+                </div>
+              </div>
+
+              {/* Trim Bounds Panel */}
+              <div className="grid grid-cols-2 gap-4 bg-surface-container-low p-3 rounded-md border border-border">
+                {/* Trim Start */}
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-semibold text-txt-primary">Mulai Trim (Start)</label>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="number"
+                      step={0.1}
+                      min={0}
+                      max={trimEnd}
+                      value={parseFloat(trimStart.toFixed(1))}
+                      onChange={(e) => {
+                        const val = Math.max(0, Math.min(parseFloat(e.target.value) || 0, trimEnd));
+                        setTrimStart(val);
+                        if (videoRef.current) videoRef.current.currentTime = val;
+                      }}
+                      className="w-full rounded border border-border bg-surface px-2 py-1 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (videoRef.current) {
+                          const val = Math.min(videoRef.current.currentTime, trimEnd);
+                          setTrimStart(val);
+                        }
+                      }}
+                      className="shrink-0 bg-primary text-white rounded px-2 text-[10px] font-semibold hover:bg-primary-dark"
+                    >
+                      Set Mulai
+                    </button>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = Math.max(0, trimStart - 1);
+                        setTrimStart(val);
+                        if (videoRef.current) videoRef.current.currentTime = val;
+                      }}
+                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded"
+                    >
+                      -1s
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = Math.min(trimStart + 1, trimEnd);
+                        setTrimStart(val);
+                        if (videoRef.current) videoRef.current.currentTime = val;
+                      }}
+                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded"
+                    >
+                      +1s
+                    </button>
+                  </div>
+                </div>
+
+                {/* Trim End */}
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-semibold text-txt-primary">Selesai Trim (End)</label>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="number"
+                      step={0.1}
+                      min={trimStart}
+                      max={videoDuration}
+                      value={parseFloat(trimEnd.toFixed(1))}
+                      onChange={(e) => {
+                        const val = Math.max(trimStart, Math.min(parseFloat(e.target.value) || 0, videoDuration));
+                        setTrimEnd(val);
+                        if (videoRef.current) videoRef.current.currentTime = val;
+                      }}
+                      className="w-full rounded border border-border bg-surface px-2 py-1 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (videoRef.current) {
+                          const val = Math.max(videoRef.current.currentTime, trimStart);
+                          setTrimEnd(val);
+                        }
+                      }}
+                      className="shrink-0 bg-primary text-white rounded px-2 text-[10px] font-semibold hover:bg-primary-dark"
+                    >
+                      Set Selesai
+                    </button>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = Math.max(trimStart, trimEnd - 1);
+                        setTrimEnd(val);
+                        if (videoRef.current) videoRef.current.currentTime = val;
+                      }}
+                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded"
+                    >
+                      -1s
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = Math.min(trimEnd + 1, videoDuration);
+                        setTrimEnd(val);
+                        if (videoRef.current) videoRef.current.currentTime = val;
+                      }}
+                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded"
+                    >
+                      +1s
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clip Stats Summary */}
+              <div className="flex items-center justify-between p-2.5 rounded-md border border-border bg-surface-container">
+                <span className="text-xs text-txt-secondary font-medium">Durasi Clip:</span>
+                <span className={`text-sm font-bold ${isDurationValid ? "text-green-600" : "text-red-600"}`}>
+                  {clipDuration.toFixed(1)} detik
+                  {clipDuration > 30 && " (Maksimal 30 detik!)"}
+                  {clipDuration < 0.5 && " (Minimal 0.5 detik!)"}
+                </span>
+              </div>
+
+              {/* Clip Caption Input */}
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-txt-primary">Teks / Keterangan Clip (Opsional)</label>
+                <input
+                  type="text"
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  placeholder="Keterangan untuk clip slot ini..."
+                  className="w-full rounded border border-border bg-surface px-3 py-2 text-xs"
+                />
+              </div>
+
+              {/* Reset Action */}
+              {!editingSlot && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setVideoFile(null)}
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    Ganti Video Master
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="border-t border-border pt-4 flex justify-between gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded border border-border px-4 py-2 text-xs font-semibold text-txt-secondary hover:bg-surface-secondary"
+          >
+            {editingSlot ? "Batal" : "Selesai"}
+          </button>
+          
+          {videoFile && (
+            <button
+              type="button"
+              onClick={handleSaveClip}
+              disabled={saving || !isDurationValid}
+              className="flex items-center gap-1.5 rounded bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+            >
+              {saving && <Loader2 size={12} className="animate-spin" />}
+              {editingSlot ? "Simpan Perubahan" : "Buat Clip & Tambah ke Slot"}
+            </button>
+          )}
         </div>
       </div>
     </div>
