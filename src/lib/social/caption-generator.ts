@@ -215,6 +215,11 @@ Aturan:
     .filter((t): t is string => Boolean(t));
   const tags = Array.from(new Set(tagsList)).join(" ");
 
+  if (platform === "THREADS") {
+    const resolvedCaption = `[ ${article.title} ]\n\nBaca selengkapnya di: ${link}\n\n${tags}`.trim();
+    return enforceMaxLength(resolvedCaption, "THREADS");
+  }
+
   // Resolve placeholders in the custom template
   const resolvedCaption = template
     .replace(/\{\{title\}\}/g, article.title || "")
