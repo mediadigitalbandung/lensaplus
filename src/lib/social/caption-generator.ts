@@ -118,6 +118,12 @@ export async function generateSocialCaption(
 ): Promise<string> {
   const { article, platform, hashtags = [], cta } = opts;
   const includeLink = opts.includeLink !== false;
+  const link = (includeLink && article.slug) ? `${SITE_URL.replace(/\/+$/, "")}/berita/${article.slug}` : "";
+
+  if (platform === "THREADS") {
+    const resolvedCaption = `[ ${article.title} ]\n\nBaca selengkapnya di: ${link}`.trim();
+    return enforceMaxLength(resolvedCaption, "THREADS");
+  }
 
   const excerpt = article.excerpt || stripHtml(article.content).slice(0, 600);
   const categoryName = article.category?.name || "";
@@ -204,7 +210,6 @@ Aturan:
   const template = (captionTemplate && captionTemplate.trim()) || defaultTemplate;
 
   // Build values for replacement
-  const link = (includeLink && article.slug) ? `${SITE_URL.replace(/\/+$/, "")}/berita/${article.slug}` : "";
   
   // Combine user-provided tags (default + article tags) with AI-generated trending tags
   const combinedTagsList = [
@@ -216,27 +221,6 @@ Aturan:
     .map(normalizeHashtag)
     .filter((t): t is string => Boolean(t));
   const tags = Array.from(new Set(tagsList)).join(" ");
-
-  if (platform === "THREADS") {
-    const titlePart = `[ ${article.title} ]`;
-    const linkPart = link ? `Baca selengkapnya di: ${link}` : "";
-    const titleSpacing = body ? "\n\n" : "";
-    const linkSpacing = (body && linkPart) ? "\n\n" : (titlePart && linkPart) ? "\n\n" : "";
-    
-    const staticLength = titlePart.length + titleSpacing.length + linkSpacing.length + linkPart.length;
-    const allowedBodyLength = 500 - staticLength;
-    
-    let processedBody = body || "";
-    if (processedBody.length > allowedBodyLength) {
-      const cut = processedBody.slice(0, Math.max(10, allowedBodyLength - 3));
-      const boundary = cut.lastIndexOf(" ");
-      const stopped = boundary > 40 ? cut.slice(0, boundary) : cut;
-      processedBody = `${stopped}...`;
-    }
-    
-    const resolvedCaption = `${titlePart}${titleSpacing}${processedBody}${linkSpacing}${linkPart}`.trim();
-    return resolvedCaption;
-  }
 
   // Resolve placeholders in the custom template
   const resolvedCaption = template
