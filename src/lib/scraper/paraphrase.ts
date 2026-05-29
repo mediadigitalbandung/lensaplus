@@ -372,7 +372,8 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
     parsed.title,
     sourceName,
   );
-  const finalContent = sanitizeHtml(bodyWithImages);
+  const attributionHtml = buildAttribution(source.url, sourceName, source.title);
+  const finalContent = sanitizeHtml(bodyWithImages + attributionHtml);
 
   const slug = await uniqueSlug(parsed.title);
 
@@ -419,6 +420,14 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
       categoryId,
       tags:
         tagConnections.length > 0 ? { connect: tagConnections } : undefined,
+      sources: {
+        create: [
+          {
+            name: sourceName,
+            url: source.url,
+          },
+        ],
+      },
     },
     select: { id: true, slug: true, title: true },
   });
