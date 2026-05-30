@@ -71,6 +71,7 @@ interface SocialSettings {
     autoPublishIG: boolean;
     autoPublishFB: boolean;
     autoPublishTwitter: boolean;
+    autoPublishThreads: boolean;
     defaultHashtags: string | null;
     defaultCTA: string | null;
     captionTemplate?: string | null;
@@ -144,7 +145,7 @@ function PostsTab() {
   const [filterStatus, setFilterStatus] = useState<PostStatus | "ALL">("ALL");
   const [testingPublish, setTestingPublish] = useState(false);
 
-  async function handleTestPublish(targetPlatform?: "INSTAGRAM" | "FACEBOOK" | "ALL", isStory?: boolean) {
+  async function handleTestPublish(targetPlatform?: "INSTAGRAM" | "FACEBOOK" | "THREADS" | "ALL", isStory?: boolean) {
     let platformLabel = "Semua Platform";
     if (targetPlatform === "INSTAGRAM") {
       platformLabel = isStory ? "Instagram Story" : "Instagram Feed";
@@ -279,65 +280,68 @@ function PostsTab() {
           Refresh
         </button>
         <div className="flex flex-wrap items-center gap-2 ml-auto">
+          <span className="hidden sm:inline text-xs font-semibold text-txt-muted">
+            Uji Coba:
+          </span>
           <button
             onClick={() => handleTestPublish("INSTAGRAM", false)}
             disabled={testingPublish}
-            className="bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-txt-secondary transition-colors hover:bg-surface-secondary hover:text-txt-primary disabled:opacity-50"
           >
             {testingPublish ? (
-              <Loader2 size={12} className="animate-spin" />
+              <Loader2 size={12} className="animate-spin text-primary" />
             ) : (
-              <Instagram size={12} />
+              <Instagram size={12} className="text-pink-500" />
             )}
-            Test IG Feed
+            IG Feed
           </button>
           <button
             onClick={() => handleTestPublish("INSTAGRAM", true)}
             disabled={testingPublish}
-            className="bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-700 hover:to-indigo-600 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-txt-secondary transition-colors hover:bg-surface-secondary hover:text-txt-primary disabled:opacity-50"
           >
             {testingPublish ? (
-              <Loader2 size={12} className="animate-spin" />
+              <Loader2 size={12} className="animate-spin text-primary" />
             ) : (
-              <Instagram size={12} />
+              <Instagram size={12} className="text-pink-500" />
             )}
-            Test IG Story
+            IG Story
           </button>
           <button
             onClick={() => handleTestPublish("FACEBOOK", false)}
             disabled={testingPublish}
-            className="bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-txt-secondary transition-colors hover:bg-surface-secondary hover:text-txt-primary disabled:opacity-50"
           >
             {testingPublish ? (
-              <Loader2 size={12} className="animate-spin" />
+              <Loader2 size={12} className="animate-spin text-primary" />
             ) : (
-              <Facebook size={12} />
+              <Facebook size={12} className="text-blue-600" />
             )}
-            Test FB Feed
+            FB Feed
           </button>
           <button
             onClick={() => handleTestPublish("FACEBOOK", true)}
             disabled={testingPublish}
-            className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-txt-secondary transition-colors hover:bg-surface-secondary hover:text-txt-primary disabled:opacity-50"
           >
             {testingPublish ? (
-              <Loader2 size={12} className="animate-spin" />
+              <Loader2 size={12} className="animate-spin text-primary" />
             ) : (
-              <Facebook size={12} />
+              <Facebook size={12} className="text-blue-600" />
             )}
-            Test FB Story
+            FB Story
           </button>
           <button
             onClick={() => handleTestPublish("THREADS", false)}
             disabled={testingPublish}
-            className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-50 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-txt-secondary transition-colors hover:bg-surface-secondary hover:text-txt-primary disabled:opacity-50"
           >
             {testingPublish ? (
-              <Loader2 size={12} className="animate-spin" />
+              <Loader2 size={12} className="animate-spin text-primary" />
             ) : (
-              <Share2 size={12} />
+              <Share2 size={12} className="text-txt-primary" />
             )}
-            Test Threads
+            Threads
           </button>
         </div>
       </div>
@@ -522,12 +526,6 @@ const EMPTY_TEMPLATE: TemplateFormData = {
   backgroundUrl: "",
   textLayersJson: "",
   isActive: true,
-};
-
-const ASPECT_RATIO_LABELS: Record<Platform, string> = {
-  INSTAGRAM: "Instagram Portrait 4:5 (1080 × 1350)",
-  FACEBOOK: "Facebook Link Share 1.91:1 (1200 × 630)",
-  TWITTER: "Twitter/X Feed 16:9 (1200 × 675)",
 };
 
 const PLATFORM_ASPECT_RATIOS: Record<Platform, { label: string; width: number; height: number }[]> = {
@@ -1113,18 +1111,18 @@ function TemplatesTab() {
 
       {/* Premium Visual Template Editor Panel */}
       {showForm && (
-        <div className="fixed inset-0 z-[9999] bg-[#001025] flex flex-col overflow-y-auto text-slate-100 font-sans">
+        <div className="fixed inset-0 z-[9999] bg-surface-secondary flex flex-col overflow-y-auto text-txt-primary font-sans">
           {/* Top Navbar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1e293b] px-6 py-4 bg-[#020c1b]/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-6 py-4 bg-surface/90 backdrop-blur-md sticky top-0 z-50">
             <div className="space-y-0.5">
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-txt-primary flex items-center gap-2">
                 {editing ? "Edit Template" : "Template Baru"}
               </h2>
-              <p className="text-xs text-slate-400">
-                Placeholder: <span className="font-mono text-emerald-400">{"{{paraphrased_title}}"}</span>{" "}
-                <span className="font-mono text-emerald-400">{"{{short_summary}}"}</span>{" "}
-                <span className="font-mono text-emerald-400">{"{{category}}"}</span>{" "}
-                <span className="font-mono text-emerald-400">{"{{date}}"}</span> · AI auto-fill
+              <p className="text-xs text-txt-muted">
+                Placeholder: <span className="font-mono text-primary">{"{{paraphrased_title}}"}</span>{" "}
+                <span className="font-mono text-primary">{"{{short_summary}}"}</span>{" "}
+                <span className="font-mono text-primary">{"{{category}}"}</span>{" "}
+                <span className="font-mono text-primary">{"{{date}}"}</span> · AI auto-fill
               </p>
             </div>
 
@@ -1134,21 +1132,21 @@ function TemplatesTab() {
                   onClick={() => {
                     handleDelete(editing.id);
                   }}
-                  className="border border-red-500/30 hover:bg-red-500/10 text-red-400 font-semibold text-sm px-4 py-2 rounded-lg transition-all"
+                  className="border border-red-200 hover:bg-red-50 text-red-600 font-semibold text-sm px-4 py-2 rounded-lg transition-all"
                 >
                   Hapus
                 </button>
               )}
               <button
                 onClick={() => setShowForm(false)}
-                className="border border-[#1e293b] hover:bg-slate-800 text-slate-300 font-semibold text-sm px-4 py-2 rounded-lg transition-all"
+                className="border border-border hover:bg-surface-secondary text-txt-secondary font-semibold text-sm px-4 py-2 rounded-lg transition-all"
               >
                 Batal
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-6 py-2 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-lg shadow-emerald-950/20"
+                className="bg-primary hover:bg-primary-dark text-white font-semibold text-sm px-6 py-2 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-card"
               >
                 {saving ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -1166,26 +1164,26 @@ function TemplatesTab() {
               {/* Left Column: Canvas and Layers Editor */}
               <div className="xl:col-span-7 space-y-6">
                 {/* Form Settings */}
-                <div className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-5 space-y-4">
+                <div className="rounded-xl border border-border bg-surface p-5 space-y-4 shadow-card">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                      <label className="block text-xs font-semibold text-txt-secondary mb-1.5">
                         Nama Template
                       </label>
                       <input
                         type="text"
-                        className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-medium"
+                        className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-3 py-2.5 outline-none focus:border-primary transition-all font-medium"
                         value={form.name}
                         onChange={(e) => setForm({ ...form, name: e.target.value })}
                         placeholder="contoh: IG Portrait Berita Terkini"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                      <label className="block text-xs font-semibold text-txt-secondary mb-1.5">
                         Platform
                       </label>
                       <select
-                        className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-medium"
+                        className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-3 py-2.5 outline-none focus:border-primary transition-all font-medium"
                         value={form.platform}
                         onChange={(e) => {
                           const p = e.target.value as Platform;
@@ -1204,11 +1202,11 @@ function TemplatesTab() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                      <label className="block text-xs font-semibold text-txt-secondary mb-1.5">
                         Aspek Rasio
                       </label>
                       <select
-                        className="w-full bg-[#020c1b] border border-[#1e293b] text-slate-300 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-medium"
+                        className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-3 py-2.5 outline-none focus:border-primary transition-all font-medium"
                         value={`${canvasWidth}x${canvasHeight}`}
                         onChange={(e) => {
                           const [w, h] = e.target.value.split("x").map(Number);
@@ -1227,11 +1225,11 @@ function TemplatesTab() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                      <label className="block text-xs font-semibold text-txt-secondary mb-1.5">
                         Kategori (opsional)
                       </label>
                       <select
-                        className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-3 py-2.5 outline-none focus:border-emerald-500 transition-all font-medium"
+                        className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-3 py-2.5 outline-none focus:border-primary transition-all font-medium"
                         value={form.categoryId}
                         onChange={(e) =>
                           setForm({ ...form, categoryId: e.target.value })
@@ -1246,19 +1244,19 @@ function TemplatesTab() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                      <label className="block text-xs font-semibold text-txt-secondary mb-1.5">
                         Background Template (PNG transparan di area foto)
                       </label>
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 border border-[#1e293b] hover:border-slate-600 shadow-sm"
+                          className="bg-surface-secondary hover:bg-surface-container text-txt-primary font-semibold text-xs px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 border border-border shadow-sm"
                         >
                           <Plus size={12} />
                           Ganti
                         </button>
-                        <span className="text-xs text-slate-400 font-mono truncate max-w-[280px]">
+                        <span className="text-xs text-txt-secondary font-mono truncate max-w-[280px]">
                           {form.backgroundUrl
                             ? form.backgroundUrl.substring(form.backgroundUrl.lastIndexOf("/") + 1)
                             : "Belum ada file dipilih"}
@@ -1281,24 +1279,24 @@ function TemplatesTab() {
                       onChange={(e) =>
                         setForm({ ...form, isActive: e.target.checked })
                       }
-                      className="h-4 w-4 rounded border-[#1e293b] bg-[#020c1b] accent-emerald-500"
+                      className="h-4 w-4 rounded border-border bg-surface-secondary accent-primary"
                     />
                     Template Aktif
                   </label>
                 </div>
 
                 {/* Drag-and-resize Visual Canvas Box */}
-                <div className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-5 space-y-4">
+                <div className="rounded-xl border border-border bg-surface p-5 space-y-4 shadow-card">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-slate-200">
+                    <h3 className="text-sm font-semibold text-txt-primary">
                       Area Foto Artikel (drag untuk pindah, pojok kanan-bawah untuk resize)
                     </h3>
                   </div>
 
-                  <div className="flex justify-center bg-[#020612] p-6 rounded-lg border border-[#1e293b] shadow-inner">
+                  <div className="flex justify-center bg-surface-container p-6 rounded-lg border border-border shadow-inner">
                     <div
                       ref={canvasRef}
-                      className="relative border-2 border-slate-700 bg-slate-950 overflow-hidden shadow-2xl container-type-inline-size select-none"
+                      className="relative border border-outline-variant bg-surface-container-high overflow-hidden shadow-card container-type-inline-size select-none"
                       style={{
                         aspectRatio: `${dims.width} / ${dims.height}`,
                         width: "100%",
@@ -1330,11 +1328,11 @@ function TemplatesTab() {
                             className={`absolute select-none ${
                               isPhoto
                                 ? isSelected
-                                  ? "border-2 border-dashed border-[#10b981] bg-[#10b981]/25 z-20"
-                                  : "border border-dashed border-[#10b981]/70 bg-[#10b981]/15 z-0"
+                                  ? "border-2 border-dashed border-[#002045] bg-[#002045]/25 z-20"
+                                  : "border border-dashed border-[#002045]/70 bg-[#002045]/15 z-0"
                                 : isSelected
-                                  ? "border-2 border-dashed border-[#3b82f6] bg-[#3b82f6]/20 z-30"
-                                  : "border border-dashed border-[#3b82f6]/50 bg-[#3b82f6]/5 z-20 hover:border-[#3b82f6]/80"
+                                  ? "border-2 border-dashed border-[#b7102a] bg-[#b7102a]/20 z-30"
+                                  : "border border-dashed border-[#b7102a]/50 bg-[#b7102a]/5 z-20 hover:border-[#b7102a]/80"
                             }`}
                             style={{
                               left: `${pctX}%`,
@@ -1348,13 +1346,13 @@ function TemplatesTab() {
                             {/* Inner label / representation */}
                             {isPhoto ? (
                               <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                                <span className="bg-[#022c16]/90 border border-[#10b981] text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                                <span className="bg-primary/90 border border-primary text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
                                   AREA FOTO
                                 </span>
                               </div>
                             ) : (
                               <div
-                                className="absolute inset-0 p-1 pointer-events-none text-white truncate text-[9px] font-mono leading-none"
+                                className="absolute inset-0 p-1 pointer-events-none text-txt-primary truncate text-[9px] font-mono leading-none"
                                 style={{
                                   fontFamily: layer.fontFamily?.includes("Newsreader") ? "serif" : "sans-serif",
                                   fontWeight: layer.weight === "Bold" ? "bold" : "normal",
@@ -1362,7 +1360,7 @@ function TemplatesTab() {
                                   color: layer.color || "#ffffff",
                                 }}
                               >
-                                <span className="bg-[#02183d]/95 border border-[#3b82f6]/80 text-[#3b82f6] px-1 py-0.5 rounded text-[8px] mr-1 font-sans select-none">
+                                <span className="bg-secondary-light border border-secondary/40 text-secondary px-1 py-0.5 rounded text-[8px] mr-1 font-sans select-none">
                                   {`T${idx}: ${layer.text.replace(/[{}]/g, "")}`}
                                 </span>
                               </div>
@@ -1372,7 +1370,7 @@ function TemplatesTab() {
                             {isSelected && (
                               <div
                                 className={`absolute bottom-0 right-0 w-3 h-3 translate-x-1/2 translate-y-1/2 rounded-full shadow-lg border border-white cursor-se-resize z-40 ${
-                                  isPhoto ? "bg-[#10b981]" : "bg-[#3b82f6]"
+                                  isPhoto ? "bg-[#002045]" : "bg-[#b7102a]"
                                 }`}
                                 onMouseDown={(e) => handleCanvasMouseDown(e, idx, "resize")}
                               />
@@ -1384,7 +1382,7 @@ function TemplatesTab() {
                   </div>
 
                   {activeLayer && (
-                    <div className="text-center text-xs font-semibold text-slate-400 font-mono select-none pt-1">
+                    <div className="text-center text-xs font-semibold text-txt-secondary font-mono select-none pt-1">
                       {`Posisi: ${Math.round((activeLayer.x / dims.width) * 100)}%, ${Math.round(
                         (activeLayer.y / dims.height) * 100
                       )}% · Ukuran: ${Math.round((activeLayer.width / dims.width) * 100)}% × ${Math.round(
@@ -1397,13 +1395,13 @@ function TemplatesTab() {
                 {/* Layer Cards Form Section */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between select-none">
-                    <h3 className="text-sm font-bold text-slate-200">
+                    <h3 className="text-sm font-bold text-txt-primary">
                       Text Layers ({layers.length})
                     </h3>
                     <button
                       type="button"
                       onClick={addTextLayer}
-                      className="text-emerald-400 hover:text-emerald-300 font-bold text-xs flex items-center gap-1 transition-all"
+                      className="text-primary hover:text-primary-dark font-bold text-xs flex items-center gap-1 transition-all"
                     >
                       <Plus size={12} />
                       Tambah Teks
@@ -1420,9 +1418,9 @@ function TemplatesTab() {
                         className={`rounded-xl border transition-all ${
                           isSelected
                             ? isPhoto
-                              ? "border-[#10b981]/50 bg-emerald-950/15"
-                              : "border-[#3b82f6]/50 bg-[#001c3d]/20"
-                            : "border-[#1e293b] bg-slate-900/25 hover:border-slate-800"
+                              ? "border-primary/40 bg-primary/5"
+                              : "border-secondary/40 bg-secondary/5"
+                            : "border-border bg-surface hover:border-outline-variant"
                         }`}
                       >
                         {/* Header card click selector */}
@@ -1433,10 +1431,10 @@ function TemplatesTab() {
                           <div className="flex items-center gap-2">
                             <div
                               className={`w-2.5 h-2.5 rounded-full ${
-                                isPhoto ? "bg-[#10b981]" : "bg-[#3b82f6]"
+                                isPhoto ? "bg-[#002045]" : "bg-[#b7102a]"
                               }`}
                             />
-                            <span className="text-sm font-bold text-slate-200">
+                            <span className="text-sm font-bold text-txt-primary">
                               {isPhoto ? "Layer #1 (Area Foto)" : `Layer #${idx} (${layer.text})`}
                             </span>
                           </div>
@@ -1454,7 +1452,7 @@ function TemplatesTab() {
                                 <Trash2 size={14} />
                               </button>
                             )}
-                            <span className="text-xs text-slate-500 font-mono">
+                            <span className="text-xs text-txt-muted font-mono">
                               {isSelected ? "Tutup" : "Edit"}
                             </span>
                           </div>
@@ -1462,15 +1460,15 @@ function TemplatesTab() {
 
                         {/* Collapsible content editor */}
                         {isSelected && (
-                          <div className="px-5 pb-5 pt-1 border-t border-[#1e293b]/60 space-y-4">
+                          <div className="px-5 pb-5 pt-1 border-t border-border space-y-4">
                             {!isPhoto && (
                               <div>
-                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                   Teks / Placeholder
                                 </label>
                                 <textarea
-                                  rows={1.5}
-                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500 font-medium font-mono"
+                                  rows={2}
+                                  className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium font-mono"
                                   value={layer.text}
                                   onChange={(e) => {
                                     const updated = [...layers];
@@ -1484,12 +1482,12 @@ function TemplatesTab() {
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                               <div>
-                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                   X (%)
                                 </label>
                                 <input
                                   type="number"
-                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                  className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
                                   value={Math.round((layer.x / dims.width) * 100)}
                                   onChange={(e) => {
                                     const pct = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
@@ -1500,12 +1498,12 @@ function TemplatesTab() {
                                 />
                               </div>
                               <div>
-                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                   Y (%)
                                 </label>
                                 <input
                                   type="number"
-                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                  className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
                                   value={Math.round((layer.y / dims.height) * 100)}
                                   onChange={(e) => {
                                     const pct = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
@@ -1516,12 +1514,12 @@ function TemplatesTab() {
                                 />
                               </div>
                               <div>
-                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                   Lebar (%)
                                 </label>
                                 <input
                                   type="number"
-                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                  className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
                                   value={Math.round((layer.width / dims.width) * 100)}
                                   onChange={(e) => {
                                     const pct = Math.min(100, Math.max(5, parseInt(e.target.value) || 5));
@@ -1532,12 +1530,12 @@ function TemplatesTab() {
                                 />
                               </div>
                               <div>
-                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                   Tinggi (%)
                                 </label>
                                 <input
                                   type="number"
-                                  className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                  className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
                                   value={Math.round((layer.height / dims.height) * 100)}
                                   onChange={(e) => {
                                     const pct = Math.min(100, Math.max(5, parseInt(e.target.value) || 5));
@@ -1553,11 +1551,11 @@ function TemplatesTab() {
                               <>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                    <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                       Font Family
                                     </label>
                                     <select
-                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-xs rounded-lg px-2.5 py-2 outline-none font-medium focus:border-emerald-500"
+                                      className="w-full bg-surface-container-highest border border-border text-txt-primary text-xs rounded-lg px-2.5 py-2 outline-none font-medium focus:border-primary"
                                       value={layer.fontFamily || FONT_OPTIONS[0].value}
                                       onChange={(e) => {
                                         const updated = [...layers];
@@ -1573,12 +1571,12 @@ function TemplatesTab() {
                                     </select>
                                   </div>
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                    <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                       Font Size (px)
                                     </label>
                                     <input
                                       type="number"
-                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                      className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
                                       value={layer.fontSize}
                                       onChange={(e) => {
                                         const val = Math.max(1, parseInt(e.target.value) || 12);
@@ -1589,13 +1587,13 @@ function TemplatesTab() {
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                    <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                       Warna (Hex)
                                     </label>
                                     <div className="flex gap-1.5 items-center">
                                       <input
                                         type="color"
-                                        className="w-8 h-8 rounded border border-[#1e293b] cursor-pointer bg-transparent p-0"
+                                        className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent p-0"
                                         value={layer.color || "#ffffff"}
                                         onChange={(e) => {
                                           const updated = [...layers];
@@ -1605,7 +1603,7 @@ function TemplatesTab() {
                                       />
                                       <input
                                         type="text"
-                                        className="flex-1 bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2 py-1.5 outline-none font-medium font-mono"
+                                        className="flex-1 bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-2 py-1.5 outline-none font-medium font-mono"
                                         value={layer.color || "#ffffff"}
                                         onChange={(e) => {
                                           const updated = [...layers];
@@ -1619,11 +1617,11 @@ function TemplatesTab() {
 
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                    <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                       Alignment
                                     </label>
                                     <select
-                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-xs rounded-lg px-2.5 py-2 outline-none font-medium focus:border-emerald-500"
+                                      className="w-full bg-surface-container-highest border border-border text-txt-primary text-xs rounded-lg px-2.5 py-2 outline-none font-medium focus:border-primary"
                                       value={layer.align || "left"}
                                       onChange={(e) => {
                                         const updated = [...layers];
@@ -1639,11 +1637,11 @@ function TemplatesTab() {
                                     </select>
                                   </div>
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                    <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                       Weight
                                     </label>
                                     <select
-                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-xs rounded-lg px-2.5 py-2 outline-none font-medium focus:border-emerald-500"
+                                      className="w-full bg-surface-container-highest border border-border text-txt-primary text-xs rounded-lg px-2.5 py-2 outline-none font-medium focus:border-primary"
                                       value={layer.weight || "Regular"}
                                       onChange={(e) => {
                                         const updated = [...layers];
@@ -1659,13 +1657,13 @@ function TemplatesTab() {
                                     </select>
                                   </div>
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                    <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                       Line Height
                                     </label>
                                     <input
                                       type="number"
                                       step="0.1"
-                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                      className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
                                       value={layer.lineHeight || 1.2}
                                       onChange={(e) => {
                                         const val = Math.max(0.5, parseFloat(e.target.value) || 1.2);
@@ -1676,12 +1674,12 @@ function TemplatesTab() {
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                    <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                                       Max Lines
                                     </label>
                                     <input
                                       type="number"
-                                      className="w-full bg-[#020c1b] border border-[#1e293b] text-white text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
+                                      className="w-full bg-surface-container-highest border border-border text-txt-primary text-sm rounded-lg px-2.5 py-1.5 outline-none font-medium font-mono"
                                       value={layer.maxLines || 3}
                                       onChange={(e) => {
                                         const val = Math.max(1, parseInt(e.target.value) || 3);
@@ -1704,10 +1702,10 @@ function TemplatesTab() {
 
               {/* Right Column: High-Fidelity Responsive Preview Container */}
               <div className="xl:col-span-5 xl:sticky xl:top-[90px] space-y-6">
-                <div className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-5 space-y-4">
+                <div className="rounded-xl border border-border bg-surface p-5 space-y-4 shadow-card">
                   <div className="flex items-center justify-between select-none">
-                    <h3 className="text-sm font-bold text-slate-200">
-                      Preview Template <span className="text-xs text-slate-500 font-normal ml-1">({dims.width}×{dims.height} · {Math.round(previewScale * 100)}%)</span>
+                    <h3 className="text-sm font-bold text-txt-primary">
+                      Preview Template <span className="text-xs text-txt-muted font-normal ml-1">({dims.width}×{dims.height} · {Math.round(previewScale * 100)}%)</span>
                     </h3>
                     <button
                       type="button"
@@ -1715,7 +1713,7 @@ function TemplatesTab() {
                         fetchLatestArticle();
                         showSuccess("Preview di-refresh dengan artikel terbaru");
                       }}
-                      className="text-emerald-400 hover:text-emerald-300 font-bold text-xs flex items-center gap-1 transition-all"
+                      className="text-primary hover:text-primary-dark font-bold text-xs flex items-center gap-1 transition-all"
                     >
                       <RefreshCw size={12} className="animate-pulse" />
                       Refresh
@@ -1725,7 +1723,7 @@ function TemplatesTab() {
                   {/* Pixel-perfect preview — rendered at full resolution, CSS-scaled to fit container */}
                   <div
                     ref={previewContainerRef}
-                    className="bg-[#020612] p-4 rounded-lg border border-[#1e293b] shadow-inner overflow-hidden"
+                    className="bg-surface-container p-4 rounded-lg border border-border shadow-inner overflow-hidden"
                   >
                     <div
                       className="mx-auto"
@@ -1735,7 +1733,7 @@ function TemplatesTab() {
                       }}
                     >
                       <div
-                        className="relative rounded-lg overflow-hidden bg-white text-slate-800 shadow-2xl select-none origin-top-left"
+                        className="relative rounded-lg overflow-hidden bg-white text-txt-primary shadow-2xl select-none origin-top-left"
                         style={{
                           width: `${dims.width}px`,
                           height: `${dims.height}px`,
@@ -1833,7 +1831,7 @@ function TemplatesTab() {
                     </div>
                   </div>
 
-                  <p className="text-[10px] text-slate-500 text-center select-none mt-1">
+                  <p className="text-[10px] text-txt-muted text-center select-none mt-1">
                     Preview menggunakan artikel terbaru yang dipublish sebagai sample.
                   </p>
                 </div>
@@ -2078,12 +2076,12 @@ function SettingsTab() {
   if (error && !loading) {
     return (
       <div className="py-16 text-center max-w-md mx-auto space-y-4">
-        <div className="p-6 rounded-2xl border border-red-500/20 bg-red-950/10 backdrop-blur-sm space-y-3">
+        <div className="p-6 rounded-2xl border border-red-200 bg-red-50 space-y-3">
           <span className="text-3xl">⚠️</span>
-          <h4 className="font-bold text-slate-200 text-sm">
+          <h4 className="font-bold text-txt-primary text-sm">
             Gagal Memuat Pengaturan
           </h4>
-          <p className="text-xs text-red-400 font-mono break-all leading-relaxed max-h-[150px] overflow-y-auto">
+          <p className="text-xs text-red-600 font-mono break-all leading-relaxed max-h-[150px] overflow-y-auto">
             {error}
           </p>
         </div>
@@ -2689,7 +2687,7 @@ function SettingsTab() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <label 
                 className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
-                  facebook.postMode === "link" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
+                  facebook.postMode === "link" ? "border-primary bg-primary/5" : "border-border hover:border-outline-variant"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1.5">
@@ -2711,7 +2709,7 @@ function SettingsTab() {
 
               <label 
                 className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
-                  facebook.postMode === "photo" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
+                  facebook.postMode === "photo" ? "border-primary bg-primary/5" : "border-border hover:border-outline-variant"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1.5">
@@ -2733,7 +2731,7 @@ function SettingsTab() {
 
               <label 
                 className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
-                  facebook.postMode === "both" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
+                  facebook.postMode === "both" ? "border-primary bg-primary/5" : "border-border hover:border-outline-variant"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1.5">
@@ -2816,9 +2814,9 @@ function SettingsTab() {
         </p>
 
         {/* Quick Connect Section */}
-        <div className="mb-6 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-4">
+        <div className="mb-6 p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-4">
           <div>
-            <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-1 flex items-center gap-1.5">
               ⚡ Cara Cepat: Hubungkan Threads Otomatis (Rekomendasi)
             </h4>
             <p className="text-[11px] text-txt-secondary leading-relaxed">
@@ -2835,7 +2833,7 @@ function SettingsTab() {
                 href={`https://threads.net/oauth/authorize?client_id=4402452543382960&redirect_uri=${encodeURIComponent("https://kartawarta.com/")}&scope=threads_basic,threads_content_publish&response_type=code`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold transition-all w-full text-center"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary hover:bg-primary-dark text-white px-4 py-2 text-sm font-semibold transition-all w-full text-center"
               >
                 <ExternalLink size={14} />
                 Buka Link Otorisasi Threads
@@ -2849,7 +2847,7 @@ function SettingsTab() {
               <input
                 type="text"
                 placeholder="Tempel kode di sini..."
-                className="input w-full py-2 text-sm border-emerald-300 focus:border-emerald-500"
+                className="input w-full py-2 text-sm"
                 value={threadsAuthCode}
                 onChange={(e) => setThreadsAuthCode(e.target.value)}
               />
@@ -2859,7 +2857,7 @@ function SettingsTab() {
               <button
                 onClick={handleExchangeThreads}
                 disabled={exchangingThreadsCode || !threadsAuthCode.trim()}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 text-sm font-semibold disabled:opacity-50 transition-all w-full min-w-[130px]"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary hover:bg-primary-dark text-white px-5 py-2 text-sm font-semibold disabled:opacity-50 transition-all w-full min-w-[130px]"
               >
                 {exchangingThreadsCode ? (
                   <Loader2 size={14} className="animate-spin" />
