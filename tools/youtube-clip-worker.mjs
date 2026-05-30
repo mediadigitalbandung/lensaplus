@@ -30,6 +30,16 @@ import { randomBytes, createDecipheriv } from "node:crypto";
 import path from "node:path";
 import os from "node:os";
 
+// This worker is a plain Node process — unlike Next.js it does NOT auto-load
+// .env. Load it from the app dir (pm2 cwd) so DATABASE_URL / CRON_SECRET /
+// DEEPGRAM_API_KEY are available BEFORE PrismaClient initialises. Guarded:
+// harmless if the file is absent or the vars are already exported.
+try {
+  process.loadEnvFile(path.join(process.cwd(), ".env"));
+} catch {
+  /* no .env here or unsupported Node — rely on exported env */
+}
+
 const prisma = new PrismaClient();
 
 const POLL_INTERVAL_MS = 5000;
