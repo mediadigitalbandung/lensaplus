@@ -416,7 +416,7 @@ async function runPublisher(
  */
 export async function publishArticleToSocial(
   articleId: string,
-  targetPlatform?: "INSTAGRAM" | "FACEBOOK" | "ALL",
+  targetPlatform?: "INSTAGRAM" | "FACEBOOK" | "THREADS" | "ALL",
   targetIsStory?: boolean,
 ): Promise<OrchestratorResult> {
   const results: OrchestratorPlatformResult[] = [];

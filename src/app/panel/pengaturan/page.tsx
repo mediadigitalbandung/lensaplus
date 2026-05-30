@@ -31,6 +31,7 @@ import {
   Instagram,
   Facebook,
   Twitter,
+  Share2,
   Cloud,
   Mail,
   Bot,
@@ -547,7 +548,7 @@ export default function PengaturanPage() {
   }
 
   async function saveSocialScope(
-    scope: "global" | "instagram" | "facebook",
+    scope: "global" | "instagram" | "facebook" | "threads",
     data: Record<string, unknown>,
   ) {
     const sectionKey = `social_${scope}`;
