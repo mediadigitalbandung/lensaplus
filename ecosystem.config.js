@@ -58,6 +58,9 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         APP_URL: "http://127.0.0.1:3000",
+        // Ensure yt-dlp + its deno JS runtime (for YouTube's nsig challenge)
+        // and ffmpeg are resolvable when the worker spawns them.
+        PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       },
       out_file: "/root/.pm2/logs/kartawarta-youtube-worker-out.log",
       error_file: "/root/.pm2/logs/kartawarta-youtube-worker-error.log",
