@@ -130,6 +130,7 @@ model User {
   articles         Article[]
   auditLogs        AuditLog[]
   liveBlogs        LiveBlog[]
+  scrapedUrlClaims ScrapedUrl[]
 
   @@map("users")
 }
@@ -687,10 +688,49 @@ model NewsSource {
   lastError          String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+  urlClaims          ScrapedUrl[]
 
   @@index([isActive, priority])
   @@index([categoryId])
   @@map("news_sources")
+}
+
+/// Global, cross-source claim/dedup ledger for scraped upstream URLs.
+///
+/// `url @unique` is the lock that guarantees ONE upstream article →
+/// exactly ONE Kartawarta draft, even when several writers (any role)
+/// scrape the same source at the same time. First writer to insert the
+/// row wins ("siapa cepat dia dapat"); a concurrent insert hits the
+/// unique constraint (P2002) and is rejected, so no two writers ever
+/// turn the same article into two drafts.
+///
+/// status:
+///   CLAIMED — a writer is mid-scrape (or the row was just reserved).
+///             Acts as a short-lived lock; a stale CLAIMED row (older
+///             than the takeover window with no articleId) can be taken
+///             over if the original run crashed.
+///   DONE    — paraphrase finished, `articleId` points at the draft.
+model ScrapedUrl {
+  id          String      @id @default(cuid())
+  url         String      @unique
+  status      String      @default("CLAIMED")
+  source      NewsSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  sourceId    String?
+  /// Writer who claimed/scraped this URL (the byline of the draft).
+  scrapedBy   User?       @relation(fields: [scrapedById], references: [id], onDelete: SetNull)
+  scrapedById String?
+  /// Resulting draft Article id (set when status flips to DONE). Plain
+  /// reference — no FK so deleting the article never cascades here and
+  /// the URL stays claimed (won't be re-scraped into a fresh duplicate).
+  articleId   String?
+  claimedAt   DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([sourceId])
+  @@index([scrapedById])
+  @@index([status])
+  @@map("scraped_urls")
 }
 
 enum GlossaryRanah {

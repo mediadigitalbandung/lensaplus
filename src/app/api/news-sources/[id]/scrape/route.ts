@@ -29,9 +29,13 @@ import { fetchListing } from "@/lib/scraper/fetch-listing";
 import { crawlListings } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
-import { getScraperAuthor } from "@/lib/scraper/author";
-
-const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
+import {
+  claimUrl,
+  finalizeClaim,
+  releaseClaim,
+  getClaimsForUrls,
+} from "@/lib/scraper/claim";
+import { SCRAPER_ROLES } from "@/lib/roles";
 
 const bodySchema = z.object({
   limit: z.number().int().min(1).max(10).optional(),
@@ -47,7 +51,7 @@ export async function POST(
   const params = await paramsPromise;
   const started = Date.now();
   try {
-    const session = await requireRole([...ADMIN_ROLES]);
+    const session = await requireRole([...SCRAPER_ROLES]);
 
     const source = await prisma.newsSource.findUnique({
       where: { id: params.id },
@@ -98,10 +102,15 @@ export async function POST(
       throw new ApiError(`Gagal fetch listing: ${msg}`, 502);
     }
 
-    // 2. Filter new URLs (not yet scraped)
+    // 2. Filter new URLs — exclude both the legacy per-source list AND
+    //    anything already claimed/done in the global ledger, so the
+    //    `limit` budget is spent only on genuinely-fresh articles.
     const scrapedSet = new Set(source.scrapedUrls);
+    const globalClaims = await getClaimsForUrls(
+      listing.items.map((i) => i.url),
+    );
     const newCandidates = listing.items.filter(
-      (i) => !scrapedSet.has(i.url),
+      (i) => !scrapedSet.has(i.url) && !globalClaims.has(i.url),
     );
 
     if (newCandidates.length === 0) {
@@ -123,6 +132,8 @@ export async function POST(
     const results: Array<{
       sourceUrl: string;
       ok: boolean;
+      /** True when skipped because another writer already claimed it. */
+      skipped?: boolean;
       articleId?: string;
       slug?: string;
       title?: string;
@@ -132,12 +143,34 @@ export async function POST(
       featuredImage?: string | null;
     }> = [];
     const newlyScrapedUrls: string[] = [];
-    // Scraper drafts always carry the configured author (default: Owen),
-    // not the operator who clicked Scrape. This keeps the byline
-    // consistent regardless of which admin triggers the run.
-    const scraperAuthor = await getScraperAuthor();
+    let skippedClaimed = 0;
+    // Byline = the writer who clicked Scrape (operator attribution). Each
+    // writer's scraped drafts land in their own queue, which is part of
+    // how concurrent scraping stays conflict-free.
+    const operatorId = session.user.id;
+    const operatorName = session.user.name;
 
     for (const candidate of newCandidates.slice(0, limit)) {
+      // Atomically claim the URL globally before spending any AI tokens.
+      // If another writer grabbed it in the meantime, skip — no duplicate.
+      const claim = await claimUrl({
+        url: candidate.url,
+        sourceId: source.id,
+        userId: operatorId,
+      });
+      if (!claim.ok) {
+        skippedClaimed++;
+        results.push({
+          sourceUrl: candidate.url,
+          ok: false,
+          skipped: true,
+          error:
+            claim.reason === "already-scraped"
+              ? "Sudah pernah di-scrape penulis lain"
+              : "Sedang di-scrape penulis lain",
+        });
+        continue;
+      }
       try {
         const detail = await fetchArticle(candidate.url, {
           contentSelector: source.contentSelector || undefined,
@@ -147,12 +180,13 @@ export async function POST(
         const draft = await paraphraseAndCreateDraft({
           source: detail,
           sourceName: source.name,
-          authorId: scraperAuthor.id,
-          authorName: scraperAuthor.name,
+          authorId: operatorId,
+          authorName: operatorName,
           categoryId,
           defaultTags: source.defaultTags,
           downloadImage: true,
         });
+        await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);
         results.push({
           sourceUrl: candidate.url,
           ok: true,
@@ -165,6 +199,8 @@ export async function POST(
         });
         newlyScrapedUrls.push(candidate.url);
       } catch (e) {
+        // Scrape failed — release the claim so the URL can be retried.
+        await releaseClaim(claim.claimId, claim.claimToken);
         results.push({
           sourceUrl: candidate.url,
           ok: false,
@@ -199,7 +235,8 @@ export async function POST(
           listingUrl: source.listingUrl,
           attempted: results.length,
           ok: successes,
-          failed: results.length - successes,
+          skipped: skippedClaimed,
+          failed: results.length - successes - skippedClaimed,
           durationMs: Date.now() - started,
         }),
       );
@@ -214,7 +251,8 @@ export async function POST(
       newCandidates: newCandidates.length,
       attempted: results.length,
       ok: successes,
-      failed: results.length - successes,
+      skipped: skippedClaimed,
+      failed: results.length - successes - skippedClaimed,
       results,
       durationMs: Date.now() - started,
     });

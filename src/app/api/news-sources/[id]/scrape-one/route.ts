@@ -26,9 +26,8 @@ import {
 } from "@/lib/api-utils";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
-import { getScraperAuthor } from "@/lib/scraper/author";
-
-const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
+import { claimUrl, finalizeClaim, releaseClaim } from "@/lib/scraper/claim";
+import { SCRAPER_ROLES } from "@/lib/roles";
 
 const bodySchema = z.object({
   url: z.string().url(),
@@ -44,7 +43,7 @@ export async function POST(
   const params = await paramsPromise;
   const started = Date.now();
   try {
-    const session = await requireRole([...ADMIN_ROLES]);
+    const session = await requireRole([...SCRAPER_ROLES]);
 
     const source = await prisma.newsSource.findUnique({
       where: { id: params.id },
@@ -69,10 +68,27 @@ export async function POST(
       );
     }
 
-    // Dedup
+    // Legacy per-source dedup (fast path for already-known URLs).
     if (source.scrapedUrls.includes(data.url)) {
       return successResponse({
         skipped: "already-scraped",
+        url: data.url,
+      });
+    }
+
+    // Global atomic claim — first writer to grab this URL wins; everyone
+    // else gets a clean "already taken" instead of a duplicate draft.
+    const claim = await claimUrl({
+      url: data.url,
+      sourceId: source.id,
+      userId: session.user.id,
+    });
+    if (!claim.ok) {
+      return successResponse({
+        skipped:
+          claim.reason === "already-scraped"
+            ? "already-scraped"
+            : "in-progress",
         url: data.url,
       });
     }
@@ -87,26 +103,33 @@ export async function POST(
       categoryId = fallback?.id ?? null;
     }
     if (!categoryId) {
+      await releaseClaim(claim.claimId, claim.claimToken);
       throw new ApiError("Tidak ada kategori untuk artikel", 500);
     }
 
-    // Fetch + paraphrase + create draft
-    const detail = await fetchArticle(data.url, {
-      contentSelector: source.contentSelector || undefined,
-      imageSelector: source.imageSelector || undefined,
-      useHeadless: source.useHeadless,
-    });
-
-    const scraperAuthor = await getScraperAuthor();
-    const draft = await paraphraseAndCreateDraft({
-      source: detail,
-      sourceName: source.name,
-      authorId: scraperAuthor.id,
-      authorName: scraperAuthor.name,
-      categoryId,
-      defaultTags: source.defaultTags,
-      downloadImage: true,
-    });
+    // Fetch + paraphrase + create draft. Byline = the writer who clicked.
+    let draft;
+    try {
+      const detail = await fetchArticle(data.url, {
+        contentSelector: source.contentSelector || undefined,
+        imageSelector: source.imageSelector || undefined,
+        useHeadless: source.useHeadless,
+      });
+      draft = await paraphraseAndCreateDraft({
+        source: detail,
+        sourceName: source.name,
+        authorId: session.user.id,
+        authorName: session.user.name,
+        categoryId,
+        defaultTags: source.defaultTags,
+        downloadImage: true,
+      });
+    } catch (e) {
+      // Release the claim so the URL can be retried by anyone.
+      await releaseClaim(claim.claimId, claim.claimToken);
+      throw e;
+    }
+    await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);
 
     // Persist progress
     await prisma.newsSource.update({

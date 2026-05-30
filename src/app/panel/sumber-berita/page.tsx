@@ -1,12 +1,16 @@
 "use client";
 
 /**
- * Sumber Berita Panel — SUPER_ADMIN / CHIEF_EDITOR only
+ * Sumber Berita Panel — open to EVERY writer role.
  *
- * Manage the NewsSource list: add a listing URL of an upstream press
- * site (e.g. https://www.bankbjb.co.id/page/berita), preview the
- * articles the scraper detects, and trigger manual scrape runs that
- * paraphrase 1–3 new items per click and drop them as DRAFTs.
+ * Anyone (SUPER_ADMIN → CONTRIBUTOR) can browse sources, preview the
+ * articles the scraper detects, and generate DRAFTs from them. Each
+ * upstream URL is claimed globally before scraping (ScrapedUrl ledger),
+ * so two writers can never turn the same article into two drafts — first
+ * to grab it wins; everyone else sees it as "sudah diambil".
+ *
+ * Managing the source catalogue (add / edit / toggle / delete) stays
+ * limited to SUPER_ADMIN & CHIEF_EDITOR (`canManage`).
  *
  * Cron `/api/cron/scrape-sources` walks all active sources hourly
  * and obeys each source's `frequencyHours` (1–24).
@@ -14,6 +18,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   Globe,
   Plus,
@@ -29,9 +34,11 @@ import {
   CheckCircle,
   X,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { MANAGEMENT_ROLES } from "@/lib/roles";
 
 interface Category {
   id: string;
@@ -71,6 +78,10 @@ interface PreviewItem {
   thumbnail?: string;
   snippet?: string;
   alreadyScraped: boolean;
+  /** Name of the writer who already claimed this URL (null = free). */
+  claimedBy?: string | null;
+  /** "CLAIMED" (in progress) | "DONE" (already a draft) | null. */
+  claimStatus?: string | null;
 }
 
 interface PreviewResponse {
@@ -92,6 +103,10 @@ function fmtDate(iso: string | null): string {
 }
 
 export default function SumberBeritaPage() {
+  const { data: session } = useSession();
+  // Managing the catalogue (add/edit/toggle/delete) is management-only.
+  // Scraping itself is open to every writer role.
+  const canManage = MANAGEMENT_ROLES.includes(session?.user?.role ?? "");
   const [sources, setSources] = useState<NewsSource[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +189,11 @@ export default function SumberBeritaPage() {
       if (d.skipped === "no-new-articles") {
         success("Tidak ada artikel baru — semua sudah pernah di-scrape");
       } else {
-        success(`Selesai: ${d.ok} draft baru dibuat dari ${d.attempted} percobaan`);
+        const skippedNote =
+          typeof d.skipped === "number" && d.skipped > 0
+            ? `, ${d.skipped} dilewati (sudah diambil penulis lain)`
+            : "";
+        success(`Selesai: ${d.ok} draft baru dibuat${skippedNote}`);
       }
       fetchSources();
     } catch {
@@ -241,16 +260,22 @@ export default function SumberBeritaPage() {
             Sumber Berita
           </h1>
           <p className="mt-1 max-w-3xl text-sm text-txt-secondary">
-            Tambahkan link halaman daftar berita resmi (mis. <code className="text-xs font-mono">https://www.bankbjb.co.id/page/berita</code>).
-            Kartawarta akan otomatis ambil judul, isi, dan gambar, lalu paraphrase via AI menjadi draft baru.
+            Pilih sumber, <strong>Preview</strong>, lalu <strong>Generate</strong> — Kartawarta ambil judul, isi, dan
+            gambar, paraphrase via AI jadi draft baru atas nama Anda. Setiap artikel <strong>dikunci begitu diambil</strong>:
+            kalau penulis lain sudah mengambilnya, artikel itu otomatis terkunci dan tidak bisa diambil dobel.
+            {canManage && (
+              <> Sebagai pengelola, Anda juga bisa menambah/ubah/hapus sumber.</>
+            )}
           </p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="btn-primary flex items-center gap-1.5"
-        >
-          <Plus size={16} /> Tambah Sumber
-        </button>
+        {canManage && (
+          <button
+            onClick={() => setShowAdd(true)}
+            className="btn-primary flex items-center gap-1.5"
+          >
+            <Plus size={16} /> Tambah Sumber
+          </button>
+        )}
       </div>
 
       {/* Legal banner */}
@@ -278,7 +303,9 @@ export default function SumberBeritaPage() {
           <Globe size={48} className="mx-auto text-txt-muted/40" />
           <p className="mt-4 text-base font-medium text-txt-primary">Belum ada sumber berita</p>
           <p className="mt-1 text-sm text-txt-secondary">
-            Tambah link halaman daftar berita untuk mulai auto-paraphrase
+            {canManage
+              ? "Tambah link halaman daftar berita untuk mulai auto-paraphrase"
+              : "Belum ada sumber yang disiapkan. Hubungi editor atau admin untuk menambahkannya."}
           </p>
         </div>
       ) : (
@@ -379,29 +406,33 @@ export default function SumberBeritaPage() {
                     )}
                     Scrape Now
                   </button>
-                  <button
-                    onClick={() => setEditing(s)}
-                    className="btn-ghost text-xs"
-                    title="Edit"
-                  >
-                    <Edit size={14} />
-                  </button>
-                  <button
-                    onClick={() => handleToggle(s)}
-                    disabled={busyId === s.id}
-                    className="btn-ghost text-xs disabled:opacity-50"
-                    title={s.isActive ? "Nonaktifkan" : "Aktifkan"}
-                  >
-                    {s.isActive ? <PowerOff size={14} /> : <Power size={14} />}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(s)}
-                    disabled={busyId === s.id}
-                    className="btn-ghost text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
-                    title="Hapus"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {canManage && (
+                    <>
+                      <button
+                        onClick={() => setEditing(s)}
+                        className="btn-ghost text-xs"
+                        title="Edit"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleToggle(s)}
+                        disabled={busyId === s.id}
+                        className="btn-ghost text-xs disabled:opacity-50"
+                        title={s.isActive ? "Nonaktifkan" : "Aktifkan"}
+                      >
+                        {s.isActive ? <PowerOff size={14} /> : <Power size={14} />}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(s)}
+                        disabled={busyId === s.id}
+                        className="btn-ghost text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        title="Hapus"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -409,7 +440,8 @@ export default function SumberBeritaPage() {
         </div>
       )}
 
-      {/* Cron trigger info */}
+      {/* Cron trigger info — management only (server crontab config) */}
+      {canManage && (
       <div className="mt-8 rounded-xl bg-surface-container-low p-5 text-sm text-txt-secondary">
         <div className="flex items-start gap-2">
           <RefreshCw size={16} className="mt-0.5 text-primary flex-shrink-0" />
@@ -426,9 +458,10 @@ export default function SumberBeritaPage() {
           </div>
         </div>
       </div>
+      )}
 
-      {/* Add / Edit modal */}
-      {(showAdd || editing) && (
+      {/* Add / Edit modal — management only */}
+      {canManage && (showAdd || editing) && (
         <SourceFormModal
           source={editing}
           categories={categories}
@@ -875,12 +908,15 @@ function PreviewModal({
         return;
       }
       const d = json.data;
-      if (d.skipped === "already-scraped") {
+      if (d.skipped) {
+        // Either already a draft ("already-scraped") or another writer is
+        // mid-scrape ("in-progress"). Either way it's locked — mark done so
+        // the card flips and the Generate button disappears.
         setScrapedSet((prev) => new Set(prev).add(url));
-        // No articleId returned on the dedup early-exit — fall back to URL-based
-        // link to the panel article list filtered by source URL won't work, so
-        // mark "done" without an articleId; user opens via panel artikel list.
         setItemState((s) => ({ ...s, [url]: { status: "done" } }));
+        if (d.skipped === "in-progress") {
+          showError("Artikel ini sedang diambil penulis lain.");
+        }
         return;
       }
       setScrapedSet((prev) => new Set(prev).add(url));
@@ -1048,7 +1084,15 @@ function PreviewModal({
                           </p>
                         )}
                         <div className="mt-1 flex items-center gap-1.5">
-                          {isDone ? (
+                          {item.claimedBy ? (
+                            <span
+                              className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500"
+                              title={`Terkunci — diambil oleh ${item.claimedBy}`}
+                            >
+                              <Lock size={10} />
+                              {item.claimStatus === "CLAIMED" ? "Sedang diambil" : "Diambil"} {item.claimedBy}
+                            </span>
+                          ) : isDone ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
                               <CheckCircle size={10} /> Sudah jadi draft
                             </span>

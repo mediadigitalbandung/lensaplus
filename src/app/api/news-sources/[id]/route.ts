@@ -15,6 +15,7 @@ import {
   logAudit,
 } from "@/lib/api-utils";
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
+import { SCRAPER_ROLES } from "@/lib/roles";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
 
@@ -47,7 +48,7 @@ export async function GET(
 ) {
   const params = await paramsPromise;
   try {
-    await requireRole([...ADMIN_ROLES]);
+    await requireRole([...SCRAPER_ROLES]);
     const source = await prisma.newsSource.findUnique({
       where: { id: params.id },
       include: { category: { select: { id: true, name: true, slug: true } } },

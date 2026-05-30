@@ -17,7 +17,9 @@ import {
   logAudit,
 } from "@/lib/api-utils";
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
+import { SCRAPER_ROLES } from "@/lib/roles";
 
+// Managing the source catalogue (create/edit/delete) stays with management.
 const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
 
 const createSchema = z.object({
@@ -45,7 +47,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await requireRole([...ADMIN_ROLES]);
+    // Any writer may browse the source list to pick something to scrape.
+    await requireRole([...SCRAPER_ROLES]);
     const sources = await prisma.newsSource.findMany({
       orderBy: [{ isActive: "desc" }, { priority: "desc" }, { name: "asc" }],
       include: {

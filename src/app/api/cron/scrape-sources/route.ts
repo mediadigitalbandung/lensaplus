@@ -22,6 +22,12 @@ import { crawlListings } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
 import { getScraperAuthor } from "@/lib/scraper/author";
+import {
+  claimUrl,
+  finalizeClaim,
+  releaseClaim,
+  getClaimsForUrls,
+} from "@/lib/scraper/claim";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -123,8 +129,11 @@ async function handler(req: NextRequest) {
           : await fetchListing(source.listingUrl, baseOpts);
 
         const scrapedSet = new Set(source.scrapedUrls);
+        const cronGlobalClaims = await getClaimsForUrls(
+          listing.items.map((i) => i.url),
+        );
         const newCandidates = listing.items.filter(
-          (i) => !scrapedSet.has(i.url),
+          (i) => !scrapedSet.has(i.url) && !cronGlobalClaims.has(i.url),
         );
 
         let categoryId = source.categoryId;
@@ -150,6 +159,16 @@ async function handler(req: NextRequest) {
             sourceResult.attempted++;
             continue;
           }
+          // Atomic global claim — skip anything a writer grabbed since the
+          // pre-filter, so cron and writers never produce duplicates.
+          const claim = await claimUrl({
+            url: candidate.url,
+            sourceId: source.id,
+            userId: admin.id,
+          });
+          if (!claim.ok) {
+            continue; // claimed/done elsewhere — not counted as attempt
+          }
           sourceResult.attempted++;
           try {
             const detail = await fetchArticle(candidate.url, {
@@ -166,6 +185,7 @@ async function handler(req: NextRequest) {
               defaultTags: source.defaultTags,
               downloadImage: true,
             });
+            await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);
             sourceResult.drafts.push({
               sourceUrl: candidate.url,
               ok: true,
@@ -175,6 +195,7 @@ async function handler(req: NextRequest) {
             totalOk++;
             newlyScrapedUrls.push(candidate.url);
           } catch (e) {
+            await releaseClaim(claim.claimId, claim.claimToken);
             sourceResult.drafts.push({
               sourceUrl: candidate.url,
               ok: false,

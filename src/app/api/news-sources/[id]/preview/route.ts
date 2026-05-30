@@ -16,8 +16,8 @@ import {
 } from "@/lib/api-utils";
 import { fetchListing } from "@/lib/scraper/fetch-listing";
 import { crawlListings } from "@/lib/scraper/crawl-listings";
-
-const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
+import { getClaimsForUrls } from "@/lib/scraper/claim";
+import { SCRAPER_ROLES } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,7 +28,7 @@ export async function POST(
 ) {
   const params = await paramsPromise;
   try {
-    await requireRole([...ADMIN_ROLES]);
+    await requireRole([...SCRAPER_ROLES]);
     const source = await prisma.newsSource.findUnique({
       where: { id: params.id },
     });
@@ -65,12 +65,21 @@ export async function POST(
       selectorUsed = r.selectorUsed;
     }
 
-    // Mark which items are already scraped (dedup).
+    // Mark which items are already scraped — both the legacy per-source
+    // list AND the global claim ledger (so a URL another writer already
+    // grabbed from any source shows as taken, with who took it).
     const scrapedSet = new Set(source.scrapedUrls);
-    const enriched = items.map((item) => ({
-      ...item,
-      alreadyScraped: scrapedSet.has(item.url),
-    }));
+    const claims = await getClaimsForUrls(items.map((i) => i.url));
+    const enriched = items.map((item) => {
+      const claim = claims.get(item.url);
+      return {
+        ...item,
+        alreadyScraped: scrapedSet.has(item.url) || !!claim,
+        // Who already claimed/scraped this URL (null = free to grab).
+        claimedBy: claim?.scrapedByName ?? null,
+        claimStatus: claim?.status ?? null, // "CLAIMED" | "DONE" | null
+      };
+    });
 
     return successResponse({
       selectorUsed,
