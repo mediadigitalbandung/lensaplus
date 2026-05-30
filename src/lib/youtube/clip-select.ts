@@ -79,7 +79,8 @@ export function buildClipSelectionPrompt(
     `JANGAN mengarang timestamp. Rujuk HANYA nomor segmen [idx] yang diberikan. Pilih rentang segmen (segmentStartIdx..segmentEndIdx) yang total durasinya masuk rentang di atas.`,
     `Tulis hookCaption dalam Bahasa ${lang}: 1 kalimat menarik (maks ~120 karakter) sebagai teks pembuka klip.`,
     `Balas HANYA JSON valid (tanpa markdown, tanpa penjelasan di luar JSON) dengan bentuk:`,
-    `{"clips":[{"segmentStartIdx":<int>,"segmentEndIdx":<int>,"hookCaption":"<string>","viralityScore":<0-100>,"reason":"<ringkas>"}]}`,
+    `{"clips":[{"segmentStartIdx":<int>,"segmentEndIdx":<int>,"hookCaption":"<string>","viralityScore":<0-100>,"reason":"<maks 8 kata>"}]}`,
+    `Buat "reason" sangat singkat (maksimal 8 kata) agar respons tidak terlalu panjang.`,
   ].join("\n");
 
   const lines: string[] = [];
@@ -177,7 +178,7 @@ export function validateAndMapClips(
     if (!startSeg || !endSeg) continue;
     if (!c.hookCaption) continue;
 
-    let startMs = Math.round(startSeg.start * 1000);
+    const startMs = Math.round(startSeg.start * 1000);
     let endMs = Math.round(endSeg.end * 1000);
     if (endMs <= startMs) continue;
 
@@ -218,4 +219,44 @@ export function validateAndMapClips(
   // Return in chronological order for a natural review experience.
   chosen.sort((a, b) => a.startMs - b.startMs);
   return chosen;
+}
+
+/**
+ * Partition segments into time-contiguous chunks whose serialized prompt size
+ * stays under `charBudget`. Long videos ("video panjang" is the stated use
+ * case) are selected chunk-by-chunk so a single prompt never overflows the
+ * model context (esp. the smaller DeepSeek fallback window) or the per-call
+ * timeout. Chunks are time-disjoint, so clips from different chunks cannot
+ * overlap and merge by simple concatenation + global score-cap.
+ */
+export function chunkSegments(
+  segments: TranscriptSegment[],
+  charBudget = 28000,
+): TranscriptSegment[][] {
+  const chunks: TranscriptSegment[][] = [];
+  let cur: TranscriptSegment[] = [];
+  let size = 0;
+  for (const s of segments) {
+    const lineLen = (s.text?.length ?? 0) + 16; // "[idx] mm:ss " overhead
+    if (cur.length && size + lineLen > charBudget) {
+      chunks.push(cur);
+      cur = [];
+      size = 0;
+    }
+    cur.push(s);
+    size += lineLen;
+  }
+  if (cur.length) chunks.push(cur);
+  return chunks;
+}
+
+/**
+ * Merge per-chunk clip plans into a final global set: highest score first,
+ * capped to `count`, returned chronologically. Chunks are time-disjoint so no
+ * cross-chunk overlap is possible.
+ */
+export function mergeClipPlans(plans: ClipPlan[], count: number): ClipPlan[] {
+  const top = [...plans].sort((a, b) => b.score - a.score).slice(0, Math.max(1, count));
+  top.sort((a, b) => a.startMs - b.startMs);
+  return top;
 }

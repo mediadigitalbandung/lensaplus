@@ -37,6 +37,8 @@ export interface CallAIOptions {
   userId?: string;
   articleTitle?: string;
   forceProvider?: "anthropic" | "deepseek";
+  /** Override the 60s default per-call timeout (ms). */
+  timeoutMs?: number;
 }
 
 export interface CallAIResult {
@@ -143,7 +145,7 @@ async function callAnthropic(
   const start = Date.now();
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
   try {
     const response = await client.messages.create(
@@ -189,7 +191,7 @@ async function callDeepSeek(
 ): Promise<CallAIResult> {
   const start = Date.now();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
   try {
     const response = await fetch(DEEPSEEK_ENDPOINT, {

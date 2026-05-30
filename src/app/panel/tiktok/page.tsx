@@ -14,6 +14,11 @@ import {
   AlertCircle,
   Inbox,
   Sparkles,
+  Youtube,
+  X,
+  Loader2,
+  Scissors,
+  ExternalLink,
 } from "lucide-react";
 
 interface SlotPreview {
@@ -90,6 +95,7 @@ export default function TiktokListPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [ytOpen, setYtOpen] = useState(false);
 
   const fetchContents = useCallback(async () => {
     try {
@@ -143,6 +149,14 @@ export default function TiktokListPage() {
           <Link href="/panel/tiktok/akun" className="btn-secondary text-sm">
             Kelola Akun
           </Link>
+          <button
+            type="button"
+            onClick={() => setYtOpen(true)}
+            className="btn-secondary flex items-center gap-1.5 text-sm"
+          >
+            <Youtube size={16} className="text-red-600" />
+            Import YouTube
+          </button>
           <Link href="/panel/tiktok/baru" className="btn-primary flex items-center gap-1.5 text-sm">
             <Plus size={16} />
             Buat Konten
@@ -304,6 +318,291 @@ export default function TiktokListPage() {
           })}
         </div>
       )}
+
+      <YoutubeImportModal open={ytOpen} onClose={() => setYtOpen(false)} onDone={fetchContents} />
+    </div>
+  );
+}
+
+interface YtJobStatus {
+  status: string;
+  stage: string | null;
+  progress: number;
+  errorMessage?: string | null;
+  resultContentIds: string[];
+  clipCount?: number;
+  contents: Array<{ id: string; title: string; status: string; slots: number }>;
+}
+
+const YT_STAGE_LABEL: Record<string, string> = {
+  DOWNLOADING: "Mengunduh video",
+  TRANSCRIBING: "Transkripsi audio",
+  SELECTING: "AI memilih potongan",
+  CUTTING: "Memotong klip",
+  CREATING_CONTENTS: "Membuat draft konten",
+};
+
+function YoutubeImportModal({
+  open,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [url, setUrl] = useState("");
+  const [clips, setClips] = useState(5);
+  const [targetLength, setTargetLength] = useState(30);
+  const [reframe, setReframe] = useState(true);
+  const [rightsBasis, setRightsBasis] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [job, setJob] = useState<YtJobStatus | null>(null);
+
+  useEffect(() => {
+    if (!jobId) return;
+    let active = true;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/tiktok/youtube/jobs/${jobId}`);
+        const j = await res.json();
+        if (active && res.ok && j.success) {
+          setJob(j.data as YtJobStatus);
+          if (j.data.status === "SUCCEEDED" || j.data.status === "FAILED") {
+            onDone();
+            return true;
+          }
+        }
+      } catch {
+        /* keep polling */
+      }
+      return false;
+    };
+    const id = setInterval(async () => {
+      if (await poll()) clearInterval(id);
+    }, 4000);
+    poll();
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [jobId, onDone]);
+
+  if (!open) return null;
+
+  const submit = async () => {
+    if (!url.trim()) {
+      setError("Tempel URL video YouTube dulu.");
+      return;
+    }
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/tiktok/youtube/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: url.trim(),
+          clips,
+          targetLengthSec: targetLength,
+          reframe,
+          rightsBasis: rightsBasis.trim() || null,
+        }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.success) throw new Error(j.error || "Gagal memulai import");
+      setJobId(j.data.jobId);
+      setJob({ status: "QUEUED", stage: null, progress: 0, resultContentIds: [], contents: [] });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal memulai import");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const reset = () => {
+    setJobId(null);
+    setJob(null);
+  };
+  const close = () => {
+    reset();
+    setUrl("");
+    setError("");
+    onClose();
+  };
+
+  const running = jobId && job && job.status !== "SUCCEEDED" && job.status !== "FAILED";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border p-4">
+          <h3 className="flex items-center gap-2 text-base font-bold text-txt-primary">
+            <Youtube size={18} className="text-red-600" />
+            Import & Auto-Clip dari YouTube
+          </h3>
+          <button onClick={close} className="rounded p-1 text-txt-muted hover:bg-surface-secondary">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto p-4">
+          <div className="flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-[11px] text-yellow-800">
+            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <span>
+              Semua klip dibuat sebagai <strong>DRAFT</strong> untuk ditinjau editor sebelum tayang.
+              Pastikan kamu punya hak atas video (konten sendiri / berlisensi / kutipan wajar dengan
+              atribusi) — tanggung jawab hak cipta ada di redaksi.
+            </span>
+          </div>
+
+          {error && (
+            <div className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">{error}</div>
+          )}
+
+          {!jobId && (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-txt-primary">URL Video YouTube</label>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="input w-full text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-txt-primary">Jumlah klip</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={clips}
+                    onChange={(e) => setClips(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+                    className="input w-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-txt-primary">Panjang/klip (detik)</label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={60}
+                    value={targetLength}
+                    onChange={(e) => setTargetLength(Math.max(5, Math.min(60, parseInt(e.target.value) || 30)))}
+                    className="input w-full text-sm"
+                  />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-xs text-txt-primary">
+                <input type="checkbox" checked={reframe} onChange={(e) => setReframe(e.target.checked)} />
+                Reframe ke vertikal 9:16 (disarankan untuk TikTok)
+              </label>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-txt-primary">Dasar hak (opsional, untuk audit)</label>
+                <input
+                  type="text"
+                  value={rightsBasis}
+                  onChange={(e) => setRightsBasis(e.target.value)}
+                  placeholder="mis. channel sendiri / lisensi Antara / kutipan wajar"
+                  className="input w-full text-sm"
+                />
+              </div>
+            </>
+          )}
+
+          {jobId && job && (
+            <div className="space-y-3">
+              {running && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-txt-primary">
+                    <Loader2 size={14} className="animate-spin text-primary" />
+                    {job.stage ? YT_STAGE_LABEL[job.stage] || job.stage : "Menunggu antrean…"}
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded bg-surface-secondary">
+                    <div className="h-full bg-primary transition-all" style={{ width: `${job.progress}%` }} />
+                  </div>
+                  <p className="text-[11px] text-txt-muted">
+                    Proses berjalan di server (unduh + transkripsi + AI + potong). Boleh ditutup — hasil
+                    muncul di daftar konten saat selesai.
+                  </p>
+                </div>
+              )}
+
+              {job.status === "SUCCEEDED" && (
+                <div className="space-y-2">
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
+                    <Scissors size={14} /> {job.contents.length} klip DRAFT dibuat
+                  </p>
+                  <ul className="space-y-1">
+                    {job.contents.map((c) => (
+                      <li key={c.id}>
+                        <Link
+                          href={`/panel/tiktok/${c.id}`}
+                          className="flex items-center justify-between rounded-md border border-border bg-surface-container-low px-3 py-2 text-xs hover:border-primary/40"
+                        >
+                          <span className="truncate text-txt-primary">{c.title}</span>
+                          <span className="ml-2 flex shrink-0 items-center gap-1 text-primary">
+                            Buka <ExternalLink size={11} />
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {job.status === "FAILED" && (
+                <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  Gagal: {job.errorMessage || "kesalahan tidak diketahui"}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-border p-4">
+          {!jobId && (
+            <>
+              <button onClick={close} className="btn-ghost text-sm" disabled={submitting}>
+                Batal
+              </button>
+              <button
+                onClick={submit}
+                disabled={submitting}
+                className="btn-primary flex items-center gap-1.5 text-sm disabled:opacity-50"
+              >
+                {submitting ? <Loader2 size={14} className="animate-spin" /> : <Scissors size={14} />}
+                Mulai Auto-Clip
+              </button>
+            </>
+          )}
+          {jobId && job?.status === "SUCCEEDED" && (
+            <>
+              <button onClick={reset} className="btn-secondary text-sm">
+                Import lagi
+              </button>
+              <button onClick={close} className="btn-primary text-sm">
+                Selesai
+              </button>
+            </>
+          )}
+          {jobId && job?.status === "FAILED" && (
+            <button onClick={reset} className="btn-primary text-sm">
+              Coba lagi
+            </button>
+          )}
+          {running && (
+            <button onClick={close} className="btn-secondary text-sm">
+              Tutup (lanjut di background)
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -8,7 +8,10 @@ import {
   parseClipSelection,
   validateAndMapClips,
   buildClipSelectionPrompt,
+  chunkSegments,
+  mergeClipPlans,
   type TranscriptSegment,
+  type ClipPlan,
 } from "@/lib/youtube/clip-select";
 import {
   buildClipArgs,
@@ -121,6 +124,45 @@ describe("clip-select.buildClipSelectionPrompt", () => {
     expect(user).toContain("[0]");
     expect(user).toContain("Ekonomi Bandung");
     expect(user).toContain("Inflasi naik tajam");
+  });
+});
+
+describe("clip-select.chunkSegments", () => {
+  it("returns a single chunk when under budget", () => {
+    expect(chunkSegments(SEGMENTS, 28000)).toHaveLength(1);
+  });
+  it("splits long transcripts into multiple time-contiguous chunks", () => {
+    const many: TranscriptSegment[] = Array.from({ length: 50 }, (_, i) => ({
+      idx: i,
+      start: i * 5,
+      end: i * 5 + 5,
+      text: "x".repeat(200),
+    }));
+    const chunks = chunkSegments(many, 1000); // ~216 chars/seg → ~4 segs/chunk
+    expect(chunks.length).toBeGreaterThan(1);
+    // every segment is preserved exactly once, in order
+    const flat = chunks.flat();
+    expect(flat).toHaveLength(50);
+    expect(flat.map((s) => s.idx)).toEqual(many.map((s) => s.idx));
+    // chunks are non-empty
+    expect(chunks.every((c) => c.length > 0)).toBe(true);
+  });
+});
+
+describe("clip-select.mergeClipPlans", () => {
+  const mk = (startMs: number, score: number): ClipPlan => ({
+    startMs,
+    endMs: startMs + 5000,
+    durationMs: 5000,
+    hookCaption: `c${startMs}`,
+    score,
+    reason: "",
+  });
+  it("keeps top-N by score but returns chronological order", () => {
+    const merged = mergeClipPlans([mk(0, 50), mk(10000, 95), mk(20000, 70)], 2);
+    expect(merged).toHaveLength(2);
+    // top-2 by score = 95 + 70; chronological → 10000 before 20000
+    expect(merged.map((c) => c.startMs)).toEqual([10000, 20000]);
   });
 });
 

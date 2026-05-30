@@ -17,6 +17,8 @@
  */
 
 import { NextRequest } from "next/server";
+import { readdir, stat, unlink } from "fs/promises";
+import path from "path";
 import { prisma } from "@/lib/prisma";
 import { verifyCronSecret, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
 
@@ -98,7 +100,39 @@ export async function POST(req: NextRequest) {
     });
     const subscriberIpAnonymized = subscriberIpResult.count;
 
-    const summary = { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged, subscriberIpAnonymized };
+    // 6. YouTube clip jobs: purge finished rows older than 30 days.
+    const clipJobResult = await prisma.youtubeClipJob.deleteMany({
+      where: { status: { in: ["SUCCEEDED", "FAILED"] }, finishedAt: { lt: subDays(now, 30) } },
+    });
+    const clipJobsPurged = clipJobResult.count;
+
+    // 7. Delete orphaned TikTok media files (not referenced by any slot) older
+    //    than 30 days. The render/clip pipelines write MP4s here that leak once
+    //    their slot/content is deleted. The 30-day age guard protects fresh
+    //    uploads not yet attached to a slot.
+    let orphanMediaDeleted = 0;
+    try {
+      const dir = path.join(process.cwd(), "public", "uploads", "tiktok-media");
+      const files = await readdir(dir).catch(() => [] as string[]);
+      if (files.length) {
+        const slots = await prisma.tiktokMediaSlot.findMany({ select: { url: true } });
+        const referenced = new Set(slots.map((s) => s.url));
+        const cutoff = subDays(now, 30).getTime();
+        for (const f of files) {
+          if (referenced.has(`/uploads/tiktok-media/${f}`)) continue;
+          const full = path.join(dir, f);
+          const st = await stat(full).catch(() => null);
+          if (st && st.isFile() && st.mtimeMs < cutoff) {
+            await unlink(full).catch(() => {});
+            orphanMediaDeleted++;
+          }
+        }
+      }
+    } catch {
+      // best-effort — never fail the cron on filesystem cleanup
+    }
+
+    const summary = { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged, subscriberIpAnonymized, clipJobsPurged, orphanMediaDeleted };
 
     // Audit the purge itself using a system sentinel. The logAudit helper requires
     // a valid userId FK — find the first SUPER_ADMIN to attach it to. If none

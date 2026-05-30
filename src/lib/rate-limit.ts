@@ -70,3 +70,9 @@ export function pollVoteRateLimit(ip: string): { success: boolean; remaining: nu
 export function tiktokUploadRateLimit(userId: string): { success: boolean; remaining: number } {
   return rateLimit(`tiktok-upload:${userId}`, 30, 5 * 60 * 1000); // 30 uploads per 5 min
 }
+
+// YouTube auto-clip import per user — each job downloads + transcodes + STT +
+// cuts, which is heavy, so keep it conservative.
+export function youtubeImportRateLimit(userId: string): { success: boolean; remaining: number } {
+  return rateLimit(`yt-import:${userId}`, 10, 60 * 60 * 1000); // 10 imports per hour
+}

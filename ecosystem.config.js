@@ -43,5 +43,29 @@ module.exports = {
       max_restarts: 10,
       min_uptime: "60s",
     },
+    {
+      // YouTube auto-clip worker — separate process (heavy yt-dlp + ffmpeg +
+      // Deepgram). Requires ffmpeg + yt-dlp installed on the VPS and env:
+      // DATABASE_URL, DEEPGRAM_API_KEY, CRON_SECRET, APP_URL.
+      name: "kartawarta-youtube-worker",
+      script: "tools/youtube-clip-worker.mjs",
+      cwd: "/var/www/kartawarta",
+      exec_mode: "fork",
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "1500M",
+      env: {
+        NODE_ENV: "production",
+        APP_URL: "http://127.0.0.1:3000",
+      },
+      out_file: "/root/.pm2/logs/kartawarta-youtube-worker-out.log",
+      error_file: "/root/.pm2/logs/kartawarta-youtube-worker-error.log",
+      merge_logs: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      kill_timeout: 15000,
+      max_restarts: 10,
+      min_uptime: "60s",
+    },
   ],
 };

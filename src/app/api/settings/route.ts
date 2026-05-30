@@ -57,6 +57,10 @@ const ALLOWED_KEYS = [
   "sorotan_batch_size",
   // IndexNow
   "indexnow_key",
+  // YouTube auto-clipper (Deepgram STT). The worker reads DEEPGRAM_API_KEY from
+  // env; this stored key powers the in-app /api/youtube/test smoke test.
+  "deepgram_api_key",
+  "youtube_clip_enabled",
 ] as const;
 
 const settingSchema = z.object({

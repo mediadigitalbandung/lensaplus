@@ -86,8 +86,15 @@ export function errorResponse(error: unknown) {
   }
   console.error("API Error:", error);
   const message = error instanceof Error ? error.message : "Internal server error";
+  // Don't leak internal error details to clients in production. Expected,
+  // user-facing errors are thrown as ApiError (handled above); anything that
+  // reaches here is unexpected — keep the detail server-side via console.error.
+  const clientMessage =
+    process.env.NODE_ENV === "production"
+      ? "Terjadi kesalahan internal pada server."
+      : message;
   return NextResponse.json(
-    { success: false, error: message },
+    { success: false, error: clientMessage },
     { status: 500 }
   );
 }

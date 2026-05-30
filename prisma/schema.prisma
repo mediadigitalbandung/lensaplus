@@ -840,6 +840,10 @@ model TiktokContent {
   hashtags        String              @default("") // comma-sep, "hukum,bandung"
   // Optional: derived from / linked to an Article
   sourceArticleId String?
+  // Provenance when auto-generated from a YouTube clip job (plain strings, no FK
+  // — same convention as sourceArticleId).
+  sourceVideoUrl  String?
+  sourceClipJobId String?
   // Output settings
   aspectRatio     TiktokAspectRatio   @default(PORTRAIT_9_16)
   duration        Int? // seconds, set after render
@@ -935,6 +939,43 @@ model TiktokRenderJob {
   @@index([contentId])
   @@index([status])
   @@map("tiktok_render_jobs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// YouTube auto-clipper — ingest a long video, AI-pick highlights, cut into
+// vertical clips that become DRAFT TiktokContents. Processed by a separate PM2
+// worker (tools/youtube-clip-worker.mjs). One job → one-or-many TiktokContents.
+// ─────────────────────────────────────────────────────────────────────────────
+model YoutubeClipJob {
+  id               String    @id @default(cuid())
+  sourceUrl        String // canonical YouTube watch URL (derived from sourceVideoId, never raw user input)
+  sourceVideoId    String    @unique // normalized YouTube id — dedup lock (P2002 = already queued)
+  engine           String    @default("INHOUSE") // INHOUSE | SAAS — worker branch
+  status           String    @default("QUEUED") // QUEUED | RUNNING | SUCCEEDED | FAILED
+  stage            String? // DOWNLOADING | TRANSCRIBING | SELECTING | CUTTING | CREATING_CONTENTS
+  progress         Int       @default(0) // 0..100, also a heartbeat for stale reclaim
+  requestedClips   Int       @default(5)
+  targetLengthSec  Int? // desired clip length hint (seconds)
+  reframe          Boolean   @default(true) // produce 9:16 vertical
+  burnCaptions     Boolean   @default(false) // burn-in subtitles — not yet implemented (follow-up)
+  // Optional pre-assignment + provenance / rights trail
+  accountId        String? // TiktokAccount to pre-assign produced contents
+  videoTitle       String?
+  rightsBasis      String? // editor-affirmed source-rights note (own/licensed/excerpt)
+  resultContentIds String[]  @default([]) // TiktokContent ids produced
+  clipCount        Int       @default(0)
+  workerId         String?
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  errorMessage     String?   @db.Text
+  requestedById    String
+  requestedByName  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt // heartbeat for stale-RUNNING reclaim
+
+  @@index([status])
+  @@index([requestedById])
+  @@map("youtube_clip_jobs")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
