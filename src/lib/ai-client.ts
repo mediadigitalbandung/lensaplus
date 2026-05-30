@@ -25,6 +25,7 @@ export type AIFeature =
   | "tag_research"
   | "bulk_tags"
   | "polling"
+  | "clip_selection"
   | "test";
 
 export interface CallAIOptions {
