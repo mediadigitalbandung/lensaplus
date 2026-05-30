@@ -139,5 +139,6 @@ Detail di [.claude/agents/README.md](.claude/agents/README.md). Orchestrator uta
 - `editorial-lead` — produksi artikel end-to-end
 - `release-lead` — pipeline build+deploy
 - `migration-lead` — eksekusi migrasi fitur sesuai `docs/FEATURE_REFERENCE.md`
+- `tiktok-lead` — otomasi TikTok sesuai `docs/TIKTOK_AUTOMATION.md` (delegasi ke `tiktok-render-engineer` Fase 2 + `tiktok-publish-engineer` Fase 3). Panggil saat user bilang **"lanjut tiktok"** / **"lanjut tiktok fase 2/3"**.
 
 Cara kerja `migration-lead`: saat user bilang **"lanjut"** / **"lanjutkan migrasi"**, dia baca `MIGRATION_PROGRESS.md`, pick task `[ ]` pertama yang dependensinya sudah `[x]`, delegasi ke specialist yang tepat, validasi hasil, update ke `[x]`, lanjut task berikutnya. User hanya dipanggil kalau butuh input (API key, breaking change confirm) atau fase selesai.

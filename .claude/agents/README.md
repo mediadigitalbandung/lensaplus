@@ -9,6 +9,7 @@ Saat user minta sesuatu ke Claude Code:
 - **Permintaan coding multi-layer** (fitur baru, refactor) → panggil `tech-lead`
 - **Mau rilis ke production** → panggil `release-lead`
 - **Eksekusi migrasi fitur** (samakan dengan `docs/FEATURE_REFERENCE.md`) → panggil `migration-lead`
+- **Otomasi TikTok** (lanjut render Fase 2 / auto-post Fase 3) → panggil `tiktok-lead`
 - **Audit menyeluruh project** (security + perf + SEO + a11y + DB + …) → panggil `audit-lead`
 - **Audit responsiveness di semua device** (320px hingga 4K) → panggil `responsive-lead`
 - **Tugas tunggal** — panggil specialist langsung (mis. `copy-editor` untuk proofread saja)
@@ -18,7 +19,7 @@ Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, a
 > gunakan fact-checker untuk verifikasi artikel ini
 ```
 
-## Struktur (48 Agent: 18 Core + 10 Migration + 12 Audit + 8 Responsive)
+## Struktur (51 Agent: 18 Core + 10 Migration + 12 Audit + 8 Responsive + 3 TikTok)
 
 ### 🗞️ Domain Editorial — Produksi Konten
 | Agent | Fokus Tunggal |
@@ -95,6 +96,13 @@ Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, a
 | cron-engineer | Cron endpoint `/api/cron/*` + crontab docs |
 | integration-secrets-ui | Refactor `/panel/pengaturan` per integrasi + test buttons |
 | doc-panel-builder | `/panel/dokumentasi` render `FEATURE_REFERENCE.md` (SUPER_ADMIN) |
+
+### 🎵 Domain TikTok — Otomasi Konten Video (3 Fase)
+| Agent | Fokus Tunggal |
+|---|---|
+| **tiktok-lead** | Orchestrator: baca `docs/TIKTOK_AUTOMATION.md`, tentukan fase, delegasi render/publish, validasi, update checklist |
+| tiktok-render-engineer | Fase 2 — render slot→MP4 via Hyperframes (Puppeteer+FFmpeg) di worker PM2 terpisah, job queue, ganti stub 501 `/render` |
+| tiktok-publish-engineer | Fase 3 — TikTok OAuth + Content Posting API (chunked upload + status poll), enkripsi token, cron scheduled post, ganti stub 501 `/publish` |
 
 ## Alur Kerja Umum
 
@@ -257,6 +265,10 @@ Report final ke user → kalau ada CRITICAL/HIGH → delegasi tech-lead untuk fi
 ├── viewport-desktop.md
 ├── viewport-widescreen.md
 ├── responsive-fix-applier.md
+│
+├── tiktok-lead.md                      orchestrator (otomasi TikTok 3 fase)
+├── tiktok-render-engineer.md           Fase 2 — Hyperframes render worker
+├── tiktok-publish-engineer.md          Fase 3 — TikTok Content Posting API
 │
 ├── audit-lead.md                     orchestrator (18-dimension audit menyeluruh)
 ├── perf-auditor.md
