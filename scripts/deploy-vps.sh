@@ -57,6 +57,12 @@ rm -rf .next
 npm install --no-audit --no-fund || fail "npm install failed"
 npx prisma generate || fail "prisma generate failed"
 
+# Apply additive schema changes so the regenerated client never references DB
+# columns/tables that don't exist yet (that mismatch 500s every query touching
+# the changed model). No --accept-data-loss: a destructive diff aborts the
+# deploy instead of silently dropping data.
+npx prisma db push --skip-generate || fail "prisma db push failed"
+
 # Memory-capped, telemetry-disabled, low-priority build to keep other PM2
 # apps responsive on a shared ~16 GB VPS.
 NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 \
