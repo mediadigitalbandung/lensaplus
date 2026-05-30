@@ -55,6 +55,8 @@ export async function GET() {
       googleIndexingEnabledRow,
       indexNowEnabledRow,
       recentArticles,
+      articlesWithSeoTitle,
+      publishedTopicCount,
     ] = await Promise.all([
       prisma.article.count(),
       prisma.article.count({ where: { status: "PUBLISHED" } }),
@@ -108,6 +110,13 @@ export async function GET() {
         orderBy: { publishedAt: "desc" },
         take: 200,
       }),
+      // seoTitle-only coverage — the CoverageBar labelled "SEO Title" must
+      // measure title presence alone, NOT title+description (that combined
+      // metric is `articlesWithSeo`, used for the headline score).
+      prisma.article.count({ where: { status: "PUBLISHED", seoTitle: { not: null } } }),
+      // Topic cluster pages in sitemap.xml are filtered `isPublished: true`,
+      // so the sitemap page-count must use the published subset, not all topics.
+      prisma.topic.count({ where: { isPublished: true } }),
     ]);
 
     // ─────────────────── Compute scores ───────────────────
@@ -131,6 +140,13 @@ export async function GET() {
     const indexedRatio = publishedArticles > 0
       ? Math.round((indexCounts.indexed / publishedArticles) * 100)
       : 0;
+    // "Submitted" is the real success-terminal state for the Google Indexing
+    // API — publish() only confirms receipt, not actual indexing. indexedRatio
+    // stays structurally ~0 until a GSC URL Inspection integration flips
+    // indexStatus to "indexed", so the panel reports this submission ratio.
+    const submittedRatio = publishedArticles > 0
+      ? Math.round(((indexCounts.submitted + indexCounts.indexed) / publishedArticles) * 100)
+      : 0;
 
     // Google Indexing API quota — show live consumption today.
     const today = new Date().toISOString().slice(0, 10);
@@ -140,8 +156,16 @@ export async function GET() {
 
     // Integration toggles — UI shows different banner / disables actions
     // when Google Indexing API is off (site still indexed via sitemap).
-    const googleIndexingEnabled = googleIndexingEnabledRow?.value !== "false"; // default true
-    const indexNowEnabled = indexNowEnabledRow?.value !== "false"; // default true
+    // Use the SAME disabled-value set as the engines (google-indexing.ts /
+    // indexnow.ts) so the panel state can never disagree with actual
+    // behaviour: default ON, only an explicit false/0/no/off disables.
+    const isDisabledFlag = (v?: string | null): boolean => {
+      if (!v) return false;
+      const s = v.trim().toLowerCase();
+      return s === "false" || s === "0" || s === "no" || s === "off";
+    };
+    const googleIndexingEnabled = !isDisabledFlag(googleIndexingEnabledRow?.value);
+    const indexNowEnabled = !isDisabledFlag(indexNowEnabledRow?.value);
 
     // ─────────────────── Article audit ───────────────────
     const articleAudit = recentArticles.map((a) => {
@@ -182,12 +206,32 @@ export async function GET() {
     // - sitemap-sorotan.xml: all Sorotan
     // - sitemap-lokasi.xml: ~30 location pages
     const newsSitemapCutoff = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-    const newsSitemapCount = await prisma.article.count({
-      where: { status: "PUBLISHED", publishedAt: { gte: newsSitemapCutoff } },
+    // sitemap-news.xml (the canonical Google News sitemap) rejects entries
+    // without an image and filters `featuredImage: { not: null }`, so the
+    // panel count must apply the same filter — otherwise it overstates the
+    // real number of entries Google actually receives.
+    const newsSitemapMatching = await prisma.article.count({
+      where: {
+        status: "PUBLISHED",
+        publishedAt: { gte: newsSitemapCutoff },
+        featuredImage: { not: null },
+      },
     });
+    // sitemap-news.xml also caps emitted entries at take:1000, so apply the
+    // same ceiling — otherwise this would overstate on the (rare) day that
+    // >1000 image-bearing articles publish inside the 48h window.
+    const newsSitemapCount = Math.min(newsSitemapMatching, 1000);
 
+    // Mirror sitemap.xml exactly: 11 static URLs, articles capped at take:1000,
+    // all categories + tags + active authors, and ONLY published topics.
+    const STATIC_SITEMAP_URLS = 11;
     const sitemapPages =
-      publishedArticles + categories + tags + authors + topicCount + 10;
+      Math.min(publishedArticles, 1000) +
+      categories +
+      tags +
+      authors +
+      publishedTopicCount +
+      STATIC_SITEMAP_URLS;
 
     return successResponse({
       overview: {
@@ -208,9 +252,10 @@ export async function GET() {
         sitemapPages,
         newsSitemapCount,
         indexedRatio,
+        submittedRatio,
       },
       coverage: {
-        seoTitle: publishedArticles > 0 ? Math.round((articlesWithSeo / publishedArticles) * 100) : 0,
+        seoTitle: publishedArticles > 0 ? Math.round((articlesWithSeoTitle / publishedArticles) * 100) : 0,
         image: publishedArticles > 0 ? Math.round((articlesWithImage / publishedArticles) * 100) : 0,
         excerpt: publishedArticles > 0 ? Math.round((articlesWithExcerpt / publishedArticles) * 100) : 0,
         sorotan: sorotanCoverage,
@@ -240,7 +285,10 @@ export async function GET() {
       },
       urls: {
         sitemap: `${siteUrl}/sitemap.xml`,
-        newsSitemap: `${siteUrl}/news-sitemap.xml`,
+        // Canonical Google News sitemap (matches robots.ts + seo-auto pings).
+        // The legacy /news-sitemap.xml route is a near-duplicate kept only for
+        // backward compatibility; the panel always links the canonical path.
+        newsSitemap: `${siteUrl}/sitemap-news.xml`,
         sitemapGlossary: `${siteUrl}/sitemap-glossary.xml`,
         sitemapSorotan: `${siteUrl}/sitemap-sorotan.xml`,
         robots: `${siteUrl}/robots.txt`,

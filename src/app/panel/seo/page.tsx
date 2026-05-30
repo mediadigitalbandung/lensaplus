@@ -25,6 +25,7 @@ interface SeoData {
     sitemapPages: number;
     newsSitemapCount: number;
     indexedRatio: number;
+    submittedRatio: number;
   };
   coverage: { seoTitle: number; image: number; excerpt: number; sorotan: number };
   indexing: {
@@ -145,7 +146,10 @@ export default function SeoDashboardPage() {
       const ok = Boolean(result?.ok || result?.success || result?.valid);
       setCredResult({
         ok,
-        message: result?.message || (ok ? "Credentials valid." : "Credentials invalid."),
+        // `testGoogleCredentials()` returns { success, error } — surface the
+        // real reason (invalid_grant / Invalid JWT Signature / account not
+        // found) instead of swallowing it behind a generic string.
+        message: result?.message || result?.error || (ok ? "Credentials valid." : "Credentials invalid."),
       });
     } catch (err) {
       setCredResult({
@@ -346,7 +350,7 @@ export default function SeoDashboardPage() {
           </div>
           <div className="space-y-1.5 pt-1">
             <a href={urls.sitemap} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> sitemap.xml</a>
-            <a href={urls.newsSitemap} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> news-sitemap.xml</a>
+            <a href={urls.newsSitemap} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> sitemap-news.xml</a>
             <a href={urls.sitemapGlossary} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> sitemap-glossary.xml</a>
             <a href={urls.sitemapSorotan} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> sitemap-sorotan.xml</a>
             <a href={urls.robots} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-primary hover:underline"><ExternalLink size={10} /> robots.txt</a>
@@ -442,7 +446,7 @@ export default function SeoDashboardPage() {
                 </span>
               </div>
               <p className="mt-3 text-xs text-txt-muted">
-                Indexed ratio: <span className="font-bold text-txt-primary">{overview.indexedRatio}%</span> dari {overview.publishedArticles} artikel terbit.
+                Sudah disubmit ke Google: <span className="font-bold text-txt-primary">{overview.submittedRatio}%</span> dari {overview.publishedArticles} artikel terbit.
               </p>
             </>
           ) : (
@@ -637,6 +641,12 @@ export default function SeoDashboardPage() {
             </p>
           </div>
         </div>
+
+        <p className="mt-2 text-[11px] text-txt-muted leading-relaxed">
+          <strong>Submitted</strong> = berhasil dikirim ke Google Indexing API (ini status sukses terminal).
+          Kolom <strong>Indexed</strong> baru terisi jika status ter-index dikonfirmasi (GSC URL Inspection /
+          manual) — submit ke API <em>bukan</em> jaminan sudah ter-index, jadi angka Indexed = 0 itu wajar.
+        </p>
 
         {sorotanStatus && (
           <div className="mt-4 pt-4 border-t border-border">

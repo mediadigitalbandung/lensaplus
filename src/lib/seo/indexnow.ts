@@ -100,6 +100,26 @@ export async function pingIndexNow(urls: string[]): Promise<IndexNowResult> {
     return { success: true, statusCode: 200 };
   }
 
+  // Respect the `indexnow_enabled` toggle (default ON — opt-out, mirroring the
+  // Google Indexing API gate in google-indexing.ts). Until now this setting
+  // was displayed in the SEO panel but never enforced, so the "✗ IndexNow"
+  // indicator could claim disabled while pings kept firing. An explicit
+  // "false"/"0"/"no"/"off" now actually halts pinging. DB failure → fail-open
+  // (continue) so a transient outage never silently stops indexing.
+  try {
+    const toggle = await prisma.systemSetting.findUnique({
+      where: { key: "indexnow_enabled" },
+    });
+    if (toggle?.value) {
+      const v = toggle.value.trim().toLowerCase();
+      if (v === "false" || v === "0" || v === "no" || v === "off") {
+        return { success: false, error: "IndexNow disabled via setting" };
+      }
+    }
+  } catch {
+    // DB unavailable — fail open and proceed with the ping.
+  }
+
   const key = await getIndexNowKey();
   if (!key) {
     return { success: false, error: "IndexNow key not configured" };
