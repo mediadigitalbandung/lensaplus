@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Pin, Zap, Image as ImageIcon, Play } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Pin, Zap, Image as ImageIcon, Play, Clock } from "lucide-react";
+
+type LiveBlogStatus = "SCHEDULED" | "LIVE" | "ENDED" | "CANCELLED";
 
 export interface LiveBlogEntry {
   id: string;
@@ -113,55 +115,83 @@ function EntryCard({ entry }: { entry: LiveBlogEntry }) {
 export default function LiveBlogTimeline({
   slug,
   initialEntries,
-  isLive,
+  initialStatus,
 }: {
   slug: string;
   initialEntries: LiveBlogEntry[];
-  isLive: boolean;
+  initialStatus: LiveBlogStatus;
 }) {
   const [entries, setEntries] = useState<LiveBlogEntry[]>(initialEntries);
-  const [isPolling, setIsPolling] = useState(isLive);
+  const [status, setStatus] = useState<LiveBlogStatus>(initialStatus);
   const [newCount, setNewCount] = useState(0);
   const [lastPollError, setLastPollError] = useState(false);
 
+  // Keep the freshest entries reachable from the poller without re-arming the
+  // interval on every update (so the 12 s clock isn't reset by each new entry).
+  const entriesRef = useRef(entries);
+  entriesRef.current = entries;
+
+  // Poll while the event is LIVE or still SCHEDULED — a viewer who opened the
+  // page early then sees it flip to LIVE automatically. Stop once it ends.
+  const shouldPoll = status === "LIVE" || status === "SCHEDULED";
+
   const fetchNewEntries = useCallback(async () => {
-    if (!isPolling) return;
-    const latestId = entries[0]?.id;
-    if (!latestId) return;
+    const current = entriesRef.current;
+
+    // Anchor on the entry with the newest postedAt — NOT entries[0], which is
+    // the newest *pinned* entry (pinned entries sort first). Anchoring on a
+    // pinned-but-old entry would re-fetch everything after it and duplicate
+    // the whole feed.
+    const newest =
+      current.length > 0
+        ? current.reduce((a, b) =>
+            new Date(b.postedAt).getTime() > new Date(a.postedAt).getTime()
+              ? b
+              : a
+          )
+        : null;
 
     try {
-      const res = await fetch(
-        `/api/live-blogs/${slug}/entries?since=${latestId}&limit=20`
-      );
+      const qs = new URLSearchParams({ limit: "30" });
+      if (newest) qs.set("since", newest.id);
+      const res = await fetch(`/api/live-blogs/${slug}/entries?${qs}`);
       if (!res.ok) {
         setLastPollError(true);
         return;
       }
       const json = await res.json();
-      const newEntries: LiveBlogEntry[] = json.data?.entries || [];
-      const blogStatus: string = json.data?.blogStatus || "LIVE";
-
-      if (newEntries.length > 0) {
-        setEntries((prev) => [...newEntries, ...prev]);
-        setNewCount((c) => c + newEntries.length);
-      }
+      const incoming: LiveBlogEntry[] = json.data?.entries || [];
+      const blogStatus: LiveBlogStatus = json.data?.blogStatus || status;
 
       setLastPollError(false);
 
-      // Stop polling if live blog ended
-      if (blogStatus === "ENDED" || blogStatus === "CANCELLED") {
-        setIsPolling(false);
+      if (incoming.length > 0) {
+        // Dedupe against what we already show (defends against the strict-gt
+        // boundary and any pinned/overlap edge cases).
+        const known = new Set(current.map((e) => e.id));
+        const fresh = incoming.filter((e) => !known.has(e.id));
+        if (fresh.length > 0) {
+          setEntries((prev) => {
+            const seen = new Set(prev.map((e) => e.id));
+            const stillFresh = fresh.filter((e) => !seen.has(e.id));
+            return stillFresh.length > 0 ? [...stillFresh, ...prev] : prev;
+          });
+          setNewCount((c) => c + fresh.length);
+        }
       }
+
+      // Reflect server-side status transitions (SCHEDULED → LIVE → ENDED).
+      setStatus((s) => (blogStatus !== s ? blogStatus : s));
     } catch {
       setLastPollError(true);
     }
-  }, [slug, entries, isPolling]);
+  }, [slug, status]);
 
   useEffect(() => {
-    if (!isLive) return;
+    if (!shouldPoll) return;
     const interval = setInterval(fetchNewEntries, 12000);
     return () => clearInterval(interval);
-  }, [isLive, fetchNewEntries]);
+  }, [shouldPoll, fetchNewEntries]);
 
   // Separate pinned entries for top display
   const pinnedEntries = entries.filter((e) => e.isPinned);
@@ -182,7 +212,7 @@ export default function LiveBlogTimeline({
   return (
     <div className="space-y-6">
       {/* Live status + new entries banner */}
-      {isPolling && (
+      {status === "LIVE" && (
         <div className="flex items-center gap-2 rounded-md bg-secondary/10 px-4 py-2.5">
           <span className="relative flex h-2.5 w-2.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
@@ -196,6 +226,16 @@ export default function LiveBlogTimeline({
               +{newCount} update baru
             </span>
           )}
+        </div>
+      )}
+
+      {/* Scheduled — page auto-refreshes when the event goes live */}
+      {status === "SCHEDULED" && (
+        <div className="flex items-center gap-2 rounded-md bg-primary-light px-4 py-2.5">
+          <Clock size={15} className="text-primary" />
+          <span className="text-body-sm font-medium text-primary">
+            Siaran belum dimulai — halaman akan diperbarui otomatis saat live.
+          </span>
         </div>
       )}
 

@@ -157,8 +157,6 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
 
   if (!blog) notFound();
 
-  const isLive = blog.status === "LIVE";
-
   // Increment view count
   prisma.liveBlog
     .update({ where: { id: blog.id }, data: { viewCount: { increment: 1 } } })
@@ -262,7 +260,7 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
           <LiveBlogTimeline
             slug={blog.slug}
             initialEntries={initialEntries}
-            isLive={isLive}
+            initialStatus={blog.status}
           />
         </div>
       </main>
