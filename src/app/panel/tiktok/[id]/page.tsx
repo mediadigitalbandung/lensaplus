@@ -579,19 +579,26 @@ export default function TiktokEditorPage() {
                       <div className="mt-1 flex items-center gap-1.5">
                         <label className="text-[10px] text-txt-muted">Durasi</label>
                         <input
+                          // Uncontrolled (defaultValue + onBlur) to avoid re-render
+                          // jitter while typing. `key` forces a remount when the
+                          // server value changes (e.g. after Clipper edit) so the
+                          // displayed default refreshes.
+                          key={`dur-${s.id}-${s.durationMs}`}
                           type="number"
-                          value={s.durationMs}
                           step={500}
                           min={500}
                           max={30000}
-                          onBlur={(e) => {
-                            const ms = parseInt(e.target.value);
-                            if (ms !== s.durationMs) updateSlotDuration(s.id, ms);
-                          }}
-                          onChange={() => {
-                            /* uncontrolled to avoid jitter */
-                          }}
                           defaultValue={s.durationMs}
+                          onBlur={(e) => {
+                            const raw = parseInt(e.target.value, 10);
+                            if (Number.isNaN(raw)) {
+                              e.target.value = String(s.durationMs); // restore invalid input
+                              return;
+                            }
+                            const ms = Math.min(30000, Math.max(500, raw));
+                            if (ms !== s.durationMs) updateSlotDuration(s.id, ms);
+                            else e.target.value = String(ms); // reflect clamped value
+                          }}
                           className="w-16 rounded border border-border bg-surface px-1.5 py-0.5 text-[10px]"
                         />
                         <span className="text-[10px] text-txt-muted">ms</span>

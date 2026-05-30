@@ -3,6 +3,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomBytes } from "crypto";
 import { ApiError, errorResponse, requireAuth, successResponse } from "@/lib/api-utils";
+import { tiktokUploadRateLimit } from "@/lib/rate-limit";
 import {
   TIKTOK_BGM_MAX_BYTES,
   TIKTOK_BGM_MIME,
@@ -30,6 +31,11 @@ export async function POST(request: NextRequest) {
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) {
       throw new ApiError("Anda tidak memiliki izin mengelola konten TikTok", 403);
+    }
+
+    const rl = tiktokUploadRateLimit(session.user.id);
+    if (!rl.success) {
+      throw new ApiError("Terlalu banyak upload dalam waktu singkat. Tunggu sebentar lalu coba lagi.", 429);
     }
 
     const formData = await request.formData();

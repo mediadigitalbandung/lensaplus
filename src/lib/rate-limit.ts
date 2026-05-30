@@ -64,3 +64,9 @@ export function reportRateLimit(ip: string): { success: boolean; remaining: numb
 export function pollVoteRateLimit(ip: string): { success: boolean; remaining: number } {
   return rateLimit(`pollvote:${ip}`, 10, 60 * 1000); // 10 votes per minute per IP
 }
+
+// TikTok media upload rate limit per user — each upload writes a file to disk
+// (up to 100MB), so cap to avoid disk/CPU abuse from a single editor session.
+export function tiktokUploadRateLimit(userId: string): { success: boolean; remaining: number } {
+  return rateLimit(`tiktok-upload:${userId}`, 30, 5 * 60 * 1000); // 30 uploads per 5 min
+}
