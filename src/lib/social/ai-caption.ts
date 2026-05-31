@@ -111,7 +111,7 @@ const REEL_QUOTE_SYSTEM_PROMPT =
   "Kamu adalah editor media sosial untuk Kartawarta — media berita digital Bandung. Tugasmu mengambil INTI dari sebuah berita dan menuliskannya sebagai SATU kalimat kutipan pendek yang kuat untuk ditampilkan sebagai teks besar di video Reels Instagram (format vertikal). Jawab hanya dalam format JSON murni, tanpa markdown, tanpa komentar.";
 
 const REEL_QUOTE_MAX_LEN = 90;
-const REEL_SEGMENT_MAX_LEN = 190; // a description "part" = ~2 short sentences
+const REEL_SEGMENT_MAX_LEN = 220; // a description "part" = exactly 2 sentences (news-report style)
 
 /**
  * Produce ONE short, punchy quote (<= ~90 chars) distilled from the article,
@@ -173,15 +173,15 @@ export async function generateReelQuotes(
 ): Promise<{ quotes: string[] }> {
   const excerpt = article.excerpt ? article.excerpt : stripHtml(article.content).slice(0, 1200);
 
-  const userPrompt = `Ringkas berita berikut menjadi ${count} BAGIAN deskripsi berurutan (bagian 1 sampai ${count}) yang mengalir membentuk satu ringkasan utuh, untuk ditampilkan BERGANTIAN sebagai teks di video Reels vertikal:
-- Bahasa Indonesia, lugas, informatif, mudah dibaca.
-- Setiap bagian berisi 1–2 kalimat, MAKSIMAL ${REEL_SEGMENT_MAX_LEN} karakter.
-- Harus RUNTUT: bagian 1 membuka inti berita, bagian berikutnya melengkapi/menjelaskan — JANGAN saling mengulang.
-- Tanpa tanda kutip, tanpa hashtag, tanpa tautan, tanpa emoji, tanpa penomoran.
-- Diringkas dari ISI berita (bukan sekadar menyalin judul). Jika materi terbatas, boleh menghasilkan lebih sedikit bagian.
+  const userPrompt = `Tuliskan ulang berita berikut sebagai NARASI LAPORAN BERITA (gaya reporter/jurnalis yang membacakan berita), SETIA pada fakta artikel asli, dibagi menjadi ${count} BAGIAN berurutan (bagian 1 sampai ${count}) untuk ditampilkan & dinarasikan bergantian di video Reels:
+- Gaya bahasa: laporan berita Indonesia yang jelas dan mengalir (seperti anchor/reporter), BUKAN caption promosi.
+- Setiap bagian TEPAT 2 kalimat. MAKSIMAL ${REEL_SEGMENT_MAX_LEN} karakter per bagian.
+- RUNTUT & tidak mengulang: bagian 1 membuka berita (apa/siapa/di mana/kapan), bagian berikutnya menjelaskan detail, dampak, atau kutipan sesuai isi asli.
+- Hanya fakta dari ISI berita — JANGAN mengarang. Tanpa tanda kutip pembungkus, tanpa hashtag, tanpa tautan, tanpa emoji, tanpa penomoran.
+- Jika materi terbatas, boleh kurang dari ${count} bagian (tetap 2 kalimat tiap bagian).
 
 Format jawaban WAJIB JSON murni (tanpa markdown), persis:
-{"quotes":["bagian 1 ...","bagian 2 ...","bagian 3 ...","bagian 4 ...","bagian 5 ..."]}
+{"quotes":["bagian 1 (2 kalimat) ...","bagian 2 (2 kalimat) ...","..."]}
 
 JUDUL: ${article.title}
 ISI: ${excerpt}`;

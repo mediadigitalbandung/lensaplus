@@ -124,23 +124,24 @@ async function loadFeaturedImage(featuredImage: string | null | undefined): Prom
 
 // ── Layout (1080×1920) ──────────────────────────────────────────────
 // Title = persistent header (LARGER); description animates below it (SMALLER).
-const BADGE_Y = 1088;
-const TITLE_Y = 1166;
+const BADGE_Y = 1090;
+const TITLE_Y = 1224; // extra breathing room below the category badge (not cramped)
 const TITLE_FONT = 52; // headline — clearly larger than the description
 const TITLE_LH = 62;
 const TITLE_MAX_CHARS = 30;
 const TITLE_MAX_LINES = 3;
-const DESC_FONT = 38; // description — clearly smaller than the title
-const DESC_LH = 48;
-const DESC_MAX_CHARS = 34;
-const DESC_MAX_LINES = 6; // holds ~2 sentences without overflowing the frame
-const DESC_GAP = 70; // space between the title block and the description
-const BRAND_BAR_Y = HEIGHT - 170;
+const DESC_FONT = 36; // description — clearly smaller than the title
+const DESC_LH = 44;
+const DESC_MAX_CHARS = 42;
+const DESC_MAX_LINES = 7; // holds ~2 sentences without overflowing the frame
+const DESC_GAP = 46; // space between the title block and the description
+const BRAND_BAR_Y = HEIGHT - 168;
 
 const DEFAULT_WPM = 240;
 export const HOLD_SEC = 1.4; // silent mode: linger on a completed part to read it
 export const VOICED_HOLD_SEC = 0.6; // narrated mode: short pause between parts
 export const INTRO_SEC = 0.8; // title/photo shown before the first word
+export const TEXT_LEAD_SEC = 0.3; // text appears this much BEFORE the narration (read-then-hear)
 const FADE_OPACITY = 0.4; // opacity of a word during its (brief) fade-in frame
 
 export interface TimedFrame {
@@ -303,6 +304,13 @@ export async function renderReelKineticFrames(input: ReelKineticInput): Promise<
       const settled = wordDur - fadeDur + (k === words.length ? holdSec : 0);
       frames.push({ buffer: await composeDesc(fullText), durationSec: Math.max(0.05, settled) });
     }
+  }
+
+  // When narrated, the audio is delayed by TEXT_LEAD_SEC (text leads voice), so
+  // the whole narration track is that much longer than the visuals — hold the
+  // final frame for the extra time so the last words aren't cut off.
+  if (voiced && frames.length > 1) {
+    frames[frames.length - 1].durationSec += TEXT_LEAD_SEC;
   }
 
   return frames;
