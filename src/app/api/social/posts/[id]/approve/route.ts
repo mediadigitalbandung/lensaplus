@@ -11,7 +11,7 @@ import {
   requireRole,
   successResponse,
 } from "@/lib/api-utils";
-import { approveDraft } from "@/lib/social/orchestrator";
+import { startApproveDraft } from "@/lib/social/orchestrator";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +23,14 @@ export async function POST(
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
 
-    const result = await approveDraft(params.id);
+    const result = await startApproveDraft(params.id);
 
     await logAudit(
       session.user.id,
       "APPROVE",
       "social_post",
       params.id,
-      `Approve draft — success=${result.success}${result.externalId ? ` ext=${result.externalId}` : ""}${result.error ? ` err=${result.error}` : ""}`,
+      `Approve draft — success=${result.success}${result.async ? " (async/Reel publishing in background)" : ""}${result.externalId ? ` ext=${result.externalId}` : ""}${result.error ? ` err=${result.error}` : ""}`,
     );
 
     return successResponse(result);

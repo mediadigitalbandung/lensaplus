@@ -299,10 +299,10 @@ function PostsTab() {
     fetchPosts();
   }, [fetchPosts]);
 
-  // While any post is still rendering (PROCESSING — e.g. a Reel being encoded
-  // in the background), poll so the panel reflects the DRAFT/PUBLISHED/REJECTED
-  // transition without a manual refresh.
-  const hasProcessing = posts.some((p) => p.status === "PROCESSING");
+  // While any post is mid-flight (PROCESSING = Reel rendering, PENDING = being
+  // published to the platform in the background), poll so the panel reflects the
+  // DRAFT/PUBLISHED/REJECTED transition without a manual refresh.
+  const hasProcessing = posts.some((p) => p.status === "PROCESSING" || p.status === "PENDING");
   useEffect(() => {
     if (!hasProcessing) return;
     const t = setInterval(() => {
@@ -333,7 +333,13 @@ function PostsTab() {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Gagal");
-      showSuccess(`Berhasil ${labels[action]}.`);
+      if (json.data?.async) {
+        showSuccess(
+          "Reel sedang dipublikasikan ke Instagram di latar belakang — status akan diperbarui otomatis (bisa beberapa menit)."
+        );
+      } else {
+        showSuccess(`Berhasil ${labels[action]}.`);
+      }
       fetchPosts();
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal");

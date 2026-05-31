@@ -539,7 +539,9 @@ async function loadPostWithArticle(postId: string): Promise<
 export async function approveDraft(postId: string): Promise<PublishResult> {
   const post = await loadPostWithArticle(postId);
   if (!post) return { success: false, error: "SocialPost not found" };
-  if (post.status !== "DRAFT" && post.status !== "REJECTED") {
+  // PENDING is allowed because startApproveDraft pre-sets it for async (Reel)
+  // publishes before handing off to this function in the background.
+  if (post.status !== "DRAFT" && post.status !== "REJECTED" && post.status !== "PENDING") {
     return { success: false, error: `SocialPost is not in DRAFT or REJECTED state (is ${post.status})` };
   }
   const isReel = post.mediaKind === "REELS";
@@ -623,6 +625,42 @@ export async function approveDraft(postId: string): Promise<PublishResult> {
   }
 
   return result;
+}
+
+/**
+ * Entry point for the approve action. Images publish fast, so they run inline
+ * and return the real result. Reels publish via Meta's async video container
+ * (polling up to ~5 min) which would exceed the HTTP/proxy timeout (504), so
+ * they are set PENDING and published in the BACKGROUND — the panel polls the
+ * PENDING row until it flips to PUBLISHED/REJECTED.
+ */
+export async function startApproveDraft(
+  postId: string,
+): Promise<{ success: boolean; async?: boolean; status?: string; externalId?: string; error?: string }> {
+  const post = await prisma.socialPost.findUnique({
+    where: { id: postId },
+    select: { mediaKind: true, status: true, videoUrl: true },
+  });
+  if (!post) return { success: false, error: "SocialPost not found" };
+  if (post.status !== "DRAFT" && post.status !== "REJECTED") {
+    return { success: false, error: `SocialPost is not in DRAFT or REJECTED state (is ${post.status})` };
+  }
+
+  if (post.mediaKind === "REELS") {
+    if (!post.videoUrl) return { success: false, error: "Reel post is missing videoUrl" };
+    // Flip to PENDING synchronously so the panel shows it immediately, then
+    // publish detached (Meta video processing can take minutes).
+    await prisma.socialPost.update({
+      where: { id: postId },
+      data: { status: "PENDING", errorMessage: null },
+    });
+    void approveDraft(postId).catch((err) => {
+      console.error("[reel] background publish failed", err);
+    });
+    return { success: true, async: true, status: "PENDING" };
+  }
+
+  return approveDraft(postId);
 }
 
 /**
