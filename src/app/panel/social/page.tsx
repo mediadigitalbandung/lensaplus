@@ -155,6 +155,7 @@ function PostsTab() {
   const [filterPlatform, setFilterPlatform] = useState<Platform | "ALL">("ALL");
   const [filterStatus, setFilterStatus] = useState<PostStatus | "ALL">("ALL");
   const [testingPublish, setTestingPublish] = useState(false);
+  const [testingReel, setTestingReel] = useState(false);
   // Instagram Reel (story-card video) creation
   const [showReelModal, setShowReelModal] = useState(false);
   const [reelArticleId, setReelArticleId] = useState("");
@@ -242,6 +243,42 @@ function PostsTab() {
       showError(err instanceof Error ? err.message : "Gagal merender Reel");
     } finally {
       setRenderingReel(false);
+    }
+  }
+
+  async function handleTestReel() {
+    const ok = await confirm({
+      title: "Uji Coba Reel Instagram",
+      message:
+        "Render Reel uji coba dari artikel terbaru yang sudah terbit? Sistem akan membuat kutipan AI + video 9:16 (butuh beberapa detik). Jika Draft Mode aktif, hasilnya jadi draft untuk ditinjau; jika tidak, langsung dipublikasikan ke Instagram.",
+      variant: "default",
+    });
+    if (!ok) return;
+    try {
+      setTestingReel(true);
+      const res = await fetch("/api/social/reels/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || `Server Error (HTTP ${res.status}).`);
+      }
+      const r = json.data?.result;
+      if (r?.status === "REJECTED") {
+        throw new Error(r.error || "Render Reel gagal.");
+      }
+      showSuccess(
+        r?.status === "PUBLISHED"
+          ? "Uji coba Reel selesai — dipublikasikan ke Instagram!"
+          : "Uji coba Reel selesai — tersimpan sebagai draft. Tinjau di daftar lalu klik Approve."
+      );
+      fetchPosts();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal uji coba Reel");
+    } finally {
+      setTestingReel(false);
     }
   }
 
@@ -407,6 +444,19 @@ function PostsTab() {
               <Share2 size={12} className="text-txt-primary" />
             )}
             Threads
+          </button>
+          <button
+            onClick={handleTestReel}
+            disabled={testingReel}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-txt-secondary transition-colors hover:bg-surface-secondary hover:text-txt-primary disabled:opacity-50"
+            title="Render Reel uji coba dari artikel terbaru"
+          >
+            {testingReel ? (
+              <Loader2 size={12} className="animate-spin text-primary" />
+            ) : (
+              <Film size={12} className="text-primary" />
+            )}
+            Reel
           </button>
         </div>
       </div>
