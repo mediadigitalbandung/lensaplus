@@ -174,7 +174,10 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   if (voicePath) await fs.writeFile(voicePath, opts.voiceWav as Buffer);
   const hasBgm = !!(opts.bgmPath && existsSync(opts.bgmPath));
 
-  const videoChain = `[0:v]scale=${OUT_W}:${OUT_H},fps=${FPS},format=yuv420p[v]`;
+  // Gentle fade-in at the very start (over the opening clip) and fade-out at the
+  // end (over the closing clip) for a polished open/close.
+  const vFadeOut = Math.max(0, totalSec - 0.5).toFixed(2);
+  const videoChain = `[0:v]scale=${OUT_W}:${OUT_H},fps=${FPS},fade=t=in:st=0:d=0.4,fade=t=out:st=${vFadeOut}:d=0.5,format=yuv420p[v]`;
   const fadeOut = Math.max(0, totalSec - 1).toFixed(3);
 
   // Audio inputs follow the concat video (input 0). Four cases: voice + BGM

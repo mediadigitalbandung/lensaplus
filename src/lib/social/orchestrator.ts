@@ -30,7 +30,14 @@ import type {
 import { prisma } from "@/lib/prisma";
 import { generateReelQuotes } from "./ai-caption";
 import { generateSocialCaption } from "./caption-generator";
-import { renderReelKineticFrames, INTRO_SEC, VOICED_HOLD_SEC, TEXT_LEAD_SEC } from "./reel-frame";
+import {
+  renderReelKineticFrames,
+  INTRO_SEC,
+  VOICED_HOLD_SEC,
+  TEXT_LEAD_SEC,
+  OPENING_SEC,
+  CLOSING_SEC,
+} from "./reel-frame";
 import { renderReelVideo, deleteReelFiles } from "./video-renderer";
 import { isTtsConfigured, synthesizeIndonesianSpeech, silencePcm, pcmToWav } from "./tts";
 import { FacebookPublisher, type FacebookPostMode } from "./facebook";
@@ -893,8 +900,11 @@ async function executeReelRender(
         segmentDurations = ok.map((a) => a.durationSec);
         // Lead the on-screen text ahead of the narration by TEXT_LEAD_SEC: pad
         // the narration start so the viewer reads each part a beat before hearing it.
-        const parts: Buffer[] = [silencePcm(INTRO_SEC + TEXT_LEAD_SEC)];
+        // Silence for the opening clip + intro + text-lead, then each part's
+        // narration with a pause, then silence for the closing clip.
+        const parts: Buffer[] = [silencePcm(OPENING_SEC + INTRO_SEC + TEXT_LEAD_SEC)];
         for (const a of ok) parts.push(a.pcm, silencePcm(VOICED_HOLD_SEC));
+        parts.push(silencePcm(CLOSING_SEC));
         voiceWav = pcmToWav(Buffer.concat(parts));
       }
     }

@@ -142,6 +142,8 @@ export const HOLD_SEC = 1.4; // silent mode: linger on a completed part to read 
 export const VOICED_HOLD_SEC = 0.6; // narrated mode: short pause between parts
 export const INTRO_SEC = 0.8; // title/photo shown before the first word
 export const TEXT_LEAD_SEC = 0.3; // text appears this much BEFORE the narration (read-then-hear)
+export const OPENING_SEC = 2.0; // reusable branded opening clip
+export const CLOSING_SEC = 2.5; // reusable branded closing clip
 const FADE_OPACITY = 0.4; // opacity of a word during its (brief) fade-in frame
 
 export interface TimedFrame {
@@ -236,8 +238,57 @@ function buildDescSvg(text: string, descY: number, fadeWord?: string, fadeOpacit
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
-  <text xml:space="preserve" font-family="'Work Sans','Helvetica',sans-serif" font-size="${DESC_FONT}" font-weight="600" fill="#ffffff">${tspans}</text>
+  <text xml:space="preserve" font-family="'Work Sans','Helvetica',sans-serif" font-size="${DESC_FONT}" font-weight="400" fill="#ffffff">${tspans}</text>
 </svg>`;
+}
+
+// ── Reusable branded OPENING / CLOSING templates (same on every Reel) ────────
+
+function buildOpeningSvg(category: string, hasImage: boolean): string {
+  const cat = (category || "BERITA").toUpperCase();
+  const cx = WIDTH / 2;
+  const bg = hasImage
+    ? `<defs><linearGradient id="ogo" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#001530" stop-opacity="0.4"/><stop offset="55%" stop-color="#001530" stop-opacity="0.8"/><stop offset="100%" stop-color="#001530" stop-opacity="1"/></linearGradient></defs>
+      <rect x="0" y="0" width="${WIDTH}" height="${IMG_H}" fill="url(#ogo)" />
+      <rect x="0" y="${IMG_H}" width="${WIDTH}" height="${HEIGHT - IMG_H}" fill="#001530" />`
+    : `<rect x="0" y="0" width="${WIDTH}" height="${HEIGHT}" fill="#001530" />`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+  ${bg}
+  <text x="${cx}" y="1300" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="30" font-weight="700" fill="#b7102a" letter-spacing="6">${escapeXml(cat)}</text>
+  <text x="${cx}" y="1432" text-anchor="middle" font-family="'Newsreader','Georgia',serif" font-size="104" font-weight="800" fill="#ffffff" letter-spacing="2">KARTAWARTA</text>
+  <rect x="${cx - 170}" y="1474" width="340" height="5" fill="#b7102a" />
+  <text x="${cx}" y="1548" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="31" font-weight="500" fill="#ffffff" fill-opacity="0.88" letter-spacing="4">MEDIA BERITA DIGITAL BANDUNG</text>
+</svg>`;
+}
+
+function buildClosingSvg(): string {
+  const cx = WIDTH / 2;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+  <rect x="0" y="0" width="${WIDTH}" height="${HEIGHT}" fill="#001530" />
+  <text x="${cx}" y="900" text-anchor="middle" font-family="'Newsreader','Georgia',serif" font-size="110" font-weight="800" fill="#ffffff" letter-spacing="2">KARTAWARTA</text>
+  <rect x="${cx - 180}" y="946" width="360" height="5" fill="#b7102a" />
+  <text x="${cx}" y="1028" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="40" font-weight="700" fill="#ffffff" letter-spacing="1">kartawarta.com</text>
+  <text x="${cx}" y="1108" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="30" font-weight="400" fill="#ffffff" fill-opacity="0.82">Ikuti untuk berita terkini Bandung</text>
+</svg>`;
+}
+
+async function renderOpeningFrame(imageBuffer: Buffer | null, category: string): Promise<Buffer> {
+  const composites: sharp.OverlayOptions[] = [];
+  if (imageBuffer) composites.push({ input: imageBuffer, top: 0, left: 0 });
+  composites.push({ input: Buffer.from(buildOpeningSvg(category, imageBuffer !== null)), top: 0, left: 0 });
+  return sharp({ create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 0, g: 21, b: 48 } } })
+    .composite(composites)
+    .jpeg({ quality: 88 })
+    .toBuffer();
+}
+
+async function renderClosingFrame(): Promise<Buffer> {
+  return sharp({ create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 0, g: 21, b: 48 } } })
+    .composite([{ input: Buffer.from(buildClosingSvg()), top: 0, left: 0 }])
+    .jpeg({ quality: 88 })
+    .toBuffer();
 }
 
 /**
@@ -286,6 +337,8 @@ export async function renderReelKineticFrames(input: ReelKineticInput): Promise<
   };
 
   const frames: TimedFrame[] = [];
+  // Reusable branded OPENING clip (template) — identical on every Reel.
+  frames.push({ buffer: await renderOpeningFrame(imageBuffer, category), durationSec: OPENING_SEC });
   frames.push({ buffer: await composeDesc(""), durationSec: INTRO_SEC });
 
   for (let si = 0; si < segments.length; si++) {
@@ -312,6 +365,9 @@ export async function renderReelKineticFrames(input: ReelKineticInput): Promise<
   if (voiced && frames.length > 1) {
     frames[frames.length - 1].durationSec += TEXT_LEAD_SEC;
   }
+
+  // Reusable branded CLOSING clip (template).
+  frames.push({ buffer: await renderClosingFrame(), durationSec: CLOSING_SEC });
 
   return frames;
 }
