@@ -158,7 +158,7 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   const listLines: string[] = [];
   let lastPath = "";
   for (let i = 0; i < frames.length; i++) {
-    const fp = path.join(workDir, `f${String(i).padStart(4, "0")}.png`);
+    const fp = path.join(workDir, `f${String(i).padStart(4, "0")}.jpg`);
     await fs.writeFile(fp, frames[i].buffer);
     lastPath = fp.replace(/\\/g, "/");
     listLines.push(`file '${lastPath}'`);

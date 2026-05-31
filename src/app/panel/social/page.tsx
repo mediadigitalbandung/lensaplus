@@ -666,10 +666,10 @@ function PostsTab() {
               <h3 className="text-lg font-bold text-txt-primary">Buat Reel dari Story Card</h3>
             </div>
             <p className="mb-4 text-xs leading-relaxed text-txt-secondary">
-              Judul artikel tampil tetap, lalu deskripsi berita (dari AI) muncul
-              <strong> kata demi kata</strong> dalam 3 bagian bergantian. Foto &amp; latar
-              diam (tanpa zoom); durasi mengikuti kecepatan baca. Hasilnya jadi draft Reel
-              untuk Anda tinjau &amp; publikasikan.
+              Judul artikel tampil <strong>tetap</strong>, lalu deskripsi berita (dari AI)
+              muncul <strong>kata demi kata dengan fade-in</strong> dalam hingga 5 bagian
+              (±2 kalimat) bergantian. Foto &amp; latar diam (tanpa zoom); durasi mengikuti
+              kecepatan baca. Hasilnya jadi draft Reel untuk Anda tinjau &amp; publikasikan.
             </p>
             <div className="space-y-4">
               <div>
@@ -2548,7 +2548,7 @@ function SettingsTab() {
               onChange={(e) => setGlobal({ ...global, reelDefaultBgmUrl: e.target.value })}
             />
             <p className="mt-1.5 text-[10px] leading-relaxed text-txt-muted">
-              Judul tetap + deskripsi berita (maks 3 bagian) muncul kata demi kata; foto &amp; latar diam (tanpa zoom). Durasi otomatis mengikuti kecepatan baca.
+              Judul tetap + deskripsi berita (maks 5 bagian, ±2 kalimat) muncul kata demi kata dengan fade-in; foto &amp; latar diam (tanpa zoom). Durasi otomatis mengikuti kecepatan baca.
             </p>
           </div>
           <div className="md:col-span-2">

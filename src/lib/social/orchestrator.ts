@@ -872,7 +872,7 @@ async function executeReelRender(
     // Up to 3 description parts (the rotating, word-by-word text) + the
     // under-post caption, generated in parallel.
     const [{ quotes }, caption] = await Promise.all([
-      generateReelQuotes(article, 3),
+      generateReelQuotes(article, 5),
       buildReelCaption(article, global),
     ]);
 

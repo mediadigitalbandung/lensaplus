@@ -111,6 +111,7 @@ const REEL_QUOTE_SYSTEM_PROMPT =
   "Kamu adalah editor media sosial untuk Kartawarta — media berita digital Bandung. Tugasmu mengambil INTI dari sebuah berita dan menuliskannya sebagai SATU kalimat kutipan pendek yang kuat untuk ditampilkan sebagai teks besar di video Reels Instagram (format vertikal). Jawab hanya dalam format JSON murni, tanpa markdown, tanpa komentar.";
 
 const REEL_QUOTE_MAX_LEN = 90;
+const REEL_SEGMENT_MAX_LEN = 190; // a description "part" = ~2 short sentences
 
 /**
  * Produce ONE short, punchy quote (<= ~90 chars) distilled from the article,
@@ -168,19 +169,19 @@ ISI: ${excerpt}`;
  */
 export async function generateReelQuotes(
   article: ArticleForPublish,
-  count = 3,
+  count = 5,
 ): Promise<{ quotes: string[] }> {
-  const excerpt = article.excerpt ? article.excerpt : stripHtml(article.content).slice(0, 700);
+  const excerpt = article.excerpt ? article.excerpt : stripHtml(article.content).slice(0, 1200);
 
-  const userPrompt = `Ringkas berita berikut menjadi ${count} kalimat DESKRIPSI berurutan (bagian 1 sampai ${count}) yang mengalir membentuk satu ringkasan utuh, untuk ditampilkan BERGANTIAN sebagai teks di video Reels vertikal:
-- Bahasa Indonesia, lugas, informatif, mudah dibaca sekilas.
-- Setiap kalimat MAKSIMAL ${REEL_QUOTE_MAX_LEN} karakter.
-- Harus RUNTUT: kalimat 1 membuka inti berita, kalimat berikutnya melengkapi — JANGAN saling mengulang.
+  const userPrompt = `Ringkas berita berikut menjadi ${count} BAGIAN deskripsi berurutan (bagian 1 sampai ${count}) yang mengalir membentuk satu ringkasan utuh, untuk ditampilkan BERGANTIAN sebagai teks di video Reels vertikal:
+- Bahasa Indonesia, lugas, informatif, mudah dibaca.
+- Setiap bagian berisi 1–2 kalimat, MAKSIMAL ${REEL_SEGMENT_MAX_LEN} karakter.
+- Harus RUNTUT: bagian 1 membuka inti berita, bagian berikutnya melengkapi/menjelaskan — JANGAN saling mengulang.
 - Tanpa tanda kutip, tanpa hashtag, tanpa tautan, tanpa emoji, tanpa penomoran.
-- Diringkas dari ISI berita (bukan sekadar menyalin judul).
+- Diringkas dari ISI berita (bukan sekadar menyalin judul). Jika materi terbatas, boleh menghasilkan lebih sedikit bagian.
 
 Format jawaban WAJIB JSON murni (tanpa markdown), persis:
-{"quotes":["...","...","..."]}
+{"quotes":["bagian 1 ...","bagian 2 ...","bagian 3 ...","bagian 4 ...","bagian 5 ..."]}
 
 JUDUL: ${article.title}
 ISI: ${excerpt}`;
@@ -190,7 +191,7 @@ ISI: ${excerpt}`;
       feature: "social_caption",
       systemPrompt: REEL_QUOTE_SYSTEM_PROMPT,
       userPrompt,
-      maxTokens: 400,
+      maxTokens: 800,
       temperature: 0.7,
       articleTitle: article.title,
     });
@@ -200,7 +201,7 @@ ISI: ${excerpt}`;
     const cleaned = raw
       .map((q) => (typeof q === "string" ? cleanAIShortText(q) : ""))
       .map((q) => q.replace(/^["'“”‘’]+|["'“”‘’]+$/g, "").trim())
-      .map((q) => (q.length > REEL_QUOTE_MAX_LEN ? truncateAtWord(q, REEL_QUOTE_MAX_LEN).replace(/\.$/, "") : q))
+      .map((q) => (q.length > REEL_SEGMENT_MAX_LEN ? truncateAtWord(q, REEL_SEGMENT_MAX_LEN) : q))
       .filter((q) => q.length > 0);
     const quotes = Array.from(new Set(cleaned)).slice(0, count);
     if (quotes.length > 0) return { quotes };
@@ -208,7 +209,7 @@ ISI: ${excerpt}`;
     // swallow — fall through to fallback
   }
 
-  const fallback = truncateAtWord(article.title, REEL_QUOTE_MAX_LEN).replace(/\.$/, "");
+  const fallback = truncateAtWord((article.excerpt || article.title || "").trim(), REEL_SEGMENT_MAX_LEN);
   return { quotes: [fallback] };
 }
 

@@ -1,15 +1,17 @@
 /**
  * Reel frame renderer — kinetic typography.
  *
- * Produces the ORDERED, TIMED sequence of 1080×1920 (9:16) PNG frames for an
- * Instagram Reel. The photo + category badge + headline (title) form a PERSISTENT
- * base that never moves; the article description is revealed below it ONE WORD AT
- * A TIME (subtitle style), rotating through up to 3 parts. No zoom/pan.
+ * Produces the ORDERED, TIMED 1080×1920 (9:16) frames for an Instagram Reel.
+ * The photo + category badge + headline (title) form a PERSISTENT base that
+ * never moves. The article description is revealed below it ONE WORD AT A TIME
+ * (subtitle style) — each new word FADES IN — rotating through up to 5 parts of
+ * ~2 sentences each.
  *
- * Per-word timing follows adult reading speed (`wpm`, 200–300 typical) and each
- * part lingers (HOLD) once fully shown. All text is word-wrapped + line-capped so
- * it can never exceed the frame. Text is burned in with sharp + SVG (librsvg →
- * Pango/HarfBuzz) so Indonesian text + the brand fonts shape correctly.
+ *  - Title font is larger than the description font (clear hierarchy).
+ *  - Per-word timing follows adult reading speed (`wpm`, 200–300 typical).
+ *  - All text is word-wrapped + line-capped so it can never exceed the frame.
+ *  - Text is burned in with sharp + SVG (librsvg → Pango/HarfBuzz) so Indonesian
+ *    text + the brand fonts shape correctly.
  */
 
 import sharp from "sharp";
@@ -121,23 +123,24 @@ async function loadFeaturedImage(featuredImage: string | null | undefined): Prom
 }
 
 // ── Layout (1080×1920) ──────────────────────────────────────────────
-// Title = persistent header; description animates below it; brand bar at bottom.
-const BADGE_Y = 1120;
-const TITLE_Y = 1232;
-const TITLE_FONT = 44;
-const TITLE_LH = 54;
-const TITLE_MAX_CHARS = 32;
+// Title = persistent header (LARGER); description animates below it (SMALLER).
+const BADGE_Y = 1088;
+const TITLE_Y = 1166;
+const TITLE_FONT = 52; // headline — clearly larger than the description
+const TITLE_LH = 62;
+const TITLE_MAX_CHARS = 30;
 const TITLE_MAX_LINES = 3;
-const DESC_Y = 1470;
-const DESC_FONT = 58;
-const DESC_LH = 72;
-const DESC_MAX_CHARS = 26;
-const DESC_MAX_LINES = 4; // 4×72 + DESC_Y ≈ 1686 < brand bar — never overflows
-const BRAND_BAR_Y = HEIGHT - 180;
+const DESC_FONT = 38; // description — clearly smaller than the title
+const DESC_LH = 48;
+const DESC_MAX_CHARS = 34;
+const DESC_MAX_LINES = 6; // holds ~2 sentences without overflowing the frame
+const DESC_GAP = 70; // space between the title block and the description
+const BRAND_BAR_Y = HEIGHT - 170;
 
 const DEFAULT_WPM = 240;
-const HOLD_SEC = 1.3; // linger on a completed part so it can be read
+const HOLD_SEC = 1.4; // linger on a completed part so it can be read
 const INTRO_SEC = 0.8; // title/photo shown before the first word
+const FADE_OPACITY = 0.4; // opacity of a word during its (brief) fade-in frame
 
 export interface TimedFrame {
   buffer: Buffer;
@@ -148,7 +151,7 @@ export interface ReelKineticInput {
   /** Headline — shown as a persistent header for the whole clip. */
   title: string;
   category: string;
-  /** Up to 3 description parts, revealed one after another, word by word. */
+  /** Up to 5 description parts (~2 sentences each), revealed in turn, word by word. */
   segments: string[];
   featuredImage?: string | null;
   /** Adult reading speed in words/min (200–300 typical); drives word timing. */
@@ -185,50 +188,71 @@ function buildBaseSvg({
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   ${background}
-  <rect x="60" y="${BADGE_Y}" rx="6" ry="6" width="${badgeWidth}" height="48" fill="#b7102a" />
-  <text x="76" y="${BADGE_Y + 33}" font-family="'Work Sans','Helvetica',sans-serif" font-size="22" font-weight="700" fill="#ffffff" letter-spacing="2">${escapeXml(category.toUpperCase())}</text>
+  <rect x="60" y="${BADGE_Y}" rx="6" ry="6" width="${badgeWidth}" height="44" fill="#b7102a" />
+  <text x="76" y="${BADGE_Y + 31}" font-family="'Work Sans','Helvetica',sans-serif" font-size="22" font-weight="700" fill="#ffffff" letter-spacing="2">${escapeXml(category.toUpperCase())}</text>
   <text font-family="'Newsreader','Georgia',serif" font-size="${TITLE_FONT}" font-weight="800" fill="#ffffff" letter-spacing="-0.5">
     <tspan x="60" y="${TITLE_Y}">${titleTspans}</tspan>
   </text>
-  <rect x="0" y="${BRAND_BAR_Y}" width="${WIDTH}" height="180" fill="#000000" fill-opacity="0.35" />
-  <rect x="60" y="${BRAND_BAR_Y + 60}" width="6" height="40" fill="#b7102a" />
-  <text x="84" y="${BRAND_BAR_Y + 92}" font-family="'Newsreader','Georgia',serif" font-size="38" font-weight="800" fill="#ffffff" letter-spacing="1">KARTAWARTA</text>
-</svg>`;
-}
-
-/** Transparent overlay with just the (partial) description text, word-wrapped. */
-function buildDescSvg(visible: string): string {
-  const lines = wrapText(visible, DESC_MAX_CHARS, DESC_MAX_LINES);
-  const tspans = lines
-    .map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : DESC_LH}">${escapeXml(line)}</tspan>`)
-    .join("");
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
-  <text font-family="'Work Sans','Helvetica',sans-serif" font-size="${DESC_FONT}" font-weight="700" fill="#ffffff">
-    <tspan x="60" y="${DESC_Y}">${tspans}</tspan>
-  </text>
+  <rect x="0" y="${BRAND_BAR_Y}" width="${WIDTH}" height="170" fill="#000000" fill-opacity="0.35" />
+  <rect x="60" y="${BRAND_BAR_Y + 56}" width="6" height="38" fill="#b7102a" />
+  <text x="84" y="${BRAND_BAR_Y + 86}" font-family="'Newsreader','Georgia',serif" font-size="36" font-weight="800" fill="#ffffff" letter-spacing="1">KARTAWARTA</text>
 </svg>`;
 }
 
 /**
- * Build the ordered, timed frame sequence for a kinetic-typography Reel:
- * a persistent photo+title base with the description revealed one word at a time.
- * Per-word duration follows `wpm`; each part lingers (HOLD) once fully shown.
- * Returns at least the intro frame. The featured image is fetched ONCE.
+ * Transparent overlay with the (partial) description text, word-wrapped. When a
+ * `fadeWord` + `fadeOpacity` are given, the trailing word renders dimmed — this
+ * is what produces the per-word fade-in across two consecutive frames.
+ */
+function buildDescSvg(text: string, descY: number, fadeWord?: string, fadeOpacity?: number): string {
+  const lines = wrapText(text, DESC_MAX_CHARS, DESC_MAX_LINES);
+  const lastIdx = lines.length - 1;
+  const fade = fadeWord && fadeOpacity !== undefined && fadeOpacity < 1;
+
+  const tspans = lines
+    .map((line, i) => {
+      const pos = i === 0 ? `x="60" y="${descY}"` : `x="60" dy="${DESC_LH}"`;
+      if (fade && i === lastIdx) {
+        if (line === fadeWord) {
+          return `<tspan ${pos} fill-opacity="${fadeOpacity}">${escapeXml(line)}</tspan>`;
+        }
+        const suffix = ` ${fadeWord}`;
+        if (line.endsWith(suffix)) {
+          const prefix = line.slice(0, line.length - suffix.length);
+          return `<tspan ${pos}>${escapeXml(prefix + " ")}</tspan><tspan fill-opacity="${fadeOpacity}">${escapeXml(fadeWord as string)}</tspan>`;
+        }
+      }
+      return `<tspan ${pos}>${escapeXml(line)}</tspan>`;
+    })
+    .join("");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+  <text xml:space="preserve" font-family="'Work Sans','Helvetica',sans-serif" font-size="${DESC_FONT}" font-weight="600" fill="#ffffff">${tspans}</text>
+</svg>`;
+}
+
+/**
+ * Build the ordered, timed frame sequence for a kinetic-typography Reel: a
+ * persistent photo+title base, with the description revealed one word at a time
+ * — each new word fades in over two frames. Per-word duration follows `wpm`;
+ * each part lingers (HOLD) once fully shown. Frames are JPEG (fast to encode).
  */
 export async function renderReelKineticFrames(input: ReelKineticInput): Promise<TimedFrame[]> {
   const category = input.category || "BERITA";
   const wpm = Math.min(400, Math.max(120, Math.round(input.wpm ?? DEFAULT_WPM)));
   const wordDur = 60 / wpm;
+  const fadeDur = Math.min(0.09, wordDur * 0.45);
 
   const segments = (input.segments || [])
     .map((s) => (s || "").trim())
     .filter(Boolean)
-    .slice(0, 3);
+    .slice(0, 5);
   if (segments.length === 0) segments.push((input.title || "").trim());
 
   const imageBuffer = await loadFeaturedImage(input.featuredImage);
   const titleLines = wrapText(input.title || "", TITLE_MAX_CHARS, TITLE_MAX_LINES);
+  const descY = TITLE_Y + (titleLines.length - 1) * TITLE_LH + DESC_GAP + DESC_FONT;
 
   const baseComposites: sharp.OverlayOptions[] = [];
   if (imageBuffer) baseComposites.push({ input: imageBuffer, top: 0, left: 0 });
@@ -244,11 +268,11 @@ export async function renderReelKineticFrames(input: ReelKineticInput): Promise<
     .png()
     .toBuffer();
 
-  const composeDesc = async (visible: string): Promise<Buffer> => {
-    if (!visible) return baseBuffer; // intro: title only
+  const composeDesc = async (text: string, fadeWord?: string, fadeOpacity?: number): Promise<Buffer> => {
+    if (!text) return sharp(baseBuffer).jpeg({ quality: 88 }).toBuffer(); // intro: title only
     return sharp(baseBuffer)
-      .composite([{ input: Buffer.from(buildDescSvg(visible)), top: 0, left: 0 }])
-      .png()
+      .composite([{ input: Buffer.from(buildDescSvg(text, descY, fadeWord, fadeOpacity)), top: 0, left: 0 }])
+      .jpeg({ quality: 88 })
       .toBuffer();
   };
 
@@ -258,9 +282,13 @@ export async function renderReelKineticFrames(input: ReelKineticInput): Promise<
   for (const seg of segments) {
     const words = seg.split(/\s+/).filter(Boolean);
     for (let k = 1; k <= words.length; k++) {
-      const buf = await composeDesc(words.slice(0, k).join(" "));
-      const isLast = k === words.length;
-      frames.push({ buffer: buf, durationSec: isLast ? wordDur + HOLD_SEC : wordDur });
+      const fullText = words.slice(0, k).join(" ");
+      const newWord = words[k - 1];
+      // 1) brief frame with the new word dimmed (the fade-in)…
+      frames.push({ buffer: await composeDesc(fullText, newWord, FADE_OPACITY), durationSec: fadeDur });
+      // 2) …then the settled frame at full opacity (last word lingers extra).
+      const settled = wordDur - fadeDur + (k === words.length ? HOLD_SEC : 0);
+      frames.push({ buffer: await composeDesc(fullText), durationSec: Math.max(0.05, settled) });
     }
   }
 
