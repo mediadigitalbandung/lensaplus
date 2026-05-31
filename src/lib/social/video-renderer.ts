@@ -178,27 +178,22 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   if (voicePath) await fs.writeFile(voicePath, opts.voiceWav as Buffer);
   const hasBgm = !!(opts.bgmPath && existsSync(opts.bgmPath));
 
-  // Fades. With known opening/closing lengths, each clip fades in & out (a brief
-  // dip to black between opening → content → closing); otherwise a simple
-  // fade-in at start + fade-out at end.
-  const F = 0.6;
+  // Video fades: ONE fade-in at the very start (over the opening) and ONE
+  // fade-out at the very end (over the closing). NOTE: `fade=t=in:st=X` forces
+  // every frame BEFORE X to black, so multiple in-fades mid-stream would black
+  // out the whole clip — we deliberately use only the two edge fades.
   const O = opts.openingSec ?? 0;
   const C = opts.closingSec ?? 0;
-  let fadeChain: string;
-  if (O > F && C > F && totalSec > O + C + 1) {
-    fadeChain = [
-      `fade=t=in:st=0:d=${F}`,
-      `fade=t=out:st=${(O - F).toFixed(2)}:d=${F}`,
-      `fade=t=in:st=${O.toFixed(2)}:d=${F}`,
-      `fade=t=out:st=${Math.max(0, totalSec - C - F).toFixed(2)}:d=${F}`,
-      `fade=t=in:st=${Math.max(0, totalSec - C).toFixed(2)}:d=${F}`,
-      `fade=t=out:st=${Math.max(0, totalSec - F).toFixed(2)}:d=${F}`,
-    ].join(",");
-  } else {
-    fadeChain = `fade=t=in:st=0:d=0.5,fade=t=out:st=${Math.max(0, totalSec - 0.5).toFixed(2)}:d=0.5`;
-  }
+  const fadeIn = Math.min(0.8, O > 0.4 ? O * 0.4 : 0.5);
+  const fadeOutDur = Math.min(0.9, C > 0.5 ? C * 0.4 : 0.5);
+  const fadeChain = `fade=t=in:st=0:d=${fadeIn.toFixed(2)},fade=t=out:st=${Math.max(0, totalSec - fadeOutDur).toFixed(2)}:d=${fadeOutDur.toFixed(2)}`;
   const videoChain = `[0:v]scale=${OUT_W}:${OUT_H},fps=${FPS},${fadeChain},format=yuv420p[v]`;
-  const fadeOut = Math.max(0, totalSec - 1).toFixed(3);
+
+  // Background-music fades: fade IN over (roughly) the opening, fade OUT over
+  // (roughly) the closing; ducked low when a voiceover is present.
+  const bgmFadeIn = Math.min(1.5, Math.max(0.4, O || 1.2));
+  const bgmFadeOutDur = Math.min(2.5, Math.max(0.6, C || 1.5));
+  const bgmFadeOutStart = Math.max(0, totalSec - bgmFadeOutDur).toFixed(2);
 
   // Audio inputs follow the concat video (input 0). Four cases: voice + BGM
   // (BGM ducked under the narration & mixed), voice only, BGM only, or silent.
@@ -206,18 +201,21 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   let audioFilter = "";
   let audioMap = "";
   if (voicePath && hasBgm) {
+    // Voice at full volume; BGM ducked LOW under it, with fade in/out. normalize=0
+    // sums without auto-attenuating the voice (safe since BGM is quiet).
+    const duckVol = Math.min(bgmVolume, 0.1);
     audioInputs.push("-i", voicePath, "-stream_loop", "-1", "-i", opts.bgmPath as string);
     audioFilter =
       `;[1:a]aresample=44100,volume=1[av]` +
-      `;[2:a]aresample=44100,volume=${Math.min(bgmVolume, 0.18)},afade=t=out:st=${fadeOut}:d=1[ab]` +
-      `;[av][ab]amix=inputs=2:duration=first:dropout_transition=0[a]`;
+      `;[2:a]aresample=44100,volume=${duckVol},afade=t=in:st=0:d=${bgmFadeIn.toFixed(2)},afade=t=out:st=${bgmFadeOutStart}:d=${bgmFadeOutDur.toFixed(2)}[ab]` +
+      `;[av][ab]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]`;
     audioMap = "[a]";
   } else if (voicePath) {
     audioInputs.push("-i", voicePath);
     audioMap = "1:a";
   } else if (hasBgm) {
     audioInputs.push("-stream_loop", "-1", "-i", opts.bgmPath as string);
-    audioFilter = `;[1:a]volume=${bgmVolume},afade=t=out:st=${fadeOut}:d=1[a]`;
+    audioFilter = `;[1:a]volume=${bgmVolume},afade=t=in:st=0:d=${bgmFadeIn.toFixed(2)},afade=t=out:st=${bgmFadeOutStart}:d=${bgmFadeOutDur.toFixed(2)}[a]`;
     audioMap = "[a]";
   } else {
     audioInputs.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100");
