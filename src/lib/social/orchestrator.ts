@@ -923,7 +923,13 @@ async function executeReelRender(
     const bgmUrl = input.bgmUrl ?? global.reelDefaultBgmUrl ?? null;
     const bgmPath = resolveLocalUploadPath(bgmUrl);
 
-    const rendered = await renderReelVideo({ frames, bgmPath, voiceWav });
+    const rendered = await renderReelVideo({
+      frames,
+      bgmPath,
+      voiceWav,
+      openingSec: OPENING_SEC,
+      closingSec: CLOSING_SEC,
+    });
 
     await prisma.socialPost.update({
       where: { id: postId },

@@ -142,8 +142,8 @@ export const HOLD_SEC = 1.4; // silent mode: linger on a completed part to read 
 export const VOICED_HOLD_SEC = 0.6; // narrated mode: short pause between parts
 export const INTRO_SEC = 0.8; // title/photo shown before the first word
 export const TEXT_LEAD_SEC = 0.3; // text appears this much BEFORE the narration (read-then-hear)
-export const OPENING_SEC = 2.0; // reusable branded opening clip
-export const CLOSING_SEC = 2.5; // reusable branded closing clip
+export const OPENING_SEC = 3.5; // reusable branded opening clip (longer, with fades)
+export const CLOSING_SEC = 4.0; // reusable branded closing clip (longer, with fades)
 const FADE_OPACITY = 0.4; // opacity of a word during its (brief) fade-in frame
 
 export interface TimedFrame {

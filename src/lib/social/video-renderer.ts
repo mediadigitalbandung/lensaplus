@@ -115,6 +115,10 @@ export interface RenderReelOptions {
   bgmVolume?: number;
   /** Combined narration WAV (whole-clip length). When present it's the primary audio. */
   voiceWav?: Buffer | null;
+  /** Opening clip length (sec) — enables fade-in/out around the opening. */
+  openingSec?: number;
+  /** Closing clip length (sec) — enables fade-in/out around the closing. */
+  closingSec?: number;
 }
 
 export interface RenderReelResult {
@@ -174,10 +178,26 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   if (voicePath) await fs.writeFile(voicePath, opts.voiceWav as Buffer);
   const hasBgm = !!(opts.bgmPath && existsSync(opts.bgmPath));
 
-  // Gentle fade-in at the very start (over the opening clip) and fade-out at the
-  // end (over the closing clip) for a polished open/close.
-  const vFadeOut = Math.max(0, totalSec - 0.5).toFixed(2);
-  const videoChain = `[0:v]scale=${OUT_W}:${OUT_H},fps=${FPS},fade=t=in:st=0:d=0.4,fade=t=out:st=${vFadeOut}:d=0.5,format=yuv420p[v]`;
+  // Fades. With known opening/closing lengths, each clip fades in & out (a brief
+  // dip to black between opening → content → closing); otherwise a simple
+  // fade-in at start + fade-out at end.
+  const F = 0.6;
+  const O = opts.openingSec ?? 0;
+  const C = opts.closingSec ?? 0;
+  let fadeChain: string;
+  if (O > F && C > F && totalSec > O + C + 1) {
+    fadeChain = [
+      `fade=t=in:st=0:d=${F}`,
+      `fade=t=out:st=${(O - F).toFixed(2)}:d=${F}`,
+      `fade=t=in:st=${O.toFixed(2)}:d=${F}`,
+      `fade=t=out:st=${Math.max(0, totalSec - C - F).toFixed(2)}:d=${F}`,
+      `fade=t=in:st=${Math.max(0, totalSec - C).toFixed(2)}:d=${F}`,
+      `fade=t=out:st=${Math.max(0, totalSec - F).toFixed(2)}:d=${F}`,
+    ].join(",");
+  } else {
+    fadeChain = `fade=t=in:st=0:d=0.5,fade=t=out:st=${Math.max(0, totalSec - 0.5).toFixed(2)}:d=0.5`;
+  }
+  const videoChain = `[0:v]scale=${OUT_W}:${OUT_H},fps=${FPS},${fadeChain},format=yuv420p[v]`;
   const fadeOut = Math.max(0, totalSec - 1).toFixed(3);
 
   // Audio inputs follow the concat video (input 0). Four cases: voice + BGM
