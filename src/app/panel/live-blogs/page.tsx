@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Filter,
   Edit,
+  Settings,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";

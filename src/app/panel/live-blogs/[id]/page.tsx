@@ -37,6 +37,7 @@ interface LiveBlog {
   endedAt: string | null;
   coverImage: string | null;
   isPublished: boolean;
+  syndicateToSocial: boolean;
 }
 
 interface LiveBlogEntry {
@@ -106,6 +107,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
           scheduledAt: b.scheduledAt,
           coverImage: b.coverImage,
           isPublished: b.isPublished,
+          syndicateToSocial: b.syndicateToSocial,
         });
       }
     } catch { /* noop */ }
@@ -338,6 +340,24 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
               className="h-4 w-4 rounded border-border text-primary"
             />
             <span className="text-sm text-on-surface">Tampilkan ke publik</span>
+          </label>
+
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={meta.syndicateToSocial ?? false}
+              onChange={(e) => setMeta((m) => ({ ...m, syndicateToSocial: e.target.checked }))}
+              className="h-4 w-4 rounded border-border text-primary mt-0.5"
+            />
+            <span className="text-sm text-on-surface">
+              Sebar update ke sosmed
+              <span className="block text-label-sm text-txt-muted">
+                Tiap update otomatis dikirim ke Telegram/Threads (saat status LIVE).{" "}
+                <Link href="/panel/live-blogs/pengaturan" className="text-primary hover:underline">
+                  Atur kanal
+                </Link>
+              </span>
+            </span>
           </label>
 
           <button

@@ -32,6 +32,7 @@ const updateSchema = z.object({
   coverImage: z.string().url().optional().nullable(),
   articleId: z.string().optional().nullable(),
   isPublished: z.boolean().optional(),
+  syndicateToSocial: z.boolean().optional(),
 });
 
 const WRITE_ROLES = [
@@ -148,6 +149,9 @@ export async function PUT(
         }),
         ...(data.isPublished !== undefined && {
           isPublished: data.isPublished,
+        }),
+        ...(data.syndicateToSocial !== undefined && {
+          syndicateToSocial: data.syndicateToSocial,
         }),
       },
     });

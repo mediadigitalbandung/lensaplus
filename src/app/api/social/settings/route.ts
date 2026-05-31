@@ -67,6 +67,15 @@ export async function GET() {
       }
     }
 
+    // Telegram lives in its own table; fetch separately and tolerate the table
+    // not existing yet (pre-migration) by falling back to defaults.
+    let telegram: { enabled: boolean; chatId: string | null; botToken: string | null } | null = null;
+    try {
+      telegram = await prisma.telegramSettings.findUnique({ where: { id: "global" } });
+    } catch {
+      telegram = null;
+    }
+
     return successResponse({
       global: settings.global,
       instagram: {
@@ -84,6 +93,12 @@ export async function GET() {
         accessToken: maskToken(settings.threads.accessToken),
         hasAccessToken: Boolean(settings.threads.accessToken),
       },
+      telegram: {
+        enabled: telegram?.enabled ?? false,
+        chatId: telegram?.chatId ?? null,
+        botToken: maskToken(telegram?.botToken),
+        hasBotToken: Boolean(telegram?.botToken),
+      },
     });
   } catch (err) {
     return errorResponse(err);
@@ -99,6 +114,15 @@ const globalSchema = z.object({
   defaultHashtags: z.string().nullable().optional(),
   defaultCTA: z.string().nullable().optional(),
   captionTemplate: z.string().nullable().optional(),
+  liveSyndicateTelegram: z.boolean().optional(),
+  liveSyndicateThreads: z.boolean().optional(),
+  liveSyndicateHighlightsOnly: z.boolean().optional(),
+});
+
+const telegramSchema = z.object({
+  botToken: z.string().nullable().optional(),
+  chatId: z.string().nullable().optional(),
+  enabled: z.boolean().optional(),
 });
 
 const instagramSchema = z.object({
@@ -129,7 +153,7 @@ const threadsSchema = z.object({
 });
 
 const putSchema = z.object({
-  scope: z.enum(["global", "instagram", "facebook", "threads"]),
+  scope: z.enum(["global", "instagram", "facebook", "threads", "telegram"]),
   data: z.record(z.unknown()),
 });
 
@@ -189,6 +213,28 @@ export async function PUT(req: NextRequest) {
         tokenExpiresAt,
       };
       updatedRow = await prisma.threadsSettings.upsert({
+        where: { id: "global" },
+        update: prepared,
+        create: { id: "global", ...prepared },
+      });
+    } else if (parsed.scope === "telegram") {
+      const data = telegramSchema.parse(parsed.data);
+      const prepared: Record<string, unknown> = {};
+      if (data.chatId !== undefined) prepared.chatId = data.chatId;
+      if (data.enabled !== undefined) prepared.enabled = data.enabled;
+      // Only overwrite the bot token when a genuine new value is supplied —
+      // a masked echo ("1234...cdef") or the "(tidak berubah)" sentinel keeps
+      // the stored token; an explicit null clears it.
+      if (data.botToken === null) {
+        prepared.botToken = null;
+      } else if (
+        data.botToken &&
+        !data.botToken.includes("...") &&
+        data.botToken !== "(tidak berubah)"
+      ) {
+        prepared.botToken = data.botToken;
+      }
+      updatedRow = await prisma.telegramSettings.upsert({
         where: { id: "global" },
         update: prepared,
         create: { id: "global", ...prepared },

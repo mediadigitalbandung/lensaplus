@@ -43,6 +43,7 @@ export default function NewLiveBlogPage() {
     scheduledAt: toLocalInput(),
     coverImage: "",
     isPublished: true,
+    syndicateToSocial: false,
   });
   const [saving, setSaving] = useState(false);
   const [slugManual, setSlugManual] = useState(false);
@@ -229,6 +230,25 @@ export default function NewLiveBlogPage() {
             className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
           />
           <span className="text-body-sm text-on-surface">Tampilkan ke publik</span>
+        </label>
+
+        {/* Syndicate to social */}
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.syndicateToSocial}
+            onChange={(e) => setForm((f) => ({ ...f, syndicateToSocial: e.target.checked }))}
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary mt-0.5"
+          />
+          <span className="text-body-sm text-on-surface">
+            Sebar update ke sosmed
+            <span className="block text-label-sm text-txt-muted">
+              Tiap update otomatis dikirim ke Telegram/Threads saat status LIVE.{" "}
+              <Link href="/panel/live-blogs/pengaturan" className="text-primary hover:underline">
+                Atur kanal
+              </Link>
+            </span>
+          </span>
         </label>
 
         {/* Submit */}

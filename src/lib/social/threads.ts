@@ -174,6 +174,69 @@ export class ThreadsPublisher {
   }
 
   /**
+   * Text-only publish (media_type=TEXT) with optional reply chaining — used by
+   * the live-blog syndicator so each update threads under the opening post.
+   * Unlike publish(), this needs no image and no container polling (text
+   * containers are ready immediately); a short delay covers Meta's eventual
+   * consistency before threads_publish.
+   */
+  async publishText(opts: {
+    text: string;
+    replyToId?: string;
+  }): Promise<PublishResult> {
+    const { accessToken, threadsUserId } = this.config;
+    if (!accessToken || !threadsUserId) {
+      return { success: false, error: "Threads not configured (missing accessToken or threadsUserId)" };
+    }
+    if (!opts.text.trim()) {
+      return { success: false, error: "Threads text post requires non-empty text" };
+    }
+
+    try {
+      const params: Record<string, string> = {
+        media_type: "TEXT",
+        text: opts.text,
+        access_token: accessToken,
+      };
+      if (opts.replyToId) params.reply_to_id = opts.replyToId;
+
+      const createRes = await graphRequest<{ id?: string }>(`${GRAPH_BASE}/me/threads`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(params).toString(),
+      });
+      if (!createRes.id) {
+        return { success: false, error: "Threads text container creation returned no id" };
+      }
+
+      // Brief settle before publishing (text needs no full status polling).
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const publishRes = await graphRequest<{ id?: string }>(`${GRAPH_BASE}/me/threads_publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          creation_id: createRes.id,
+          access_token: accessToken,
+        }).toString(),
+      });
+
+      if (!publishRes.id) {
+        return { success: false, error: "Threads text publish returned no id" };
+      }
+      return { success: true, externalId: publishRes.id };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isTokenExpired = /code 190/i.test(msg);
+      const error = isTokenExpired ? `TOKEN_EXPIRED — ${msg}` : msg;
+      if (isTokenExpired) {
+        console.error("[threads] TOKEN_EXPIRED error 190 — live syndication blocked until token refreshed");
+      }
+      return { success: false, error };
+    }
+  }
+
+  /**
    * Delete a post (Threads API does not support programmatic deletion currently; returns local deletion flag).
    */
   async deletePost(externalId: string): Promise<{ success: boolean; error?: string }> {

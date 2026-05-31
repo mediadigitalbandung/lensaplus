@@ -16,6 +16,7 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { syndicateLiveBlogEntry } from "@/lib/social/live-syndicator";
 
 export const dynamic = "force-dynamic";
 
@@ -94,7 +95,16 @@ export async function POST(
 
     const blog = await prisma.liveBlog.findUnique({
       where: { id: params.id },
-      select: { id: true, title: true, status: true, authorId: true },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        status: true,
+        authorId: true,
+        isPublished: true,
+        syndicateToSocial: true,
+      },
     });
 
     if (!blog) {
@@ -136,6 +146,26 @@ export async function POST(
       entry.id,
       `Added entry to live blog: ${blog.title}`
     );
+
+    // Fire-and-forget social syndication — never blocks the editor's post.
+    // syndicateLiveBlogEntry swallows all errors and self-gates on the
+    // per-blog flag + global switches + LIVE status.
+    void syndicateLiveBlogEntry({
+      blog: {
+        id: blog.id,
+        slug: blog.slug,
+        title: blog.title,
+        description: blog.description,
+        status: blog.status,
+        isPublished: blog.isPublished,
+        syndicateToSocial: blog.syndicateToSocial,
+      },
+      entry: {
+        id: entry.id,
+        content: entry.content,
+        isHighlight: entry.isHighlight,
+      },
+    });
 
     return successResponse(entry, 201);
   } catch (err) {

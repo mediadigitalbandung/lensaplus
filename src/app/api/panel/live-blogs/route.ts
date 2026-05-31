@@ -45,6 +45,7 @@ const createSchema = z.object({
   coverImage: z.string().url().optional().nullable(),
   articleId: z.string().optional().nullable(),
   isPublished: z.boolean().default(true),
+  syndicateToSocial: z.boolean().default(false),
 });
 
 export async function GET(req: NextRequest) {
@@ -140,6 +141,7 @@ export async function POST(req: NextRequest) {
         authorId: session.user.id,
         articleId: data.articleId ?? null,
         isPublished: data.isPublished,
+        syndicateToSocial: data.syndicateToSocial,
       },
     });
 

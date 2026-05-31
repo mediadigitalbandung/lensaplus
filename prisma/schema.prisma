@@ -106,6 +106,15 @@ enum SocialMediaKind {
   REELS
 }
 
+// Platforms supported by the LIVE BLOG real-time syndication subsystem.
+// Kept separate from SocialPlatform (the article-publishing enum) so the
+// live-blog flow can evolve independently without touching the article
+// orchestrator's Record<Platform> maps.
+enum LiveSyndicationPlatform {
+  TELEGRAM
+  THREADS
+}
+
 enum CourtScheduleStatus {
   SCHEDULED
   LIVE
@@ -576,9 +585,25 @@ model SocialMediaSettings {
   defaultHashtags    String?  @db.Text
   defaultCTA         String?  @db.Text
   captionTemplate    String?  @db.Text
+  // Live-blog real-time syndication master switches (per platform), plus an
+  // option to only broadcast entries flagged as highlights. A live blog also
+  // needs its own LiveBlog.syndicateToSocial = true to actually broadcast.
+  liveSyndicateTelegram      Boolean @default(false)
+  liveSyndicateThreads       Boolean @default(false)
+  liveSyndicateHighlightsOnly Boolean @default(false)
   updatedAt          DateTime @updatedAt
 
   @@map("social_media_settings")
+}
+
+model TelegramSettings {
+  id        String   @id @default("global")
+  botToken  String?  @db.Text // bot token from @BotFather
+  chatId    String? // channel username (e.g. "@kartawarta") or numeric chat id ("-100...")
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("telegram_settings")
 }
 
 model InstagramSettings {
@@ -1220,11 +1245,15 @@ model LiveBlog {
   articleId   String? // optional link ke artikel terkait
   isPublished Boolean        @default(true)
   viewCount   Int            @default(0)
+  // When true (and the relevant global liveSyndicate* switch is on), each new
+  // entry of this live blog is broadcast to social media as a real-time thread.
+  syndicateToSocial Boolean  @default(false)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  entries LiveBlogEntry[]
-  author  User            @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  entries     LiveBlogEntry[]
+  socialPosts LiveBlogSocialPost[]
+  author      User            @relation(fields: [authorId], references: [id], onDelete: Restrict)
 
   @@index([status, scheduledAt(sort: Desc)])
   @@index([isPublished, status])
@@ -1243,11 +1272,37 @@ model LiveBlogEntry {
   imageUrl    String?
   videoUrl    String?
 
-  liveBlog LiveBlog @relation(fields: [liveBlogId], references: [id], onDelete: Cascade)
+  liveBlog    LiveBlog             @relation(fields: [liveBlogId], references: [id], onDelete: Cascade)
+  socialPosts LiveBlogSocialPost[]
 
   @@index([liveBlogId, postedAt(sort: Desc)])
   @@index([liveBlogId, isPinned, postedAt(sort: Desc)])
   @@map("live_blog_entries")
+}
+
+// Tracks each social broadcast of a live blog. The "root" row (isRoot=true,
+// liveBlogEntryId=null) is the opening post per platform; every entry post is
+// recorded with its externalId so updates can chain as replies under the root
+// and so failures are inspectable / retryable.
+model LiveBlogSocialPost {
+  id              String                  @id @default(cuid())
+  liveBlogId      String
+  liveBlogEntryId String? // null for the root/opener post
+  platform        LiveSyndicationPlatform
+  externalId      String? // Telegram message_id or Threads media id
+  status          SocialPostStatus        @default(PENDING)
+  isRoot          Boolean                 @default(false)
+  caption         String?                 @db.Text
+  errorMessage    String?
+  createdAt       DateTime                @default(now())
+  publishedAt     DateTime?
+
+  liveBlog      LiveBlog       @relation(fields: [liveBlogId], references: [id], onDelete: Cascade)
+  liveBlogEntry LiveBlogEntry? @relation(fields: [liveBlogEntryId], references: [id], onDelete: Cascade)
+
+  @@index([liveBlogId, platform])
+  @@index([liveBlogEntryId])
+  @@map("live_blog_social_posts")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
