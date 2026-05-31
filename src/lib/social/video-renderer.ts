@@ -32,7 +32,6 @@ import ffmpegStatic from "ffmpeg-static";
 const FPS = 30;
 const OUT_W = 1080;
 const OUT_H = 1920;
-const XFADE_DURATION = 0.6; // seconds of crossfade between text segments
 const THREADS = 2;
 
 export const SOCIAL_REELS_DIR = path.join(process.cwd(), "public", "uploads", "social-reels");
@@ -105,13 +104,11 @@ function runFfmpeg(args: string[]): Promise<void> {
 
 export interface RenderReelOptions {
   /**
-   * 1080×1920 still frames (PNG). Shown in sequence — each shares the SAME
-   * photo + background, only the overlaid text differs. 1–3 frames; with >1 the
-   * renderer crossfades between them (no camera movement). 1 frame = fully static.
+   * Ordered, TIMED 1080×1920 PNG frames. The renderer concatenates them at their
+   * given per-frame durations (ffmpeg concat demuxer) — this is what drives the
+   * word-by-word text reveal. Total clip length = sum of the frame durations.
    */
-  frames: Buffer[];
-  /** Total clip length in seconds (clamped 5–60; default 30). */
-  durationSec?: number;
+  frames: { buffer: Buffer; durationSec: number }[];
   /** Local filesystem path to a background-music file, or null/undefined for silent. */
   bgmPath?: string | null;
   /** BGM volume 0–1 (default 0.35). */
@@ -129,15 +126,18 @@ export interface RenderReelResult {
 }
 
 /**
- * Render the still frame into an MP4 Reel + a cover JPEG. Returns local paths
- * and public URLs. Throws on render failure (caller marks the post REJECTED).
+ * Render the ordered, timed frames into an MP4 Reel + cover JPEG via the ffmpeg
+ * concat demuxer (each frame held for its own duration → drives the word-by-word
+ * reveal). No zoom/pan. Returns local paths + public URLs. Throws on failure.
  */
 export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderReelResult> {
-  const durationSec = Math.min(60, Math.max(5, Math.round(opts.durationSec ?? 30)));
   const bgmVolume = Math.min(1, Math.max(0, opts.bgmVolume ?? 0.35));
-  const frameBuffers = (opts.frames || []).filter(Boolean).slice(0, 3);
-  if (frameBuffers.length === 0) throw new Error("renderReelVideo: no frames provided");
-  const n = frameBuffers.length;
+  const frames = (opts.frames || []).filter((f) => f && f.buffer);
+  if (frames.length === 0) throw new Error("renderReelVideo: no frames provided");
+  const totalSec = Math.max(
+    1,
+    frames.reduce((s, f) => s + Math.max(0.05, f.durationSec || 0), 0),
+  );
 
   await fs.mkdir(SOCIAL_REELS_DIR, { recursive: true });
 
@@ -146,71 +146,59 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   const coverFilename = `${id}.jpg`;
   const mp4Path = path.join(SOCIAL_REELS_DIR, mp4Filename);
   const coverPath = path.join(SOCIAL_REELS_DIR, coverFilename);
-  const tmpPaths = frameBuffers.map((_, i) => path.join(os.tmpdir(), `reel-frame-${id}-${i}.png`));
+  const workDir = path.join(os.tmpdir(), `reel-${id}`);
+  await fs.mkdir(workDir, { recursive: true });
 
-  // Cover = the first frame (photo + first quote).
-  await sharp(frameBuffers[0]).jpeg({ quality: 88 }).toFile(coverPath);
-  await Promise.all(frameBuffers.map((b, i) => fs.writeFile(tmpPaths[i], b)));
+  // Cover = the first frame.
+  await sharp(frames[0].buffer).jpeg({ quality: 88 }).toFile(coverPath);
 
-  // STATIC video (no zoom / no pan). With >1 frame we crossfade between them —
-  // every frame shares the same photo+background, so only the text visibly
-  // swaps while the image stays perfectly still. segLen is sized so the
-  // crossfade overlaps still sum to exactly `durationSec`.
-  const D = XFADE_DURATION;
-  const segLen = n === 1 ? durationSec : (durationSec + (n - 1) * D) / n;
-
-  let videoChain: string;
-  if (n === 1) {
-    videoChain = `[0:v]scale=${OUT_W}:${OUT_H},setsar=1,fps=${FPS},format=yuv420p[v]`;
-  } else {
-    const scaled = frameBuffers
-      .map((_, i) => `[${i}:v]scale=${OUT_W}:${OUT_H},setsar=1,fps=${FPS}[s${i}]`)
-      .join(";");
-    const steps: string[] = [];
-    let prev = "s0";
-    for (let k = 1; k < n; k++) {
-      const offset = (k * (segLen - D)).toFixed(3);
-      const out = k === n - 1 ? "vx" : `x${k}`;
-      steps.push(`[${prev}][s${k}]xfade=transition=fade:duration=${D}:offset=${offset}[${out}]`);
-      prev = out;
-    }
-    videoChain = `${scaled};${steps.join(";")};[vx]format=yuv420p[v]`;
+  // Write each frame + a concat list with per-frame durations. The concat
+  // demuxer ignores the LAST entry's duration unless the file is repeated, so
+  // we append the final frame once more.
+  const listLines: string[] = [];
+  let lastPath = "";
+  for (let i = 0; i < frames.length; i++) {
+    const fp = path.join(workDir, `f${String(i).padStart(4, "0")}.png`);
+    await fs.writeFile(fp, frames[i].buffer);
+    lastPath = fp.replace(/\\/g, "/");
+    listLines.push(`file '${lastPath}'`);
+    listLines.push(`duration ${Math.max(0.05, frames[i].durationSec || 0).toFixed(3)}`);
   }
+  listLines.push(`file '${lastPath}'`);
+  const listPath = path.join(workDir, "list.txt");
+  await fs.writeFile(listPath, listLines.join("\n"));
 
-  const inputArgs: string[] = [];
-  for (const p of tmpPaths) {
-    inputArgs.push("-loop", "1", "-t", segLen.toFixed(3), "-i", p);
-  }
+  const videoChain = `[0:v]scale=${OUT_W}:${OUT_H},fps=${FPS},format=yuv420p[v]`;
 
   try {
     await withRenderLock(async () => {
       let args: string[];
       if (opts.bgmPath && existsSync(opts.bgmPath)) {
-        const audioChain = `[${n}:a]volume=${bgmVolume},afade=t=out:st=${Math.max(0, durationSec - 1)}:d=1[a]`;
+        const audioChain = `[1:a]volume=${bgmVolume},afade=t=out:st=${Math.max(0, totalSec - 1).toFixed(3)}:d=1[a]`;
         args = [
           "-y",
-          ...inputArgs,
+          "-f", "concat", "-safe", "0", "-i", listPath,
           "-stream_loop", "-1", "-i", opts.bgmPath,
           "-filter_complex", `${videoChain};${audioChain}`,
           "-map", "[v]", "-map", "[a]",
-          ...commonOutputArgs(durationSec),
+          ...commonOutputArgs(totalSec),
           mp4Path,
         ];
       } else {
         args = [
           "-y",
-          ...inputArgs,
+          "-f", "concat", "-safe", "0", "-i", listPath,
           "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
           "-filter_complex", videoChain,
-          "-map", "[v]", "-map", `${n}:a`,
-          ...commonOutputArgs(durationSec),
+          "-map", "[v]", "-map", "1:a",
+          ...commonOutputArgs(totalSec),
           mp4Path,
         ];
       }
       await runFfmpeg(args);
     });
   } finally {
-    await Promise.all(tmpPaths.map((p) => fs.unlink(p).catch(() => {})));
+    await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
   }
 
   return {
@@ -220,7 +208,7 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
     coverPath,
     videoUrl: reelPublicUrl(mp4Filename),
     coverUrl: reelPublicUrl(coverFilename),
-    durationSec,
+    durationSec: Math.round(totalSec),
   };
 }
 
@@ -231,7 +219,6 @@ function commonOutputArgs(durationSec: number): string[] {
     "-level", "4.1",
     "-pix_fmt", "yuv420p",
     "-preset", "veryfast",
-    "-tune", "stillimage",
     "-g", String(FPS * 2), // closed GOP (2s) — Reels require closed GOP
     "-threads", String(THREADS),
     "-c:a", "aac",

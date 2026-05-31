@@ -30,7 +30,7 @@ import type {
 import { prisma } from "@/lib/prisma";
 import { generateReelQuotes } from "./ai-caption";
 import { generateSocialCaption } from "./caption-generator";
-import { renderReelFrames } from "./reel-frame";
+import { renderReelKineticFrames } from "./reel-frame";
 import { renderReelVideo, deleteReelFiles } from "./video-renderer";
 import { FacebookPublisher, type FacebookPostMode } from "./facebook";
 import { InstagramPublisher } from "./instagram";
@@ -869,28 +869,27 @@ async function executeReelRender(
   input: RenderReelInput,
 ): Promise<void> {
   try {
-    // Up to 3 distinct AI quotes (the only thing that changes in the video) +
-    // the under-post caption, generated in parallel.
+    // Up to 3 description parts (the rotating, word-by-word text) + the
+    // under-post caption, generated in parallel.
     const [{ quotes }, caption] = await Promise.all([
       generateReelQuotes(article, 3),
       buildReelCaption(article, global),
     ]);
 
-    // One frame per quote — same photo + background, only the text differs.
-    const frames = await renderReelFrames({
+    // Persistent photo + headline base; description revealed word-by-word.
+    // Clip duration follows adult reading speed (frames carry their own timing).
+    const frames = await renderReelKineticFrames({
       title: article.title,
       category: article.category?.name || "BERITA",
-      quotes,
+      segments: quotes,
       featuredImage: article.featuredImage,
+      wpm: 240,
     });
 
     const bgmUrl = input.bgmUrl ?? global.reelDefaultBgmUrl ?? null;
     const bgmPath = resolveLocalUploadPath(bgmUrl);
-    // Reels are a fixed 30s format (text rotates across the clip); a per-render
-    // override is still honored when explicitly supplied.
-    const durationSec = input.durationSec ?? 30;
 
-    const rendered = await renderReelVideo({ frames, durationSec, bgmPath });
+    const rendered = await renderReelVideo({ frames, bgmPath });
 
     await prisma.socialPost.update({
       where: { id: postId },

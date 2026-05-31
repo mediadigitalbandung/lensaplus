@@ -1,16 +1,15 @@
 /**
- * Reel frame renderer.
+ * Reel frame renderer — kinetic typography.
  *
- * Produces a single 1080×1920 (9:16) PNG buffer — the still frame that the
- * video renderer (`video-renderer.ts`) animates with a subtle Ken Burns zoom
- * into an Instagram Reel. The quote (auto-distilled from the article) is the
- * hero text. Visual language mirrors `/api/og/story` (navy gradient, crimson
- * accent, Newsreader/Work Sans, KARTAWARTA brand bar) but is kept self-contained
- * so the live story-card endpoint is never touched.
+ * Produces the ORDERED, TIMED sequence of 1080×1920 (9:16) PNG frames for an
+ * Instagram Reel. The photo + category badge + headline (title) form a PERSISTENT
+ * base that never moves; the article description is revealed below it ONE WORD AT
+ * A TIME (subtitle style), rotating through up to 3 parts. No zoom/pan.
  *
- * Text is burned in here via sharp + SVG (librsvg → Pango/HarfBuzz) rather than
- * ffmpeg `drawtext`, so Indonesian text + the brand fonts shape correctly and
- * the same frame doubles as the Reel cover.
+ * Per-word timing follows adult reading speed (`wpm`, 200–300 typical) and each
+ * part lingers (HOLD) once fully shown. All text is word-wrapped + line-capped so
+ * it can never exceed the frame. Text is burned in with sharp + SVG (librsvg →
+ * Pango/HarfBuzz) so Indonesian text + the brand fonts shape correctly.
  */
 
 import sharp from "sharp";
@@ -121,41 +120,55 @@ async function loadFeaturedImage(featuredImage: string | null | undefined): Prom
   }
 }
 
-export interface ReelFrameInput {
-  title: string;
-  category: string;
-  quote: string;
-  featuredImage?: string | null;
+// ── Layout (1080×1920) ──────────────────────────────────────────────
+// Title = persistent header; description animates below it; brand bar at bottom.
+const BADGE_Y = 1120;
+const TITLE_Y = 1232;
+const TITLE_FONT = 44;
+const TITLE_LH = 54;
+const TITLE_MAX_CHARS = 32;
+const TITLE_MAX_LINES = 3;
+const DESC_Y = 1470;
+const DESC_FONT = 58;
+const DESC_LH = 72;
+const DESC_MAX_CHARS = 26;
+const DESC_MAX_LINES = 4; // 4×72 + DESC_Y ≈ 1686 < brand bar — never overflows
+const BRAND_BAR_Y = HEIGHT - 180;
+
+const DEFAULT_WPM = 240;
+const HOLD_SEC = 1.3; // linger on a completed part so it can be read
+const INTRO_SEC = 0.8; // title/photo shown before the first word
+
+export interface TimedFrame {
+  buffer: Buffer;
+  durationSec: number;
 }
 
-function buildReelSvg({
+export interface ReelKineticInput {
+  /** Headline — shown as a persistent header for the whole clip. */
+  title: string;
+  category: string;
+  /** Up to 3 description parts, revealed one after another, word by word. */
+  segments: string[];
+  featuredImage?: string | null;
+  /** Adult reading speed in words/min (200–300 typical); drives word timing. */
+  wpm?: number;
+}
+
+/** Persistent layer: gradient + category badge + title header + brand bar. */
+function buildBaseSvg({
   category,
-  quote,
+  titleLines,
   hasImage,
 }: {
   category: string;
-  quote: string;
+  titleLines: string[];
   hasImage: boolean;
 }): string {
-  // Hero quote: adapt font size to length so 1–5 lines stay legible.
-  const quoteLines = wrapText(quote, quote.length > 60 ? 24 : 20, 5);
-  const quoteFontSize = quoteLines.length >= 4 ? 76 : quoteLines.length === 3 ? 88 : 104;
-  const quoteLineHeight = Math.round(quoteFontSize * 1.18);
-
-  // Anchor the quote block in the lower-middle of the navy panel.
-  const blockHeight = quoteLines.length * quoteLineHeight;
-  const quoteStartY = Math.max(IMG_H + 220, 1500 - blockHeight); // keep above brand bar
-
-  const quoteTspans = quoteLines
-    .map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : quoteLineHeight}">${escapeXml(line)}</tspan>`)
-    .join("");
-
   const badgeWidth = Math.max(120, category.length * 18 + 32);
-  const badgeY = quoteStartY - quoteFontSize - 96;
-  // Big decorative opening quotation mark above the text.
-  const quoteMarkY = badgeY + 40;
-
-  const brandBarY = HEIGHT - 200;
+  const titleTspans = titleLines
+    .map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : TITLE_LH}">${escapeXml(line)}</tspan>`)
+    .join("");
 
   const background = hasImage
     ? `<defs>
@@ -172,79 +185,85 @@ function buildReelSvg({
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   ${background}
-
-  <!-- Category badge -->
-  <rect x="60" y="${badgeY}" rx="6" ry="6" width="${badgeWidth}" height="48" fill="#b7102a" />
-  <text x="76" y="${badgeY + 33}" font-family="'Work Sans','Helvetica',sans-serif" font-size="22" font-weight="700" fill="#ffffff" letter-spacing="2">
-    ${escapeXml(category.toUpperCase())}
+  <rect x="60" y="${BADGE_Y}" rx="6" ry="6" width="${badgeWidth}" height="48" fill="#b7102a" />
+  <text x="76" y="${BADGE_Y + 33}" font-family="'Work Sans','Helvetica',sans-serif" font-size="22" font-weight="700" fill="#ffffff" letter-spacing="2">${escapeXml(category.toUpperCase())}</text>
+  <text font-family="'Newsreader','Georgia',serif" font-size="${TITLE_FONT}" font-weight="800" fill="#ffffff" letter-spacing="-0.5">
+    <tspan x="60" y="${TITLE_Y}">${titleTspans}</tspan>
   </text>
+  <rect x="0" y="${BRAND_BAR_Y}" width="${WIDTH}" height="180" fill="#000000" fill-opacity="0.35" />
+  <rect x="60" y="${BRAND_BAR_Y + 60}" width="6" height="40" fill="#b7102a" />
+  <text x="84" y="${BRAND_BAR_Y + 92}" font-family="'Newsreader','Georgia',serif" font-size="38" font-weight="800" fill="#ffffff" letter-spacing="1">KARTAWARTA</text>
+</svg>`;
+}
 
-  <!-- Decorative opening quote mark -->
-  <text x="56" y="${quoteMarkY}" font-family="'Newsreader','Georgia',serif" font-size="160" font-weight="800" fill="#b7102a" fill-opacity="0.85">&#8220;</text>
-
-  <!-- Hero quote -->
-  <text font-family="'Newsreader','Georgia',serif" font-size="${quoteFontSize}" font-weight="800" fill="#ffffff" letter-spacing="-1">
-    <tspan x="60" y="${quoteStartY}">${quoteTspans}</tspan>
-  </text>
-
-  <!-- Bottom brand bar -->
-  <rect x="0" y="${brandBarY}" width="${WIDTH}" height="200" fill="#000000" fill-opacity="0.35" />
-  <rect x="60" y="${brandBarY + 64}" width="6" height="44" fill="#b7102a" />
-  <text x="84" y="${brandBarY + 100}" font-family="'Newsreader','Georgia',serif" font-size="42" font-weight="800" fill="#ffffff" letter-spacing="1">
-    KARTAWARTA
+/** Transparent overlay with just the (partial) description text, word-wrapped. */
+function buildDescSvg(visible: string): string {
+  const lines = wrapText(visible, DESC_MAX_CHARS, DESC_MAX_LINES);
+  const tspans = lines
+    .map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : DESC_LH}">${escapeXml(line)}</tspan>`)
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+  <text font-family="'Work Sans','Helvetica',sans-serif" font-size="${DESC_FONT}" font-weight="700" fill="#ffffff">
+    <tspan x="60" y="${DESC_Y}">${tspans}</tspan>
   </text>
 </svg>`;
 }
 
 /**
- * Render the Reel still frame as a PNG buffer (lossless — ideal as ffmpeg input
- * and as the Reel cover). Never throws on image-fetch failure; falls back to a
- * solid navy background.
+ * Build the ordered, timed frame sequence for a kinetic-typography Reel:
+ * a persistent photo+title base with the description revealed one word at a time.
+ * Per-word duration follows `wpm`; each part lingers (HOLD) once fully shown.
+ * Returns at least the intro frame. The featured image is fetched ONCE.
  */
-/** Composite a single 1080×1920 PNG from a (possibly null) shared photo + quote. */
-async function compositeReelFrame(
-  imageBuffer: Buffer | null,
-  category: string,
-  quote: string,
-): Promise<Buffer> {
-  const composites: sharp.OverlayOptions[] = [];
-  if (imageBuffer) composites.push({ input: imageBuffer, top: 0, left: 0 });
-  const svg = buildReelSvg({ category, quote, hasImage: imageBuffer !== null });
-  composites.push({ input: Buffer.from(svg), top: 0, left: 0 });
-  return sharp({
+export async function renderReelKineticFrames(input: ReelKineticInput): Promise<TimedFrame[]> {
+  const category = input.category || "BERITA";
+  const wpm = Math.min(400, Math.max(120, Math.round(input.wpm ?? DEFAULT_WPM)));
+  const wordDur = 60 / wpm;
+
+  const segments = (input.segments || [])
+    .map((s) => (s || "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+  if (segments.length === 0) segments.push((input.title || "").trim());
+
+  const imageBuffer = await loadFeaturedImage(input.featuredImage);
+  const titleLines = wrapText(input.title || "", TITLE_MAX_CHARS, TITLE_MAX_LINES);
+
+  const baseComposites: sharp.OverlayOptions[] = [];
+  if (imageBuffer) baseComposites.push({ input: imageBuffer, top: 0, left: 0 });
+  baseComposites.push({
+    input: Buffer.from(buildBaseSvg({ category, titleLines, hasImage: imageBuffer !== null })),
+    top: 0,
+    left: 0,
+  });
+  const baseBuffer = await sharp({
     create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 0, g: 21, b: 48 } },
   })
-    .composite(composites)
+    .composite(baseComposites)
     .png()
     .toBuffer();
-}
 
-export async function renderReelFrame(input: ReelFrameInput): Promise<Buffer> {
-  const imageBuffer = await loadFeaturedImage(input.featuredImage);
-  return compositeReelFrame(imageBuffer, input.category || "BERITA", (input.quote || input.title || "").trim());
-}
+  const composeDesc = async (visible: string): Promise<Buffer> => {
+    if (!visible) return baseBuffer; // intro: title only
+    return sharp(baseBuffer)
+      .composite([{ input: Buffer.from(buildDescSvg(visible)), top: 0, left: 0 }])
+      .png()
+      .toBuffer();
+  };
 
-export interface ReelFramesInput {
-  title: string;
-  category: string;
-  quotes: string[];
-  featuredImage?: string | null;
-}
+  const frames: TimedFrame[] = [];
+  frames.push({ buffer: await composeDesc(""), durationSec: INTRO_SEC });
 
-/**
- * Render N frames that share the SAME photo + background; only the overlaid
- * quote changes. The featured image is fetched/decoded ONCE and reused, so the
- * video renderer can crossfade between identical-photo frames (text swaps,
- * photo stays still). Returns at least one frame.
- */
-export async function renderReelFrames(input: ReelFramesInput): Promise<Buffer[]> {
-  const category = input.category || "BERITA";
-  const quotes = input.quotes.length ? input.quotes : [input.title];
-  const imageBuffer = await loadFeaturedImage(input.featuredImage);
-  const frames: Buffer[] = [];
-  for (const q of quotes) {
-    frames.push(await compositeReelFrame(imageBuffer, category, (q || input.title || "").trim()));
+  for (const seg of segments) {
+    const words = seg.split(/\s+/).filter(Boolean);
+    for (let k = 1; k <= words.length; k++) {
+      const buf = await composeDesc(words.slice(0, k).join(" "));
+      const isLast = k === words.length;
+      frames.push({ buffer: buf, durationSec: isLast ? wordDur + HOLD_SEC : wordDur });
+    }
   }
+
   return frames;
 }
 

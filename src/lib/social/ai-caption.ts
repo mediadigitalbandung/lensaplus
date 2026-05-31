@@ -172,12 +172,12 @@ export async function generateReelQuotes(
 ): Promise<{ quotes: string[] }> {
   const excerpt = article.excerpt ? article.excerpt : stripHtml(article.content).slice(0, 700);
 
-  const userPrompt = `Dari berita berikut, buat ${count} kalimat kutipan PENDEK yang BERBEDA satu sama lain, untuk ditampilkan BERGANTIAN sebagai teks di video Reels vertikal:
-- Bahasa Indonesia, lugas, kuat, mudah dibaca sekilas.
+  const userPrompt = `Ringkas berita berikut menjadi ${count} kalimat DESKRIPSI berurutan (bagian 1 sampai ${count}) yang mengalir membentuk satu ringkasan utuh, untuk ditampilkan BERGANTIAN sebagai teks di video Reels vertikal:
+- Bahasa Indonesia, lugas, informatif, mudah dibaca sekilas.
 - Setiap kalimat MAKSIMAL ${REEL_QUOTE_MAX_LEN} karakter.
-- Masing-masing menyoroti poin/aspek BERBEDA dari berita — jangan saling mengulang.
+- Harus RUNTUT: kalimat 1 membuka inti berita, kalimat berikutnya melengkapi — JANGAN saling mengulang.
 - Tanpa tanda kutip, tanpa hashtag, tanpa tautan, tanpa emoji, tanpa penomoran.
-- Diringkas dari isi berita (bukan sekadar menyalin judul).
+- Diringkas dari ISI berita (bukan sekadar menyalin judul).
 
 Format jawaban WAJIB JSON murni (tanpa markdown), persis:
 {"quotes":["...","...","..."]}
