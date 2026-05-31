@@ -231,9 +231,7 @@ function PostsTab() {
         throw new Error(r.error || "Render Reel gagal.");
       }
       showSuccess(
-        r?.status === "PUBLISHED"
-          ? "Reel berhasil dirender & dipublikasikan ke Instagram!"
-          : "Reel berhasil dirender. Tinjau di daftar lalu klik Approve untuk publikasi."
+        "Reel sedang dirender di latar belakang (±30 detik). Daftar akan diperbarui otomatis saat selesai — tinjau lalu klik Approve untuk publikasi."
       );
       setShowReelModal(false);
       setReelArticleId("");
@@ -270,9 +268,7 @@ function PostsTab() {
         throw new Error(r.error || "Render Reel gagal.");
       }
       showSuccess(
-        r?.status === "PUBLISHED"
-          ? "Uji coba Reel selesai — dipublikasikan ke Instagram!"
-          : "Uji coba Reel selesai — tersimpan sebagai draft. Tinjau di daftar lalu klik Approve."
+        "Uji coba Reel dimulai — sedang dirender di latar belakang (±30 detik). Daftar akan diperbarui otomatis."
       );
       fetchPosts();
     } catch (err) {
@@ -304,6 +300,18 @@ function PostsTab() {
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
+
+  // While any post is still rendering (PROCESSING — e.g. a Reel being encoded
+  // in the background), poll so the panel reflects the DRAFT/PUBLISHED/REJECTED
+  // transition without a manual refresh.
+  const hasProcessing = posts.some((p) => p.status === "PROCESSING");
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const t = setInterval(() => {
+      fetchPosts();
+    }, 5000);
+    return () => clearInterval(t);
+  }, [hasProcessing, fetchPosts]);
 
   async function doAction(id: string, action: "approve" | "reject" | "takedown") {
     const post = posts.find(p => p.id === id);

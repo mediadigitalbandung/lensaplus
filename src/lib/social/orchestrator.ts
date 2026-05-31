@@ -783,28 +783,58 @@ export async function renderReelForArticle(
     return { platform, status: "SKIPPED", note: "auto reels disabled or IG not enabled" };
   }
 
-  // Create the PROCESSING row up-front so the panel can show "merender…".
+  // Create the PROCESSING row up-front so the panel shows "merender…" instantly.
   const post = await prisma.socialPost.create({
     data: { articleId: article.id, platform, status: "PROCESSING", mediaKind: "REELS" },
   });
 
-  try {
-    const { quote } = await generateReelQuote(article);
+  // Run the heavy work (AI + sharp + ffmpeg, frequently >60s) in the BACKGROUND
+  // so the HTTP caller returns immediately — otherwise nginx/Cloudflare time the
+  // request out with a 504. The panel polls the PROCESSING row until it flips to
+  // DRAFT/PUBLISHED/REJECTED.
+  void executeReelRender(post.id, article, global, input).catch((err) => {
+    console.error("[reel] background render failed", err);
+  });
 
-    const defaultTags = parseHashtags(global.defaultHashtags);
-    const articleTags = article.tags ? article.tags.map((t) => t.name) : [];
-    const combinedTags = Array.from(new Set([...defaultTags, ...articleTags]));
-    let caption: string;
-    try {
-      caption = await generateSocialCaption({
-        article,
-        platform,
-        hashtags: combinedTags,
-        cta: global.defaultCTA || undefined,
-      });
-    } catch {
-      caption = `${article.title}. ${article.excerpt || ""}`.trim();
-    }
+  return { platform, postId: post.id, status: "PROCESSING", isStory: false };
+}
+
+/** Build the under-post caption for a Reel (AI, with raw-title fallback). */
+async function buildReelCaption(
+  article: ArticleForPublish,
+  global: SocialMediaSettings,
+): Promise<string> {
+  const defaultTags = parseHashtags(global.defaultHashtags);
+  const articleTags = article.tags ? article.tags.map((t) => t.name) : [];
+  const combinedTags = Array.from(new Set([...defaultTags, ...articleTags]));
+  try {
+    return await generateSocialCaption({
+      article,
+      platform: "INSTAGRAM",
+      hashtags: combinedTags,
+      cta: global.defaultCTA || undefined,
+    });
+  } catch {
+    return `${article.title}. ${article.excerpt || ""}`.trim();
+  }
+}
+
+/**
+ * Heavy Reel render, run detached from the HTTP request: AI quote + caption (in
+ * parallel) → 1080×1920 frame → ffmpeg MP4 → update the PROCESSING row to DRAFT
+ * (or publish when draftMode is off). Never throws — failures land as REJECTED.
+ */
+async function executeReelRender(
+  postId: string,
+  article: ArticleForPublish,
+  global: SocialMediaSettings,
+  input: RenderReelInput,
+): Promise<void> {
+  try {
+    const [{ quote }, caption] = await Promise.all([
+      generateReelQuote(article),
+      buildReelCaption(article, global),
+    ]);
 
     const frame = await renderReelFrame({
       title: article.title,
@@ -820,7 +850,7 @@ export async function renderReelForArticle(
     const rendered = await renderReelVideo({ frame, durationSec, bgmPath });
 
     await prisma.socialPost.update({
-      where: { id: post.id },
+      where: { id: postId },
       data: {
         status: "DRAFT",
         caption,
@@ -832,27 +862,16 @@ export async function renderReelForArticle(
 
     // draftMode off → publish straight away (manual button or auto).
     if (!global.draftMode) {
-      const pubResult = await approveDraft(post.id);
-      return {
-        platform,
-        postId: post.id,
-        status: pubResult.success ? "PUBLISHED" : "REJECTED",
-        externalId: pubResult.externalId,
-        error: pubResult.error,
-        isStory: false,
-      };
+      await approveDraft(postId);
     }
-
-    return { platform, postId: post.id, status: "DRAFT", isStory: false };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await prisma.socialPost
       .update({
-        where: { id: post.id },
+        where: { id: postId },
         data: { status: "REJECTED", errorMessage: `Reel render failed: ${message}` },
       })
       .catch(() => {});
-    return { platform, postId: post.id, status: "REJECTED", error: message };
   }
 }
 
