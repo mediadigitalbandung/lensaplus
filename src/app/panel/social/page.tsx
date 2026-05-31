@@ -79,6 +79,9 @@ interface SocialSettings {
     autoPublishFB: boolean;
     autoPublishTwitter: boolean;
     autoPublishThreads: boolean;
+    autoPublishReels: boolean;
+    reelDurationSec?: number;
+    reelDefaultBgmUrl?: string | null;
     defaultHashtags: string | null;
     defaultCTA: string | null;
     captionTemplate?: string | null;
@@ -2466,6 +2469,51 @@ function SettingsTab() {
             />
             Auto-publish Twitter
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={global.autoPublishReels}
+              onChange={(e) =>
+                setGlobal({ ...global, autoPublishReels: e.target.checked })
+              }
+              className="h-4 w-4 rounded border-border"
+            />
+            Auto-buat Reel IG (saat artikel terbit)
+          </label>
+          <div className="md:col-span-2 grid grid-cols-1 gap-4 rounded-xl border border-border bg-surface-secondary/40 p-3.5 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
+                <Film size={12} /> Durasi Reel default (detik)
+              </label>
+              <input
+                type="number"
+                min={3}
+                max={60}
+                className="input w-full py-2 text-sm"
+                value={global.reelDurationSec ?? 8}
+                onChange={(e) =>
+                  setGlobal({
+                    ...global,
+                    reelDurationSec: Math.min(60, Math.max(3, parseInt(e.target.value) || 8)),
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
+                <Music size={12} /> Musik latar default Reel (opsional)
+              </label>
+              <input
+                type="text"
+                className="input w-full py-2 text-sm"
+                placeholder="/uploads/… URL musik"
+                value={global.reelDefaultBgmUrl || ""}
+                onChange={(e) =>
+                  setGlobal({ ...global, reelDefaultBgmUrl: e.target.value })
+                }
+              />
+            </div>
+          </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-txt-secondary mb-1">
               Default Hashtags
@@ -2555,6 +2603,10 @@ function SettingsTab() {
                 autoPublishIG: global.autoPublishIG,
                 autoPublishFB: global.autoPublishFB,
                 autoPublishTwitter: global.autoPublishTwitter,
+                autoPublishThreads: global.autoPublishThreads,
+                autoPublishReels: global.autoPublishReels,
+                reelDurationSec: global.reelDurationSec ?? 8,
+                reelDefaultBgmUrl: global.reelDefaultBgmUrl || null,
                 defaultHashtags: global.defaultHashtags,
                 defaultCTA: global.defaultCTA,
                 captionTemplate: global.captionTemplate || null,
