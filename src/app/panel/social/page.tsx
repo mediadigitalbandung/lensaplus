@@ -25,21 +25,28 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Link2,
+  Film,
+  Play,
+  Music,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { PLATFORM_DIMENSIONS, type TextLayer } from "@/lib/social/types";
 
 type Platform = "INSTAGRAM" | "FACEBOOK" | "TWITTER" | "THREADS";
-type PostStatus = "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "DELETED";
+type PostStatus = "DRAFT" | "PENDING" | "PROCESSING" | "PUBLISHED" | "REJECTED" | "DELETED";
+type MediaKind = "IMAGE" | "STORY" | "REELS";
 
 interface SocialPost {
   id: string;
   articleId: string;
   platform: Platform;
   status: PostStatus;
+  mediaKind?: MediaKind;
   externalId: string | null;
   imageUrl: string | null;
+  videoUrl?: string | null;
+  thumbnailUrl?: string | null;
   caption: string | null;
   publishedAt: string | null;
   errorMessage: string | null;
@@ -119,6 +126,7 @@ const PLATFORM_COLORS: Record<Platform, string> = {
 const STATUS_COLORS: Record<PostStatus, string> = {
   DRAFT: "bg-surface-tertiary text-txt-secondary",
   PENDING: "bg-yellow-50 text-yellow-600",
+  PROCESSING: "bg-blue-50 text-blue-600",
   PUBLISHED: "bg-primary-light text-primary",
   REJECTED: "bg-red-50 text-red-600",
   DELETED: "bg-surface-tertiary text-txt-muted",
@@ -144,6 +152,13 @@ function PostsTab() {
   const [filterPlatform, setFilterPlatform] = useState<Platform | "ALL">("ALL");
   const [filterStatus, setFilterStatus] = useState<PostStatus | "ALL">("ALL");
   const [testingPublish, setTestingPublish] = useState(false);
+  // Instagram Reel (story-card video) creation
+  const [showReelModal, setShowReelModal] = useState(false);
+  const [reelArticleId, setReelArticleId] = useState("");
+  const [reelDuration, setReelDuration] = useState(8);
+  const [reelBgmUrl, setReelBgmUrl] = useState("");
+  const [renderingReel, setRenderingReel] = useState(false);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
 
   async function handleTestPublish(targetPlatform?: "INSTAGRAM" | "FACEBOOK" | "THREADS" | "ALL", isStory?: boolean) {
     let platformLabel = "Semua Platform";
@@ -188,6 +203,42 @@ function PostsTab() {
       showError(err instanceof Error ? err.message : "Gagal memicu uji coba");
     } finally {
       setTestingPublish(false);
+    }
+  }
+
+  async function handleRenderReel() {
+    try {
+      setRenderingReel(true);
+      const body: Record<string, unknown> = {};
+      if (reelArticleId.trim()) body.articleId = reelArticleId.trim();
+      if (reelDuration) body.durationSec = reelDuration;
+      if (reelBgmUrl.trim()) body.bgmUrl = reelBgmUrl.trim();
+      const res = await fetch("/api/social/reels/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || `Server Error (HTTP ${res.status}).`);
+      }
+      const r = json.data?.result;
+      if (r?.status === "REJECTED") {
+        throw new Error(r.error || "Render Reel gagal.");
+      }
+      showSuccess(
+        r?.status === "PUBLISHED"
+          ? "Reel berhasil dirender & dipublikasikan ke Instagram!"
+          : "Reel berhasil dirender. Tinjau di daftar lalu klik Approve untuk publikasi."
+      );
+      setShowReelModal(false);
+      setReelArticleId("");
+      setReelBgmUrl("");
+      fetchPosts();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal merender Reel");
+    } finally {
+      setRenderingReel(false);
     }
   }
 
@@ -279,6 +330,17 @@ function PostsTab() {
           <RefreshCw size={14} />
           Refresh
         </button>
+        <button
+          onClick={() => {
+            setReelArticleId("");
+            setReelBgmUrl("");
+            setShowReelModal(true);
+          }}
+          className="btn-primary flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold"
+        >
+          <Film size={14} />
+          Buat Reel
+        </button>
         <div className="flex flex-wrap items-center gap-2 ml-auto">
           <span className="hidden sm:inline text-xs font-semibold text-txt-muted">
             Uji Coba:
@@ -365,8 +427,8 @@ function PostsTab() {
                 className="rounded-2xl border border-border bg-surface p-4 shadow-card"
               >
                 <div className="flex items-start gap-4">
-                  {/* Image */}
-                  <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-surface-secondary">
+                  {/* Image / video thumbnail */}
+                  <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-surface-secondary relative">
                     {p.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -378,6 +440,18 @@ function PostsTab() {
                       <div className="w-full h-full flex items-center justify-center">
                         <ImageIcon size={20} className="text-border" />
                       </div>
+                    )}
+                    {p.videoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setVideoPreview(p.videoUrl!)}
+                        className="absolute inset-0 flex items-center justify-center bg-black/35 transition-colors hover:bg-black/45"
+                        title="Putar video Reel"
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-primary">
+                          <Play size={16} className="ml-0.5" fill="currentColor" />
+                        </span>
+                      </button>
                     )}
                   </div>
                   {/* Content */}
@@ -394,6 +468,12 @@ function PostsTab() {
                       >
                         {p.status}
                       </span>
+                      {p.mediaKind === "REELS" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2 py-0.5 text-xs font-medium text-primary">
+                          <Film size={12} />
+                          Reel
+                        </span>
+                      )}
                       {p.externalId && (
                         <span className="text-xs text-txt-muted">
                           ID: {p.externalId.slice(0, 12)}...
@@ -421,6 +501,12 @@ function PostsTab() {
                   </div>
                   {/* Actions */}
                   <div className="flex flex-col gap-1.5 shrink-0">
+                    {p.status === "PROCESSING" && (
+                      <span className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold text-blue-600">
+                        <Loader2 size={12} className="animate-spin" />
+                        Merender…
+                      </span>
+                    )}
                     {p.status === "DRAFT" && (
                       <>
                         <button
@@ -503,6 +589,113 @@ function PostsTab() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Buat Reel modal */}
+      {showReelModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface p-6 shadow-2xl">
+            <div className="mb-3 flex items-center gap-2">
+              <Film size={20} className="text-primary" />
+              <h3 className="text-lg font-bold text-txt-primary">Buat Reel dari Story Card</h3>
+            </div>
+            <p className="mb-4 text-xs leading-relaxed text-txt-secondary">
+              Sistem membuat kutipan singkat dari berita via AI, merendernya menjadi
+              video 9:16 dengan efek zoom halus (Ken Burns), lalu menyimpannya sebagai
+              draft Reel Instagram untuk Anda tinjau & publikasikan.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-txt-secondary">
+                  Article ID{" "}
+                  <span className="font-normal text-txt-muted">(kosongkan = artikel terbaru)</span>
+                </label>
+                <input
+                  type="text"
+                  className="input w-full py-2 text-sm"
+                  placeholder="cljx… (opsional)"
+                  value={reelArticleId}
+                  onChange={(e) => setReelArticleId(e.target.value)}
+                />
+                <p className="mt-1 text-[10px] text-txt-muted">
+                  Ambil ID dari URL /panel/artikel/[id]/edit. Biarkan kosong untuk memakai
+                  artikel terbaru yang sudah terbit.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-txt-secondary">
+                    Durasi (detik)
+                  </label>
+                  <input
+                    type="number"
+                    min={3}
+                    max={60}
+                    className="input w-full py-2 text-sm"
+                    value={reelDuration}
+                    onChange={(e) =>
+                      setReelDuration(Math.min(60, Math.max(3, parseInt(e.target.value) || 8)))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
+                    <Music size={12} /> Musik (opsional)
+                  </label>
+                  <input
+                    type="text"
+                    className="input w-full py-2 text-sm"
+                    placeholder="/uploads/… URL musik"
+                    value={reelBgmUrl}
+                    onChange={(e) => setReelBgmUrl(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setShowReelModal(false)}
+                disabled={renderingReel}
+                className="btn-ghost rounded-md px-4 py-2 text-sm disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleRenderReel}
+                disabled={renderingReel}
+                className="btn-primary flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
+              >
+                {renderingReel ? <Loader2 size={14} className="animate-spin" /> : <Film size={14} />}
+                {renderingReel ? "Merender video…" : "Render Reel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video preview modal */}
+      {videoPreview && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setVideoPreview(null)}
+        >
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src={videoPreview}
+              controls
+              autoPlay
+              className="max-h-[85vh] w-auto rounded-xl shadow-2xl"
+              style={{ maxWidth: "min(90vw, 420px)" }}
+            />
+            <button
+              onClick={() => setVideoPreview(null)}
+              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-txt-primary shadow-lg"
+            >
+              <XCircle size={18} />
+            </button>
+          </div>
         </div>
       )}
     </div>

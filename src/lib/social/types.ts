@@ -30,8 +30,15 @@ export interface PreparedPost {
   caption: string;
   articleId: string;
   templateId?: string;
-  mediaType?: "FEED" | "STORIES";
+  mediaType?: "FEED" | "STORIES" | "REELS";
+  /** Public https URL of the rendered MP4 — required when mediaType === "REELS". */
+  videoUrl?: string;
+  /** Public https URL of a 9:16 cover JPEG for the Reel (cover_url). Optional. */
+  coverUrl?: string;
 }
+
+/** Target dimensions for a vertical 9:16 Instagram Reel / Story video. */
+export const REEL_DIMENSIONS: PlatformDimensions = { width: 1080, height: 1920 };
 
 /**
  * Article shape required for template rendering + caption generation.

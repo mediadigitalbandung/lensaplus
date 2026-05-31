@@ -12,6 +12,11 @@ const nextConfig = {
   //   redundant in-build typecheck cuts peak memory roughly in half and
   //   removes the OOM failure mode without sacrificing type safety.
   typescript: { ignoreBuildErrors: true },
+  // Keep `ffmpeg-static` out of the webpack server bundle. It resolves its
+  // binary path from `__dirname`; bundling rewrites that and breaks the path,
+  // so the Reel video renderer (src/lib/social/video-renderer.ts) would fail
+  // to find the ffmpeg binary at runtime. Externalizing keeps the real path.
+  serverExternalPackages: ["ffmpeg-static"],
   // ESLint config key removed — Next.js 16 deprecated `eslint` in next.config.js
   // (see https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options).
   // Lint sudah jalan di CI + local pre-commit, jadi tidak perlu di-build phase.

@@ -91,14 +91,25 @@ export class InstagramPublisher {
 
     try {
       // Step 1: create media container.
+      const isReel = post.mediaType === "REELS";
       const createUrl = `${GRAPH_BASE}/${encodeURIComponent(igUserId)}/media`;
-      const params: Record<string, string> = {
-        image_url: post.imageUrl,
-        access_token: accessToken,
-      };
-      if (post.mediaType === "STORIES") {
+      const params: Record<string, string> = { access_token: accessToken };
+      if (isReel) {
+        if (!post.videoUrl) {
+          return { success: false, error: "Reel post is missing videoUrl" };
+        }
+        // Reels: video container. video_url must be a publicly reachable https
+        // MP4 (H.264/AAC, 9:16) that Meta fetches server-side.
+        params.media_type = "REELS";
+        params.video_url = post.videoUrl;
+        params.caption = post.caption;
+        params.share_to_feed = "true";
+        if (post.coverUrl) params.cover_url = post.coverUrl;
+      } else if (post.mediaType === "STORIES") {
+        params.image_url = post.imageUrl;
         params.media_type = "STORIES";
       } else {
+        params.image_url = post.imageUrl;
         params.caption = post.caption;
       }
       const createBody = new URLSearchParams(params);
@@ -112,12 +123,14 @@ export class InstagramPublisher {
       }
 
       // Wait for the container to finish processing (polling status_code)
-      // This solves the common Meta 9007 (Media ID is not available) race condition error
+      // This solves the common Meta 9007 (Media ID is not available) race condition error.
+      // Reels (video) take much longer to process than images, so poll up to
+      // ~5 minutes (Meta's recommended ceiling) before giving up.
       let statusFinished = false;
-      let retries = 5; // 5 attempts
-      const delayMs = 10000; // 10 seconds delay between polls
+      let retries = isReel ? 20 : 5; // reels: 20×15s ≈ 5 min; images: 5×10s
+      const delayMs = isReel ? 15000 : 10000;
 
-      console.log(`[instagram] Media container ${createRes.id} created, polling status to ensure it is ready...`);
+      console.log(`[instagram] Media container ${createRes.id} created (${isReel ? "REELS" : "image"}), polling status to ensure it is ready...`);
 
       while (retries > 0 && !statusFinished) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -153,7 +166,16 @@ export class InstagramPublisher {
       }
 
       if (!statusFinished) {
-        console.warn(`[instagram] Container ${createRes.id} still in processing state after 45 seconds, attempting fallback publish...`);
+        if (isReel) {
+          // For video we MUST NOT publish before FINISHED — doing so returns
+          // Meta error 9007 / subcode 2207027. Surface a retryable failure.
+          return {
+            success: false,
+            error:
+              "Reel video container did not finish processing within ~5 minutes (Meta status not FINISHED). Coba lagi sebentar.",
+          };
+        }
+        console.warn(`[instagram] Container ${createRes.id} still processing after retries, attempting fallback publish...`);
       }
 
       // Step 2: publish.

@@ -16,6 +16,8 @@
  */
 
 import fs from "fs/promises";
+import path from "path";
+import { existsSync } from "fs";
 import type {
   Article,
   FacebookSettings,
@@ -26,7 +28,10 @@ import type {
   ThreadsSettings,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { generateReelQuote } from "./ai-caption";
 import { generateSocialCaption } from "./caption-generator";
+import { renderReelFrame } from "./reel-frame";
+import { renderReelVideo, deleteReelFiles } from "./video-renderer";
 import { FacebookPublisher, type FacebookPostMode } from "./facebook";
 import { InstagramPublisher } from "./instagram";
 import { ThreadsPublisher } from "./threads";
@@ -350,6 +355,7 @@ async function runPublisher(
   fb: FacebookSettings,
   threads: ThreadsSettings,
   isStory: boolean = false,
+  reel?: { videoUrl: string; coverUrl?: string },
 ): Promise<PublishResult> {
   if (platform === "INSTAGRAM") {
     if (!ig.accessToken || !ig.igUserId) {
@@ -359,12 +365,15 @@ async function runPublisher(
       accessToken: ig.accessToken,
       igUserId: ig.igUserId,
     });
+    const isReel = !!reel;
     return pub.publish({
       platform,
       imageUrl,
       caption,
       articleId: article.id,
-      mediaType: isStory ? "STORIES" : "FEED",
+      mediaType: isReel ? "REELS" : isStory ? "STORIES" : "FEED",
+      videoUrl: reel?.videoUrl,
+      coverUrl: reel?.coverUrl,
     });
   }
 
@@ -533,17 +542,36 @@ export async function approveDraft(postId: string): Promise<PublishResult> {
   if (post.status !== "DRAFT" && post.status !== "REJECTED") {
     return { success: false, error: `SocialPost is not in DRAFT or REJECTED state (is ${post.status})` };
   }
-  if (!post.imageUrl || !post.caption) {
+  const isReel = post.mediaKind === "REELS";
+  if (isReel) {
+    if (!post.videoUrl) {
+      return { success: false, error: "Reel post is missing videoUrl" };
+    }
+  } else if (!post.imageUrl || !post.caption) {
     return { success: false, error: "SocialPost is missing imageUrl or caption" };
   }
 
-  let sanitizedImageUrl = sanitizeSocialImageUrl(post.imageUrl);
-  if (sanitizedImageUrl !== post.imageUrl) {
+  // Canonicalize every Meta-facing URL (Meta fetches these server-side, so a
+  // bare IP / nip.io host would fail; sanitize rewrites them to kartawarta.com).
+  const sanitizedImageUrl = post.imageUrl ? sanitizeSocialImageUrl(post.imageUrl) : post.imageUrl;
+  const sanitizedVideoUrl = post.videoUrl ? sanitizeSocialImageUrl(post.videoUrl) : post.videoUrl;
+  const sanitizedThumbUrl = post.thumbnailUrl ? sanitizeSocialImageUrl(post.thumbnailUrl) : post.thumbnailUrl;
+  if (
+    sanitizedImageUrl !== post.imageUrl ||
+    sanitizedVideoUrl !== post.videoUrl ||
+    sanitizedThumbUrl !== post.thumbnailUrl
+  ) {
     await prisma.socialPost.update({
       where: { id: postId },
-      data: { imageUrl: sanitizedImageUrl },
+      data: {
+        imageUrl: sanitizedImageUrl,
+        videoUrl: sanitizedVideoUrl,
+        thumbnailUrl: sanitizedThumbUrl,
+      },
     });
-    post.imageUrl = sanitizedImageUrl;
+    post.imageUrl = sanitizedImageUrl ?? null;
+    post.videoUrl = sanitizedVideoUrl ?? null;
+    post.thumbnailUrl = sanitizedThumbUrl ?? null;
   }
 
   const { instagram: ig, facebook: fb, threads } = await getAllSocialSettings();
@@ -554,19 +582,21 @@ export async function approveDraft(postId: string): Promise<PublishResult> {
     data: { status: "PENDING", errorMessage: null },
   });
 
-  const isStory = post.imageUrl ? post.imageUrl.includes("/api/og/story") : false;
+  const isStory =
+    !isReel && (post.mediaKind === "STORY" || (post.imageUrl?.includes("/api/og/story") ?? false));
 
   let result: PublishResult;
   try {
     result = await runPublisher(
       post.platform as Platform,
       post.article,
-      post.imageUrl,
-      post.caption,
+      post.imageUrl ?? "",
+      post.caption ?? "",
       ig,
       fb,
       threads,
       isStory,
+      isReel ? { videoUrl: post.videoUrl as string, coverUrl: post.thumbnailUrl ?? undefined } : undefined,
     );
   } catch (err) {
     result = { success: false, error: err instanceof Error ? err.message : String(err) };
@@ -616,6 +646,9 @@ export async function rejectDraft(postId: string): Promise<void> {
       // ignore — URL parsing issues should not block the delete.
     }
   }
+
+  // Best-effort delete of any rendered Reel MP4 + cover.
+  await deleteReelFiles(post.videoUrl, post.thumbnailUrl);
 
   await prisma.socialPost.delete({ where: { id: postId } });
 }
@@ -691,4 +724,143 @@ export async function takedownPost(
     data: { status: "DELETED", deletedAt: new Date() },
   });
   return { success: true, note: `Platform ${post.platform} takedown not supported; marked DELETED locally.` };
+}
+
+// ─── Instagram Reels (story-card video) ────────────────────────────
+
+/** Map an /uploads/... URL (or relative path) to a local file path, if it exists. */
+function resolveLocalUploadPath(url?: string | null): string | null {
+  if (!url) return null;
+  try {
+    const pathname = url.startsWith("http") ? new URL(url).pathname : url;
+    const rel = decodeURIComponent(pathname.replace(/^\/+/, ""));
+    if (rel.startsWith("uploads/")) {
+      const abs = path.join(process.cwd(), "public", rel);
+      return existsSync(abs) ? abs : null;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+export interface RenderReelInput {
+  durationSec?: number;
+  bgmUrl?: string | null;
+  /** When true (auto-on-publish path), only render if autoPublishReels + IG enabled. */
+  auto?: boolean;
+}
+
+/**
+ * Render an Instagram Reel from an article's story card:
+ *   AI quote → 1080×1920 frame (sharp) → Ken Burns MP4 (ffmpeg) →
+ *   SocialPost(mediaKind=REELS).
+ * Respects `draftMode` (creates a DRAFT for approval, otherwise publishes
+ * immediately). Never throws — failures land on the row as REJECTED.
+ */
+export async function renderReelForArticle(
+  articleId: string,
+  input: RenderReelInput = {},
+): Promise<OrchestratorPlatformResult> {
+  const platform: Platform = "INSTAGRAM";
+
+  let article: ArticleForPublish | null;
+  try {
+    article = await loadArticleForPublish(articleId);
+  } catch (err) {
+    return {
+      platform,
+      status: "REJECTED",
+      error: `Article load failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+  if (!article) return { platform, status: "REJECTED", error: "Article not found" };
+
+  const { global, instagram: ig } = await getAllSocialSettings();
+
+  // Auto-on-publish path only renders when explicitly enabled + IG is ready.
+  if (input.auto && (!global.autoPublishReels || !ig.enabled)) {
+    return { platform, status: "SKIPPED", note: "auto reels disabled or IG not enabled" };
+  }
+
+  // Create the PROCESSING row up-front so the panel can show "merender…".
+  const post = await prisma.socialPost.create({
+    data: { articleId: article.id, platform, status: "PROCESSING", mediaKind: "REELS" },
+  });
+
+  try {
+    const { quote } = await generateReelQuote(article);
+
+    const defaultTags = parseHashtags(global.defaultHashtags);
+    const articleTags = article.tags ? article.tags.map((t) => t.name) : [];
+    const combinedTags = Array.from(new Set([...defaultTags, ...articleTags]));
+    let caption: string;
+    try {
+      caption = await generateSocialCaption({
+        article,
+        platform,
+        hashtags: combinedTags,
+        cta: global.defaultCTA || undefined,
+      });
+    } catch {
+      caption = `${article.title}. ${article.excerpt || ""}`.trim();
+    }
+
+    const frame = await renderReelFrame({
+      title: article.title,
+      category: article.category?.name || "BERITA",
+      quote,
+      featuredImage: article.featuredImage,
+    });
+
+    const bgmUrl = input.bgmUrl ?? global.reelDefaultBgmUrl ?? null;
+    const bgmPath = resolveLocalUploadPath(bgmUrl);
+    const durationSec = input.durationSec ?? global.reelDurationSec ?? 8;
+
+    const rendered = await renderReelVideo({ frame, durationSec, bgmPath });
+
+    await prisma.socialPost.update({
+      where: { id: post.id },
+      data: {
+        status: "DRAFT",
+        caption,
+        videoUrl: sanitizeSocialImageUrl(rendered.videoUrl),
+        thumbnailUrl: sanitizeSocialImageUrl(rendered.coverUrl),
+        imageUrl: sanitizeSocialImageUrl(rendered.coverUrl),
+      },
+    });
+
+    // draftMode off → publish straight away (manual button or auto).
+    if (!global.draftMode) {
+      const pubResult = await approveDraft(post.id);
+      return {
+        platform,
+        postId: post.id,
+        status: pubResult.success ? "PUBLISHED" : "REJECTED",
+        externalId: pubResult.externalId,
+        error: pubResult.error,
+        isStory: false,
+      };
+    }
+
+    return { platform, postId: post.id, status: "DRAFT", isStory: false };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await prisma.socialPost
+      .update({
+        where: { id: post.id },
+        data: { status: "REJECTED", errorMessage: `Reel render failed: ${message}` },
+      })
+      .catch(() => {});
+    return { platform, postId: post.id, status: "REJECTED", error: message };
+  }
+}
+
+/** Auto-on-publish hook — best-effort, gated by `autoPublishReels`. Never throws. */
+export async function autoRenderReelIfEnabled(articleId: string): Promise<void> {
+  try {
+    await renderReelForArticle(articleId, { auto: true });
+  } catch (err) {
+    console.error("[reel] auto render failed", err);
+  }
 }

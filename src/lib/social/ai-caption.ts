@@ -107,6 +107,60 @@ EXCERPT: ${excerpt}`;
   };
 }
 
+const REEL_QUOTE_SYSTEM_PROMPT =
+  "Kamu adalah editor media sosial untuk Kartawarta — media berita digital Bandung. Tugasmu mengambil INTI dari sebuah berita dan menuliskannya sebagai SATU kalimat kutipan pendek yang kuat untuk ditampilkan sebagai teks besar di video Reels Instagram (format vertikal). Jawab hanya dalam format JSON murni, tanpa markdown, tanpa komentar.";
+
+const REEL_QUOTE_MAX_LEN = 90;
+
+/**
+ * Produce ONE short, punchy quote (<= ~90 chars) distilled from the article,
+ * tuned for legibility as large overlay text on a 9:16 Reel. Falls back to a
+ * trimmed paraphrase of the title on any failure. Never throws.
+ */
+export async function generateReelQuote(
+  article: ArticleForPublish,
+): Promise<{ quote: string }> {
+  const excerpt = article.excerpt ? article.excerpt : stripHtml(article.content).slice(0, 500);
+
+  const userPrompt = `Dari judul + isi berita berikut, buat SATU kalimat kutipan (quote) untuk overlay video Reels:
+- Bahasa Indonesia, lugas, kuat, mudah dibaca sekilas.
+- MAKSIMAL ${REEL_QUOTE_MAX_LEN} karakter (termasuk spasi). Lebih pendek lebih baik.
+- Tanpa tanda kutip pembuka/penutup, tanpa hashtag, tanpa tautan, tanpa emoji.
+- Menangkap inti/sudut paling menarik dari berita, bukan sekadar menyalin judul.
+
+Format jawaban WAJIB JSON murni (tanpa markdown), persis:
+{"quote":"..."}
+
+JUDUL: ${article.title}
+ISI: ${excerpt}`;
+
+  try {
+    const result = await callAI({
+      feature: "social_caption",
+      systemPrompt: REEL_QUOTE_SYSTEM_PROMPT,
+      userPrompt,
+      maxTokens: 200,
+      temperature: 0.6,
+      articleTitle: article.title,
+    });
+
+    const parsed = safeParseJson<{ quote?: string }>(result.text);
+    let quote = parsed?.quote ? cleanAIShortText(parsed.quote) : "";
+    // Strip any stray surrounding quotes the model may add and hard-cap length.
+    quote = quote.replace(/^["'“”‘’]+|["'“”‘’]+$/g, "").trim();
+    if (quote.length > REEL_QUOTE_MAX_LEN) {
+      quote = truncateAtWord(quote, REEL_QUOTE_MAX_LEN).replace(/\.$/, "");
+    }
+    if (quote) return { quote };
+  } catch {
+    // swallow — fall through to fallback
+  }
+
+  // Fallback: trimmed title.
+  const fallback = truncateAtWord(article.title, REEL_QUOTE_MAX_LEN).replace(/\.$/, "");
+  return { quote: fallback };
+}
+
 /** Truncate text at word boundary, ensuring it doesn't exceed maxLen chars. */
 function truncateAtWord(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;

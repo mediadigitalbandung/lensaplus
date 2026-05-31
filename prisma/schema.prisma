@@ -91,9 +91,19 @@ enum SocialPlatform {
 enum SocialPostStatus {
   DRAFT
   PENDING
+  PROCESSING
   PUBLISHED
   REJECTED
   DELETED
+}
+
+// Distinguishes the rendered media kind for a SocialPost. IMAGE = a static
+// feed image (default, backfill-safe), STORY = a vertical story image, REELS =
+// a rendered MP4 video published as an Instagram Reel.
+enum SocialMediaKind {
+  IMAGE
+  STORY
+  REELS
 }
 
 enum CourtScheduleStatus {
@@ -518,8 +528,11 @@ model SocialPost {
   articleId    String
   platform     SocialPlatform
   status       SocialPostStatus
+  mediaKind    SocialMediaKind  @default(IMAGE)
   externalId   String?
   imageUrl     String?
+  videoUrl     String?          @db.Text
+  thumbnailUrl String?          @db.Text
   caption      String?          @db.Text
   publishedAt  DateTime?
   errorMessage String?
@@ -556,6 +569,10 @@ model SocialMediaSettings {
   autoPublishFB      Boolean  @default(false)
   autoPublishTwitter Boolean  @default(false)
   autoPublishThreads Boolean  @default(false)
+  // Instagram Reels (story-card video) automation
+  autoPublishReels   Boolean  @default(false)
+  reelDurationSec    Int      @default(8)
+  reelDefaultBgmUrl  String?  @db.Text
   defaultHashtags    String?  @db.Text
   defaultCTA         String?  @db.Text
   captionTemplate    String?  @db.Text

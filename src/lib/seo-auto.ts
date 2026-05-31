@@ -12,7 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { submitUrlToGoogle } from "./seo/google-indexing";
 import { pingIndexNow } from "./seo/indexnow";
 import { generateSorotanIfMissing } from "./seo/sorotan-generator";
-import { publishArticleToSocial } from "./social/orchestrator";
+import { publishArticleToSocial, autoRenderReelIfEnabled } from "./social/orchestrator";
 import { purgeCache } from "./cloudflare/purge";
 import { invalidateCachePrefix } from "./cache";
 import { invalidateInternalStatsCache } from "./stats/internal";
@@ -240,6 +240,14 @@ export async function onArticlePublished(
       { categorySlug: categorySlug ?? undefined },
     ),
   ]);
+
+  // Best-effort, non-blocking: auto-generate an Instagram Reel draft when
+  // `autoPublishReels` is enabled. Kept OUT of the awaited Promise.allSettled
+  // above because the ffmpeg render takes ~10-30s and must never delay the
+  // article publish response. The render updates its own SocialPost row.
+  if (resolvedId) {
+    void autoRenderReelIfEnabled(resolvedId);
+  }
 
   const summary: PublishChainSummary = {
     url,
