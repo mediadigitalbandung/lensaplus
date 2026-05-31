@@ -132,7 +132,41 @@ export async function POST(req: NextRequest) {
       // best-effort — never fail the cron on filesystem cleanup
     }
 
-    const summary = { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged, subscriberIpAnonymized, clipJobsPurged, orphanMediaDeleted };
+    // 8. Delete orphaned Instagram Reel files (mp4 + cover) in
+    //    public/uploads/social-reels older than 30 days that are no longer
+    //    referenced by any SocialPost.videoUrl/thumbnailUrl. Failed renders and
+    //    rejected/expired reels leak files here.
+    let reelFilesDeleted = 0;
+    try {
+      const dir = path.join(process.cwd(), "public", "uploads", "social-reels");
+      const files = await readdir(dir).catch(() => [] as string[]);
+      if (files.length) {
+        const rows = await prisma.socialPost.findMany({
+          where: { OR: [{ videoUrl: { not: null } }, { thumbnailUrl: { not: null } }] },
+          select: { videoUrl: true, thumbnailUrl: true },
+        });
+        const referenced = new Set<string>();
+        for (const r of rows) {
+          for (const u of [r.videoUrl, r.thumbnailUrl]) {
+            if (u) referenced.add(u.split("/").pop() as string);
+          }
+        }
+        const cutoff = subDays(now, 30).getTime();
+        for (const f of files) {
+          if (referenced.has(f)) continue;
+          const full = path.join(dir, f);
+          const st = await stat(full).catch(() => null);
+          if (st && st.isFile() && st.mtimeMs < cutoff) {
+            await unlink(full).catch(() => {});
+            reelFilesDeleted++;
+          }
+        }
+      }
+    } catch {
+      // best-effort — never fail the cron on filesystem cleanup
+    }
+
+    const summary = { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged, subscriberIpAnonymized, clipJobsPurged, orphanMediaDeleted, reelFilesDeleted };
 
     // Audit the purge itself using a system sentinel. The logAudit helper requires
     // a valid userId FK — find the first SUPER_ADMIN to attach it to. If none
