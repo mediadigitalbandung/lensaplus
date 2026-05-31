@@ -159,7 +159,6 @@ function PostsTab() {
   // Instagram Reel (story-card video) creation
   const [showReelModal, setShowReelModal] = useState(false);
   const [reelArticleId, setReelArticleId] = useState("");
-  const [reelDuration, setReelDuration] = useState(8);
   const [reelBgmUrl, setReelBgmUrl] = useState("");
   const [renderingReel, setRenderingReel] = useState(false);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
@@ -215,7 +214,6 @@ function PostsTab() {
       setRenderingReel(true);
       const body: Record<string, unknown> = {};
       if (reelArticleId.trim()) body.articleId = reelArticleId.trim();
-      if (reelDuration) body.durationSec = reelDuration;
       if (reelBgmUrl.trim()) body.bgmUrl = reelBgmUrl.trim();
       const res = await fetch("/api/social/reels/render", {
         method: "POST",
@@ -662,9 +660,9 @@ function PostsTab() {
               <h3 className="text-lg font-bold text-txt-primary">Buat Reel dari Story Card</h3>
             </div>
             <p className="mb-4 text-xs leading-relaxed text-txt-secondary">
-              Sistem membuat kutipan singkat dari berita via AI, merendernya menjadi
-              video 9:16 dengan efek zoom halus (Ken Burns), lalu menyimpannya sebagai
-              draft Reel Instagram untuk Anda tinjau & publikasikan.
+              Sistem membuat hingga 3 kalimat kutipan dari berita via AI lalu merendernya
+              jadi video 9:16 berdurasi 30 detik — foto &amp; latar tetap (tanpa zoom),
+              hanya teksnya yang berganti. Hasilnya jadi draft Reel untuk Anda tinjau &amp; publikasikan.
             </p>
             <div className="space-y-4">
               <div>
@@ -687,18 +685,11 @@ function PostsTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-txt-secondary">
-                    Durasi (detik)
+                    Durasi
                   </label>
-                  <input
-                    type="number"
-                    min={3}
-                    max={60}
-                    className="input w-full py-2 text-sm"
-                    value={reelDuration}
-                    onChange={(e) =>
-                      setReelDuration(Math.min(60, Math.max(3, parseInt(e.target.value) || 8)))
-                    }
-                  />
+                  <div className="input flex items-center py-2 text-sm text-txt-muted">
+                    30 detik · teks auto-ganti
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
@@ -2538,39 +2529,20 @@ function SettingsTab() {
             />
             Auto-buat Reel IG (saat artikel terbit)
           </label>
-          <div className="md:col-span-2 grid grid-cols-1 gap-4 rounded-xl border border-border bg-surface-secondary/40 p-3.5 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
-                <Film size={12} /> Durasi Reel default (detik)
-              </label>
-              <input
-                type="number"
-                min={3}
-                max={60}
-                className="input w-full py-2 text-sm"
-                value={global.reelDurationSec ?? 8}
-                onChange={(e) =>
-                  setGlobal({
-                    ...global,
-                    reelDurationSec: Math.min(60, Math.max(3, parseInt(e.target.value) || 8)),
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
-                <Music size={12} /> Musik latar default Reel (opsional)
-              </label>
-              <input
-                type="text"
-                className="input w-full py-2 text-sm"
-                placeholder="/uploads/… URL musik"
-                value={global.reelDefaultBgmUrl || ""}
-                onChange={(e) =>
-                  setGlobal({ ...global, reelDefaultBgmUrl: e.target.value })
-                }
-              />
-            </div>
+          <div className="md:col-span-2 rounded-xl border border-border bg-surface-secondary/40 p-3.5">
+            <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
+              <Music size={12} /> Musik latar default Reel (opsional)
+            </label>
+            <input
+              type="text"
+              className="input w-full py-2 text-sm"
+              placeholder="/uploads/… URL musik"
+              value={global.reelDefaultBgmUrl || ""}
+              onChange={(e) => setGlobal({ ...global, reelDefaultBgmUrl: e.target.value })}
+            />
+            <p className="mt-1.5 text-[10px] leading-relaxed text-txt-muted">
+              Reel berdurasi 30 detik (foto &amp; latar tetap, tanpa zoom); teks maks 3 kalimat dibuat otomatis dari ringkasan berita dan berganti bergantian.
+            </p>
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-txt-secondary mb-1">

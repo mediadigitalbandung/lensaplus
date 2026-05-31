@@ -32,8 +32,7 @@ import ffmpegStatic from "ffmpeg-static";
 const FPS = 30;
 const OUT_W = 1080;
 const OUT_H = 1920;
-const UPSCALE_H = 2400; // headroom for sub-pixel zoom without doubling RAM
-const ZOOM_TOTAL = 0.1; // 10% push-in over the clip
+const XFADE_DURATION = 0.6; // seconds of crossfade between text segments
 const THREADS = 2;
 
 export const SOCIAL_REELS_DIR = path.join(process.cwd(), "public", "uploads", "social-reels");
@@ -105,9 +104,13 @@ function runFfmpeg(args: string[]): Promise<void> {
 }
 
 export interface RenderReelOptions {
-  /** The 1080×1920 still frame (PNG buffer) to animate. */
-  frame: Buffer;
-  /** Clip length in seconds (clamped 3–60). */
+  /**
+   * 1080×1920 still frames (PNG). Shown in sequence — each shares the SAME
+   * photo + background, only the overlaid text differs. 1–3 frames; with >1 the
+   * renderer crossfades between them (no camera movement). 1 frame = fully static.
+   */
+  frames: Buffer[];
+  /** Total clip length in seconds (clamped 5–60; default 30). */
   durationSec?: number;
   /** Local filesystem path to a background-music file, or null/undefined for silent. */
   bgmPath?: string | null;
@@ -130,10 +133,11 @@ export interface RenderReelResult {
  * and public URLs. Throws on render failure (caller marks the post REJECTED).
  */
 export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderReelResult> {
-  const durationSec = Math.min(60, Math.max(3, Math.round(opts.durationSec ?? 8)));
-  const frames = durationSec * FPS;
-  const lastFrame = frames - 1;
+  const durationSec = Math.min(60, Math.max(5, Math.round(opts.durationSec ?? 30)));
   const bgmVolume = Math.min(1, Math.max(0, opts.bgmVolume ?? 0.35));
+  const frameBuffers = (opts.frames || []).filter(Boolean).slice(0, 3);
+  if (frameBuffers.length === 0) throw new Error("renderReelVideo: no frames provided");
+  const n = frameBuffers.length;
 
   await fs.mkdir(SOCIAL_REELS_DIR, { recursive: true });
 
@@ -142,26 +146,50 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   const coverFilename = `${id}.jpg`;
   const mp4Path = path.join(SOCIAL_REELS_DIR, mp4Filename);
   const coverPath = path.join(SOCIAL_REELS_DIR, coverFilename);
-  const tmpFramePath = path.join(os.tmpdir(), `reel-frame-${id}.png`);
+  const tmpPaths = frameBuffers.map((_, i) => path.join(os.tmpdir(), `reel-frame-${id}-${i}.png`));
 
-  // Cover = the still frame itself (zoom starts at 1.0, so frame 0 == the card).
-  await sharp(opts.frame).jpeg({ quality: 88 }).toFile(coverPath);
-  await fs.writeFile(tmpFramePath, opts.frame);
+  // Cover = the first frame (photo + first quote).
+  await sharp(frameBuffers[0]).jpeg({ quality: 88 }).toFile(coverPath);
+  await Promise.all(frameBuffers.map((b, i) => fs.writeFile(tmpPaths[i], b)));
 
-  const videoChain =
-    `[0:v]scale=-2:${UPSCALE_H}:flags=lanczos,` +
-    `zoompan=z='1+${ZOOM_TOTAL}*on/${lastFrame}':` +
-    `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':` +
-    `d=${frames}:s=${OUT_W}x${OUT_H}:fps=${FPS},format=yuv420p[v]`;
+  // STATIC video (no zoom / no pan). With >1 frame we crossfade between them —
+  // every frame shares the same photo+background, so only the text visibly
+  // swaps while the image stays perfectly still. segLen is sized so the
+  // crossfade overlaps still sum to exactly `durationSec`.
+  const D = XFADE_DURATION;
+  const segLen = n === 1 ? durationSec : (durationSec + (n - 1) * D) / n;
+
+  let videoChain: string;
+  if (n === 1) {
+    videoChain = `[0:v]scale=${OUT_W}:${OUT_H},setsar=1,fps=${FPS},format=yuv420p[v]`;
+  } else {
+    const scaled = frameBuffers
+      .map((_, i) => `[${i}:v]scale=${OUT_W}:${OUT_H},setsar=1,fps=${FPS}[s${i}]`)
+      .join(";");
+    const steps: string[] = [];
+    let prev = "s0";
+    for (let k = 1; k < n; k++) {
+      const offset = (k * (segLen - D)).toFixed(3);
+      const out = k === n - 1 ? "vx" : `x${k}`;
+      steps.push(`[${prev}][s${k}]xfade=transition=fade:duration=${D}:offset=${offset}[${out}]`);
+      prev = out;
+    }
+    videoChain = `${scaled};${steps.join(";")};[vx]format=yuv420p[v]`;
+  }
+
+  const inputArgs: string[] = [];
+  for (const p of tmpPaths) {
+    inputArgs.push("-loop", "1", "-t", segLen.toFixed(3), "-i", p);
+  }
 
   try {
     await withRenderLock(async () => {
       let args: string[];
       if (opts.bgmPath && existsSync(opts.bgmPath)) {
-        const audioChain = `[1:a]volume=${bgmVolume},afade=t=out:st=${Math.max(0, durationSec - 1)}:d=1[a]`;
+        const audioChain = `[${n}:a]volume=${bgmVolume},afade=t=out:st=${Math.max(0, durationSec - 1)}:d=1[a]`;
         args = [
           "-y",
-          "-loop", "1", "-i", tmpFramePath,
+          ...inputArgs,
           "-stream_loop", "-1", "-i", opts.bgmPath,
           "-filter_complex", `${videoChain};${audioChain}`,
           "-map", "[v]", "-map", "[a]",
@@ -171,10 +199,10 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
       } else {
         args = [
           "-y",
-          "-loop", "1", "-i", tmpFramePath,
+          ...inputArgs,
           "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
           "-filter_complex", videoChain,
-          "-map", "[v]", "-map", "1:a",
+          "-map", "[v]", "-map", `${n}:a`,
           ...commonOutputArgs(durationSec),
           mp4Path,
         ];
@@ -182,7 +210,7 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
       await runFfmpeg(args);
     });
   } finally {
-    await fs.unlink(tmpFramePath).catch(() => {});
+    await Promise.all(tmpPaths.map((p) => fs.unlink(p).catch(() => {})));
   }
 
   return {

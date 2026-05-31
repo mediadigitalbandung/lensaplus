@@ -161,6 +161,57 @@ ISI: ${excerpt}`;
   return { quote: fallback };
 }
 
+/**
+ * Produce up to `count` SHORT, DISTINCT quotes (each <= ~90 chars) distilled
+ * from the article — shown in sequence as the only changing element of a Reel.
+ * Falls back to a single trimmed title on failure. Never throws.
+ */
+export async function generateReelQuotes(
+  article: ArticleForPublish,
+  count = 3,
+): Promise<{ quotes: string[] }> {
+  const excerpt = article.excerpt ? article.excerpt : stripHtml(article.content).slice(0, 700);
+
+  const userPrompt = `Dari berita berikut, buat ${count} kalimat kutipan PENDEK yang BERBEDA satu sama lain, untuk ditampilkan BERGANTIAN sebagai teks di video Reels vertikal:
+- Bahasa Indonesia, lugas, kuat, mudah dibaca sekilas.
+- Setiap kalimat MAKSIMAL ${REEL_QUOTE_MAX_LEN} karakter.
+- Masing-masing menyoroti poin/aspek BERBEDA dari berita — jangan saling mengulang.
+- Tanpa tanda kutip, tanpa hashtag, tanpa tautan, tanpa emoji, tanpa penomoran.
+- Diringkas dari isi berita (bukan sekadar menyalin judul).
+
+Format jawaban WAJIB JSON murni (tanpa markdown), persis:
+{"quotes":["...","...","..."]}
+
+JUDUL: ${article.title}
+ISI: ${excerpt}`;
+
+  try {
+    const result = await callAI({
+      feature: "social_caption",
+      systemPrompt: REEL_QUOTE_SYSTEM_PROMPT,
+      userPrompt,
+      maxTokens: 400,
+      temperature: 0.7,
+      articleTitle: article.title,
+    });
+
+    const parsed = safeParseJson<{ quotes?: unknown }>(result.text);
+    const raw = Array.isArray(parsed?.quotes) ? (parsed!.quotes as unknown[]) : [];
+    const cleaned = raw
+      .map((q) => (typeof q === "string" ? cleanAIShortText(q) : ""))
+      .map((q) => q.replace(/^["'“”‘’]+|["'“”‘’]+$/g, "").trim())
+      .map((q) => (q.length > REEL_QUOTE_MAX_LEN ? truncateAtWord(q, REEL_QUOTE_MAX_LEN).replace(/\.$/, "") : q))
+      .filter((q) => q.length > 0);
+    const quotes = Array.from(new Set(cleaned)).slice(0, count);
+    if (quotes.length > 0) return { quotes };
+  } catch {
+    // swallow — fall through to fallback
+  }
+
+  const fallback = truncateAtWord(article.title, REEL_QUOTE_MAX_LEN).replace(/\.$/, "");
+  return { quotes: [fallback] };
+}
+
 /** Truncate text at word boundary, ensuring it doesn't exceed maxLen chars. */
 function truncateAtWord(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;

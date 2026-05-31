@@ -201,29 +201,51 @@ function buildReelSvg({
  * and as the Reel cover). Never throws on image-fetch failure; falls back to a
  * solid navy background.
  */
-export async function renderReelFrame(input: ReelFrameInput): Promise<Buffer> {
-  const category = input.category || "BERITA";
-  const quote = (input.quote || input.title || "").trim();
-
-  const imageBuffer = await loadFeaturedImage(input.featuredImage);
-
+/** Composite a single 1080×1920 PNG from a (possibly null) shared photo + quote. */
+async function compositeReelFrame(
+  imageBuffer: Buffer | null,
+  category: string,
+  quote: string,
+): Promise<Buffer> {
   const composites: sharp.OverlayOptions[] = [];
   if (imageBuffer) composites.push({ input: imageBuffer, top: 0, left: 0 });
-
   const svg = buildReelSvg({ category, quote, hasImage: imageBuffer !== null });
   composites.push({ input: Buffer.from(svg), top: 0, left: 0 });
-
   return sharp({
-    create: {
-      width: WIDTH,
-      height: HEIGHT,
-      channels: 3,
-      background: { r: 0, g: 21, b: 48 },
-    },
+    create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 0, g: 21, b: 48 } },
   })
     .composite(composites)
     .png()
     .toBuffer();
+}
+
+export async function renderReelFrame(input: ReelFrameInput): Promise<Buffer> {
+  const imageBuffer = await loadFeaturedImage(input.featuredImage);
+  return compositeReelFrame(imageBuffer, input.category || "BERITA", (input.quote || input.title || "").trim());
+}
+
+export interface ReelFramesInput {
+  title: string;
+  category: string;
+  quotes: string[];
+  featuredImage?: string | null;
+}
+
+/**
+ * Render N frames that share the SAME photo + background; only the overlaid
+ * quote changes. The featured image is fetched/decoded ONCE and reused, so the
+ * video renderer can crossfade between identical-photo frames (text swaps,
+ * photo stays still). Returns at least one frame.
+ */
+export async function renderReelFrames(input: ReelFramesInput): Promise<Buffer[]> {
+  const category = input.category || "BERITA";
+  const quotes = input.quotes.length ? input.quotes : [input.title];
+  const imageBuffer = await loadFeaturedImage(input.featuredImage);
+  const frames: Buffer[] = [];
+  for (const q of quotes) {
+    frames.push(await compositeReelFrame(imageBuffer, category, (q || input.title || "").trim()));
+  }
+  return frames;
 }
 
 export const REEL_FRAME_WIDTH = WIDTH;

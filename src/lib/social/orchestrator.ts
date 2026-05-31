@@ -28,9 +28,9 @@ import type {
   ThreadsSettings,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { generateReelQuote } from "./ai-caption";
+import { generateReelQuotes } from "./ai-caption";
 import { generateSocialCaption } from "./caption-generator";
-import { renderReelFrame } from "./reel-frame";
+import { renderReelFrames } from "./reel-frame";
 import { renderReelVideo, deleteReelFiles } from "./video-renderer";
 import { FacebookPublisher, type FacebookPostMode } from "./facebook";
 import { InstagramPublisher } from "./instagram";
@@ -831,23 +831,28 @@ async function executeReelRender(
   input: RenderReelInput,
 ): Promise<void> {
   try {
-    const [{ quote }, caption] = await Promise.all([
-      generateReelQuote(article),
+    // Up to 3 distinct AI quotes (the only thing that changes in the video) +
+    // the under-post caption, generated in parallel.
+    const [{ quotes }, caption] = await Promise.all([
+      generateReelQuotes(article, 3),
       buildReelCaption(article, global),
     ]);
 
-    const frame = await renderReelFrame({
+    // One frame per quote — same photo + background, only the text differs.
+    const frames = await renderReelFrames({
       title: article.title,
       category: article.category?.name || "BERITA",
-      quote,
+      quotes,
       featuredImage: article.featuredImage,
     });
 
     const bgmUrl = input.bgmUrl ?? global.reelDefaultBgmUrl ?? null;
     const bgmPath = resolveLocalUploadPath(bgmUrl);
-    const durationSec = input.durationSec ?? global.reelDurationSec ?? 8;
+    // Reels are a fixed 30s format (text rotates across the clip); a per-render
+    // override is still honored when explicitly supplied.
+    const durationSec = input.durationSec ?? 30;
 
-    const rendered = await renderReelVideo({ frame, durationSec, bgmPath });
+    const rendered = await renderReelVideo({ frames, durationSec, bgmPath });
 
     await prisma.socialPost.update({
       where: { id: postId },
