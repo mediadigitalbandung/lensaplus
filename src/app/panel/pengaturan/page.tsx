@@ -368,6 +368,7 @@ export default function PengaturanPage() {
   // AI
   const [anthropicKey, setAnthropicKey] = useState("");
   const [deepseekKey, setDeepseekKey] = useState("");
+  const [geminiKey, setGeminiKey] = useState("");
   const [enableAi, setEnableAi] = useState(true);
 
   // Google
@@ -444,6 +445,7 @@ export default function PengaturanPage() {
 
         setAnthropicKey(map.anthropic_api_key || "");
         setDeepseekKey(map.deepseek_api_key || "");
+        setGeminiKey(map.gemini_api_key || "");
         setEnableAi(map.enable_ai !== "false");
 
         setGoogleCredentials(map.google_credentials_json || "");
@@ -933,6 +935,32 @@ export default function PengaturanPage() {
               placeholder="sk-..."
             />
           </Field>
+          <Field
+            label="Gemini API Key (suara Reel / TTS)"
+            hint={
+              <>
+                Untuk voiceover Bahasa Indonesia pada Reel. Dapatkan di{" "}
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  aistudio.google.com
+                </a>
+                . Kosongkan = Reel tanpa suara.
+              </>
+            }
+          >
+            <SecretInput
+              value={geminiKey}
+              onChange={(v) => {
+                setGeminiKey(v);
+                markDirty("ai");
+              }}
+              placeholder="AIza..."
+            />
+          </Field>
           <div className="flex items-center justify-between rounded-xl border border-border bg-surface-secondary px-4 py-3">
             <div>
               <p className="text-sm font-medium text-txt-primary">
@@ -955,6 +983,7 @@ export default function PengaturanPage() {
               saveSection("ai", [
                 ["anthropic_api_key", anthropicKey],
                 ["deepseek_api_key", deepseekKey],
+                ["gemini_api_key", geminiKey],
                 ["enable_ai", enableAi ? "true" : "false"],
               ])
             }

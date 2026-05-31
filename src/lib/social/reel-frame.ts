@@ -138,8 +138,9 @@ const DESC_GAP = 70; // space between the title block and the description
 const BRAND_BAR_Y = HEIGHT - 170;
 
 const DEFAULT_WPM = 240;
-const HOLD_SEC = 1.4; // linger on a completed part so it can be read
-const INTRO_SEC = 0.8; // title/photo shown before the first word
+export const HOLD_SEC = 1.4; // silent mode: linger on a completed part to read it
+export const VOICED_HOLD_SEC = 0.6; // narrated mode: short pause between parts
+export const INTRO_SEC = 0.8; // title/photo shown before the first word
 const FADE_OPACITY = 0.4; // opacity of a word during its (brief) fade-in frame
 
 export interface TimedFrame {
@@ -154,8 +155,14 @@ export interface ReelKineticInput {
   /** Up to 5 description parts (~2 sentences each), revealed in turn, word by word. */
   segments: string[];
   featuredImage?: string | null;
-  /** Adult reading speed in words/min (200–300 typical); drives word timing. */
+  /** Adult reading speed in words/min (200–300 typical); drives word timing when not narrated. */
   wpm?: number;
+  /**
+   * Per-segment narration durations (seconds), aligned to `segments`. When
+   * present, each segment's words are timed to fill its narration (word reveal
+   * tracks the spoken audio) instead of using `wpm`.
+   */
+  segmentDurations?: number[];
 }
 
 /** Persistent layer: gradient + category badge + title header + brand bar. */
@@ -241,8 +248,9 @@ function buildDescSvg(text: string, descY: number, fadeWord?: string, fadeOpacit
 export async function renderReelKineticFrames(input: ReelKineticInput): Promise<TimedFrame[]> {
   const category = input.category || "BERITA";
   const wpm = Math.min(400, Math.max(120, Math.round(input.wpm ?? DEFAULT_WPM)));
-  const wordDur = 60 / wpm;
-  const fadeDur = Math.min(0.09, wordDur * 0.45);
+  const baseWordDur = 60 / wpm;
+  const voiced = Array.isArray(input.segmentDurations) && input.segmentDurations.length > 0;
+  const holdSec = voiced ? VOICED_HOLD_SEC : HOLD_SEC;
 
   const segments = (input.segments || [])
     .map((s) => (s || "").trim())
@@ -279,15 +287,20 @@ export async function renderReelKineticFrames(input: ReelKineticInput): Promise<
   const frames: TimedFrame[] = [];
   frames.push({ buffer: await composeDesc(""), durationSec: INTRO_SEC });
 
-  for (const seg of segments) {
-    const words = seg.split(/\s+/).filter(Boolean);
+  for (let si = 0; si < segments.length; si++) {
+    const words = segments[si].split(/\s+/).filter(Boolean);
+    if (words.length === 0) continue;
+    // Sync to the narration when available, else fall back to reading speed.
+    const segDur = input.segmentDurations?.[si];
+    const wordDur = segDur && segDur > 0 ? Math.max(0.12, segDur / words.length) : baseWordDur;
+    const fadeDur = Math.min(0.09, wordDur * 0.45);
     for (let k = 1; k <= words.length; k++) {
       const fullText = words.slice(0, k).join(" ");
       const newWord = words[k - 1];
       // 1) brief frame with the new word dimmed (the fade-in)…
       frames.push({ buffer: await composeDesc(fullText, newWord, FADE_OPACITY), durationSec: fadeDur });
       // 2) …then the settled frame at full opacity (last word lingers extra).
-      const settled = wordDur - fadeDur + (k === words.length ? HOLD_SEC : 0);
+      const settled = wordDur - fadeDur + (k === words.length ? holdSec : 0);
       frames.push({ buffer: await composeDesc(fullText), durationSec: Math.max(0.05, settled) });
     }
   }

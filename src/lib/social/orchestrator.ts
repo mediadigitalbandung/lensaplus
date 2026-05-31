@@ -30,8 +30,9 @@ import type {
 import { prisma } from "@/lib/prisma";
 import { generateReelQuotes } from "./ai-caption";
 import { generateSocialCaption } from "./caption-generator";
-import { renderReelKineticFrames } from "./reel-frame";
+import { renderReelKineticFrames, INTRO_SEC, VOICED_HOLD_SEC } from "./reel-frame";
 import { renderReelVideo, deleteReelFiles } from "./video-renderer";
+import { isTtsConfigured, synthesizeIndonesianSpeech, silencePcm, pcmToWav } from "./tts";
 import { FacebookPublisher, type FacebookPostMode } from "./facebook";
 import { InstagramPublisher } from "./instagram";
 import { ThreadsPublisher } from "./threads";
@@ -876,20 +877,41 @@ async function executeReelRender(
       buildReelCaption(article, global),
     ]);
 
+    // Optional Indonesian voiceover (Gemini TTS). Synthesize each part in turn
+    // (sequential — gentler on rate limits), build one narration WAV aligned to
+    // the video timeline, and time each part's word reveal to its spoken length.
+    // Any miss → fall back to a silent, reading-speed Reel.
+    let segmentDurations: number[] | undefined;
+    let voiceWav: Buffer | undefined;
+    if (await isTtsConfigured()) {
+      const audios: ({ pcm: Buffer; durationSec: number } | null)[] = [];
+      for (const q of quotes) {
+        audios.push(await synthesizeIndonesianSpeech(q));
+      }
+      if (audios.length > 0 && audios.every((a) => a && a.pcm.length > 0)) {
+        const ok = audios as { pcm: Buffer; durationSec: number }[];
+        segmentDurations = ok.map((a) => a.durationSec);
+        const parts: Buffer[] = [silencePcm(INTRO_SEC)];
+        for (const a of ok) parts.push(a.pcm, silencePcm(VOICED_HOLD_SEC));
+        voiceWav = pcmToWav(Buffer.concat(parts));
+      }
+    }
+
     // Persistent photo + headline base; description revealed word-by-word.
-    // Clip duration follows adult reading speed (frames carry their own timing).
+    // Word timing syncs to the narration when present, else follows reading speed.
     const frames = await renderReelKineticFrames({
       title: article.title,
       category: article.category?.name || "BERITA",
       segments: quotes,
       featuredImage: article.featuredImage,
       wpm: 240,
+      segmentDurations,
     });
 
     const bgmUrl = input.bgmUrl ?? global.reelDefaultBgmUrl ?? null;
     const bgmPath = resolveLocalUploadPath(bgmUrl);
 
-    const rendered = await renderReelVideo({ frames, bgmPath });
+    const rendered = await renderReelVideo({ frames, bgmPath, voiceWav });
 
     await prisma.socialPost.update({
       where: { id: postId },

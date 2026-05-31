@@ -111,8 +111,10 @@ export interface RenderReelOptions {
   frames: { buffer: Buffer; durationSec: number }[];
   /** Local filesystem path to a background-music file, or null/undefined for silent. */
   bgmPath?: string | null;
-  /** BGM volume 0–1 (default 0.35). */
+  /** BGM volume 0–1 (default 0.35; ducked under voice when narration is present). */
   bgmVolume?: number;
+  /** Combined narration WAV (whole-clip length). When present it's the primary audio. */
+  voiceWav?: Buffer | null;
 }
 
 export interface RenderReelResult {
@@ -168,33 +170,48 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   const listPath = path.join(workDir, "list.txt");
   await fs.writeFile(listPath, listLines.join("\n"));
 
+  const voicePath = opts.voiceWav && opts.voiceWav.length > 44 ? path.join(workDir, "voice.wav") : null;
+  if (voicePath) await fs.writeFile(voicePath, opts.voiceWav as Buffer);
+  const hasBgm = !!(opts.bgmPath && existsSync(opts.bgmPath));
+
   const videoChain = `[0:v]scale=${OUT_W}:${OUT_H},fps=${FPS},format=yuv420p[v]`;
+  const fadeOut = Math.max(0, totalSec - 1).toFixed(3);
+
+  // Audio inputs follow the concat video (input 0). Four cases: voice + BGM
+  // (BGM ducked under the narration & mixed), voice only, BGM only, or silent.
+  const audioInputs: string[] = [];
+  let audioFilter = "";
+  let audioMap = "";
+  if (voicePath && hasBgm) {
+    audioInputs.push("-i", voicePath, "-stream_loop", "-1", "-i", opts.bgmPath as string);
+    audioFilter =
+      `;[1:a]aresample=44100,volume=1[av]` +
+      `;[2:a]aresample=44100,volume=${Math.min(bgmVolume, 0.18)},afade=t=out:st=${fadeOut}:d=1[ab]` +
+      `;[av][ab]amix=inputs=2:duration=first:dropout_transition=0[a]`;
+    audioMap = "[a]";
+  } else if (voicePath) {
+    audioInputs.push("-i", voicePath);
+    audioMap = "1:a";
+  } else if (hasBgm) {
+    audioInputs.push("-stream_loop", "-1", "-i", opts.bgmPath as string);
+    audioFilter = `;[1:a]volume=${bgmVolume},afade=t=out:st=${fadeOut}:d=1[a]`;
+    audioMap = "[a]";
+  } else {
+    audioInputs.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100");
+    audioMap = "1:a";
+  }
 
   try {
     await withRenderLock(async () => {
-      let args: string[];
-      if (opts.bgmPath && existsSync(opts.bgmPath)) {
-        const audioChain = `[1:a]volume=${bgmVolume},afade=t=out:st=${Math.max(0, totalSec - 1).toFixed(3)}:d=1[a]`;
-        args = [
-          "-y",
-          "-f", "concat", "-safe", "0", "-i", listPath,
-          "-stream_loop", "-1", "-i", opts.bgmPath,
-          "-filter_complex", `${videoChain};${audioChain}`,
-          "-map", "[v]", "-map", "[a]",
-          ...commonOutputArgs(totalSec),
-          mp4Path,
-        ];
-      } else {
-        args = [
-          "-y",
-          "-f", "concat", "-safe", "0", "-i", listPath,
-          "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
-          "-filter_complex", videoChain,
-          "-map", "[v]", "-map", "1:a",
-          ...commonOutputArgs(totalSec),
-          mp4Path,
-        ];
-      }
+      const args = [
+        "-y",
+        "-f", "concat", "-safe", "0", "-i", listPath,
+        ...audioInputs,
+        "-filter_complex", `${videoChain}${audioFilter}`,
+        "-map", "[v]", "-map", audioMap,
+        ...commonOutputArgs(totalSec),
+        mp4Path,
+      ];
       await runFfmpeg(args);
     });
   } finally {
