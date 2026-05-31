@@ -28,8 +28,11 @@ const ALLOWED_KEYS = [
   // AI providers
   "deepseek_api_key",
   "anthropic_api_key",
-  // Gemini (Google AI Studio) — used for Reel voiceover (TTS)
+  // Reel voiceover (TTS): Gemini (AI Studio) + ElevenLabs, with a provider switch
   "gemini_api_key",
+  "elevenlabs_api_key",
+  "elevenlabs_voice_id",
+  "tts_provider",
   // Google Indexing / GSC / GA
   "google_credentials_json",
   "google_indexing_enabled",

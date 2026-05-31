@@ -369,6 +369,9 @@ export default function PengaturanPage() {
   const [anthropicKey, setAnthropicKey] = useState("");
   const [deepseekKey, setDeepseekKey] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
+  const [elevenlabsKey, setElevenlabsKey] = useState("");
+  const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState("");
+  const [ttsProvider, setTtsProvider] = useState("auto");
   const [enableAi, setEnableAi] = useState(true);
 
   // Google
@@ -446,6 +449,9 @@ export default function PengaturanPage() {
         setAnthropicKey(map.anthropic_api_key || "");
         setDeepseekKey(map.deepseek_api_key || "");
         setGeminiKey(map.gemini_api_key || "");
+        setElevenlabsKey(map.elevenlabs_api_key || "");
+        setElevenlabsVoiceId(map.elevenlabs_voice_id || "");
+        setTtsProvider(map.tts_provider || "auto");
         setEnableAi(map.enable_ai !== "false");
 
         setGoogleCredentials(map.google_credentials_json || "");
@@ -961,6 +967,65 @@ export default function PengaturanPage() {
               placeholder="AIza..."
             />
           </Field>
+          <Field
+            label="ElevenLabs API Key (alternatif suara Reel)"
+            hint={
+              <>
+                Suara TTS alternatif (sangat natural). Dapatkan di{" "}
+                <a
+                  href="https://elevenlabs.io/app/settings/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  elevenlabs.io
+                </a>
+                .
+              </>
+            }
+          >
+            <SecretInput
+              value={elevenlabsKey}
+              onChange={(v) => {
+                setElevenlabsKey(v);
+                markDirty("ai");
+              }}
+              placeholder="sk_..."
+            />
+          </Field>
+          <Field
+            label="ElevenLabs Voice ID (opsional)"
+            hint="Kosongkan = suara default. Salin Voice ID dari halaman Voices di ElevenLabs."
+          >
+            <input
+              type="text"
+              value={elevenlabsVoiceId}
+              onChange={(e) => {
+                setElevenlabsVoiceId(e.target.value);
+                markDirty("ai");
+              }}
+              className="input"
+              placeholder="21m00Tcm4TlvDq8ikWAM"
+            />
+          </Field>
+          <Field
+            label="Penyedia Suara Reel (TTS)"
+            hint="Otomatis = pakai ElevenLabs bila key terisi, jika tidak pakai Gemini."
+          >
+            <select
+              value={ttsProvider}
+              onChange={(e) => {
+                setTtsProvider(e.target.value);
+                markDirty("ai");
+              }}
+              className="input"
+            >
+              <option value="auto">Otomatis (ElevenLabs → Gemini)</option>
+              <option value="elevenlabs">ElevenLabs</option>
+              <option value="gemini">Gemini</option>
+              <option value="off">Nonaktif (tanpa suara)</option>
+            </select>
+          </Field>
           <div className="flex items-center justify-between rounded-xl border border-border bg-surface-secondary px-4 py-3">
             <div>
               <p className="text-sm font-medium text-txt-primary">
@@ -984,6 +1049,9 @@ export default function PengaturanPage() {
                 ["anthropic_api_key", anthropicKey],
                 ["deepseek_api_key", deepseekKey],
                 ["gemini_api_key", geminiKey],
+                ["elevenlabs_api_key", elevenlabsKey],
+                ["elevenlabs_voice_id", elevenlabsVoiceId],
+                ["tts_provider", ttsProvider],
                 ["enable_ai", enableAi ? "true" : "false"],
               ])
             }
