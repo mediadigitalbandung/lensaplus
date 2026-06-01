@@ -13,6 +13,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomBytes } from "crypto";
 import { ApiError, errorResponse, requireRole, successResponse } from "@/lib/api-utils";
+import { addBgmTrack } from "@/lib/social/bgm-library";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,11 +42,17 @@ export async function POST(request: NextRequest) {
     await mkdir(uploadDir, { recursive: true });
     await writeFile(join(uploadDir, filename), Buffer.from(await file.arrayBuffer()));
 
+    const url = `/uploads/${bucket}/${filename}`;
+    // Auto-save to the reusable library so it can be picked again later.
+    const niceName = (file.name || filename).replace(/\.[a-z0-9]+$/i, "").slice(0, 80) || filename;
+    const tracks = await addBgmTrack({ url, name: niceName, savedAt: new Date().toISOString() });
+
     return successResponse({
-      url: `/uploads/${bucket}/${filename}`,
+      url,
       mimeType: file.type,
       size: file.size,
       filename: file.name,
+      tracks,
     });
   } catch (error) {
     return errorResponse(error);

@@ -154,6 +154,113 @@ async function uploadReelAudio(file: File): Promise<string> {
   return json.data.url as string;
 }
 
+interface BgmTrack {
+  url: string;
+  name: string;
+}
+
+function ReelBgmPicker({
+  value,
+  onChange,
+  idPrefix,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+  idPrefix: string;
+}) {
+  const { success: showSuccess, error: showError } = useToast();
+  const [tracks, setTracks] = useState<BgmTrack[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch("/api/social/reels/audio-library");
+      const j = await r.json();
+      if (j.success) setTracks(j.data?.tracks || []);
+    } catch {
+      /* */
+    }
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const known = tracks.some((t) => t.url === value);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploading(true);
+      const url = await uploadReelAudio(file);
+      await load();
+      onChange(url);
+      showSuccess("Musik tersimpan & dipilih.");
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Upload gagal");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleDelete() {
+    if (!value || !known) return;
+    try {
+      const r = await fetch("/api/social/reels/audio-library", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: value }),
+      });
+      const j = await r.json();
+      if (!j.success) throw new Error(j.error || "Gagal hapus");
+      onChange("");
+      await load();
+      showSuccess("Musik dihapus dari pustaka.");
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal hapus");
+    }
+  }
+
+  return (
+    <div className="flex gap-2">
+      <select
+        className="input flex-1 py-2 text-sm"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">Tanpa musik</option>
+        {tracks.map((t) => (
+          <option key={t.url} value={t.url}>
+            {t.name}
+          </option>
+        ))}
+        {value && !known && <option value={value}>(URL kustom)</option>}
+      </select>
+      {value && known && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="btn-ghost shrink-0 rounded-md border border-border px-2.5 py-2 text-xs text-red-500"
+          title="Hapus musik tersimpan"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => document.getElementById(`${idPrefix}-file`)?.click()}
+        disabled={uploading}
+        className="btn-ghost shrink-0 rounded-md border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50"
+        title="Upload musik dari komputer"
+      >
+        {uploading ? <Loader2 size={14} className="animate-spin" /> : "Upload"}
+      </button>
+      <input id={`${idPrefix}-file`} type="file" accept="audio/*" className="hidden" onChange={handleFile} />
+    </div>
+  );
+}
+
 // -------------------- Posts Tab --------------------
 function PostsTab() {
   const { success: showSuccess, error: showError } = useToast();
@@ -711,42 +818,7 @@ function PostsTab() {
                   <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
                     <Music size={12} /> Musik (opsional)
                   </label>
-                  <div className="flex gap-2">
-                  <input
-                    type="text"
-                    className="input flex-1 py-2 text-sm"
-                    placeholder="/uploads/… atau klik Upload"
-                    value={reelBgmUrl}
-                    onChange={(e) => setReelBgmUrl(e.target.value)}
-                  />
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById("reel-bgm-modal-file")?.click()}
-                      className="btn-ghost shrink-0 rounded-md border border-border px-3 py-2 text-xs font-semibold"
-                    >
-                      Upload
-                    </button>
-                    <input
-                      id="reel-bgm-modal-file"
-                      type="file"
-                      accept="audio/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          showSuccess("Mengupload musik…");
-                          const url = await uploadReelAudio(file);
-                          setReelBgmUrl(url);
-                          showSuccess("Musik terupload.");
-                        } catch (err) {
-                          showError(err instanceof Error ? err.message : "Upload gagal");
-                        } finally {
-                          e.target.value = "";
-                        }
-                      }}
-                    />
-                  </div>
+                  <ReelBgmPicker value={reelBgmUrl} onChange={setReelBgmUrl} idPrefix="reel-bgm-modal" />
                 </div>
               </div>
             </div>
@@ -2578,42 +2650,11 @@ function SettingsTab() {
             <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
               <Music size={12} /> Musik latar default Reel (opsional)
             </label>
-            <div className="flex gap-2">
-            <input
-              type="text"
-              className="input flex-1 py-2 text-sm"
-              placeholder="/uploads/… atau klik Upload"
+            <ReelBgmPicker
               value={global.reelDefaultBgmUrl || ""}
-              onChange={(e) => setGlobal({ ...global, reelDefaultBgmUrl: e.target.value })}
+              onChange={(url) => setGlobal({ ...global, reelDefaultBgmUrl: url })}
+              idPrefix="reel-bgm-settings"
             />
-              <button
-                type="button"
-                onClick={() => document.getElementById("reel-bgm-settings-file")?.click()}
-                className="btn-ghost shrink-0 rounded-md border border-border px-3 py-2 text-xs font-semibold"
-              >
-                Upload
-              </button>
-              <input
-                id="reel-bgm-settings-file"
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  try {
-                    showSuccess("Mengupload musik…");
-                    const url = await uploadReelAudio(file);
-                    setGlobal({ ...global, reelDefaultBgmUrl: url });
-                    showSuccess("Musik terupload.");
-                  } catch (err) {
-                    showError(err instanceof Error ? err.message : "Upload gagal");
-                  } finally {
-                    e.target.value = "";
-                  }
-                }}
-              />
-            </div>
             <p className="mt-1.5 text-[10px] leading-relaxed text-txt-muted">
               Judul tetap + deskripsi berita (maks 5 bagian, ±2 kalimat) muncul kata demi kata dengan fade-in; foto &amp; latar diam (tanpa zoom). Durasi otomatis mengikuti kecepatan baca.
             </p>
