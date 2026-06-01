@@ -273,10 +273,6 @@ function PostsTab() {
   const [testingPublish, setTestingPublish] = useState(false);
   const [testingReel, setTestingReel] = useState(false);
   // Instagram Reel (story-card video) creation
-  const [showReelModal, setShowReelModal] = useState(false);
-  const [reelArticleId, setReelArticleId] = useState("");
-  const [reelBgmUrl, setReelBgmUrl] = useState("");
-  const [renderingReel, setRenderingReel] = useState(false);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
 
   async function handleTestPublish(targetPlatform?: "INSTAGRAM" | "FACEBOOK" | "THREADS" | "ALL", isStory?: boolean) {
@@ -325,38 +321,6 @@ function PostsTab() {
     }
   }
 
-  async function handleRenderReel() {
-    try {
-      setRenderingReel(true);
-      const body: Record<string, unknown> = {};
-      if (reelArticleId.trim()) body.articleId = reelArticleId.trim();
-      if (reelBgmUrl.trim()) body.bgmUrl = reelBgmUrl.trim();
-      const res = await fetch("/api/social/reels/render", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || `Server Error (HTTP ${res.status}).`);
-      }
-      const r = json.data?.result;
-      if (r?.status === "REJECTED") {
-        throw new Error(r.error || "Render Reel gagal.");
-      }
-      showSuccess(
-        "Reel sedang dirender di latar belakang (±30 detik). Daftar akan diperbarui otomatis saat selesai — tinjau lalu klik Approve untuk publikasi."
-      );
-      setShowReelModal(false);
-      setReelArticleId("");
-      setReelBgmUrl("");
-      fetchPosts();
-    } catch (err) {
-      showError(err instanceof Error ? err.message : "Gagal merender Reel");
-    } finally {
-      setRenderingReel(false);
-    }
-  }
 
   async function handleTestReel() {
     const ok = await confirm({
@@ -497,17 +461,6 @@ function PostsTab() {
         >
           <RefreshCw size={14} />
           Refresh
-        </button>
-        <button
-          onClick={() => {
-            setReelArticleId("");
-            setReelBgmUrl("");
-            setShowReelModal(true);
-          }}
-          className="btn-primary flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold"
-        >
-          <Film size={14} />
-          Buat Reel
         </button>
         <div className="flex flex-wrap items-center gap-2 ml-auto">
           <span className="hidden sm:inline text-xs font-semibold text-txt-muted">
@@ -770,76 +723,6 @@ function PostsTab() {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* Buat Reel modal */}
-      {showReelModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface p-6 shadow-2xl">
-            <div className="mb-3 flex items-center gap-2">
-              <Film size={20} className="text-primary" />
-              <h3 className="text-lg font-bold text-txt-primary">Buat Reel dari Story Card</h3>
-            </div>
-            <p className="mb-4 text-xs leading-relaxed text-txt-secondary">
-              Judul artikel tampil <strong>tetap</strong>, lalu deskripsi berita (dari AI)
-              muncul <strong>kata demi kata dengan fade-in</strong> dalam hingga 5 bagian
-              (±2 kalimat) bergantian. Foto &amp; latar diam (tanpa zoom); durasi mengikuti
-              kecepatan baca. Hasilnya jadi draft Reel untuk Anda tinjau &amp; publikasikan.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-txt-secondary">
-                  Article ID{" "}
-                  <span className="font-normal text-txt-muted">(kosongkan = artikel terbaru)</span>
-                </label>
-                <input
-                  type="text"
-                  className="input w-full py-2 text-sm"
-                  placeholder="cljx… (opsional)"
-                  value={reelArticleId}
-                  onChange={(e) => setReelArticleId(e.target.value)}
-                />
-                <p className="mt-1 text-[10px] text-txt-muted">
-                  Ambil ID dari URL /panel/artikel/[id]/edit. Biarkan kosong untuk memakai
-                  artikel terbaru yang sudah terbit.
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-txt-secondary">
-                    Durasi
-                  </label>
-                  <div className="input flex items-center py-2 text-sm text-txt-muted">
-                    Otomatis · ikut kecepatan baca
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
-                    <Music size={12} /> Musik (opsional)
-                  </label>
-                  <ReelBgmPicker value={reelBgmUrl} onChange={setReelBgmUrl} idPrefix="reel-bgm-modal" />
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                onClick={() => setShowReelModal(false)}
-                disabled={renderingReel}
-                className="btn-ghost rounded-md px-4 py-2 text-sm disabled:opacity-50"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleRenderReel}
-                disabled={renderingReel}
-                className="btn-primary flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
-              >
-                {renderingReel ? <Loader2 size={14} className="animate-spin" /> : <Film size={14} />}
-                {renderingReel ? "Merender video…" : "Render Reel"}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
