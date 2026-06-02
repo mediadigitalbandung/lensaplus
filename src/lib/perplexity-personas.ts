@@ -55,3 +55,18 @@ export function getPersonaInstruction(key?: string | null): string {
   if (!key) return "";
   return PERPLEXITY_PERSONAS.find((p) => p.key === key)?.instruction ?? "";
 }
+
+/**
+ * Quick-insert example hints for the per-article "Arahan/fokus tambahan" box.
+ * Clicking one appends it to the notes so writers don't start from a blank field.
+ */
+export const PERPLEXITY_NOTE_HINTS: string[] = [
+  "Optimasi SEO + ramah Google Discover",
+  "Gabungkan LSI informasional & transaksional yang relevan",
+  "Cek angle kompetitor peringkat teratas, lalu ungguli",
+  "Fokus data & perkembangan terbaru (30 hari terakhir)",
+  "Sertakan konteks lokal Bandung/Jawa Barat",
+  "Buka dengan lead 5W1H yang kuat",
+  "Sumber resmi/pemerintah & media arus utama",
+  "Hindari clickbait & bahasa promosi",
+];

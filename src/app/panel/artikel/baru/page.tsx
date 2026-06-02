@@ -40,7 +40,7 @@ interface Source {
 }
 
 import { CAN_SUBMIT_REVIEW, EDITOR_ROLES, roleLabelsMap } from "@/lib/roles";
-import { PERPLEXITY_PERSONAS } from "@/lib/perplexity-personas";
+import { PERPLEXITY_PERSONAS, PERPLEXITY_NOTE_HINTS } from "@/lib/perplexity-personas";
 
 export default function NewArticlePage() {
   const router = useRouter();
@@ -588,13 +588,39 @@ export default function NewArticlePage() {
                     ))}
                   </select>
                 </div>
-                <input
-                  type="text"
-                  value={researchNotes}
-                  onChange={(e) => setResearchNotes(e.target.value)}
-                  placeholder="Arahan/fokus tambahan (opsional) — mis. sudut bisnis, lokasi Bandung…"
-                  className="input w-full text-sm"
-                />
+                <div>
+                  <label className="mb-1 block text-[11px] font-semibold text-txt-secondary">
+                    Arahan / fokus tambahan (opsional)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={researchNotes}
+                    onChange={(e) => setResearchNotes(e.target.value)}
+                    placeholder={"Tuliskan arahan khusus untuk artikel ini, mis:\n- Sudut: dampak ke pelaku UMKM Bandung\n- Sertakan jadwal & syarat terbaru\n- Bandingkan dengan kebijakan tahun lalu"}
+                    className="input w-full resize-none text-sm leading-relaxed"
+                  />
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {PERPLEXITY_NOTE_HINTS.map((h) => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() =>
+                          setResearchNotes((prev) => {
+                            if (prev.includes(h)) return prev;
+                            const sep = prev.trim() ? (prev.trim().endsWith(".") ? " " : ". ") : "";
+                            return `${prev.trim()}${sep}${h}`;
+                          })
+                        }
+                        className="rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-txt-secondary hover:border-primary hover:text-primary transition-colors"
+                      >
+                        + {h}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-[10px] text-txt-muted">
+                    Arahan global (gaya & SEO) diatur di Pengaturan → AI. Kotak ini untuk fokus spesifik artikel ini.
+                  </p>
+                </div>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
