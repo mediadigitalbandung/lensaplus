@@ -71,7 +71,16 @@ export default function KontakPage() {
                 <Phone size={20} className="text-primary" />
                 <h3 className="mt-2 font-bold text-txt-primary">Telepon</h3>
                 <p className="mt-1 text-sm text-txt-secondary">
-                  Hubungi via email
+                  {process.env.NEXT_PUBLIC_PUBLISHER_PHONE ? (
+                    <a
+                      href={`tel:${process.env.NEXT_PUBLIC_PUBLISHER_PHONE.replace(/[^+\d]/g, "")}`}
+                      className="hover:text-primary"
+                    >
+                      {process.env.NEXT_PUBLIC_PUBLISHER_PHONE}
+                    </a>
+                  ) : (
+                    "Hubungi via email"
+                  )}
                 </p>
               </div>
             </div>

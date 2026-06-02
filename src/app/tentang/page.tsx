@@ -56,13 +56,43 @@ export default function TentangPage() {
             })}
           </div>
 
-          {/* Contact */}
+          {/* Contact / publisher identity. Legal entity, full address, phone and
+              founding year render only when their env vars are set — never with
+              placeholder data. */}
           <div className="mt-12 rounded-[12px] border border-border bg-surface-secondary p-6">
-            <h2 className="text-lg font-bold text-txt-primary">Informasi Kontak</h2>
+            <h2 className="text-lg font-bold text-txt-primary">Informasi Penerbit &amp; Kontak</h2>
             <div className="mt-3 space-y-2 text-sm text-txt-secondary">
-              <p><strong className="text-txt-primary">Alamat Redaksi:</strong> Bandung, Jawa Barat, Indonesia</p>
+              {process.env.NEXT_PUBLIC_PUBLISHER_LEGAL_NAME && (
+                <p>
+                  <strong className="text-txt-primary">Penerbit:</strong>{" "}
+                  {process.env.NEXT_PUBLIC_PUBLISHER_LEGAL_NAME}
+                </p>
+              )}
+              <p>
+                <strong className="text-txt-primary">Alamat Redaksi:</strong>{" "}
+                {process.env.NEXT_PUBLIC_PUBLISHER_STREET
+                  ? `${process.env.NEXT_PUBLIC_PUBLISHER_STREET}, `
+                  : ""}
+                Bandung, Jawa Barat
+                {process.env.NEXT_PUBLIC_PUBLISHER_POSTAL
+                  ? ` ${process.env.NEXT_PUBLIC_PUBLISHER_POSTAL}`
+                  : ""}
+                , Indonesia
+              </p>
               <p><strong className="text-txt-primary">Email:</strong> redaksi@kartawarta.com</p>
+              {process.env.NEXT_PUBLIC_PUBLISHER_PHONE && (
+                <p>
+                  <strong className="text-txt-primary">Telepon:</strong>{" "}
+                  {process.env.NEXT_PUBLIC_PUBLISHER_PHONE}
+                </p>
+              )}
               <p><strong className="text-txt-primary">Website:</strong> kartawarta.com</p>
+              {process.env.NEXT_PUBLIC_PUBLISHER_FOUNDING && (
+                <p>
+                  <strong className="text-txt-primary">Didirikan:</strong>{" "}
+                  {process.env.NEXT_PUBLIC_PUBLISHER_FOUNDING}
+                </p>
+              )}
             </div>
           </div>
         </div>
