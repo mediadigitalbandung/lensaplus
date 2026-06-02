@@ -138,6 +138,16 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const isMgmt = userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR";
   const isEditor = EDITOR_ROLES.includes(userRole);
 
+  // Current section (icon + title) shown in the sticky top bar — makes the
+  // header reflect the page you're on instead of a static label.
+  const currentNav = pathname
+    ? menuItems.find(
+        (i) => pathname === i.href || pathname.startsWith(i.href + "/")
+      )
+    : undefined;
+  const CurrentIcon = currentNav?.icon ?? LayoutDashboard;
+  const currentTitle = currentNav?.name ?? "Panel Admin";
+
   const fetchNotifications = useCallback(async () => {
     if (!session?.user) return;
     try {
@@ -333,11 +343,13 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           {sidebarContent}
         </aside>
 
-        {/* Main content */}
-        <main className="flex-1 lg:ml-60 min-w-0 overflow-x-auto">
-          {/* Top bar */}
-          <div className="sticky top-0 z-30 flex items-center justify-between bg-surface border-b border-border h-16 px-5">
-            <div className="flex items-center">
+        {/* Main content. NOTE: no overflow-x here — an overflow ancestor turns
+            the sticky top bar into a scroll-bound element and breaks it.
+            Wide tables manage their own horizontal scroll wrappers. */}
+        <main className="flex-1 lg:ml-60 min-w-0">
+          {/* Top bar — sticky, glassy, reflects the current section */}
+          <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-surface/80 px-4 sm:px-5 backdrop-blur-md shadow-[0_1px_2px_rgba(0,32,69,0.06)]">
+            <div className="flex min-w-0 items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="rounded-xl p-2.5 text-txt-primary hover:bg-surface-secondary lg:hidden"
@@ -347,7 +359,17 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
               >
                 <Menu size={24} />
               </button>
-              <span className="ml-3 text-base font-bold text-txt-primary lg:ml-0">Panel Admin</span>
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white shadow-sm ring-1 ring-black/5">
+                <CurrentIcon size={18} />
+              </div>
+              <div className="min-w-0 leading-tight">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-txt-muted">
+                  Panel Admin
+                </div>
+                <div className="-mt-0.5 truncate text-sm font-bold text-txt-primary">
+                  {currentTitle}
+                </div>
+              </div>
             </div>
 
             {/* Notification bell */}
