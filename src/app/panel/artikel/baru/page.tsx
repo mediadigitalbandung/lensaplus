@@ -70,9 +70,17 @@ export default function NewArticlePage() {
   const [researchMode, setResearchMode] = useState<"draft" | "research">("draft");
   const [researchPersona, setResearchPersona] = useState("");
   const [researching, setResearching] = useState(false);
-  // Research RESULT staged in-panel for review/edit before inserting to editor.
+  // Research RESULT staged in-panel for review/edit before inserting to fields.
   const [researchResult, setResearchResult] = useState("");
   const [researchResultSources, setResearchResultSources] = useState<Source[]>([]);
+  // Structured field package from "Draf artikel lengkap" (editable before apply).
+  const [researchFields, setResearchFields] = useState<{
+    title: string;
+    excerpt: string;
+    tags: string;
+    seoTitle: string;
+    metaDescription: string;
+  } | null>(null);
   const [users, setUsers] = useState<{id: string; name: string; role: string}[]>([]);
   const [selectedAuthorId, setSelectedAuthorId] = useState("");
   const [selectedEditorId, setSelectedEditorId] = useState("");
@@ -231,9 +239,8 @@ export default function NewArticlePage() {
         setError(data.error || "Gagal menjalankan riset Perplexity");
         return;
       }
-      const html = (data.data?.content || "").toString();
-      // Stage the result in the panel for review/edit — do NOT touch the editor yet.
-      const cited: { title: string | null; url: string }[] = data.data?.sources || [];
+      const d = data.data || {};
+      const cited: { title: string | null; url: string }[] = d.sources || [];
       const stagedSources: Source[] = cited.slice(0, 12).map((s) => {
         let host = "";
         try {
@@ -243,10 +250,24 @@ export default function NewArticlePage() {
         }
         return { name: s.title || host || "Sumber", title: "", institution: host, url: s.url };
       });
-      setResearchResult(html);
+      // Draft mode returns a structured field package; research mode just content.
+      const f = d.fields;
+      if (f) {
+        setResearchResult((f.content || "").toString());
+        setResearchFields({
+          title: (f.title || "").toString(),
+          excerpt: (f.excerpt || "").toString(),
+          tags: (f.tags || "").toString(),
+          seoTitle: (f.seoTitle || "").toString(),
+          metaDescription: (f.metaDescription || "").toString(),
+        });
+      } else {
+        setResearchResult((d.content || "").toString());
+        setResearchFields(null);
+      }
       setResearchResultSources(stagedSources);
       success(
-        `Perplexity selesai${cited.length ? ` — ${cited.length} sumber ditemukan` : ""}. Tinjau & sunting di bawah, lalu masukkan ke editor.`,
+        `Perplexity selesai${cited.length ? ` — ${cited.length} sumber ditemukan` : ""}. Tinjau & sunting di bawah, lalu masukkan.`,
       );
     } catch {
       setError("Gagal menghubungi layanan riset Perplexity");
@@ -272,12 +293,33 @@ export default function NewArticlePage() {
   };
 
   const applyResearch = (replace: boolean) => {
-    if (!researchResult.trim()) return;
-    setContent((prev) => (replace || !prev.trim() ? researchResult : `${prev}\n${researchResult}`));
+    if (researchResult.trim()) {
+      setContent((prev) => (replace || !prev.trim() ? researchResult : `${prev}\n${researchResult}`));
+    }
+    // Fill the other form fields from the structured package — only where the
+    // field is currently empty OR when replacing, so we never clobber the user's
+    // own input silently.
+    if (researchFields) {
+      const f = researchFields;
+      if (f.title && (replace || !title.trim())) setTitle(clampToMax(f.title, 255));
+      if (f.excerpt && (replace || !excerpt.trim())) setExcerpt(f.excerpt);
+      if (f.tags && (replace || !tags.trim())) setTags(f.tags);
+      if (f.seoTitle && (replace || !seoTitle.trim())) setSeoTitle(clampToMax(f.seoTitle, 60));
+      if (f.metaDescription && (replace || !seoDescription.trim()))
+        setSeoDescription(clampToMax(f.metaDescription, 160));
+      if (f.seoTitle || f.metaDescription) setShowSeo(true);
+    }
     mergeResearchSources();
-    success(replace ? "Konten editor diganti dengan hasil riset." : "Hasil riset ditambahkan ke editor.");
+    success(
+      researchFields
+        ? "Semua kolom artikel diisi dari hasil riset. Tinjau & sunting sebelum publikasi."
+        : replace
+          ? "Konten editor diganti dengan hasil riset."
+          : "Hasil riset ditambahkan ke editor.",
+    );
     setResearchResult("");
     setResearchResultSources([]);
+    setResearchFields(null);
     setShowResearch(false);
     setResearchNotes("");
   };
@@ -658,12 +700,12 @@ export default function NewArticlePage() {
                   </span>
                 </div>
 
-                {/* Staged research result — review/edit here before inserting */}
-                {researchResult && (
+                {/* Staged research result — review/edit each field before inserting */}
+                {(researchResult || researchFields) && (
                   <div className="mt-3 space-y-2 rounded-[12px] border border-primary/30 bg-surface p-3">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-semibold text-primary">
-                        Hasil riset (bisa disunting sebelum dimasukkan)
+                        Hasil riset — tinjau & sunting, lalu isi ke kolom artikel
                       </span>
                       {researchResultSources.length > 0 && (
                         <span className="text-[10px] text-txt-muted">
@@ -671,8 +713,59 @@ export default function NewArticlePage() {
                         </span>
                       )}
                     </div>
+
+                    {researchFields && (
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-[10px] font-semibold text-txt-muted">Judul</label>
+                          <input
+                            value={researchFields.title}
+                            onChange={(e) => setResearchFields({ ...researchFields, title: e.target.value })}
+                            className="input w-full text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold text-txt-muted">Ringkasan</label>
+                          <textarea
+                            rows={2}
+                            value={researchFields.excerpt}
+                            onChange={(e) => setResearchFields({ ...researchFields, excerpt: e.target.value })}
+                            className="input w-full resize-none text-sm"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <div>
+                            <label className="text-[10px] font-semibold text-txt-muted">SEO Title</label>
+                            <input
+                              value={researchFields.seoTitle}
+                              onChange={(e) => setResearchFields({ ...researchFields, seoTitle: e.target.value })}
+                              className="input w-full text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-semibold text-txt-muted">Tags</label>
+                            <input
+                              value={researchFields.tags}
+                              onChange={(e) => setResearchFields({ ...researchFields, tags: e.target.value })}
+                              className="input w-full text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold text-txt-muted">Meta Description</label>
+                          <textarea
+                            rows={2}
+                            value={researchFields.metaDescription}
+                            onChange={(e) => setResearchFields({ ...researchFields, metaDescription: e.target.value })}
+                            className="input w-full resize-none text-sm"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <label className="text-[10px] font-semibold text-txt-muted">Isi artikel (HTML)</label>
                     <textarea
-                      rows={12}
+                      rows={10}
                       value={researchResult}
                       onChange={(e) => setResearchResult(e.target.value)}
                       className="input w-full resize-y font-mono text-[11px] leading-relaxed"
@@ -683,26 +776,30 @@ export default function NewArticlePage() {
                         onClick={() => applyResearch(false)}
                         className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark"
                       >
-                        <Plus size={13} /> Tambahkan ke editor
+                        <Plus size={13} /> {researchFields ? "Isi ke semua kolom" : "Tambahkan ke editor"}
                       </button>
                       <button
                         type="button"
                         onClick={() => applyResearch(true)}
                         className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-txt-secondary hover:bg-surface-secondary"
                       >
-                        Ganti isi editor
+                        {researchFields ? "Timpa kolom yang sudah terisi" : "Ganti isi editor"}
                       </button>
                       <button
                         type="button"
                         onClick={() => {
                           setResearchResult("");
                           setResearchResultSources([]);
+                          setResearchFields(null);
                         }}
                         className="flex items-center gap-1 px-2 py-1.5 text-xs text-txt-muted hover:text-red-500"
                       >
                         <X size={13} /> Buang
                       </button>
                     </div>
+                    <p className="text-[10px] text-txt-muted">
+                      &quot;Isi ke semua kolom&quot; hanya mengisi kolom yang masih kosong; &quot;Timpa&quot; mengganti yang sudah ada.
+                    </p>
                   </div>
                 )}
               </div>

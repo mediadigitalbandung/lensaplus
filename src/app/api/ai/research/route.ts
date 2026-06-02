@@ -27,11 +27,17 @@ const ID_OUTLETS = [
 const SYSTEM_DRAFT =
   "Anda jurnalis senior Kartawarta — media berita digital Bandung (fokus bisnis, ekonomi, " +
   "pemerintahan, hukum, plus topik general). Riset topik dari sumber berita Indonesia yang " +
-  "kredibel dan TERBARU, lalu tulis draf artikel berita berbahasa Indonesia yang faktual, " +
-  "mengalir, dan enak dibaca. JANGAN mengarang fakta — hanya tulis yang didukung sumber. " +
-  "Output WAJIB HTML rich-text: <p> untuk paragraf, <h2>/<h3> untuk sub-judul, <blockquote> " +
-  "untuk kutipan penting, <ul>/<li> untuk poin. JANGAN sertakan tag <html>/<body>, markdown, " +
-  "atau code fence. Jangan tulis daftar sumber/referensi di akhir (sumber ditangani terpisah).";
+  "kredibel dan TERBARU, lalu hasilkan PAKET artikel lengkap berbahasa Indonesia yang faktual " +
+  "dan SEO-friendly. JANGAN mengarang fakta — hanya yang didukung sumber. " +
+  "Jawab HANYA dengan JSON valid (tanpa markdown, tanpa code fence, tanpa teks lain), objek dengan field: " +
+  '{"title": judul artikel menarik (maks 110 kar), ' +
+  '"excerpt": ringkasan 1-2 kalimat (maks 200 kar), ' +
+  '"tags": array 5-8 tag relevan (string), ' +
+  '"seoTitle": judul SEO (maks 60 kar), ' +
+  '"metaDescription": meta description (maks 155 kar), ' +
+  '"contentHtml": isi artikel sebagai HTML rich-text — <p> untuk paragraf, <h2>/<h3> sub-judul, ' +
+  "<blockquote> kutipan, <ul>/<li> poin; tanpa tag <html>/<body>, tanpa daftar sumber di akhir}. " +
+  "Jangan sertakan penanda sitasi [1][2] di dalam nilai teks apa pun.";
 
 const SYSTEM_RESEARCH =
   "Anda periset berita untuk Kartawarta. Riset topik dari sumber Indonesia yang kredibel dan " +
@@ -58,7 +64,7 @@ export async function POST(req: NextRequest) {
     const userPrompt =
       mode === "draft"
         ? `Topik artikel: ${topic}.${notes ? ` Arahan tambahan: ${notes}.` : ""} ` +
-          `Tulis draf artikel berita lengkap berbahasa Indonesia berdasarkan informasi terbaru.`
+          `Hasilkan paket artikel lengkap (JSON sesuai instruksi) berdasarkan informasi terbaru.`
         : `Topik: ${topic}.${notes ? ` Fokus: ${notes}.` : ""} ` +
           `Kumpulkan bahan riset berita terbaru tentang topik ini.`;
 
@@ -93,9 +99,10 @@ export async function POST(req: NextRequest) {
       throw new ApiError(msg, 502);
     }
 
-    // Strip any accidental code fence / wrapper the model may add.
-    const html = result.text
-      .replace(/^```(?:html)?\s*/i, "")
+    // Strip citation markers + any accidental code fence wrapper.
+    const cleaned = result.text
+      .replace(/\[\d+\]/g, "")
+      .replace(/^```(?:json|html)?\s*/i, "")
       .replace(/\s*```$/i, "")
       .trim();
 
@@ -109,8 +116,56 @@ export async function POST(req: NextRequest) {
       ip,
     );
 
+    // Draft mode → parse the structured JSON package so the panel can fill every
+    // field. If parsing fails, fall back to treating the whole text as content.
+    if (mode === "draft") {
+      let pkg: Record<string, unknown> | null = null;
+      try {
+        pkg = JSON.parse(cleaned);
+      } catch {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (m) {
+          try {
+            pkg = JSON.parse(m[0]);
+          } catch {
+            pkg = null;
+          }
+        }
+      }
+      if (pkg && typeof pkg === "object") {
+        const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+        const tagsVal = Array.isArray(pkg.tags)
+          ? (pkg.tags as unknown[]).map((t) => str(t)).filter(Boolean).join(", ")
+          : str(pkg.tags);
+        return successResponse({
+          mode: "draft",
+          fields: {
+            title: str(pkg.title),
+            excerpt: str(pkg.excerpt),
+            tags: tagsVal,
+            seoTitle: str(pkg.seoTitle),
+            metaDescription: str(pkg.metaDescription),
+            content: str(pkg.contentHtml) || str(pkg.content),
+          },
+          sources: result.sources,
+          related: result.related,
+          provider: "perplexity",
+        });
+      }
+      // Fallback: not valid JSON — return as raw content only.
+      return successResponse({
+        mode: "draft",
+        fields: { content: cleaned },
+        sources: result.sources,
+        related: result.related,
+        provider: "perplexity",
+      });
+    }
+
+    // Research mode → HTML briefing, content only.
     return successResponse({
-      content: html,
+      mode: "research",
+      content: cleaned,
       sources: result.sources,
       related: result.related,
       provider: "perplexity",
