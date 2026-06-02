@@ -79,10 +79,14 @@ export async function GET(request: NextRequest) {
     // content + the articles assigned/directed to them, and any `authorId`
     // query param is ignored so they cannot enumerate other users' articles.
     let scopedViewerId: string | null = null;
+    // The authenticated viewer's id (ANY role, incl. SUPER_ADMIN). Used to keep
+    // DRAFTs private to their author below.
+    let viewerId: string | null = null;
 
     if (status === "ALL") {
       // Fetch all statuses — requires auth (admin panel)
       const session = await requireAuth();
+      viewerId = session.user.id;
       if (!canViewAllArticles(session.user.role)) {
         scopedViewerId = session.user.id;
       }
@@ -92,6 +96,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Non-public statuses require auth
       const session = await requireAuth();
+      viewerId = session.user.id;
       if (!canViewAllArticles(session.user.role)) {
         scopedViewerId = session.user.id;
       }
@@ -130,6 +135,18 @@ export async function GET(request: NextRequest) {
           ],
         },
       ];
+    }
+    // DRAFTs are PRIVATE to their author — no account (not even SUPER_ADMIN)
+    // sees another account's DRAFT. Articles in any other status (IN_REVIEW,
+    // APPROVED, PUBLISHED, …) stay governed by the role rules above, so the
+    // review workflow and published-oversight are unaffected.
+    if (viewerId) {
+      const draftPrivacy = {
+        OR: [{ status: { not: "DRAFT" } }, { authorId: viewerId }],
+      };
+      where.AND = Array.isArray(where.AND)
+        ? [...where.AND, draftPrivacy]
+        : [draftPrivacy];
     }
 
     const orderBy: Record<string, string> =
