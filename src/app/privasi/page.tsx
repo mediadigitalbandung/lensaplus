@@ -271,6 +271,7 @@ export default function PrivasiPage() {
                     ["Resend", "AS", "Email + nama (transaksional)", "Notifikasi editorial, newsletter"],
                     ["Google Search Console", "AS", "URL artikel + statistik", "Monitoring SEO"],
                     ["Google Analytics 4 (server-side)", "AS", "Event agregat (tanpa PII)", "Analitik kunjungan"],
+                    ["Google AdSense", "AS", "Cookie iklan, pengenal cookie, alamat IP, interaksi iklan", "Penayangan, pengukuran & personalisasi iklan"],
                     ["Google Indexing API", "AS", "URL artikel", "Submission ke Google Search"],
                     ["Meta Graph (Instagram + Facebook)", "AS", "Gambar, caption, URL artikel", "Auto-publish konten editorial"],
                     ["Bing IndexNow", "Global", "URL artikel", "Submission ke Bing Search"],
@@ -419,11 +420,50 @@ export default function PrivasiPage() {
               </li>
             </ul>
             <p className="mt-3">
-              Kami <strong>tidak</strong> menggunakan cookie marketing, retargeting,
-              atau pelacak pihak ketiga (third-party tracker). Analitik berjalan
-              server-side tanpa menyuntikkan script pelacak ke browser pengunjung.
-              Oleh karena itu, cookie banner tidak ditampilkan karena tidak ada cookie
-              non-esensial.
+              Analitik kunjungan kami jalankan secara server-side tanpa menyuntikkan
+              script pelacak analitik ke browser Anda.
+            </p>
+
+            <h3 className="mt-5 font-bold text-txt-primary">
+              Cookie Iklan Pihak Ketiga (Google AdSense)
+            </h3>
+            <p className="mt-2">
+              Kartawarta menampilkan iklan melalui <strong>Google AdSense</strong>.
+              Untuk menayangkan iklan, Google dan mitra (vendor pihak ketiga) menggunakan
+              cookie — termasuk cookie <strong>DoubleClick/DART</strong> — guna menayangkan
+              iklan berdasarkan kunjungan Anda ke situs ini dan situs lain di internet.
+              Cookie ini dapat memproses pengenal cookie dan alamat IP untuk pengukuran
+              dan personalisasi iklan.
+            </p>
+            <ul className="ml-6 mt-3 list-disc space-y-2">
+              <li>
+                Anda dapat menonaktifkan iklan yang dipersonalisasi melalui{" "}
+                <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  Setelan Iklan Google
+                </a>.
+              </li>
+              <li>
+                Anda dapat menonaktifkan cookie vendor pihak ketiga lain di{" "}
+                <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  aboutads.info
+                </a>{" "}
+                atau{" "}
+                <a href="https://www.youronlinechoices.eu" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  youronlinechoices.eu
+                </a>.
+              </li>
+              <li>
+                Selengkapnya tentang bagaimana Google menggunakan data saat Anda memakai
+                situs mitranya:{" "}
+                <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  Teknologi Iklan Google
+                </a>.
+              </li>
+            </ul>
+            <p className="mt-3">
+              Bagi pengunjung di Wilayah Ekonomi Eropa (EEA) dan Inggris (UK), iklan yang
+              dipersonalisasi hanya ditayangkan setelah memperoleh persetujuan (consent)
+              sesuai GDPR.
             </p>
           </section>
 
