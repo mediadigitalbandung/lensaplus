@@ -402,8 +402,9 @@ export default function PrivasiPage() {
           <section id="section-9">
             <h2 className={SECTION_HEADING}>9. Cookie</h2>
             <p>
-              Kartawarta hanya menggunakan cookie esensial yang diperlukan untuk
-              operasional situs:
+              Kartawarta menggunakan <strong>cookie esensial</strong> untuk operasional
+              situs, serta <strong>cookie iklan pihak ketiga</strong> (Google AdSense)
+              yang dijelaskan pada bagian di bawah. Cookie esensial yang kami gunakan:
             </p>
             <ul className="ml-6 mt-3 list-disc space-y-2">
               <li>

@@ -154,6 +154,10 @@ export default function SideRailAds() {
   if (pathname.startsWith("/panel")) return null;
   if (pathname.startsWith("/login")) return null;
   if (pathname.startsWith("/berita/")) return null;
+  // No ads on low-/no-content utility pages — AdSense prohibits ads on
+  // error/search/offline screens without substantial publisher content.
+  if (pathname.startsWith("/search")) return null;
+  if (pathname.startsWith("/offline")) return null;
 
   // Fixed IAB Wide Skyscraper: 160 × 600. Border + shadow define the
   // column shape so the rail always reads as a tall vertical ad slot.

@@ -13,7 +13,6 @@ import InstallPrompt from "@/components/pwa/InstallPrompt";
 import InstallTracker from "@/components/pwa/InstallTracker";
 import InstallTeaser from "@/components/pwa/InstallTeaser";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
-import Script from "next/script";
 
 
 const newsreader = Newsreader({
