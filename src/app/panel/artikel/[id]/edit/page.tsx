@@ -62,6 +62,7 @@ interface Source {
 }
 
 import { EDITOR_ROLES, ADMIN_ROLES, CAN_SUBMIT_REVIEW, roleLabelsMap } from "@/lib/roles";
+import { PERPLEXITY_PERSONAS } from "@/lib/perplexity-personas";
 
 function LoadingSkeleton() {
   return (
@@ -124,6 +125,7 @@ export default function EditArticlePage() {
   const [showResearch, setShowResearch] = useState(false);
   const [pplxNotes, setPplxNotes] = useState("");
   const [researchMode, setResearchMode] = useState<"draft" | "research">("draft");
+  const [researchPersona, setResearchPersona] = useState("");
   const [researching, setResearching] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentStatus, setCurrentStatus] = useState("");
@@ -471,7 +473,7 @@ export default function EditArticlePage() {
       const res = await fetch("/api/ai/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: title, mode: researchMode, notes: pplxNotes }),
+        body: JSON.stringify({ topic: title, mode: researchMode, notes: pplxNotes, persona: researchPersona }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -571,6 +573,20 @@ export default function EditArticlePage() {
             >
               Bahan riset saja
             </button>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold text-txt-secondary">Gaya penulisan</label>
+            <select
+              value={researchPersona}
+              onChange={(e) => setResearchPersona(e.target.value)}
+              className="input w-full text-sm"
+            >
+              {PERPLEXITY_PERSONAS.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
           </div>
           <input
             type="text"

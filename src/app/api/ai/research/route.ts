@@ -14,6 +14,7 @@ import { NextRequest } from "next/server";
 import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { aiRateLimit } from "@/lib/rate-limit";
 import { callPerplexity, getPerplexityInstructions } from "@/lib/perplexity";
+import { getPersonaInstruction } from "@/lib/perplexity-personas";
 
 // Indonesian outlets to bias sourcing toward (allowlist, not exclusive — Perplexity
 // still ranks within these first). Kept broad so niche topics aren't starved.
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
     const topic = (body.topic ?? "").toString().trim();
     const mode = body.mode === "research" ? "research" : "draft";
     const notes = (body.notes ?? "").toString().trim();
+    const personaKey = (body.persona ?? "").toString().trim();
     if (!topic) throw new ApiError("Topik/judul wajib diisi", 400);
 
     const userPrompt =
@@ -60,12 +62,14 @@ export async function POST(req: NextRequest) {
         : `Topik: ${topic}.${notes ? ` Fokus: ${notes}.` : ""} ` +
           `Kumpulkan bahan riset berita terbaru tentang topik ini.`;
 
-    // Editor-defined author persona / writing instructions (Settings → AI).
-    const persona = await getPerplexityInstructions();
+    // Layer the system prompt: base + selected preset persona + the editor's
+    // custom global instructions (Settings → AI). Both are optional.
+    const customInstructions = await getPerplexityInstructions();
+    const personaInstruction = getPersonaInstruction(personaKey);
     const baseSystem = mode === "draft" ? SYSTEM_DRAFT : SYSTEM_RESEARCH;
-    const systemPrompt = persona
-      ? `${baseSystem}\n\nARAHAN PENULIS (WAJIB DIIKUTI): ${persona}`
-      : baseSystem;
+    let systemPrompt = baseSystem;
+    if (personaInstruction) systemPrompt += `\n\nGAYA PENULISAN: ${personaInstruction}`;
+    if (customInstructions) systemPrompt += `\n\nARAHAN PENULIS (WAJIB DIIKUTI): ${customInstructions}`;
 
     let result;
     try {

@@ -40,6 +40,7 @@ interface Source {
 }
 
 import { CAN_SUBMIT_REVIEW, EDITOR_ROLES, roleLabelsMap } from "@/lib/roles";
+import { PERPLEXITY_PERSONAS } from "@/lib/perplexity-personas";
 
 export default function NewArticlePage() {
   const router = useRouter();
@@ -67,6 +68,7 @@ export default function NewArticlePage() {
   const [showResearch, setShowResearch] = useState(false);
   const [researchNotes, setResearchNotes] = useState("");
   const [researchMode, setResearchMode] = useState<"draft" | "research">("draft");
+  const [researchPersona, setResearchPersona] = useState("");
   const [researching, setResearching] = useState(false);
   const [users, setUsers] = useState<{id: string; name: string; role: string}[]>([]);
   const [selectedAuthorId, setSelectedAuthorId] = useState("");
@@ -215,7 +217,7 @@ export default function NewArticlePage() {
       const res = await fetch("/api/ai/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: title, mode: researchMode, notes: researchNotes }),
+        body: JSON.stringify({ topic: title, mode: researchMode, notes: researchNotes, persona: researchPersona }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -571,6 +573,20 @@ export default function NewArticlePage() {
                   >
                     Bahan riset saja
                   </button>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-semibold text-txt-secondary">Gaya penulisan</label>
+                  <select
+                    value={researchPersona}
+                    onChange={(e) => setResearchPersona(e.target.value)}
+                    className="input w-full text-sm"
+                  >
+                    {PERPLEXITY_PERSONAS.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <input
                   type="text"
