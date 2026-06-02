@@ -40,7 +40,6 @@ import {
   BookOpen,
   Video,
   BarChart2,
-  Scale,
   RadioTower,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -77,8 +76,6 @@ const menuItems: MenuItem[] = [
   { name: "Sorotan", href: "/panel/sorotan", icon: Lightbulb, adminOnly: true },
   { name: "Live Blog", href: "/panel/live-blogs", icon: RadioTower, editorOnly: true },
   { name: "Kalender Emiten", href: "/panel/kalender-emiten", icon: BarChart2, editorOnly: true },
-  { name: "Regulasi", href: "/panel/regulasi", icon: Scale, editorOnly: true },
-  { name: "Pejabat", href: "/panel/pejabat", icon: UserCircle, editorOnly: true },
   { name: "Pengguna", href: "/panel/pengguna", icon: Users, adminOnly: true },
   { name: "Analytics", href: "/panel/analytics", icon: BarChart3, managementOnly: true },
   { name: "Statistik", href: "/panel/statistik", icon: TrendingUp, editorOnly: true },

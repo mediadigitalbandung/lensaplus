@@ -152,26 +152,18 @@ export async function GET() {
     // tidak break kalau prisma client lag di build pipeline.
     const prismaModul = prisma as unknown as {
       publicCompany: { count: (args?: { where?: { isActive?: boolean } }) => Promise<number> };
-      regulation: { count: (args?: { where?: { isPublished?: boolean } }) => Promise<number> };
-      publicOfficial: { count: (args?: { where?: { isPublished?: boolean; status?: string } }) => Promise<number> };
       marketEvent: { count: (args?: { where?: { isPublished?: boolean; scheduledAt?: object } }) => Promise<number> };
       liveBlog: { count: (args?: { where?: { isPublished?: boolean; status?: string } }) => Promise<number> };
       pushSubscription: { count: (args?: { where?: { isActive?: boolean } }) => Promise<number> };
     };
     const [
       totalCompanies, activeCompanies,
-      totalRegulations, publishedRegulations,
-      totalOfficials, activeOfficials,
       totalMarketEvents, upcomingMarketEvents,
       totalLiveBlogs, liveLiveBlogs,
       totalPushSubscribers,
     ] = await Promise.all([
       prismaModul.publicCompany.count().catch(() => 0),
       prismaModul.publicCompany.count({ where: { isActive: true } }).catch(() => 0),
-      prismaModul.regulation.count().catch(() => 0),
-      prismaModul.regulation.count({ where: { isPublished: true } }).catch(() => 0),
-      prismaModul.publicOfficial.count().catch(() => 0),
-      prismaModul.publicOfficial.count({ where: { isPublished: true, status: "AKTIF" } }).catch(() => 0),
       prismaModul.marketEvent.count().catch(() => 0),
       prismaModul.marketEvent.count({ where: { isPublished: true, scheduledAt: { gte: today } } }).catch(() => 0),
       prismaModul.liveBlog.count().catch(() => 0),
@@ -219,8 +211,6 @@ export async function GET() {
       },
       // Sprint 2-5 modul baru — biar dashboard juga show stats-nya:
       companies: { total: totalCompanies, active: activeCompanies },
-      regulations: { total: totalRegulations, published: publishedRegulations },
-      officials: { total: totalOfficials, active: activeOfficials },
       marketEvents: { total: totalMarketEvents, upcoming: upcomingMarketEvents },
       liveBlogs: { total: totalLiveBlogs, live: liveLiveBlogs },
       pushSubscribers: { active: totalPushSubscribers },

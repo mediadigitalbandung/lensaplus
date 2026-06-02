@@ -83,8 +83,6 @@ export async function middleware(request: NextRequest) {
         "/panel/tiktok",
         "/panel/live-blogs",
         "/panel/kalender-emiten",
-        "/panel/regulasi",
-        "/panel/pejabat",
         "/panel/statistik",
         "/panel/statistik-editor",
         "/panel/material-artikel",
