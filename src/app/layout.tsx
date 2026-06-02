@@ -111,6 +111,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-5936356841993880";
+  // Funding Choices uses the bare publisher id (pub-XXXX), not the ca-pub form.
+  const fundingPubId = adsenseClientId.replace(/^ca-/, "");
 
   return (
     <html lang="id" className={`${newsreader.variable} ${workSans.variable}`}>
@@ -140,6 +142,21 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify([organizationJsonLd(), websiteJsonLd()]),
+          }}
+        />
+        {/* Google CMP — Funding Choices (GDPR/EEA + CCPA consent messaging).
+            Loads the consent framework BEFORE the AdSense tag so consent can
+            gate ad personalization. The actual consent message is created in
+            AdSense → Privacy & messaging; this only loads the framework, and
+            it shows nothing to non-EEA visitors (e.g. Indonesia). */}
+        <script
+          async
+          src={`https://fundingchoicesmessages.google.com/i/${fundingPubId}?ers=1`}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){function signalGooglefcPresent(){if(!window.frames['googlefcPresent']){if(document.body){const e=document.createElement('iframe');e.style='width:0;height:0;border:none;z-index:-1000;left:-1000px;top:-1000px;';e.style.display='none';e.name='googlefcPresent';document.body.appendChild(e);}else{setTimeout(signalGooglefcPresent,0);}}}signalGooglefcPresent();})();",
           }}
         />
         {/* Google AdSense Verification Script in Head */}
