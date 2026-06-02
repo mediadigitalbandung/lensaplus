@@ -71,6 +71,7 @@ const menuItems: MenuItem[] = [
   { name: "Redaksi", href: "/panel/redaksi", icon: Users, managementOnly: true },
   { name: "Polling", href: "/panel/polling", icon: Vote, managementOnly: true },
   { name: "Sosial Media", href: "/panel/social", icon: Share2, adminOnly: true },
+  { name: "Status Sosmed", href: "/panel/sosial-status", icon: Share2 },
   { name: "TikTok", href: "/panel/tiktok", icon: Video, editorOnly: true },
   { name: "Sorotan", href: "/panel/sorotan", icon: Lightbulb, adminOnly: true },
   { name: "Live Blog", href: "/panel/live-blogs", icon: RadioTower, editorOnly: true },
