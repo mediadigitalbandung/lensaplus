@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     const mode = body.mode === "research" ? "research" : "draft";
     const notes = (body.notes ?? "").toString().trim();
     const personaKey = (body.persona ?? "").toString().trim();
+    const includeImages = body.includeImages === true;
     if (!topic) throw new ApiError("Topik/judul wajib diisi", 400);
 
     const userPrompt =
@@ -87,9 +88,8 @@ export async function POST(req: NextRequest) {
         recency: "month",
         domains: ID_OUTLETS,
         contextSize: "high",
-        // Draft returns a full article + all fields as JSON; give it generous
-        // headroom so the JSON is never truncated (truncation = invalid JSON).
         maxTokens: mode === "draft" ? 5000 : 1400,
+        includeImages,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Perplexity error";
@@ -110,13 +110,21 @@ export async function POST(req: NextRequest) {
       .replace(/\s*```$/i, "")
       .trim();
 
+    // Up to 3 web images (only when requested). Skip tiny/icon-sized ones.
+    const images = includeImages
+      ? result.images
+          .filter((im) => (im.width ?? 0) === 0 || (im.width ?? 999) >= 300)
+          .slice(0, 3)
+          .map((im) => ({ url: im.imageUrl, origin: im.originUrl, title: im.title }))
+      : [];
+
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
     await logAudit(
       session.user.id,
       "AI_RESEARCH",
       "Article",
       "perplexity",
-      JSON.stringify({ mode, topic, sources: result.sources.length }),
+      JSON.stringify({ mode, topic, sources: result.sources.length, images: images.length }),
       ip,
     );
 
@@ -151,6 +159,7 @@ export async function POST(req: NextRequest) {
         },
         sources: result.sources,
         related: result.related,
+        images,
         provider: "perplexity",
       });
     }
@@ -161,6 +170,7 @@ export async function POST(req: NextRequest) {
       content: cleaned,
       sources: result.sources,
       related: result.related,
+      images,
       provider: "perplexity",
     });
   } catch (error) {

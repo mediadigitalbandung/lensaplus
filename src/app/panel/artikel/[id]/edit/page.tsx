@@ -126,6 +126,7 @@ export default function EditArticlePage() {
   const [pplxNotes, setPplxNotes] = useState("");
   const [researchMode, setResearchMode] = useState<"draft" | "research">("draft");
   const [researchPersona, setResearchPersona] = useState("");
+  const [researchImages, setResearchImages] = useState(true);
   const [researching, setResearching] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentStatus, setCurrentStatus] = useState("");
@@ -474,7 +475,7 @@ export default function EditArticlePage() {
       const res = await fetch("/api/ai/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, mode: researchMode, notes: pplxNotes, persona: researchPersona }),
+        body: JSON.stringify({ topic, mode: researchMode, notes: pplxNotes, persona: researchPersona, includeImages: researchImages }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -498,7 +499,29 @@ export default function EditArticlePage() {
         fill(f.metaDescription, seoDescription, setSeoDescription, 160);
         if ((f.seoTitle || f.metaDescription) && (!seoTitle.trim() || !seoDescription.trim())) setShowSeo(true);
       }
-      if (html) setContent((prev) => (prev.trim() ? `${prev}\n${html}` : html));
+      const imgs: { url: string; origin: string | null; title: string | null }[] = d.images || [];
+      let imgHtml = "";
+      if (imgs.length > 0) {
+        if (!featuredImage.trim()) setFeaturedImage(imgs[0].url);
+        const extra = featuredImage.trim() ? imgs : imgs.slice(1);
+        imgHtml = extra
+          .map((im) => {
+            const cap = im.title ? im.title.replace(/[<>]/g, "") : "";
+            let host = "";
+            try {
+              host = im.origin ? new URL(im.origin).hostname.replace(/^www\./, "") : "";
+            } catch {
+              /* ignore */
+            }
+            const credit = host ? `<em>Sumber: ${host}</em>` : "";
+            const sep = cap && credit ? " — " : "";
+            const figcap = cap || credit ? `<figcaption>${cap}${sep}${credit}</figcaption>` : "";
+            return `<figure><img src="${im.url}" alt="${cap}" />${figcap}</figure>`;
+          })
+          .join("");
+      }
+      const bodyHtml = `${html || ""}${imgHtml}`;
+      if (bodyHtml) setContent((prev) => (prev.trim() ? `${prev}\n${bodyHtml}` : bodyHtml));
 
       const cited: { title: string | null; url: string }[] = d.sources || [];
       if (cited.length > 0) {
@@ -526,7 +549,7 @@ export default function EditArticlePage() {
       }
 
       success(
-        `Selesai — kolom artikel terisi dari riset${cited.length ? ` + ${cited.length} sumber` : ""}. Tinjau & sunting sebelum publikasi.`,
+        `Selesai — kolom artikel terisi dari riset${cited.length ? ` + ${cited.length} sumber` : ""}${imgs.length ? ` + ${imgs.length} foto` : ""}. Tinjau & sunting sebelum publikasi.`,
       );
       setShowResearch(false);
       setPplxNotes("");
@@ -606,6 +629,15 @@ export default function EditArticlePage() {
               ))}
             </select>
           </div>
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-txt-secondary">
+            <input
+              type="checkbox"
+              checked={researchImages}
+              onChange={(e) => setResearchImages(e.target.checked)}
+              className="h-4 w-4 rounded border-border accent-primary"
+            />
+            Sertakan foto dari sumber lain (2–3 foto, foto pertama jadi gambar utama)
+          </label>
           <div>
             <label className="mb-1 block text-[11px] font-semibold text-txt-secondary">
               Arahan / fokus tambahan (opsional)

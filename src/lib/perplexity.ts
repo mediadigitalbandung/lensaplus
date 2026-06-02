@@ -22,10 +22,19 @@ export interface PerplexitySource {
   date: string | null;
 }
 
+export interface PerplexityImage {
+  imageUrl: string;
+  originUrl: string | null;
+  title: string | null;
+  width: number | null;
+  height: number | null;
+}
+
 export interface PerplexityResult {
   text: string;
   sources: PerplexitySource[];
   related: string[];
+  images: PerplexityImage[];
 }
 
 export interface PerplexityOptions {
@@ -39,6 +48,8 @@ export interface PerplexityOptions {
   domains?: string[];
   /** Retrieval depth: more context = better sourcing but higher cost. */
   contextSize?: "low" | "medium" | "high";
+  /** When true, ask Perplexity to also return related images from the web. */
+  includeImages?: boolean;
 }
 
 async function getApiKey(): Promise<string | null> {
@@ -81,6 +92,7 @@ interface PplxResponse {
   citations?: string[];
   search_results?: { title?: string; url?: string; date?: string }[];
   related_questions?: string[];
+  images?: { image_url?: string; origin_url?: string; title?: string; width?: number; height?: number }[];
 }
 
 /**
@@ -110,6 +122,7 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
     };
     if (opts.recency) body.search_recency_filter = opts.recency;
     if (opts.domains && opts.domains.length > 0) body.search_domain_filter = opts.domains;
+    if (opts.includeImages) body.return_images = true;
 
     const res = await fetch(ENDPOINT, {
       method: "POST",
@@ -150,7 +163,17 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
       }
     }
 
-    return { text, sources, related: data.related_questions ?? [] };
+    const images: PerplexityImage[] = (data.images || [])
+      .filter((im) => im?.image_url)
+      .map((im) => ({
+        imageUrl: im.image_url as string,
+        originUrl: im.origin_url ?? null,
+        title: im.title ?? null,
+        width: typeof im.width === "number" ? im.width : null,
+        height: typeof im.height === "number" ? im.height : null,
+      }));
+
+    return { text, sources, related: data.related_questions ?? [], images };
   } finally {
     clearTimeout(timer);
   }
