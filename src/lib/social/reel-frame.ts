@@ -144,6 +144,7 @@ export const INTRO_SEC = 0.8; // title/photo shown before the first word
 export const TEXT_LEAD_SEC = 0.3; // text appears this much BEFORE the narration (read-then-hear)
 export const OPENING_SEC = 3.5; // reusable branded opening clip (longer, with fades)
 export const CLOSING_SEC = 4.0; // reusable branded closing clip (longer, with fades)
+const TRANSITION_SEC = 0.55; // crossfade (dissolve) at opening→content and content→closing
 const FADE_OPACITY = 0.4; // opacity of a word during its (brief) fade-in frame
 
 export interface TimedFrame {
@@ -292,6 +293,37 @@ async function renderClosingFrame(): Promise<Buffer> {
 }
 
 /**
+ * Build crossfade (dissolve) frames between two stills `from` → `to`. Renders
+ * `steps` intermediate JPEGs where `to` is composited over `from` at increasing
+ * opacity. Total transition time is `durSec` (split evenly across the steps).
+ * Returns [] when inputs are degenerate so callers can no-op safely.
+ */
+async function crossfadeFrames(from: Buffer, to: Buffer, durSec: number, steps = 8): Promise<TimedFrame[]> {
+  if (durSec <= 0 || steps < 1) return [];
+  const per = durSec / steps;
+  const out: TimedFrame[] = [];
+  for (let i = 1; i <= steps; i++) {
+    const opacity = i / (steps + 1); // 0 < … < 1 (true endpoints are the real clips)
+    // sharp can't set whole-image opacity directly; multiply the alpha channel.
+    const overlay = await sharp(to)
+      .ensureAlpha()
+      .composite([
+        {
+          input: Buffer.from([255, 255, 255, Math.round(opacity * 255)]),
+          raw: { width: 1, height: 1, channels: 4 },
+          tile: true,
+          blend: "dest-in",
+        },
+      ])
+      .png()
+      .toBuffer();
+    const blended = await sharp(from).composite([{ input: overlay, top: 0, left: 0 }]).jpeg({ quality: 88 }).toBuffer();
+    out.push({ buffer: blended, durationSec: per });
+  }
+  return out;
+}
+
+/**
  * Build the ordered, timed frame sequence for a kinetic-typography Reel: a
  * persistent photo+title base, with the description revealed one word at a time
  * — each new word fades in over two frames. Per-word duration follows `wpm`;
@@ -337,9 +369,19 @@ export async function renderReelKineticFrames(input: ReelKineticInput): Promise<
   };
 
   const frames: TimedFrame[] = [];
-  // Reusable branded OPENING clip (template) — identical on every Reel.
-  frames.push({ buffer: await renderOpeningFrame(imageBuffer, category), durationSec: OPENING_SEC });
-  frames.push({ buffer: await composeDesc(""), durationSec: INTRO_SEC });
+
+  // Pre-render the clips we crossfade between.
+  const openingBuffer = await renderOpeningFrame(imageBuffer, category);
+  const introBuffer = await composeDesc(""); // content base: photo + title, no description yet
+  const closingBuffer = await renderClosingFrame();
+
+  // Reusable branded OPENING clip. Hold it for (OPENING_SEC − transition), then
+  // dissolve into the content. The transition time is BORROWED from the opening
+  // (not added) so total duration — and narration sync — is unchanged.
+  const openHold = Math.max(0.3, OPENING_SEC - TRANSITION_SEC);
+  frames.push({ buffer: openingBuffer, durationSec: openHold });
+  frames.push(...(await crossfadeFrames(openingBuffer, introBuffer, TRANSITION_SEC)));
+  frames.push({ buffer: introBuffer, durationSec: INTRO_SEC });
 
   for (let si = 0; si < segments.length; si++) {
     const words = segments[si].split(/\s+/).filter(Boolean);
@@ -366,8 +408,13 @@ export async function renderReelKineticFrames(input: ReelKineticInput): Promise<
     frames[frames.length - 1].durationSec += TEXT_LEAD_SEC;
   }
 
-  // Reusable branded CLOSING clip (template).
-  frames.push({ buffer: await renderClosingFrame(), durationSec: CLOSING_SEC });
+  // Dissolve the LAST content frame into the branded CLOSING clip, then hold the
+  // closing for (CLOSING_SEC − transition). Transition time is borrowed from the
+  // closing so total duration is unchanged.
+  const lastContent = frames[frames.length - 1]?.buffer ?? introBuffer;
+  frames.push(...(await crossfadeFrames(lastContent, closingBuffer, TRANSITION_SEC)));
+  const closeHold = Math.max(0.3, CLOSING_SEC - TRANSITION_SEC);
+  frames.push({ buffer: closingBuffer, durationSec: closeHold });
 
   return frames;
 }
