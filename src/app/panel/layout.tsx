@@ -250,7 +250,10 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
       <nav className="flex-1 space-y-0.5">
         {filteredMenu.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname.startsWith(item.href);
+          // Boundary-aware match so sibling routes that share a prefix don't
+          // both light up (e.g. /panel/statistik vs /panel/statistik-editor).
+          const isActive =
+            pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
