@@ -79,14 +79,10 @@ export async function GET(request: NextRequest) {
     // content + the articles assigned/directed to them, and any `authorId`
     // query param is ignored so they cannot enumerate other users' articles.
     let scopedViewerId: string | null = null;
-    // The authenticated viewer's id (ANY role, incl. SUPER_ADMIN). Used to keep
-    // DRAFTs private to their author below.
-    let viewerId: string | null = null;
 
     if (status === "ALL") {
       // Fetch all statuses — requires auth (admin panel)
       const session = await requireAuth();
-      viewerId = session.user.id;
       if (!canViewAllArticles(session.user.role)) {
         scopedViewerId = session.user.id;
       }
@@ -96,7 +92,6 @@ export async function GET(request: NextRequest) {
     } else {
       // Non-public statuses require auth
       const session = await requireAuth();
-      viewerId = session.user.id;
       if (!canViewAllArticles(session.user.role)) {
         scopedViewerId = session.user.id;
       }
@@ -136,13 +131,13 @@ export async function GET(request: NextRequest) {
         },
       ];
     }
-    // DRAFTs are PRIVATE to their author — no account (not even SUPER_ADMIN)
-    // sees another account's DRAFT. Articles in any other status (IN_REVIEW,
-    // APPROVED, PUBLISHED, …) stay governed by the role rules above, so the
-    // review workflow and published-oversight are unaffected.
-    if (viewerId) {
+    // DRAFTs are private to their author for NON-SUPER_ADMIN accounts — each
+    // such account only sees its own drafts. SUPER_ADMIN (scopedViewerId null)
+    // sees every draft ("bisa segalanya"). Other statuses follow the role
+    // rules above, so the review workflow + published-oversight are unaffected.
+    if (scopedViewerId) {
       const draftPrivacy = {
-        OR: [{ status: { not: "DRAFT" } }, { authorId: viewerId }],
+        OR: [{ status: { not: "DRAFT" } }, { authorId: scopedViewerId }],
       };
       where.AND = Array.isArray(where.AND)
         ? [...where.AND, draftPrivacy]
