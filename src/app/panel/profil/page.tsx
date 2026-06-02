@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
-import { UserCircle, Save, Loader2, Camera } from "lucide-react";
+import { UserCircle, Save, Loader2, Camera, KeyRound, Eye, EyeOff } from "lucide-react";
 
 import { roleLabelsMap } from "@/lib/roles";
 
@@ -50,6 +50,15 @@ export default function ProfilPage() {
   const [portofolio, setPortofolio] = useState("");
   const [mediaSosial, setMediaSosial] = useState("");
   const [alamat, setAlamat] = useState("");
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -114,6 +123,53 @@ export default function ProfilPage() {
       });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPwMessage(null);
+
+    if (newPassword.length < 8) {
+      setPwMessage({ type: "error", text: "Password baru minimal 8 karakter." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwMessage({ type: "error", text: "Konfirmasi password tidak cocok." });
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setPwMessage({ type: "error", text: "Password baru tidak boleh sama dengan password saat ini." });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch("/api/users/me/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Gagal mengubah password");
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPwMessage({
+        type: "success",
+        text: "Password berhasil diubah. Anda akan keluar otomatis, silakan login kembali.",
+      });
+      // Password change invalidates the active session — sign out so the user
+      // re-authenticates with the new password.
+      setTimeout(() => signOut({ callbackUrl: "/login" }), 2000);
+    } catch (err) {
+      setPwMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Gagal mengubah password.",
+      });
+    } finally {
+      setChangingPassword(false);
     }
   }
 
@@ -380,6 +436,103 @@ export default function ProfilPage() {
             </div>
           </form>
         </div>
+      </div>
+
+      {/* Ganti Password */}
+      <div className="mt-6 rounded-[12px] border border-border bg-surface p-6 shadow-card">
+        <div className="mb-1 flex items-center gap-2">
+          <KeyRound size={20} className="text-primary" />
+          <h3 className="text-lg font-semibold text-txt-primary">Ganti Password</h3>
+        </div>
+        <p className="mb-4 text-sm text-txt-secondary">
+          Demi keamanan, Anda akan otomatis keluar setelah password diubah dan harus login kembali.
+        </p>
+
+        {pwMessage && (
+          <div
+            className={`mb-4 rounded-[12px] border p-4 text-sm ${
+              pwMessage.type === "success"
+                ? "border-primary/30 bg-primary/10 text-primary"
+                : "border-red-500/30 bg-red-500/10 text-red-400"
+            }`}
+          >
+            {pwMessage.text}
+          </div>
+        )}
+
+        <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
+          <div>
+            <label className="mb-1.5 block text-base font-medium text-txt-secondary">Password Saat Ini</label>
+            <div className="relative">
+              <input
+                type={showCurrent ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="input w-full pr-10"
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-txt-muted hover:text-txt-primary"
+                aria-label={showCurrent ? "Sembunyikan password" : "Tampilkan password"}
+              >
+                {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-base font-medium text-txt-secondary">Password Baru</label>
+            <div className="relative">
+              <input
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="input w-full pr-10"
+                autoComplete="new-password"
+                minLength={8}
+                maxLength={128}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-txt-muted hover:text-txt-primary"
+                aria-label={showNew ? "Sembunyikan password" : "Tampilkan password"}
+              >
+                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-txt-muted">Minimal 8 karakter.</p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-base font-medium text-txt-secondary">Konfirmasi Password Baru</label>
+            <input
+              type={showNew ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="input w-full"
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={128}
+              required
+            />
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={changingPassword}
+              className="btn-primary flex items-center gap-2 px-6 py-2.5 text-sm font-semibold disabled:opacity-50"
+            >
+              {changingPassword ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+              {changingPassword ? "Menyimpan..." : "Ganti Password"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
