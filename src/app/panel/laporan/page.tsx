@@ -267,6 +267,18 @@ export default function LaporanPage() {
                           </button>
                         </div>
                       )}
+                      {report.status === "REVIEWED" && (
+                        <div className="ml-4 flex gap-2">
+                          <button
+                            onClick={() => handleUpdateStatus(report.id, "RESOLVED")}
+                            disabled={updating === report.id}
+                            className="rounded-[12px] bg-primary-light px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                            aria-label="Tandai laporan selesai"
+                          >
+                            {updating === report.id ? "..." : "Tandai Selesai"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

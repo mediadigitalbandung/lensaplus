@@ -31,6 +31,9 @@ interface Tag {
 export default function TagsPage() {
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
+  // Deleting a tag is SA|CE only (matches DELETE /api/tags) — EDITOR can view
+  // and create tags but must not see a delete button that just 403s.
+  const isManagement = userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR";
   const { success: showSuccess, error: showError } = useToast();
   const { confirm } = useConfirm();
 
@@ -389,13 +392,15 @@ export default function TagsPage() {
                         {usage.toLocaleString("id-ID")}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <button
-                          onClick={() => handleDelete(t.id, t.name, usage)}
-                          className="btn-ghost rounded p-2 hover:text-red-500"
-                          title="Hapus"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {isManagement && (
+                          <button
+                            onClick={() => handleDelete(t.id, t.name, usage)}
+                            className="btn-ghost rounded p-2 hover:text-red-500"
+                            title="Hapus"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

@@ -9,7 +9,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const categorySlug = searchParams.get("category");
 
-    const where: Record<string, unknown> = { isActive: true };
+    // The admin panel passes ?all=true to manage inactive polls too (otherwise
+    // a deactivated poll vanishes from the panel and can never be re-edited /
+    // re-activated). That path requires a management role; the public/default
+    // path returns only active polls.
+    const wantAll = searchParams.get("all") === "true";
+    const where: Record<string, unknown> = {};
+    if (wantAll) {
+      await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
+    } else {
+      where.isActive = true;
+    }
     if (categorySlug) {
       where.category = { slug: categorySlug };
     }

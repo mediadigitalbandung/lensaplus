@@ -83,7 +83,8 @@ export default function PollingPanelPage() {
     try {
       setLoading(true);
       const [resPolls, resCats] = await Promise.all([
-        fetch("/api/polls"),
+        // ?all=true → include inactive polls so they remain manageable here.
+        fetch("/api/polls?all=true"),
         fetch("/api/categories"),
       ]);
       if (resPolls.ok) {

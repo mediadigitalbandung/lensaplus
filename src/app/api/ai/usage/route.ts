@@ -4,7 +4,11 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
+    // SUPER_ADMIN only — returns site-wide, per-user AI token spend (every
+    // staffer's name + tokens + the articles they ran AI on). That's admin
+    // cost telemetry, not data a CHIEF_EDITOR should see; matches the SA-only
+    // middleware tier for /panel/ai-log.
+    await requireRole(["SUPER_ADMIN"]);
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");

@@ -1247,7 +1247,7 @@ export default function DashboardPage() {
             subtitle: "Pengguna, taksonomi, dan iklan",
             actions: [
               { href: "/panel/redaksi", label: "Redaksi", icon: Users, color: "text-blue-600", bg: "bg-blue-50", show: isManagement },
-              { href: "/panel/pengguna", label: "Pengguna", icon: Users, color: "text-purple-600", bg: "bg-purple-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/pengguna", label: "Pengguna", icon: Users, color: "text-purple-600", bg: "bg-purple-50", show: isAdmin },
               { href: "/panel/kategori", label: "Kategori", icon: Folder, color: "text-orange-600", bg: "bg-orange-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
               { href: "/panel/tags", label: "Tag", icon: Tag, color: "text-teal-600", bg: "bg-teal-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
               { href: "/panel/iklan", label: "Iklan", icon: Megaphone, color: "text-rose-600", bg: "bg-rose-50", show: isAdmin || userRole === "CHIEF_EDITOR" },

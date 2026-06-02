@@ -276,13 +276,16 @@ export default function PenggunaPage() {
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedUsers = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  if (session && session.user.role !== "SUPER_ADMIN" && session.user.role !== "CHIEF_EDITOR") {
+  // User management is SUPER_ADMIN-only (matches /api/users + middleware
+  // SUPER_ONLY). CHIEF_EDITOR has no user-management remit and was previously
+  // shown an unusable page (PII is SA-gated server-side anyway).
+  if (session && session.user.role !== "SUPER_ADMIN") {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
         <ShieldAlert size={48} className="mb-4 text-red-400" />
         <h1 className="text-xl font-bold text-txt-primary">Akses Ditolak</h1>
         <p className="mt-2 text-base text-txt-secondary">
-          Halaman ini hanya dapat diakses oleh Super Admin atau Editor Kepala.
+          Halaman ini hanya dapat diakses oleh Super Admin.
         </p>
       </div>
     );
