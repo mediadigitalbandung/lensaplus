@@ -29,15 +29,17 @@ const SYSTEM_DRAFT =
   "pemerintahan, hukum, plus topik general). Riset topik dari sumber berita Indonesia yang " +
   "kredibel dan TERBARU, lalu hasilkan PAKET artikel lengkap berbahasa Indonesia yang faktual " +
   "dan SEO-friendly. JANGAN mengarang fakta — hanya yang didukung sumber. " +
-  "Jawab HANYA dengan JSON valid (tanpa markdown, tanpa code fence, tanpa teks lain), objek dengan field: " +
-  '{"title": judul artikel menarik (maks 110 kar), ' +
-  '"excerpt": ringkasan 1-2 kalimat (maks 200 kar), ' +
-  '"tags": array 5-8 tag relevan (string), ' +
-  '"seoTitle": judul SEO (maks 60 kar), ' +
-  '"metaDescription": meta description (maks 155 kar), ' +
-  '"contentHtml": isi artikel sebagai HTML rich-text — <p> untuk paragraf, <h2>/<h3> sub-judul, ' +
-  "<blockquote> kutipan, <ul>/<li> poin; tanpa tag <html>/<body>, tanpa daftar sumber di akhir}. " +
-  "Jangan sertakan penanda sitasi [1][2] di dalam nilai teks apa pun.";
+  "Jawab PERSIS dengan format blok berpenanda di bawah ini (JANGAN pakai JSON, markdown, atau code fence). " +
+  "Tulis setiap penanda di barisnya sendiri, lalu isinya di bawahnya:\n" +
+  "===JUDUL===\n(judul artikel menarik, maks 110 karakter)\n" +
+  "===RINGKASAN===\n(ringkasan 1-2 kalimat, maks 200 karakter)\n" +
+  "===TAGS===\n(5-8 tag relevan dipisah koma)\n" +
+  "===SEO_TITLE===\n(judul SEO, maks 60 karakter)\n" +
+  "===META===\n(meta description, maks 155 karakter)\n" +
+  "===KONTEN===\n(isi artikel sebagai HTML rich-text: <p> paragraf, <h2>/<h3> sub-judul, " +
+  "<blockquote> kutipan, <ul>/<li> poin; tanpa tag <html>/<body>, tanpa daftar sumber di akhir)\n" +
+  "Jangan menulis apa pun sebelum ===JUDUL=== atau sesudah konten. " +
+  "Jangan sertakan penanda sitasi [1][2] di dalam teks.";
 
 const SYSTEM_RESEARCH =
   "Anda periset berita untuk Kartawarta. Riset topik dari sumber Indonesia yang kredibel dan " +
@@ -118,73 +120,34 @@ export async function POST(req: NextRequest) {
       ip,
     );
 
-    // Draft mode → parse the structured JSON package so the panel can fill every
-    // field. If parsing fails, fall back to treating the whole text as content.
+    // Draft mode → parse the delimiter-block format (===JUDUL=== etc). This is
+    // far more robust than JSON for a long HTML body (no quote/newline escaping
+    // to break). Each section runs until the next ===MARKER=== or end of text.
     if (mode === "draft") {
-      let pkg: Record<string, unknown> | null = null;
-      try {
-        pkg = JSON.parse(cleaned);
-      } catch {
-        const m = cleaned.match(/\{[\s\S]*\}/);
-        if (m) {
-          try {
-            pkg = JSON.parse(m[0]);
-          } catch {
-            pkg = null;
-          }
-        }
-      }
-      if (pkg && typeof pkg === "object") {
-        const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
-        const tagsVal = Array.isArray(pkg.tags)
-          ? (pkg.tags as unknown[]).map((t) => str(t)).filter(Boolean).join(", ")
-          : str(pkg.tags);
-        return successResponse({
-          mode: "draft",
-          fields: {
-            title: str(pkg.title),
-            excerpt: str(pkg.excerpt),
-            tags: tagsVal,
-            seoTitle: str(pkg.seoTitle),
-            metaDescription: str(pkg.metaDescription),
-            content: str(pkg.contentHtml) || str(pkg.content),
-          },
-          sources: result.sources,
-          related: result.related,
-          provider: "perplexity",
-        });
-      }
-
-      // Fallback: JSON didn't parse (often truncated). Salvage individual fields
-      // by regex so the editor still gets title/excerpt/etc — never dump raw JSON
-      // braces as the article body.
-      const grab = (key: string): string => {
-        const m = cleaned.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, "i"));
-        if (!m) return "";
-        try {
-          return JSON.parse(`"${m[1]}"`).trim();
-        } catch {
-          return m[1].replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
-        }
+      const section = (marker: string): string => {
+        const re = new RegExp(
+          `===${marker}===\\s*\\n?([\\s\\S]*?)(?=\\n?===(?:JUDUL|RINGKASAN|TAGS|SEO_TITLE|META|KONTEN)===|$)`,
+          "i",
+        );
+        const m = cleaned.match(re);
+        return m ? m[1].trim() : "";
       };
-      const tagsM = cleaned.match(/"tags"\s*:\s*\[([\s\S]*?)\]/i);
-      const tagsFallback = tagsM
-        ? Array.from(tagsM[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)).map((x) => x[1]).join(", ")
-        : grab("tags");
-      const contentFallback = grab("contentHtml") || grab("content");
-      const looksLikeJson = /^\s*\{/.test(cleaned);
+
+      const title = section("JUDUL");
+      const content = section("KONTEN");
+      const hasMarkers = /===KONTEN===/i.test(cleaned) || /===JUDUL===/i.test(cleaned);
 
       return successResponse({
         mode: "draft",
         fields: {
-          title: grab("title"),
-          excerpt: grab("excerpt"),
-          tags: tagsFallback,
-          seoTitle: grab("seoTitle"),
-          metaDescription: grab("metaDescription"),
-          // If it wasn't JSON at all, treat the whole text as the article body;
-          // if it was (broken) JSON, only use the salvaged contentHtml.
-          content: looksLikeJson ? contentFallback : cleaned,
+          title,
+          excerpt: section("RINGKASAN"),
+          tags: section("TAGS").replace(/^\[|\]$/g, "").replace(/"/g, "").trim(),
+          seoTitle: section("SEO_TITLE"),
+          metaDescription: section("META"),
+          // If the model ignored the format, treat the whole reply as the body so
+          // the user still gets the article (never lose the draft).
+          content: content || (hasMarkers ? "" : cleaned),
         },
         sources: result.sources,
         related: result.related,
