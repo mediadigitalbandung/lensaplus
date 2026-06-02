@@ -9,6 +9,13 @@
 # action wrapper (appleboy/ssh-action) accumulated that output in Node
 # memory and got SIGKILL'd by the GitHub runner (exit 137) every few runs.
 # Splitting trigger + polling keeps every individual SSH call sub-second.
+#
+# Downtime handling: the real app is stopped during the (RAM-heavy) build, so
+# while it rebuilds a tiny zero-dependency maintenance server takes over port
+# 3000 and serves a branded Kartawarta "sedang memperbarui" page (HTTP 503)
+# instead of Cloudflare's default "Bad gateway 502". The previous build is
+# kept as .next.old so a failed build rolls back and the site comes straight
+# back up.
 
 set -u
 
@@ -16,18 +23,50 @@ STATUS_FILE=/tmp/kartawarta-deploy-status
 LOG_FILE=/tmp/kartawarta-deploy.log
 APP_DIR=/var/www/kartawarta
 LOCK=/tmp/kartawarta-build.lock
+MAINT_PID_FILE=/tmp/kartawarta-maintenance.pid
+MAINT_LOG=/tmp/kartawarta-maintenance.log
+PORT=3000
 
 # Reset status — anything that consumed an old "OK" before this run started
 # is now stale and the poller should treat it as in-progress.
 rm -f "$STATUS_FILE"
 
+start_maintenance() {
+  # Fill the app port with the branded maintenance page while the real app is
+  # down. Best-effort: if it can't start, the deploy still proceeds.
+  [ -f scripts/maintenance-server.js ] || return 0
+  PORT="$PORT" setsid node scripts/maintenance-server.js > "$MAINT_LOG" 2>&1 < /dev/null &
+  echo $! > "$MAINT_PID_FILE"
+  sleep 1
+}
+
+stop_maintenance() {
+  if [ -f "$MAINT_PID_FILE" ]; then
+    kill "$(cat "$MAINT_PID_FILE" 2>/dev/null)" 2>/dev/null || true
+    rm -f "$MAINT_PID_FILE"
+  fi
+  # Belt-and-suspenders: kill any stray maintenance server still holding 3000,
+  # otherwise the real app can't rebind the port.
+  pkill -f 'scripts/maintenance-server.js' 2>/dev/null || true
+  sleep 1
+}
+
 fail() {
   echo "FAIL: $1" > "$STATUS_FILE"
+  # Roll back to the previous build if this one didn't produce a usable .next,
+  # so the site recovers to the last good version instead of staying down.
+  if [ ! -f .next/BUILD_ID ] && [ -d .next.old ]; then
+    rm -rf .next
+    mv .next.old .next
+  fi
+  stop_maintenance
+  pm2 restart kartawarta --update-env 2>/dev/null \
+    || pm2 start ecosystem.config.js 2>/dev/null || true
   rm -f "$LOCK"
   exit 1
 }
 
-cd "$APP_DIR" || fail "cannot cd to $APP_DIR"
+cd "$APP_DIR" || { echo "FAIL: cannot cd to $APP_DIR" > "$STATUS_FILE"; exit 1; }
 
 # Build lock — prevents two CI runs (or a manual SSH build) from spawning
 # concurrent next-build processes that fight over RAM and orphan jest-workers.
@@ -45,15 +84,20 @@ echo $$ > "$LOCK"
 pkill -9 -f 'next/dist/build' 2>/dev/null || true
 pkill -9 -f 'jest-worker'     2>/dev/null || true
 
-pm2 stop kartawarta || true
-sleep 2
-
-# Drop ANY local file modifications before pulling — hotfixes via scp
-# occasionally leave the working tree dirty.
+# Pull latest source FIRST so the maintenance assets + deploy logic are the
+# newest version before we touch the running app. The live app serves a
+# precompiled .next, so rewriting source files does not affect it yet.
+# Drop ANY local file modifications — hotfixes via scp occasionally leave the
+# working tree dirty.
 git fetch origin master || fail "git fetch failed"
 git reset --hard origin/master || fail "git reset failed"
 
-rm -rf .next
+# Take the app down and immediately put up the branded maintenance page so
+# visitors see Kartawarta's page (not Cloudflare's 502) for the whole rebuild.
+pm2 stop kartawarta || true
+sleep 1
+start_maintenance
+
 npm install --no-audit --no-fund || fail "npm install failed"
 npx prisma generate || fail "prisma generate failed"
 
@@ -63,6 +107,11 @@ npx prisma generate || fail "prisma generate failed"
 # deploy instead of silently dropping data.
 npx prisma db push --skip-generate || fail "prisma db push failed"
 
+# Keep the previous build as .next.old, then build a fresh .next. If the build
+# fails, fail() restores .next.old so the site returns to the last good build.
+rm -rf .next.old
+[ -d .next ] && mv .next .next.old
+
 # Memory-capped, telemetry-disabled, low-priority build to keep other PM2
 # apps responsive on a shared ~16 GB VPS.
 NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 \
@@ -70,9 +119,16 @@ NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 \
 
 [ -f .next/BUILD_ID ] || fail "BUILD_ID missing — build failed silently"
 
-pm2 restart kartawarta --update-env || fail "pm2 restart failed"
+# Hand port 3000 back to the real app: stop maintenance, then (re)start.
+stop_maintenance
+pm2 restart kartawarta --update-env \
+  || pm2 start ecosystem.config.js \
+  || fail "pm2 restart failed"
 sleep 3
 pm2 list | grep kartawarta || true
+
+# Build succeeded and the app is back — drop the rollback copy.
+rm -rf .next.old
 
 echo "OK" > "$STATUS_FILE"
 rm -f "$LOCK"

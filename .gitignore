@@ -70,6 +70,8 @@ scripts/*
 !scripts/backup-offsite.sh
 !scripts/safe-db-push.sh
 !scripts/deploy-vps.sh
+!scripts/maintenance-server.js
+!scripts/maintenance-page.html
 !scripts/test-instagram.js
 !scripts/exchange-threads.js
 !scripts/.gitkeep
