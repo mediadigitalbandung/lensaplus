@@ -38,6 +38,12 @@ export default function PedomanMediaPage() {
             <p>
               Kami menyediakan mekanisme hak jawab bagi pihak yang merasa dirugikan oleh pemberitaan.
               Koreksi dan klarifikasi dipublikasikan secara transparan dan dapat diakses oleh publik.
+              Permohonan hak jawab atau koreksi dapat diajukan melalui email{" "}
+              <a href="mailto:redaksi@kartawarta.com" className="text-primary hover:underline">redaksi@kartawarta.com</a>{" "}
+              atau formulir pada halaman{" "}
+              <a href="/kontak" className="text-primary hover:underline">Kontak</a> dengan subjek
+              &quot;Koreksi Berita&quot;. Redaksi menindaklanjuti setiap permohonan dalam waktu wajar dan
+              memuat koreksi pada artikel terkait.
             </p>
 
             <h2 className="!mt-8 text-lg font-bold text-txt-primary sm:text-xl">4. Anti-Hoax</h2>
@@ -70,8 +76,10 @@ export default function PedomanMediaPage() {
             <div className="mt-10 rounded-[12px] border border-primary/20 bg-primary-light p-4">
               <p className="text-sm text-primary-dark">
                 Pedoman ini mengacu pada Peraturan Dewan Pers Nomor 1/Peraturan-DP/III/2012 tentang
-                Pedoman Pemberitaan Media Siber.
+                Pedoman Pemberitaan Media Siber. Lihat juga{" "}
+                <a href="/kode-etik" className="font-medium underline">Kode Etik Jurnalistik</a> yang kami patuhi.
               </p>
+              <p className="mt-2 text-xs text-primary-dark/80">Terakhir diperbarui: Juni 2026.</p>
             </div>
           </div>
         </div>

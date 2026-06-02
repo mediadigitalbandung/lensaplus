@@ -92,6 +92,101 @@ describe("howToJsonLd", () => {
   });
 });
 
+describe("newsArticleJsonLd — Google News compliance", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  const base = {
+    slug: "x",
+    author: { name: "A", slug: "a" },
+    category: { name: "C", slug: "c" },
+    publishedAt: new Date("2026-01-01T00:00:00Z"),
+    updatedAt: new Date("2026-01-02T00:00:00Z"),
+  };
+
+  it("clamps headline to <=110 characters", async () => {
+    const { newsArticleJsonLd } = await import("../seo/json-ld");
+    const longTitle = "A".repeat(200);
+    const out = newsArticleJsonLd({ ...base, title: longTitle }) as Record<string, unknown>;
+    expect((out.headline as string).length).toBeLessThanOrEqual(110);
+    expect(out.headline as string).toMatch(/…$/);
+  });
+
+  it("keeps short headlines verbatim", async () => {
+    const { newsArticleJsonLd } = await import("../seo/json-ld");
+    const out = newsArticleJsonLd({ ...base, title: "Judul Pendek" }) as Record<string, unknown>;
+    expect(out.headline).toBe("Judul Pendek");
+  });
+
+  it("falls back to ogImageUrl as an ImageObject when featuredImage is absent", async () => {
+    const { newsArticleJsonLd } = await import("../seo/json-ld");
+    const out = newsArticleJsonLd({
+      ...base,
+      title: "T",
+      featuredImage: null,
+      ogImageUrl: "/api/og?slug=x&v=1",
+    }) as Record<string, unknown>;
+    const images = out.image as Array<Record<string, unknown>>;
+    expect(images.length).toBeGreaterThanOrEqual(1);
+    expect(images[0]["@type"]).toBe("ImageObject");
+    expect(images[0].url).toBe("https://kartawarta.com/api/og?slug=x&v=1");
+    expect(images[0].width).toBe(1200);
+  });
+
+  it("prefers the real featuredImage (absolute) over the og fallback", async () => {
+    const { newsArticleJsonLd } = await import("../seo/json-ld");
+    const out = newsArticleJsonLd({
+      ...base,
+      title: "T",
+      featuredImage: "/uploads/foo.jpg",
+      ogImageUrl: "/api/og?slug=x",
+    }) as Record<string, unknown>;
+    const images = out.image as Array<Record<string, unknown>>;
+    expect(images[0].url).toBe("https://kartawarta.com/uploads/foo.jpg");
+  });
+
+  it("omits description when excerpt is empty", async () => {
+    const { newsArticleJsonLd } = await import("../seo/json-ld");
+    const out = newsArticleJsonLd({ ...base, title: "T", excerpt: "" }) as Record<string, unknown>;
+    expect("description" in out).toBe(false);
+  });
+});
+
+describe("organizationJsonLd — publisher transparency", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("includes address (Bandung/Jawa Barat/ID), email and an editorial contactPoint", async () => {
+    const { organizationJsonLd } = await import("../seo/json-ld");
+    const out = organizationJsonLd() as Record<string, unknown>;
+    expect(out.email).toBe("redaksi@kartawarta.com");
+    const addr = out.address as Record<string, unknown>;
+    expect(addr["@type"]).toBe("PostalAddress");
+    expect(addr.addressLocality).toBe("Bandung");
+    expect(addr.addressRegion).toBe("Jawa Barat");
+    expect(addr.addressCountry).toBe("ID");
+    const cp = out.contactPoint as Record<string, unknown>;
+    expect(cp["@type"]).toBe("ContactPoint");
+    expect(cp.email).toBe("redaksi@kartawarta.com");
+  });
+
+  it("emits foundingDate + telephone only when env is set", async () => {
+    vi.stubEnv("NEXT_PUBLIC_PUBLISHER_FOUNDING", "2024");
+    vi.stubEnv("NEXT_PUBLIC_PUBLISHER_PHONE", "+62-22-1234567");
+    const { organizationJsonLd } = await import("../seo/json-ld");
+    const out = organizationJsonLd() as Record<string, unknown>;
+    expect(out.foundingDate).toBe("2024");
+    const cp = out.contactPoint as Record<string, unknown>;
+    expect(cp.telephone).toBe("+62-22-1234567");
+  });
+});
+
 describe("qaJsonLd", () => {
   it("returns QAPage with mainEntity Question when answers list is empty", async () => {
     const { qaJsonLd } = await import("../seo/json-ld");

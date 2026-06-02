@@ -3,7 +3,8 @@ import { Shield, Eye, Users, Award } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Tentang Kami",
-  description: "Kartawarta - Media hukum digital terpercaya untuk wilayah Bandung dan sekitarnya.",
+  description:
+    "Kartawarta — media berita digital terpercaya berbasis di Bandung: bisnis & ekonomi, pemerintahan, hukum, serta topik umum lainnya.",
 };
 
 export default function TentangPage() {
@@ -18,19 +19,21 @@ export default function TentangPage() {
 
           <div className="mt-8 space-y-6 font-serif text-[17px] leading-relaxed text-txt-secondary">
             <p>
-              <strong className="text-txt-primary">Kartawarta</strong> adalah media digital yang berfokus pada pemberitaan
-              hukum di wilayah Bandung Raya dan Jawa Barat. Didirikan dengan visi menjadi sumber informasi
-              hukum yang terpercaya, akurat, dan berimbang bagi masyarakat.
+              <strong className="text-txt-primary">Kartawarta</strong> adalah media berita digital yang berbasis di
+              Bandung, Jawa Barat. Kami meliput beragam isu — dengan prioritas pada bisnis &amp; ekonomi,
+              pemerintahan, dan hukum — di samping topik umum lain seperti olahraga, hiburan, dan teknologi.
+              Kami berdiri dengan visi menjadi sumber informasi yang terpercaya, akurat, dan berimbang bagi masyarakat.
             </p>
             <p>
               Kami percaya bahwa akses terhadap informasi yang berkualitas adalah hak setiap warga negara.
-              Melalui jurnalisme investigatif dan analisis mendalam, kami berusaha menyajikan berita yang
+              Melalui jurnalisme yang cermat dan analisis mendalam, kami berusaha menyajikan berita yang
               tidak hanya informatif, tetapi juga edukatif.
             </p>
             <p>
-              Tim redaksi kami terdiri dari jurnalis berpengalaman yang memiliki latar belakang pendidikan hukum
-              dan jurnalistik. Setiap artikel yang kami terbitkan melalui proses verifikasi ketat untuk memastikan
-              keakuratan dan keberimbangan informasi.
+              Tim redaksi kami terdiri dari jurnalis berpengalaman dengan latar belakang jurnalistik. Setiap artikel
+              yang kami terbitkan melalui proses verifikasi ketat untuk memastikan keakuratan dan keberimbangan informasi.
+              Susunan redaksi selengkapnya dapat dilihat pada halaman{" "}
+              <a href="/redaksi" className="text-primary hover:underline">Redaksi</a>.
             </p>
           </div>
 

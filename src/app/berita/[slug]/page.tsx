@@ -407,6 +407,8 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
     excerpt: article.excerpt,
     content: article.content,
     featuredImage: article.featuredImage,
+    // Guaranteed fallback so image[] is never empty (Google rich-result req).
+    ogImageUrl: `/api/og?slug=${encodeURIComponent(article.slug)}&v=${article.updatedAt.getTime()}`,
     publishedAt: article.publishedAt,
     updatedAt: article.updatedAt,
     author: { name: article.author.name, slug: slugify(article.author.name) },

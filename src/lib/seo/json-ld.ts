@@ -27,6 +27,39 @@ const SISTER_BRANDS: string[] = [
   "https://jurnalishukumbandung.com",
 ];
 
+// Publisher identity/contact for Organization structured data.
+// City/region/country/email are already public on the site, so they're inlined.
+// Sensitive specifics (legal entity, street, postal code, phone, founding year)
+// come from env and render ONLY when the operator sets them — never fabricated.
+const PUBLISHER_EMAIL = "redaksi@kartawarta.com";
+const PUBLISHER_PHONE = process.env.NEXT_PUBLIC_PUBLISHER_PHONE || "";
+const PUBLISHER_STREET = process.env.NEXT_PUBLIC_PUBLISHER_STREET || "";
+const PUBLISHER_POSTAL = process.env.NEXT_PUBLIC_PUBLISHER_POSTAL || "";
+const PUBLISHER_FOUNDING = process.env.NEXT_PUBLIC_PUBLISHER_FOUNDING || ""; // e.g. "2024"
+const PUBLISHER_LEGAL_NAME = process.env.NEXT_PUBLIC_PUBLISHER_LEGAL_NAME || ""; // e.g. "PT Media Digital Bandung"
+
+function publisherAddress(): Record<string, unknown> {
+  return {
+    "@type": "PostalAddress",
+    ...(PUBLISHER_STREET && { streetAddress: PUBLISHER_STREET }),
+    addressLocality: "Bandung",
+    addressRegion: "Jawa Barat",
+    ...(PUBLISHER_POSTAL && { postalCode: PUBLISHER_POSTAL }),
+    addressCountry: "ID",
+  };
+}
+
+function publisherContactPoint(): Record<string, unknown> {
+  return {
+    "@type": "ContactPoint",
+    contactType: "editorial",
+    email: PUBLISHER_EMAIL,
+    ...(PUBLISHER_PHONE && { telephone: PUBLISHER_PHONE }),
+    areaServed: "ID",
+    availableLanguage: ["id"],
+  };
+}
+
 export interface JsonLdAuthor {
   name: string;
   slug?: string;
@@ -44,12 +77,24 @@ export interface JsonLdArticleInput {
   excerpt?: string | null;
   content?: string;
   featuredImage?: string | null;
+  /**
+   * Guaranteed fallback image (e.g. the dynamic /api/og?slug=... 1200x630 card)
+   * used when `featuredImage` is absent so the Article JSON-LD always carries
+   * at least one image — a Google rich-result / Top Stories requirement.
+   */
+  ogImageUrl?: string | null;
   publishedAt?: Date | string | null;
   updatedAt?: Date | string | null;
   author: JsonLdAuthor;
   category: JsonLdCategory;
   tags?: { name: string }[];
   wordCount?: number;
+}
+
+// Google ignores/truncates headlines over 110 characters in structured data.
+function clampHeadline(title: string): string {
+  const t = title.trim();
+  return t.length <= 110 ? t : `${t.slice(0, 107).trimEnd()}…`;
 }
 
 function iso(value: Date | string | null | undefined): string | undefined {
@@ -87,6 +132,7 @@ function publisherBlock() {
   return {
     "@type": "NewsMediaOrganization",
     name: SITE_NAME,
+    ...(PUBLISHER_LEGAL_NAME && { legalName: PUBLISHER_LEGAL_NAME }),
     url: SITE_URL,
     logo: {
       "@type": "ImageObject",
@@ -94,6 +140,10 @@ function publisherBlock() {
       width: 512,
       height: 512,
     },
+    email: PUBLISHER_EMAIL,
+    address: publisherAddress(),
+    contactPoint: publisherContactPoint(),
+    ...(PUBLISHER_FOUNDING && { foundingDate: PUBLISHER_FOUNDING }),
     sameAs: publisherSameAs(),
   };
 }
@@ -108,10 +158,20 @@ function articleBody(
   const mainEntityUrl = `${SITE_URL}${mainPath}`;
   const wordCount = article.wordCount ?? countWords(article.content);
 
+  // Always emit at least one ImageObject: real featured image if present,
+  // else the guaranteed 1200x630 OG card. Never an empty array.
+  const featured = absoluteUrl(article.featuredImage);
+  const ogFallback = absoluteUrl(article.ogImageUrl);
+  const images: object[] = featured
+    ? [{ "@type": "ImageObject", url: featured }]
+    : ogFallback
+      ? [{ "@type": "ImageObject", url: ogFallback, width: 1200, height: 630 }]
+      : [];
+
   return {
-    headline: article.title,
-    description: article.excerpt || "",
-    image: article.featuredImage ? [absoluteUrl(article.featuredImage)] : [],
+    headline: clampHeadline(article.title),
+    ...(article.excerpt ? { description: article.excerpt } : {}),
+    ...(images.length > 0 && { image: images }),
     datePublished: iso(article.publishedAt),
     dateModified: iso(article.updatedAt) ?? iso(article.publishedAt),
     author: {
@@ -314,6 +374,7 @@ export function organizationJsonLd(): object {
     "@context": "https://schema.org",
     "@type": "NewsMediaOrganization",
     name: SITE_NAME,
+    ...(PUBLISHER_LEGAL_NAME && { legalName: PUBLISHER_LEGAL_NAME }),
     url: SITE_URL,
     logo: {
       "@type": "ImageObject",
@@ -321,6 +382,10 @@ export function organizationJsonLd(): object {
       width: 512,
       height: 512,
     },
+    email: PUBLISHER_EMAIL,
+    address: publisherAddress(),
+    contactPoint: publisherContactPoint(),
+    ...(PUBLISHER_FOUNDING && { foundingDate: PUBLISHER_FOUNDING }),
     sameAs: publisherSameAs(),
   };
 }
