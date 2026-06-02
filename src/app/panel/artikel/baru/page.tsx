@@ -207,8 +207,12 @@ export default function NewArticlePage() {
   };
 
   const runResearch = async () => {
-    if (!title.trim()) {
-      setError("Isi judul/topik dulu sebelum riset");
+    // Topic = the title, OR (when writing from scratch) the notes box. This lets
+    // the user research a topic even before a title exists — the title can be
+    // generated afterward from the resulting draft.
+    const topic = (title.trim() || researchNotes.trim());
+    if (!topic) {
+      setError("Isi Judul atau kolom arahan/topik dulu sebelum riset");
       return;
     }
     setResearching(true);
@@ -217,7 +221,7 @@ export default function NewArticlePage() {
       const res = await fetch("/api/ai/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: title, mode: researchMode, notes: researchNotes, persona: researchPersona }),
+        body: JSON.stringify({ topic, mode: researchMode, notes: researchNotes, persona: researchPersona }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -621,9 +625,9 @@ export default function NewArticlePage() {
                     Arahan global (gaya & SEO) diatur di Pengaturan → AI. Kotak ini untuk fokus spesifik artikel ini.
                   </p>
                 </div>
-                {!title.trim() && (
+                {!title.trim() && !researchNotes.trim() && (
                   <p className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
-                    <AlertCircle size={12} /> Isi <strong>Judul Artikel</strong> di atas dulu sebagai topik riset.
+                    <AlertCircle size={12} /> Isi <strong>Judul</strong> atau tulis topik di kotak arahan di atas. (Judul bisa digenerate setelah draf jadi.)
                   </p>
                 )}
                 <div className="flex items-center gap-3">

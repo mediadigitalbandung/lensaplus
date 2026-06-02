@@ -463,8 +463,9 @@ export default function EditArticlePage() {
   );
 
   const runResearch = async () => {
-    if (!title.trim()) {
-      setError("Isi judul/topik dulu sebelum riset");
+    const topic = (title.trim() || pplxNotes.trim());
+    if (!topic) {
+      setError("Isi Judul atau kolom arahan/topik dulu sebelum riset");
       return;
     }
     setResearching(true);
@@ -473,7 +474,7 @@ export default function EditArticlePage() {
       const res = await fetch("/api/ai/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: title, mode: researchMode, notes: pplxNotes, persona: researchPersona }),
+        body: JSON.stringify({ topic, mode: researchMode, notes: pplxNotes, persona: researchPersona }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -621,9 +622,9 @@ export default function EditArticlePage() {
               Arahan global (gaya & SEO) diatur di Pengaturan → AI. Kotak ini untuk fokus spesifik artikel ini.
             </p>
           </div>
-          {!title.trim() && (
+          {!title.trim() && !pplxNotes.trim() && (
             <p className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
-              <AlertCircle size={12} /> Isi <strong>Judul</strong> di atas dulu sebagai topik riset.
+              <AlertCircle size={12} /> Isi <strong>Judul</strong> atau tulis topik di kotak arahan di atas. (Judul bisa digenerate setelah draf jadi.)
             </p>
           )}
           <div className="flex items-center gap-3">
