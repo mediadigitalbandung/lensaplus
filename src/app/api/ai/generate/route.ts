@@ -2,7 +2,21 @@ import { NextRequest } from "next/server";
 import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { aiRateLimit } from "@/lib/rate-limit";
 import { callAI, type AIFeature } from "@/lib/ai-client";
+import { callPerplexity, isPerplexityConfigured, getPerplexityInstructions } from "@/lib/perplexity";
 import { cleanAIShortText } from "@/lib/sanitize";
+
+// System prompt for Perplexity when generating short article fields. Perplexity
+// is web-grounded so it can check competitors/SEO, but it must return ONLY the
+// requested value (no citation markers, no preamble).
+const PPLX_SYSTEM =
+  "Kamu editor SEO Kartawarta — media berita digital Bandung. Manfaatkan pencarian web untuk hasil " +
+  "yang kompetitif di Google & Discover. Jawab LANGSUNG dengan nilai yang diminta saja — tanpa basa-basi, " +
+  "tanpa penanda sitasi [1][2], tanpa markdown/code fence, tanpa daftar sumber. Bahasa Indonesia.";
+
+/** Remove Perplexity citation markers like [1], [2][3] from generated text. */
+function stripCitations(s: string): string {
+  return s.replace(/\[\d+\]/g, "").replace(/ {2,}/g, " ").trim();
+}
 
 const PROMPTS: Record<string, (title: string, content: string) => string> = {
   tags: (title, content) =>
@@ -60,38 +74,69 @@ export async function POST(req: NextRequest) {
     const prompt = PROMPTS[feature](title, content);
     const aiFeature = FEATURE_MAP[feature] ?? "article_draft";
 
-    let result;
-    try {
-      result = await callAI({
-        feature: aiFeature,
-        userPrompt: prompt,
-        maxTokens: 500,
-        temperature: 0.7,
-        userId: session.user.id,
-        articleTitle: title,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "AI service error";
-      // Surface a user-friendly message but preserve cause in logs
-      console.error("callAI failed:", err);
-      if (msg.includes("no API key configured") || msg.includes("providers exhausted")) {
-        throw new ApiError("API Key AI belum dikonfigurasi atau tidak dapat dihubungi. Hubungi administrator.", 400);
+    // Short fields must be clean plain text (no markdown/citations).
+    const SHORT_FIELDS = new Set(["tags", "seo_title", "meta_description", "summary"]);
+    const isShort = SHORT_FIELDS.has(feature);
+
+    let resultText = "";
+    let provider = "";
+    let tokensUsed = 0;
+
+    // Prefer Perplexity (web-grounded → checks competitors/SEO in real time) when
+    // configured; fall back to Claude/DeepSeek so nothing breaks if it's unset/fails.
+    const usePerplexity = await isPerplexityConfigured();
+    if (usePerplexity) {
+      try {
+        const persona = await getPerplexityInstructions();
+        const sys = persona ? `${PPLX_SYSTEM}\n\nARAHAN PENULIS: ${persona}` : PPLX_SYSTEM;
+        const r = await callPerplexity({
+          systemPrompt: sys,
+          userPrompt: prompt,
+          recency: "month",
+          contextSize: isShort ? "low" : "medium",
+          maxTokens: isShort ? 400 : 1600,
+          temperature: 0.4,
+        });
+        resultText = stripCitations(r.text);
+        provider = "perplexity";
+      } catch (err) {
+        console.error("Perplexity generate failed, falling back:", err);
       }
-      throw new ApiError("Gagal menghubungi AI service. Coba lagi nanti.", 502);
+    }
+
+    if (!resultText) {
+      try {
+        const result = await callAI({
+          feature: aiFeature,
+          userPrompt: prompt,
+          maxTokens: 500,
+          temperature: 0.7,
+          userId: session.user.id,
+          articleTitle: title,
+        });
+        resultText = result.text;
+        provider = result.provider;
+        tokensUsed = result.totalTokens;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "AI service error";
+        console.error("callAI failed:", err);
+        if (msg.includes("no API key configured") || msg.includes("providers exhausted")) {
+          throw new ApiError("API Key AI belum dikonfigurasi atau tidak dapat dihubungi. Hubungi administrator.", 400);
+        }
+        throw new ApiError("Gagal menghubungi AI service. Coba lagi nanti.", 502);
+      }
     }
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
-    await logAudit(session.user.id, "AI_GENERATE", "Article", "generate", JSON.stringify({ feature, tokensUsed: result.totalTokens, provider: result.provider }), ip);
+    await logAudit(session.user.id, "AI_GENERATE", "Article", "generate", JSON.stringify({ feature, tokensUsed, provider }), ip);
 
-    // Strip Markdown artifacts from short-field AI outputs (seo_title, meta_description)
-    // so callers receive clean plain-text values ready for HTML <meta> tags.
-    const SHORT_FIELDS = new Set(["seo_title", "meta_description"]);
-    const resultText = SHORT_FIELDS.has(feature) ? cleanAIShortText(result.text) : result.text;
+    // Clean short-field outputs so callers get plain text ready for HTML <meta> tags.
+    const finalText = isShort ? cleanAIShortText(stripCitations(resultText)) : resultText;
 
     return successResponse({
-      result: resultText,
-      tokensUsed: result.totalTokens,
-      provider: result.provider,
+      result: finalText,
+      tokensUsed,
+      provider,
     });
   } catch (error) {
     return errorResponse(error);
