@@ -33,6 +33,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
+    // The Emiten admin page was removed from the CMS for ALL roles/users.
+    // Redirect any lingering links (e.g. from the dashboard) to the dashboard.
+    if (pathname === "/panel/emiten" || pathname.startsWith("/panel/emiten/")) {
+      return NextResponse.redirect(new URL("/panel/dashboard", request.url));
+    }
+
     // Defense-in-depth role→path gating. The API routes remain the source of
     // truth (the JWT role can be up to ~10 min stale per the revalidate
     // interval), so this only stops low-privilege users from deep-linking into
@@ -76,7 +82,6 @@ export async function middleware(request: NextRequest) {
         "/panel/tags",
         "/panel/tiktok",
         "/panel/live-blogs",
-        "/panel/emiten",
         "/panel/kalender-emiten",
         "/panel/regulasi",
         "/panel/pejabat",
