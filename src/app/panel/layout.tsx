@@ -372,8 +372,21 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
               </div>
             </div>
 
-            {/* Notification bell */}
-            <div className="relative" ref={notifRef}>
+            {/* Right side: Lihat Situs + notifications + user chip */}
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-txt-secondary transition-colors hover:bg-surface-secondary hover:text-primary sm:inline-flex"
+                title="Lihat situs publik"
+              >
+                <Globe size={15} />
+                Lihat Situs
+              </a>
+
+              {/* Notification bell */}
+              <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setNotifOpen(!notifOpen)}
                 className="relative rounded-lg p-2 text-txt-secondary hover:bg-surface-secondary hover:text-txt-primary transition-colors"
@@ -450,6 +463,26 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                   )}
                 </div>
               )}
+              </div>
+
+              {/* User chip → profil */}
+              <Link
+                href="/panel/profil"
+                className="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-surface-secondary sm:pr-3"
+                title="Profil saya"
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-secondary to-secondary-dark text-xs font-bold text-white ring-1 ring-black/5">
+                  {(session.user.name || "?").charAt(0).toUpperCase()}
+                </span>
+                <span className="hidden max-w-[150px] text-left leading-tight sm:block">
+                  <span className="block truncate text-xs font-semibold text-txt-primary">
+                    {session.user.name}
+                  </span>
+                  <span className="block truncate text-[10px] text-txt-muted">
+                    {roleLabelsMap[session.user.role] || session.user.role.replace(/_/g, " ")}
+                  </span>
+                </span>
+              </Link>
             </div>
           </div>
 
