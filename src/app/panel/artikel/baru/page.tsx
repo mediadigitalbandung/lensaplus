@@ -70,17 +70,6 @@ export default function NewArticlePage() {
   const [researchMode, setResearchMode] = useState<"draft" | "research">("draft");
   const [researchPersona, setResearchPersona] = useState("");
   const [researching, setResearching] = useState(false);
-  // Research RESULT staged in-panel for review/edit before inserting to fields.
-  const [researchResult, setResearchResult] = useState("");
-  const [researchResultSources, setResearchResultSources] = useState<Source[]>([]);
-  // Structured field package from "Draf artikel lengkap" (editable before apply).
-  const [researchFields, setResearchFields] = useState<{
-    title: string;
-    excerpt: string;
-    tags: string;
-    seoTitle: string;
-    metaDescription: string;
-  } | null>(null);
   const [users, setUsers] = useState<{id: string; name: string; role: string}[]>([]);
   const [selectedAuthorId, setSelectedAuthorId] = useState("");
   const [selectedEditorId, setSelectedEditorId] = useState("");
@@ -218,9 +207,7 @@ export default function NewArticlePage() {
   };
 
   const runResearch = async () => {
-    // Topic = the title, OR (when writing from scratch) the notes box. This lets
-    // the user research a topic even before a title exists — the title can be
-    // generated afterward from the resulting draft.
+    // Topic = the title, OR (when writing from scratch) the notes box.
     const topic = (title.trim() || researchNotes.trim());
     if (!topic) {
       setError("Isi Judul atau kolom arahan/topik dulu sebelum riset");
@@ -240,88 +227,61 @@ export default function NewArticlePage() {
         return;
       }
       const d = data.data || {};
-      const cited: { title: string | null; url: string }[] = d.sources || [];
-      const stagedSources: Source[] = cited.slice(0, 12).map((s) => {
-        let host = "";
-        try {
-          host = new URL(s.url).hostname.replace(/^www\./, "");
-        } catch {
-          /* keep blank */
-        }
-        return { name: s.title || host || "Sumber", title: "", institution: host, url: s.url };
-      });
-      // Draft mode returns a structured field package; research mode just content.
+
+      // Fill EVERY field directly — title, excerpt, tags, SEO, meta, content —
+      // no review step. Empty fields are filled; existing user input is kept.
       const f = d.fields;
+      const html = (f?.content ?? d.content ?? "").toString();
       if (f) {
-        setResearchResult((f.content || "").toString());
-        setResearchFields({
-          title: (f.title || "").toString(),
-          excerpt: (f.excerpt || "").toString(),
-          tags: (f.tags || "").toString(),
-          seoTitle: (f.seoTitle || "").toString(),
-          metaDescription: (f.metaDescription || "").toString(),
-        });
-      } else {
-        setResearchResult((d.content || "").toString());
-        setResearchFields(null);
+        const fill = (v: unknown, cur: string, set: (s: string) => void, max?: number) => {
+          const val = (v ?? "").toString().trim();
+          if (val && !cur.trim()) set(max ? clampToMax(val, max) : val);
+        };
+        fill(f.title, title, setTitle, 255);
+        fill(f.excerpt, excerpt, setExcerpt);
+        fill(f.tags, tags, setTags);
+        fill(f.seoTitle, seoTitle, setSeoTitle, 60);
+        fill(f.metaDescription, seoDescription, setSeoDescription, 160);
+        if ((f.seoTitle || f.metaDescription) && (!seoTitle.trim() || !seoDescription.trim())) setShowSeo(true);
       }
-      setResearchResultSources(stagedSources);
+      if (html) setContent((prev) => (prev.trim() ? `${prev}\n${html}` : html));
+
+      // Auto-add the cited sources (dedup by URL).
+      const cited: { title: string | null; url: string }[] = d.sources || [];
+      if (cited.length > 0) {
+        const newSources: Source[] = cited.slice(0, 12).map((s) => {
+          let host = "";
+          try {
+            host = new URL(s.url).hostname.replace(/^www\./, "");
+          } catch {
+            /* keep blank */
+          }
+          return { name: s.title || host || "Sumber", title: "", institution: host, url: s.url };
+        });
+        setSources((prev) => {
+          const existing = prev.filter((p) => p.name.trim() || p.url.trim());
+          const seen = new Set(existing.map((e) => e.url));
+          const merged = [...existing];
+          for (const ns of newSources) {
+            if (!ns.url || !seen.has(ns.url)) {
+              merged.push(ns);
+              seen.add(ns.url);
+            }
+          }
+          return merged.length > 0 ? merged : prev;
+        });
+      }
+
       success(
-        `Perplexity selesai${cited.length ? ` — ${cited.length} sumber ditemukan` : ""}. Tinjau & sunting di bawah, lalu masukkan.`,
+        `Selesai — kolom artikel terisi dari riset${cited.length ? ` + ${cited.length} sumber` : ""}. Tinjau & sunting sebelum publikasi.`,
       );
+      setShowResearch(false);
+      setResearchNotes("");
     } catch {
       setError("Gagal menghubungi layanan riset Perplexity");
     } finally {
       setResearching(false);
     }
-  };
-
-  const mergeResearchSources = () => {
-    if (researchResultSources.length === 0) return;
-    setSources((prev) => {
-      const existing = prev.filter((p) => p.name.trim() || p.url.trim());
-      const seen = new Set(existing.map((e) => e.url));
-      const merged = [...existing];
-      for (const ns of researchResultSources) {
-        if (!ns.url || !seen.has(ns.url)) {
-          merged.push(ns);
-          seen.add(ns.url);
-        }
-      }
-      return merged.length > 0 ? merged : prev;
-    });
-  };
-
-  const applyResearch = (replace: boolean) => {
-    if (researchResult.trim()) {
-      setContent((prev) => (replace || !prev.trim() ? researchResult : `${prev}\n${researchResult}`));
-    }
-    // Fill the other form fields from the structured package — only where the
-    // field is currently empty OR when replacing, so we never clobber the user's
-    // own input silently.
-    if (researchFields) {
-      const f = researchFields;
-      if (f.title && (replace || !title.trim())) setTitle(clampToMax(f.title, 255));
-      if (f.excerpt && (replace || !excerpt.trim())) setExcerpt(f.excerpt);
-      if (f.tags && (replace || !tags.trim())) setTags(f.tags);
-      if (f.seoTitle && (replace || !seoTitle.trim())) setSeoTitle(clampToMax(f.seoTitle, 60));
-      if (f.metaDescription && (replace || !seoDescription.trim()))
-        setSeoDescription(clampToMax(f.metaDescription, 160));
-      if (f.seoTitle || f.metaDescription) setShowSeo(true);
-    }
-    mergeResearchSources();
-    success(
-      researchFields
-        ? "Semua kolom artikel diisi dari hasil riset. Tinjau & sunting sebelum publikasi."
-        : replace
-          ? "Konten editor diganti dengan hasil riset."
-          : "Hasil riset ditambahkan ke editor.",
-    );
-    setResearchResult("");
-    setResearchResultSources([]);
-    setResearchFields(null);
-    setShowResearch(false);
-    setResearchNotes("");
   };
 
   const AiButton = ({ feature, setter }: { feature: string; setter: (val: string) => void }) => (
@@ -696,112 +656,9 @@ export default function NewArticlePage() {
                     {researching ? "Meriset & menulis…" : "Jalankan Riset"}
                   </button>
                   <span className="text-[10px] text-txt-muted">
-                    Hasil tampil di bawah untuk ditinjau dulu — tidak langsung ke editor.
+                    Hasil langsung mengisi kolom artikel (judul, ringkasan, tags, SEO, isi). Tinjau sebelum publikasi.
                   </span>
                 </div>
-
-                {/* Staged research result — review/edit each field before inserting */}
-                {(researchResult || researchFields) && (
-                  <div className="mt-3 space-y-2 rounded-[12px] border border-primary/30 bg-surface p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-primary">
-                        Hasil riset — tinjau & sunting, lalu isi ke kolom artikel
-                      </span>
-                      {researchResultSources.length > 0 && (
-                        <span className="text-[10px] text-txt-muted">
-                          {researchResultSources.length} sumber akan ditambahkan
-                        </span>
-                      )}
-                    </div>
-
-                    {researchFields && (
-                      <div className="space-y-2">
-                        <div>
-                          <label className="text-[10px] font-semibold text-txt-muted">Judul</label>
-                          <input
-                            value={researchFields.title}
-                            onChange={(e) => setResearchFields({ ...researchFields, title: e.target.value })}
-                            className="input w-full text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-semibold text-txt-muted">Ringkasan</label>
-                          <textarea
-                            rows={2}
-                            value={researchFields.excerpt}
-                            onChange={(e) => setResearchFields({ ...researchFields, excerpt: e.target.value })}
-                            className="input w-full resize-none text-sm"
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                          <div>
-                            <label className="text-[10px] font-semibold text-txt-muted">SEO Title</label>
-                            <input
-                              value={researchFields.seoTitle}
-                              onChange={(e) => setResearchFields({ ...researchFields, seoTitle: e.target.value })}
-                              className="input w-full text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-semibold text-txt-muted">Tags</label>
-                            <input
-                              value={researchFields.tags}
-                              onChange={(e) => setResearchFields({ ...researchFields, tags: e.target.value })}
-                              className="input w-full text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-semibold text-txt-muted">Meta Description</label>
-                          <textarea
-                            rows={2}
-                            value={researchFields.metaDescription}
-                            onChange={(e) => setResearchFields({ ...researchFields, metaDescription: e.target.value })}
-                            className="input w-full resize-none text-sm"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <label className="text-[10px] font-semibold text-txt-muted">Isi artikel (HTML)</label>
-                    <textarea
-                      rows={10}
-                      value={researchResult}
-                      onChange={(e) => setResearchResult(e.target.value)}
-                      className="input w-full resize-y font-mono text-[11px] leading-relaxed"
-                    />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => applyResearch(false)}
-                        className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark"
-                      >
-                        <Plus size={13} /> {researchFields ? "Isi ke semua kolom" : "Tambahkan ke editor"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyResearch(true)}
-                        className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-txt-secondary hover:bg-surface-secondary"
-                      >
-                        {researchFields ? "Timpa kolom yang sudah terisi" : "Ganti isi editor"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setResearchResult("");
-                          setResearchResultSources([]);
-                          setResearchFields(null);
-                        }}
-                        className="flex items-center gap-1 px-2 py-1.5 text-xs text-txt-muted hover:text-red-500"
-                      >
-                        <X size={13} /> Buang
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-txt-muted">
-                      &quot;Isi ke semua kolom&quot; hanya mengisi kolom yang masih kosong; &quot;Timpa&quot; mengganti yang sudah ada.
-                    </p>
-                  </div>
-                )}
               </div>
             )}
           </div>
