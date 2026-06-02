@@ -644,6 +644,30 @@ export default function PengaturanPage() {
     }
   }
 
+  async function handleTestPerplexity() {
+    setTest("perplexity", { loading: true });
+    try {
+      const res = await fetch("/api/ai/test-perplexity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      const d = json.data;
+      setTest("perplexity", {
+        loading: false,
+        success: !!(json.success && d?.success),
+        message: d?.message || json.error || "Test gagal",
+      });
+    } catch (err) {
+      setTest("perplexity", {
+        loading: false,
+        success: false,
+        message: err instanceof Error ? err.message : "Network error",
+      });
+    }
+  }
+
   async function handleTestGoogle() {
     setTest("google", { loading: true });
     try {
@@ -996,6 +1020,34 @@ export default function PengaturanPage() {
               }}
               placeholder="pplx-..."
             />
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleTestPerplexity}
+                disabled={testResults.perplexity?.loading}
+                className="btn-secondary flex items-center gap-2 text-xs"
+              >
+                {testResults.perplexity?.loading ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <PlugZap size={14} />
+                )}
+                Tes Koneksi Perplexity
+              </button>
+              {testResults.perplexity && !testResults.perplexity.loading && (
+                <span
+                  className={`inline-flex items-center gap-1 text-xs ${
+                    testResults.perplexity.success ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {testResults.perplexity.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                  {testResults.perplexity.message}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-[10px] text-txt-muted">
+              Simpan key dulu sebelum tes (tes memakai key yang tersimpan).
+            </p>
           </Field>
           <Field
             label="Arahan Penulis Perplexity (gaya & karakter)"
