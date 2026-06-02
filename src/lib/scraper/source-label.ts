@@ -101,20 +101,17 @@ export function rewriteCreditsInContent(html: string, label: string): string {
   const esc = escapeHtml(label);
   return (
     html
-      // 1. <figcaption ...>Foto: Kartawarta</figcaption>
+      // 1. photo credit phrase "Foto: Kartawarta" (scraper figcaptions).
+      //    Tag-agnostic so it matches regardless of how the figcaption is
+      //    wrapped or whether sanitize stripped its classes.
+      .replace(/(\bFoto:\s*)Kartawarta\b/gi, `$1${esc}`)
+      // 2. image credit phrase "Sumber: Kartawarta" (rich-text inserts).
+      .replace(/(\bSumber:\s*)Kartawarta\b/gi, `$1${esc}`)
+      // 3. attribution footer link text: Disarikan dari rilis <a ...>Kartawarta — "…"
+      //    Only the link's leading name — never the trailing "Versi Kartawarta" sentence.
       .replace(
-        /(<figcaption\b[^>]*>\s*Foto:\s*)([^<]*kartawarta[^<]*?)(\s*<\/figcaption>)/gi,
-        `$1${esc}$3`,
-      )
-      // 2. <em>Sumber: Kartawarta</em>
-      .replace(
-        /(<em>\s*Sumber:\s*)([^<]*kartawarta[^<]*?)(\s*<\/em>)/gi,
-        `$1${esc}$3`,
-      )
-      // 3. footer: Disarikan dari rilis <a ...>Kartawarta — "title"</a>
-      .replace(
-        /(Disarikan dari rilis\s*<a\b[^>]*>\s*)([^<—]*kartawarta[^<—]*?)(\s*—)/gi,
-        `$1${esc}$3`,
+        /(Disarikan dari rilis\s*<a\b[^>]*>\s*)Kartawarta(\s*—)/gi,
+        `$1${esc}$2`,
       )
   );
 }

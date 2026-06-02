@@ -463,16 +463,23 @@ export default function ArtikelPage() {
         scanned: number;
         fixed: number;
         skipped: number;
+        plan: Array<{ category: string; source: string; count: number }>;
         samples: Array<{ slug: string; to: string }>;
       };
       if (p.fixed === 0) {
-        success(`Sudah rapi — tidak ada yang perlu diperbaiki dari ${p.scanned} artikel hasil scraper.`);
+        showError(
+          `Tidak ada artikel yang bisa dipetakan ke sumbernya (dari ${p.scanned} artikel). Pastikan setiap "Sumber Berita" sudah punya Kategori, lalu coba lagi.`,
+        );
         return;
       }
-      const contoh = p.samples?.[0]?.to ? ` (mis. menjadi "${p.samples[0].to}")` : "";
+      const planText =
+        p.plan && p.plan.length > 0
+          ? "\n\nSumber per kategori:\n" +
+            p.plan.map((r) => `• ${r.category} → ${r.source} (${r.count})`).join("\n")
+          : "";
       const ok = await confirm({
         title: "Perbaiki Sumber Foto",
-        message: `${p.fixed} dari ${p.scanned} artikel hasil scraper akan diperbaiki sumber fotonya ke website asalnya${contoh}. ${p.skipped} dilewati. Lanjutkan?`,
+        message: `${p.fixed} dari ${p.scanned} artikel hasil scraper akan diperbaiki sumber fotonya ke website asalnya. ${p.skipped} dilewati.${planText}\n\nLanjutkan?`,
         variant: "warning",
       });
       if (!ok) return;
