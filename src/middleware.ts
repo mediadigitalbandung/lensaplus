@@ -32,6 +32,73 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set("reason", "session-expired");
       return NextResponse.redirect(loginUrl);
     }
+
+    // Defense-in-depth role→path gating. The API routes remain the source of
+    // truth (the JWT role can be up to ~10 min stale per the revalidate
+    // interval), so this only stops low-privilege users from deep-linking into
+    // admin/editor page shells. Fail OPEN if role is somehow absent — never
+    // lock a valid user out of a page the API would have allowed.
+    const role = (tok.role as string) || "";
+    if (role) {
+      const isSuper = role === "SUPER_ADMIN";
+      const isMgmt = isSuper || role === "CHIEF_EDITOR";
+      const isEditor = isMgmt || role === "EDITOR";
+
+      // SUPER_ADMIN only.
+      const SUPER_ONLY = [
+        "/panel/pengguna",
+        "/panel/pengaturan",
+        "/panel/social",
+        "/panel/email",
+        "/panel/aktivitas",
+        "/panel/ai-log",
+        "/panel/auto-artikel",
+        "/panel/dokumentasi",
+        "/panel/sorotan",
+      ];
+      // SUPER_ADMIN | CHIEF_EDITOR.
+      const MANAGEMENT = [
+        "/panel/iklan",
+        "/panel/analytics",
+        "/panel/seo",
+        "/panel/redaksi",
+        "/panel/kategori",
+        "/panel/polling",
+        "/panel/topik",
+        "/panel/newsletter-subscribers",
+      ];
+      // SUPER_ADMIN | CHIEF_EDITOR | EDITOR.
+      const EDITOR_PATHS = [
+        "/panel/komentar",
+        "/panel/media",
+        "/panel/laporan",
+        "/panel/riwayat-review",
+        "/panel/tags",
+        "/panel/tiktok",
+        "/panel/live-blogs",
+        "/panel/emiten",
+        "/panel/kalender-emiten",
+        "/panel/regulasi",
+        "/panel/pejabat",
+        "/panel/statistik",
+        "/panel/statistik-editor",
+        "/panel/material-artikel",
+      ];
+      // Everything else under /panel (dashboard, artikel, profil,
+      // sumber-berita) stays open to any authenticated writer.
+
+      const matches = (list: string[]) =>
+        list.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+      let allowed = true;
+      if (matches(SUPER_ONLY)) allowed = isSuper;
+      else if (matches(MANAGEMENT)) allowed = isMgmt;
+      else if (matches(EDITOR_PATHS)) allowed = isEditor;
+
+      if (!allowed) {
+        return NextResponse.redirect(new URL("/panel/dashboard", request.url));
+      }
+    }
   }
 
   return NextResponse.next();

@@ -28,7 +28,11 @@ export async function PUT(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
+    // User management (esp. role/password/isActive) is SUPER_ADMIN-only —
+    // matches canManageUsers, the POST creator, and the DELETE handler.
+    // Previously CHIEF_EDITOR could PUT here and set role=SUPER_ADMIN or reset
+    // an admin's password (+ null activeSessionId) → privilege escalation.
+    const session = await requireRole(["SUPER_ADMIN"]);
 
     const user = await prisma.user.findUnique({
       where: { id: params.id },

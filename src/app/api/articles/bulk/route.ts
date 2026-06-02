@@ -140,14 +140,30 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "delete") {
-      // Delete related records first, then articles
-      await prisma.$transaction(async (tx) => {
-        await tx.source.deleteMany({ where: { articleId: { in: ids } } });
-        await tx.correction.deleteMany({ where: { articleId: { in: ids } } });
-        await tx.revision.deleteMany({ where: { articleId: { in: ids } } });
-        await tx.comment.deleteMany({ where: { articleId: { in: ids } } });
-        await tx.report.deleteMany({ where: { articleId: { in: ids } } });
-        await tx.article.deleteMany({ where: { id: { in: ids } } });
+      // Ownership scope: mirror the single-article DELETE (owner OR SUPER_ADMIN).
+      // A non-superadmin (EDITOR/CHIEF_EDITOR reach this route) may bulk-delete
+      // ONLY their own articles; other authors' ids are silently skipped.
+      const isSuper = session.user.role === "SUPER_ADMIN";
+      const count = await prisma.$transaction(async (tx) => {
+        const deletable = isSuper
+          ? ids
+          : (
+              await tx.article.findMany({
+                where: { id: { in: ids }, authorId: session.user.id },
+                select: { id: true },
+              })
+            ).map((a) => a.id);
+
+        if (deletable.length === 0) return 0;
+
+        // Delete related records first, then the articles themselves.
+        await tx.source.deleteMany({ where: { articleId: { in: deletable } } });
+        await tx.correction.deleteMany({ where: { articleId: { in: deletable } } });
+        await tx.revision.deleteMany({ where: { articleId: { in: deletable } } });
+        await tx.comment.deleteMany({ where: { articleId: { in: deletable } } });
+        await tx.report.deleteMany({ where: { articleId: { in: deletable } } });
+        const res = await tx.article.deleteMany({ where: { id: { in: deletable } } });
+        return res.count;
       });
 
       await logAudit(
@@ -155,7 +171,7 @@ export async function POST(request: NextRequest) {
         "DELETE",
         "article",
         ids.join(","),
-        `Bulk delete ${ids.length} artikel`
+        `Bulk delete ${count} dari ${ids.length} artikel`
       );
 
       try {
@@ -165,7 +181,7 @@ export async function POST(request: NextRequest) {
         /* harmless */
       }
 
-      return successResponse({ count: ids.length, action: "delete" });
+      return successResponse({ count, requested: ids.length, action: "delete" });
     }
 
     throw new ApiError("Invalid action", 400);

@@ -51,8 +51,9 @@ interface MenuItem {
   name: string;
   href: string;
   icon: React.ElementType;
-  adminOnly?: boolean;
-  editorOnly?: boolean;
+  adminOnly?: boolean; // SUPER_ADMIN only
+  managementOnly?: boolean; // SUPER_ADMIN | CHIEF_EDITOR
+  editorOnly?: boolean; // SUPER_ADMIN | CHIEF_EDITOR | EDITOR
 }
 
 const menuItems: MenuItem[] = [
@@ -61,16 +62,16 @@ const menuItems: MenuItem[] = [
   { name: "Auto Artikel", href: "/panel/auto-artikel", icon: Bot, adminOnly: true },
   { name: "Material Artikel", href: "/panel/material-artikel", icon: Sparkles, editorOnly: true },
   { name: "Sumber Berita", href: "/panel/sumber-berita", icon: Globe },
-  { name: "Kategori", href: "/panel/kategori", icon: FolderOpen, adminOnly: true },
+  { name: "Kategori", href: "/panel/kategori", icon: FolderOpen, managementOnly: true },
   { name: "Tags", href: "/panel/tags", icon: Hash, editorOnly: true },
   { name: "Riwayat Review", href: "/panel/riwayat-review", icon: ClipboardCheck, editorOnly: true },
-  { name: "Komentar", href: "/panel/komentar", icon: MessageCircle, adminOnly: true },
-  { name: "Media", href: "/panel/media", icon: ImageIcon, adminOnly: true },
-  { name: "Laporan", href: "/panel/laporan", icon: Flag },
+  { name: "Komentar", href: "/panel/komentar", icon: MessageCircle, editorOnly: true },
+  { name: "Media", href: "/panel/media", icon: ImageIcon, editorOnly: true },
+  { name: "Laporan", href: "/panel/laporan", icon: Flag, editorOnly: true },
   { name: "Aktivitas", href: "/panel/aktivitas", icon: History, adminOnly: true },
-  { name: "Iklan", href: "/panel/iklan", icon: Megaphone, adminOnly: true },
-  { name: "Redaksi", href: "/panel/redaksi", icon: Users, adminOnly: true },
-  { name: "Polling", href: "/panel/polling", icon: Vote, adminOnly: true },
+  { name: "Iklan", href: "/panel/iklan", icon: Megaphone, managementOnly: true },
+  { name: "Redaksi", href: "/panel/redaksi", icon: Users, managementOnly: true },
+  { name: "Polling", href: "/panel/polling", icon: Vote, managementOnly: true },
   { name: "Sosial Media", href: "/panel/social", icon: Share2, adminOnly: true },
   { name: "TikTok", href: "/panel/tiktok", icon: Video, editorOnly: true },
   { name: "Sorotan", href: "/panel/sorotan", icon: Lightbulb, adminOnly: true },
@@ -80,9 +81,9 @@ const menuItems: MenuItem[] = [
   { name: "Regulasi", href: "/panel/regulasi", icon: Scale, editorOnly: true },
   { name: "Pejabat", href: "/panel/pejabat", icon: UserCircle, editorOnly: true },
   { name: "Pengguna", href: "/panel/pengguna", icon: Users, adminOnly: true },
-  { name: "Analytics", href: "/panel/analytics", icon: BarChart3, adminOnly: true },
+  { name: "Analytics", href: "/panel/analytics", icon: BarChart3, managementOnly: true },
   { name: "Statistik", href: "/panel/statistik", icon: TrendingUp, editorOnly: true },
-  { name: "SEO", href: "/panel/seo", icon: Search, adminOnly: true },
+  { name: "SEO", href: "/panel/seo", icon: Search, managementOnly: true },
   { name: "Statistik Editor", href: "/panel/statistik-editor", icon: BarChart3, editorOnly: true },
   { name: "Email", href: "/panel/email", icon: Mail, adminOnly: true },
   { name: "Pengaturan", href: "/panel/pengaturan", icon: Settings, adminOnly: true },
@@ -141,6 +142,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
   const userRole = session?.user?.role || "";
   const isAdmin = userRole === "SUPER_ADMIN";
+  const isMgmt = userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR";
   const isEditor = EDITOR_ROLES.includes(userRole);
 
   const fetchNotifications = useCallback(async () => {
@@ -227,6 +229,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
   const filteredMenu = menuItems.filter((item) => {
     if (item.adminOnly && !isAdmin) return false;
+    if (item.managementOnly && !isMgmt) return false;
     if (item.editorOnly && !isEditor) return false;
     return true;
   });
