@@ -85,7 +85,9 @@ export async function POST(req: NextRequest) {
         recency: "month",
         domains: ID_OUTLETS,
         contextSize: "high",
-        maxTokens: mode === "draft" ? 2200 : 1400,
+        // Draft returns a full article + all fields as JSON; give it generous
+        // headroom so the JSON is never truncated (truncation = invalid JSON).
+        maxTokens: mode === "draft" ? 5000 : 1400,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Perplexity error";
@@ -152,10 +154,38 @@ export async function POST(req: NextRequest) {
           provider: "perplexity",
         });
       }
-      // Fallback: not valid JSON — return as raw content only.
+
+      // Fallback: JSON didn't parse (often truncated). Salvage individual fields
+      // by regex so the editor still gets title/excerpt/etc — never dump raw JSON
+      // braces as the article body.
+      const grab = (key: string): string => {
+        const m = cleaned.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, "i"));
+        if (!m) return "";
+        try {
+          return JSON.parse(`"${m[1]}"`).trim();
+        } catch {
+          return m[1].replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
+        }
+      };
+      const tagsM = cleaned.match(/"tags"\s*:\s*\[([\s\S]*?)\]/i);
+      const tagsFallback = tagsM
+        ? Array.from(tagsM[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)).map((x) => x[1]).join(", ")
+        : grab("tags");
+      const contentFallback = grab("contentHtml") || grab("content");
+      const looksLikeJson = /^\s*\{/.test(cleaned);
+
       return successResponse({
         mode: "draft",
-        fields: { content: cleaned },
+        fields: {
+          title: grab("title"),
+          excerpt: grab("excerpt"),
+          tags: tagsFallback,
+          seoTitle: grab("seoTitle"),
+          metaDescription: grab("metaDescription"),
+          // If it wasn't JSON at all, treat the whole text as the article body;
+          // if it was (broken) JSON, only use the salvaged contentHtml.
+          content: looksLikeJson ? contentFallback : cleaned,
+        },
         sources: result.sources,
         related: result.related,
         provider: "perplexity",

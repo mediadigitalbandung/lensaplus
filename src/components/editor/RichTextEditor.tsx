@@ -209,6 +209,20 @@ export default function RichTextEditor({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Sync external content changes into the editor. TipTap's `useEditor` only reads
+  // `content` once at init, so programmatic updates from the parent (e.g. the
+  // Perplexity "Riset & Tulis" feature filling the body) would otherwise never
+  // appear. Only push when the incoming HTML differs from the editor's current
+  // HTML to avoid clobbering the caret on the user's own typing.
+  useEffect(() => {
+    if (!editor) return;
+    const incoming = content || "";
+    if (incoming !== editor.getHTML()) {
+      editor.commands.setContent(incoming, { emitUpdate: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, editor]);
+
   // ─── AI Tools ───
   const callAi = useCallback(
     async (feature: AiFeature) => {
