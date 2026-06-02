@@ -49,6 +49,9 @@ export async function POST(
       where: { id: params.id },
     });
     if (!source) throw new ApiError("Sumber tidak ditemukan", 404);
+    if (session.user.role !== "SUPER_ADMIN" && source.ownerId !== session.user.id) {
+      throw new ApiError("Sumber tidak ditemukan", 404);
+    }
 
     const data = bodySchema.parse(await request.json());
 

@@ -45,6 +45,7 @@ async function handler(req: NextRequest) {
     const sources = await prisma.newsSource.findMany({
       where: { isActive: true },
       orderBy: [{ priority: "desc" }, { lastCheckedAt: "asc" }],
+      include: { owner: { select: { id: true, name: true } } },
     });
 
     const eligible = sources.filter((s) => {
@@ -147,6 +148,12 @@ async function handler(req: NextRequest) {
 
         const newlyScrapedUrls: string[] = [];
 
+        // Auto-scraped drafts belong to the account that configured the
+        // source; fall back to the default scraper byline for legacy/shared
+        // (ownerless) sources.
+        const draftAuthorId = source.owner?.id ?? admin.id;
+        const draftAuthorName = source.owner?.name ?? admin.name;
+
         for (const candidate of newCandidates.slice(0, PER_SOURCE_LIMIT)) {
           if (totalOk >= TOTAL_RUN_LIMIT) break;
           if (!categoryId) {
@@ -164,7 +171,7 @@ async function handler(req: NextRequest) {
           const claim = await claimUrl({
             url: candidate.url,
             sourceId: source.id,
-            userId: admin.id,
+            userId: draftAuthorId,
           });
           if (!claim.ok) {
             continue; // claimed/done elsewhere — not counted as attempt
@@ -179,8 +186,8 @@ async function handler(req: NextRequest) {
             const draft = await paraphraseAndCreateDraft({
               source: detail,
               sourceName: source.name,
-              authorId: admin.id,
-              authorName: admin.name,
+              authorId: draftAuthorId,
+              authorName: draftAuthorName,
               categoryId,
               defaultTags: source.defaultTags,
               downloadImage: true,

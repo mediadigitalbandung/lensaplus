@@ -28,11 +28,14 @@ export async function POST(
 ) {
   const params = await paramsPromise;
   try {
-    await requireRole([...SCRAPER_ROLES]);
+    const session = await requireRole([...SCRAPER_ROLES]);
     const source = await prisma.newsSource.findUnique({
       where: { id: params.id },
     });
     if (!source) throw new ApiError("Sumber tidak ditemukan", 404);
+    if (session.user.role !== "SUPER_ADMIN" && source.ownerId !== session.user.id) {
+      throw new ApiError("Sumber tidak ditemukan", 404);
+    }
 
     const scrapeOptions = {
       articleSelector: source.articleSelector || undefined,

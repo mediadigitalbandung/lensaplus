@@ -19,9 +19,6 @@ import {
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
 import { SCRAPER_ROLES } from "@/lib/roles";
 
-// Managing the source catalogue (create/edit/delete) stays with management.
-const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
-
 const createSchema = z.object({
   name: z.string().min(2).max(120),
   listingUrl: z.string().url(),
@@ -47,12 +44,16 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    // Any writer may browse the source list to pick something to scrape.
-    await requireRole([...SCRAPER_ROLES]);
+    // Any writer may browse — but only their OWN sources. SUPER_ADMIN sees
+    // everyone's (with the owner attached so the panel can label who scrapes).
+    const session = await requireRole([...SCRAPER_ROLES]);
+    const isSuperAdmin = session.user.role === "SUPER_ADMIN";
     const sources = await prisma.newsSource.findMany({
+      where: isSuperAdmin ? {} : { ownerId: session.user.id },
       orderBy: [{ isActive: "desc" }, { priority: "desc" }, { name: "asc" }],
       include: {
         category: { select: { id: true, name: true, slug: true } },
+        owner: { select: { id: true, name: true } },
       },
     });
     return successResponse({ sources });
@@ -63,7 +64,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireRole([...ADMIN_ROLES]);
+    // Every writer may add their OWN sources to scrape.
+    const session = await requireRole([...SCRAPER_ROLES]);
     const body = await request.json();
     const data = createSchema.parse(body);
 
@@ -76,10 +78,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Per-owner uniqueness: reject if THIS user already has the same URL.
+    const dup = await prisma.newsSource.findFirst({
+      where: { ownerId: session.user.id, listingUrl: data.listingUrl },
+      select: { id: true },
+    });
+    if (dup) {
+      throw new ApiError("Anda sudah punya sumber dengan URL ini.", 409);
+    }
+
     const created = await prisma.newsSource.create({
       data: {
         name: data.name,
         listingUrl: data.listingUrl,
+        ownerId: session.user.id,
         categoryId: data.categoryId || null,
         description: data.description || null,
         isActive: data.isActive ?? true,

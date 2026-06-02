@@ -17,7 +17,13 @@ import {
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
 import { SCRAPER_ROLES } from "@/lib/roles";
 
-const ADMIN_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"] as const;
+/** A source is manageable by its owner, or by any SUPER_ADMIN. */
+function canManageSource(
+  session: { user: { id: string; role: string } },
+  source: { ownerId: string | null },
+): boolean {
+  return session.user.role === "SUPER_ADMIN" || source.ownerId === session.user.id;
+}
 
 const updateSchema = z.object({
   name: z.string().min(2).max(120).optional(),
@@ -48,12 +54,14 @@ export async function GET(
 ) {
   const params = await paramsPromise;
   try {
-    await requireRole([...SCRAPER_ROLES]);
+    const session = await requireRole([...SCRAPER_ROLES]);
     const source = await prisma.newsSource.findUnique({
       where: { id: params.id },
       include: { category: { select: { id: true, name: true, slug: true } } },
     });
-    if (!source) throw new ApiError("Sumber tidak ditemukan", 404);
+    if (!source || !canManageSource(session, source)) {
+      throw new ApiError("Sumber tidak ditemukan", 404);
+    }
     return successResponse(source);
   } catch (error) {
     return errorResponse(error);
@@ -66,11 +74,13 @@ export async function PUT(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole([...ADMIN_ROLES]);
+    const session = await requireRole([...SCRAPER_ROLES]);
     const existing = await prisma.newsSource.findUnique({
       where: { id: params.id },
     });
-    if (!existing) throw new ApiError("Sumber tidak ditemukan", 404);
+    if (!existing || !canManageSource(session, existing)) {
+      throw new ApiError("Sumber tidak ditemukan", 404);
+    }
 
     const data = updateSchema.parse(await request.json());
 
@@ -82,6 +92,16 @@ export async function PUT(
           400,
         );
       }
+      // Per-owner uniqueness on the new URL.
+      const dup = await prisma.newsSource.findFirst({
+        where: {
+          ownerId: existing.ownerId,
+          listingUrl: data.listingUrl,
+          id: { not: existing.id },
+        },
+        select: { id: true },
+      });
+      if (dup) throw new ApiError("Sumber dengan URL ini sudah ada.", 409);
     }
 
     const updated = await prisma.newsSource.update({
@@ -105,11 +125,13 @@ export async function DELETE(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole([...ADMIN_ROLES]);
+    const session = await requireRole([...SCRAPER_ROLES]);
     const existing = await prisma.newsSource.findUnique({
       where: { id: params.id },
     });
-    if (!existing) throw new ApiError("Sumber tidak ditemukan", 404);
+    if (!existing || !canManageSource(session, existing)) {
+      throw new ApiError("Sumber tidak ditemukan", 404);
+    }
     await prisma.newsSource.delete({ where: { id: params.id } });
 
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;

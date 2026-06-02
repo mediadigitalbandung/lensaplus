@@ -38,7 +38,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import { MANAGEMENT_ROLES } from "@/lib/roles";
 
 interface Category {
   id: string;
@@ -51,6 +50,8 @@ interface NewsSource {
   name: string;
   listingUrl: string;
   description: string | null;
+  ownerId: string | null;
+  owner: { id: string; name: string } | null;
   categoryId: string | null;
   category: Category | null;
   isActive: boolean;
@@ -104,9 +105,13 @@ function fmtDate(iso: string | null): string {
 
 export default function SumberBeritaPage() {
   const { data: session } = useSession();
-  // Managing the catalogue (add/edit/toggle/delete) is management-only.
-  // Scraping itself is open to every writer role.
-  const canManage = MANAGEMENT_ROLES.includes(session?.user?.role ?? "");
+  const role = session?.user?.role ?? "";
+  const myId = session?.user?.id ?? "";
+  const isSuperAdmin = role === "SUPER_ADMIN";
+  // Every account manages its OWN sources. A source can be edited/deleted by
+  // its owner, or by any SUPER_ADMIN (who also SEES everyone's sources).
+  const canAdd = !!session?.user;
+  const canManageSource = (s: NewsSource) => isSuperAdmin || s.ownerId === myId;
   const [sources, setSources] = useState<NewsSource[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -263,12 +268,13 @@ export default function SumberBeritaPage() {
             Pilih sumber, <strong>Preview</strong>, lalu <strong>Generate</strong> — Kartawarta ambil judul, isi, dan
             gambar, paraphrase via AI jadi draft baru atas nama Anda. Setiap artikel <strong>dikunci begitu diambil</strong>:
             kalau penulis lain sudah mengambilnya, artikel itu otomatis terkunci dan tidak bisa diambil dobel.
-            {canManage && (
-              <> Sebagai pengelola, Anda juga bisa menambah/ubah/hapus sumber.</>
+            <> Daftar sumber ini <strong>milik akun Anda sendiri</strong> — tambah situs yang ingin Anda scrape.</>
+            {isSuperAdmin && (
+              <> Sebagai Super Admin, Anda melihat sumber dari <strong>semua akun</strong> (ada keterangan pemiliknya).</>
             )}
           </p>
         </div>
-        {canManage && (
+        {canAdd && (
           <button
             onClick={() => setShowAdd(true)}
             className="btn-primary flex items-center gap-1.5"
@@ -303,9 +309,9 @@ export default function SumberBeritaPage() {
           <Globe size={48} className="mx-auto text-txt-muted/40" />
           <p className="mt-4 text-base font-medium text-txt-primary">Belum ada sumber berita</p>
           <p className="mt-1 text-sm text-txt-secondary">
-            {canManage
+            {canAdd
               ? "Tambah link halaman daftar berita untuk mulai auto-paraphrase"
-              : "Belum ada sumber yang disiapkan. Hubungi editor atau admin untuk menambahkannya."}
+              : "Belum ada sumber yang disiapkan."}
           </p>
         </div>
       ) : (
@@ -333,6 +339,14 @@ export default function SumberBeritaPage() {
                     {s.category && (
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
                         {s.category.name}
+                      </span>
+                    )}
+                    {isSuperAdmin && (
+                      <span
+                        className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-txt-secondary"
+                        title="Akun yang menambahkan / men-scrape sumber ini"
+                      >
+                        {s.owner?.name ?? "Bersama (lama)"}
                       </span>
                     )}
                     {s.useHeadless && (
@@ -406,7 +420,7 @@ export default function SumberBeritaPage() {
                     )}
                     Scrape Now
                   </button>
-                  {canManage && (
+                  {canManageSource(s) && (
                     <>
                       <button
                         onClick={() => setEditing(s)}
@@ -440,8 +454,8 @@ export default function SumberBeritaPage() {
         </div>
       )}
 
-      {/* Cron trigger info — management only (server crontab config) */}
-      {canManage && (
+      {/* Cron trigger info — SUPER_ADMIN only (server crontab config) */}
+      {isSuperAdmin && (
       <div className="mt-8 rounded-xl bg-surface-container-low p-5 text-sm text-txt-secondary">
         <div className="flex items-start gap-2">
           <RefreshCw size={16} className="mt-0.5 text-primary flex-shrink-0" />
@@ -460,8 +474,8 @@ export default function SumberBeritaPage() {
       </div>
       )}
 
-      {/* Add / Edit modal — management only */}
-      {canManage && (showAdd || editing) && (
+      {/* Add / Edit modal */}
+      {canAdd && (showAdd || editing) && (
         <SourceFormModal
           source={editing}
           categories={categories}

@@ -115,13 +115,6 @@ enum LiveSyndicationPlatform {
   THREADS
 }
 
-enum CourtScheduleStatus {
-  SCHEDULED
-  LIVE
-  DONE
-  CANCELLED
-}
-
 model User {
   id               String     @id @default(cuid())
   email            String     @unique
@@ -150,6 +143,7 @@ model User {
   auditLogs        AuditLog[]
   liveBlogs        LiveBlog[]
   scrapedUrlClaims ScrapedUrl[]
+  newsSources      NewsSource[] @relation("UserNewsSources")
 
   @@map("users")
 }
@@ -645,21 +639,6 @@ model ThreadsSettings {
   @@map("threads_settings")
 }
 
-model CourtSchedule {
-  id          String              @id @default(cuid())
-  caseName    String
-  caseNumber  String?
-  courtName   String
-  scheduledAt DateTime
-  status      CourtScheduleStatus @default(SCHEDULED)
-  notes       String?             @db.Text
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-
-  @@index([scheduledAt])
-  @@index([status])
-  @@map("court_schedules")
-}
 
 model TargetKeyword {
   id              String    @id @default(cuid())
@@ -683,7 +662,12 @@ model TargetKeyword {
 model NewsSource {
   id                 String    @id @default(cuid())
   name               String
-  listingUrl         String    @unique
+  listingUrl         String
+  /// The account that owns this source. Each user manages their OWN scrape
+  /// list; SUPER_ADMIN can see/manage everyone's. Null = legacy/shared
+  /// source created before per-account ownership (only SUPER_ADMIN sees it).
+  owner              User?     @relation("UserNewsSources", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId            String?
   category           Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   categoryId         String?
   description        String?
@@ -732,8 +716,11 @@ model NewsSource {
   updatedAt          DateTime  @updatedAt
   urlClaims          ScrapedUrl[]
 
+  // Per-owner uniqueness: two different accounts may scrape the same site.
+  @@unique([ownerId, listingUrl])
   @@index([isActive, priority])
   @@index([categoryId])
+  @@index([ownerId])
   @@map("news_sources")
 }
 
