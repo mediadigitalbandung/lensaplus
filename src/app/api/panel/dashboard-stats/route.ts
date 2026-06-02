@@ -90,8 +90,6 @@ export async function GET() {
       publishedGlossary,
       totalSocialPosts,
       socialPostsThisMonth,
-      totalCourtSchedules,
-      upcomingCourtSchedules,
       totalUsers,
       activeUsers,
       totalAds,
@@ -118,10 +116,6 @@ export async function GET() {
       prisma.socialPost.count(),
       prisma.socialPost.count({
         where: { status: "PUBLISHED", publishedAt: { gte: monthAgo } },
-      }),
-      prisma.courtSchedule.count(),
-      prisma.courtSchedule.count({
-        where: { scheduledAt: { gte: today }, status: "SCHEDULED" },
       }),
       prisma.user.count(),
       prisma.user.count({ where: { isActive: true } }),
@@ -208,7 +202,6 @@ export async function GET() {
       sorotan: { total: totalSorotan },
       glossary: { total: totalGlossary, published: publishedGlossary },
       socialPosts: { total: totalSocialPosts, thisMonth: socialPostsThisMonth },
-      courtSchedules: { total: totalCourtSchedules, upcoming: upcomingCourtSchedules },
       users: { total: totalUsers, active: activeUsers },
       ads: { total: totalAds, active: activeAds },
       aiUsage: { totalTokens30d: aiUsageMonth._sum.totalTokens || 0 },

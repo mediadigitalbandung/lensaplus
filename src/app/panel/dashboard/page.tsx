@@ -30,7 +30,6 @@ import {
   Bot,
   Settings,
   Highlighter,
-  Gavel,
   Newspaper,
   Music,
   Mail,
@@ -963,7 +962,6 @@ export default function DashboardPage() {
               { label: "Pengguna Aktif", value: formatNumber(dashStats.users?.active || 0), icon: Users, color: "text-blue-500 bg-blue-50", href: "/panel/pengguna", accent: "info", hint: `${dashStats.users?.total || 0} total` },
               { label: "Iklan Aktif", value: formatNumber(dashStats.ads?.active || 0), icon: Megaphone, color: "text-rose-500 bg-rose-50", href: "/panel/iklan", accent: "danger", hint: `${dashStats.ads?.total || 0} total` },
               { label: "Sumber Berita Aktif", value: formatNumber(dashStats.newsSources?.active || 0), icon: Newspaper, color: "text-cyan-600 bg-cyan-50", href: "/panel/sumber-berita", accent: "info", hint: "Untuk auto-artikel" },
-              { label: "Sidang Mendatang", value: formatNumber(dashStats.courtSchedules?.upcoming || 0), icon: Gavel, color: "text-stone-500 bg-stone-100", href: "/panel/jadwal-sidang", accent: "muted", hint: "Terjadwal" },
               // ─── Modul Bisnis & Pemerintahan (Sprint 2-5) ───────────────
               { label: "Total Emiten", value: formatNumber(dashStats.companies?.total || 0), icon: Building2, color: "text-blue-600 bg-blue-50", href: "/panel/emiten", accent: "info", hint: `${dashStats.companies?.active || 0} aktif` },
               { label: "Total Regulasi", value: formatNumber(dashStats.regulations?.total || 0), icon: ScrollText, color: "text-amber-600 bg-amber-50", href: "/panel/regulasi", accent: "primary", hint: `${dashStats.regulations?.published || 0} dipublikasi` },
@@ -1021,7 +1019,6 @@ export default function DashboardPage() {
               { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50", href: "/panel/polling", accent: "info", hint: `${dashStats.polls?.active || 0} aktif` },
               { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50", href: "/panel/dokumentasi", accent: "ok", hint: `${dashStats.glossary?.published || 0} dipublikasi` },
               { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50", href: "/panel/social", accent: "primary", hint: "Bulan ini" },
-              { label: "Sidang Mendatang", value: formatNumber(dashStats.courtSchedules?.upcoming || 0), icon: Gavel, color: "text-stone-500 bg-stone-100", href: "/panel/jadwal-sidang", accent: "muted", hint: "Terjadwal" },
             ]);
           }
 
@@ -1100,7 +1097,7 @@ export default function DashboardPage() {
     ["Komentar Pending", "Total Komentar", "Total Sorotan", "Total Polling", "Total Glossary", "Posting Sosmed (30hr)"].includes(s.label)
   );
   const operasionalStats = extraStats.filter((s) =>
-    ["Token AI (30hr)", "Total Kategori", "Total Tag", "Pengguna Aktif", "Iklan Aktif", "Sumber Berita Aktif", "Sidang Mendatang"].includes(s.label)
+    ["Token AI (30hr)", "Total Kategori", "Total Tag", "Pengguna Aktif", "Iklan Aktif", "Sumber Berita Aktif"].includes(s.label)
   );
 
   // Role label for display
@@ -1259,7 +1256,6 @@ export default function DashboardPage() {
               { href: "/panel/newsletter-subscribers", label: "Newsletter", icon: Mail, color: "text-indigo-600", bg: "bg-indigo-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
               { href: "/panel/statistik", label: "Statistik", icon: BarChart3, color: "text-green-600", bg: "bg-green-50", show: !isCreator },
               { href: "/panel/polling", label: "Polling", icon: Vote, color: "text-purple-600", bg: "bg-purple-50", show: !isCreator },
-              { href: "/panel/jadwal-sidang", label: "Jadwal Sidang", icon: Gavel, color: "text-stone-700", bg: "bg-stone-100", show: !isCreator },
             ],
           },
           {

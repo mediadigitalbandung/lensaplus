@@ -11,7 +11,6 @@ import {
   Clock,
   Globe,
   Building2,
-  Gavel,
   Newspaper,
   ExternalLink,
 } from "lucide-react";
@@ -67,23 +66,6 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
   const params = await paramsPromise;
   const court = getCourtLocationBySlug(params.slug);
   if (!court) notFound();
-
-  // Upcoming schedules where courtName matches (case-insensitive contains)
-  const allUpcoming = await prisma.courtSchedule.findMany({
-    where: {
-      status: { in: ["SCHEDULED", "LIVE"] },
-      scheduledAt: { gte: new Date() },
-    },
-    orderBy: { scheduledAt: "asc" },
-    take: 50,
-  });
-  const upcoming = allUpcoming.filter((s) => {
-    const name = s.courtName.toLowerCase();
-    return (
-      name.includes(court.shortName.toLowerCase()) ||
-      name.includes(court.name.toLowerCase())
-    );
-  });
 
   // Related articles whose title or content includes the court name
   const relatedArticles = await prisma.article.findMany({
@@ -174,64 +156,6 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">
-            {/* Upcoming schedules */}
-            <section>
-              <h2 className="mb-4 flex items-center gap-2 border-l-[3px] border-primary pl-3 text-lg font-bold text-on-surface">
-                <Gavel size={18} className="text-primary" />
-                Jadwal Sidang Mendatang
-              </h2>
-              {upcoming.length > 0 ? (
-                <div className="space-y-3">
-                  {upcoming.map((s) => (
-                    <article
-                      key={s.id}
-                      className="rounded-[12px] border border-border bg-surface-container-lowest p-4 shadow-card"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-serif text-title-md leading-snug text-on-surface">
-                            {s.caseName}
-                          </h3>
-                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant">
-                            {s.caseNumber && <span>No. {s.caseNumber}</span>}
-                            <span>
-                              {s.scheduledAt.toLocaleString("id-ID", {
-                                weekday: "short",
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}{" "}
-                              WIB
-                            </span>
-                          </div>
-                        </div>
-                        <span
-                          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${
-                            s.status === "LIVE"
-                              ? "bg-secondary text-white"
-                              : "bg-primary/10 text-primary border border-primary/20"
-                          }`}
-                        >
-                          {s.status === "LIVE" ? "Berlangsung" : "Terjadwal"}
-                        </span>
-                      </div>
-                    </article>
-                  ))}
-                  <div className="pt-2">
-                    <Link href="/jadwal-sidang" className="text-sm font-semibold text-primary hover:underline">
-                      Lihat semua jadwal sidang &rarr;
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <p className="rounded-[12px] border border-dashed border-border bg-surface-container-low p-6 text-sm text-on-surface-variant">
-                  Belum ada jadwal sidang yang dipublikasikan untuk pengadilan ini.
-                </p>
-              )}
-            </section>
-
             {/* Related articles */}
             <section>
               <h2 className="mb-4 flex items-center gap-2 border-l-[3px] border-primary pl-3 text-lg font-bold text-on-surface">
