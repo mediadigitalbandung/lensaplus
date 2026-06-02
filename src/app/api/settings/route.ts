@@ -28,6 +28,8 @@ const ALLOWED_KEYS = [
   // AI providers
   "deepseek_api_key",
   "anthropic_api_key",
+  // Perplexity (Sonar) — web-grounded research + sourced article drafting
+  "perplexity_api_key",
   // Reel voiceover (TTS): Gemini (AI Studio) + ElevenLabs, with a provider switch
   "gemini_api_key",
   "elevenlabs_api_key",
