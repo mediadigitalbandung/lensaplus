@@ -166,7 +166,45 @@ export async function POST(req: NextRequest) {
       // best-effort — never fail the cron on filesystem cleanup
     }
 
-    const summary = { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged, subscriberIpAnonymized, clipJobsPurged, orphanMediaDeleted, reelFilesDeleted };
+    // 9. Delete orphaned Perplexity-downloaded images (public/uploads/perplexity)
+    //    older than 7 days that no article references in content/featuredImage.
+    //    Short window: these are downloaded at research time but only "kept" once
+    //    the draft (which embeds them) is saved — unsaved research leaks files.
+    let perplexityImagesDeleted = 0;
+    try {
+      const dir = path.join(process.cwd(), "public", "uploads", "perplexity");
+      const files = await readdir(dir).catch(() => [] as string[]);
+      if (files.length) {
+        const cutoff = subDays(now, 7).getTime();
+        const aged: string[] = [];
+        for (const f of files) {
+          const st = await stat(path.join(dir, f)).catch(() => null);
+          if (st && st.isFile() && st.mtimeMs < cutoff) aged.push(f);
+        }
+        if (aged.length) {
+          // A file is "referenced" if its /uploads/perplexity/<name> path appears
+          // in any article's content or featuredImage.
+          const arts = await prisma.article.findMany({
+            where: { content: { contains: "/uploads/perplexity/" } },
+            select: { content: true },
+          });
+          const featured = await prisma.article.findMany({
+            where: { featuredImage: { contains: "/uploads/perplexity/" } },
+            select: { featuredImage: true },
+          });
+          const haystack = arts.map((a) => a.content).join("\n") + "\n" + featured.map((a) => a.featuredImage).join("\n");
+          for (const f of aged) {
+            if (haystack.includes(`/uploads/perplexity/${f}`)) continue;
+            await unlink(path.join(dir, f)).catch(() => {});
+            perplexityImagesDeleted++;
+          }
+        }
+      }
+    } catch {
+      // best-effort — never fail the cron on filesystem cleanup
+    }
+
+    const summary = { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged, subscriberIpAnonymized, clipJobsPurged, orphanMediaDeleted, reelFilesDeleted, perplexityImagesDeleted };
 
     // Audit the purge itself using a system sentinel. The logAudit helper requires
     // a valid userId FK — find the first SUPER_ADMIN to attach it to. If none

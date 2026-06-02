@@ -15,6 +15,7 @@ import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from 
 import { aiRateLimit } from "@/lib/rate-limit";
 import { callPerplexity, getPerplexityInstructions } from "@/lib/perplexity";
 import { getPersonaInstruction } from "@/lib/perplexity-personas";
+import { localizePerplexityImages } from "@/lib/perplexity-images";
 
 // Indonesian outlets to bias sourcing toward (allowlist, not exclusive — Perplexity
 // still ranks within these first). Kept broad so niche topics aren't starved.
@@ -110,13 +111,9 @@ export async function POST(req: NextRequest) {
       .replace(/\s*```$/i, "")
       .trim();
 
-    // Up to 3 web images (only when requested). Skip tiny/icon-sized ones.
-    const images = includeImages
-      ? result.images
-          .filter((im) => (im.width ?? 0) === 0 || (im.width ?? 999) >= 300)
-          .slice(0, 3)
-          .map((im) => ({ url: im.imageUrl, origin: im.originUrl, title: im.title }))
-      : [];
+    // Up to 3 web images (only when requested). DOWNLOAD them to /uploads so the
+    // article doesn't hotlink external CDNs (licensing/expiry). `url` is local.
+    const images = includeImages ? await localizePerplexityImages(result.images, 3) : [];
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
     await logAudit(
