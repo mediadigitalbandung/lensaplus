@@ -746,8 +746,10 @@ model NewsSource {
   updatedAt          DateTime  @updatedAt
   urlClaims          ScrapedUrl[]
 
-  // Per-owner uniqueness: two different accounts may scrape the same site.
-  @@unique([ownerId, listingUrl])
+  // Per-owner uniqueness (one site per account) is enforced in the API layer
+  // (POST/PUT dup check), NOT a DB @@unique — adding a unique constraint trips
+  // Prisma's data-loss guard, and the deploy runs `db push` without
+  // --accept-data-loss on purpose. Different accounts may scrape the same site.
   @@index([isActive, priority])
   @@index([categoryId])
   @@index([ownerId])
