@@ -20,6 +20,20 @@ export async function GET() {
       return successResponse({});
     }
 
+    // Non-superadmin editors (EDITOR / CHIEF_EDITOR) only get the one site-wide
+    // metric they can act on — pending comment moderation. Every other global
+    // count (users, ads, AI usage, newsletter, content totals) is SUPER_ADMIN-
+    // only and must not be exposed to lower roles, even in the JSON response.
+    if (role !== "SUPER_ADMIN") {
+      const [totalComments, pendingComments] = await Promise.all([
+        prisma.comment.count(),
+        prisma.comment.count({ where: { isApproved: false } }),
+      ]);
+      return successResponse({
+        comments: { total: totalComments, pending: pendingComments },
+      });
+    }
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);

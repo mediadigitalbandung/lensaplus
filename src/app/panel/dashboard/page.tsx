@@ -843,6 +843,9 @@ export default function DashboardPage() {
   const isCreator = CREATOR_ROLES.includes(userRole);
   const isEditorRole = EDITOR_ROLES.includes(userRole);
   const isAdmin = userRole === "SUPER_ADMIN";
+  // SUPER_ADMIN | CHIEF_EDITOR — for gating quick-links/cards to the same tier
+  // as the pages they point to (matches the panel nav + middleware).
+  const isManagement = isAdmin || userRole === "CHIEF_EDITOR";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1003,13 +1006,13 @@ export default function DashboardPage() {
             { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50", href: "/panel/artikel", accent: "info", hint: "Seluruh artikel" },
           ]);
 
-          if (dashStats) {
+          if (dashStats?.comments) {
+            // Editor/Chief-editor extra card: only the one site-wide metric they
+            // can actually act on (comment moderation). Other global metrics
+            // (sorotan/polling/glossary/social/users/ads/AI) are SUPER_ADMIN-only
+            // — they'd link to pages this role can't open and aren't its data.
             setExtraStats([
               { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50", href: "/panel/komentar", accent: "warn", hint: "Belum disetujui" },
-              { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), icon: Highlighter, color: "text-amber-500 bg-amber-50", href: "/panel/sorotan", accent: "primary", hint: "Variasi SEO artikel" },
-              { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50", href: "/panel/polling", accent: "info", hint: `${dashStats.polls?.active || 0} aktif` },
-              { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50", href: "/panel/dokumentasi", accent: "ok", hint: `${dashStats.glossary?.published || 0} dipublikasi` },
-              { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50", href: "/panel/social", accent: "primary", hint: "Bulan ini" },
             ]);
           }
 
@@ -1212,7 +1215,7 @@ export default function DashboardPage() {
             subtitle: "Tulis, review, dan moderasi",
             actions: [
               { href: "/panel/artikel/baru", label: "Tulis Artikel", icon: FileText, color: "text-primary", bg: "bg-primary-light", show: true },
-              { href: "/panel/auto-artikel", label: "Auto Artikel AI", icon: Sparkles, color: "text-indigo-600", bg: "bg-indigo-50", show: !isCreator },
+              { href: "/panel/auto-artikel", label: "Auto Artikel AI", icon: Sparkles, color: "text-indigo-600", bg: "bg-indigo-50", show: isAdmin },
               { href: "/panel/material-artikel", label: "Material Artikel", icon: BookOpen, color: "text-emerald-600", bg: "bg-emerald-50", show: !isCreator },
               { href: "/panel/sumber-berita", label: "Sumber Berita", icon: Newspaper, color: "text-cyan-600", bg: "bg-cyan-50", show: !isCreator },
               { href: "/panel/artikel", label: isCreator ? "Artikel Saya" : "Review Artikel", icon: isCreator ? Send : Clock, color: isCreator ? "text-blue-600" : "text-yellow-600", bg: isCreator ? "bg-blue-50" : "bg-yellow-50", show: true },
@@ -1227,14 +1230,14 @@ export default function DashboardPage() {
             icon: Share2,
             subtitle: "Sebar ke pembaca, mesin pencari, dan sosmed",
             actions: [
-              { href: "/panel/sorotan", label: "Sorotan SEO", icon: Highlighter, color: "text-amber-600", bg: "bg-amber-50", show: !isCreator },
+              { href: "/panel/sorotan", label: "Sorotan SEO", icon: Highlighter, color: "text-amber-600", bg: "bg-amber-50", show: isAdmin },
               { href: "/panel/topik", label: "Topic Cluster", icon: Layers, color: "text-emerald-600", bg: "bg-emerald-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/seo", label: "SEO Panel", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", show: !isCreator },
-              { href: "/panel/social", label: "Sosial Media", icon: Share2, color: "text-pink-600", bg: "bg-pink-50", show: !isCreator },
+              { href: "/panel/seo", label: "SEO Panel", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", show: isManagement },
+              { href: "/panel/social", label: "Sosial Media", icon: Share2, color: "text-pink-600", bg: "bg-pink-50", show: isAdmin },
               { href: "/panel/tiktok", label: "TikTok", icon: Music, color: "text-fuchsia-600", bg: "bg-fuchsia-50", show: !isCreator },
               { href: "/panel/newsletter-subscribers", label: "Newsletter", icon: Mail, color: "text-indigo-600", bg: "bg-indigo-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
               { href: "/panel/statistik", label: "Statistik", icon: BarChart3, color: "text-green-600", bg: "bg-green-50", show: !isCreator },
-              { href: "/panel/polling", label: "Polling", icon: Vote, color: "text-purple-600", bg: "bg-purple-50", show: !isCreator },
+              { href: "/panel/polling", label: "Polling", icon: Vote, color: "text-purple-600", bg: "bg-purple-50", show: isManagement },
             ],
           },
           {
@@ -1243,7 +1246,7 @@ export default function DashboardPage() {
             icon: Settings,
             subtitle: "Pengguna, taksonomi, dan iklan",
             actions: [
-              { href: "/panel/redaksi", label: "Redaksi", icon: Users, color: "text-blue-600", bg: "bg-blue-50", show: !isCreator },
+              { href: "/panel/redaksi", label: "Redaksi", icon: Users, color: "text-blue-600", bg: "bg-blue-50", show: isManagement },
               { href: "/panel/pengguna", label: "Pengguna", icon: Users, color: "text-purple-600", bg: "bg-purple-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
               { href: "/panel/kategori", label: "Kategori", icon: Folder, color: "text-orange-600", bg: "bg-orange-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
               { href: "/panel/tags", label: "Tag", icon: Tag, color: "text-teal-600", bg: "bg-teal-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
