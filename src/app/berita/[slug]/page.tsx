@@ -6,6 +6,7 @@ import { Metadata } from "next";
 import {
   Flag,
   CheckCircle,
+  Eye,
 } from "lucide-react";
 import CopyProtection from "@/components/artikel/CopyProtection";
 import ReadingProgress from "@/components/artikel/ReadingProgress";
@@ -557,6 +558,11 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                 </span>
                 <span className="text-txt-muted/50">&middot;</span>
                 <span>{article.readTime ?? 0} menit baca</span>
+                <span className="text-txt-muted/50">&middot;</span>
+                <span className="flex items-center gap-1">
+                  <Eye size={13} aria-hidden />
+                  {(article.viewCount ?? 0).toLocaleString("id-ID")} dilihat
+                </span>
               </div>
 
               {/* Divider */}
