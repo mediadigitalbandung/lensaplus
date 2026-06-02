@@ -25,8 +25,20 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")));
     const uploadedBy = searchParams.get("uploadedBy") || undefined;
+    const search = (searchParams.get("search") || searchParams.get("q") || "").trim();
 
-    const where = uploadedBy ? { uploadedBy } : {};
+    const where: Record<string, unknown> = {};
+    if (uploadedBy) where.uploadedBy = uploadedBy;
+    if (search) {
+      // Search across all media (every page), not just the loaded slice.
+      where.OR = [
+        { filename: { contains: search, mode: "insensitive" } },
+        { title: { contains: search, mode: "insensitive" } },
+        { caption: { contains: search, mode: "insensitive" } },
+        { credit: { contains: search, mode: "insensitive" } },
+        { uploaderName: { contains: search, mode: "insensitive" } },
+      ];
+    }
 
     const [media, total] = await Promise.all([
       prisma.media.findMany({

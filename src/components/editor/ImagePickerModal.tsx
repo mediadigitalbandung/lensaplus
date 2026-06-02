@@ -94,13 +94,16 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selected, setSelected] = useState<MediaItem | null>(null);
 
   const fetchGallery = useCallback(async () => {
     try {
       setLoadingGallery(true);
       setGalleryError("");
-      const res = await fetch(`/api/media?page=${page}&limit=24`);
+      const params = new URLSearchParams({ page: String(page), limit: "24" });
+      if (debouncedQuery.trim()) params.set("search", debouncedQuery.trim());
+      const res = await fetch(`/api/media?${params}`);
       if (!res.ok) throw new Error("Gagal memuat galeri");
       const json = await res.json();
       setMedia(json.data?.media || []);
@@ -110,13 +113,23 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
     } finally {
       setLoadingGallery(false);
     }
-  }, [page]);
+  }, [page, debouncedQuery]);
 
   useEffect(() => {
     if (open && tab === "gallery") {
       fetchGallery();
     }
   }, [open, tab, fetchGallery]);
+
+  // Debounce the gallery search into a server-side query so it matches across
+  // ALL pages, not just the 24 items currently loaded.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedQuery(query);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -250,18 +263,9 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
     onClose();
   };
 
-  const filteredMedia = query.trim()
-    ? media.filter((m) => {
-        const q = query.toLowerCase();
-        return (
-          m.filename.toLowerCase().includes(q) ||
-          m.uploaderName.toLowerCase().includes(q) ||
-          (m.title && m.title.toLowerCase().includes(q)) ||
-          (m.caption && m.caption.toLowerCase().includes(q)) ||
-          (m.credit && m.credit.toLowerCase().includes(q))
-        );
-      })
-    : media;
+  // Search is handled server-side now (see fetchGallery) so `media` already
+  // reflects the query across every page.
+  const filteredMedia = media;
 
   if (!open) return null;
 

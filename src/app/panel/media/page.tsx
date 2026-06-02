@@ -16,6 +16,7 @@ import {
   Pencil,
   X,
   Save,
+  Search,
 } from "lucide-react";
 import ImageUploader from "@/components/editor/ImageUploader";
 
@@ -80,6 +81,8 @@ export default function MediaPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterUser, setFilterUser] = useState<string>("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [editing, setEditing] = useState<MediaItem | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editCaption, setEditCaption] = useState("");
@@ -94,6 +97,7 @@ export default function MediaPage() {
       setError(null);
       const params = new URLSearchParams({ page: String(page), limit: "20" });
       if (filterUser) params.set("uploadedBy", filterUser);
+      if (debouncedSearch) params.set("search", debouncedSearch);
 
       const res = await fetch(`/api/media?${params}`);
       if (!res.ok) throw new Error("Gagal memuat media");
@@ -106,11 +110,20 @@ export default function MediaPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filterUser]);
+  }, [page, filterUser, debouncedSearch]);
 
   useEffect(() => {
     fetchMedia();
   }, [fetchMedia]);
+
+  // Debounce the search box → server-side query across every page.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
   async function handleDelete(id: string) {
     const ok = await confirm({ message: "Hapus media ini secara permanen?", variant: "danger", title: "Konfirmasi" });
@@ -214,6 +227,19 @@ export default function MediaPage() {
         </button>
       </div>
 
+      {/* Search */}
+      <div className="relative mb-4 max-w-md">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari media (judul, nama file, caption, sumber)..."
+          className="input w-full pl-9"
+          aria-label="Cari media"
+        />
+      </div>
+
       {/* Upload area */}
       {showUpload && (
         <div className="mb-6 rounded-[12px] border-2 border-dashed border-primary/30 bg-primary-50 p-6">
@@ -279,7 +305,9 @@ export default function MediaPage() {
         <LoadingSkeleton />
       ) : media.length === 0 ? (
         <div className="rounded-[12px] border border-border bg-surface p-8 text-center text-base text-txt-secondary shadow-card">
-          Belum ada media yang diupload.
+          {debouncedSearch
+            ? `Tidak ada media yang cocok dengan "${debouncedSearch}".`
+            : "Belum ada media yang diupload."}
         </div>
       ) : (
         <>

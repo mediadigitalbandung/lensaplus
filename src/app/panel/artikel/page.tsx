@@ -172,6 +172,7 @@ export default function ArtikelPage() {
   // articles from cron-generated drafts.
   const [filterOrigin, setFilterOrigin] = useState<"all" | "manual" | "cron" | "scraper">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [page, setPage] = useState(1);
@@ -191,6 +192,9 @@ export default function ArtikelPage() {
       if (filterOrigin !== "all") {
         url += `&origin=${filterOrigin}`;
       }
+      if (debouncedSearch) {
+        url += `&search=${encodeURIComponent(debouncedSearch)}`;
+      }
 
       const res = await fetch(url);
 
@@ -207,11 +211,18 @@ export default function ArtikelPage() {
     } finally {
       setLoading(false);
     }
-  }, [session?.user, isCreator, userId, page, filterStatus, filterOrigin]);
+  }, [session?.user, isCreator, userId, page, filterStatus, filterOrigin, debouncedSearch]);
 
   useEffect(() => {
     fetchArticles();
   }, [fetchArticles]);
+
+  // Debounce the search box into a server-side query so it searches title +
+  // excerpt across ALL pages, not just the rows currently loaded.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   async function handleDelete(id: string, title: string) {
     const ok = await confirm({ message: "Apakah Anda yakin ingin menghapus artikel ini? Tindakan ini tidak dapat dibatalkan.", variant: "danger", title: "Konfirmasi" });
@@ -502,9 +513,8 @@ export default function ArtikelPage() {
     }
   }
 
-  const filtered = articles.filter((a) => {
-    return a.title.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  // Filtering (status/origin/search) is done server-side; render as returned.
+  const filtered = articles;
 
   const filteredIds = filtered.map((a) => a.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
