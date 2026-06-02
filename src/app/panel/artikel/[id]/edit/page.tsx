@@ -621,11 +621,16 @@ export default function EditArticlePage() {
               Arahan global (gaya & SEO) diatur di Pengaturan → AI. Kotak ini untuk fokus spesifik artikel ini.
             </p>
           </div>
+          {!title.trim() && (
+            <p className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
+              <AlertCircle size={12} /> Isi <strong>Judul</strong> di atas dulu sebagai topik riset.
+            </p>
+          )}
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={runResearch}
-              disabled={researching || !title.trim()}
+              disabled={researching}
               className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-40"
             >
               {researching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
