@@ -15,8 +15,8 @@ import {
   ChevronLeft,
   Menu,
   X,
-  UserCircle,
   ClipboardCheck,
+  ChevronRight,
   Bell,
   Settings,
   BarChart3,
@@ -39,7 +39,6 @@ import {
   TrendingUp,
   BookOpen,
   Video,
-  BarChart2,
   RadioTower,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -75,7 +74,6 @@ const menuItems: MenuItem[] = [
   { name: "TikTok", href: "/panel/tiktok", icon: Video, editorOnly: true },
   { name: "Sorotan", href: "/panel/sorotan", icon: Lightbulb, adminOnly: true },
   { name: "Live Blog", href: "/panel/live-blogs", icon: RadioTower, editorOnly: true },
-  { name: "Kalender Emiten", href: "/panel/kalender-emiten", icon: BarChart2, editorOnly: true },
   { name: "Pengguna", href: "/panel/pengguna", icon: Users, adminOnly: true },
   { name: "Analytics", href: "/panel/analytics", icon: BarChart3, managementOnly: true },
   { name: "Statistik", href: "/panel/statistik", icon: TrendingUp, editorOnly: true },
@@ -84,7 +82,6 @@ const menuItems: MenuItem[] = [
   { name: "Email", href: "/panel/email", icon: Mail, adminOnly: true },
   { name: "Pengaturan", href: "/panel/pengaturan", icon: Settings, adminOnly: true },
   { name: "Dokumentasi", href: "/panel/dokumentasi", icon: BookOpen, adminOnly: true },
-  { name: "Profil", href: "/panel/profil", icon: UserCircle },
 ];
 
 interface NotificationItem {
@@ -263,13 +260,18 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         })}
       </nav>
 
-      {/* User info */}
+      {/* User info — klik untuk buka halaman profil */}
       <div className="border-t border-white/[0.08] pt-4 mt-2">
-        <div className="flex items-center gap-3 rounded-lg px-4 py-3">
+        <Link
+          href="/panel/profil"
+          onClick={() => setSidebarOpen(false)}
+          className="group flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-150 hover:bg-white/5"
+          aria-label="Buka profil saya"
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/20 text-sm font-bold text-blue-300">
             {session.user.name?.charAt(0)}
           </div>
-          <div className="truncate">
+          <div className="min-w-0 flex-1 truncate">
             <p className="truncate text-[13px] font-semibold text-white/90">
               {session.user.name}
             </p>
@@ -277,7 +279,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
               {roleLabelsMap[session.user.role] || session.user.role.replace(/_/g, " ")}
             </p>
           </div>
-        </div>
+          <ChevronRight size={16} className="text-white/30 transition-colors group-hover:text-white/70" />
+        </Link>
         <button
           onClick={async () => {
             await fetch("/api/auth/logout", { method: "POST" });
