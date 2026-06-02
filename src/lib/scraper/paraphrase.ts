@@ -23,6 +23,7 @@ import { callAI } from "@/lib/ai-client";
 import { sanitizeHtml, cleanAIShortText, cleanAILongText } from "@/lib/sanitize";
 import { slugify } from "@/lib/utils";
 import { downloadImageToUploads } from "./download-image";
+import { sourceLabelFromUrl } from "./source-label";
 import type { ScrapedArticle } from "./types";
 
 const MAX_BODY_IMAGES = 5;
@@ -274,6 +275,13 @@ export async function paraphraseAndCreateDraft(
   const { source, sourceName, authorId, categoryId, defaultTags = [] } = input;
   const downloadImage = input.downloadImage ?? true;
 
+  // Photo credit = the real publisher derived from the upstream URL's domain
+  // (e.g. https://www.bola.com/... → "Bola"), NOT the configured source name —
+  // editors sometimes name a source "Kartawarta", which wrongly credited our
+  // own site as the photo source. Falls back to sourceName if the URL can't
+  // be parsed into a brand.
+  const creditLabel = sourceLabelFromUrl(source.url) ?? sourceName;
+
   const isEnglish = source.lang === "en";
   const langInstruction = isEnglish
     ? `Sumber dalam Bahasa Inggris — terjemahkan SEKALIGUS parafrase ke Bahasa Indonesia jurnalistik yang baik dan benar.`
@@ -327,7 +335,7 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
       const dl = await downloadImageToUploads(source.heroImageUrl, {
         title: parsed.title.slice(0, 200),
         caption: parsed.excerpt || source.excerpt,
-        credit: sourceName,
+        credit: creditLabel,
         uploadedBy: authorId,
         uploaderName: input.authorName,
       });
@@ -354,7 +362,7 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
         const dl = await downloadImageToUploads(upstreamUrl, {
           title: parsed.title.slice(0, 200),
           caption: parsed.excerpt || source.excerpt,
-          credit: sourceName,
+          credit: creditLabel,
           uploadedBy: authorId,
           uploaderName: input.authorName,
         });
@@ -370,9 +378,9 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
     parsed.content,
     localBodyImageUrls,
     parsed.title,
-    sourceName,
+    creditLabel,
   );
-  const attributionHtml = buildAttribution(source.url, sourceName, source.title);
+  const attributionHtml = buildAttribution(source.url, creditLabel, source.title);
   const finalContent = sanitizeHtml(bodyWithImages + attributionHtml);
 
   const slug = await uniqueSlug(parsed.title);
@@ -423,7 +431,7 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
       sources: {
         create: [
           {
-            name: sourceName,
+            name: creditLabel,
             url: source.url,
           },
         ],

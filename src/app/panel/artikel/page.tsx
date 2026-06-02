@@ -21,6 +21,7 @@ import {
   Download,
   Archive,
   ImageOff,
+  Camera,
   Send,
   EyeOff,
   Loader2,
@@ -157,6 +158,7 @@ export default function ArtikelPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
   const [publishingSocial, setPublishingSocial] = useState<string | null>(null);
+  const [fixingCredits, setFixingCredits] = useState(false);
   // Only SUPER_ADMIN / CHIEF_EDITOR / EDITOR see direct Publish + Takedown buttons.
   const userRoleForActions = (session?.user as { role?: string } | undefined)?.role || "";
   const canPublishDirect =
@@ -443,6 +445,56 @@ export default function ArtikelPage() {
     exportToCsv("artikel-kartawarta.csv", headers, rows);
   }
 
+  // Repair photo credits on scraper articles that still credit "Kartawarta"
+  // instead of the real source website. Previews first (dry-run), then applies.
+  async function handleFixPhotoCredits() {
+    try {
+      setFixingCredits(true);
+      const previewRes = await fetch("/api/admin/fix-photo-credits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apply: false }),
+      });
+      const previewJson = await previewRes.json();
+      if (!previewRes.ok || !previewJson?.success) {
+        throw new Error(previewJson?.error || "Gagal memeriksa sumber foto");
+      }
+      const p = previewJson.data as {
+        scanned: number;
+        fixed: number;
+        skipped: number;
+        samples: Array<{ slug: string; to: string }>;
+      };
+      if (p.fixed === 0) {
+        success(`Sudah rapi — tidak ada yang perlu diperbaiki dari ${p.scanned} artikel hasil scraper.`);
+        return;
+      }
+      const contoh = p.samples?.[0]?.to ? ` (mis. menjadi "${p.samples[0].to}")` : "";
+      const ok = await confirm({
+        title: "Perbaiki Sumber Foto",
+        message: `${p.fixed} dari ${p.scanned} artikel hasil scraper akan diperbaiki sumber fotonya ke website asalnya${contoh}. ${p.skipped} dilewati. Lanjutkan?`,
+        variant: "warning",
+      });
+      if (!ok) return;
+
+      const applyRes = await fetch("/api/admin/fix-photo-credits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apply: true }),
+      });
+      const applyJson = await applyRes.json();
+      if (!applyRes.ok || !applyJson?.success) {
+        throw new Error(applyJson?.error || "Gagal memperbaiki sumber foto");
+      }
+      success(`Selesai — ${applyJson.data.fixed} artikel diperbaiki, ${applyJson.data.skipped} dilewati.`);
+      fetchArticles();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal memperbaiki sumber foto.");
+    } finally {
+      setFixingCredits(false);
+    }
+  }
+
   const filtered = articles.filter((a) => {
     return a.title.toLowerCase().includes(searchQuery.toLowerCase());
   });
@@ -523,6 +575,22 @@ export default function ArtikelPage() {
               aria-label="Cari artikel"
             />
           </div>
+          {userRole === "SUPER_ADMIN" && (
+            <button
+              onClick={handleFixPhotoCredits}
+              disabled={fixingCredits}
+              className="btn-secondary flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold whitespace-nowrap disabled:opacity-60"
+              title="Perbaiki sumber foto artikel hasil scraper ke website asalnya"
+              aria-label="Perbaiki sumber foto artikel hasil scraper"
+            >
+              {fixingCredits ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Camera size={14} />
+              )}
+              Perbaiki Sumber Foto
+            </button>
+          )}
           <button
             onClick={handleExportCsv}
             className="btn-secondary flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold whitespace-nowrap"
