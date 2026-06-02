@@ -33,9 +33,16 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // The Emiten admin page was removed from the CMS for ALL roles/users.
-    // Redirect any lingering links (e.g. from the dashboard) to the dashboard.
-    if (pathname === "/panel/emiten" || pathname.startsWith("/panel/emiten/")) {
+    // The Emiten + Kalender Emiten admin pages were removed from the CMS for
+    // ALL roles/users. Redirect any lingering links (e.g. from the dashboard).
+    // (Public /emiten and /kalender-emiten pages are NOT under /panel, so the
+    // middleware matcher never touches them.)
+    if (
+      pathname === "/panel/emiten" ||
+      pathname.startsWith("/panel/emiten/") ||
+      pathname === "/panel/kalender-emiten" ||
+      pathname.startsWith("/panel/kalender-emiten/")
+    ) {
       return NextResponse.redirect(new URL("/panel/dashboard", request.url));
     }
 
@@ -82,7 +89,6 @@ export async function middleware(request: NextRequest) {
         "/panel/tags",
         "/panel/tiktok",
         "/panel/live-blogs",
-        "/panel/kalender-emiten",
         "/panel/statistik",
         "/panel/statistik-editor",
         "/panel/material-artikel",
