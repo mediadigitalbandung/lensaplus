@@ -42,6 +42,39 @@ interface Source {
 import { CAN_SUBMIT_REVIEW, EDITOR_ROLES, roleLabelsMap } from "@/lib/roles";
 import { PERPLEXITY_PERSONAS, PERPLEXITY_NOTE_HINTS } from "@/lib/perplexity-personas";
 
+const AUTOSAVE_KEY = "autosave_draft_new";
+const AUTOSAVE_DRAFTID_KEY = "autosave_draft_new_id";
+
+type ArticleSnapshot = {
+  title: string; content: string; categoryId: string; excerpt: string;
+  tags: string; featuredImage: string; seoTitle: string; seoDescription: string;
+  sources: Source[]; selectedAuthorId: string; selectedEditorId: string; saving: boolean;
+};
+
+// Build the POST/PUT body from a state snapshot. Pure + module-scoped so it can
+// be shared by the autosave loop and the manual save without re-creating on
+// every render (which would reset the autosave interval).
+function buildArticlePayload(s: ArticleSnapshot, status?: "DRAFT" | "IN_REVIEW") {
+  const validSources = (s.sources || []).filter((x) => x.name.trim());
+  const tagList = s.tags.split(",").map((t) => t.trim()).filter(Boolean);
+  const safeStr = (str: string, max: number) =>
+    str ? (str.length > max ? str.slice(0, max - 1).trimEnd() + "…" : str) : undefined;
+  return {
+    title: safeStr(s.title, 255),
+    content: s.content,
+    excerpt: safeStr(s.excerpt, 500),
+    categoryId: s.categoryId,
+    tags: tagList,
+    featuredImage: s.featuredImage || undefined,
+    seoTitle: safeStr(s.seoTitle, 70),
+    seoDescription: safeStr(s.seoDescription, 160),
+    ...(status ? { status } : {}),
+    sources: validSources.length > 0 ? validSources : undefined,
+    authorId: s.selectedAuthorId || undefined,
+    assignedEditorId: s.selectedEditorId || undefined,
+  };
+}
+
 export default function NewArticlePage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -79,39 +112,105 @@ export default function NewArticlePage() {
   const wordCount = plainText ? plainText.split(/\s+/).length : 0;
   const charCount = plainText.length;
   const readTime = Math.max(1, Math.ceil(wordCount / 200));
-  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Server-side draft autosave. Once the article meets the API minimums
+  // (title >= 5, content >= 50, category chosen) it is persisted as a real
+  // DRAFT in the author's account — so an interrupted session (deploy / bad
+  // gateway) leaves the work recoverable from the Artikel list, not just this
+  // browser. The localStorage copy below is the offline net for the moments
+  // before that and while the server is unreachable.
+  const draftIdRef = useRef<string | null>(null);
+  const autosaveInFlightRef = useRef<Promise<void> | null>(null);
+  const lastSavedHashRef = useRef<string>("");
+  const [serverSaving, setServerSaving] = useState(false);
+  const [serverSavedAt, setServerSavedAt] = useState<number | null>(null);
 
-  const AUTOSAVE_KEY = "autosave_draft_new";
+  // Always-current snapshot so the mount-once autosave interval never reads
+  // stale closure values.
+  const latestRef = useRef<ArticleSnapshot>({
+    title, content, categoryId, excerpt, tags, featuredImage,
+    seoTitle, seoDescription, sources, selectedAuthorId, selectedEditorId, saving,
+  });
+  latestRef.current = {
+    title, content, categoryId, excerpt, tags, featuredImage,
+    seoTitle, seoDescription, sources, selectedAuthorId, selectedEditorId, saving,
+  };
 
-  // Check for auto-saved draft on mount
+  // Persist the current draft to the server (create once, then update the same
+  // record). Best-effort: failures (server mid-deploy) are swallowed because
+  // localStorage still protects the work.
+  const attemptServerAutosave = useCallback(async () => {
+    const s = latestRef.current;
+    if (s.saving) return;                        // manual save/submit in progress
+    const plain = s.content.replace(/<[^>]*>/g, "").trim();
+    if (s.title.trim().length < 5 || plain.length < 50 || !s.categoryId) return; // below API minimums
+    if (autosaveInFlightRef.current) return;     // a save is already running
+    const payload = buildArticlePayload(s, "DRAFT");
+    const hash = JSON.stringify(payload);
+    if (hash === lastSavedHashRef.current) return; // nothing changed since last server save
+    const run = (async () => {
+      setServerSaving(true);
+      try {
+        const id = draftIdRef.current;
+        const res = await fetch(id ? `/api/articles/${id}` : "/api/articles", {
+          method: id ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          if (!id && data.data?.id) {
+            draftIdRef.current = data.data.id;
+            try { localStorage.setItem(AUTOSAVE_DRAFTID_KEY, data.data.id); } catch { /* ignore */ }
+          }
+          lastSavedHashRef.current = hash;
+          setServerSavedAt(Date.now());
+        }
+      } catch {
+        // Server unreachable (e.g. deploy) — localStorage net holds it.
+      } finally {
+        setServerSaving(false);
+      }
+    })();
+    autosaveInFlightRef.current = run;
+    try { await run; } finally { autosaveInFlightRef.current = null; }
+  }, []);
+
+  // Check for a browser-saved draft on mount.
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(AUTOSAVE_KEY);
-      if (saved) {
-        setShowAutosaveBanner(true);
-      }
+      if (localStorage.getItem(AUTOSAVE_KEY)) setShowAutosaveBanner(true);
     } catch {
       // localStorage not available
     }
   }, []);
 
-  // Auto-save every 30 seconds (only for drafts)
+  // One interval for the page's lifetime: snapshot to localStorage every cycle
+  // (offline net) and attempt a server draft save (account copy). Also fire
+  // when the tab is hidden/closed — the moment work is most often lost.
   useEffect(() => {
-    autosaveTimerRef.current = setInterval(() => {
-      if (title.trim() || content.trim()) {
-        try {
-          const draft = { title, content, categoryId, excerpt, tags, featuredImage, sources };
-          localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draft));
-        } catch {
-          // localStorage not available
+    const tick = () => {
+      const s = latestRef.current;
+      try {
+        if (s.title.trim() || s.content.trim()) {
+          localStorage.setItem(
+            AUTOSAVE_KEY,
+            JSON.stringify({
+              title: s.title, content: s.content, categoryId: s.categoryId,
+              excerpt: s.excerpt, tags: s.tags, featuredImage: s.featuredImage,
+              sources: s.sources, savedAt: Date.now(),
+            }),
+          );
         }
+      } catch {
+        // localStorage not available
       }
-    }, 30000);
-
-    return () => {
-      if (autosaveTimerRef.current) clearInterval(autosaveTimerRef.current);
+      attemptServerAutosave();
     };
-  }, [title, content, categoryId, excerpt, tags, featuredImage, sources]);
+    const timer = setInterval(tick, 15000);
+    const onHide = () => { if (document.visibilityState === "hidden") tick(); };
+    document.addEventListener("visibilitychange", onHide);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", onHide); };
+  }, [attemptServerAutosave]);
 
   function loadAutosaveDraft() {
     try {
@@ -402,32 +501,17 @@ export default function NewArticlePage() {
     setSaving(true);
 
     try {
-      const validSources = sources.filter((s) => s.name.trim());
-      const tagList = tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
-
-      const safeStr = (s: string, max: number) =>
-        s ? (s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s) : undefined;
-
-      const res = await fetch("/api/articles", {
-        method: "POST",
+      // If an autosave already created a server draft, converge onto it so we
+      // update that record instead of creating a duplicate. Wait for any
+      // in-flight autosave first so its freshly-created id is visible here.
+      if (autosaveInFlightRef.current) {
+        try { await autosaveInFlightRef.current; } catch { /* ignore */ }
+      }
+      const existingId = draftIdRef.current;
+      const res = await fetch(existingId ? `/api/articles/${existingId}` : "/api/articles", {
+        method: existingId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: safeStr(title, 255),
-          content,
-          excerpt: safeStr(excerpt, 500),
-          categoryId,
-          tags: tagList,
-          featuredImage: featuredImage || undefined,
-          seoTitle: safeStr(seoTitle, 70),
-          seoDescription: safeStr(seoDescription, 160),
-          status,
-          sources: validSources.length > 0 ? validSources : undefined,
-          authorId: selectedAuthorId || undefined,
-          assignedEditorId: selectedEditorId || undefined,
-        }),
+        body: JSON.stringify(buildArticlePayload(latestRef.current, status)),
       });
 
       const data = await res.json();
@@ -438,8 +522,12 @@ export default function NewArticlePage() {
         return;
       }
 
-      // Clear auto-save after successful creation
-      try { localStorage.removeItem(AUTOSAVE_KEY); } catch { /* ignore */ }
+      // Clear autosave state after a successful manual save.
+      try {
+        localStorage.removeItem(AUTOSAVE_KEY);
+        localStorage.removeItem(AUTOSAVE_DRAFTID_KEY);
+      } catch { /* ignore */ }
+      draftIdRef.current = null;
       success(status === "IN_REVIEW" ? "Artikel berhasil dikirim untuk review" : "Artikel berhasil disimpan sebagai draf");
       router.push("/panel/artikel");
       router.refresh();
@@ -461,6 +549,20 @@ export default function NewArticlePage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* Autosave-to-account status */}
+          {(serverSaving || serverSavedAt) && (
+            <span className="mr-1 flex items-center gap-1.5 text-xs text-txt-muted">
+              {serverSaving ? (
+                <><Loader2 size={13} className="animate-spin" /> Menyimpan ke akun…</>
+              ) : (
+                <>
+                  <CheckCircle size={13} className="text-primary" />
+                  Tersimpan ke akun
+                  {serverSavedAt ? ` ${new Date(serverSavedAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                </>
+              )}
+            </span>
+          )}
           {/* Save Draft */}
           <button
             onClick={() => handleSubmit("DRAFT")}
