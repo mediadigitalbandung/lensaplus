@@ -115,6 +115,19 @@ enum LiveSyndicationPlatform {
   THREADS
 }
 
+// NOTE: the court-schedule (jadwal sidang) FEATURE was removed (its routes +
+// pages are gone). This model/table is intentionally KEPT for now because the
+// deploy's `prisma db push` runs WITHOUT --accept-data-loss (a deliberate
+// guardrail), so it refuses to drop a populated table. Drop it deliberately on
+// the VPS (`prisma db push --accept-data-loss` or `DROP TABLE court_schedules`)
+// when ready, then delete this model + enum.
+enum CourtScheduleStatus {
+  SCHEDULED
+  LIVE
+  DONE
+  CANCELLED
+}
+
 model User {
   id               String     @id @default(cuid())
   email            String     @unique
@@ -637,6 +650,24 @@ model ThreadsSettings {
   updatedAt         DateTime  @updatedAt
 
   @@map("threads_settings")
+}
+
+// Kept only so `prisma db push` stays additive (see CourtScheduleStatus note).
+// The feature's code is already removed; drop this table deliberately later.
+model CourtSchedule {
+  id          String              @id @default(cuid())
+  caseName    String
+  caseNumber  String?
+  courtName   String
+  scheduledAt DateTime
+  status      CourtScheduleStatus @default(SCHEDULED)
+  notes       String?             @db.Text
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("court_schedules")
 }
 
 model TargetKeyword {
