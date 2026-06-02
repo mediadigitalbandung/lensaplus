@@ -70,6 +70,9 @@ export default function NewArticlePage() {
   const [researchMode, setResearchMode] = useState<"draft" | "research">("draft");
   const [researchPersona, setResearchPersona] = useState("");
   const [researching, setResearching] = useState(false);
+  // Research RESULT staged in-panel for review/edit before inserting to editor.
+  const [researchResult, setResearchResult] = useState("");
+  const [researchResultSources, setResearchResultSources] = useState<Source[]>([]);
   const [users, setUsers] = useState<{id: string; name: string; role: string}[]>([]);
   const [selectedAuthorId, setSelectedAuthorId] = useState("");
   const [selectedEditorId, setSelectedEditorId] = useState("");
@@ -229,44 +232,54 @@ export default function NewArticlePage() {
         return;
       }
       const html = (data.data?.content || "").toString();
-      // Insert the draft: append to existing content so nothing is lost.
-      setContent((prev) => (prev && prev.trim() ? `${prev}\n${html}` : html));
-
-      // Auto-fill the Sources list with the real citations Perplexity used.
+      // Stage the result in the panel for review/edit — do NOT touch the editor yet.
       const cited: { title: string | null; url: string }[] = data.data?.sources || [];
-      if (cited.length > 0) {
-        const newSources: Source[] = cited.slice(0, 12).map((s) => {
-          let host = "";
-          try {
-            host = new URL(s.url).hostname.replace(/^www\./, "");
-          } catch {
-            /* keep blank */
-          }
-          return { name: s.title || host || "Sumber", title: "", institution: host, url: s.url };
-        });
-        setSources((prev) => {
-          const existing = prev.filter((p) => p.name.trim() || p.url.trim());
-          const seen = new Set(existing.map((e) => e.url));
-          const merged = [...existing];
-          for (const ns of newSources) {
-            if (!ns.url || !seen.has(ns.url)) {
-              merged.push(ns);
-              seen.add(ns.url);
-            }
-          }
-          return merged.length > 0 ? merged : prev;
-        });
-      }
+      const stagedSources: Source[] = cited.slice(0, 12).map((s) => {
+        let host = "";
+        try {
+          host = new URL(s.url).hostname.replace(/^www\./, "");
+        } catch {
+          /* keep blank */
+        }
+        return { name: s.title || host || "Sumber", title: "", institution: host, url: s.url };
+      });
+      setResearchResult(html);
+      setResearchResultSources(stagedSources);
       success(
-        `Perplexity selesai — draf dimasukkan ke editor${cited.length ? ` + ${cited.length} sumber ditambahkan` : ""}. Tinjau & sunting sebelum publikasi.`,
+        `Perplexity selesai${cited.length ? ` — ${cited.length} sumber ditemukan` : ""}. Tinjau & sunting di bawah, lalu masukkan ke editor.`,
       );
-      setShowResearch(false);
-      setResearchNotes("");
     } catch {
       setError("Gagal menghubungi layanan riset Perplexity");
     } finally {
       setResearching(false);
     }
+  };
+
+  const mergeResearchSources = () => {
+    if (researchResultSources.length === 0) return;
+    setSources((prev) => {
+      const existing = prev.filter((p) => p.name.trim() || p.url.trim());
+      const seen = new Set(existing.map((e) => e.url));
+      const merged = [...existing];
+      for (const ns of researchResultSources) {
+        if (!ns.url || !seen.has(ns.url)) {
+          merged.push(ns);
+          seen.add(ns.url);
+        }
+      }
+      return merged.length > 0 ? merged : prev;
+    });
+  };
+
+  const applyResearch = (replace: boolean) => {
+    if (!researchResult.trim()) return;
+    setContent((prev) => (replace || !prev.trim() ? researchResult : `${prev}\n${researchResult}`));
+    mergeResearchSources();
+    success(replace ? "Konten editor diganti dengan hasil riset." : "Hasil riset ditambahkan ke editor.");
+    setResearchResult("");
+    setResearchResultSources([]);
+    setShowResearch(false);
+    setResearchNotes("");
   };
 
   const AiButton = ({ feature, setter }: { feature: string; setter: (val: string) => void }) => (
@@ -641,9 +654,57 @@ export default function NewArticlePage() {
                     {researching ? "Meriset & menulis…" : "Jalankan Riset"}
                   </button>
                   <span className="text-[10px] text-txt-muted">
-                    Hasil ditambahkan ke editor (tidak menimpa). Tinjau sebelum publikasi.
+                    Hasil tampil di bawah untuk ditinjau dulu — tidak langsung ke editor.
                   </span>
                 </div>
+
+                {/* Staged research result — review/edit here before inserting */}
+                {researchResult && (
+                  <div className="mt-3 space-y-2 rounded-[12px] border border-primary/30 bg-surface p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-primary">
+                        Hasil riset (bisa disunting sebelum dimasukkan)
+                      </span>
+                      {researchResultSources.length > 0 && (
+                        <span className="text-[10px] text-txt-muted">
+                          {researchResultSources.length} sumber akan ditambahkan
+                        </span>
+                      )}
+                    </div>
+                    <textarea
+                      rows={12}
+                      value={researchResult}
+                      onChange={(e) => setResearchResult(e.target.value)}
+                      className="input w-full resize-y font-mono text-[11px] leading-relaxed"
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => applyResearch(false)}
+                        className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark"
+                      >
+                        <Plus size={13} /> Tambahkan ke editor
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyResearch(true)}
+                        className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-txt-secondary hover:bg-surface-secondary"
+                      >
+                        Ganti isi editor
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResearchResult("");
+                          setResearchResultSources([]);
+                        }}
+                        className="flex items-center gap-1 px-2 py-1.5 text-xs text-txt-muted hover:text-red-500"
+                      >
+                        <X size={13} /> Buang
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
