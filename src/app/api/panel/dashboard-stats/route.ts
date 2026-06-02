@@ -151,21 +151,13 @@ export async function GET() {
     // Tambahan stats untuk fitur yang baru di-add — cast prismaAny supaya
     // tidak break kalau prisma client lag di build pipeline.
     const prismaModul = prisma as unknown as {
-      publicCompany: { count: (args?: { where?: { isActive?: boolean } }) => Promise<number> };
-      marketEvent: { count: (args?: { where?: { isPublished?: boolean; scheduledAt?: object } }) => Promise<number> };
       liveBlog: { count: (args?: { where?: { isPublished?: boolean; status?: string } }) => Promise<number> };
       pushSubscription: { count: (args?: { where?: { isActive?: boolean } }) => Promise<number> };
     };
     const [
-      totalCompanies, activeCompanies,
-      totalMarketEvents, upcomingMarketEvents,
       totalLiveBlogs, liveLiveBlogs,
       totalPushSubscribers,
     ] = await Promise.all([
-      prismaModul.publicCompany.count().catch(() => 0),
-      prismaModul.publicCompany.count({ where: { isActive: true } }).catch(() => 0),
-      prismaModul.marketEvent.count().catch(() => 0),
-      prismaModul.marketEvent.count({ where: { isPublished: true, scheduledAt: { gte: today } } }).catch(() => 0),
       prismaModul.liveBlog.count().catch(() => 0),
       prismaModul.liveBlog.count({ where: { status: "LIVE" } }).catch(() => 0),
       prismaModul.pushSubscription.count({ where: { isActive: true } }).catch(() => 0),
@@ -210,8 +202,6 @@ export async function GET() {
             : 0,
       },
       // Sprint 2-5 modul baru — biar dashboard juga show stats-nya:
-      companies: { total: totalCompanies, active: activeCompanies },
-      marketEvents: { total: totalMarketEvents, upcoming: upcomingMarketEvents },
       liveBlogs: { total: totalLiveBlogs, live: liveLiveBlogs },
       pushSubscribers: { active: totalPushSubscribers },
     });

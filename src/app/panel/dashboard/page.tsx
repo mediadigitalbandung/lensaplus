@@ -34,8 +34,6 @@ import {
   Music,
   Mail,
   Activity,
-  Building2,
-  CalendarDays,
   Radio,
   Bell,
 } from "lucide-react";
@@ -960,9 +958,6 @@ export default function DashboardPage() {
               { label: "Pengguna Aktif", value: formatNumber(dashStats.users?.active || 0), icon: Users, color: "text-blue-500 bg-blue-50", href: "/panel/pengguna", accent: "info", hint: `${dashStats.users?.total || 0} total` },
               { label: "Iklan Aktif", value: formatNumber(dashStats.ads?.active || 0), icon: Megaphone, color: "text-rose-500 bg-rose-50", href: "/panel/iklan", accent: "danger", hint: `${dashStats.ads?.total || 0} total` },
               { label: "Sumber Berita Aktif", value: formatNumber(dashStats.newsSources?.active || 0), icon: Newspaper, color: "text-cyan-600 bg-cyan-50", href: "/panel/sumber-berita", accent: "info", hint: "Untuk auto-artikel" },
-              // ─── Modul Bisnis & Pemerintahan (Sprint 2-5) ───────────────
-              { label: "Total Emiten", value: formatNumber(dashStats.companies?.total || 0), icon: Building2, color: "text-blue-600 bg-blue-50", href: "/panel/emiten", accent: "info", hint: `${dashStats.companies?.active || 0} aktif` },
-              { label: "Kalender Emiten", value: formatNumber(dashStats.marketEvents?.total || 0), icon: CalendarDays, color: "text-orange-600 bg-orange-50", href: "/panel/kalender-emiten", accent: "primary", hint: `${dashStats.marketEvents?.upcoming || 0} mendatang` },
               { label: "Live Blog", value: formatNumber(dashStats.liveBlogs?.total || 0), icon: Radio, color: "text-red-500 bg-red-50", href: "/panel/live-blogs", accent: dashStats.liveBlogs?.live ? "danger" : "muted", hint: dashStats.liveBlogs?.live ? `${dashStats.liveBlogs.live} LIVE saat ini` : "Tidak ada yang live" },
               { label: "Subscriber Push", value: formatNumber(dashStats.pushSubscribers?.active || 0), icon: Bell, color: "text-violet-500 bg-violet-50", href: "/panel/pengaturan", accent: "muted", hint: "Push notification" },
             ]);
@@ -1224,16 +1219,6 @@ export default function DashboardPage() {
               { href: "/panel/komentar", label: "Komentar", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50", show: !isCreator },
               { href: "/panel/laporan", label: "Laporan", icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50", show: !isCreator },
               { href: "/panel/live-blogs", label: "Live Blog", icon: Radio, color: "text-red-600", bg: "bg-red-50", show: !isCreator },
-            ],
-          },
-          {
-            id: "bisnis-pemerintahan",
-            title: "Bisnis & Pemerintahan",
-            icon: Building2,
-            subtitle: "Modul data emiten dan kalender pasar",
-            actions: [
-              { href: "/panel/emiten", label: "Direktori Emiten", icon: Building2, color: "text-blue-600", bg: "bg-blue-50", show: !isCreator },
-              { href: "/panel/kalender-emiten", label: "Kalender Emiten", icon: CalendarDays, color: "text-orange-600", bg: "bg-orange-50", show: !isCreator },
             ],
           },
           {
