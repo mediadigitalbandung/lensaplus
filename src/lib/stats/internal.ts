@@ -125,6 +125,14 @@ export interface InternalStats {
 export interface InternalStatsOptions {
   from?: Date;
   to?: Date;
+  /**
+   * When set, the stats are scoped to ONLY this author's content (their
+   * articles, views, trend, and comments on their articles). All site-wide
+   * sections (users, ads, newsletter, scraping, audit, etc.) are zeroed.
+   * Used so a non-SUPER_ADMIN sees only their OWN statistics; omit for the
+   * full site-wide dashboard (SUPER_ADMIN).
+   */
+  authorId?: string;
 }
 
 // ---------- Cache ----------
@@ -136,8 +144,8 @@ interface CacheEntry {
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const cache = new Map<string, CacheEntry>();
 
-function cacheKey(from: Date, to: Date) {
-  return `internal:${from.toISOString()}:${to.toISOString()}`;
+function cacheKey(from: Date, to: Date, authorId?: string) {
+  return `internal:${authorId ?? "all"}:${from.toISOString()}:${to.toISOString()}`;
 }
 
 function getCached(key: string): InternalStats | null {
@@ -205,16 +213,101 @@ function buildTrendBuckets(
   }));
 }
 
+/**
+ * Per-author stats: ONLY the author's own articles, views, trend, and comments
+ * on their articles. Every site-wide section is zeroed so a non-SUPER_ADMIN
+ * never receives global numbers through this endpoint.
+ */
+async function buildAuthorScopedStats(
+  from: Date,
+  to: Date,
+  authorId: string,
+): Promise<InternalStats> {
+  const [
+    articleGroups,
+    publishedInRange,
+    viewAgg,
+    top10Raw,
+    viewsRangeAgg,
+    top10InRangeRaw,
+    trendRows,
+    commentTotal,
+    commentPending,
+    commentApproved,
+    commentInRange,
+  ] = await Promise.all([
+    prisma.article.groupBy({ by: ["status"], _count: { _all: true }, where: { authorId } }),
+    prisma.article.count({ where: { authorId, status: "PUBLISHED", publishedAt: { gte: from, lte: to } } }),
+    prisma.article.aggregate({ _sum: { viewCount: true }, where: { authorId, status: "PUBLISHED" } }),
+    prisma.article.findMany({ where: { authorId, status: "PUBLISHED" }, orderBy: { viewCount: "desc" }, take: 10, select: { slug: true, title: true, viewCount: true } }),
+    prisma.article.aggregate({ _sum: { viewCount: true }, where: { authorId, status: "PUBLISHED", publishedAt: { gte: from, lte: to } } }),
+    prisma.article.findMany({ where: { authorId, status: "PUBLISHED", publishedAt: { gte: from, lte: to } }, orderBy: { viewCount: "desc" }, take: 10, select: { slug: true, title: true, viewCount: true, publishedAt: true } }),
+    prisma.article.findMany({ where: { authorId, status: "PUBLISHED", publishedAt: { gte: from, lte: to } }, select: { publishedAt: true, viewCount: true } }),
+    prisma.comment.count({ where: { article: { authorId } } }),
+    prisma.comment.count({ where: { article: { authorId }, isApproved: false } }),
+    prisma.comment.count({ where: { article: { authorId }, isApproved: true } }),
+    prisma.comment.count({ where: { article: { authorId }, createdAt: { gte: from, lte: to } } }),
+  ]);
+
+  const articles = { total: 0, published: 0, draft: 0, inReview: 0, rejected: 0, archived: 0, publishedInRange };
+  for (const g of articleGroups) {
+    articles.total += g._count._all;
+    switch (g.status) {
+      case "PUBLISHED": articles.published = g._count._all; break;
+      case "DRAFT": articles.draft = g._count._all; break;
+      case "IN_REVIEW": articles.inReview = g._count._all; break;
+      case "REJECTED": articles.rejected = g._count._all; break;
+      case "ARCHIVED": articles.archived = g._count._all; break;
+    }
+  }
+
+  return {
+    articles,
+    users: { total: 0, byRole: {}, newInRange: 0 },
+    views: {
+      total: viewAgg._sum.viewCount ?? 0,
+      inRange: viewsRangeAgg._sum.viewCount ?? 0,
+      top10: top10Raw,
+      top10InRange: top10InRangeRaw.map((a) => ({
+        slug: a.slug,
+        title: a.title,
+        viewCount: a.viewCount,
+        publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null,
+      })),
+    },
+    trend: buildTrendBuckets(from, to, trendRows),
+    comments: { total: commentTotal, pending: commentPending, approved: commentApproved, inRange: commentInRange },
+    polls: { total: 0, active: 0, totalVotes: 0, votesInRange: 0 },
+    ai: { rangeTokens: 0, rangeCalls: 0, topFeatures: [] },
+    sorotan: { total: 0, indexed: 0, pending: 0, submitted: 0, failed: 0, createdInRange: 0 },
+    social: { total: 0, published: 0, draft: 0, publishedInRange: 0 },
+    glossary: { total: 0, viewsTotal: 0, top5: [] },
+    ads: { activeCount: 0, totalImpressions: 0, totalClicks: 0, ctr: 0, top5: [] },
+    scraping: { sources: 0, activeSources: 0, articlesScrapedInRange: 0, lastSuccessAt: null },
+    newsletter: { subscribers: 0, confirmed: 0, newInRange: 0 },
+    audit: { totalInRange: 0, topActions: [], topUsers: [] },
+    _meta: { from: from.toISOString(), to: to.toISOString(), cacheHit: false, generatedAt: new Date().toISOString() },
+  };
+}
+
 // ---------- Main ----------
 
 export async function getInternalStats(
   opts?: InternalStatsOptions,
 ): Promise<InternalStats> {
   const { from, to } = defaultRange(opts);
-  const key = cacheKey(from, to);
+  const authorId = opts?.authorId;
+  const key = cacheKey(from, to, authorId);
   const cached = getCached(key);
   if (cached) {
     return { ...cached, _meta: { ...cached._meta, cacheHit: true } };
+  }
+
+  // Non-SUPER_ADMIN: only their own content (no site-wide numbers).
+  if (authorId) {
+    const scoped = await buildAuthorScopedStats(from, to, authorId);
+    setCached(key, scoped);
+    return scoped;
   }
 
   // ─────────────────── ARTICLES ───────────────────

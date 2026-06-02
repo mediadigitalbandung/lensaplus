@@ -76,7 +76,7 @@ const menuItems: MenuItem[] = [
   { name: "Live Blog", href: "/panel/live-blogs", icon: RadioTower, editorOnly: true },
   { name: "Pengguna", href: "/panel/pengguna", icon: Users, adminOnly: true },
   { name: "Analytics", href: "/panel/analytics", icon: BarChart3, managementOnly: true },
-  { name: "Statistik", href: "/panel/statistik", icon: TrendingUp, editorOnly: true },
+  { name: "Statistik", href: "/panel/statistik", icon: TrendingUp },
   { name: "SEO", href: "/panel/seo", icon: Search, managementOnly: true },
   { name: "Statistik Editor", href: "/panel/statistik-editor", icon: BarChart3, editorOnly: true },
   { name: "Email", href: "/panel/email", icon: Mail, adminOnly: true },

@@ -89,7 +89,8 @@ export async function middleware(request: NextRequest) {
         "/panel/tags",
         "/panel/tiktok",
         "/panel/live-blogs",
-        "/panel/statistik",
+        // "/panel/statistik" is open to ALL writers (each sees only their OWN
+        // stats; SUPER_ADMIN sees site-wide) — not gated here.
         "/panel/statistik-editor",
         "/panel/material-artikel",
       ];

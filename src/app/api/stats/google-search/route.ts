@@ -25,7 +25,7 @@ function parseDateParam(raw: string | null): string | null {
 
 export async function GET(req: Request) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    await requireRole(["SUPER_ADMIN"]);
 
     const url = new URL(req.url);
     const from =

@@ -7,7 +7,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -36,7 +35,6 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { EDITOR_ROLES } from "@/lib/roles";
 
 // --- Types (mirror src/lib/stats/internal.ts InternalStats) ---
 interface InternalStats {
@@ -236,8 +234,98 @@ function NotConfiguredBanner({
   );
 }
 
+// --- Scoped (per-author) Internal view — for non-SUPER_ADMIN ---
+function ScopedInternalView({
+  data,
+  from,
+  to,
+}: {
+  data: InternalStats;
+  from: string;
+  to: string;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl bg-primary-light/40 border border-primary/20 px-4 py-3 text-xs text-primary/90 flex flex-wrap items-center gap-2">
+        <Activity size={12} />
+        <span className="font-semibold">Statistik Anda</span>
+        <span className="font-mono">{from}</span>
+        <span>→</span>
+        <span className="font-mono">{to}</span>
+        <span className="ml-auto text-primary/60">
+          Hanya menampilkan performa artikel milik Anda.
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <StatCard label="Artikel Terbit (Periode)" value={formatNumber(data.articles.publishedInRange)} icon={FileText} color="text-blue-500 bg-blue-50" />
+        <StatCard label="Views (Periode)" value={formatNumber(data.views.inRange)} icon={Eye} color="text-primary bg-primary-light" />
+        <StatCard label="Komentar (Periode)" value={formatNumber(data.comments.inRange)} icon={Activity} color="text-yellow-500 bg-yellow-50" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Total Artikel Saya" value={formatNumber(data.articles.total)} icon={FileText} color="text-blue-500 bg-blue-50" />
+        <StatCard label="Terbit" value={formatNumber(data.articles.published)} icon={FileText} color="text-green-600 bg-green-50" />
+        <StatCard label="Draf" value={formatNumber(data.articles.draft)} icon={FileText} color="text-txt-secondary bg-surface-tertiary" />
+        <StatCard label="Total Views Saya" value={formatNumber(data.views.total)} icon={Eye} color="text-primary bg-primary-light" />
+      </div>
+
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <h3 className="text-base font-bold text-txt-primary mb-1">Trend Publikasi &amp; Views (Artikel Anda)</h3>
+        <p className="text-xs text-txt-muted mb-4">Artikel Anda yang terbit + view kumulatif per hari di rentang dipilih.</p>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data.trend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e8eaeb" />
+              <XAxis dataKey="date" fontSize={11} />
+              <YAxis yAxisId="left" fontSize={11} />
+              <YAxis yAxisId="right" orientation="right" fontSize={11} />
+              <Tooltip />
+              <Legend />
+              <Line yAxisId="left" type="monotone" dataKey="publishedCount" stroke="#002045" strokeWidth={2} name="Terbit" />
+              <Line yAxisId="right" type="monotone" dataKey="viewCount" stroke="#b7102a" strokeWidth={2} name="Views" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+        <div className="border-b border-border bg-surface-secondary px-5 py-4">
+          <h3 className="text-base font-bold text-txt-primary">Artikel Terpopuler Saya</h3>
+          <p className="text-xs text-txt-muted mt-0.5">10 artikel Anda paling banyak dibaca (seluruh waktu)</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border bg-surface-secondary">
+              <tr>
+                <th className="px-5 py-3 text-left font-medium text-txt-secondary">#</th>
+                <th className="px-5 py-3 text-left font-medium text-txt-secondary">Judul</th>
+                <th className="px-5 py-3 text-right font-medium text-txt-secondary">Views</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {data.views.top10.map((a, i) => (
+                <tr key={a.slug} className="hover:bg-surface-secondary/50">
+                  <td className="px-5 py-3 text-txt-muted">{i + 1}</td>
+                  <td className="px-5 py-3 font-medium text-txt-primary max-w-[400px] truncate">
+                    <Link href={`/berita/${a.slug}`} target="_blank" className="hover:text-primary">{a.title}</Link>
+                  </td>
+                  <td className="px-5 py-3 text-right font-bold">{formatNumber(a.viewCount)}</td>
+                </tr>
+              ))}
+              {data.views.top10.length === 0 && (
+                <tr><td colSpan={3} className="px-5 py-8 text-center text-txt-muted">Belum ada artikel terbit.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Internal Tab ---
-function InternalTab({ from, to }: { from: string; to: string }) {
+function InternalTab({ from, to, scoped }: { from: string; to: string; scoped: boolean }) {
   const [data, setData] = useState<InternalStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -275,6 +363,11 @@ function InternalTab({ from, to }: { from: string; to: string }) {
         Gagal memuat data.
       </p>
     );
+  }
+
+  // Non-SUPER_ADMIN: render only the per-author subset (no site-wide numbers).
+  if (scoped) {
+    return <ScopedInternalView data={data} from={from} to={to} />;
   }
 
   const roleEntries = Object.entries(data.users.byRole).map(
@@ -1159,6 +1252,7 @@ function CloudflareTab({ from, to }: { from: string; to: string }) {
 export default function StatistikPage() {
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
   const [tab, setTab] = useState<"internal" | "ga4" | "gsc" | "cf">(
     "internal",
   );
@@ -1167,14 +1261,6 @@ export default function StatistikPage() {
   const [from, setFrom] = useState(ymd(thirtyDaysAgo));
   const [to, setTo] = useState(ymd(now));
   const [refreshKey, setRefreshKey] = useState(0);
-
-  if (
-    sessionStatus !== "loading" &&
-    session &&
-    !EDITOR_ROLES.includes(userRole)
-  ) {
-    redirect("/panel/dashboard");
-  }
 
   if (sessionStatus === "loading") {
     return (
@@ -1195,7 +1281,9 @@ export default function StatistikPage() {
             </h1>
           </div>
           <p className="mt-1 text-sm text-txt-secondary">
-            Dashboard terpusat — Internal, GA4, GSC, dan Cloudflare.
+            {isSuperAdmin
+              ? "Dashboard terpusat — Internal, GA4, GSC, dan Cloudflare."
+              : "Statistik performa artikel Anda."}
           </p>
         </div>
       </div>
@@ -1230,7 +1318,8 @@ export default function StatistikPage() {
         </button>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — SUPER_ADMIN only; non-SA see only their own Internal stats. */}
+      {isSuperAdmin && (
       <div className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
         {[
           { key: "internal", label: "Internal", icon: BarChart3 },
@@ -1258,17 +1347,18 @@ export default function StatistikPage() {
           );
         })}
       </div>
+      )}
 
       {tab === "internal" && (
-        <InternalTab key={`internal-${refreshKey}`} from={from} to={to} />
+        <InternalTab key={`internal-${refreshKey}`} from={from} to={to} scoped={!isSuperAdmin} />
       )}
-      {tab === "ga4" && (
+      {isSuperAdmin && tab === "ga4" && (
         <GA4Tab key={`ga4-${refreshKey}`} from={from} to={to} />
       )}
-      {tab === "gsc" && (
+      {isSuperAdmin && tab === "gsc" && (
         <GSCTab key={`gsc-${refreshKey}`} from={from} to={to} />
       )}
-      {tab === "cf" && (
+      {isSuperAdmin && tab === "cf" && (
         <CloudflareTab key={`cf-${refreshKey}`} from={from} to={to} />
       )}
     </div>

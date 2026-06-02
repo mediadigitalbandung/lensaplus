@@ -10,6 +10,8 @@ import {
   successResponse,
 } from "@/lib/api-utils";
 import { getInternalStats } from "@/lib/stats/internal";
+import { SCRAPER_ROLES } from "@/lib/roles";
+import { canViewAllArticles } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,12 @@ function parseDate(raw: string | null): Date | undefined {
 
 export async function GET(req: Request) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    // Open to every writer role — but a non-SUPER_ADMIN only sees their OWN
+    // stats (scoped by authorId); SUPER_ADMIN sees site-wide.
+    const session = await requireRole([...SCRAPER_ROLES]);
+    const authorId = canViewAllArticles(session.user.role)
+      ? undefined
+      : session.user.id;
 
     const url = new URL(req.url);
     const from =
@@ -29,7 +36,7 @@ export async function GET(req: Request) {
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const to = parseDate(url.searchParams.get("to")) ?? new Date();
 
-    const data = await getInternalStats({ from, to });
+    const data = await getInternalStats({ from, to, authorId });
 
     return successResponse({
       ...data,
