@@ -37,6 +37,8 @@ import {
   ArrowDownToLine,
   TrendingUp,
   Lightbulb,
+  Search,
+  X,
 } from "lucide-react";
 import { stripHtml, downloadTextFile, exportArticlePdf } from "@/lib/export-utils";
 import DOMPurify from "isomorphic-dompurify";
@@ -118,6 +120,11 @@ export default function EditArticlePage() {
   const [error, setError] = useState("");
   const [showSeo, setShowSeo] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
+  // Perplexity research-and-draft
+  const [showResearch, setShowResearch] = useState(false);
+  const [pplxNotes, setPplxNotes] = useState("");
+  const [researchMode, setResearchMode] = useState<"draft" | "research">("draft");
+  const [researching, setResearching] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentStatus, setCurrentStatus] = useState("");
   const [articleSlug, setArticleSlug] = useState("");
@@ -451,6 +458,142 @@ export default function EditArticlePage() {
       {aiLoading[feature] ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
       Generate AI
     </button>
+  );
+
+  const runResearch = async () => {
+    if (!title.trim()) {
+      setError("Isi judul/topik dulu sebelum riset");
+      return;
+    }
+    setResearching(true);
+    setError("");
+    try {
+      const res = await fetch("/api/ai/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: title, mode: researchMode, notes: pplxNotes }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || "Gagal menjalankan riset Perplexity");
+        return;
+      }
+      const html = (data.data?.content || "").toString();
+      setContent((prev) => (prev && prev.trim() ? `${prev}\n${html}` : html));
+
+      const cited: { title: string | null; url: string }[] = data.data?.sources || [];
+      if (cited.length > 0) {
+        const newSources: Source[] = cited.slice(0, 12).map((s) => {
+          let host = "";
+          try {
+            host = new URL(s.url).hostname.replace(/^www\./, "");
+          } catch {
+            /* keep blank */
+          }
+          return { name: s.title || host || "Sumber", title: "", institution: host, url: s.url };
+        });
+        setSources((prev) => {
+          const existing = prev.filter((p) => p.name.trim() || p.url.trim());
+          const seen = new Set(existing.map((e) => e.url));
+          const merged = [...existing];
+          for (const ns of newSources) {
+            if (!ns.url || !seen.has(ns.url)) {
+              merged.push(ns);
+              seen.add(ns.url);
+            }
+          }
+          return merged.length > 0 ? merged : prev;
+        });
+      }
+      success(
+        `Perplexity selesai — draf dimasukkan ke editor${cited.length ? ` + ${cited.length} sumber ditambahkan` : ""}. Tinjau & sunting sebelum publikasi.`,
+      );
+      setShowResearch(false);
+      setPplxNotes("");
+    } catch {
+      setError("Gagal menghubungi layanan riset Perplexity");
+    } finally {
+      setResearching(false);
+    }
+  };
+
+  const researchPanel = (
+    <div className="rounded-[12px] border border-primary/20 bg-primary-light/40 p-3">
+      {!showResearch ? (
+        <button
+          type="button"
+          onClick={() => setShowResearch(true)}
+          className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+        >
+          <Search size={16} />
+          Riset &amp; Tulis dengan Perplexity AI
+          <span className="text-[10px] font-normal text-txt-muted">— riset web real-time + sumber otomatis</span>
+        </button>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-primary">
+              <Search size={16} /> Riset &amp; Tulis dengan Perplexity
+            </h3>
+            <button
+              type="button"
+              onClick={() => setShowResearch(false)}
+              className="text-txt-muted hover:text-txt-secondary"
+              aria-label="Tutup"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <p className="text-xs leading-relaxed text-txt-secondary">
+            Perplexity meriset topik dari berita Indonesia terbaru, lalu menambahkan
+            draf ke editor &amp; mengisi daftar Sumber otomatis. Hasil ditambahkan (tidak menimpa).
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setResearchMode("draft")}
+              className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                researchMode === "draft"
+                  ? "border-primary bg-primary text-white"
+                  : "border-border bg-surface text-txt-secondary"
+              }`}
+            >
+              Draf artikel lengkap
+            </button>
+            <button
+              type="button"
+              onClick={() => setResearchMode("research")}
+              className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                researchMode === "research"
+                  ? "border-primary bg-primary text-white"
+                  : "border-border bg-surface text-txt-secondary"
+              }`}
+            >
+              Bahan riset saja
+            </button>
+          </div>
+          <input
+            type="text"
+            value={pplxNotes}
+            onChange={(e) => setPplxNotes(e.target.value)}
+            placeholder="Arahan/fokus tambahan (opsional) — mis. sudut bisnis, perkembangan terbaru…"
+            className="input w-full text-sm"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={runResearch}
+              disabled={researching || !title.trim()}
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-40"
+            >
+              {researching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {researching ? "Meriset & menulis…" : "Jalankan Riset"}
+            </button>
+            <span className="text-[10px] text-txt-muted">Tinjau hasil sebelum publikasi.</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 
   const generateTagsAI = async () => {
@@ -1498,6 +1641,7 @@ export default function EditArticlePage() {
               placeholder="Judul Artikel"
               className="input w-full px-4 py-3 text-xl font-bold"
             />
+            {researchPanel}
             <div className="rounded-[12px] border border-border overflow-hidden">
               <RichTextEditor
                 content={content}
@@ -1802,6 +1946,7 @@ export default function EditArticlePage() {
                 <label className="mb-2 block text-sm font-medium text-txt-primary">Judul</label>
                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="input w-full text-lg font-bold" />
               </div>
+              {researchPanel}
               <div className="rounded-[12px] border border-border bg-surface p-5">
                 <label className="mb-2 block text-sm font-medium text-txt-primary">Konten</label>
                 <div className="rounded-[12px] border border-border overflow-hidden">
@@ -2265,6 +2410,7 @@ export default function EditArticlePage() {
               placeholder="Judul Artikel"
               className="input w-full px-4 py-3 text-xl font-bold"
             />
+            {researchPanel}
             <div className="rounded-[12px] border border-border overflow-hidden">
               <RichTextEditor
                 content={content}
