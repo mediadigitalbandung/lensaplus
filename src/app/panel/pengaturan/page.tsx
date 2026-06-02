@@ -370,6 +370,7 @@ export default function PengaturanPage() {
   const [deepseekKey, setDeepseekKey] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
   const [perplexityKey, setPerplexityKey] = useState("");
+  const [perplexityInstructions, setPerplexityInstructions] = useState("");
   const [elevenlabsKey, setElevenlabsKey] = useState("");
   const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState("");
   const [ttsProvider, setTtsProvider] = useState("auto");
@@ -451,6 +452,7 @@ export default function PengaturanPage() {
         setDeepseekKey(map.deepseek_api_key || "");
         setGeminiKey(map.gemini_api_key || "");
         setPerplexityKey(map.perplexity_api_key || "");
+        setPerplexityInstructions(map.perplexity_instructions || "");
         setElevenlabsKey(map.elevenlabs_api_key || "");
         setElevenlabsVoiceId(map.elevenlabs_voice_id || "");
         setTtsProvider(map.tts_provider || "auto");
@@ -996,6 +998,21 @@ export default function PengaturanPage() {
             />
           </Field>
           <Field
+            label="Arahan Penulis Perplexity (gaya & karakter)"
+            hint="Arahan untuk agent Perplexity saat meriset & menulis: gaya bahasa, sudut pandang, panjang, hal yang harus/dihindari. Dipakai di setiap 'Riset & Tulis'. Kosongkan untuk gaya default Kartawarta."
+          >
+            <textarea
+              rows={5}
+              value={perplexityInstructions}
+              onChange={(e) => {
+                setPerplexityInstructions(e.target.value);
+                markDirty("ai");
+              }}
+              className="input resize-none"
+              placeholder={"Contoh: Tulis dengan gaya jurnalistik ringkas dan tegas. Gunakan kalimat aktif, hindari jargon. Sertakan konteks lokal Bandung bila relevan. Buka dengan lead yang kuat (5W1H) di paragraf pertama. Hindari bahasa promosi/clickbait."}
+            />
+          </Field>
+          <Field
             label="ElevenLabs API Key (alternatif suara Reel)"
             hint={
               <>
@@ -1078,6 +1095,7 @@ export default function PengaturanPage() {
                 ["deepseek_api_key", deepseekKey],
                 ["gemini_api_key", geminiKey],
                 ["perplexity_api_key", perplexityKey],
+                ["perplexity_instructions", perplexityInstructions],
                 ["elevenlabs_api_key", elevenlabsKey],
                 ["elevenlabs_voice_id", elevenlabsVoiceId],
                 ["tts_provider", ttsProvider],

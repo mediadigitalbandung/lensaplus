@@ -62,6 +62,20 @@ export async function isPerplexityConfigured(): Promise<boolean> {
   return Boolean(await getApiKey());
 }
 
+/**
+ * Optional editor-defined writing instructions / author persona for the
+ * Perplexity drafter (SystemSetting `perplexity_instructions`). Appended to the
+ * system prompt so drafts match a desired voice/style. Empty when unset.
+ */
+export async function getPerplexityInstructions(): Promise<string> {
+  try {
+    const row = await prisma.systemSetting.findUnique({ where: { key: "perplexity_instructions" } });
+    return (row?.value ?? "").trim();
+  } catch {
+    return "";
+  }
+}
+
 interface PplxResponse {
   choices?: { message?: { content?: string } }[];
   citations?: string[];

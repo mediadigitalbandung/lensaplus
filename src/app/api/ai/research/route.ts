@@ -13,7 +13,7 @@
 import { NextRequest } from "next/server";
 import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { aiRateLimit } from "@/lib/rate-limit";
-import { callPerplexity } from "@/lib/perplexity";
+import { callPerplexity, getPerplexityInstructions } from "@/lib/perplexity";
 
 // Indonesian outlets to bias sourcing toward (allowlist, not exclusive — Perplexity
 // still ranks within these first). Kept broad so niche topics aren't starved.
@@ -60,10 +60,17 @@ export async function POST(req: NextRequest) {
         : `Topik: ${topic}.${notes ? ` Fokus: ${notes}.` : ""} ` +
           `Kumpulkan bahan riset berita terbaru tentang topik ini.`;
 
+    // Editor-defined author persona / writing instructions (Settings → AI).
+    const persona = await getPerplexityInstructions();
+    const baseSystem = mode === "draft" ? SYSTEM_DRAFT : SYSTEM_RESEARCH;
+    const systemPrompt = persona
+      ? `${baseSystem}\n\nARAHAN PENULIS (WAJIB DIIKUTI): ${persona}`
+      : baseSystem;
+
     let result;
     try {
       result = await callPerplexity({
-        systemPrompt: mode === "draft" ? SYSTEM_DRAFT : SYSTEM_RESEARCH,
+        systemPrompt,
         userPrompt,
         recency: "month",
         domains: ID_OUTLETS,
