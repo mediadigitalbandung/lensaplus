@@ -19,6 +19,7 @@ export async function GET() {
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);
 
     const accounts = await prisma.tiktokAccount.findMany({
+      where: session.user.role === "SUPER_ADMIN" ? {} : { ownerId: session.user.id },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

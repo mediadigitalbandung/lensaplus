@@ -6,7 +6,7 @@ import {
   logAudit,
   requireAuth,
 } from "@/lib/api-utils";
-import { canManageTiktok } from "@/lib/tiktok/specs";
+import { canManageTiktok, ownsTiktok } from "@/lib/tiktok/specs";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +38,9 @@ export async function POST(_req: NextRequest, { params: paramsPromise }: { param
 
     const exists = await prisma.tiktokContent.findUnique({ where: { id: params.id } });
     if (!exists) throw new ApiError("Konten tidak ditemukan", 404);
+    if (!ownsTiktok(session.user.role, exists.createdById, session.user.id)) {
+      throw new ApiError("Konten tidak ditemukan", 404);
+    }
 
     // Audit render attempt even for stub
     await logAudit(session.user.id, "TIKTOK_RENDER_ATTEMPT", "tiktok_content", params.id, "Render attempted (Phase 2 stub — 501)");

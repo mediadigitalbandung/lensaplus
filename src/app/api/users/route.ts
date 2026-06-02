@@ -9,7 +9,10 @@ import { createEmailForward, addDestinationAddress } from "@/lib/cloudflare-emai
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth();
-    const isAdmin = ["SUPER_ADMIN", "CHIEF_EDITOR"].includes(session.user.role);
+    // Only SUPER_ADMIN gets the full directory (incl. email/PII). Everyone else
+    // — including CHIEF_EDITOR — gets the minimal id/name/role list used to
+    // populate author/editor pickers, never other accounts' emails.
+    const isAdmin = session.user.role === "SUPER_ADMIN";
 
     if (isAdmin) {
       const { searchParams } = new URL(request.url);

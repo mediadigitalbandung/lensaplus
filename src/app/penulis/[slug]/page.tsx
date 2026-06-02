@@ -8,7 +8,19 @@ import { notFound } from "next/navigation";
 import { slugify } from "@/lib/utils";
 
 async function getAuthorBySlug(slug: string) {
-  const users = await prisma.user.findMany({ where: { isActive: true } });
+  // Public profile — never pull password/email/phone into request memory.
+  const users = await prisma.user.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      bio: true,
+      role: true,
+      specialization: true,
+      avatar: true,
+      createdAt: true,
+    },
+  });
   return users.find((u) => slugify(u.name) === slug) || null;
 }
 
@@ -34,7 +46,7 @@ export default async function PenulisPage({ params: paramsPromise }: { params: P
   const [articles, viewAgg] = await Promise.all([
     prisma.article.findMany({
       where: { status: "PUBLISHED", authorId: author.id },
-      include: { author: true, category: true },
+      include: { author: { select: { name: true, avatar: true } }, category: true },
       orderBy: { publishedAt: "desc" },
     }),
     prisma.article.aggregate({

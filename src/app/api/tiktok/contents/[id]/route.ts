@@ -13,6 +13,7 @@ import {
   TIKTOK_TITLE_MAX,
   canManageTiktok,
   normalizeHashtags,
+  ownsTiktok,
 } from "@/lib/tiktok/specs";
 
 export const dynamic = "force-dynamic";
@@ -59,6 +60,9 @@ export async function GET(_req: NextRequest, { params: paramsPromise }: { params
       },
     });
     if (!content) throw new ApiError("Konten tidak ditemukan", 404);
+    if (!ownsTiktok(session.user.role, content.createdById, session.user.id)) {
+      throw new ApiError("Konten tidak ditemukan", 404);
+    }
 
     return successResponse(content);
   } catch (error) {
@@ -75,6 +79,9 @@ export async function PUT(request: NextRequest, { params: paramsPromise }: { par
 
     const existing = await prisma.tiktokContent.findUnique({ where: { id: params.id } });
     if (!existing) throw new ApiError("Konten tidak ditemukan", 404);
+    if (!ownsTiktok(session.user.role, existing.createdById, session.user.id)) {
+      throw new ApiError("Konten tidak ditemukan", 404);
+    }
 
     const body = await request.json();
     const data = updateSchema.parse(body);
@@ -123,6 +130,9 @@ export async function DELETE(_req: NextRequest, { params: paramsPromise }: { par
 
     const existing = await prisma.tiktokContent.findUnique({ where: { id: params.id } });
     if (!existing) throw new ApiError("Konten tidak ditemukan", 404);
+    if (!ownsTiktok(session.user.role, existing.createdById, session.user.id)) {
+      throw new ApiError("Konten tidak ditemukan", 404);
+    }
 
     await prisma.tiktokContent.delete({ where: { id: params.id } });
     await logAudit(

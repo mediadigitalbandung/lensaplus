@@ -45,14 +45,17 @@ export async function GET(
 ) {
   const params = await paramsPromise;
   try {
-    await requireRole([...WRITE_ROLES]);
+    const session = await requireRole([...WRITE_ROLES]);
 
     const blog = await prisma.liveBlog.findUnique({
       where: { id: params.id },
-      select: { id: true },
+      select: { id: true, authorId: true },
     });
 
     if (!blog) {
+      throw new ApiError("Live blog tidak ditemukan", 404);
+    }
+    if (session.user.role !== "SUPER_ADMIN" && blog.authorId !== session.user.id) {
       throw new ApiError("Live blog tidak ditemukan", 404);
     }
 
@@ -111,16 +114,10 @@ export async function POST(
       throw new ApiError("Live blog tidak ditemukan", 404);
     }
 
-    // Only LIVE blogs accept new entries (warn if posting to non-live)
-    // JOURNALIST can only post to their own live blog or any LIVE blog
-    if (
-      session.user.role === "JOURNALIST" &&
-      blog.authorId !== session.user.id
-    ) {
-      throw new ApiError(
-        "Anda tidak memiliki akses ke live blog ini",
-        403
-      );
+    // Only the live blog's author (or a SUPER_ADMIN) may post entries — no
+    // cross-account posting for EDITOR/CHIEF_EDITOR either.
+    if (session.user.role !== "SUPER_ADMIN" && blog.authorId !== session.user.id) {
+      throw new ApiError("Live blog tidak ditemukan", 404);
     }
 
     const body = await req.json();

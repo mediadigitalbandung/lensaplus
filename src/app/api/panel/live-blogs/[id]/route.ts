@@ -48,7 +48,7 @@ export async function GET(
 ) {
   const params = await paramsPromise;
   try {
-    await requireRole([...WRITE_ROLES]);
+    const session = await requireRole([...WRITE_ROLES]);
 
     const blog = await prisma.liveBlog.findUnique({
       where: { id: params.id },
@@ -59,6 +59,10 @@ export async function GET(
     });
 
     if (!blog) {
+      throw new ApiError("Live blog tidak ditemukan", 404);
+    }
+    // Only the author (or a SUPER_ADMIN) may see another account's live blog.
+    if (session.user.role !== "SUPER_ADMIN" && blog.authorId !== session.user.id) {
       throw new ApiError("Live blog tidak ditemukan", 404);
     }
 
@@ -85,15 +89,10 @@ export async function PUT(
       throw new ApiError("Live blog tidak ditemukan", 404);
     }
 
-    // JOURNALIST can only edit their own live blogs
-    if (
-      session.user.role === "JOURNALIST" &&
-      blog.authorId !== session.user.id
-    ) {
-      throw new ApiError(
-        "Anda hanya dapat mengedit live blog milik Anda",
-        403
-      );
+    // Only the author (or a SUPER_ADMIN) may edit a live blog — no cross-account
+    // editing for EDITOR/CHIEF_EDITOR either.
+    if (session.user.role !== "SUPER_ADMIN" && blog.authorId !== session.user.id) {
+      throw new ApiError("Live blog tidak ditemukan", 404);
     }
 
     const body = await req.json();
@@ -180,10 +179,14 @@ export async function DELETE(
 
     const blog = await prisma.liveBlog.findUnique({
       where: { id: params.id },
-      select: { id: true, title: true },
+      select: { id: true, title: true, authorId: true },
     });
 
     if (!blog) {
+      throw new ApiError("Live blog tidak ditemukan", 404);
+    }
+    // CHIEF_EDITOR may delete only their OWN; SUPER_ADMIN may delete any.
+    if (session.user.role !== "SUPER_ADMIN" && blog.authorId !== session.user.id) {
       throw new ApiError("Live blog tidak ditemukan", 404);
     }
 

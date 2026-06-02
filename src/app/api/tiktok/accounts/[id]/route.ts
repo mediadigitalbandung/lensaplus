@@ -8,7 +8,7 @@ import {
   requireAuth,
   successResponse,
 } from "@/lib/api-utils";
-import { canManageTiktok } from "@/lib/tiktok/specs";
+import { canManageTiktok, ownsTiktok } from "@/lib/tiktok/specs";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +26,9 @@ export async function PATCH(request: NextRequest, { params: paramsPromise }: { p
 
     const acct = await prisma.tiktokAccount.findUnique({ where: { id: params.id } });
     if (!acct) throw new ApiError("Akun tidak ditemukan", 404);
+    if (!ownsTiktok(session.user.role, acct.ownerId, session.user.id)) {
+      throw new ApiError("Akun tidak ditemukan", 404);
+    }
 
     const body = await request.json();
     const data = updateSchema.parse(body);
@@ -53,6 +56,9 @@ export async function DELETE(_req: NextRequest, { params: paramsPromise }: { par
 
     const acct = await prisma.tiktokAccount.findUnique({ where: { id: params.id } });
     if (!acct) throw new ApiError("Akun tidak ditemukan", 404);
+    if (!ownsTiktok(session.user.role, acct.ownerId, session.user.id)) {
+      throw new ApiError("Akun tidak ditemukan", 404);
+    }
 
     await prisma.tiktokAccount.delete({ where: { id: params.id } });
 

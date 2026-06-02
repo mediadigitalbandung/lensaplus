@@ -51,6 +51,8 @@ export async function GET(request: NextRequest) {
         { caption: { contains: search, mode: "insensitive" } },
       ];
     }
+    // Each account sees only its OWN TikTok content; SUPER_ADMIN sees all.
+    if (session.user.role !== "SUPER_ADMIN") where.createdById = session.user.id;
 
     const [contents, total] = await Promise.all([
       prisma.tiktokContent.findMany({

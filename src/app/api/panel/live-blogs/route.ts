@@ -50,7 +50,7 @@ const createSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    await requireRole([...WRITE_ROLES]);
+    const session = await requireRole([...WRITE_ROLES]);
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -71,6 +71,10 @@ export async function GET(req: NextRequest) {
     if (statusFilter && VALID_STATUSES.has(statusFilter)) {
       where.status =
         statusFilter as Prisma.EnumLiveBlogStatusFilter;
+    }
+    // Each account sees only its OWN live blogs; SUPER_ADMIN sees all.
+    if (session.user.role !== "SUPER_ADMIN") {
+      where.authorId = session.user.id;
     }
 
     const [liveBlogs, total] = await Promise.all([

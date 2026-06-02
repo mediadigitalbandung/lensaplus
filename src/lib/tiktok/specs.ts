@@ -47,6 +47,16 @@ export function canManageTiktok(role: Role): boolean {
   return role === "SUPER_ADMIN" || role === "CHIEF_EDITOR" || role === "EDITOR";
 }
 
+/**
+ * Cross-account guard for OWNED TikTok rows. A SUPER_ADMIN may touch any row;
+ * every other (canManageTiktok) role is limited to rows they own —
+ * TiktokContent.createdById / TiktokAccount.ownerId. Without this an EDITOR or
+ * CHIEF_EDITOR could read/edit/delete another account's TikTok content.
+ */
+export function ownsTiktok(role: Role, ownerId: string, userId: string): boolean {
+  return role === "SUPER_ADMIN" || ownerId === userId;
+}
+
 // ── Hashtag normalization ──────────────────────────────────────────────────
 /** Accept comma- or whitespace-separated string with or without leading "#",
  *  return canonical comma-separated lowercased list w/o "#".

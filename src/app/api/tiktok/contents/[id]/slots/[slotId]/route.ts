@@ -12,6 +12,7 @@ import {
   TIKTOK_SLOT_DURATION_MAX_MS,
   TIKTOK_SLOT_DURATION_MIN_MS,
   canManageTiktok,
+  ownsTiktok,
 } from "@/lib/tiktok/specs";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,13 @@ export async function PATCH(
 
     const slot = await prisma.tiktokMediaSlot.findUnique({ where: { id: params.slotId } });
     if (!slot || slot.contentId !== params.id) {
+      throw new ApiError("Slot tidak ditemukan", 404);
+    }
+    const parent = await prisma.tiktokContent.findUnique({
+      where: { id: params.id },
+      select: { createdById: true },
+    });
+    if (!parent || !ownsTiktok(session.user.role, parent.createdById, session.user.id)) {
       throw new ApiError("Slot tidak ditemukan", 404);
     }
 
@@ -71,6 +79,13 @@ export async function DELETE(
 
     const slot = await prisma.tiktokMediaSlot.findUnique({ where: { id: params.slotId } });
     if (!slot || slot.contentId !== params.id) {
+      throw new ApiError("Slot tidak ditemukan", 404);
+    }
+    const parent = await prisma.tiktokContent.findUnique({
+      where: { id: params.id },
+      select: { createdById: true },
+    });
+    if (!parent || !ownsTiktok(session.user.role, parent.createdById, session.user.id)) {
       throw new ApiError("Slot tidak ditemukan", 404);
     }
 

@@ -51,12 +51,9 @@ export async function PUT(
       throw new ApiError("Entry tidak ditemukan", 404);
     }
 
-    // JOURNALIST can only edit their own entries
-    if (
-      session.user.role === "JOURNALIST" &&
-      entry.authorId !== session.user.id
-    ) {
-      throw new ApiError("Anda hanya dapat mengedit entry milik Anda", 403);
+    // Only the entry's author (or a SUPER_ADMIN) may edit it.
+    if (session.user.role !== "SUPER_ADMIN" && entry.authorId !== session.user.id) {
+      throw new ApiError("Entry tidak ditemukan", 404);
     }
 
     const body = await req.json();
@@ -108,12 +105,9 @@ export async function DELETE(
       throw new ApiError("Entry tidak ditemukan", 404);
     }
 
-    // JOURNALIST can only delete their own entries
-    if (
-      session.user.role === "JOURNALIST" &&
-      entry.authorId !== session.user.id
-    ) {
-      throw new ApiError("Anda hanya dapat menghapus entry milik Anda", 403);
+    // Only the entry's author (or a SUPER_ADMIN) may delete it.
+    if (session.user.role !== "SUPER_ADMIN" && entry.authorId !== session.user.id) {
+      throw new ApiError("Entry tidak ditemukan", 404);
     }
 
     await prisma.liveBlogEntry.delete({ where: { id: params.entryId } });

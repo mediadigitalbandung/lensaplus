@@ -13,6 +13,7 @@ import {
   TIKTOK_SLOT_DURATION_MIN_MS,
   TIKTOK_SLOT_MAX,
   canManageTiktok,
+  ownsTiktok,
 } from "@/lib/tiktok/specs";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest, { params: paramsPromise }: { pa
       include: { _count: { select: { slots: true } } },
     });
     if (!content) throw new ApiError("Konten tidak ditemukan", 404);
+    if (!ownsTiktok(session.user.role, content.createdById, session.user.id)) {
+      throw new ApiError("Konten tidak ditemukan", 404);
+    }
     if (content._count.slots >= TIKTOK_SLOT_MAX) {
       throw new ApiError(`Maksimal ${TIKTOK_SLOT_MAX} slot per konten`, 400);
     }
@@ -89,6 +93,14 @@ export async function PUT(request: NextRequest, { params: paramsPromise }: { par
 
     const body = await request.json();
     const { ordered } = reorderSchema.parse(body);
+
+    const content = await prisma.tiktokContent.findUnique({
+      where: { id: params.id },
+      select: { createdById: true },
+    });
+    if (!content || !ownsTiktok(session.user.role, content.createdById, session.user.id)) {
+      throw new ApiError("Konten tidak ditemukan", 404);
+    }
 
     const slots = await prisma.tiktokMediaSlot.findMany({
       where: { contentId: params.id },

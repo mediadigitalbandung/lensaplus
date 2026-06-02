@@ -6,7 +6,7 @@ import {
   requireAuth,
   successResponse,
 } from "@/lib/api-utils";
-import { canManageTiktok, composeFinalCaption } from "@/lib/tiktok/specs";
+import { canManageTiktok, composeFinalCaption, ownsTiktok } from "@/lib/tiktok/specs";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +33,9 @@ export async function GET(_req: NextRequest, { params: paramsPromise }: { params
       },
     });
     if (!content) throw new ApiError("Konten tidak ditemukan", 404);
+    if (!ownsTiktok(session.user.role, content.createdById, session.user.id)) {
+      throw new ApiError("Konten tidak ditemukan", 404);
+    }
 
     const manifest = {
       id: content.id,
