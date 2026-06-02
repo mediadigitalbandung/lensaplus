@@ -127,6 +127,14 @@ export async function POST(req: NextRequest) {
       throw new ApiError("Slug sudah digunakan, pilih slug lain", 409);
     }
 
+    // When created straight as LIVE, stamp startedAt now (mirrors the PUT
+    // transition) so "go live immediately" works without scheduling first.
+    const startedAt = data.startedAt
+      ? new Date(data.startedAt)
+      : data.status === "LIVE"
+        ? new Date()
+        : null;
+
     const liveBlog = await prisma.liveBlog.create({
       data: {
         slug: data.slug,
@@ -135,7 +143,7 @@ export async function POST(req: NextRequest) {
         category: data.category ? sanitizeText(data.category) : null,
         status: data.status,
         scheduledAt: new Date(data.scheduledAt),
-        startedAt: data.startedAt ? new Date(data.startedAt) : null,
+        startedAt,
         endedAt: data.endedAt ? new Date(data.endedAt) : null,
         coverImage: data.coverImage ?? null,
         authorId: session.user.id,

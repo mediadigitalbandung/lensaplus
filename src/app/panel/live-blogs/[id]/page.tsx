@@ -19,6 +19,7 @@ import {
   Zap,
   RefreshCw,
   ExternalLink,
+  Square,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -157,6 +158,35 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
     }
   };
 
+  // One-click status switch — "Mulai Live Sekarang" / "Akhiri Siaran" without
+  // touching the schedule. The API auto-stamps startedAt/endedAt on transition.
+  const quickStatus = async (newStatus: LiveBlogStatus) => {
+    if (!blog) return;
+    setSavingMeta(true);
+    try {
+      const res = await fetch(`/api/panel/live-blogs/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const json = await res.json();
+      if (!res.ok) { showError(json.error || "Gagal mengubah status"); return; }
+      setBlog(json.data?.liveBlog);
+      setMeta((m) => ({ ...m, status: newStatus }));
+      showSuccess(
+        newStatus === "LIVE"
+          ? "🔴 Siaran dimulai — sekarang LIVE"
+          : newStatus === "ENDED"
+            ? "Siaran diakhiri"
+            : "Status diperbarui"
+      );
+    } catch {
+      showError("Terjadi kesalahan");
+    } finally {
+      setSavingMeta(false);
+    }
+  };
+
   const postEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!entryContent.trim()) return;
@@ -270,6 +300,45 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
             Lihat publik
           </Link>
         </div>
+
+        {/* Quick status action — go live / end without editing the schedule */}
+        {blog.status !== "LIVE" ? (
+          <button
+            type="button"
+            onClick={() => quickStatus("LIVE")}
+            disabled={savingMeta}
+            className="btn-urgent w-full flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+          >
+            {savingMeta ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+              </span>
+            )}
+            Mulai Live Sekarang
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 rounded-md bg-secondary/10 px-3 py-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-secondary" />
+              </span>
+              <span className="text-label-md font-bold text-secondary">SEDANG LIVE</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => quickStatus("ENDED")}
+              disabled={savingMeta}
+              className="btn-ghost w-full flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+            >
+              {savingMeta ? <Loader2 size={14} className="animate-spin" /> : <Square size={14} />}
+              Akhiri Siaran
+            </button>
+          </div>
+        )}
 
         <form onSubmit={saveMeta} className="card p-4 space-y-4">
           <h2 className="text-label-md font-semibold text-on-surface">Metadata</h2>
