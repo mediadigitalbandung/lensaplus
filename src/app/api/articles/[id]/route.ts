@@ -9,7 +9,7 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { calculateReadTime, slugify } from "@/lib/utils";
-import { canApproveArticles } from "@/lib/auth";
+import { canApproveArticles, canViewAllArticles } from "@/lib/auth";
 import { sanitizeHtml, cleanAIShortText } from "@/lib/sanitize";
 import { notifyArticleStatusChange } from "@/lib/notifications";
 import {
@@ -47,6 +47,11 @@ export async function GET(
 ) {
   const params = await paramsPromise;
   try {
+    // Panel-only endpoint (public pages read by slug via Prisma). Require auth
+    // and scope: only SUPER_ADMIN may open any article; everyone else only
+    // their own + the ones assigned/directed to them.
+    const session = await requireAuth();
+
     const article = await prisma.article.findUnique({
       where: { id: params.id },
       include: {
@@ -60,6 +65,17 @@ export async function GET(
     });
 
     if (!article) {
+      throw new ApiError("Artikel tidak ditemukan", 404);
+    }
+
+    const uid = session.user.id;
+    const canSee =
+      canViewAllArticles(session.user.role) ||
+      article.authorId === uid ||
+      article.reviewedBy === uid ||
+      article.assignedEditorId === uid;
+    if (!canSee) {
+      // 404 (not 403) so we don't reveal that the article exists.
       throw new ApiError("Artikel tidak ditemukan", 404);
     }
 

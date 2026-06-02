@@ -12,7 +12,7 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { slugify, calculateReadTime } from "@/lib/utils";
-import { canWriteArticles, canApproveArticles } from "@/lib/auth";
+import { canWriteArticles, canApproveArticles, canViewAllArticles } from "@/lib/auth";
 
 const createArticleSchema = z.object({
   title: z.string().min(5, "Judul minimal 5 karakter").max(255),
@@ -74,23 +74,26 @@ export async function GET(request: NextRequest) {
     }
 
     let targetUserId: string | null = null;
+    // Set when an authenticated viewer is NOT allowed to see every article
+    // (i.e. anyone but SUPER_ADMIN). Such a viewer is hard-scoped to their own
+    // content + the articles assigned/directed to them, and any `authorId`
+    // query param is ignored so they cannot enumerate other users' articles.
+    let scopedViewerId: string | null = null;
 
     if (status === "ALL") {
       // Fetch all statuses — requires auth (admin panel)
       const session = await requireAuth();
-      // Non-editor roles can only see their own articles
-      if (!canApproveArticles(session.user.role)) {
-        targetUserId = session.user.id;
+      if (!canViewAllArticles(session.user.role)) {
+        scopedViewerId = session.user.id;
       }
-      // No status filter — return all
+      // No status filter — return all (subject to scoping below)
     } else if (status === "PUBLISHED") {
       where.status = "PUBLISHED";
     } else {
       // Non-public statuses require auth
       const session = await requireAuth();
-      // Non-editor roles can only see their own articles
-      if (!canApproveArticles(session.user.role)) {
-        targetUserId = session.user.id;
+      if (!canViewAllArticles(session.user.role)) {
+        scopedViewerId = session.user.id;
       }
       where.status = status;
     }
@@ -98,7 +101,12 @@ export async function GET(request: NextRequest) {
     if (category) {
       where.category = { slug: category };
     }
-    if (authorId) {
+
+    if (scopedViewerId) {
+      // Hard self-scope (ignores authorId param) — own + assigned + reviewed.
+      targetUserId = scopedViewerId;
+    } else if (authorId) {
+      // Public author filter, or SUPER_ADMIN filtering the panel by author.
       targetUserId = authorId;
     }
 

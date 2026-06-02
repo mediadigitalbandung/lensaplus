@@ -6,6 +6,7 @@ import {
   requireAuth,
   ApiError,
 } from "@/lib/api-utils";
+import { canViewAllArticles } from "@/lib/auth";
 
 // GET /api/articles/:id/revisions
 export async function GET(
@@ -14,14 +15,26 @@ export async function GET(
 ) {
   const params = await paramsPromise;
   try {
-    await requireAuth();
+    const session = await requireAuth();
 
     const article = await prisma.article.findUnique({
       where: { id: params.id },
-      select: { id: true },
+      select: { id: true, authorId: true, reviewedBy: true, assignedEditorId: true },
     });
 
     if (!article) {
+      throw new ApiError("Artikel tidak ditemukan", 404);
+    }
+
+    // Same scope as the article itself: only SUPER_ADMIN, the author, the
+    // assigned editor or the reviewer may read its revision history.
+    const uid = session.user.id;
+    const canSee =
+      canViewAllArticles(session.user.role) ||
+      article.authorId === uid ||
+      article.reviewedBy === uid ||
+      article.assignedEditorId === uid;
+    if (!canSee) {
       throw new ApiError("Artikel tidak ditemukan", 404);
     }
 

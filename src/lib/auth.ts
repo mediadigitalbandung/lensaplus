@@ -286,6 +286,13 @@ export function canApproveArticles(role: Role): boolean {
   return EDITOR_ROLES.includes(role);
 }
 
+// Only SUPER_ADMIN may see EVERY article in the panel. Everyone else — incl.
+// EDITOR & CHIEF_EDITOR — is scoped to their own articles plus the ones
+// assigned/directed to them (authorId | reviewedBy | assignedEditorId == self).
+export function canViewAllArticles(role: Role): boolean {
+  return role === "SUPER_ADMIN";
+}
+
 export function canWriteArticles(role: Role): boolean {
   return WRITER_ROLES.includes(role);
 }
