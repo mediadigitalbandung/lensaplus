@@ -235,6 +235,8 @@ async function buildAuthorScopedStats(
     commentPending,
     commentApproved,
     commentInRange,
+    aiOwnAgg,
+    aiOwnFeatures,
   ] = await Promise.all([
     prisma.article.groupBy({ by: ["status"], _count: { _all: true }, where: { authorId } }),
     prisma.article.count({ where: { authorId, status: "PUBLISHED", publishedAt: { gte: from, lte: to } } }),
@@ -247,6 +249,21 @@ async function buildAuthorScopedStats(
     prisma.comment.count({ where: { article: { authorId }, isApproved: false } }),
     prisma.comment.count({ where: { article: { authorId }, isApproved: true } }),
     prisma.comment.count({ where: { article: { authorId }, createdAt: { gte: from, lte: to } } }),
+    // The viewer's OWN AI usage in range (keyed to userId) — surfaced on the
+    // personal stats view so each user can see how much AI they've used.
+    prisma.aIUsageLog.aggregate({
+      where: { userId: authorId, createdAt: { gte: from, lte: to } },
+      _sum: { totalTokens: true },
+      _count: { _all: true },
+    }),
+    prisma.aIUsageLog.groupBy({
+      by: ["feature"],
+      where: { userId: authorId, createdAt: { gte: from, lte: to } },
+      _count: { _all: true },
+      _sum: { totalTokens: true },
+      orderBy: { _count: { feature: "desc" } },
+      take: 5,
+    }),
   ]);
 
   const articles = { total: 0, published: 0, draft: 0, inReview: 0, rejected: 0, archived: 0, publishedInRange };
@@ -278,7 +295,15 @@ async function buildAuthorScopedStats(
     trend: buildTrendBuckets(from, to, trendRows),
     comments: { total: commentTotal, pending: commentPending, approved: commentApproved, inRange: commentInRange },
     polls: { total: 0, active: 0, totalVotes: 0, votesInRange: 0 },
-    ai: { rangeTokens: 0, rangeCalls: 0, topFeatures: [] },
+    ai: {
+      rangeTokens: aiOwnAgg._sum.totalTokens ?? 0,
+      rangeCalls: aiOwnAgg._count._all,
+      topFeatures: aiOwnFeatures.map((g) => ({
+        feature: g.feature,
+        calls: g._count._all,
+        tokens: g._sum.totalTokens ?? 0,
+      })),
+    },
     sorotan: { total: 0, indexed: 0, pending: 0, submitted: 0, failed: 0, createdInRange: 0 },
     social: { total: 0, published: 0, draft: 0, publishedInRange: 0 },
     glossary: { total: 0, viewsTotal: 0, top5: [] },

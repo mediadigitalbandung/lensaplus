@@ -8,7 +8,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { EDITOR_ROLES } from "@/lib/roles";
 import {
   TrendingUp,
   Eye,
@@ -23,6 +22,7 @@ import {
   ExternalLink,
   Activity,
   Shield,
+  Bot,
 } from "lucide-react";
 import {
   LineChart,
@@ -269,6 +269,31 @@ function ScopedInternalView({
         <StatCard label="Terbit" value={formatNumber(data.articles.published)} icon={FileText} color="text-green-600 bg-green-50" />
         <StatCard label="Draf" value={formatNumber(data.articles.draft)} icon={FileText} color="text-txt-secondary bg-surface-tertiary" />
         <StatCard label="Total Views Saya" value={formatNumber(data.views.total)} icon={Eye} color="text-primary bg-primary-light" />
+      </div>
+
+      {/* Personal AI usage — how much AI the viewer has used in this range. */}
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <h3 className="text-base font-bold text-txt-primary mb-1">Pemakaian AI Anda (Periode)</h3>
+        <p className="text-xs text-txt-muted mb-4">Token &amp; permintaan AI yang Anda gunakan di rentang dipilih.</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <StatCard label="Token AI (Periode)" value={formatNumber(data.ai.rangeTokens)} icon={Bot} color="text-indigo-500 bg-indigo-50" />
+          <StatCard label="Permintaan AI (Periode)" value={formatNumber(data.ai.rangeCalls)} icon={Activity} color="text-violet-500 bg-violet-50" />
+        </div>
+        {data.ai.topFeatures.length > 0 ? (
+          <div className="mt-4 space-y-1.5">
+            <p className="text-xs font-semibold text-txt-secondary">Fitur AI terbanyak</p>
+            {data.ai.topFeatures.map((f) => (
+              <div key={f.feature} className="flex justify-between text-sm">
+                <span className="text-txt-secondary">{f.feature}</span>
+                <span className="font-medium text-txt-primary">
+                  {formatNumber(f.tokens)} token · {formatNumber(f.calls)}×
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-txt-muted">Belum ada aktivitas AI di rentang ini.</p>
+        )}
       </div>
 
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
@@ -1254,9 +1279,11 @@ export default function StatistikPage() {
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
   const isSuperAdmin = userRole === "SUPER_ADMIN";
-  // Editors+ (incl. CHIEF_EDITOR) may see site-wide ("Umum") stats; everyone
-  // can see their own ("Pribadi"). Creators only ever get the personal view.
-  const canSeeGeneral = EDITOR_ROLES.includes(userRole);
+  // Only SUPER_ADMIN sees the site-wide ("Umum") view — which is the only place
+  // the per-role user breakdown and Sorotan SEO appear. Every other role
+  // (incl. CHIEF_EDITOR / EDITOR) sees ONLY their own ("Pribadi") stats, so
+  // those site-wide sections are never shown to a non-superadmin.
+  const canSeeGeneral = isSuperAdmin;
   const [statScope, setStatScope] = useState<"all" | "me">("all");
   const [tab, setTab] = useState<"internal" | "ga4" | "gsc" | "cf">(
     "internal",
