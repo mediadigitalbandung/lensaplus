@@ -68,6 +68,16 @@ fail() {
 
 cd "$APP_DIR" || { echo "FAIL: cannot cd to $APP_DIR" > "$STATUS_FILE"; exit 1; }
 
+# Snapshot load + memory at deploy start. Helps diagnose the recurring
+# "dial tcp :22 i/o timeout" the GitHub runner hits on back-to-back deploys:
+# if a prior build is still running here, load1 will be high and free RAM low,
+# confirming the VPS was simply too busy for sshd to accept the next connect.
+echo "=== deploy start (UTC $(date -u '+%Y-%m-%d %H:%M:%S')) ==="
+uptime || true
+free -m 2>/dev/null | head -2 || true
+pgrep -af 'next/dist/build|next build' || echo "(no build currently running)"
+echo "==========================================================="
+
 # Build lock — prevents two CI runs (or a manual SSH build) from spawning
 # concurrent next-build processes that fight over RAM and orphan jest-workers.
 if [ -e "$LOCK" ]; then
