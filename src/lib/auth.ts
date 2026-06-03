@@ -286,11 +286,14 @@ export function canApproveArticles(role: Role): boolean {
   return EDITOR_ROLES.includes(role);
 }
 
-// Only SUPER_ADMIN may see EVERY article in the panel. Everyone else — incl.
-// EDITOR & CHIEF_EDITOR — is scoped to their own articles plus the ones
-// assigned/directed to them (authorId | reviewedBy | assignedEditorId == self).
+// Editors+ (SUPER_ADMIN, CHIEF_EDITOR, EDITOR) may VIEW every article — the
+// panel list, a single article, and its revisions — for newsroom oversight.
+// Creators (journalist/contributor) stay scoped to their own articles plus the
+// ones assigned/directed to them (authorId | reviewedBy | assignedEditorId).
+// VIEW-only: edit/publish/delete rights are still enforced separately by the
+// article workflow, so widening visibility does not grant mutation.
 export function canViewAllArticles(role: Role): boolean {
-  return role === "SUPER_ADMIN";
+  return EDITOR_ROLES.includes(role);
 }
 
 export function canWriteArticles(role: Role): boolean {

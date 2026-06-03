@@ -48,8 +48,8 @@ export async function GET(
   const params = await paramsPromise;
   try {
     // Panel-only endpoint (public pages read by slug via Prisma). Require auth
-    // and scope: only SUPER_ADMIN may open any article; everyone else only
-    // their own + the ones assigned/directed to them.
+    // and scope: editors+ (canViewAllArticles) may open any article; creators
+    // only their own + the ones assigned/directed to them.
     const session = await requireAuth();
 
     const article = await prisma.article.findUnique({

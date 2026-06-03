@@ -75,9 +75,10 @@ export async function GET(request: NextRequest) {
 
     let targetUserId: string | null = null;
     // Set when an authenticated viewer is NOT allowed to see every article
-    // (i.e. anyone but SUPER_ADMIN). Such a viewer is hard-scoped to their own
-    // content + the articles assigned/directed to them, and any `authorId`
-    // query param is ignored so they cannot enumerate other users' articles.
+    // (i.e. a creator — journalist/contributor; editors+ CAN see all). Such a
+    // viewer is hard-scoped to their own content + the articles assigned/directed
+    // to them, and any `authorId` query param is ignored so they cannot
+    // enumerate other users' articles.
     let scopedViewerId: string | null = null;
 
     if (status === "ALL") {
@@ -131,10 +132,10 @@ export async function GET(request: NextRequest) {
         },
       ];
     }
-    // DRAFTs are private to their author for NON-SUPER_ADMIN accounts — each
-    // such account only sees its own drafts. SUPER_ADMIN (scopedViewerId null)
-    // sees every draft ("bisa segalanya"). Other statuses follow the role
-    // rules above, so the review workflow + published-oversight are unaffected.
+    // DRAFTs are private to their author for CREATOR accounts — each such
+    // account only sees its own drafts. Editors+ (scopedViewerId null) see every
+    // draft for newsroom oversight. Other statuses follow the role rules above,
+    // so the review workflow + published-oversight are unaffected.
     if (scopedViewerId) {
       const draftPrivacy = {
         OR: [{ status: { not: "DRAFT" } }, { authorId: scopedViewerId }],

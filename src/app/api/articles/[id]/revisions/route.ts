@@ -26,8 +26,8 @@ export async function GET(
       throw new ApiError("Artikel tidak ditemukan", 404);
     }
 
-    // Same scope as the article itself: only SUPER_ADMIN, the author, the
-    // assigned editor or the reviewer may read its revision history.
+    // Same scope as the article itself: editors+ (canViewAllArticles), the
+    // author, the assigned editor or the reviewer may read its revision history.
     const uid = session.user.id;
     const canSee =
       canViewAllArticles(session.user.role) ||

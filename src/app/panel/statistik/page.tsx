@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { EDITOR_ROLES } from "@/lib/roles";
 import {
   TrendingUp,
   Eye,
@@ -325,7 +326,7 @@ function ScopedInternalView({
 }
 
 // --- Internal Tab ---
-function InternalTab({ from, to, scoped }: { from: string; to: string; scoped: boolean }) {
+function InternalTab({ from, to, scope }: { from: string; to: string; scope: "all" | "me" }) {
   const [data, setData] = useState<InternalStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -333,7 +334,7 @@ function InternalTab({ from, to, scoped }: { from: string; to: string; scoped: b
     try {
       setLoading(true);
       const res = await fetch(
-        `/api/stats/internal?from=${from}&to=${to}`,
+        `/api/stats/internal?from=${from}&to=${to}&scope=${scope}`,
       );
       if (res.ok) {
         const json = await res.json();
@@ -344,7 +345,7 @@ function InternalTab({ from, to, scoped }: { from: string; to: string; scoped: b
     } finally {
       setLoading(false);
     }
-  }, [from, to]);
+  }, [from, to, scope]);
 
   useEffect(() => {
     fetchData();
@@ -365,8 +366,8 @@ function InternalTab({ from, to, scoped }: { from: string; to: string; scoped: b
     );
   }
 
-  // Non-SUPER_ADMIN: render only the per-author subset (no site-wide numbers).
-  if (scoped) {
+  // Personal scope: render only the per-author subset (no site-wide numbers).
+  if (scope === "me") {
     return <ScopedInternalView data={data} from={from} to={to} />;
   }
 
@@ -1253,6 +1254,10 @@ export default function StatistikPage() {
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
   const isSuperAdmin = userRole === "SUPER_ADMIN";
+  // Editors+ (incl. CHIEF_EDITOR) may see site-wide ("Umum") stats; everyone
+  // can see their own ("Pribadi"). Creators only ever get the personal view.
+  const canSeeGeneral = EDITOR_ROLES.includes(userRole);
+  const [statScope, setStatScope] = useState<"all" | "me">("all");
   const [tab, setTab] = useState<"internal" | "ga4" | "gsc" | "cf">(
     "internal",
   );
@@ -1283,7 +1288,9 @@ export default function StatistikPage() {
           <p className="mt-1 text-sm text-txt-secondary">
             {isSuperAdmin
               ? "Dashboard terpusat — Internal, GA4, GSC, dan Cloudflare."
-              : "Statistik performa artikel Anda."}
+              : canSeeGeneral
+                ? "Statistik umum situs + performa pribadi Anda."
+                : "Statistik performa artikel Anda."}
           </p>
         </div>
       </div>
@@ -1318,6 +1325,29 @@ export default function StatistikPage() {
         </button>
       </div>
 
+      {/* Umum vs Pribadi — editors+ can switch between site-wide and their own
+          numbers on the Internal tab. Creators only ever see their own. */}
+      {canSeeGeneral && tab === "internal" && (
+        <div className="mb-6 inline-flex rounded-lg border border-border bg-surface p-1">
+          {([
+            { k: "all", label: "Umum" },
+            { k: "me", label: "Pribadi" },
+          ] as const).map((o) => (
+            <button
+              key={o.k}
+              onClick={() => setStatScope(o.k)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                statScope === o.k
+                  ? "bg-primary text-white"
+                  : "text-txt-secondary hover:text-txt-primary"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Tabs — SUPER_ADMIN only; non-SA see only their own Internal stats. */}
       {isSuperAdmin && (
       <div className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
@@ -1350,7 +1380,12 @@ export default function StatistikPage() {
       )}
 
       {tab === "internal" && (
-        <InternalTab key={`internal-${refreshKey}`} from={from} to={to} scoped={!isSuperAdmin} />
+        <InternalTab
+          key={`internal-${refreshKey}-${canSeeGeneral ? statScope : "me"}`}
+          from={from}
+          to={to}
+          scope={canSeeGeneral ? statScope : "me"}
+        />
       )}
       {isSuperAdmin && tab === "ga4" && (
         <GA4Tab key={`ga4-${refreshKey}`} from={from} to={to} />
