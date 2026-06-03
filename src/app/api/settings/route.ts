@@ -65,6 +65,12 @@ const ALLOWED_KEYS = [
   "sorotan_batch_size",
   // IndexNow
   "indexnow_key",
+  // Press membership card (KTA) — org officials & signatures (not secrets)
+  "kta_director_name",
+  "kta_director_signature",
+  "kta_pwi_chairman_name",
+  "kta_pwi_chairman_signature",
+  "kta_card_logo",
   // YouTube auto-clipper (Deepgram STT). The worker reads DEEPGRAM_API_KEY from
   // env; this stored key powers the in-app /api/youtube/test smoke test.
   "deepgram_api_key",

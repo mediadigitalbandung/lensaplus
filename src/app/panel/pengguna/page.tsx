@@ -19,7 +19,9 @@ import {
   EyeOff,
   AtSign,
   AlertCircle,
+  CreditCard,
 } from "lucide-react";
+import UserCardManager from "@/components/panel/UserCardManager";
 
 interface EmailRoute {
   from: string;
@@ -87,6 +89,7 @@ export default function PenggunaPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [cardUser, setCardUser] = useState<{ id: string; name: string } | null>(null);
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
@@ -416,6 +419,14 @@ export default function PenggunaPage() {
                       <td className="px-3 sm:px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
+                            onClick={() => setCardUser({ id: user.id, name: user.name })}
+                            className="btn-ghost rounded p-2 hover:text-primary"
+                            title="Kelola Kartu Anggota (KTA)"
+                            aria-label="Kelola KTA"
+                          >
+                            <CreditCard size={16} />
+                          </button>
+                          <button
                             onClick={() => openEditModal(user)}
                             className="btn-ghost rounded p-2"
                             title="Edit"
@@ -592,6 +603,14 @@ export default function PenggunaPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {cardUser && (
+        <UserCardManager
+          userId={cardUser.id}
+          userName={cardUser.name}
+          onClose={() => setCardUser(null)}
+        />
       )}
     </div>
   );

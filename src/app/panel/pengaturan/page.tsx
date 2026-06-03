@@ -36,6 +36,7 @@ import {
   Mail,
   Bot,
   ToggleRight,
+  CreditCard,
   Loader2,
   CheckCircle2,
   XCircle,
@@ -138,6 +139,57 @@ function isValidServiceAccountJson(text: string): { ok: boolean; error?: string 
 // =====================================================================
 // Reusable bits
 // =====================================================================
+
+function KtaImageField({
+  label,
+  url,
+  uploading,
+  onPick,
+  onClear,
+}: {
+  label: string;
+  url: string;
+  uploading: boolean;
+  onPick: (file: File) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-txt-secondary">{label}</label>
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-secondary p-3">
+        <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded bg-[repeating-conic-gradient(#e8eaeb_0_25%,#fff_0_50%)] bg-[length:16px_16px]">
+          {url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={url} alt={label} className="max-h-14 max-w-24 object-contain" />
+          ) : (
+            <span className="text-[10px] text-txt-muted">kosong</span>
+          )}
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="cursor-pointer text-xs font-semibold text-primary hover:underline">
+            {uploading ? "Mengupload…" : url ? "Ganti" : "Upload"}
+            <input
+              type="file"
+              accept="image/png,image/webp,image/jpeg"
+              className="hidden"
+              disabled={uploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onPick(f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {url && (
+            <button type="button" onClick={onClear} className="text-left text-[11px] text-red-500 hover:underline">
+              Hapus
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Section({
   icon,
@@ -412,6 +464,14 @@ export default function PengaturanPage() {
   const [cfApiToken, setCfApiToken] = useState("");
   const [cfZoneId, setCfZoneId] = useState("");
 
+  // KTA (membership card) officials + signatures
+  const [ktaDirectorName, setKtaDirectorName] = useState("");
+  const [ktaDirectorSig, setKtaDirectorSig] = useState("");
+  const [ktaPwiName, setKtaPwiName] = useState("");
+  const [ktaPwiSig, setKtaPwiSig] = useState("");
+  const [ktaCardLogo, setKtaCardLogo] = useState("");
+  const [ktaUploading, setKtaUploading] = useState<string | null>(null);
+
   // Resend
   const [resendKey, setResendKey] = useState("");
   const [emailFrom, setEmailFrom] = useState("");
@@ -471,6 +531,11 @@ export default function PengaturanPage() {
 
         setCfApiToken(map.cloudflare_api_token || "");
         setCfZoneId(map.cloudflare_zone_id || "");
+        setKtaDirectorName(map.kta_director_name || "");
+        setKtaDirectorSig(map.kta_director_signature || "");
+        setKtaPwiName(map.kta_pwi_chairman_name || "");
+        setKtaPwiSig(map.kta_pwi_chairman_signature || "");
+        setKtaCardLogo(map.kta_card_logo || "");
 
         setResendKey(map.resend_api_key || "");
         setEmailFrom(map.notification_email_from || "");
@@ -556,6 +621,26 @@ export default function PengaturanPage() {
       }
     } finally {
       setSaving((p) => ({ ...p, [section]: false }));
+    }
+  }
+
+  // Upload an image (signature/logo) for the KTA section → returns its URL.
+  async function uploadKtaImage(slot: string, file: File, setter: (url: string) => void) {
+    setKtaUploading(slot);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      const url = json.url || json.data?.url;
+      if (!res.ok || !url) throw new Error(json.error || "Upload gagal");
+      setter(url);
+      markDirty("kta");
+      showSuccess("Gambar terupload. Jangan lupa Simpan.");
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal upload gambar");
+    } finally {
+      setKtaUploading(null);
     }
   }
 
@@ -1906,6 +1991,57 @@ export default function PengaturanPage() {
             }
             saving={!!saving.auto}
             dirty={!!dirty.auto}
+          />
+        </Section>
+
+        {/* ============== Kartu Anggota (KTA) ============== */}
+        <Section
+          icon={<CreditCard size={18} />}
+          title="Kartu Anggota (KTA) Pers"
+          description="Pejabat & tanda tangan yang tercetak di kartu anggota semua user"
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Nama Direktur Kartawarta" hint="Tercetak di kartu sebagai penanda tangan.">
+              <input
+                type="text"
+                value={ktaDirectorName}
+                onChange={(e) => { setKtaDirectorName(e.target.value); markDirty("kta"); }}
+                className="input"
+                placeholder="Nama lengkap direktur"
+              />
+            </Field>
+            <Field label="Nama Ketua Umum PWI Pusat">
+              <input
+                type="text"
+                value={ktaPwiName}
+                onChange={(e) => { setKtaPwiName(e.target.value); markDirty("kta"); }}
+                className="input"
+                placeholder="Nama ketua umum PWI Pusat"
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <KtaImageField label="TTD Direktur (PNG transparan)" url={ktaDirectorSig} uploading={ktaUploading === "dir"}
+              onPick={(f) => uploadKtaImage("dir", f, setKtaDirectorSig)} onClear={() => { setKtaDirectorSig(""); markDirty("kta"); }} />
+            <KtaImageField label="TTD Ketua PWI (PNG transparan)" url={ktaPwiSig} uploading={ktaUploading === "pwi"}
+              onPick={(f) => uploadKtaImage("pwi", f, setKtaPwiSig)} onClear={() => { setKtaPwiSig(""); markDirty("kta"); }} />
+            <KtaImageField label="Logo kartu (opsional)" url={ktaCardLogo} uploading={ktaUploading === "logo"}
+              onPick={(f) => uploadKtaImage("logo", f, setKtaCardLogo)} onClear={() => { setKtaCardLogo(""); markDirty("kta"); }} />
+          </div>
+
+          <SaveBar
+            onSave={() =>
+              saveSection("kta", [
+                ["kta_director_name", ktaDirectorName],
+                ["kta_director_signature", ktaDirectorSig],
+                ["kta_pwi_chairman_name", ktaPwiName],
+                ["kta_pwi_chairman_signature", ktaPwiSig],
+                ["kta_card_logo", ktaCardLogo],
+              ])
+            }
+            saving={!!saving.kta}
+            dirty={!!dirty.kta}
           />
         </Section>
 

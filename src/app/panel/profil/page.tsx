@@ -6,6 +6,7 @@ import Image from "next/image";
 import { UserCircle, Save, Loader2, Camera, KeyRound, Eye, EyeOff } from "lucide-react";
 
 import { roleLabelsMap } from "@/lib/roles";
+import MembershipCardSection from "@/components/panel/MembershipCardSection";
 
 interface UserProfile {
   id: string;
@@ -534,6 +535,9 @@ export default function ProfilPage() {
           </div>
         </form>
       </div>
+
+      {/* Kartu Tanda Anggota (KTA) */}
+      <MembershipCardSection />
     </div>
   );
 }

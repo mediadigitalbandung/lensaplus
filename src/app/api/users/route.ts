@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { successResponse, errorResponse, requireRole, requireAuth, logAudit, ApiError } from "@/lib/api-utils";
+import { ensureMembershipCard } from "@/lib/membership";
 import { createEmailForward, addDestinationAddress } from "@/lib/cloudflare-email";
 
 // GET /api/users
@@ -106,6 +107,10 @@ export async function POST(request: NextRequest) {
     });
 
     await logAudit(session.user.id, "CREATE", "user", user.id, `Membuat user: ${user.name} (${user.role})`);
+
+    // Auto-create a DRAFT membership card (KTA) for every new user. Best-effort
+    // — never blocks user creation.
+    await ensureMembershipCard(user.id);
 
     // Create email@kartawarta.com if requested
     let emailCreated = false;
