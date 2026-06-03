@@ -1,37 +1,35 @@
 import { successResponse, errorResponse, requireAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { EDITOR_ROLES } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Aggregated dashboard counts for the admin/editor dashboard.
- * Returns counts for content (articles, comments, polls, sorotan,
- * glossary, social posts), governance (reports, users, court schedules),
- * and AI usage. Single round-trip to keep the dashboard snappy.
+ *
+ * Returns counts for content (articles, comments, polls, sorotan, glossary,
+ * social posts), governance (reports, users), and AI usage. Single round-trip
+ * to keep the dashboard snappy.
+ *
+ * Scoping:
+ *  - Editors+ (EDITOR_ROLES) now oversee EVERY article, so they get the
+ *    accurate site-wide ARTICLE + COMMENT counts (DB counts, not the capped
+ *    /api/articles?limit=200 array) — this keeps the dashboard cards in sync
+ *    with the article list.
+ *  - The heavier BUSINESS/OPS counts (users, ads, AI usage, newsletter,
+ *    taxonomy, sorotan, polls, glossary, social, sources, live blogs, push)
+ *    stay SUPER_ADMIN-only — lower roles don't manage those and shouldn't see
+ *    them even in the JSON.
  */
 export async function GET() {
   try {
     const session = await requireAuth();
     const role = session.user.role;
-    const isAdminOrEditor = ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"].includes(role);
+    const isAdminOrEditor = EDITOR_ROLES.includes(role);
 
-    // Creators get a slimmer payload (no global counts)
+    // Creators get a slimmer payload (no global counts).
     if (!isAdminOrEditor) {
       return successResponse({});
-    }
-
-    // Non-superadmin editors (EDITOR / CHIEF_EDITOR) only get the one site-wide
-    // metric they can act on — pending comment moderation. Every other global
-    // count (users, ads, AI usage, newsletter, content totals) is SUPER_ADMIN-
-    // only and must not be exposed to lower roles, even in the JSON response.
-    if (role !== "SUPER_ADMIN") {
-      const [totalComments, pendingComments] = await Promise.all([
-        prisma.comment.count(),
-        prisma.comment.count({ where: { isApproved: false } }),
-      ]);
-      return successResponse({
-        comments: { total: totalComments, pending: pendingComments },
-      });
     }
 
     const now = new Date();
@@ -39,10 +37,10 @@ export async function GET() {
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
     const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // ─── Article stats (akurat dari DB, BUKAN dari fetched array) ─────
-    // Dashboard sebelumnya pakai `fetchedArticles.length` dari
-    // /api/articles?limit=200 yang ke-cap di 200 → angka salah saat DB
-    // punya lebih dari 200 artikel. Sekarang count langsung dari prisma.
+    // ─── Article + comment stats — for EVERY editor (accurate DB counts) ─────
+    // Previously editors derived these from `fetchedArticles.length`
+    // (/api/articles?limit=200, capped at 200 → wrong once the DB has >200
+    // articles). Now counted straight from prisma and shared with all editors.
     const [
       articleTotalAll,
       articleDraft,
@@ -54,6 +52,8 @@ export async function GET() {
       articleViewsSum,
       articlePublishedToday,
       articleViewsTodayAgg,
+      totalComments,
+      pendingComments,
     ] = await Promise.all([
       prisma.article.count(),
       prisma.article.count({ where: { status: "DRAFT" } }),
@@ -69,22 +69,41 @@ export async function GET() {
         _sum: { viewCount: true },
       }),
       prisma.article.count({
-        where: {
-          status: "PUBLISHED",
-          publishedAt: { gte: today, lt: tomorrow },
-        },
+        where: { status: "PUBLISHED", publishedAt: { gte: today, lt: tomorrow } },
       }),
       prisma.article.aggregate({
-        where: {
-          status: "PUBLISHED",
-          publishedAt: { gte: today, lt: tomorrow },
-        },
+        where: { status: "PUBLISHED", publishedAt: { gte: today, lt: tomorrow } },
         _sum: { viewCount: true },
       }),
+      prisma.comment.count(),
+      prisma.comment.count({ where: { isApproved: false } }),
     ]);
 
-    // PrismaClient cast for Topic model (regenerate Prisma client after
-     // schema migration — newer pages use `topic` directly).
+    const editorPayload = {
+      articles: {
+        total: articleTotalAll,
+        byStatus: {
+          DRAFT: articleDraft,
+          IN_REVIEW: articleInReview,
+          APPROVED: articleApproved,
+          PUBLISHED: articlePublished,
+          REJECTED: articleRejected,
+        },
+        scheduled: articleScheduled,
+        totalViews: articleViewsSum._sum.viewCount || 0,
+        publishedToday: articlePublishedToday,
+        viewsToday: articleViewsTodayAgg._sum.viewCount || 0,
+      },
+      comments: { total: totalComments, pending: pendingComments },
+    };
+
+    // Everything below is SUPER_ADMIN-only business/ops data.
+    if (role !== "SUPER_ADMIN") {
+      return successResponse(editorPayload);
+    }
+
+    // PrismaClient cast for Topic/Newsletter models (client type may lag the DB
+    // schema until `prisma generate` runs at build time).
     const prismaAny = prisma as unknown as {
       topic: { count: (args?: { where?: { isPublished?: boolean } }) => Promise<number> };
       newsletterSubscriber: {
@@ -95,8 +114,6 @@ export async function GET() {
     const [
       totalCategories,
       totalTags,
-      totalComments,
-      pendingComments,
       totalPolls,
       activePolls,
       totalSorotan,
@@ -120,8 +137,6 @@ export async function GET() {
     ] = await Promise.all([
       prisma.category.count(),
       prisma.tag.count(),
-      prisma.comment.count(),
-      prisma.comment.count({ where: { isApproved: false } }),
       prisma.poll.count(),
       prisma.poll.count({ where: { isActive: true } }),
       prisma.sorotan.count(),
@@ -141,61 +156,32 @@ export async function GET() {
       }),
       prisma.newsSource.count(),
       prisma.newsSource.count({ where: { isActive: true } }),
-      // Topic + Newsletter — cast through prismaAny because Prisma client
-      // type may lag DB schema until `prisma generate` runs at build time.
       prismaAny.topic.count().catch(() => 0),
       prismaAny.topic.count({ where: { isPublished: true } }).catch(() => 0),
       prismaAny.newsletterSubscriber.count().catch(() => 0),
       prismaAny.newsletterSubscriber
         .count({ where: { confirmedAt: { not: null }, unsubscribedAt: null } })
         .catch(() => 0),
-      // Articles with non-empty faqData — drives "FAQ coverage" metric so
-      // editors can see how many published articles still need FAQ.
       prisma.article.count({
-        where: {
-          status: "PUBLISHED",
-          faqData: { not: null },
-          NOT: { faqData: "" },
-        },
+        where: { status: "PUBLISHED", faqData: { not: null }, NOT: { faqData: "" } },
       }),
       prisma.article.count({ where: { status: "PUBLISHED" } }),
     ]);
 
-    // ─── Modul Bisnis & Pemerintahan (Sprint 2-5) ──────────────────
-    // Tambahan stats untuk fitur yang baru di-add — cast prismaAny supaya
-    // tidak break kalau prisma client lag di build pipeline.
     const prismaModul = prisma as unknown as {
       liveBlog: { count: (args?: { where?: { isPublished?: boolean; status?: string } }) => Promise<number> };
       pushSubscription: { count: (args?: { where?: { isActive?: boolean } }) => Promise<number> };
     };
-    const [
-      totalLiveBlogs, liveLiveBlogs,
-      totalPushSubscribers,
-    ] = await Promise.all([
+    const [totalLiveBlogs, liveLiveBlogs, totalPushSubscribers] = await Promise.all([
       prismaModul.liveBlog.count().catch(() => 0),
       prismaModul.liveBlog.count({ where: { status: "LIVE" } }).catch(() => 0),
       prismaModul.pushSubscription.count({ where: { isActive: true } }).catch(() => 0),
     ]);
 
     return successResponse({
-      // Article stats akurat (count langsung dari DB, BUKAN fetched array)
-      articles: {
-        total: articleTotalAll,
-        byStatus: {
-          DRAFT: articleDraft,
-          IN_REVIEW: articleInReview,
-          APPROVED: articleApproved,
-          PUBLISHED: articlePublished,
-          REJECTED: articleRejected,
-        },
-        scheduled: articleScheduled,
-        totalViews: articleViewsSum._sum.viewCount || 0,
-        publishedToday: articlePublishedToday,
-        viewsToday: articleViewsTodayAgg._sum.viewCount || 0,
-      },
+      ...editorPayload,
       categories: { total: totalCategories },
       tags: { total: totalTags },
-      comments: { total: totalComments, pending: pendingComments },
       polls: { total: totalPolls, active: activePolls },
       sorotan: { total: totalSorotan },
       glossary: { total: totalGlossary, published: publishedGlossary },
@@ -209,13 +195,11 @@ export async function GET() {
       faqCoverage: {
         withFaq: articlesWithFaq,
         published: totalPublishedArticles,
-        // Percent rounded to nearest integer for stat-card display.
         percent:
           totalPublishedArticles > 0
             ? Math.round((articlesWithFaq / totalPublishedArticles) * 100)
             : 0,
       },
-      // Sprint 2-5 modul baru — biar dashboard juga show stats-nya:
       liveBlogs: { total: totalLiveBlogs, live: liveLiveBlogs },
       pushSubscribers: { active: totalPushSubscribers },
     });

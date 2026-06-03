@@ -990,14 +990,21 @@ export default function DashboardPage() {
           );
           setRecentArticles(sorted.slice(0, 5));
         } else if (isEditorRole) {
-          // Editor stats: review queue, approved today, rejected, total
-          const reviewQueue = fetchedArticles.filter((a) => a.status === "IN_REVIEW").length;
+          // Editor stats — prefer ACCURATE DB counts from dashStats. The fetched
+          // array is capped at limit=200, so deriving counts from it desyncs the
+          // cards from the article list once the DB has >200 articles. Fallback
+          // to the array only while dashStats is still loading.
+          const aStats = dashStats?.articles;
+          const reviewQueue = aStats?.byStatus?.IN_REVIEW ?? fetchedArticles.filter((a) => a.status === "IN_REVIEW").length;
+          const rejected = aStats?.byStatus?.REJECTED ?? fetchedArticles.filter((a) => a.status === "REJECTED").length;
+          const totalArticles = aStats?.total ?? fetchedArticles.length;
+          // "Disetujui Hari Ini" = currently-approved (awaiting publish) + published today.
           const today = new Date().toDateString();
-          const approvedToday = fetchedArticles.filter(
-            (a) => a.status === "APPROVED" || (a.status === "PUBLISHED" && a.publishedAt && new Date(a.publishedAt).toDateString() === today)
-          ).length;
-          const rejected = fetchedArticles.filter((a) => a.status === "REJECTED").length;
-          const totalArticles = fetchedArticles.length;
+          const approvedToday = aStats
+            ? (aStats.byStatus?.APPROVED ?? 0) + (aStats.publishedToday ?? 0)
+            : fetchedArticles.filter(
+                (a) => a.status === "APPROVED" || (a.status === "PUBLISHED" && a.publishedAt && new Date(a.publishedAt).toDateString() === today)
+              ).length;
 
           setStats([
             { label: "Antrean Review", value: reviewQueue.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50", href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: reviewQueue > 0 ? "Perlu tindakan" : "Antrean kosong" },
