@@ -29,6 +29,7 @@ export async function GET(
         startedAt: true,
         endedAt: true,
         coverImage: true,
+        liveStreamUrl: true,
         articleId: true,
         viewCount: true,
         createdAt: true,

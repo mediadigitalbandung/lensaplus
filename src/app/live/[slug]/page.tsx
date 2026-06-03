@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import LiveBlogTimeline, {
   LiveBlogEntry,
 } from "@/components/live/LiveBlogTimeline";
-import { Radio, Clock, ArrowLeft, ExternalLink } from "lucide-react";
+import { Radio, Clock, ArrowLeft, ExternalLink, Play } from "lucide-react";
+import { resolveLiveEmbed } from "@/lib/live-embed";
 
 export const revalidate = 30;
 
@@ -134,6 +135,7 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
       startedAt: true,
       endedAt: true,
       coverImage: true,
+      liveStreamUrl: true,
       articleId: true,
       viewCount: true,
       createdAt: true,
@@ -254,6 +256,38 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
             )}
           </div>
         </header>
+
+        {/* Live video player (embed) — shown above the timeline when set */}
+        {(() => {
+          const embed = resolveLiveEmbed(blog.liveStreamUrl);
+          if (!embed) return null;
+          if (embed.kind === "iframe") {
+            return (
+              <div className="mb-8 max-w-2xl">
+                <div className="relative aspect-video w-full overflow-hidden rounded-md bg-black shadow-card">
+                  <iframe
+                    src={embed.src}
+                    title={`Siaran langsung — ${blog.title}`}
+                    className="absolute inset-0 h-full w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                </div>
+              </div>
+            );
+          }
+          return (
+            <a
+              href={embed.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary mb-8 inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
+            >
+              <Play size={16} /> Tonton Siaran Langsung
+            </a>
+          );
+        })()}
 
         {/* Timeline */}
         <div className="max-w-2xl">

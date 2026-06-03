@@ -37,6 +37,7 @@ interface LiveBlog {
   startedAt: string | null;
   endedAt: string | null;
   coverImage: string | null;
+  liveStreamUrl: string | null;
   isPublished: boolean;
   syndicateToSocial: boolean;
 }
@@ -107,6 +108,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
           status: b.status,
           scheduledAt: b.scheduledAt,
           coverImage: b.coverImage,
+          liveStreamUrl: b.liveStreamUrl,
           isPublished: b.isPublished,
           syndicateToSocial: b.syndicateToSocial,
         });
@@ -399,6 +401,22 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
               rows={2}
               className="input w-full text-sm resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-label-sm text-txt-muted mb-1">
+              Video Live / Embed (YouTube Live)
+            </label>
+            <input
+              type="url"
+              value={meta.liveStreamUrl || ""}
+              onChange={(e) => setMeta((m) => ({ ...m, liveStreamUrl: e.target.value }))}
+              className="input w-full text-sm"
+              placeholder="https://www.youtube.com/watch?v=..."
+            />
+            <p className="mt-1 text-label-sm text-txt-muted">
+              Tempel link YouTube Live → player video muncul di atas timeline halaman publik.
+            </p>
           </div>
 
           <label className="flex items-center gap-2 cursor-pointer">

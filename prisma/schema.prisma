@@ -1303,6 +1303,9 @@ model LiveBlog {
   startedAt   DateTime?
   endedAt     DateTime?
   coverImage  String?
+  // Optional embedded live-video URL (e.g. a YouTube Live link). When set, the
+  // public live page shows an embedded player above the text timeline.
+  liveStreamUrl String?       @db.Text
   authorId    String // siapa yang liput
   articleId   String? // optional link ke artikel terkait
   isPublished Boolean        @default(true)

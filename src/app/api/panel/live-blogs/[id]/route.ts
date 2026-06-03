@@ -30,6 +30,10 @@ const updateSchema = z.object({
   startedAt: z.string().datetime().optional().nullable(),
   endedAt: z.string().datetime().optional().nullable(),
   coverImage: z.string().url().optional().nullable(),
+  liveStreamUrl: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim() || null : v),
+    z.string().url("URL video tidak valid").max(2000).optional().nullable(),
+  ),
   articleId: z.string().optional().nullable(),
   isPublished: z.boolean().optional(),
   syndicateToSocial: z.boolean().optional(),
@@ -142,6 +146,9 @@ export async function PUT(
         ...(endedAt !== undefined && { endedAt }),
         ...(data.coverImage !== undefined && {
           coverImage: data.coverImage,
+        }),
+        ...(data.liveStreamUrl !== undefined && {
+          liveStreamUrl: (data.liveStreamUrl as string | null) ?? null,
         }),
         ...(data.articleId !== undefined && {
           articleId: data.articleId,

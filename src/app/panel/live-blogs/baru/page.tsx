@@ -42,6 +42,7 @@ export default function NewLiveBlogPage() {
     status: "SCHEDULED" as "SCHEDULED" | "LIVE" | "ENDED" | "CANCELLED",
     scheduledAt: toLocalInput(),
     coverImage: "",
+    liveStreamUrl: "",
     isPublished: true,
     syndicateToSocial: false,
   });
@@ -68,6 +69,7 @@ export default function NewLiveBlogPage() {
         description: form.description || null,
         category: form.category || null,
         coverImage: form.coverImage || null,
+        liveStreamUrl: form.liveStreamUrl.trim() || null,
       };
 
       const res = await fetch("/api/panel/live-blogs", {
@@ -219,6 +221,25 @@ export default function NewLiveBlogPage() {
             className="input w-full"
             placeholder="https://..."
           />
+        </div>
+
+        {/* Live video embed */}
+        <div>
+          <label className="block text-label-md font-medium text-on-surface mb-1">
+            Video Live / Embed <span className="font-normal text-txt-muted">(opsional)</span>
+          </label>
+          <input
+            type="url"
+            value={form.liveStreamUrl}
+            onChange={(e) => setForm((f) => ({ ...f, liveStreamUrl: e.target.value }))}
+            className="input w-full"
+            placeholder="https://www.youtube.com/watch?v=..."
+          />
+          <p className="mt-1 text-label-sm text-txt-muted">
+            Tempel link YouTube Live untuk menampilkan player video di atas timeline.
+            Mulai siaran di YouTube (HP/OBS), lalu salin link-nya ke sini. Bisa juga
+            ditambahkan nanti saat sudah LIVE.
+          </p>
         </div>
 
         {/* Published */}

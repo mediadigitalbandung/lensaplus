@@ -43,6 +43,10 @@ const createSchema = z.object({
   startedAt: z.string().datetime().optional().nullable(),
   endedAt: z.string().datetime().optional().nullable(),
   coverImage: z.string().url().optional().nullable(),
+  liveStreamUrl: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim() || null : v),
+    z.string().url("URL video tidak valid").max(2000).optional().nullable(),
+  ),
   articleId: z.string().optional().nullable(),
   isPublished: z.boolean().default(true),
   syndicateToSocial: z.boolean().default(false),
@@ -150,6 +154,7 @@ export async function POST(req: NextRequest) {
         startedAt,
         endedAt: data.endedAt ? new Date(data.endedAt) : null,
         coverImage: data.coverImage ?? null,
+        liveStreamUrl: (data.liveStreamUrl as string | null | undefined) ?? null,
         authorId: session.user.id,
         articleId: data.articleId ?? null,
         isPublished: data.isPublished,
