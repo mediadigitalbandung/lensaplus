@@ -52,6 +52,79 @@ function escapeXml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+/**
+ * Code 128 module-width patterns (index 0..106). Each entry is a string of
+ * bar/space widths, alternating starting with a BAR. Indices 0–102 are data,
+ * 104 = Start Code B, 106 = Stop. Standard canonical table.
+ */
+const CODE128_PATTERNS = [
+  "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
+  "221312","231212","112232","122132","122231","113222","123122","123221","223211","221132",
+  "221231","213212","223112","312131","311222","321122","321221","312212","322112","322211",
+  "212123","212321","232121","111323","131123","131321","112313","132113","132311","211313",
+  "231113","231311","112133","112331","132131","113123","113321","133121","313121","211331",
+  "231131","213113","213311","213131","311123","311321","331121","312113","312311","332111",
+  "314111","221411","431111","111224","111422","121124","121421","141122","141221","112214",
+  "112412","122114","122411","142112","142211","241211","221114","413111","241112","134111",
+  "111242","121142","121241","114212","124112","124211","411212","421112","421211","212141",
+  "214121","412121","111143","111341","131141","114113","114311","411113","411311","113141",
+  "114131","311141","411131","211412","211214","211232","2331112",
+];
+
+/** Code 128-B value sequence (start + data + checksum + stop) for a string. */
+function code128BValues(data: string): number[] {
+  const START_B = 104, STOP = 106;
+  const clean = data.replace(/[^\x20-\x7E]/g, "");
+  const values = [START_B];
+  let sum = START_B;
+  for (let i = 0; i < clean.length; i++) {
+    const v = clean.charCodeAt(i) - 32;
+    values.push(v);
+    sum += v * (i + 1);
+  }
+  values.push(sum % 103); // checksum
+  values.push(STOP);
+  return values;
+}
+
+/** Build SVG <rect> bars for a Code 128-B barcode fitted into the given box. */
+function barcodeBars(data: string, x: number, y: number, totalWidth: number, height: number): string {
+  const values = code128BValues(data);
+  let totalModules = 0;
+  for (const v of values) for (const ch of CODE128_PATTERNS[v]) totalModules += Number(ch);
+  const mw = totalWidth / totalModules;
+  let cursor = x;
+  let rects = "";
+  for (const v of values) {
+    const pattern = CODE128_PATTERNS[v];
+    for (let i = 0; i < pattern.length; i++) {
+      const w = Number(pattern[i]) * mw;
+      if (i % 2 === 0) {
+        rects += `<rect x="${cursor.toFixed(2)}" y="${y}" width="${w.toFixed(2)}" height="${height}" fill="#001530"/>`;
+      }
+      cursor += w;
+    }
+  }
+  return rects;
+}
+
+/** Greedy word-wrap into lines of at most maxChars characters. */
+function wrapText(text: string, maxChars: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let line = "";
+  for (const w of words) {
+    if (!line) line = w;
+    else if ((line + " " + w).length <= maxChars) line += " " + w;
+    else {
+      lines.push(line);
+      line = w;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 /** Load a local (/uploads or public) or allowlisted-remote image → resized Buffer. */
 async function loadImage(src: string | null | undefined, w: number, h: number, fit: "cover" | "inside" = "cover"): Promise<Buffer | null> {
   if (!src) return null;
@@ -198,6 +271,81 @@ export async function renderMembershipCard(input: CardRenderInput): Promise<Buff
   if (logo) overlays.push({ input: logo, left: 40, top: 34 });
   if (pwiSig) overlays.push({ input: pwiSig, left: PHOTO_X + 300, top: SIG_Y });
   if (dirSig) overlays.push({ input: dirSig, left: PHOTO_X + 300 + 250, top: SIG_Y });
+
+  return sharp({ create: { width: W, height: H, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } })
+    .composite(overlays)
+    .png()
+    .toBuffer();
+}
+
+/** Cardholder terms printed on the back of the KTA. */
+const CARD_TERMS = [
+  "Kartu ini merupakan identitas resmi pemegangnya sebagai anggota pers (jurnalis) Kartawarta.",
+  "Pemegang menjalankan tugas jurnalistik sesuai UU No. 40 Tahun 1999 tentang Pers dan Kode Etik Jurnalistik.",
+  "Kartu ini tidak dapat dipindahtangankan dan hanya berlaku bagi pemegang yang namanya tertera.",
+  "Kartu berlaku sampai tanggal yang tertera pada sisi depan dan dapat diperpanjang.",
+  "Bila masa berlaku berakhir atau keanggotaan dicabut, kartu wajib dikembalikan kepada Redaksi.",
+];
+
+const RETURN_EMAIL = "redaksi@kartawarta.com";
+
+/** Render the BACK of the card (terms + return notice + Code 128 barcode) as a PNG buffer. */
+export async function renderMembershipCardBack(input: CardRenderInput): Promise<Buffer> {
+  const logo = await loadImage(input.cardLogo, 92, 92, "inside");
+
+  const PAD = 64;
+  const TXT_X = PAD + 34;
+  const MAXC = 86;
+
+  // Numbered terms (word-wrapped).
+  let y = 190;
+  const termSvg = CARD_TERMS.map((t, i) => {
+    const lines = wrapText(t, MAXC);
+    let block = `<text x="${PAD}" y="${y}" font-family="'Newsreader','Georgia',serif" font-size="20" font-weight="800" fill="#b7102a">${i + 1}.</text>`;
+    for (const ln of lines) {
+      block += `<text x="${TXT_X}" y="${y}" font-family="'Work Sans','Helvetica',sans-serif" font-size="18" fill="#33373d">${escapeXml(ln)}</text>`;
+      y += 26;
+    }
+    y += 10;
+    return block;
+  }).join("");
+
+  // Barcode (bottom-left) + caption.
+  const BAR_W = 360, BAR_H = 64, BAR_X = PAD, BAR_Y = H - 132;
+  const bars = barcodeBars(input.number, BAR_X, BAR_Y, BAR_W, BAR_H);
+  const siteHost = (() => {
+    try { return new URL(SITE).hostname.replace(/^www\./, ""); } catch { return "kartawarta.com"; }
+  })();
+
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <defs>
+    <linearGradient id="bgb" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#eef2f7"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="${W}" height="${H}" rx="28" fill="url(#bgb)"/>
+  <rect x="0" y="0" width="${W}" height="${H}" rx="28" fill="none" stroke="#c4c6d0" stroke-width="2"/>
+  <!-- Header bar -->
+  <path d="M0,28 Q0,0 28,0 L${W - 28},0 Q${W},0 ${W},28 L${W},120 L0,120 Z" fill="#001530"/>
+  <text x="${logo ? 160 : PAD}" y="52" font-family="'Newsreader','Georgia',serif" font-size="34" font-weight="800" fill="#ffffff" letter-spacing="1">KARTAWARTA</text>
+  <text x="${logo ? 162 : PAD + 2}" y="84" font-family="'Work Sans','Helvetica',sans-serif" font-size="17" fill="#9fb2c9" letter-spacing="2">SYARAT &amp; KETENTUAN PEMEGANG KARTU</text>
+  <text x="${W - PAD}" y="60" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="22" font-weight="700" fill="#ffffff" letter-spacing="1">${escapeXml(input.number)}</text>
+  <text x="${W - PAD}" y="86" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#9fb2c9">No. Anggota</text>
+  <rect x="${PAD - 24}" y="146" width="6" height="${H - 280}" fill="#b7102a"/>
+  ${termSvg}
+  <!-- Return notice + contact (right) -->
+  <line x1="${PAD}" y1="${H - 158}" x2="${W - PAD}" y2="${H - 158}" stroke="#dfe1e6" stroke-width="1.5"/>
+  <text x="${W - PAD}" y="${H - 126}" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="15" fill="#5d6066">Jika ditemukan, mohon kembalikan ke Redaksi Kartawarta:</text>
+  <text x="${W - PAD}" y="${H - 102}" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="17" font-weight="700" fill="#001530">${RETURN_EMAIL} &#8226; ${escapeXml(siteHost)}</text>
+  <text x="${W - PAD}" y="${H - 60}" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#74777f">Verifikasi keaslian: ${escapeXml(siteHost)}/verifikasi/${escapeXml(input.number)}</text>
+  <!-- Barcode -->
+  ${bars}
+  <text x="${BAR_X + BAR_W / 2}" y="${BAR_Y + BAR_H + 22}" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="16" font-weight="600" letter-spacing="2" fill="#001530">${escapeXml(input.number)}</text>
+</svg>`;
+
+  const overlays: sharp.OverlayOptions[] = [{ input: Buffer.from(svg), left: 0, top: 0 }];
+  if (logo) overlays.push({ input: logo, left: PAD, top: 16 });
 
   return sharp({ create: { width: W, height: H, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } })
     .composite(overlays)
