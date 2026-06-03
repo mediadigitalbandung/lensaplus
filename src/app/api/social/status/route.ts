@@ -13,7 +13,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { errorResponse, requireAuth, successResponse } from "@/lib/api-utils";
-import { EDITOR_ROLES } from "@/lib/roles";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -39,23 +38,18 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "12", 10)));
 
-    // Data-privacy scoping: editors/management see every post, but a creator
-    // (journalist/contributor) only ever sees posts derived from articles they
-    // authored — never other people's content.
-    const isEditor = EDITOR_ROLES.includes(session.user.role);
-    const articleFilter: Prisma.ArticleWhereInput = {};
-    if (!isEditor) articleFilter.authorId = session.user.id;
+    // Strict per-user privacy: EVERY account — including editors and admins —
+    // only sees social posts derived from its OWN articles here. The full
+    // cross-newsroom view lives in the SUPER_ADMIN-only /panel/social panel.
+    const articleFilter: Prisma.ArticleWhereInput = { authorId: session.user.id };
     if (categoryId) articleFilter.categoryId = categoryId;
 
-    const where: Prisma.SocialPostWhereInput = {};
+    const where: Prisma.SocialPostWhereInput = { article: articleFilter };
     if (platform && ALLOWED_PLATFORMS.has(platform)) {
       where.platform = platform as Prisma.SocialPostWhereInput["platform"];
     }
     if (status && ALLOWED_STATUSES.has(status)) {
       where.status = status as Prisma.SocialPostWhereInput["status"];
-    }
-    if (Object.keys(articleFilter).length > 0) {
-      where.article = articleFilter;
     }
 
     const [posts, total] = await Promise.all([

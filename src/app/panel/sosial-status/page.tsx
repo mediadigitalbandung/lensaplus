@@ -29,6 +29,7 @@ import {
   Layers,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { cn } from "@/lib/utils";
 
 interface PostCategory {
   id: string;
@@ -212,19 +213,30 @@ export default function SosialStatusPage() {
         </p>
       </div>
 
-      {/* Filters */}
+      {/* Platform tabs */}
+      <div className="mb-4 flex flex-wrap gap-1 border-b border-border">
+        {[{ value: "ALL", label: "Semua", icon: Share2 }, ...PLATFORMS].map((tab) => {
+          const TIcon = tab.icon;
+          const active = filterPlatform === tab.value;
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setFilterPlatform(tab.value)}
+              className={cn(
+                "-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
+                active
+                  ? "border-primary text-primary"
+                  : "border-transparent text-txt-secondary hover:text-txt-primary"
+              )}
+            >
+              <TIcon size={15} /> {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Secondary filters */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
-        <select
-          value={filterPlatform}
-          onChange={(e) => setFilterPlatform(e.target.value)}
-          className="input h-10 w-auto"
-          aria-label="Filter platform"
-        >
-          <option value="ALL">Semua Platform</option>
-          {PLATFORMS.map((p) => (
-            <option key={p.value} value={p.value}>{p.label}</option>
-          ))}
-        </select>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
