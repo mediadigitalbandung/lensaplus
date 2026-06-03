@@ -1,18 +1,24 @@
 /**
  * GET /api/social/status
  *
- * Read-only feed of social-media posts for ANY logged-in staff member. Unlike
- * /api/social/posts (EDITOR+, used by the full control panel), this endpoint is
- * view-only: it never mutates anything and is safe to expose to every role so
- * they can monitor automation status and share already-published posts.
+ * Read-only feed of social-media posts. Unlike /api/social/posts (EDITOR+, the
+ * full control panel), this endpoint never mutates anything — staff use it only
+ * to monitor automation status and share already-published posts.
  *
- * Query: ?platform=&status=&categoryId=&page=&limit=
- * Auth:  any authenticated user (requireAuth)
+ * Per-role scoping (data privacy):
+ *  - Creators (CREATOR_ROLES) are hard-scoped to their OWN articles; any
+ *    client-supplied authorId is ignored so they cannot enumerate others.
+ *  - Editors+ (EDITOR_ROLES) may monitor every account's posts and optionally
+ *    narrow to one author via ?authorId.
+ *
+ * Query: ?platform=&status=&categoryId=&authorId=&page=&limit=
+ * Auth:  any authenticated user (requireAuth); visibility scoped by role above
  */
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { errorResponse, requireAuth, successResponse } from "@/lib/api-utils";
+import { EDITOR_ROLES } from "@/lib/roles";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -30,21 +36,33 @@ const ALLOWED_STATUSES = new Set([
 export async function GET(req: NextRequest) {
   try {
     const session = await requireAuth();
+    const isEditor = EDITOR_ROLES.includes(session.user.role);
 
     const { searchParams } = new URL(req.url);
     const platform = searchParams.get("platform");
     const status = searchParams.get("status");
     const categoryId = searchParams.get("categoryId");
+    const authorId = searchParams.get("authorId");
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "12", 10)));
 
-    // Strict per-user privacy: EVERY account — including editors and admins —
-    // only sees social posts derived from its OWN articles here. The full
-    // cross-newsroom view lives in the SUPER_ADMIN-only /panel/social panel.
-    const articleFilter: Prisma.ArticleWhereInput = { authorId: session.user.id };
+    // Visibility & privacy:
+    //  - Creators (journalist/contributor) are HARD-scoped to their OWN
+    //    articles. Any client-supplied authorId is IGNORED for them, so they
+    //    can never enumerate other accounts' posts.
+    //  - Editors+ (EDITOR_ROLES) may monitor EVERY account's posts and may
+    //    optionally narrow to one author via the authorId filter.
+    // Either way this endpoint stays read-only — no mutations live here.
+    const articleFilter: Prisma.ArticleWhereInput = {};
+    if (!isEditor) {
+      articleFilter.authorId = session.user.id;
+    } else if (authorId) {
+      articleFilter.authorId = authorId;
+    }
     if (categoryId) articleFilter.categoryId = categoryId;
 
-    const where: Prisma.SocialPostWhereInput = { article: articleFilter };
+    const where: Prisma.SocialPostWhereInput = {};
+    if (Object.keys(articleFilter).length > 0) where.article = articleFilter;
     if (platform && ALLOWED_PLATFORMS.has(platform)) {
       where.platform = platform as Prisma.SocialPostWhereInput["platform"];
     }
@@ -74,6 +92,7 @@ export async function GET(req: NextRequest) {
               title: true,
               slug: true,
               category: { select: { id: true, name: true, slug: true } },
+              author: { select: { id: true, name: true } },
             },
           },
         },

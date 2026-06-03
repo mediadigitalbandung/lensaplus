@@ -6,8 +6,9 @@
  * View-only: shows the status of automated social posts and lets staff SHARE
  * already-published ones. No publish / edit / takedown actions live here — the
  * full control panel (/panel/social) stays SUPER_ADMIN-only. The API
- * (/api/social/status) scopes data per user: creators only see posts from
- * their own articles (data privacy); editors+ see all.
+ * (/api/social/status) scopes data per role: creators (journalist/contributor)
+ * only see posts from their OWN articles (data privacy); editors+ may monitor
+ * every account's posts and filter by author. Read-only for everyone.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -27,9 +28,12 @@ import {
   ImageOff,
   Film,
   Layers,
+  User,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import { EDITOR_ROLES } from "@/lib/roles";
 
 interface PostCategory {
   id: string;
@@ -41,6 +45,7 @@ interface PostArticle {
   title: string;
   slug: string;
   category: PostCategory | null;
+  author: { id: string; name: string } | null;
 }
 interface SocialStatusPost {
   id: string;
@@ -58,6 +63,10 @@ interface SocialStatusPost {
   article: PostArticle | null;
 }
 interface Category {
+  id: string;
+  name: string;
+}
+interface StaffUser {
   id: string;
   name: string;
 }
@@ -97,14 +106,19 @@ function formatDate(d: string | null) {
 
 export default function SosialStatusPage() {
   const { success: showSuccess } = useToast();
+  const { data: session } = useSession();
+  // Editors+ may monitor every account's posts; creators only see their own.
+  const isEditor = EDITOR_ROLES.includes(session?.user?.role || "");
 
   const [posts, setPosts] = useState<SocialStatusPost[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [authors, setAuthors] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [filterPlatform, setFilterPlatform] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterCategory, setFilterCategory] = useState("ALL");
+  const [filterAuthor, setFilterAuthor] = useState("ALL");
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -129,6 +143,28 @@ export default function SosialStatusPage() {
     })();
   }, []);
 
+  // Editors get an author filter — load the staff list. (/api/users returns a
+  // role-dependent shape: array for editors, { users } for super admin.)
+  useEffect(() => {
+    if (!isEditor) return;
+    (async () => {
+      try {
+        const res = await fetch("/api/users?limit=100");
+        if (res.ok) {
+          const json = await res.json();
+          const list: StaffUser[] = Array.isArray(json.data?.users)
+            ? json.data.users
+            : Array.isArray(json.data)
+              ? json.data
+              : [];
+          setAuthors(list.map((u) => ({ id: u.id, name: u.name })));
+        }
+      } catch {
+        /* non-critical */
+      }
+    })();
+  }, [isEditor]);
+
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
@@ -136,6 +172,7 @@ export default function SosialStatusPage() {
       if (filterPlatform !== "ALL") params.set("platform", filterPlatform);
       if (filterStatus !== "ALL") params.set("status", filterStatus);
       if (filterCategory !== "ALL") params.set("categoryId", filterCategory);
+      if (isEditor && filterAuthor !== "ALL") params.set("authorId", filterAuthor);
       params.set("page", String(page));
       params.set("limit", String(LIMIT));
       const res = await fetch(`/api/social/status?${params.toString()}`);
@@ -152,7 +189,7 @@ export default function SosialStatusPage() {
     } finally {
       setLoading(false);
     }
-  }, [filterPlatform, filterStatus, filterCategory, page]);
+  }, [filterPlatform, filterStatus, filterCategory, filterAuthor, isEditor, page]);
 
   useEffect(() => {
     fetchPosts();
@@ -161,7 +198,7 @@ export default function SosialStatusPage() {
   // Reset to page 1 whenever a filter changes.
   useEffect(() => {
     setPage(1);
-  }, [filterPlatform, filterStatus, filterCategory]);
+  }, [filterPlatform, filterStatus, filterCategory, filterAuthor]);
 
   // Close the share menu on outside click.
   useEffect(() => {
@@ -259,6 +296,19 @@ export default function SosialStatusPage() {
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
+        {isEditor && (
+          <select
+            value={filterAuthor}
+            onChange={(e) => setFilterAuthor(e.target.value)}
+            className="input h-10 w-auto"
+            aria-label="Filter penulis"
+          >
+            <option value="ALL">Semua Penulis</option>
+            {authors.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+        )}
         <span className="ml-auto text-sm text-txt-muted">{total} postingan</span>
       </div>
 
@@ -322,6 +372,11 @@ export default function SosialStatusPage() {
                   <p className="line-clamp-2 text-sm font-semibold text-txt-primary">
                     {p.article?.title || "(artikel dihapus)"}
                   </p>
+                  {isEditor && (
+                    <p className="mt-1 flex items-center gap-1 text-[11px] text-txt-muted">
+                      <User size={11} /> {p.article?.author?.name || "—"}
+                    </p>
+                  )}
                   {p.caption && (
                     <p className="mt-1 line-clamp-2 text-xs text-txt-secondary">{p.caption}</p>
                   )}
