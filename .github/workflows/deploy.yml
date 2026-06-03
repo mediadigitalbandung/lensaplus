@@ -116,12 +116,16 @@ jobs:
                 case "$STATUS" in
                   OK)
                     echo "Deploy succeeded after ${i} polls"
+                    echo "─── VPS state at deploy start ───"
+                    head -n 6 "$LOG_FILE" || true
                     echo "─── deploy log (last 30 lines) ───"
                     tail -n 30 "$LOG_FILE" || true
                     exit 0
                     ;;
                   FAIL*)
                     echo "Deploy failed: $STATUS"
+                    echo "─── VPS state at deploy start ───"
+                    head -n 6 "$LOG_FILE" || true
                     echo "─── deploy log (last 80 lines) ───"
                     tail -n 80 "$LOG_FILE" || true
                     exit 1
