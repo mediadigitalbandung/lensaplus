@@ -404,8 +404,9 @@
  * ─────────────────────────────────────────────────────────────────── */
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(20px) scale(0.96); filter: blur(6px); }
+  60%  { filter: blur(0); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
 @keyframes shimmer {
@@ -424,18 +425,21 @@
 }
 
 .kw-fade-in-up {
-  animation: fadeInUp 0.5s ease-out backwards;
+  animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
-/* Stagger delays untuk grid cards — 8 step cycle, lebih ringan dari per-index inline style */
-.kw-stagger > *:nth-child(8n+1) { animation-delay: 0.00s; }
-.kw-stagger > *:nth-child(8n+2) { animation-delay: 0.04s; }
-.kw-stagger > *:nth-child(8n+3) { animation-delay: 0.08s; }
-.kw-stagger > *:nth-child(8n+4) { animation-delay: 0.12s; }
-.kw-stagger > *:nth-child(8n+5) { animation-delay: 0.16s; }
-.kw-stagger > *:nth-child(8n+6) { animation-delay: 0.20s; }
-.kw-stagger > *:nth-child(8n+7) { animation-delay: 0.24s; }
-.kw-stagger > *:nth-child(8n+8) { animation-delay: 0.28s; }
+/* Stagger delays untuk grid cards — 10 step cycle dengan langkah lebih panjang
+ * supaya cascade-nya benar-benar kebaca (efek "berjatuhan" satu per satu). */
+.kw-stagger > *:nth-child(10n+1)  { animation-delay: 0.00s; }
+.kw-stagger > *:nth-child(10n+2)  { animation-delay: 0.06s; }
+.kw-stagger > *:nth-child(10n+3)  { animation-delay: 0.12s; }
+.kw-stagger > *:nth-child(10n+4)  { animation-delay: 0.18s; }
+.kw-stagger > *:nth-child(10n+5)  { animation-delay: 0.24s; }
+.kw-stagger > *:nth-child(10n+6)  { animation-delay: 0.30s; }
+.kw-stagger > *:nth-child(10n+7)  { animation-delay: 0.36s; }
+.kw-stagger > *:nth-child(10n+8)  { animation-delay: 0.42s; }
+.kw-stagger > *:nth-child(10n+9)  { animation-delay: 0.48s; }
+.kw-stagger > *:nth-child(10n+10) { animation-delay: 0.54s; }
 
 .kw-pulse-live {
   animation: pulseGlow 2s ease-in-out infinite;
@@ -445,14 +449,15 @@
   animation: floatY 3s ease-in-out infinite;
 }
 
-/* Section header dengan gradient underline yang shimmer subtle on hover */
+/* Section header gradient underline — shimmer halus berjalan terus, lebih cepat on hover */
 .kw-section-bar {
   background: linear-gradient(90deg, #002045 0%, #b7102a 50%, #002045 100%);
   background-size: 200% 100%;
+  animation: shimmer 6s linear infinite;
   transition: opacity 0.3s;
 }
 .kw-section-bar:hover {
-  animation: shimmer 2s linear infinite;
+  animation: shimmer 1.5s linear infinite;
 }
 
 /* Card hover: subtle radial gradient di latar saat hover */
@@ -482,4 +487,69 @@
 .kw-card-glow:hover .kw-stat-number {
   color: var(--primary, #002045);
   transform: scale(1.02);
+}
+
+/* ── Ambient aurora — gradient warna yang bergerak pelan di latar hero header.
+ * Memberi "kehidupan" terus-menerus tanpa mengganggu keterbacaan teks. ── */
+@keyframes auroraDrift {
+  0%   { transform: translate3d(-10%, -6%, 0) rotate(0deg); }
+  50%  { transform: translate3d(10%, 6%, 0) rotate(180deg); }
+  100% { transform: translate3d(-10%, -6%, 0) rotate(360deg); }
+}
+.kw-aurora {
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(38% 38% at 25% 30%, rgba(183, 16, 42, 0.45) 0%, transparent 60%),
+    radial-gradient(34% 34% at 78% 65%, rgba(56, 132, 255, 0.40) 0%, transparent 60%),
+    radial-gradient(30% 30% at 60% 20%, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
+  filter: blur(36px);
+  opacity: 0.55;
+  animation: auroraDrift 18s ease-in-out infinite;
+}
+
+/* ── Sheen sweep — kilatan cahaya diagonal melintas saat kartu di-hover. ── */
+@keyframes cardSheen {
+  0%   { transform: translateX(-130%) skewX(-20deg); opacity: 0; }
+  18%  { opacity: 0.65; }
+  100% { transform: translateX(130%) skewX(-20deg); opacity: 0; }
+}
+.kw-card-glow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.55) 50%, transparent 100%);
+  transform: translateX(-130%) skewX(-20deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+.kw-card-glow:hover::after {
+  animation: cardSheen 0.85s ease-out;
+}
+
+/* ── Scroll-reveal — section "muncul" saat masuk viewport. Pakai CSS scroll-driven
+ * animation (Chromium modern, yang dipakai panel admin). Di-gate via @supports +
+ * no-preference, jadi browser lama / reduced-motion TIDAK pernah menyembunyikan
+ * konten (fallback: tampil normal). ── */
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(34px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .kw-reveal {
+      animation: revealUp linear both;
+      animation-timeline: view();
+      /* Selesai begitu elemen tuntas masuk viewport → elemen above-fold pasti
+       * langsung tampil 100% saat load; yang below-fold reveal saat di-scroll. */
+      animation-range: entry;
+    }
+  }
 }

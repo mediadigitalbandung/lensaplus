@@ -150,7 +150,7 @@ function SectionHeader({
   action?: { label: string; href: string };
 }) {
   return (
-    <div className="mb-4 group">
+    <div className="kw-reveal mb-4 group">
       <div className="flex items-end justify-between gap-3 mb-2">
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/20 transition-transform group-hover:scale-110 group-hover:rotate-3">
@@ -1122,6 +1122,7 @@ export default function DashboardPage() {
     <div>
       {/* Premium hero header */}
       <div className="mb-6 relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary via-primary to-primary-dark text-white shadow-card">
+        <div className="kw-aurora" aria-hidden />
         <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-white/5 blur-2xl" aria-hidden />
         <div className="absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-secondary/20 blur-3xl" aria-hidden />
         <div className="relative px-5 py-5 sm:px-7 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1159,7 +1160,7 @@ export default function DashboardPage() {
         title="Ikhtisar Editorial"
         subtitle="Ringkasan status artikel dan trafik"
       />
-      <div className={`kw-stagger mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 ${isAdmin ? "md:grid-cols-4 xl:grid-cols-7" : "md:grid-cols-4"}`}>
+      <div className={`kw-reveal kw-stagger mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 ${isAdmin ? "md:grid-cols-4 xl:grid-cols-7" : "md:grid-cols-4"}`}>
         {stats.map((stat) => (
           <PremiumStatCard key={stat.label} stat={stat} />
         ))}
@@ -1173,7 +1174,7 @@ export default function DashboardPage() {
             title="Konten & Engagement"
             subtitle="Komentar, sorotan, polling, dan distribusi sosial"
           />
-          <div className={`kw-stagger mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 ${isAdmin ? "xl:grid-cols-6" : "xl:grid-cols-6"}`}>
+          <div className={`kw-reveal kw-stagger mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 ${isAdmin ? "xl:grid-cols-6" : "xl:grid-cols-6"}`}>
             {contentStats.map((stat) => (
               <PremiumStatCard key={stat.label} stat={stat} />
             ))}
@@ -1189,7 +1190,7 @@ export default function DashboardPage() {
             title="Operasional & Sistem"
             subtitle="Pengguna, taksonomi, AI, dan integrasi"
           />
-          <div className="kw-stagger mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
+          <div className="kw-reveal kw-stagger mb-8 grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
             {operasionalStats.map((stat) => (
               <PremiumStatCard key={stat.label} stat={stat} />
             ))}
@@ -1282,7 +1283,7 @@ export default function DashboardPage() {
               {visibleGroups.map((group) => {
                 const GIcon = group.icon;
                 return (
-                  <div key={group.id} className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+                  <div key={group.id} className="kw-reveal rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
                     <div className="flex items-center gap-2 border-b border-border bg-gradient-to-r from-surface-secondary/60 to-transparent px-4 py-2.5">
                       <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary-light text-primary">
                         <GIcon size={12} />
@@ -1400,14 +1401,14 @@ export default function DashboardPage() {
 
       {/* Cron health — admin/editor only */}
       {!isCreator && (
-        <div className="mt-6">
+        <div className="kw-reveal mt-6">
           <CronHealthWidget />
         </div>
       )}
 
       {/* Power Widgets — pipeline, pending, AI, top authors, backup */}
       {!isCreator && (
-        <div className="mt-6">
+        <div className="kw-reveal mt-6">
           <SectionHeader
             icon={Activity}
             title="Operasional Realtime"
@@ -1418,7 +1419,7 @@ export default function DashboardPage() {
       )}
 
       {/* Analytics Section */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="kw-reveal mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {isCreator ? (
           <MyArticleStats articles={allArticles} />
         ) : (
