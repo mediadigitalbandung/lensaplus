@@ -19,6 +19,7 @@ import {
   type PerplexitySource,
   type PerplexityImage,
 } from "@/lib/perplexity";
+import { shouldOffloadSmallFields, deriveSmallFieldsViaDeepSeek } from "@/lib/ai-small-fields";
 
 // Indonesian outlets to bias sourcing toward (allowlist, not exclusive).
 const ID_OUTLETS = [
@@ -99,14 +100,33 @@ export async function generateArticleViaPerplexity(keyword: string): Promise<Per
   const hasMarkers = /===JUDUL===/i.test(cleaned);
   const tagsStr = section("TAGS").replace(/^\[|\]$/g, "").replace(/"/g, "").trim();
 
+  const title = section("JUDUL");
+  // If the model ignored the markers entirely, fall back to the whole reply as body.
+  const content = section("KONTEN") || (hasMarkers ? "" : cleaned);
+  let excerpt = section("RINGKASAN");
+  let suggestedTags = tagsStr.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 8);
+  let seoTitle = section("SEO_TITLE");
+  let metaDescription = section("META");
+
+  // Cost combo: regenerate the small SEO metadata with cheap DeepSeek (opt-in).
+  // Best-effort — on any miss we keep Perplexity's own fields.
+  if (content && (await shouldOffloadSmallFields())) {
+    const sf = await deriveSmallFieldsViaDeepSeek(title, content);
+    if (sf) {
+      excerpt = sf.excerpt || excerpt;
+      suggestedTags = sf.tags.length ? sf.tags : suggestedTags;
+      seoTitle = sf.seoTitle || seoTitle;
+      metaDescription = sf.metaDescription || metaDescription;
+    }
+  }
+
   return {
-    title: section("JUDUL"),
-    excerpt: section("RINGKASAN"),
-    // If the model ignored the markers entirely, fall back to the whole reply as body.
-    content: section("KONTEN") || (hasMarkers ? "" : cleaned),
-    suggestedTags: tagsStr.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 8),
-    seoTitle: section("SEO_TITLE"),
-    metaDescription: section("META"),
+    title,
+    excerpt,
+    content,
+    suggestedTags,
+    seoTitle,
+    metaDescription,
     sources: result.sources,
     images: result.images,
   };

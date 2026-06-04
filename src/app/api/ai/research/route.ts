@@ -14,6 +14,7 @@ import { NextRequest } from "next/server";
 import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { aiRateLimit } from "@/lib/rate-limit";
 import { callPerplexity, getPerplexityInstructions } from "@/lib/perplexity";
+import { shouldOffloadSmallFields, deriveSmallFieldsViaDeepSeek } from "@/lib/ai-small-fields";
 import { getPersonaInstruction } from "@/lib/perplexity-personas";
 import { localizePerplexityImages } from "@/lib/perplexity-images";
 import { recordAiUsage } from "@/lib/ai-usage";
@@ -168,19 +169,30 @@ export async function POST(req: NextRequest) {
       const title = section("JUDUL");
       const content = section("KONTEN");
       const hasMarkers = /===KONTEN===/i.test(cleaned) || /===JUDUL===/i.test(cleaned);
+      // If the model ignored the format, treat the whole reply as the body so
+      // the user still gets the article (never lose the draft).
+      const finalContent = content || (hasMarkers ? "" : cleaned);
+
+      let excerpt = section("RINGKASAN");
+      let tags = section("TAGS").replace(/^\[|\]$/g, "").replace(/"/g, "").trim();
+      let seoTitle = section("SEO_TITLE");
+      let metaDescription = section("META");
+
+      // Cost combo: regenerate the small SEO metadata with cheap DeepSeek (opt-in,
+      // and only when a DeepSeek key exists). Best-effort — keep Perplexity's on miss.
+      if (finalContent && (await shouldOffloadSmallFields())) {
+        const sf = await deriveSmallFieldsViaDeepSeek(title, finalContent, session.user.id);
+        if (sf) {
+          excerpt = sf.excerpt || excerpt;
+          if (sf.tags.length) tags = sf.tags.join(", ");
+          seoTitle = sf.seoTitle || seoTitle;
+          metaDescription = sf.metaDescription || metaDescription;
+        }
+      }
 
       return successResponse({
         mode: "draft",
-        fields: {
-          title,
-          excerpt: section("RINGKASAN"),
-          tags: section("TAGS").replace(/^\[|\]$/g, "").replace(/"/g, "").trim(),
-          seoTitle: section("SEO_TITLE"),
-          metaDescription: section("META"),
-          // If the model ignored the format, treat the whole reply as the body so
-          // the user still gets the article (never lose the draft).
-          content: content || (hasMarkers ? "" : cleaned),
-        },
+        fields: { title, excerpt, tags, seoTitle, metaDescription, content: finalContent },
         sources: result.sources,
         related: result.related,
         images,

@@ -516,6 +516,7 @@ export default function PengaturanPage() {
   const [perplexitySearchContext, setPerplexitySearchContext] = useState("");
   const [perplexityComboEnabled, setPerplexityComboEnabled] = useState(false);
   const [perplexityResearchModel, setPerplexityResearchModel] = useState("");
+  const [perplexitySmallFieldsDeepseek, setPerplexitySmallFieldsDeepseek] = useState(false);
   const [elevenlabsKey, setElevenlabsKey] = useState("");
   const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState("");
   const [ttsProvider, setTtsProvider] = useState("auto");
@@ -615,6 +616,7 @@ export default function PengaturanPage() {
         setPerplexitySearchContext(map.perplexity_search_context || "");
         setPerplexityComboEnabled(map.perplexity_combo_enabled === "true");
         setPerplexityResearchModel(map.perplexity_research_model || "");
+        setPerplexitySmallFieldsDeepseek(map.perplexity_small_fields_deepseek === "true");
         setElevenlabsKey(map.elevenlabs_api_key || "");
         setElevenlabsVoiceId(map.elevenlabs_voice_id || "");
         setTtsProvider(map.tts_provider || "auto");
@@ -1405,6 +1407,23 @@ export default function PengaturanPage() {
             </select>
           </Field>
           <Field
+            label="Field kecil (meta/SEO/tag) via DeepSeek"
+            hint="Saat AKTIF: ringkasan, tag, judul SEO, dan meta description tidak lagi dibuat Perplexity, melainkan diturunkan dari isi artikel oleh DeepSeek yang JAUH lebih murah (field kecil tak butuh riset web). Konten utama tetap dari Perplexity. Butuh DeepSeek API Key terisi; kalau gagal, otomatis pakai field bawaan Perplexity."
+          >
+            <label className="flex items-center gap-2 text-sm text-txt-secondary">
+              <input
+                type="checkbox"
+                checked={perplexitySmallFieldsDeepseek}
+                onChange={(e) => {
+                  setPerplexitySmallFieldsDeepseek(e.target.checked);
+                  markDirty("ai");
+                }}
+                className="h-4 w-4 accent-primary"
+              />
+              Pakai DeepSeek untuk ringkasan, tag, SEO title & meta description
+            </label>
+          </Field>
+          <Field
             label="ElevenLabs API Key (alternatif suara Reel)"
             hint={
               <>
@@ -1493,6 +1512,7 @@ export default function PengaturanPage() {
                 ["perplexity_search_context", perplexitySearchContext],
                 ["perplexity_combo_enabled", perplexityComboEnabled ? "true" : "false"],
                 ["perplexity_research_model", perplexityResearchModel],
+                ["perplexity_small_fields_deepseek", perplexitySmallFieldsDeepseek ? "true" : "false"],
                 ["elevenlabs_api_key", elevenlabsKey],
                 ["elevenlabs_voice_id", elevenlabsVoiceId],
                 ["tts_provider", ttsProvider],
