@@ -84,6 +84,10 @@ export interface PerplexityResult {
   sources: PerplexitySource[];
   related: string[];
   images: PerplexityImage[];
+  /** Token usage + the model/context used — for cost telemetry. */
+  usage: { inputTokens: number; outputTokens: number; totalTokens: number };
+  model: string;
+  searchContext: "low" | "medium" | "high";
 }
 
 export interface PerplexityOptions {
@@ -142,6 +146,7 @@ interface PplxResponse {
   search_results?: { title?: string; url?: string; date?: string }[];
   related_questions?: string[];
   images?: { image_url?: string; origin_url?: string; title?: string; width?: number; height?: number }[];
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
 }
 
 /**
@@ -159,6 +164,11 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
   const requestedMax = opts.maxTokens ?? 1800;
   const maxTokens = cfg.maxTokensCap ? Math.min(requestedMax, cfg.maxTokensCap) : requestedMax;
 
+  // The editor's cost setting wins (so it actually saves money even though
+  // callers default to "high"); else the caller value; else "high". Captured in
+  // a variable so we can both send it AND return it for cost telemetry.
+  const searchContext: "low" | "medium" | "high" = cfg.contextSize ?? opts.contextSize ?? "high";
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -172,9 +182,7 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
       max_tokens: maxTokens,
       search_mode: "web",
       return_related_questions: true,
-      // The editor's cost setting wins (so it actually saves money even though
-      // callers default to "high"); else the caller value; else "high".
-      web_search_options: { search_context_size: cfg.contextSize ?? opts.contextSize ?? "high" },
+      web_search_options: { search_context_size: searchContext },
     };
     if (opts.recency) body.search_recency_filter = opts.recency;
     if (opts.domains && opts.domains.length > 0) body.search_domain_filter = opts.domains;
@@ -229,7 +237,19 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
         height: typeof im.height === "number" ? im.height : null,
       }));
 
-    return { text, sources, related: data.related_questions ?? [], images };
+    const inputTokens = data.usage?.prompt_tokens ?? 0;
+    const outputTokens = data.usage?.completion_tokens ?? 0;
+    const totalTokens = data.usage?.total_tokens ?? inputTokens + outputTokens;
+
+    return {
+      text,
+      sources,
+      related: data.related_questions ?? [],
+      images,
+      usage: { inputTokens, outputTokens, totalTokens },
+      model: cfg.model,
+      searchContext,
+    };
   } finally {
     clearTimeout(timer);
   }

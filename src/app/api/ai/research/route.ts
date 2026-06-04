@@ -16,6 +16,7 @@ import { aiRateLimit } from "@/lib/rate-limit";
 import { callPerplexity, getPerplexityInstructions } from "@/lib/perplexity";
 import { getPersonaInstruction } from "@/lib/perplexity-personas";
 import { localizePerplexityImages } from "@/lib/perplexity-images";
+import { recordAiUsage } from "@/lib/ai-usage";
 
 // Indonesian outlets to bias sourcing toward (allowlist, not exclusive — Perplexity
 // still ranks within these first). Kept broad so niche topics aren't starved.
@@ -126,13 +127,28 @@ export async function POST(req: NextRequest) {
     // article doesn't hotlink external CDNs (licensing/expiry). `url` is local.
     const images = includeImages ? await localizePerplexityImages(result.images, 3) : [];
 
+    // Cost telemetry: record Perplexity token usage + computed cost, attributed
+    // to this topic/title so the AI stats tab can total tokens & Rupiah per article.
+    recordAiUsage({
+      userId: session.user.id,
+      userName: session.user.name || "user",
+      feature: mode === "draft" ? "perplexity_draft" : "perplexity_research",
+      provider: "perplexity",
+      model: result.model,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.totalTokens,
+      searchContext: result.searchContext,
+      articleTitle: topic,
+    });
+
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
     await logAudit(
       session.user.id,
       "AI_RESEARCH",
       "Article",
       "perplexity",
-      JSON.stringify({ mode, topic, sources: result.sources.length, images: images.length }),
+      JSON.stringify({ mode, topic, sources: result.sources.length, images: images.length, tokens: result.usage.totalTokens }),
       ip,
     );
 

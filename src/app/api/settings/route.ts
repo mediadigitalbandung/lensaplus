@@ -35,6 +35,8 @@ const ALLOWED_KEYS = [
   "perplexity_model",
   "perplexity_max_tokens",
   "perplexity_search_context",
+  // USD→IDR rate for the AI cost dashboard (Statistik → AI). Default 16500.
+  "usd_idr_rate",
   // Reel voiceover (TTS): Gemini (AI Studio) + ElevenLabs, with a provider switch
   "gemini_api_key",
   "elevenlabs_api_key",

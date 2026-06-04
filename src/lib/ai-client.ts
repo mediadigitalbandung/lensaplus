@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "./prisma";
 import { decryptSecret } from "./crypto-secrets";
+import { computeCostUsd } from "./ai-pricing";
 
 /**
  * Shared AI client for Kartawarta.
@@ -249,6 +250,13 @@ async function callDeepSeek(
  * never block or fail the caller.
  */
 function logUsage(opts: CallAIOptions, result: CallAIResult): void {
+  const model = result.provider === "anthropic" ? ANTHROPIC_MODEL : DEEPSEEK_MODEL;
+  const costUsd = computeCostUsd({
+    provider: result.provider,
+    model,
+    inputTokens: result.inputTokens,
+    outputTokens: result.outputTokens,
+  });
   void prisma.aIUsageLog
     .create({
       data: {
@@ -258,6 +266,9 @@ function logUsage(opts: CallAIOptions, result: CallAIResult): void {
         inputTokens: result.inputTokens,
         outputTokens: result.outputTokens,
         totalTokens: result.totalTokens,
+        provider: result.provider,
+        model,
+        costUsd,
         articleTitle: opts.articleTitle,
       },
     })

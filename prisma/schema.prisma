@@ -413,6 +413,11 @@ model AIUsageLog {
   outputTokens Int      @default(0)
   totalTokens  Int      @default(0)
   articleTitle String?
+  // Cost telemetry (added 2026-06). Null on legacy rows logged before this.
+  provider      String? // "perplexity" | "anthropic" | "deepseek"
+  model         String? // model id used, e.g. "sonar-pro", "claude-haiku-4-5"
+  costUsd       Float?  // computed USD cost of the call (tokens + per-request fee)
+  searchContext String? // Perplexity search_context_size: low | medium | high
   createdAt    DateTime @default(now())
 
   @@index([userId])
