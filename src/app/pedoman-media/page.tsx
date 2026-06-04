@@ -11,7 +11,7 @@ export default function PedomanMediaPage() {
       <div className="container-main py-12">
         <div className="mx-auto max-w-3xl">
           <h1 className="flex items-center gap-3 text-lg font-bold text-txt-primary sm:text-xl sm:text-2xl lg:text-3xl">
-            <span className="block h-8 w-[3px] rounded-full bg-primary" />
+            <span className="block h-8 w-[3px] rounded-full bg-secondary" />
             Pedoman Media Siber
           </h1>
 

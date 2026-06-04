@@ -18,7 +18,7 @@ export default async function VideoPage() {
     <div className="bg-surface min-h-screen">
       <div className="container-main py-6 sm:py-8 lg:py-10">
         <h1 className="flex items-center gap-3 font-serif text-headline-sm font-bold text-txt-primary sm:text-headline-md lg:text-headline-lg">
-          <span className="block h-7 w-[3px] rounded-full bg-primary" />
+          <span className="block h-7 w-[3px] rounded-full bg-secondary" />
           Video Story
         </h1>
         <p className="mt-1 text-sm text-txt-secondary">

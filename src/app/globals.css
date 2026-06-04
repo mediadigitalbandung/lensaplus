@@ -38,7 +38,7 @@
     @apply flex items-center justify-between mb-6 sm:mb-8 lg:mb-10;
   }
   .section-title {
-    @apply font-serif text-headline-md text-on-surface tracking-tight;
+    @apply font-serif text-headline-md text-on-surface tracking-tight border-l-4 border-secondary pl-3;
   }
   .section-subtitle {
     @apply text-body-md text-on-surface-variant mt-2 max-w-2xl;

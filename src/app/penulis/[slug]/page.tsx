@@ -133,7 +133,7 @@ export default async function PenulisPage({ params: paramsPromise }: { params: P
         {/* Articles by author */}
         <div className="mt-8">
           <h2 className="mb-4 flex items-center gap-3 text-base font-bold text-txt-primary sm:text-lg lg:text-xl">
-            <span className="block h-6 w-[3px] rounded-full bg-primary" />
+            <span className="block h-6 w-[3px] rounded-full bg-secondary" />
             Artikel oleh {author.name}
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">

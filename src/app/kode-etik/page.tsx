@@ -25,7 +25,7 @@ export default function KodeEtikPage() {
       <div className="container-main py-12">
         <div className="mx-auto max-w-3xl">
           <h1 className="flex items-center gap-3 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
-            <span className="block h-8 w-[3px] rounded-full bg-primary" />
+            <span className="block h-8 w-[3px] rounded-full bg-secondary" />
             Kode Etik Jurnalistik
           </h1>
 

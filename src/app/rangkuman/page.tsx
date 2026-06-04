@@ -137,7 +137,7 @@ export default async function RangkumanIndexPage() {
 
         <div className="mb-8">
           <div className="flex items-center gap-3">
-            <span className="block h-7 w-[3px] rounded-full bg-primary" />
+            <span className="block h-7 w-[3px] rounded-full bg-secondary" />
             <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
               <Newspaper size={22} className="text-primary" />
               Rangkuman

@@ -13,7 +13,7 @@ export default function TentangPage() {
       <div className="container-main py-8 sm:py-10 lg:py-12 2xl:py-16">
         <div className="mx-auto max-w-3xl">
           <h1 className="flex items-center gap-3 font-serif text-headline-sm font-bold text-txt-primary sm:text-headline-md lg:text-headline-lg">
-            <span className="block h-8 w-[3px] rounded-full bg-primary" />
+            <span className="block h-8 w-[3px] rounded-full bg-secondary" />
             Tentang Kami
           </h1>
 

@@ -262,11 +262,11 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
               className={cn(
                 "flex items-center gap-3 rounded-lg px-4 py-2.5 text-[14px] font-medium transition-all duration-150",
                 isActive
-                  ? "bg-white/10 text-white shadow-sm border border-white/10"
+                  ? "bg-white/10 text-white shadow-sm border border-white/10 border-l-[3px] border-l-secondary"
                   : "text-white/50 hover:text-white/90 hover:bg-white/5 border border-transparent"
               )}
             >
-              <Icon size={18} className={isActive ? "text-blue-400" : ""} />
+              <Icon size={18} />
               {item.name}
             </Link>
           );

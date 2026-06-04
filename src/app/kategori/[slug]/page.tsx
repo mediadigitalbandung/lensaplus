@@ -208,7 +208,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
 
         <div className="mb-6">
           <h1 className="flex items-center gap-3 font-serif text-headline-sm font-bold text-txt-primary sm:text-headline-md lg:text-headline-lg">
-            <span className="block h-7 w-[3px] rounded-full bg-primary" />
+            <span className="block h-7 w-[3px] rounded-full bg-secondary" />
             {category.name}
           </h1>
           <p className="mt-1 text-sm text-txt-muted">

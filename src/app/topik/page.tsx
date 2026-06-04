@@ -74,7 +74,7 @@ export default async function TopikIndexPage() {
 
         <div className="mb-8 max-w-2xl">
           <div className="flex items-center gap-3">
-            <span className="block h-7 w-[3px] rounded-full bg-primary" />
+            <span className="block h-7 w-[3px] rounded-full bg-secondary" />
             <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
               <Compass size={22} className="text-primary" />
               Telusuri Topik
