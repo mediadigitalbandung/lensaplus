@@ -34,36 +34,64 @@ const VALID_CONTEXT = ["low", "medium", "high"] as const;
 
 /**
  * Cost-control knobs, all editor-settable via SystemSetting (Pengaturan → AI):
- *   perplexity_model           — which Sonar model (default sonar-pro)
+ *   perplexity_model           — the DRAFT (writing) Sonar model (default sonar)
  *   perplexity_max_tokens      — hard cap on output tokens (the main cost lever);
  *                                empty/0 = no extra cap (use each caller's value)
  *   perplexity_search_context  — low | medium | high (search retrieval cost)
+ *   perplexity_combo_enabled   — "true" → 2-stage Combo mode (research with a
+ *                                stronger model, write with the cheap draft model)
+ *   perplexity_research_model  — the RESEARCH model used in Combo (default sonar-pro)
  * Read in one round-trip so callPerplexity adds just a single extra query.
  */
 async function getPerplexityConfig(): Promise<{
   model: string;
+  researchModel: string;
+  comboEnabled: boolean;
   maxTokensCap: number | null;
   contextSize: "low" | "medium" | "high" | null;
 }> {
   try {
     const rows = await prisma.systemSetting.findMany({
-      where: { key: { in: ["perplexity_model", "perplexity_max_tokens", "perplexity_search_context"] } },
+      where: {
+        key: {
+          in: [
+            "perplexity_model",
+            "perplexity_max_tokens",
+            "perplexity_search_context",
+            "perplexity_combo_enabled",
+            "perplexity_research_model",
+          ],
+        },
+      },
       select: { key: true, value: true },
     });
     const map = Object.fromEntries(rows.map((r) => [r.key, (r.value ?? "").trim()]));
     const model = (PERPLEXITY_MODELS as readonly string[]).includes(map.perplexity_model)
       ? map.perplexity_model
       : DEFAULT_MODEL;
+    const researchModel = (PERPLEXITY_MODELS as readonly string[]).includes(map.perplexity_research_model)
+      ? map.perplexity_research_model
+      : "sonar-pro";
+    const comboEnabled = map.perplexity_combo_enabled === "true";
     const cap = parseInt(map.perplexity_max_tokens || "0", 10);
     const maxTokensCap = Number.isFinite(cap) && cap > 0 ? cap : null;
     const contextSize = (VALID_CONTEXT as readonly string[]).includes(map.perplexity_search_context)
       ? (map.perplexity_search_context as "low" | "medium" | "high")
       : null;
-    return { model, maxTokensCap, contextSize };
+    return { model, researchModel, comboEnabled, maxTokensCap, contextSize };
   } catch {
-    return { model: DEFAULT_MODEL, maxTokensCap: null, contextSize: null };
+    return { model: DEFAULT_MODEL, researchModel: "sonar-pro", comboEnabled: false, maxTokensCap: null, contextSize: null };
   }
 }
+
+// Concise web-research brief used as stage 1 of Combo mode. Output stays SHORT
+// (raw facts, not a full article) so the pricier research model costs little.
+const RESEARCH_SYSTEM =
+  "Anda periset berita untuk redaksi Kartawarta. Riset topik dari sumber berita Indonesia " +
+  "yang kredibel dan TERBARU, lalu rangkum SECARA RINGKAS dalam poin-poin: fakta kunci, " +
+  "kronologi (5W+1H), angka/data penting, dan kutipan penting beserta atribusinya. HANYA " +
+  "tulis yang didukung sumber — jangan mengarang. Padat, tanpa basa-basi, dan JANGAN menulis " +
+  "artikel utuh; cukup bahan mentah yang nanti ditulis ulang oleh penulis lain.";
 
 export interface PerplexitySource {
   title: string | null;
@@ -149,48 +177,41 @@ interface PplxResponse {
   usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
 }
 
-/**
- * Run a web-grounded Perplexity query. Throws a user-friendly Error on auth/credit/
- * rate-limit/other failures so the route can surface a clear message.
- */
-export async function callPerplexity(opts: PerplexityOptions): Promise<PerplexityResult> {
-  const key = await getApiKey();
-  if (!key) {
-    throw new Error("PERPLEXITY_NOT_CONFIGURED");
-  }
-
-  const cfg = await getPerplexityConfig();
-  // Output tokens are the dominant cost — honour an editor-set hard cap.
-  const requestedMax = opts.maxTokens ?? 1800;
-  const maxTokens = cfg.maxTokensCap ? Math.min(requestedMax, cfg.maxTokensCap) : requestedMax;
-
-  // The editor's cost setting wins (so it actually saves money even though
-  // callers default to "high"); else the caller value; else "high". Captured in
-  // a variable so we can both send it AND return it for cost telemetry.
-  const searchContext: "low" | "medium" | "high" = cfg.contextSize ?? opts.contextSize ?? "high";
-
+/** Low-level single Perplexity call with an EXPLICIT model + search depth. */
+async function runPerplexity(p: {
+  key: string;
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+  maxTokens: number;
+  searchContext: "low" | "medium" | "high";
+  temperature: number;
+  recency?: "hour" | "day" | "week" | "month" | "year";
+  domains?: string[];
+  includeImages?: boolean;
+}): Promise<PerplexityResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
     const body: Record<string, unknown> = {
-      model: cfg.model,
+      model: p.model,
       messages: [
-        { role: "system", content: opts.systemPrompt },
-        { role: "user", content: opts.userPrompt },
+        { role: "system", content: p.systemPrompt },
+        { role: "user", content: p.userPrompt },
       ],
-      temperature: opts.temperature ?? 0.2,
-      max_tokens: maxTokens,
+      temperature: p.temperature,
+      max_tokens: p.maxTokens,
       search_mode: "web",
       return_related_questions: true,
-      web_search_options: { search_context_size: searchContext },
+      web_search_options: { search_context_size: p.searchContext },
     };
-    if (opts.recency) body.search_recency_filter = opts.recency;
-    if (opts.domains && opts.domains.length > 0) body.search_domain_filter = opts.domains;
-    if (opts.includeImages) body.return_images = true;
+    if (p.recency) body.search_recency_filter = p.recency;
+    if (p.domains && p.domains.length > 0) body.search_domain_filter = p.domains;
+    if (p.includeImages) body.return_images = true;
 
     const res = await fetch(ENDPOINT, {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -208,7 +229,7 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
         throw new Error("Batas rate Perplexity tercapai (429). Coba lagi beberapa saat.");
       }
       if (res.status === 400 && /model/i.test(detail)) {
-        throw new Error(`Model Perplexity tidak valid (${cfg.model}). ${detail}`);
+        throw new Error(`Model Perplexity tidak valid (${p.model}). ${detail}`);
       }
       throw new Error(`Perplexity error ${res.status}: ${detail}`);
     }
@@ -247,10 +268,99 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
       related: data.related_questions ?? [],
       images,
       usage: { inputTokens, outputTokens, totalTokens },
-      model: cfg.model,
-      searchContext,
+      model: p.model,
+      searchContext: p.searchContext,
     };
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Run a web-grounded Perplexity query. Throws a user-friendly Error on auth/credit/
+ * rate-limit/other failures so the route can surface a clear message.
+ *
+ * Combo mode (perplexity_combo_enabled): does it in TWO stages with TWO models —
+ * a short research pass on the stronger model (good sourcing, few output tokens)
+ * then the long write on the cheap draft model (low extra search). Transparent to
+ * every caller; the returned `model` is "research+draft" and `usage` is summed.
+ */
+export async function callPerplexity(opts: PerplexityOptions): Promise<PerplexityResult> {
+  const key = await getApiKey();
+  if (!key) {
+    throw new Error("PERPLEXITY_NOT_CONFIGURED");
+  }
+
+  const cfg = await getPerplexityConfig();
+  // Output tokens are the dominant cost — honour an editor-set hard cap.
+  const requestedMax = opts.maxTokens ?? 1800;
+  const draftMaxTokens = cfg.maxTokensCap ? Math.min(requestedMax, cfg.maxTokensCap) : requestedMax;
+  // The editor's cost setting wins; else the caller value; else "high".
+  const searchContext: "low" | "medium" | "high" = cfg.contextSize ?? opts.contextSize ?? "high";
+
+  // ── Single-model path (default, and when research==draft model) ──
+  if (!cfg.comboEnabled || cfg.researchModel === cfg.model) {
+    return runPerplexity({
+      key,
+      model: cfg.model,
+      systemPrompt: opts.systemPrompt,
+      userPrompt: opts.userPrompt,
+      maxTokens: draftMaxTokens,
+      searchContext,
+      temperature: opts.temperature ?? 0.2,
+      recency: opts.recency,
+      domains: opts.domains,
+      includeImages: opts.includeImages,
+    });
+  }
+
+  // ── Combo: stronger model researches (short → cheap), cheap model writes ──
+  const research = await runPerplexity({
+    key,
+    model: cfg.researchModel,
+    systemPrompt: RESEARCH_SYSTEM,
+    userPrompt: opts.userPrompt,
+    maxTokens: Math.min(900, draftMaxTokens),
+    searchContext, // good retrieval where it matters
+    temperature: 0.2,
+    recency: opts.recency,
+    domains: opts.domains,
+    includeImages: false,
+  });
+
+  const draft = await runPerplexity({
+    key,
+    model: cfg.model,
+    systemPrompt: opts.systemPrompt,
+    userPrompt: `${opts.userPrompt}\n\n=== HASIL RISET (gunakan sebagai basis fakta; jangan menambah fakta di luar ini) ===\n${research.text}`,
+    maxTokens: draftMaxTokens,
+    searchContext: "low", // facts already gathered → minimise extra search cost
+    temperature: opts.temperature ?? 0.3,
+    domains: opts.domains,
+    includeImages: opts.includeImages,
+  });
+
+  // Merge sources (research first, deduped by URL), sum token usage.
+  const seen = new Set<string>();
+  const mergedSources: PerplexitySource[] = [];
+  for (const s of [...research.sources, ...draft.sources]) {
+    if (s.url && !seen.has(s.url)) {
+      seen.add(s.url);
+      mergedSources.push(s);
+    }
+  }
+
+  return {
+    text: draft.text,
+    sources: mergedSources,
+    related: draft.related,
+    images: draft.images,
+    usage: {
+      inputTokens: research.usage.inputTokens + draft.usage.inputTokens,
+      outputTokens: research.usage.outputTokens + draft.usage.outputTokens,
+      totalTokens: research.usage.totalTokens + draft.usage.totalTokens,
+    },
+    model: `${cfg.researchModel}+${cfg.model}`,
+    searchContext: draft.searchContext,
+  };
 }

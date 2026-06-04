@@ -427,6 +427,8 @@ export default function PengaturanPage() {
   const [perplexityModel, setPerplexityModel] = useState("");
   const [perplexityMaxTokens, setPerplexityMaxTokens] = useState("");
   const [perplexitySearchContext, setPerplexitySearchContext] = useState("");
+  const [perplexityComboEnabled, setPerplexityComboEnabled] = useState(false);
+  const [perplexityResearchModel, setPerplexityResearchModel] = useState("");
   const [elevenlabsKey, setElevenlabsKey] = useState("");
   const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState("");
   const [ttsProvider, setTtsProvider] = useState("auto");
@@ -524,6 +526,8 @@ export default function PengaturanPage() {
         setPerplexityModel(map.perplexity_model || "");
         setPerplexityMaxTokens(map.perplexity_max_tokens || "");
         setPerplexitySearchContext(map.perplexity_search_context || "");
+        setPerplexityComboEnabled(map.perplexity_combo_enabled === "true");
+        setPerplexityResearchModel(map.perplexity_research_model || "");
         setElevenlabsKey(map.elevenlabs_api_key || "");
         setElevenlabsVoiceId(map.elevenlabs_voice_id || "");
         setTtsProvider(map.tts_provider || "auto");
@@ -1184,6 +1188,38 @@ export default function PengaturanPage() {
             </select>
           </Field>
           <Field
+            label="Mode Kombinasi (riset bagus → tulis hemat)"
+            hint="Saat AKTIF: tahap-1 RISET pakai 'Model Riset' (sumber lebih berkualitas, output pendek = murah), tahap-2 MENULIS pakai model di atas yang hemat. Hasil: kualitas riset mendekati sonar-pro dengan biaya jauh di bawahnya — di antara sonar & sonar-pro. MATI = satu model saja (paling hemat)."
+          >
+            <label className="flex items-center gap-2 text-sm text-txt-secondary">
+              <input
+                type="checkbox"
+                checked={perplexityComboEnabled}
+                onChange={(e) => {
+                  setPerplexityComboEnabled(e.target.checked);
+                  markDirty("ai");
+                }}
+                className="h-4 w-4 accent-primary"
+              />
+              Aktifkan kombinasi 2-tahap (riset + tulis pakai 2 model)
+            </label>
+            {perplexityComboEnabled && (
+              <select
+                value={perplexityResearchModel}
+                onChange={(e) => {
+                  setPerplexityResearchModel(e.target.value);
+                  markDirty("ai");
+                }}
+                className="input mt-3"
+              >
+                <option value="">Model Riset: Default (sonar-pro)</option>
+                <option value="sonar-pro">Model Riset: sonar-pro (disarankan)</option>
+                <option value="sonar-reasoning">Model Riset: sonar-reasoning</option>
+                <option value="sonar-reasoning-pro">Model Riset: sonar-reasoning-pro</option>
+              </select>
+            )}
+          </Field>
+          <Field
             label="Batas Token Output Perplexity"
             hint="Batas maksimum panjang jawaban — token output adalah biaya terbesar. Mis. isi 1500 untuk draf ringkas & hemat. Kosong/0 = tanpa batas tambahan (pakai bawaan tiap fitur)."
           >
@@ -1305,6 +1341,8 @@ export default function PengaturanPage() {
                 ["perplexity_model", perplexityModel],
                 ["perplexity_max_tokens", perplexityMaxTokens],
                 ["perplexity_search_context", perplexitySearchContext],
+                ["perplexity_combo_enabled", perplexityComboEnabled ? "true" : "false"],
+                ["perplexity_research_model", perplexityResearchModel],
                 ["elevenlabs_api_key", elevenlabsKey],
                 ["elevenlabs_voice_id", elevenlabsVoiceId],
                 ["tts_provider", ttsProvider],

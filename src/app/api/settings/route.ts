@@ -35,6 +35,9 @@ const ALLOWED_KEYS = [
   "perplexity_model",
   "perplexity_max_tokens",
   "perplexity_search_context",
+  // Perplexity Combo mode (2-stage: research model → cheap draft model)
+  "perplexity_combo_enabled",
+  "perplexity_research_model",
   // USD→IDR rate for the AI cost dashboard (Statistik → AI). Default 16500.
   "usd_idr_rate",
   // Reel voiceover (TTS): Gemini (AI Studio) + ElevenLabs, with a provider switch
