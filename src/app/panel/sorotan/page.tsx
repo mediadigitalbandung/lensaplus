@@ -2,7 +2,10 @@
 
 /**
  * Sorotan Panel — SUPER_ADMIN | CHIEF_EDITOR | EDITOR
- * Manage Sorotan SEO pages generated per article (3 angles: KRONOLOGI, ANALISIS, DAMPAK)
+ *
+ * Article-centric: browse Sorotan by their SOURCE article. Each article expands
+ * to its angle-pages (Kronologi / Analisis / Dampak / …) — click an angle to
+ * open its public Sorotan page. Generate Sorotan per article or in batch.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -13,37 +16,42 @@ import {
   Sparkles,
   RefreshCw,
   Loader2,
-  CheckCircle,
-  Clock,
-  XCircle,
-  AlertCircle,
   Zap,
   Bot,
   ExternalLink,
-  Eye,
+  ChevronDown,
+  ChevronRight,
+  Search as SearchIcon,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { EDITOR_ROLES } from "@/lib/roles";
+
+interface SorotanItem {
+  slug: string;
+  angle: string;
+  title: string;
+}
 
 interface Article {
   id: string;
   title: string;
   slug: string;
-  status: string;
   publishedAt: string | null;
-  _sorotanCount?: number;
+  sorotan: SorotanItem[];
 }
 
-interface SorotanStatus {
-  total: number;
-  counts: {
-    pending: number;
-    submitted: number;
-    indexed: number;
-    failed: number;
-    unknown: number;
-  };
-}
+const ANGLE_LABEL: Record<string, string> = {
+  KRONOLOGI: "Kronologi",
+  ANALISIS: "Analisis",
+  DAMPAK: "Dampak",
+  LATAR_BELAKANG: "Latar Belakang",
+  PROFIL: "Profil",
+  REAKSI: "Reaksi",
+  HUKUM: "Hukum",
+  EKONOMI: "Ekonomi",
+  PROYEKSI: "Proyeksi",
+  FAQ: "FAQ",
+};
 
 function formatDate(d: string | null) {
   if (!d) return "—";
@@ -60,24 +68,26 @@ export default function SorotanPage() {
   const { success: showSuccess, error: showError } = useToast();
 
   const [articles, setArticles] = useState<Article[]>([]);
-  const [sorotanStatus, setSorotanStatus] = useState<SorotanStatus | null>(
-    null,
-  );
+  const [totalSorotan, setTotalSorotan] = useState(0);
+  const [totalArticles, setTotalArticles] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [onlyWithSorotan, setOnlyWithSorotan] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [singleProcessing, setSingleProcessing] = useState<string | null>(null);
 
-  // Article list pagination (client-side over the fetched batch)
-  const [page, setPage] = useState<number>(1);
-  const ARTICLES_PER_PAGE = 15;
-
-  // Auto-generation settings (sorotan_*)
-  const [autoEnabled, setAutoEnabled] = useState<boolean>(false);
-  const [intervalMin, setIntervalMin] = useState<number>(60);
-  const [batchSize, setBatchSize] = useState<number>(5);
-  const [savingToggle, setSavingToggle] = useState<boolean>(false);
-  const [savingInterval, setSavingInterval] = useState<boolean>(false);
-  const [savingBatch, setSavingBatch] = useState<boolean>(false);
+  // Auto-generation settings (sorotan_*) — admin only
+  const [autoEnabled, setAutoEnabled] = useState(false);
+  const [intervalMin, setIntervalMin] = useState(60);
+  const [batchSize, setBatchSize] = useState(5);
+  const [savingToggle, setSavingToggle] = useState(false);
+  const [savingInterval, setSavingInterval] = useState(false);
+  const [savingBatch, setSavingBatch] = useState(false);
   const isAdmin = userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR";
 
   if (
@@ -91,25 +101,26 @@ export default function SorotanPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [artRes, statusRes] = await Promise.all([
-        fetch("/api/articles?status=PUBLISHED&limit=500&sort=oldest"),
-        fetch("/api/seo/sorotan-status"),
-      ]);
-
-      if (artRes.ok) {
-        const json = await artRes.json();
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "15",
+        onlyWithSorotan: String(onlyWithSorotan),
+      });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      const res = await fetch(`/api/seo/sorotan-by-article?${params}`);
+      if (res.ok) {
+        const json = await res.json();
         setArticles(json.data?.articles || []);
-      }
-      if (statusRes.ok) {
-        const json = await statusRes.json();
-        setSorotanStatus(json.data);
+        setTotalSorotan(json.data?.totalSorotan || 0);
+        setTotalArticles(json.data?.pagination?.total || 0);
+        setTotalPages(json.data?.pagination?.totalPages || 1);
       }
     } catch {
       /* */
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, onlyWithSorotan, debouncedSearch]);
 
   const fetchAutoSettings = useCallback(async () => {
     if (!isAdmin) return;
@@ -130,15 +141,19 @@ export default function SorotanPage() {
 
   useEffect(() => {
     fetchData();
-    fetchAutoSettings();
-  }, [fetchData, fetchAutoSettings]);
-
-  // Clamp the current page when the article list shrinks (e.g. after a
-  // generate run flips an article out of the "needs sorotan" filter).
+  }, [fetchData]);
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(articles.length / ARTICLES_PER_PAGE));
-    if (page > totalPages) setPage(totalPages);
-  }, [articles.length, page]);
+    fetchAutoSettings();
+  }, [fetchAutoSettings]);
+
+  // Debounce the search box → reset to page 1.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
   async function saveSetting(key: string, value: string) {
     const res = await fetch("/api/settings", {
@@ -233,6 +248,7 @@ export default function SorotanPage() {
       showSuccess(
         `${json.data?.created ?? 0} angle dibuat, ${json.data?.skipped ?? 0} di-skip, ${(json.data?.errors || []).length} error.`,
       );
+      setExpandedId(articleId); // reveal the freshly created sorotan
       fetchData();
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal generate");
@@ -251,6 +267,7 @@ export default function SorotanPage() {
 
   return (
     <div>
+      {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -259,11 +276,11 @@ export default function SorotanPage() {
               Sorotan
             </h1>
           </div>
-          <p className="mt-1 text-sm text-txt-secondary">
-            Halaman SEO tambahan — 10 sudut pandang per artikel (Kronologi /
-            Analisis / Dampak / Latar Belakang / Profil / Reaksi / Hukum /
-            Ekonomi / Proyeksi / FAQ). Setiap sorotan menutup dengan tombol
-            &quot;Lanjut Baca Artikel Lengkap&quot; yang funnel pembaca ke
+          <p className="mt-1 max-w-3xl text-sm text-txt-secondary">
+            Halaman SEO tambahan per artikel (Kronologi / Analisis / Dampak /
+            dst.). Pilih artikel sumber, lalu klik salah satu sudut pandang untuk
+            membuka halaman Sorotan-nya. Setiap halaman menutup dengan tombol
+            &quot;Lanjut Baca Artikel Lengkap&quot; yang mengarahkan pembaca ke
             artikel utama.
           </p>
         </div>
@@ -298,49 +315,23 @@ export default function SorotanPage() {
         </div>
       </div>
 
-      {/* Status cards */}
-      {sorotanStatus && (
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-            <p className="text-xs text-txt-secondary">Total Sorotan</p>
-            <p className="mt-1 text-2xl font-extrabold text-txt-primary">
-              {sorotanStatus.total}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-            <div className="flex items-center gap-1.5 text-xs text-txt-secondary">
-              <Clock size={12} className="text-yellow-500" /> Pending
-            </div>
-            <p className="mt-1 text-2xl font-extrabold text-yellow-600">
-              {sorotanStatus.counts.pending}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-            <div className="flex items-center gap-1.5 text-xs text-txt-secondary">
-              <AlertCircle size={12} className="text-blue-500" /> Submitted
-            </div>
-            <p className="mt-1 text-2xl font-extrabold text-blue-600">
-              {sorotanStatus.counts.submitted}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-            <div className="flex items-center gap-1.5 text-xs text-txt-secondary">
-              <CheckCircle size={12} className="text-primary" /> Indexed
-            </div>
-            <p className="mt-1 text-2xl font-extrabold text-primary">
-              {sorotanStatus.counts.indexed}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-            <div className="flex items-center gap-1.5 text-xs text-txt-secondary">
-              <XCircle size={12} className="text-red-500" /> Failed
-            </div>
-            <p className="mt-1 text-2xl font-extrabold text-red-600">
-              {sorotanStatus.counts.failed}
-            </p>
-          </div>
+      {/* Summary — total saja, tanpa status index */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:max-w-md">
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+          <p className="text-xs text-txt-secondary">Total Halaman Sorotan</p>
+          <p className="mt-1 text-2xl font-extrabold text-txt-primary">
+            {totalSorotan.toLocaleString("id-ID")}
+          </p>
         </div>
-      )}
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+          <p className="text-xs text-txt-secondary">
+            {onlyWithSorotan ? "Artikel ber-Sorotan" : "Artikel Dipublikasi"}
+          </p>
+          <p className="mt-1 text-2xl font-extrabold text-primary">
+            {totalArticles.toLocaleString("id-ID")}
+          </p>
+        </div>
+      </div>
 
       {/* Auto-generation panel — admin only */}
       {isAdmin && (
@@ -397,10 +388,6 @@ export default function SorotanPage() {
                 <option value={30}>Setiap 30 menit</option>
                 <option value={60}>Setiap 1 jam</option>
               </select>
-              <p className="mt-1 text-xs text-txt-muted">
-                Cron VPS dipanggil tiap 5 menit; throttle endpoint memastikan
-                generate hanya jalan sesuai pilihan ini.
-              </p>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-txt-secondary">
@@ -424,183 +411,176 @@ export default function SorotanPage() {
                 />
                 <span className="text-xs text-txt-secondary">artikel (0–20)</span>
               </div>
-              <p className="mt-1 text-xs text-txt-muted">
-                Tiap artikel butuh ~3 panggilan AI. 0 = pause tanpa nonaktifkan
-                toggle.
-              </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Info */}
-      <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4">
-        <div className="flex items-start gap-3">
-          <Sparkles size={16} className="mt-0.5 text-blue-600 shrink-0" />
-          <div className="text-xs text-blue-700 space-y-1">
-            <p>
-              Sorotan dibuat otomatis via AI (3 angle: KRONOLOGI, ANALISIS,
-              DAMPAK). Setiap artikel idealnya punya 3 sorotan.
-            </p>
-            <p>
-              <span className="font-semibold">Halaman publik</span>:{" "}
-              <a
-                href="/sorotan"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-blue-900"
-              >
-                /sorotan
-              </a>{" "}
-              (index) — pola URL per sorotan:{" "}
-              <code className="font-mono bg-blue-100 px-1 rounded">
-                /sorotan/&lt;slug-artikel&gt;-&lt;angle&gt;
-              </code>
-              , mis.{" "}
-              <code className="font-mono bg-blue-100 px-1 rounded">
-                /sorotan/regulasi-ai-di-indonesia-kronologi
-              </code>
-              .
-            </p>
-          </div>
+      {/* Search + filter */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <SearchIcon
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted"
+          />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari artikel sumber..."
+            className="input w-full pl-9"
+            aria-label="Cari artikel"
+          />
+        </div>
+        <div className="flex items-center gap-1 rounded-full bg-surface-tertiary p-1 text-xs font-medium">
+          <button
+            onClick={() => { setOnlyWithSorotan(true); setPage(1); }}
+            className={`rounded-full px-3 py-1.5 transition-colors ${
+              onlyWithSorotan ? "bg-primary text-white" : "text-txt-secondary"
+            }`}
+          >
+            Sudah ada Sorotan
+          </button>
+          <button
+            onClick={() => { setOnlyWithSorotan(false); setPage(1); }}
+            className={`rounded-full px-3 py-1.5 transition-colors ${
+              !onlyWithSorotan ? "bg-primary text-white" : "text-txt-secondary"
+            }`}
+          >
+            Semua artikel
+          </button>
         </div>
       </div>
 
-      {/* Article list */}
-      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
-        <div className="border-b border-border bg-surface-secondary px-5 py-4">
-          <h2 className="text-base font-bold text-txt-primary">
-            Artikel Dipublikasi
-          </h2>
+      {/* Article list — article-centric, expandable to its sorotan pages */}
+      {loading ? (
+        <div className="py-16 text-center">
+          <Loader2 size={24} className="mx-auto animate-spin text-primary" />
         </div>
-        {loading ? (
-          <div className="py-16 text-center">
-            <Loader2 size={24} className="mx-auto animate-spin text-primary" />
-          </div>
-        ) : articles.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-sm text-txt-secondary">
-              Belum ada artikel dipublikasi.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b border-border bg-surface-secondary">
-                <tr>
-                  <th className="px-5 py-3 text-left font-medium text-txt-secondary">
-                    Artikel
-                  </th>
-                  <th className="hidden sm:table-cell px-5 py-3 text-left font-medium text-txt-secondary">
-                    Dipublikasi
-                  </th>
-                  <th className="px-5 py-3 text-right font-medium text-txt-secondary">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {articles
-                  .slice(
-                    (page - 1) * ARTICLES_PER_PAGE,
-                    page * ARTICLES_PER_PAGE,
-                  )
-                  .map((a) => (
-                  <tr key={a.id} className="hover:bg-surface-secondary/50">
-                    <td className="max-w-[360px] px-5 py-3">
-                      <p className="truncate font-medium text-txt-primary">
-                        {a.title}
-                      </p>
-                      <p className="text-[11px] text-txt-muted truncate">
-                        /{a.slug}
-                      </p>
-                    </td>
-                    <td className="hidden sm:table-cell px-5 py-3 text-xs text-txt-secondary">
-                      {formatDate(a.publishedAt)}
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        <a
-                          href={`/sorotan/${a.slug}-kronologi`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-ghost inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium hover:text-primary"
-                          title="Lihat halaman Sorotan untuk artikel ini (angle Kronologi)"
-                        >
-                          <Eye size={12} />
-                          Lihat
-                        </a>
-                        <button
-                          onClick={() => handleSingle(a.id)}
-                          disabled={singleProcessing === a.id}
-                          className="btn-secondary inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-                        >
-                          {singleProcessing === a.id ? (
-                            <Loader2 size={12} className="animate-spin" />
-                          ) : (
-                            <Sparkles size={12} />
-                          )}
-                          Generate
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      ) : articles.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-surface py-16 text-center shadow-card">
+          <p className="text-sm text-txt-secondary">
+            {onlyWithSorotan
+              ? "Belum ada artikel yang punya Sorotan. Klik “Generate Batch” atau pilih “Semua artikel” untuk membuat."
+              : "Belum ada artikel dipublikasi."}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {articles.map((a) => {
+              const expanded = expandedId === a.id;
+              return (
+                <div
+                  key={a.id}
+                  className="overflow-hidden rounded-xl border border-border bg-surface shadow-card"
+                >
+                  <div className="flex items-center gap-2 px-3 py-3 sm:px-4">
+                    <button
+                      onClick={() => setExpandedId(expanded ? null : a.id)}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      aria-expanded={expanded}
+                    >
+                      <span className="text-txt-muted shrink-0">
+                        {expanded ? (
+                          <ChevronDown size={16} />
+                        ) : (
+                          <ChevronRight size={16} />
+                        )}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-txt-primary">
+                          {a.title}
+                        </span>
+                        <span className="block truncate text-[11px] text-txt-muted">
+                          /{a.slug} · {formatDate(a.publishedAt)} ·{" "}
+                          <span
+                            className={
+                              a.sorotan.length
+                                ? "font-semibold text-primary"
+                                : "text-txt-muted"
+                            }
+                          >
+                            {a.sorotan.length} sorotan
+                          </span>
+                        </span>
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => handleSingle(a.id)}
+                      disabled={singleProcessing === a.id}
+                      className="btn-secondary inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                      title="Buat / lengkapi Sorotan untuk artikel ini"
+                    >
+                      {singleProcessing === a.id ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Sparkles size={12} />
+                      )}
+                      Generate
+                    </button>
+                  </div>
 
-            {articles.length > ARTICLES_PER_PAGE && (
-              <div className="flex items-center justify-between border-t border-border bg-surface-secondary/40 px-5 py-3 text-xs">
-                <span className="text-txt-secondary">
-                  Menampilkan{" "}
-                  <span className="font-semibold text-txt-primary">
-                    {(page - 1) * ARTICLES_PER_PAGE + 1}
-                  </span>
-                  –
-                  <span className="font-semibold text-txt-primary">
-                    {Math.min(page * ARTICLES_PER_PAGE, articles.length)}
-                  </span>{" "}
-                  dari{" "}
-                  <span className="font-semibold text-txt-primary">
-                    {articles.length}
-                  </span>{" "}
-                  artikel
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="btn-ghost flex items-center gap-1 rounded px-2 py-1 disabled:opacity-30"
-                    aria-label="Halaman sebelumnya"
-                  >
-                    Prev
-                  </button>
-                  <span className="px-2 font-semibold text-txt-primary">
-                    {page} / {Math.ceil(articles.length / ARTICLES_PER_PAGE)}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setPage((p) =>
-                        Math.min(
-                          Math.ceil(articles.length / ARTICLES_PER_PAGE),
-                          p + 1,
-                        ),
-                      )
-                    }
-                    disabled={
-                      page >= Math.ceil(articles.length / ARTICLES_PER_PAGE)
-                    }
-                    className="btn-ghost flex items-center gap-1 rounded px-2 py-1 disabled:opacity-30"
-                    aria-label="Halaman berikutnya"
-                  >
-                    Next
-                  </button>
+                  {expanded && (
+                    <div className="border-t border-border bg-surface-secondary/40 px-4 py-3">
+                      {a.sorotan.length === 0 ? (
+                        <p className="text-xs text-txt-muted">
+                          Belum ada Sorotan untuk artikel ini. Klik{" "}
+                          <strong>Generate</strong> untuk membuatnya.
+                        </p>
+                      ) : (
+                        <>
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
+                            Pilih sudut pandang ({a.sorotan.length})
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {a.sorotan.map((s) => (
+                              <a
+                                key={s.slug}
+                                href={`/sorotan/${s.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={s.title}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-light/50 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary-light"
+                              >
+                                {ANGLE_LABEL[s.angle] ?? s.angle}
+                                <ExternalLink size={11} className="opacity-70" />
+                              </a>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })}
           </div>
-        )}
-      </div>
+
+          {/* Pagination (server-side) */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="btn-ghost rounded px-3 py-1.5 disabled:opacity-30"
+              >
+                Prev
+              </button>
+              <span className="px-2 font-semibold text-txt-primary">
+                {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="btn-ghost rounded px-3 py-1.5 disabled:opacity-30"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
