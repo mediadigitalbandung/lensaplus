@@ -1120,8 +1120,8 @@ export default function NewArticlePage() {
               className="input w-full"
             >
               <option value="">Otomatis (random)</option>
-              {/* Editor / Kepala Editor boleh menugaskan dirinya sendiri sebagai editor */}
-              {["EDITOR", "CHIEF_EDITOR"].includes(userRole) && session?.user?.id && (
+              {/* Editor / Kepala Editor (dan Super Admin) boleh menugaskan dirinya sendiri sebagai editor */}
+              {["EDITOR", "CHIEF_EDITOR", "SUPER_ADMIN"].includes(userRole) && session?.user?.id && (
                 <option value={session.user.id}>Saya sendiri (sebagai editor)</option>
               )}
               {users
