@@ -1796,8 +1796,12 @@ export default function EditArticlePage() {
                 className="input w-full"
               >
                 <option value="">Otomatis (random)</option>
+                {/* Editor / Kepala Editor boleh menugaskan dirinya sendiri sebagai editor */}
+                {["EDITOR", "CHIEF_EDITOR"].includes(userRole) && userId && (
+                  <option value={userId}>Saya sendiri (sebagai editor)</option>
+                )}
                 {allUsers
-                  .filter(u => ["EDITOR", "CHIEF_EDITOR", "SUPER_ADMIN"].includes(u.role))
+                  .filter(u => ["EDITOR", "CHIEF_EDITOR", "SUPER_ADMIN"].includes(u.role) && u.id !== userId)
                   .map(u => (
                     <option key={u.id} value={u.id}>{u.name} ({roleLabelsMap[u.role] || u.role})</option>
                   ))
@@ -2654,8 +2658,12 @@ export default function EditArticlePage() {
                 className="input w-full"
               >
                 <option value="">Otomatis (random)</option>
+                {/* Editor / Kepala Editor boleh menugaskan dirinya sendiri sebagai editor */}
+                {["EDITOR", "CHIEF_EDITOR"].includes(userRole) && userId && (
+                  <option value={userId}>Saya sendiri (sebagai editor)</option>
+                )}
                 {allUsers
-                  .filter(u => ["EDITOR", "CHIEF_EDITOR", "SUPER_ADMIN"].includes(u.role))
+                  .filter(u => ["EDITOR", "CHIEF_EDITOR", "SUPER_ADMIN"].includes(u.role) && u.id !== userId)
                   .map(u => (
                     <option key={u.id} value={u.id}>{u.name} ({roleLabelsMap[u.role] || u.role})</option>
                   ))
