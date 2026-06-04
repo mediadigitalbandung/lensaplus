@@ -2,7 +2,7 @@
 
 /**
  * Panel Live Blog — listing + create/delete
- * Auth: SUPER_ADMIN | CHIEF_EDITOR | EDITOR | JOURNALIST
+ * Auth: SUPER_ADMIN | CHIEF_EDITOR | EDITOR
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -56,7 +56,6 @@ const WRITE_ROLES = [
   "SUPER_ADMIN",
   "CHIEF_EDITOR",
   "EDITOR",
-  "JOURNALIST",
 ];
 
 const DELETE_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"];

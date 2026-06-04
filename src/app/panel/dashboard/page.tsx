@@ -998,10 +998,12 @@ export default function DashboardPage() {
           const reviewQueue = aStats?.byStatus?.IN_REVIEW ?? fetchedArticles.filter((a) => a.status === "IN_REVIEW").length;
           const rejected = aStats?.byStatus?.REJECTED ?? fetchedArticles.filter((a) => a.status === "REJECTED").length;
           const totalArticles = aStats?.total ?? fetchedArticles.length;
-          // "Disetujui Hari Ini" = currently-approved (awaiting publish) + published today.
+          // "Disetujui Hari Ini" = articles actually reviewed-and-approved TODAY
+          // (accurate DB count via reviewedAt). Falls back to the rough array
+          // heuristic only while dashStats is still loading.
           const today = new Date().toDateString();
           const approvedToday = aStats
-            ? (aStats.byStatus?.APPROVED ?? 0) + (aStats.publishedToday ?? 0)
+            ? (aStats.approvedToday ?? 0)
             : fetchedArticles.filter(
                 (a) => a.status === "APPROVED" || (a.status === "PUBLISHED" && a.publishedAt && new Date(a.publishedAt).toDateString() === today)
               ).length;

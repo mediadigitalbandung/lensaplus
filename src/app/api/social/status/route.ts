@@ -103,8 +103,15 @@ export async function GET(req: NextRequest) {
       prisma.socialPost.count({ where }),
     ]);
 
+    // errorMessage can carry raw Meta/Twitter publisher-API error strings (the
+    // site's GLOBAL platform tokens). Creators don't administer those tokens, so
+    // hide the detail from non-editors — they still see the REJECTED status.
+    const safePosts = isEditor
+      ? posts
+      : posts.map((p) => ({ ...p, errorMessage: null }));
+
     return successResponse({
-      posts,
+      posts: safePosts,
       pagination: {
         page,
         limit,

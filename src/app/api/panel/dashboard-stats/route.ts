@@ -52,6 +52,7 @@ export async function GET() {
       articleViewsSum,
       articlePublishedToday,
       articleViewsTodayAgg,
+      articleApprovedToday,
       totalComments,
       pendingComments,
     ] = await Promise.all([
@@ -75,6 +76,15 @@ export async function GET() {
         where: { status: "PUBLISHED", publishedAt: { gte: today, lt: tomorrow } },
         _sum: { viewCount: true },
       }),
+      // Truly "approved today": reviewed (approved, not rejected) within today.
+      // reviewedAt is stamped on approve/reject; an approval lands the article
+      // in APPROVED then later PUBLISHED, so count those two statuses.
+      prisma.article.count({
+        where: {
+          reviewedAt: { gte: today, lt: tomorrow },
+          status: { in: ["APPROVED", "PUBLISHED"] },
+        },
+      }),
       prisma.comment.count(),
       prisma.comment.count({ where: { isApproved: false } }),
     ]);
@@ -93,6 +103,7 @@ export async function GET() {
         totalViews: articleViewsSum._sum.viewCount || 0,
         publishedToday: articlePublishedToday,
         viewsToday: articleViewsTodayAgg._sum.viewCount || 0,
+        approvedToday: articleApprovedToday,
       },
       comments: { total: totalComments, pending: pendingComments },
     };

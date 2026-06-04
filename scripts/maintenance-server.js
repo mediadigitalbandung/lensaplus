@@ -47,9 +47,21 @@ const server = http.createServer((req, res) => {
   res.end(pageHtml);
 });
 
+// The real app (pm2 `next start`) may not have released port 3000 the instant
+// the deploy script launches us — its graceful-shutdown kill_timeout is up to
+// 10s. So on EADDRINUSE, keep retrying the bind (up to ~30s) instead of giving
+// up; otherwise visitors would briefly see Cloudflare's 502 instead of the
+// branded maintenance page during the hand-off.
+let bindAttempts = 0;
+const MAX_BIND_ATTEMPTS = 30;
+
 server.on("error", (err) => {
-  // Most likely EADDRINUSE if the real app hasn't released the port yet.
-  // Exit non-zero so the deploy script's launcher notices.
+  if (err.code === "EADDRINUSE" && bindAttempts < MAX_BIND_ATTEMPTS) {
+    bindAttempts++;
+    console.error(`port ${PORT} still busy (attempt ${bindAttempts}/${MAX_BIND_ATTEMPTS}) — retrying in 1s`);
+    setTimeout(() => server.listen(PORT, HOST), 1000);
+    return;
+  }
   console.error("maintenance-server error:", err.message);
   process.exit(1);
 });

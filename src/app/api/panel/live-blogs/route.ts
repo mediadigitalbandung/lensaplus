@@ -24,7 +24,6 @@ const WRITE_ROLES = [
   "SUPER_ADMIN",
   "CHIEF_EDITOR",
   "EDITOR",
-  "JOURNALIST",
 ] as const;
 
 const createSchema = z.object({
