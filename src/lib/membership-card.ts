@@ -171,8 +171,17 @@ export interface CardRenderInput {
   pwiChairmanName: string;
   pwiChairmanSignature: string | null;
   cardLogo: string | null;
+  /** Dewan Pers verification certificate number (printed on the card). */
+  dewanPersNumber?: string;
+  /** Blood type (golongan darah) — printed on the front when set. */
+  bloodType?: string | null;
   verifyUrl: string; // encoded into the QR
 }
+
+/** Kartawarta's Dewan Pers verification number (matches the site footer). */
+const DEFAULT_DEWAN_PERS = "608/DP-Verifikasi/K/XI/2020";
+/** Fallback logo so the card always shows branding even before an admin uploads one. */
+const DEFAULT_LOGO = "/kartawarta-icon.png";
 
 const STATUS_COLOR: Record<string, string> = {
   ACTIVE: "#1a7f37",
@@ -197,13 +206,14 @@ export async function renderMembershipCard(input: CardRenderInput): Promise<Buff
   const [photo, qrBuf, logo, dirSig, pwiSig] = await Promise.all([
     loadImage(input.photoUrl, 260, 320, "cover"),
     QRCode.toBuffer(input.verifyUrl, { width: 200, margin: 1, errorCorrectionLevel: "M" }).catch(() => null),
-    loadImage(input.cardLogo, 120, 120, "inside"),
+    loadImage(input.cardLogo, 78, 78, "inside"),
     loadImage(input.directorSignature, 220, 90, "inside"),
     loadImage(input.pwiChairmanSignature, 220, 90, "inside"),
   ]);
 
   const statusColor = STATUS_COLOR[input.status] || "#57606a";
   const statusText = STATUS_TEXT[input.status] || input.status;
+  const dewanPers = input.dewanPersNumber || DEFAULT_DEWAN_PERS;
 
   // Layout regions. Images and text occupy DISJOINT areas, so we can draw the
   // SVG (background + frames + all text) first and composite the photo/QR/logo/
@@ -218,6 +228,7 @@ export async function renderMembershipCard(input: CardRenderInput): Promise<Buff
     { label: "Jabatan", value: input.role || "-" },
     { label: "No. Anggota", value: input.number },
     { label: "Berlaku", value: `${fmtDate(input.issuedAt)} s/d ${fmtDate(input.expiresAt)}` },
+    ...(input.bloodType ? [{ label: "Gol. Darah", value: input.bloodType }] : []),
   ];
   const FIELD_X = PHOTO_X + 300;
   let fy = 210;
@@ -242,12 +253,18 @@ export async function renderMembershipCard(input: CardRenderInput): Promise<Buff
   <rect x="0" y="0" width="${W}" height="${H}" rx="28" fill="none" stroke="#c4c6d0" stroke-width="2"/>
   <!-- Header bar -->
   <path d="M0,28 Q0,0 28,0 L${W - 28},0 Q${W},0 ${W},28 L${W},132 L0,132 Z" fill="#001530"/>
+  <!-- White badge so a coloured logo stays visible on the navy header -->
+  ${logo ? `<rect x="40" y="18" width="98" height="98" rx="16" fill="#ffffff"/>` : ""}
   <text x="180" y="58" font-family="'Newsreader','Georgia',serif" font-size="40" font-weight="800" fill="#ffffff" letter-spacing="1">KARTAWARTA</text>
   <text x="182" y="92" font-family="'Work Sans','Helvetica',sans-serif" font-size="19" fill="#9fb2c9" letter-spacing="3">KARTU TANDA ANGGOTA PERS</text>
   <rect x="40" y="158" width="6" height="${H - 230}" fill="#b7102a"/>
   <!-- Photo frame -->
   <rect x="${PHOTO_X - 4}" y="${PHOTO_Y - 4}" width="${PHOTO_W + 8}" height="${PHOTO_H + 8}" rx="8" fill="none" stroke="#c4c6d0" stroke-width="2"/>
   ${!photo ? `<rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="6" fill="#e8eaeb"/><text x="${PHOTO_X + PHOTO_W / 2}" y="${PHOTO_Y + PHOTO_H / 2}" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#9aa0a6">FOTO</text>` : ""}
+  <!-- Dewan Pers verification badge (under the photo) -->
+  <rect x="${PHOTO_X}" y="504" width="${PHOTO_W}" height="62" rx="8" fill="#f1f3f4" stroke="#c4c6d0" stroke-width="1.5"/>
+  <text x="${PHOTO_X + PHOTO_W / 2}" y="528" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" font-weight="700" fill="#001530" letter-spacing="0.5">TERVERIFIKASI DEWAN PERS</text>
+  <text x="${PHOTO_X + PHOTO_W / 2}" y="550" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="13" fill="#5d6066">No. ${escapeXml(dewanPers)}</text>
   <!-- Status pill -->
   <rect x="${FIELD_X}" y="150" rx="6" width="${statusText.length * 11 + 40}" height="34" fill="${statusColor}"/>
   <text x="${FIELD_X + 16}" y="173" font-family="'Work Sans','Helvetica',sans-serif" font-size="18" font-weight="700" fill="#ffffff" letter-spacing="1">${escapeXml(statusText)}</text>
@@ -268,7 +285,7 @@ export async function renderMembershipCard(input: CardRenderInput): Promise<Buff
   ];
   if (photo) overlays.push({ input: photo, left: PHOTO_X, top: PHOTO_Y });
   if (qr) overlays.push({ input: qr, left: QR_X, top: QR_Y });
-  if (logo) overlays.push({ input: logo, left: 40, top: 34 });
+  if (logo) overlays.push({ input: logo, left: 50, top: 28 });
   if (pwiSig) overlays.push({ input: pwiSig, left: PHOTO_X + 300, top: SIG_Y });
   if (dirSig) overlays.push({ input: dirSig, left: PHOTO_X + 300 + 250, top: SIG_Y });
 
@@ -287,11 +304,12 @@ const CARD_TERMS = [
   "Bila masa berlaku berakhir atau keanggotaan dicabut, kartu wajib dikembalikan kepada Redaksi.",
 ];
 
-const RETURN_EMAIL = "redaksi@kartawarta.com";
+const RETURN_EMAIL = "admin@kartawarta.com";
 
 /** Render the BACK of the card (terms + return notice + Code 128 barcode) as a PNG buffer. */
 export async function renderMembershipCardBack(input: CardRenderInput): Promise<Buffer> {
-  const logo = await loadImage(input.cardLogo, 92, 92, "inside");
+  const logo = await loadImage(input.cardLogo, 68, 68, "inside");
+  const dewanPers = input.dewanPersNumber || DEFAULT_DEWAN_PERS;
 
   const PAD = 64;
   const TXT_X = PAD + 34;
@@ -328,6 +346,7 @@ export async function renderMembershipCardBack(input: CardRenderInput): Promise<
   <rect x="0" y="0" width="${W}" height="${H}" rx="28" fill="none" stroke="#c4c6d0" stroke-width="2"/>
   <!-- Header bar -->
   <path d="M0,28 Q0,0 28,0 L${W - 28},0 Q${W},0 ${W},28 L${W},120 L0,120 Z" fill="#001530"/>
+  ${logo ? `<rect x="52" y="12" width="84" height="84" rx="12" fill="#ffffff"/>` : ""}
   <text x="${logo ? 160 : PAD}" y="52" font-family="'Newsreader','Georgia',serif" font-size="34" font-weight="800" fill="#ffffff" letter-spacing="1">KARTAWARTA</text>
   <text x="${logo ? 162 : PAD + 2}" y="84" font-family="'Work Sans','Helvetica',sans-serif" font-size="17" fill="#9fb2c9" letter-spacing="2">SYARAT &amp; KETENTUAN PEMEGANG KARTU</text>
   <text x="${W - PAD}" y="60" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="22" font-weight="700" fill="#ffffff" letter-spacing="1">${escapeXml(input.number)}</text>
@@ -339,13 +358,14 @@ export async function renderMembershipCardBack(input: CardRenderInput): Promise<
   <text x="${W - PAD}" y="${H - 126}" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="15" fill="#5d6066">Jika ditemukan, mohon kembalikan ke Redaksi Kartawarta:</text>
   <text x="${W - PAD}" y="${H - 102}" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="17" font-weight="700" fill="#001530">${RETURN_EMAIL} &#8226; ${escapeXml(siteHost)}</text>
   <text x="${W - PAD}" y="${H - 60}" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#74777f">Verifikasi keaslian: ${escapeXml(siteHost)}/verifikasi/${escapeXml(input.number)}</text>
+  <text x="${W - PAD}" y="${H - 36}" text-anchor="end" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" font-weight="700" fill="#001530">Terverifikasi Dewan Pers &#183; No. ${escapeXml(dewanPers)}</text>
   <!-- Barcode -->
   ${bars}
   <text x="${BAR_X + BAR_W / 2}" y="${BAR_Y + BAR_H + 22}" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="16" font-weight="600" letter-spacing="2" fill="#001530">${escapeXml(input.number)}</text>
 </svg>`;
 
   const overlays: sharp.OverlayOptions[] = [{ input: Buffer.from(svg), left: 0, top: 0 }];
-  if (logo) overlays.push({ input: logo, left: PAD, top: 16 });
+  if (logo) overlays.push({ input: logo, left: 60, top: 20 });
 
   return sharp({ create: { width: W, height: H, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } })
     .composite(overlays)
@@ -374,6 +394,7 @@ export async function loadCardRenderInput(userId: string): Promise<CardRenderInp
     "kta_pwi_chairman_name",
     "kta_pwi_chairman_signature",
     "kta_card_logo",
+    "kta_dewan_pers_number",
   ];
   const rows = await prisma.systemSetting.findMany({ where: { key: { in: keys } } });
   const s: Record<string, string> = {};
@@ -391,7 +412,9 @@ export async function loadCardRenderInput(userId: string): Promise<CardRenderInp
     directorSignature: s.kta_director_signature || null,
     pwiChairmanName: s.kta_pwi_chairman_name || "",
     pwiChairmanSignature: s.kta_pwi_chairman_signature || null,
-    cardLogo: s.kta_card_logo || null,
+    cardLogo: s.kta_card_logo || DEFAULT_LOGO,
+    dewanPersNumber: s.kta_dewan_pers_number || DEFAULT_DEWAN_PERS,
+    bloodType: card.bloodType || null,
     verifyUrl: `${SITE.replace(/\/+$/, "")}/verifikasi/${encodeURIComponent(card.number)}`,
   };
 }
