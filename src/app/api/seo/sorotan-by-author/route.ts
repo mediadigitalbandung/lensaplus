@@ -33,17 +33,23 @@ interface AuthorGroup {
   items: SorotanItem[];
 }
 
-// Per-author cap on the detailed item list — keeps the payload bounded while
-// still giving editors a recent sample per writer (counts stay accurate).
+// Per-author cap on the detailed item list shown when a writer is expanded.
 const ITEMS_PER_AUTHOR = 15;
+// Upper bound on rows scanned to build the per-author breakdown. If the total
+// Sorotan count exceeds this, the grouped numbers reflect the most recent
+// SCAN_LIMIT entries (surfaced to the UI via `sampled`) rather than silently
+// undercounting — the authoritative all-time total is returned as `grandTotal`.
+const SCAN_LIMIT = 4000;
 
 export async function GET() {
   try {
     await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
 
-    const rows = await prisma.sorotan.findMany({
+    const [grandTotal, rows] = await Promise.all([
+      prisma.sorotan.count(),
+      prisma.sorotan.findMany({
       orderBy: { createdAt: "desc" },
-      take: 2000,
+      take: SCAN_LIMIT,
       select: {
         slug: true,
         title: true,
@@ -58,7 +64,8 @@ export async function GET() {
           },
         },
       },
-    });
+      }),
+    ]);
 
     const map = new Map<string, AuthorGroup>();
 
@@ -99,9 +106,16 @@ export async function GET() {
     }
 
     const authors = Array.from(map.values()).sort((a, b) => b.total - a.total);
-    const total = authors.reduce((sum, a) => sum + a.total, 0);
+    const scanned = rows.length;
 
-    return successResponse({ authors, total });
+    return successResponse({
+      authors,
+      grandTotal,
+      scanned,
+      // True when older entries fell outside the scan window — the per-author
+      // breakdown then reflects the most recent `scanned` Sorotan, not all-time.
+      sampled: grandTotal > scanned,
+    });
   } catch (err) {
     return errorResponse(err);
   }

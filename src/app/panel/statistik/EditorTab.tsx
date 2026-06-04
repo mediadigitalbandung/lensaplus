@@ -91,6 +91,8 @@ export default function EditorTab() {
 
   const [articles, setArticles] = useState<ReviewedArticle[]>([]);
   const [authors, setAuthors] = useState<AuthorGroup[]>([]);
+  const [grandTotal, setGrandTotal] = useState(0);
+  const [sampled, setSampled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -120,6 +122,8 @@ export default function EditorTab() {
       if (sorotanRes.ok) {
         const sorotanJson = await sorotanRes.json();
         setAuthors(sorotanJson.data?.authors || []);
+        setGrandTotal(sorotanJson.data?.grandTotal || 0);
+        setSampled(Boolean(sorotanJson.data?.sampled));
       }
     } catch {
       setError("Gagal memuat statistik. Silakan coba lagi.");
@@ -162,7 +166,7 @@ export default function EditorTab() {
     )
     .slice(0, 10);
 
-  const totalSorotan = authors.reduce((sum, a) => sum + a.total, 0);
+  const totalSorotan = grandTotal || authors.reduce((sum, a) => sum + a.total, 0);
 
   if (loading) {
     return (
@@ -367,6 +371,13 @@ export default function EditorTab() {
       </div>
       <p className="mb-4 text-sm text-txt-secondary">
         Pantauan output Sorotan SEO seluruh penulis, dikelompokkan per penulis.
+        {sampled && (
+          <span className="text-txt-muted">
+            {" "}
+            Rincian per penulis adalah sampel terbaru; total seluruhnya{" "}
+            {totalSorotan.toLocaleString("id-ID")} Sorotan.
+          </span>
+        )}
       </p>
 
       {authors.length === 0 ? (

@@ -90,9 +90,10 @@ export async function middleware(request: NextRequest) {
         "/panel/live-blogs",
         "/panel/sorotan",
         // "/panel/statistik" is open to ALL writers — creators see only their
-        // OWN stats; editors+ can switch between site-wide and personal — not
-        // gated here.
-        "/panel/statistik-editor",
+        // OWN stats; editors+ get the extra "Editor" tab (review + team Sorotan)
+        // and can switch site-wide vs personal — not gated here.
+        // ("/panel/statistik-editor" was merged into /panel/statistik and now
+        //  only redirects there, so it's intentionally left ungated.)
         "/panel/material-artikel",
       ];
       // Everything else under /panel (dashboard, artikel, profil,
