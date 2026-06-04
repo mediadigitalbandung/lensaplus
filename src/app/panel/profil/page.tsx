@@ -7,6 +7,7 @@ import { UserCircle, Save, Loader2, Camera, KeyRound, Eye, EyeOff, MailCheck, Ma
 
 import { roleLabelsMap } from "@/lib/roles";
 import MembershipCardSection from "@/components/panel/MembershipCardSection";
+import TwoFactorSection from "@/components/panel/TwoFactorSection";
 
 interface UserProfile {
   id: string;
@@ -577,6 +578,9 @@ export default function ProfilPage() {
           </div>
         </form>
       </div>
+
+      {/* Autentikasi Dua Faktor (2FA) */}
+      <TwoFactorSection />
 
       {/* Kartu Tanda Anggota (KTA) */}
       <MembershipCardSection />

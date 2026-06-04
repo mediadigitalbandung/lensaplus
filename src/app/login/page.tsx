@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 
 function LoginContent() {
   const router = useRouter();
@@ -13,6 +13,8 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needs2fa, setNeeds2fa] = useState(false);
+  const [code, setCode] = useState("");
 
   const { data: session } = useSession();
   const searchParams = useSearchParams();
@@ -34,13 +36,20 @@ function LoginContent() {
     const result = await signIn("credentials", {
       email,
       password,
+      code: needs2fa ? code : undefined,
       redirect: false,
     });
 
     setLoading(false);
 
     if (result?.error) {
-      setError(result.error);
+      if (result.error === "2FA_REQUIRED") {
+        // Password OK — account has 2FA. Prompt for the authenticator code.
+        setNeeds2fa(true);
+        setError("");
+        return;
+      }
+      setError(result.error === "CredentialsSignin" ? "Email atau password salah" : result.error);
     } else {
       // Hard redirect to clear all cached state
       window.location.href = "/panel/dashboard";
@@ -121,12 +130,36 @@ function LoginContent() {
             </div>
           </div>
 
+          {needs2fa && (
+            <div>
+              <label htmlFor="totp" className="mb-1.5 block text-sm font-medium text-txt-primary">
+                Kode Autentikasi (2FA)
+              </label>
+              <div className="relative">
+                <ShieldCheck size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-txt-muted" />
+                <input
+                  id="totp"
+                  type="text"
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.slice(0, 12))}
+                  placeholder="6 digit, atau kode cadangan"
+                  autoFocus
+                  className="input pl-11 tracking-widest"
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-txt-muted">
+                Masukkan kode dari Google Authenticator, atau salah satu kode cadangan Anda.
+              </p>
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (needs2fa && code.length < 6)}
             className="btn-primary w-full py-3"
           >
-            {loading ? "Memproses..." : "Masuk"}
+            {loading ? "Memproses..." : needs2fa ? "Verifikasi & Masuk" : "Masuk"}
           </button>
         </form>
 

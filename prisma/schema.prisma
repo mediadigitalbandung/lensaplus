@@ -163,7 +163,9 @@ model User {
   mediaSosial      String?
   alamat           String?
   isActive         Boolean    @default(true)
-  twoFactorEnabled Boolean    @default(false) // TODO: 2FA placeholder — field exists but is never read by auth flow. Keep until 2FA sprint.
+  twoFactorEnabled Boolean    @default(false) // TOTP 2FA active for this account (enforced in authorize()).
+  twoFactorSecret      String? // base32 TOTP secret, encrypted at rest (crypto-secrets). Null until enrolled.
+  twoFactorBackupCodes String? // JSON array of sha256-hashed one-time backup codes.
   activeSessionId  String?
   lastLoginAt      DateTime?
   // Email ownership verification (soft: status only, does NOT block login).

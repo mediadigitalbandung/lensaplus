@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { Role } from "@prisma/client";
 import { isLoginBlocked, registerLoginFailure } from "./rate-limit";
+import { decryptSecret } from "./crypto-secrets";
+import { verifyTotp, consumeBackupCode } from "./totp";
 
 // MED-AUTH1 — Explicit cookie security flags (audit remediation 2026-05-07).
 // In production (HTTPS), the __Secure- prefix is added automatically so the
@@ -103,6 +105,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        code: { label: "Kode 2FA", type: "text" },
       },
       async authorize(credentials, req) {
         // Brute-force guard: block an IP after too many FAILED attempts. Done
@@ -138,6 +141,34 @@ export const authOptions: NextAuthOptions = {
         if (!isValid) {
           if (ip) registerLoginFailure(ip);
           throw new Error("Email atau password salah");
+        }
+
+        // ── Two-factor gate ──────────────────────────────────────────────
+        // Password is correct; if the account has TOTP 2FA enabled, a valid
+        // 6-digit code (or a one-time backup code) is also required. The login
+        // UI re-submits with `code` after seeing the "2FA_REQUIRED" signal.
+        if (user.twoFactorEnabled) {
+          const code = (credentials.code || "").toString().trim();
+          if (!code) {
+            // Not a failed attempt — don't penalize the brute-force counter.
+            throw new Error("2FA_REQUIRED");
+          }
+          const secret = user.twoFactorSecret ? decryptSecret(user.twoFactorSecret) : "";
+          let okCode = !!secret && verifyTotp(secret, code);
+          if (!okCode) {
+            const remaining = consumeBackupCode(user.twoFactorBackupCodes, code);
+            if (remaining !== null) {
+              okCode = true;
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { twoFactorBackupCodes: remaining },
+              });
+            }
+          }
+          if (!okCode) {
+            if (ip) registerLoginFailure(ip);
+            throw new Error("Kode 2FA salah.");
+          }
         }
 
         // Generate unique session ID for this login.

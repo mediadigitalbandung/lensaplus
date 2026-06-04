@@ -30,6 +30,7 @@ const profileFields = {
   nomorKartuPers: true, organisasiPers: true, pendidikan: true,
   pengalaman: true, keahlian: true, portofolio: true,
   mediaSosial: true, alamat: true, createdAt: true, emailVerified: true,
+  twoFactorEnabled: true,
   _count: { select: { articles: true } },
 };
 
