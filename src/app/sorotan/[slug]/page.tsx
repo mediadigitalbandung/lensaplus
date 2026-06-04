@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowRight, Sparkles, BookOpen } from "lucide-react";
+import { ArrowRight, Sparkles, BookOpen, Eye } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import {
   articleJsonLd,
@@ -25,17 +25,20 @@ const ANGLE_LABEL: Record<string, string> = {
   FAQ: "Tanya Jawab",
 };
 
+// All angles share one elegant on-brand (navy) badge — the angle LABEL already
+// distinguishes them, so a uniform colour reads more editorial than a rainbow.
+const ANGLE_BADGE = "bg-primary-light text-primary border-primary/15";
 const ANGLE_COLOR: Record<string, string> = {
-  KRONOLOGI: "bg-blue-50 text-blue-700 border-blue-200",
-  ANALISIS: "bg-amber-50 text-amber-700 border-amber-200",
-  DAMPAK: "bg-rose-50 text-rose-700 border-rose-200",
-  LATAR_BELAKANG: "bg-purple-50 text-purple-700 border-purple-200",
-  PROFIL: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  REAKSI: "bg-pink-50 text-pink-700 border-pink-200",
-  HUKUM: "bg-primary-light text-primary border-primary/20",
-  EKONOMI: "bg-orange-50 text-orange-700 border-orange-200",
-  PROYEKSI: "bg-cyan-50 text-cyan-700 border-cyan-200",
-  FAQ: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  KRONOLOGI: ANGLE_BADGE,
+  ANALISIS: ANGLE_BADGE,
+  DAMPAK: ANGLE_BADGE,
+  LATAR_BELAKANG: ANGLE_BADGE,
+  PROFIL: ANGLE_BADGE,
+  REAKSI: ANGLE_BADGE,
+  HUKUM: ANGLE_BADGE,
+  EKONOMI: ANGLE_BADGE,
+  PROYEKSI: ANGLE_BADGE,
+  FAQ: ANGLE_BADGE,
 };
 
 async function getSorotan(slug: string) {
@@ -232,6 +235,15 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
                     year: "numeric",
                   })}
                 </span>
+                {(article.viewCount ?? 0) > 0 && (
+                  <>
+                    <span className="mx-2">·</span>
+                    <span className="inline-flex items-center gap-1 align-middle">
+                      <Eye size={13} aria-hidden />
+                      {(article.viewCount ?? 0).toLocaleString("id-ID")} dilihat
+                    </span>
+                  </>
+                )}
               </div>
 
               <div className="mt-6 h-px bg-border" />
