@@ -196,40 +196,67 @@ function Section({
   title,
   description,
   defaultOpen = false,
+  active,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   description?: string;
   defaultOpen?: boolean;
+  /**
+   * Tabbed mode: when provided, the parent tab nav controls visibility.
+   * `false` → render nothing; `true` → render always-expanded with a static
+   * header (no accordion toggle). When omitted, falls back to the legacy
+   * collapsible accordion behaviour.
+   */
+  active?: boolean;
   children: React.ReactNode;
 }) {
+  const tabbed = active !== undefined;
   const [open, setOpen] = useState(defaultOpen);
+
+  if (tabbed && !active) return null;
+  const isOpen = tabbed ? true : open;
+
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-surface-secondary/40 transition-colors text-left"
-      >
-        <div className="flex items-center gap-3 min-w-0">
+      {tabbed ? (
+        <div className="flex items-center gap-3 px-5 py-4">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
             {icon}
           </div>
           <div className="min-w-0">
             <h2 className="text-base font-bold text-txt-primary">{title}</h2>
             {description && (
-              <p className="text-xs text-txt-secondary truncate">{description}</p>
+              <p className="text-xs text-txt-secondary">{description}</p>
             )}
           </div>
         </div>
-        {open ? (
-          <ChevronDown size={18} className="text-txt-muted shrink-0" />
-        ) : (
-          <ChevronRight size={18} className="text-txt-muted shrink-0" />
-        )}
-      </button>
-      {open && (
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-surface-secondary/40 transition-colors text-left"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
+              {icon}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base font-bold text-txt-primary">{title}</h2>
+              {description && (
+                <p className="text-xs text-txt-secondary truncate">{description}</p>
+              )}
+            </div>
+          </div>
+          {open ? (
+            <ChevronDown size={18} className="text-txt-muted shrink-0" />
+          ) : (
+            <ChevronRight size={18} className="text-txt-muted shrink-0" />
+          )}
+        </button>
+      )}
+      {isOpen && (
         <div className="border-t border-border px-5 py-5 space-y-4">
           {children}
         </div>
@@ -388,6 +415,60 @@ function SaveBar({
 }
 
 // =====================================================================
+// Tab / sub-tab layout — groups the settings sections so the page is a
+// compact tabbed UI instead of one long accordion scroll. Each `id` matches
+// the `active` flag passed to its <Section>.
+// =====================================================================
+const SETTINGS_TABS: {
+  key: string;
+  label: string;
+  subs: { id: string; label: string }[];
+}[] = [
+  {
+    key: "umum",
+    label: "Umum",
+    subs: [
+      { id: "umum", label: "Identitas Situs" },
+      { id: "global", label: "Fitur Situs" },
+    ],
+  },
+  {
+    key: "ai",
+    label: "AI & Otomasi",
+    subs: [
+      { id: "ai", label: "Penyedia AI" },
+      { id: "auto", label: "Auto-Artikel" },
+    ],
+  },
+  {
+    key: "google",
+    label: "Google",
+    subs: [{ id: "google", label: "Layanan Google" }],
+  },
+  {
+    key: "sosial",
+    label: "Media Sosial",
+    subs: [
+      { id: "social", label: "Meta / Instagram" },
+      { id: "twitter", label: "Twitter / X" },
+    ],
+  },
+  {
+    key: "sistem",
+    label: "Sistem",
+    subs: [
+      { id: "email", label: "Email" },
+      { id: "cloudflare", label: "Cloudflare" },
+    ],
+  },
+  {
+    key: "kta",
+    label: "Kartu Pers",
+    subs: [{ id: "kta", label: "Konfigurasi KTA" }],
+  },
+];
+
+// =====================================================================
 // Main page
 // =====================================================================
 
@@ -405,6 +486,12 @@ export default function PengaturanPage() {
 
   // Test results per integration
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
+
+  // Tabbed navigation — which top tab + sub-tab (section) is visible.
+  const [activeTab, setActiveTab] = useState<string>(SETTINGS_TABS[0].key);
+  const [activeSub, setActiveSub] = useState<string>(SETTINGS_TABS[0].subs[0].id);
+  const subTabs =
+    SETTINGS_TABS.find((t) => t.key === activeTab)?.subs ?? SETTINGS_TABS[0].subs;
 
   // Social settings (separate API)
   const [socialSettings, setSocialSettings] = useState<SocialSettings | null>(null);
@@ -935,12 +1022,74 @@ export default function PengaturanPage() {
         </p>
       </div>
 
+      {/* Top tabs */}
+      <div className="mb-4 flex flex-wrap gap-1 border-b border-border">
+        {SETTINGS_TABS.map((t) => {
+          const isActive = activeTab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => {
+                setActiveTab(t.key);
+                setActiveSub(t.subs[0].id);
+              }}
+              className={`-mb-px border-b-2 px-3.5 py-2.5 text-sm font-semibold transition-colors ${
+                isActive
+                  ? "border-primary text-primary"
+                  : "border-transparent text-txt-secondary hover:text-txt-primary"
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                {t.label}
+                {t.subs.some((s) => dirty[s.id]) && (
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-amber-500"
+                    title="Ada perubahan belum disimpan"
+                  />
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Sub-tabs (only when the active tab has more than one section) */}
+      {subTabs.length > 1 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {subTabs.map((s) => {
+            const isActive = activeSub === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setActiveSub(s.id)}
+                className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-primary text-white"
+                    : "bg-surface-secondary text-txt-secondary hover:bg-surface-tertiary"
+                }`}
+              >
+                {s.label}
+                {dirty[s.id] && (
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-white" : "bg-amber-500"}`}
+                    title="Ada perubahan belum disimpan"
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="space-y-3">
         {/* ============== 1. Umum ============== */}
         <Section
           icon={<Globe size={18} />}
           title="1. Umum"
           description="Identitas situs, kontak redaksi"
+          active={activeSub === "umum"}
           defaultOpen
         >
           <Field label="Nama Situs">
@@ -1022,6 +1171,7 @@ export default function PengaturanPage() {
           icon={<Sparkles size={18} />}
           title="2. AI Providers"
           description="Anthropic Claude (primary) + DeepSeek (fallback)"
+          active={activeSub === "ai"}
         >
           <Field
             label="Anthropic API Key"
@@ -1371,6 +1521,7 @@ export default function PengaturanPage() {
           icon={<Globe size={18} />}
           title="3. Google Services"
           description="Indexing API + GA4 + Search Console (service account JSON)"
+          active={activeSub === "google"}
         >
           <Field
             label="Service Account JSON"
@@ -1496,6 +1647,7 @@ export default function PengaturanPage() {
           icon={<Instagram size={18} />}
           title="4. Meta (Instagram + Facebook)"
           description="Token Meta Graph API v21 untuk auto-publish"
+          active={activeSub === "social"}
         >
           {/* Instagram */}
           <div className="rounded-lg border border-border bg-surface-secondary/40 p-4 space-y-4">
@@ -1843,6 +1995,7 @@ export default function PengaturanPage() {
           icon={<Twitter size={18} />}
           title="5. Twitter / X"
           description="5 keys untuk Twitter API v2"
+          active={activeSub === "twitter"}
         >
           <Field label="Bearer Token">
             <SecretInput
@@ -1925,6 +2078,7 @@ export default function PengaturanPage() {
           icon={<Cloud size={18} />}
           title="6. Cloudflare"
           description="API token + Zone ID untuk cache purge"
+          active={activeSub === "cloudflare"}
         >
           <Field
             label="API Token"
@@ -1983,6 +2137,7 @@ export default function PengaturanPage() {
           icon={<Mail size={18} />}
           title="7. Resend (Email)"
           description="API key + alamat pengirim untuk notifikasi email"
+          active={activeSub === "email"}
         >
           <Field
             label="Resend API Key"
@@ -2054,6 +2209,7 @@ export default function PengaturanPage() {
           icon={<Bot size={18} />}
           title="8. Auto-Artikel"
           description="Pembuat draf otomatis via cron + AI"
+          active={activeSub === "auto"}
         >
           <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary px-4 py-3">
             <div>
@@ -2125,6 +2281,7 @@ export default function PengaturanPage() {
           icon={<CreditCard size={18} />}
           title="Kartu Anggota (KTA) & Lanyard Pers"
           description="Pejabat, tanda tangan, logo & No. Dewan Pers yang tercetak di KTA dan lanyard semua user"
+          active={activeSub === "kta"}
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Nama Direktur Kartawarta" hint="Tercetak di kartu sebagai penanda tangan.">
@@ -2202,6 +2359,7 @@ export default function PengaturanPage() {
           icon={<ToggleRight size={18} />}
           title="9. Toggle Global"
           description="Switch komentar publik & mode maintenance"
+          active={activeSub === "global"}
         >
           <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary px-4 py-3">
             <div>
