@@ -58,9 +58,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const topic = (body.topic ?? "").toString().trim();
+    // Cap lengths — both feed the prompt; bound them so a huge payload can't
+    // inflate token cost (the topic is also a title, the notes a focus blurb).
+    const topic = (body.topic ?? "").toString().trim().slice(0, 500);
     const mode = body.mode === "research" ? "research" : "draft";
-    const notes = (body.notes ?? "").toString().trim();
+    const notes = (body.notes ?? "").toString().trim().slice(0, 2000);
     const personaKey = (body.persona ?? "").toString().trim();
     const includeImages = body.includeImages === true;
     if (!topic) throw new ApiError("Topik/judul wajib diisi", 400);
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
     const userPrompt =
       mode === "draft"
         ? `Topik artikel: ${topic}.${notes ? ` Arahan tambahan: ${notes}.` : ""} ` +
-          `Hasilkan paket artikel lengkap (JSON sesuai instruksi) berdasarkan informasi terbaru.`
+          `Hasilkan paket artikel lengkap PERSIS sesuai format penanda (===JUDUL===, ===RINGKASAN===, ===TAGS===, ===SEO_TITLE===, ===META===, ===KONTEN===) berdasarkan informasi terbaru. Jangan pakai JSON.`
         : `Topik: ${topic}.${notes ? ` Fokus: ${notes}.` : ""} ` +
           `Kumpulkan bahan riset berita terbaru tentang topik ini.`;
 
