@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import ClientDate from "@/components/ClientDate";
@@ -14,6 +14,7 @@ import {
   LogIn,
   LayoutDashboard,
   ChevronRight,
+  ChevronDown,
   Bookmark,
   User,
   TrendingUp,
@@ -52,6 +53,46 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const { data: session, status } = useSession();
   const pathname = usePathname();
+
+  // Category-bar overflow: instead of clipping the rightmost links, measure how
+  // many fit and collapse the rest into a "Lainnya" dropdown.
+  const navUlRef = useRef<HTMLUListElement>(null);
+  const rulerRef = useRef<HTMLUListElement>(null);
+  const [visibleCount, setVisibleCount] = useState(3); // safe SSR default; refined on mount
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  useEffect(() => {
+    const container = navUlRef.current;
+    const ruler = rulerRef.current;
+    if (!container || !ruler) return;
+    const MORE_WIDTH = 92; // px reserved for the "Lainnya ▾" button when needed
+    const compute = () => {
+      const avail = container.clientWidth;
+      const items = Array.from(ruler.children) as HTMLElement[];
+      let used = 0;
+      let count = 0;
+      for (let i = 0; i < items.length; i++) {
+        const w = items[i].getBoundingClientRect().width;
+        const reserve = i < items.length - 1 ? MORE_WIDTH : 0; // leave room for the menu unless it's the last item
+        if (used + w + reserve <= avail) {
+          used += w;
+          count++;
+        } else {
+          break;
+        }
+      }
+      setVisibleCount(Math.max(1, count));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
+
+  // Close the overflow dropdown when navigating.
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -247,27 +288,77 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Row 2: Category navigation */}
+      {/* Row 2: Category navigation — overflow collapses into a "Lainnya" menu
+          instead of clipping the rightmost links off the edge. */}
       <nav className="bg-[#1C1C1E] relative border-b border-[#2C2C2E]" aria-label="Navigasi kategori">
-        <div className="container-main">
-          <ul className="flex items-center gap-0 overflow-x-auto scrollbar-hide">
-            {categoryNav.map((item) => {
+        <div className="container-main relative">
+          {/* Hidden ruler — the FULL list, off-screen, used only to measure how
+              many links fit at the current width. */}
+          <ul ref={rulerRef} aria-hidden="true" className="pointer-events-none invisible absolute -left-[9999px] top-0 flex items-center gap-0">
+            {categoryNav.map((item) => (
+              <li key={item.href} className="shrink-0">
+                <span className="inline-block px-2 sm:px-3 py-2 sm:py-3 text-label-sm sm:text-label-lg font-bold whitespace-nowrap">
+                  {item.name}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <ul ref={navUlRef} className="flex items-center gap-0">
+            {categoryNav.slice(0, visibleCount).map((item) => {
               const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
               return (
-              <li key={item.href} className="shrink-0">
-                <Link
-                  href={item.href}
-                  className={`relative inline-block px-2 sm:px-3 py-2 sm:py-3 text-label-sm sm:text-label-lg transition-all duration-200 whitespace-nowrap ${
-                    isActive
-                      ? "text-white font-bold after:absolute after:bottom-0 after:left-2 sm:after:left-2.5 after:right-2 sm:after:right-2.5 after:h-[2px] after:bg-primary"
-                      : "text-white/70 font-medium hover:text-white"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              </li>
+                <li key={item.href} className="shrink-0">
+                  <Link
+                    href={item.href}
+                    className={`relative inline-block px-2 sm:px-3 py-2 sm:py-3 text-label-sm sm:text-label-lg transition-all duration-200 whitespace-nowrap ${
+                      isActive
+                        ? "text-white font-bold after:absolute after:bottom-0 after:left-2 sm:after:left-2.5 after:right-2 sm:after:right-2.5 after:h-[2px] after:bg-primary"
+                        : "text-white/70 font-medium hover:text-white"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                </li>
               );
             })}
+
+            {visibleCount < categoryNav.length && (
+              <li className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen((o) => !o)}
+                  aria-haspopup="true"
+                  aria-expanded={moreOpen}
+                  className="inline-flex items-center gap-1 px-2 sm:px-3 py-2 sm:py-3 text-label-sm sm:text-label-lg font-medium text-white/70 transition-colors hover:text-white whitespace-nowrap"
+                >
+                  Lainnya
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`} />
+                </button>
+                {moreOpen && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} aria-hidden="true" />
+                    <div className="absolute right-0 top-full z-40 max-h-[70vh] w-56 overflow-y-auto overscroll-contain rounded-b-md border border-[#2C2C2E] bg-[#1C1C1E] py-1 shadow-ambient-lg sm:w-64">
+                      {categoryNav.slice(visibleCount).map((item) => {
+                        const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setMoreOpen(false)}
+                            className={`block px-4 py-2.5 text-label-md transition-colors hover:bg-white/5 ${
+                              isActive ? "font-bold text-white" : "font-medium text-white/80 hover:text-white"
+                            }`}
+                          >
+                            {item.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </li>
+            )}
           </ul>
         </div>
       </nav>
