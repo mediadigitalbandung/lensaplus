@@ -6,6 +6,7 @@ import { authOptions } from "./auth";
 import { Role } from "@prisma/client";
 import { prisma } from "./prisma";
 import { ZodError } from "zod";
+import { EDITOR_ROLES } from "./roles";
 
 export async function getSession() {
   return getServerSession(authOptions);
@@ -33,6 +34,31 @@ export class ApiError extends Error {
     public statusCode: number = 400
   ) {
     super(message);
+  }
+}
+
+/**
+ * Validate an explicitly-assigned editor id before it is stored on an article.
+ * An empty / null / undefined value is allowed (it means "auto/random" on create
+ * or "unassign"/no-change on update). A non-empty value MUST reference an
+ * existing user whose role can act as an editor (EDITOR_ROLES, which includes
+ * SUPER_ADMIN to match the editor picker in the UI).
+ *
+ * This is the server-side trust boundary: the article forms only ever offer
+ * editors, but the create/update API previously stored whatever id the client
+ * sent — letting a writer assign review to a non-editor (article then stalls,
+ * since non-editors cannot approve) or grant an arbitrary account read access
+ * to their own draft. The dedicated assign-editor endpoint already validates;
+ * this brings the create/update paths in line.
+ */
+export async function assertValidEditorAssignment(assignedEditorId: unknown): Promise<void> {
+  if (!assignedEditorId || typeof assignedEditorId !== "string") return;
+  const editor = await prisma.user.findUnique({
+    where: { id: assignedEditorId },
+    select: { role: true },
+  });
+  if (!editor || !EDITOR_ROLES.includes(editor.role)) {
+    throw new ApiError("Editor yang ditugaskan tidak valid (harus user dengan peran Editor).", 400);
   }
 }
 

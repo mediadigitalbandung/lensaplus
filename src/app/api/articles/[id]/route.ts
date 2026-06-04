@@ -7,6 +7,7 @@ import {
   requireAuth,
   logAudit,
   ApiError,
+  assertValidEditorAssignment,
 } from "@/lib/api-utils";
 import { calculateReadTime, slugify } from "@/lib/utils";
 import { canApproveArticles, canViewAllArticles } from "@/lib/auth";
@@ -136,6 +137,10 @@ export async function PUT(
     const body = await request.json();
     const { tags: tagNames, sources: sourcesData, reviewNote: bodyReviewNote, ...rawData } = body;
     const data = updateArticleSchema.parse({ ...rawData, reviewNote: bodyReviewNote });
+
+    // Reject a bogus / non-editor assignedEditorId across every branch below
+    // (journalist submit, editor review, admin edit). Empty/undefined is a no-op.
+    await assertValidEditorAssignment(data.assignedEditorId);
 
     // CRIT-01: Sanitize HTML content ONCE here, before any branch uses it
     if (data.content) {
@@ -567,11 +572,20 @@ export async function PUT(
           },
         });
 
-        // If scheduledAt is provided, schedule instead of publishing immediately
+        // If scheduledAt is provided, schedule instead of publishing immediately.
+        // The article MUST be marked APPROVED here: the publish cron
+        // (/api/cron/publish) only picks up { status: APPROVED, scheduledAt<=now },
+        // and the dashboard "scheduled" count uses the same filter. Leaving it
+        // DRAFT (as before) meant scheduled drafts were never auto-published.
         if (data.scheduledAt) {
           const updated = await prisma.article.update({
             where: { id: params.id },
             data: {
+              status: "APPROVED",
+              verificationLabel:
+                article.status === "APPROVED"
+                  ? "VERIFIED"
+                  : (article.verificationLabel || "UNVERIFIED"),
               scheduledAt: new Date(data.scheduledAt),
             },
             include: {

@@ -10,6 +10,7 @@ import {
   requireAuth,
   logAudit,
   ApiError,
+  assertValidEditorAssignment,
 } from "@/lib/api-utils";
 import { slugify, calculateReadTime } from "@/lib/utils";
 import { canWriteArticles, canApproveArticles, canViewAllArticles } from "@/lib/auth";
@@ -254,6 +255,10 @@ export async function POST(request: NextRequest) {
 
     // Determine the actual author
     const effectiveAuthorId = (canApproveArticles(session.user.role) && data.authorId) ? data.authorId : session.user.id;
+
+    // Reject a bogus / non-editor assignedEditorId (the form only offers
+    // editors, but the API is the trust boundary).
+    await assertValidEditorAssignment(data.assignedEditorId);
 
     // If submitting for review, assign an editor (use provided or random)
     let assignedReviewerId: string | null = data.assignedEditorId || null;
