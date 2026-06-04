@@ -54,7 +54,7 @@ export default async function NewsletterPage({ searchParams: searchParamsPromise
 
           {banner && (
             <div
-              className={`mt-6 rounded-xl border px-4 py-3 text-sm ${
+              className={`mt-6 rounded-lg border px-4 py-3 text-sm ${
                 banner.tone === "success"
                   ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                   : banner.tone === "error"
@@ -67,20 +67,20 @@ export default async function NewsletterPage({ searchParams: searchParamsPromise
             </div>
           )}
 
-          <div className="mt-8 rounded-2xl border border-border bg-surface-secondary/40 p-6 sm:p-8">
+          <div className="mt-8 rounded-xl border border-border bg-surface-secondary/40 p-6 sm:p-8">
             <NewsletterForm source="page" />
           </div>
 
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-            <div className="rounded-xl bg-surface p-4 border border-border">
+            <div className="rounded-lg bg-surface p-4 border border-border">
               <p className="font-bold text-txt-primary">8 berita pilihan</p>
               <p className="mt-1 text-txt-muted text-xs">Kurasi redaksi, bukan algoritma.</p>
             </div>
-            <div className="rounded-xl bg-surface p-4 border border-border">
+            <div className="rounded-lg bg-surface p-4 border border-border">
               <p className="font-bold text-txt-primary">Sekali seminggu</p>
               <p className="mt-1 text-txt-muted text-xs">Senin pagi, 07.00 WIB.</p>
             </div>
-            <div className="rounded-xl bg-surface p-4 border border-border">
+            <div className="rounded-lg bg-surface p-4 border border-border">
               <p className="font-bold text-txt-primary">Mudah berhenti</p>
               <p className="mt-1 text-txt-muted text-xs">Satu klik di footer email.</p>
             </div>

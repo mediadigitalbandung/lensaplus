@@ -150,7 +150,7 @@ export default function EmailRoutingPage() {
 
       {/* Create form */}
       {showForm && (
-        <div className="mb-6 rounded-2xl border border-border bg-surface p-5 sm:p-6 shadow-card">
+        <div className="mb-6 rounded-xl border border-border bg-surface p-5 sm:p-6 shadow-card">
           <h2 className="text-base font-bold text-txt-primary mb-4">Buat Email Baru</h2>
           <form onSubmit={handleCreate} className="space-y-4">
             {/* User selector */}
@@ -237,14 +237,14 @@ export default function EmailRoutingPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="rounded-[12px] border border-border bg-surface p-5 shadow-card">
-              <div className="h-4 w-3/4 rounded bg-surface-tertiary mb-3" />
-              <div className="h-3 w-1/2 rounded bg-surface-tertiary" />
+            <div key={i} className="rounded-lg border border-border bg-surface p-5 shadow-card">
+              <div className="h-4 w-3/4 rounded-lg bg-surface-tertiary mb-3" />
+              <div className="h-3 w-1/2 rounded-lg bg-surface-tertiary" />
             </div>
           ))}
         </div>
       ) : emails.length === 0 && !showForm ? (
-        <div className="rounded-[12px] border-2 border-dashed border-border py-16 text-center">
+        <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
           <AtSign size={40} className="mx-auto text-txt-muted mb-3" />
           <p className="text-txt-muted text-base">Belum ada email @kartawarta.com</p>
           <p className="text-txt-muted text-sm mt-1">Buat email pertama untuk tim redaksi</p>
@@ -255,10 +255,10 @@ export default function EmailRoutingPage() {
       ) : (
         <div className="space-y-3">
           {emails.map((email) => (
-            <div key={email.id} className={`rounded-[12px] border bg-surface shadow-card transition-all ${email.enabled ? "border-border" : "border-border opacity-60"}`}>
+            <div key={email.id} className={`rounded-lg border bg-surface shadow-card transition-all ${email.enabled ? "border-border" : "border-border opacity-60"}`}>
               <div className="flex items-center justify-between gap-4 p-5">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${email.enabled ? "bg-primary/10 text-primary" : "bg-surface-tertiary text-txt-muted"}`}>
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${email.enabled ? "bg-primary/10 text-primary" : "bg-surface-tertiary text-txt-muted"}`}>
                     <Mail size={18} />
                   </div>
                   <div className="min-w-0">
@@ -278,7 +278,7 @@ export default function EmailRoutingPage() {
                   {email.enabled && (
                     <button
                       onClick={() => setExpandedSetup(expandedSetup === email.id ? null : email.id)}
-                      className="btn-ghost rounded px-2.5 py-1.5 text-xs font-medium text-primary flex items-center gap-1"
+                      className="btn-ghost rounded-lg px-2.5 py-1.5 text-xs font-medium text-primary flex items-center gap-1"
                       title="Setup Gmail Send As"
                     >
                       Setup Gmail <ChevronDown size={12} className={`transition-transform ${expandedSetup === email.id ? "rotate-180" : ""}`} />
@@ -286,14 +286,14 @@ export default function EmailRoutingPage() {
                   )}
                   <button
                     onClick={() => handleToggle(email.id, email.enabled)}
-                    className={`btn-ghost rounded p-2 ${email.enabled ? "hover:text-red-500" : "hover:text-primary"}`}
+                    className={`btn-ghost rounded-lg p-2 ${email.enabled ? "hover:text-red-500" : "hover:text-primary"}`}
                     title={email.enabled ? "Nonaktifkan" : "Aktifkan"}
                   >
                     <Power size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(email.id, email.from)}
-                    className="btn-ghost rounded p-2 hover:text-red-500"
+                    className="btn-ghost rounded-lg p-2 hover:text-red-500"
                     title="Hapus"
                   >
                     <Trash2 size={16} />
@@ -332,7 +332,7 @@ export default function EmailRoutingPage() {
                         </div>
                         <button
                           onClick={() => copyText(item.value, item.label)}
-                          className="btn-ghost p-1.5 rounded"
+                          className="btn-ghost p-1.5 rounded-lg"
                           title="Copy"
                         >
                           {copied === item.label ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
@@ -362,7 +362,7 @@ export default function EmailRoutingPage() {
       )}
 
       {/* Info */}
-      <div className="mt-8 rounded-xl bg-surface-secondary border border-border p-5">
+      <div className="mt-8 rounded-lg bg-surface-secondary border border-border p-5">
         <h3 className="text-sm font-bold text-txt-primary mb-2">Cara Kerja</h3>
         <ul className="text-sm text-txt-secondary space-y-1.5">
           <li>• Email yang dibuat di sini akan forward ke email pribadi (Gmail, dll)</li>

@@ -55,12 +55,12 @@ function LoadingSkeleton() {
       {Array.from({ length: 10 }).map((_, i) => (
         <div
           key={i}
-          className="animate-pulse rounded-[12px] border border-border bg-surface shadow-card overflow-hidden"
+          className="animate-pulse rounded-lg border border-border bg-surface shadow-card overflow-hidden"
         >
           <div className="aspect-square bg-surface-tertiary" />
           <div className="p-3">
-            <div className="h-3 w-2/3 rounded bg-surface-tertiary" />
-            <div className="mt-1.5 h-2.5 w-1/2 rounded bg-surface-secondary" />
+            <div className="h-3 w-2/3 rounded-lg bg-surface-tertiary" />
+            <div className="mt-1.5 h-2.5 w-1/2 rounded-lg bg-surface-secondary" />
           </div>
         </div>
       ))}
@@ -242,7 +242,7 @@ export default function MediaPage() {
 
       {/* Upload area */}
       {showUpload && (
-        <div className="mb-6 rounded-[12px] border-2 border-dashed border-primary/30 bg-primary-50 p-6">
+        <div className="mb-6 rounded-lg border-2 border-dashed border-primary/30 bg-primary-50 p-6">
           <h3 className="mb-3 text-base font-bold text-txt-primary">
             Upload Gambar Baru
           </h3>
@@ -260,11 +260,11 @@ export default function MediaPage() {
       )}
 
       {error && (
-        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchMedia}
-            className="mt-2 rounded-[12px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
           >
             Coba Lagi
           </button>
@@ -304,7 +304,7 @@ export default function MediaPage() {
       {loading ? (
         <LoadingSkeleton />
       ) : media.length === 0 ? (
-        <div className="rounded-[12px] border border-border bg-surface p-8 text-center text-base text-txt-secondary shadow-card">
+        <div className="rounded-lg border border-border bg-surface p-8 text-center text-base text-txt-secondary shadow-card">
           {debouncedSearch
             ? `Tidak ada media yang cocok dengan "${debouncedSearch}".`
             : "Belum ada media yang diupload."}
@@ -316,7 +316,7 @@ export default function MediaPage() {
             {media.map((item) => (
               <div
                 key={item.id}
-                className="group relative rounded-[12px] border border-border bg-surface shadow-card overflow-hidden transition-all hover:shadow-lg"
+                className="group relative rounded-lg border border-border bg-surface shadow-card overflow-hidden transition-all hover:shadow-lg"
               >
                 {/* Thumbnail */}
                 <div className="relative aspect-square bg-surface-secondary">
@@ -396,7 +396,7 @@ export default function MediaPage() {
               onClick={closeEdit}
             >
               <div
-                className="w-full max-w-md overflow-hidden rounded-xl bg-surface shadow-2xl"
+                className="w-full max-w-md overflow-hidden rounded-lg bg-surface shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between border-b border-border px-5 py-3">

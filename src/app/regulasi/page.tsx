@@ -267,7 +267,7 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
 
         {/* Card list */}
         {regulations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-surface py-20 text-center">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface py-20 text-center">
             <FileText size={40} className="mx-auto text-border mb-3" />
             <p className="text-sm text-txt-secondary">
               Belum ada regulasi yang sesuai.

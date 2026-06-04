@@ -43,7 +43,7 @@ import DOMPurify from "isomorphic-dompurify";
 
 const RichTextEditor = dynamic(
   () => import("@/components/editor/RichTextEditor"),
-  { ssr: false, loading: () => <div className="h-[500px] animate-pulse rounded-[12px] bg-surface-secondary" /> }
+  { ssr: false, loading: () => <div className="h-[500px] animate-pulse rounded-lg bg-surface-secondary" /> }
 );
 
 interface Category {
@@ -67,26 +67,26 @@ function LoadingSkeleton() {
     <div className="mx-auto max-w-5xl animate-pulse">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <div className="h-7 w-48 rounded bg-surface-tertiary" />
-          <div className="mt-2 h-4 w-48 sm:w-64 rounded bg-surface-secondary" />
+          <div className="h-7 w-48 rounded-lg bg-surface-tertiary" />
+          <div className="mt-2 h-4 w-48 sm:w-64 rounded-lg bg-surface-secondary" />
         </div>
         <div className="flex gap-2">
-          <div className="h-10 w-32 rounded-[12px] bg-surface-tertiary" />
-          <div className="h-10 w-40 rounded-[12px] bg-surface-tertiary" />
+          <div className="h-10 w-32 rounded-lg bg-surface-tertiary" />
+          <div className="h-10 w-40 rounded-lg bg-surface-tertiary" />
         </div>
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <div className="h-14 rounded-[12px] bg-surface-tertiary" />
-          <div className="h-[500px] rounded-[12px] bg-surface-tertiary" />
-          <div className="h-40 rounded-[12px] bg-surface-tertiary" />
+          <div className="h-14 rounded-lg bg-surface-tertiary" />
+          <div className="h-[500px] rounded-lg bg-surface-tertiary" />
+          <div className="h-40 rounded-lg bg-surface-tertiary" />
         </div>
         <div className="space-y-4">
-          <div className="h-24 rounded-[12px] bg-surface-tertiary" />
-          <div className="h-24 rounded-[12px] bg-surface-tertiary" />
-          <div className="h-32 rounded-[12px] bg-surface-tertiary" />
-          <div className="h-24 rounded-[12px] bg-surface-tertiary" />
-          <div className="h-24 rounded-[12px] bg-surface-tertiary" />
+          <div className="h-24 rounded-lg bg-surface-tertiary" />
+          <div className="h-24 rounded-lg bg-surface-tertiary" />
+          <div className="h-32 rounded-lg bg-surface-tertiary" />
+          <div className="h-24 rounded-lg bg-surface-tertiary" />
+          <div className="h-24 rounded-lg bg-surface-tertiary" />
         </div>
       </div>
     </div>
@@ -1177,14 +1177,14 @@ export default function EditArticlePage() {
         </div>
 
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-[12px] bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             <AlertCircle size={16} />
             {error}
           </div>
         )}
 
         {/* Activity Info */}
-        <div className="mb-6 rounded-[12px] border border-border bg-surface p-5 space-y-3">
+        <div className="mb-6 rounded-lg border border-border bg-surface p-5 space-y-3">
           <h3 className="text-sm font-bold text-txt-primary uppercase tracking-wider flex items-center gap-2">
             <Eye size={16} />
             Informasi Artikel
@@ -1221,7 +1221,7 @@ export default function EditArticlePage() {
 
         {/* Admin Actions */}
         {["DRAFT", "REJECTED"].includes(currentStatus) && (
-          <div className="mb-6 rounded-[12px] border-2 border-border bg-surface p-5">
+          <div className="mb-6 rounded-lg border-2 border-border bg-surface p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-txt-primary">
               <FileText size={18} className="text-primary" />
               Artikel Masih Berupa Draf
@@ -1235,14 +1235,14 @@ export default function EditArticlePage() {
                 <button
                   onClick={handleAdminPublish}
                   disabled={saving}
-                  className="flex items-center gap-1.5 rounded-[12px] bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
                 >
                   <Upload size={16} />
                   Publikasikan Sekarang
                 </button>
                 <button
                   onClick={() => { setShowSchedule(!showSchedule); setShowReturnNote(false); }}
-                  className="flex items-center gap-1.5 rounded-[12px] border border-blue-300 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                  className="flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100"
                 >
                   <CalendarClock size={16} />
                   Jadwalkan Publikasi
@@ -1251,7 +1251,7 @@ export default function EditArticlePage() {
 
               {/* Schedule picker */}
               {showSchedule && (
-                <div className="rounded-[12px] border border-blue-300 bg-blue-50 p-4 mt-3">
+                <div className="rounded-lg border border-blue-300 bg-blue-50 p-4 mt-3">
                   <label className="mb-2 block text-sm font-medium text-blue-800">
                     Pilih tanggal & waktu publikasi
                   </label>
@@ -1266,14 +1266,14 @@ export default function EditArticlePage() {
                     <button
                       onClick={handleAdminSchedule}
                       disabled={saving || !scheduleDate}
-                      className="flex items-center gap-1.5 rounded-[12px] bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                     >
                       <CalendarClock size={14} />
                       Konfirmasi Jadwal
                     </button>
                     <button
                       onClick={() => { setShowSchedule(false); setScheduleDate(""); }}
-                      className="rounded-[12px] px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
+                      className="rounded-lg px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
                     >
                       Batal
                     </button>
@@ -1285,7 +1285,7 @@ export default function EditArticlePage() {
         )}
 
         {currentStatus === "APPROVED" && (
-          <div className="mb-6 rounded-[12px] border-2 border-primary/30 bg-primary-50 p-5">
+          <div className="mb-6 rounded-lg border-2 border-primary/30 bg-primary-50 p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
               <CheckCircle size={18} />
               Artikel Disetujui — Siap Dipublikasi
@@ -1299,21 +1299,21 @@ export default function EditArticlePage() {
                 <button
                   onClick={handleAdminPublish}
                   disabled={saving}
-                  className="flex items-center gap-1.5 rounded-[12px] bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
                 >
                   <Upload size={16} />
                   Publikasi Sekarang
                 </button>
                 <button
                   onClick={() => { setShowSchedule(!showSchedule); setShowReturnNote(false); }}
-                  className="flex items-center gap-1.5 rounded-[12px] border border-blue-300 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                  className="flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100"
                 >
                   <CalendarClock size={16} />
                   Jadwalkan Publikasi
                 </button>
                 <button
                   onClick={() => { setShowReturnNote(!showReturnNote); setShowSchedule(false); }}
-                  className="flex items-center gap-1.5 rounded-[12px] border border-yellow-300 bg-yellow-50 px-5 py-2.5 text-sm font-semibold text-yellow-700 hover:bg-yellow-100"
+                  className="flex items-center gap-1.5 rounded-lg border border-yellow-300 bg-yellow-50 px-5 py-2.5 text-sm font-semibold text-yellow-700 hover:bg-yellow-100"
                 >
                   <Undo2 size={16} />
                   Kembalikan ke Editor
@@ -1322,7 +1322,7 @@ export default function EditArticlePage() {
 
               {/* Schedule picker */}
               {showSchedule && (
-                <div className="rounded-[12px] border border-blue-300 bg-blue-50 p-4 mt-3">
+                <div className="rounded-lg border border-blue-300 bg-blue-50 p-4 mt-3">
                   <label className="mb-2 block text-sm font-medium text-blue-800">
                     Pilih tanggal & waktu publikasi
                   </label>
@@ -1337,14 +1337,14 @@ export default function EditArticlePage() {
                     <button
                       onClick={handleAdminSchedule}
                       disabled={saving || !scheduleDate}
-                      className="flex items-center gap-1.5 rounded-[12px] bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                     >
                       <CalendarClock size={14} />
                       Konfirmasi Jadwal
                     </button>
                     <button
                       onClick={() => { setShowSchedule(false); setScheduleDate(""); }}
-                      className="rounded-[12px] px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
+                      className="rounded-lg px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
                     >
                       Batal
                     </button>
@@ -1353,7 +1353,7 @@ export default function EditArticlePage() {
               )}
 
               {showReturnNote && (
-                <div className="rounded-[12px] border border-yellow-300 bg-yellow-50 p-4 mt-3">
+                <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 mt-3">
                   <label className="mb-1 block text-sm font-medium text-yellow-800">
                     Catatan untuk editor
                   </label>
@@ -1369,14 +1369,14 @@ export default function EditArticlePage() {
                     <button
                       onClick={handleAdminReturnToEditor}
                       disabled={saving}
-                      className="flex items-center gap-1.5 rounded-[12px] bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-600 disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-600 disabled:opacity-50"
                     >
                       <Undo2 size={14} />
                       Konfirmasi Kembalikan
                     </button>
                     <button
                       onClick={() => { setShowReturnNote(false); setReturnNote(""); }}
-                      className="rounded-[12px] px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
+                      className="rounded-lg px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
                     >
                       Batal
                     </button>
@@ -1388,7 +1388,7 @@ export default function EditArticlePage() {
         )}
 
         {currentStatus === "PUBLISHED" && (
-          <div className="mb-6 rounded-[12px] border border-primary/30 bg-primary-50 p-5">
+          <div className="mb-6 rounded-lg border border-primary/30 bg-primary-50 p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
               <CheckCircle size={18} />
               Artikel Sudah Dipublikasikan
@@ -1397,7 +1397,7 @@ export default function EditArticlePage() {
         )}
 
         {currentStatus === "IN_REVIEW" && (
-          <div className="mb-6 rounded-[12px] border border-yellow-300 bg-yellow-50 p-5">
+          <div className="mb-6 rounded-lg border border-yellow-300 bg-yellow-50 p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-yellow-800">
               <MessageSquare size={18} />
               Artikel Sedang Direview oleh Editor
@@ -1435,14 +1435,14 @@ export default function EditArticlePage() {
                 <button
                   onClick={handleAdminPublish}
                   disabled={saving}
-                  className="flex items-center gap-1.5 rounded-[12px] bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
                 >
                   <Upload size={16} />
                   Publikasi Langsung
                 </button>
                 <button
                   onClick={() => { setReviewChoice(reviewChoice === "reject" ? null : "reject"); }}
-                  className="flex items-center gap-1.5 rounded-[12px] border border-red-300 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100"
+                  className="flex items-center gap-1.5 rounded-lg border border-red-300 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100"
                 >
                   <XCircle size={16} />
                   Tolak
@@ -1450,7 +1450,7 @@ export default function EditArticlePage() {
               </div>
 
               {reviewChoice === "reject" && (
-                <div className="rounded-[12px] border border-red-300 bg-red-50 p-4 mt-3">
+                <div className="rounded-lg border border-red-300 bg-red-50 p-4 mt-3">
                   <label className="mb-1 block text-sm font-medium text-red-800">
                     Alasan penolakan (wajib)
                   </label>
@@ -1483,14 +1483,14 @@ export default function EditArticlePage() {
                         } catch { setError("Terjadi kesalahan."); setSaving(false); }
                       }}
                       disabled={saving || !rejectNote.trim()}
-                      className="flex items-center gap-1.5 rounded-[12px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
                     >
                       <XCircle size={14} />
                       Konfirmasi Tolak
                     </button>
                     <button
                       onClick={() => { setReviewChoice(null); setRejectNote(""); }}
-                      className="rounded-[12px] px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
+                      className="rounded-lg px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
                     >
                       Batal
                     </button>
@@ -1505,7 +1505,7 @@ export default function EditArticlePage() {
         <div className="mb-6">
           <Link
             href={`/panel/artikel/${articleId}/revisions`}
-            className="inline-flex items-center gap-1.5 rounded-[12px] border border-border bg-surface px-4 py-2.5 text-sm font-medium text-txt-primary hover:bg-surface-secondary transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-txt-primary hover:bg-surface-secondary transition-colors"
           >
             <History size={16} className="text-primary" />
             Riwayat Revisi
@@ -1524,7 +1524,7 @@ export default function EditArticlePage() {
               className="input w-full px-4 py-3 text-xl font-bold"
             />
             {researchPanel}
-            <div className="rounded-[12px] border border-border overflow-hidden">
+            <div className="rounded-lg border border-border overflow-hidden">
               <RichTextEditor
                 content={content}
                 onChange={setContent}
@@ -1542,7 +1542,7 @@ export default function EditArticlePage() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-[12px] border border-border bg-surface p-4">
+            <div className="rounded-lg border border-border bg-surface p-4">
               <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Kategori</label>
               <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input w-full">
                 <option value="">Pilih kategori</option>
@@ -1550,7 +1550,7 @@ export default function EditArticlePage() {
               </select>
             </div>
             {/* Pilih Penulis — Admins only */}
-            <div className="rounded-[12px] border border-border bg-surface p-4">
+            <div className="rounded-lg border border-border bg-surface p-4">
               <label htmlFor="admin-edit-penulis" className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">
                 Penulis
               </label>
@@ -1570,7 +1570,7 @@ export default function EditArticlePage() {
               </select>
             </div>
             {/* Pilih Editor — Admins only */}
-            <div className="rounded-[12px] border border-border bg-surface p-4">
+            <div className="rounded-lg border border-border bg-surface p-4">
               <label htmlFor="admin-edit-editor" className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">
                 Editor
               </label>
@@ -1593,11 +1593,11 @@ export default function EditArticlePage() {
                 }
               </select>
             </div>
-            <div className="rounded-[12px] border border-border bg-surface p-4">
+            <div className="rounded-lg border border-border bg-surface p-4">
               <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Tags</label>
               <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} className="input w-full" placeholder="Tag1, Tag2, Tag3" />
             </div>
-            <div className="rounded-[12px] border border-border bg-surface p-4">
+            <div className="rounded-lg border border-border bg-surface p-4">
               <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Ringkasan</label>
               <textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className="input w-full" rows={3} placeholder="Ringkasan artikel..." />
             </div>
@@ -1651,7 +1651,7 @@ export default function EditArticlePage() {
         </div>
 
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-[12px] bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             <AlertCircle size={16} />
             {error}
           </div>
@@ -1659,7 +1659,7 @@ export default function EditArticlePage() {
 
         {/* Editor Review Panel - IN_REVIEW */}
         {currentStatus === "IN_REVIEW" && isAssignedEditor && (
-          <div className="mb-6 rounded-[12px] border-2 border-yellow-300 bg-yellow-50 p-5">
+          <div className="mb-6 rounded-lg border-2 border-yellow-300 bg-yellow-50 p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-yellow-800">
               <MessageSquare size={18} />
               Panel Review Editor
@@ -1672,7 +1672,7 @@ export default function EditArticlePage() {
               {/* Approve Card */}
               <div
                 onClick={() => { setReviewChoice("approve"); setRejectNote(""); }}
-                className={`cursor-pointer rounded-[12px] border-2 p-4 transition-all ${
+                className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
                   reviewChoice === "approve"
                     ? "border-primary bg-primary/5"
                     : "border-border bg-white hover:border-primary/50"
@@ -1703,7 +1703,7 @@ export default function EditArticlePage() {
               {/* Reject Card */}
               <div
                 onClick={() => { setReviewChoice("reject"); setApproveNote(""); }}
-                className={`cursor-pointer rounded-[12px] border-2 p-4 transition-all ${
+                className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
                   reviewChoice === "reject"
                     ? "border-red-500 bg-red-500/5"
                     : "border-border bg-white hover:border-red-300"
@@ -1748,7 +1748,7 @@ export default function EditArticlePage() {
                 <button
                   onClick={reviewChoice === "approve" ? handleEditorApprove : handleEditorReject}
                   disabled={saving || (reviewChoice === "reject" && !rejectNote.trim())}
-                  className={`flex items-center gap-1.5 rounded-[12px] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${
+                  className={`flex items-center gap-1.5 rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${
                     reviewChoice === "approve"
                       ? "bg-primary hover:bg-primary-dark"
                       : "bg-red-600 hover:bg-red-700"
@@ -1774,7 +1774,7 @@ export default function EditArticlePage() {
 
         {/* Editor APPROVED — Publish or Cancel */}
         {currentStatus === "APPROVED" && isAssignedEditor && (
-          <div className="mb-6 rounded-[12px] border-2 border-primary/30 bg-primary-50 p-5">
+          <div className="mb-6 rounded-lg border-2 border-primary/30 bg-primary-50 p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
               <CheckCircle size={18} />
               Artikel Telah Disetujui — Siap Dipublikasi
@@ -1786,7 +1786,7 @@ export default function EditArticlePage() {
               <button
                 onClick={handleEditorPublish}
                 disabled={saving}
-                className="flex items-center gap-1.5 rounded-[12px] bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
               >
                 <Upload size={16} />
                 Publikasi Sekarang
@@ -1794,7 +1794,7 @@ export default function EditArticlePage() {
               <button
                 onClick={handleEditorCancelApproval}
                 disabled={saving}
-                className="flex items-center gap-1.5 rounded-[12px] border border-yellow-300 bg-yellow-50 px-4 py-2.5 text-sm font-semibold text-yellow-700 hover:bg-yellow-100 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-2.5 text-sm font-semibold text-yellow-700 hover:bg-yellow-100 disabled:opacity-50"
               >
                 <Undo2 size={16} />
                 Batalkan Persetujuan
@@ -1804,7 +1804,7 @@ export default function EditArticlePage() {
         )}
 
         {currentStatus === "PUBLISHED" && (
-          <div className="mb-6 rounded-[12px] border border-primary/30 bg-primary-50 p-5">
+          <div className="mb-6 rounded-lg border border-primary/30 bg-primary-50 p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
               <CheckCircle size={18} />
               Artikel Telah Dipublikasikan
@@ -1816,7 +1816,7 @@ export default function EditArticlePage() {
         <div className="mb-6">
           <Link
             href={`/panel/artikel/${articleId}/revisions`}
-            className="inline-flex items-center gap-1.5 rounded-[12px] border border-border bg-surface px-4 py-2.5 text-sm font-medium text-txt-primary hover:bg-surface-secondary transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-txt-primary hover:bg-surface-secondary transition-colors"
           >
             <History size={16} className="text-primary" />
             Riwayat Revisi
@@ -1828,14 +1828,14 @@ export default function EditArticlePage() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Main content — 2/3 */}
             <div className="lg:col-span-2 space-y-4">
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <label className="mb-2 block text-sm font-medium text-txt-primary">Judul</label>
                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="input w-full text-lg font-bold" />
               </div>
               {researchPanel}
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <label className="mb-2 block text-sm font-medium text-txt-primary">Konten</label>
-                <div className="rounded-[12px] border border-border overflow-hidden">
+                <div className="rounded-lg border border-border overflow-hidden">
                   <RichTextEditor
                 content={content}
                 onChange={setContent}
@@ -1861,7 +1861,7 @@ export default function EditArticlePage() {
             </div>
             {/* Sidebar — 1/3 */}
             <div className="space-y-4">
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <label className="mb-2 block text-sm font-medium text-txt-primary">Kategori</label>
                 <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input w-full">
                   <option value="">Pilih kategori</option>
@@ -1870,7 +1870,7 @@ export default function EditArticlePage() {
                   ))}
                 </select>
               </div>
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <div className="mb-2 flex items-center justify-between">
                   <label className="text-sm font-medium text-txt-primary">Tags</label>
                   <button
@@ -1886,14 +1886,14 @@ export default function EditArticlePage() {
                 <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} className="input w-full" placeholder="Tag1, Tag2, Tag3" />
                 <p className="mt-1 text-xs text-txt-muted">Pisahkan dengan koma</p>
               </div>
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <div className="mb-2 flex items-center justify-between">
                   <label className="text-sm font-medium text-txt-primary">Ringkasan</label>
                   <AiButton feature="summary" setter={setExcerpt} />
                 </div>
                 <textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} className="input w-full" placeholder="Ringkasan singkat artikel" maxLength={500} />
               </div>
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <div className="mb-2 flex items-center justify-between">
                   <label className="text-sm font-medium text-txt-primary">SEO Title</label>
                   <AiButton feature="seo_title" setter={setSeoTitle} />
@@ -1901,7 +1901,7 @@ export default function EditArticlePage() {
                 <input type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} className="input w-full" placeholder="SEO Title (maks 60 karakter)" maxLength={60} />
                 <p className="mt-1 text-xs text-txt-muted">{seoTitle.length}/60</p>
               </div>
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <div className="mb-2 flex items-center justify-between">
                   <label className="text-sm font-medium text-txt-primary">Meta Description</label>
                   <AiButton feature="meta_description" setter={setSeoDescription} />
@@ -1940,21 +1940,21 @@ export default function EditArticlePage() {
         ) : (
           /* Read-only for non-assigned or non-IN_REVIEW status */
           <div className="space-y-4">
-            <div className="rounded-[12px] border border-border bg-surface p-5">
+            <div className="rounded-lg border border-border bg-surface p-5">
               <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Judul</label>
               <p className="text-lg font-bold text-txt-primary">{title}</p>
             </div>
-            <div className="rounded-[12px] border border-border bg-surface p-5">
+            <div className="rounded-lg border border-border bg-surface p-5">
               <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Kategori</label>
               <p className="text-sm text-txt-primary">{categories.find(c => c.id === categoryId)?.name || categoryId}</p>
             </div>
             {excerpt && (
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Ringkasan</label>
                 <p className="text-sm text-txt-primary">{excerpt}</p>
               </div>
             )}
-            <div className="rounded-[12px] border border-border bg-surface p-5">
+            <div className="rounded-lg border border-border bg-surface p-5">
               <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Konten</label>
               {/* Defense-in-depth: sanitize live editor state before preview render */}
               <div className="prose prose-sm max-w-none text-txt-primary text-justify" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
@@ -2104,14 +2104,14 @@ export default function EditArticlePage() {
           <span className="text-xs font-semibold text-txt-muted uppercase tracking-wider">Export:</span>
           <button
             onClick={handleExportPdf}
-            className="btn-ghost flex items-center gap-1.5 rounded-[12px] px-3 py-1.5 text-xs font-medium text-txt-secondary hover:text-txt-primary"
+            className="btn-ghost flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-txt-secondary hover:text-txt-primary"
           >
             <Printer size={14} />
             Export PDF
           </button>
           <button
             onClick={handleExportText}
-            className="btn-ghost flex items-center gap-1.5 rounded-[12px] px-3 py-1.5 text-xs font-medium text-txt-secondary hover:text-txt-primary"
+            className="btn-ghost flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-txt-secondary hover:text-txt-primary"
           >
             <FileText size={14} />
             Export Teks
@@ -2120,7 +2120,7 @@ export default function EditArticlePage() {
       )}
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-[12px] bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertCircle size={16} />
           {error}
         </div>
@@ -2128,7 +2128,7 @@ export default function EditArticlePage() {
 
       {/* Journalist Direct Schedule Picker */}
       {viewMode === "journalist" && showSchedule && (
-        <div className="mb-4 rounded-[12px] border border-blue-300 bg-blue-50 p-4 shadow-sm">
+        <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-4 shadow-sm">
           <label className="mb-2 block text-sm font-medium text-blue-800">
             Pilih tanggal & waktu publikasi draf ini
           </label>
@@ -2143,14 +2143,14 @@ export default function EditArticlePage() {
             <button
               onClick={() => handleJurnalisSubmit("PUBLISHED", scheduleDate)}
               disabled={saving || !scheduleDate}
-              className="flex items-center gap-1.5 rounded-[12px] bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             >
               <CalendarClock size={14} />
               Konfirmasi Jadwal
             </button>
             <button
               onClick={() => { setShowSchedule(false); setScheduleDate(""); }}
-              className="rounded-[12px] px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
             >
               Batal
             </button>
@@ -2160,7 +2160,7 @@ export default function EditArticlePage() {
 
       {/* Trending Suggestions */}
       {canJurnalisEdit && ["DRAFT", "REJECTED"].includes(currentStatus) && trendingSuggestions.length > 0 && showSuggestions && (
-        <div className="mb-4 rounded-[12px] border border-border bg-surface p-4 shadow-card">
+        <div className="mb-4 rounded-lg border border-border bg-surface p-4 shadow-card">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-light">
@@ -2199,7 +2199,7 @@ export default function EditArticlePage() {
 
       {/* REJECTED: Show editor's rejection note */}
       {(currentStatus === "REJECTED" || currentStatus === "DRAFT") && existingReviewNote && (
-        <div className="mb-4 rounded-[12px] border-2 border-red-300 bg-red-50 p-4">
+        <div className="mb-4 rounded-lg border-2 border-red-300 bg-red-50 p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-red-700">
             <XCircle size={16} />
             Artikel Ditolak oleh Editor
@@ -2227,7 +2227,7 @@ export default function EditArticlePage() {
 
       {/* IN_REVIEW: Article locked, show who is reviewing */}
       {currentStatus === "IN_REVIEW" && isOwner && (
-        <div className="mb-4 rounded-[12px] border-2 border-yellow-300 bg-yellow-50 p-4">
+        <div className="mb-4 rounded-lg border-2 border-yellow-300 bg-yellow-50 p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-yellow-800">
             <Lock size={16} />
             Artikel Sedang Direview
@@ -2239,7 +2239,7 @@ export default function EditArticlePage() {
           <button
             onClick={handleCancelReview}
             disabled={saving}
-            className="mt-3 flex items-center gap-1.5 rounded-[12px] border border-yellow-400 bg-white px-4 py-2 text-sm font-semibold text-yellow-700 hover:bg-yellow-100 disabled:opacity-50"
+            className="mt-3 flex items-center gap-1.5 rounded-lg border border-yellow-400 bg-white px-4 py-2 text-sm font-semibold text-yellow-700 hover:bg-yellow-100 disabled:opacity-50"
           >
             <Undo2 size={16} />
             Batalkan Review
@@ -2249,7 +2249,7 @@ export default function EditArticlePage() {
 
       {/* APPROVED: Article locked */}
       {currentStatus === "APPROVED" && isOwner && (
-        <div className="mb-4 rounded-[12px] border border-blue-200 bg-blue-50 p-4">
+        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-blue-700">
             <CheckCircle size={16} />
             Artikel Telah Disetujui
@@ -2265,7 +2265,7 @@ export default function EditArticlePage() {
 
       {/* PUBLISHED: Article locked */}
       {currentStatus === "PUBLISHED" && isOwner && (
-        <div className="mb-4 rounded-[12px] border border-primary/30 bg-primary-50 p-4">
+        <div className="mb-4 rounded-lg border border-primary/30 bg-primary-50 p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-primary-dark">
             <CheckCircle size={16} />
             Artikel Telah Dipublikasikan
@@ -2277,7 +2277,7 @@ export default function EditArticlePage() {
       <div className="mb-4">
         <Link
           href={`/panel/artikel/${articleId}/revisions`}
-          className="inline-flex items-center gap-1.5 rounded-[12px] border border-border bg-surface px-4 py-2.5 text-sm font-medium text-txt-primary hover:bg-surface-secondary transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-txt-primary hover:bg-surface-secondary transition-colors"
         >
           <History size={16} className="text-primary" />
           Riwayat Revisi
@@ -2297,7 +2297,7 @@ export default function EditArticlePage() {
               className="input w-full px-4 py-3 text-xl font-bold"
             />
             {researchPanel}
-            <div className="rounded-[12px] border border-border overflow-hidden">
+            <div className="rounded-lg border border-border overflow-hidden">
               <RichTextEditor
                 content={content}
                 onChange={setContent}
@@ -2320,7 +2320,7 @@ export default function EditArticlePage() {
               </div>
             </div>
             {/* Sources */}
-            <div className="rounded-[12px] border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-medium text-txt-primary uppercase tracking-wider">
                   Sumber & Narasumber
@@ -2331,14 +2331,14 @@ export default function EditArticlePage() {
               </div>
               <div className="space-y-3">
                 {sources.map((source, i) => (
-                  <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-[12px] border border-border p-3">
+                  <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border border-border p-3">
                     <input type="text" placeholder="Nama narasumber *" value={source.name} onChange={(e) => updateSource(i, "name", e.target.value)} className="input text-sm" />
                     <input type="text" placeholder="Jabatan" value={source.title} onChange={(e) => updateSource(i, "title", e.target.value)} className="input text-sm" />
                     <input type="text" placeholder="Institusi" value={source.institution} onChange={(e) => updateSource(i, "institution", e.target.value)} className="input text-sm" />
                     <div className="flex gap-2">
                       <input type="url" placeholder="URL referensi" value={source.url} onChange={(e) => updateSource(i, "url", e.target.value)} className="input flex-1 text-sm" />
                       {sources.length > 1 && (
-                        <button type="button" onClick={() => removeSource(i)} className="rounded p-1.5 text-red-400 hover:bg-red-50">
+                        <button type="button" onClick={() => removeSource(i)} className="rounded-lg p-1.5 text-red-400 hover:bg-red-50">
                           <Trash2 size={14} />
                         </button>
                       )}
@@ -2348,7 +2348,7 @@ export default function EditArticlePage() {
               </div>
             </div>
             {/* SEO Settings */}
-            <div className="rounded-[12px] border border-border bg-surface">
+            <div className="rounded-lg border border-border bg-surface">
               <button type="button" onClick={() => setShowSeo(!showSeo)} className="flex w-full items-center justify-between px-6 py-3 text-sm font-medium text-txt-primary uppercase tracking-wider">
                 Pengaturan SEO
                 <ChevronDown size={16} className={showSeo ? "rotate-180" : ""} />
@@ -2400,7 +2400,7 @@ export default function EditArticlePage() {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            <div className="rounded-[12px] border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <label htmlFor="edit-kategori" className="mb-2 block text-sm font-medium text-txt-primary">Kategori *</label>
               <select id="edit-kategori" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input w-full">
                 <option value="">Pilih Kategori</option>
@@ -2411,7 +2411,7 @@ export default function EditArticlePage() {
             </div>
             {/* Pilih Penulis — only for admin/editor */}
             {EDITOR_ROLES.includes(userRole) && (
-              <div className="rounded-[12px] border border-border bg-surface p-6">
+              <div className="rounded-lg border border-border bg-surface p-6">
                 <label htmlFor="edit-penulis" className="mb-2 block text-sm font-medium text-txt-primary">
                   Penulis
                 </label>
@@ -2432,7 +2432,7 @@ export default function EditArticlePage() {
               </div>
             )}
             {/* Pilih Editor — for all roles */}
-            <div className="rounded-[12px] border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <label htmlFor="edit-editor" className="mb-2 block text-sm font-medium text-txt-primary">
                 Editor
               </label>
@@ -2455,7 +2455,7 @@ export default function EditArticlePage() {
                 }
               </select>
             </div>
-            <div className="rounded-[12px] border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <div className="mb-2 flex items-center justify-between">
                 <label htmlFor="edit-tags" className="text-sm font-medium text-txt-primary">Tags</label>
                 <AiButton feature="tags" setter={setTags} />
@@ -2463,7 +2463,7 @@ export default function EditArticlePage() {
               <input id="edit-tags" type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tag1, Tag2, Tag3" className="input w-full" />
               <p className="mt-1 text-xs text-txt-muted">Pisahkan dengan koma</p>
             </div>
-            <div className="rounded-[12px] border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <div className="mb-2 flex items-center justify-between">
                 <label htmlFor="edit-ringkasan" className="text-sm font-medium text-txt-primary">Ringkasan</label>
                 <AiButton feature="summary" setter={setExcerpt} />
@@ -2471,7 +2471,7 @@ export default function EditArticlePage() {
               <textarea id="edit-ringkasan" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} placeholder="Ringkasan singkat artikel" maxLength={500} className="input w-full" />
             </div>
             {/* Journalism Checklist */}
-            <div className="rounded-[12px] border border-primary/20 bg-primary-50 p-4">
+            <div className="rounded-lg border border-primary/20 bg-primary-50 p-4">
               <button type="button" onClick={() => setShowChecklist(!showChecklist)} className="flex w-full items-center justify-between text-sm font-bold text-primary-dark">
                 <span className="flex items-center gap-1.5">
                   <CheckCircle size={16} />
@@ -2493,7 +2493,7 @@ export default function EditArticlePage() {
                         type="checkbox"
                         checked={checklist[item.key]}
                         onChange={(e) => setChecklist({ ...checklist, [item.key]: e.target.checked })}
-                        className="mt-0.5 rounded"
+                        className="mt-0.5 rounded-lg"
                       />
                       {item.label}
                     </label>
@@ -2508,7 +2508,7 @@ export default function EditArticlePage() {
             </div>
 
             {/* Catatan Riset */}
-            <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
+            <div className="rounded-lg border border-border bg-surface shadow-card overflow-hidden">
               <button
                 onClick={() => setNotesOpen(!notesOpen)}
                 className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-txt-primary hover:bg-surface-secondary"
@@ -2537,21 +2537,21 @@ export default function EditArticlePage() {
       ) : (
         /* Read-only view for locked articles */
         <div className="space-y-4">
-          <div className="rounded-[12px] border border-border bg-surface p-5">
+          <div className="rounded-lg border border-border bg-surface p-5">
             <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Judul</label>
             <p className="text-lg font-bold text-txt-primary">{title}</p>
           </div>
-          <div className="rounded-[12px] border border-border bg-surface p-5">
+          <div className="rounded-lg border border-border bg-surface p-5">
             <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Kategori</label>
             <p className="text-sm text-txt-primary">{categories.find(c => c.id === categoryId)?.name || categoryId}</p>
           </div>
           {excerpt && (
-            <div className="rounded-[12px] border border-border bg-surface p-5">
+            <div className="rounded-lg border border-border bg-surface p-5">
               <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Ringkasan</label>
               <p className="text-sm text-txt-primary">{excerpt}</p>
             </div>
           )}
-          <div className="rounded-[12px] border border-border bg-surface p-5">
+          <div className="rounded-lg border border-border bg-surface p-5">
             <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Konten</label>
             {/* Defense-in-depth: sanitize live editor state before preview render */}
             <div className="prose prose-sm max-w-none text-txt-primary text-justify" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />

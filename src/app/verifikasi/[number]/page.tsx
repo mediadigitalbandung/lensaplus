@@ -36,7 +36,7 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
 
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-5 py-12">
-      <div className="w-full rounded-2xl border border-border bg-surface p-8 shadow-card">
+      <div className="w-full rounded-xl border border-border bg-surface p-8 shadow-card">
         <div className="mb-6 text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">Kartawarta</p>
           <p className="text-xs text-txt-muted">Verifikasi Kartu Tanda Anggota Pers</p>
@@ -67,7 +67,7 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
               </p>
             )}
 
-            <div className="mt-2 w-full space-y-2 rounded-xl border border-border bg-surface-secondary/50 p-4 text-left text-sm">
+            <div className="mt-2 w-full space-y-2 rounded-lg border border-border bg-surface-secondary/50 p-4 text-left text-sm">
               <Row label="Nama" value={card.holderName || card.user.name} />
               <Row label="Jabatan" value={roleLabelsMap[card.user.role] || card.user.role} />
               <Row label="No. Anggota" value={card.number} mono />

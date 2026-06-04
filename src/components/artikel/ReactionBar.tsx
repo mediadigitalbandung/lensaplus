@@ -65,7 +65,7 @@ export default function ReactionBar({ articleId }: { articleId: string }) {
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="my-8 rounded-2xl border border-border bg-surface-secondary p-4 sm:p-5">
+    <div className="my-8 rounded-xl border border-border bg-surface-secondary p-4 sm:p-5">
       <p className="mb-3 text-xs font-semibold text-txt-primary sm:text-sm">
         Apa pendapat Anda tentang artikel ini?
       </p>

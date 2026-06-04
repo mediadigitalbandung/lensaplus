@@ -99,7 +99,7 @@ function useTrending() {
 /* ── Stock Card ── */
 function StockCard({ s }: { s: StockItem }) {
   return (
-    <div className={`shrink-0 rounded-[10px] sm:rounded-[12px] px-3 py-2 sm:px-4 sm:py-3 min-w-[120px] sm:min-w-[170px] border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_14px_-4px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-0.5 relative overflow-hidden group cursor-default ${
+    <div className={`shrink-0 rounded-lg sm:rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-[120px] sm:min-w-[170px] border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_14px_-4px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-0.5 relative overflow-hidden group cursor-default ${
       s.direction === "up" ? "bg-emerald-50/60 border-emerald-100" : s.direction === "down" ? "bg-red-50/60 border-red-100" : "bg-gray-50/60 border-gray-100"
     }`}>
       {/* Decorative top accent line */}
@@ -173,7 +173,7 @@ function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="shrink-0 rounded-[10px] sm:rounded-[12px] min-w-[120px] sm:min-w-[170px] h-[68px] sm:h-[88px] bg-gray-100/70 animate-pulse"
+                className="shrink-0 rounded-lg sm:rounded-lg min-w-[120px] sm:min-w-[170px] h-[68px] sm:h-[88px] bg-gray-100/70 animate-pulse"
               />
             ))}
           </div>

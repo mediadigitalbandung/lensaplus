@@ -124,7 +124,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
         </nav>
 
         {/* Hero */}
-        <header className="mb-8 rounded-[12px] border border-border bg-surface-container-lowest p-6 shadow-card">
+        <header className="mb-8 rounded-lg border border-border bg-surface-container-lowest p-6 shadow-card">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <span className="inline-block rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
@@ -180,7 +180,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
                   ))}
                 </div>
               ) : (
-                <p className="rounded-[12px] border border-dashed border-border bg-surface-container-low p-6 text-sm text-on-surface-variant">
+                <p className="rounded-lg border border-dashed border-border bg-surface-container-low p-6 text-sm text-on-surface-variant">
                   Belum ada berita terkait yang ditandai untuk pengadilan ini.
                 </p>
               )}
@@ -189,7 +189,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
 
           {/* Sidebar */}
           <aside className="lg:col-span-1 space-y-6">
-            <div className="rounded-[12px] border border-border bg-surface-container-lowest p-5 shadow-card">
+            <div className="rounded-lg border border-border bg-surface-container-lowest p-5 shadow-card">
               <h3 className="mb-4 border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wider text-on-surface">
                 Kontak &amp; Operasional
               </h3>
@@ -226,14 +226,14 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
               </ul>
             </div>
 
-            <div className="rounded-[12px] border border-border bg-surface-container-lowest p-5 shadow-card">
+            <div className="rounded-lg border border-border bg-surface-container-lowest p-5 shadow-card">
               <h3 className="mb-3 border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wider text-on-surface">
                 Wilayah Hukum
               </h3>
               <p className="text-sm text-on-surface-variant">{court.jurisdiction}</p>
             </div>
 
-            <div className="rounded-[12px] border border-border bg-surface-container-lowest p-5 shadow-card">
+            <div className="rounded-lg border border-border bg-surface-container-lowest p-5 shadow-card">
               <h3 className="mb-3 border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wider text-on-surface">
                 Pengadilan Lain
               </h3>

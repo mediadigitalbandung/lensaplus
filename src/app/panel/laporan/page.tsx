@@ -47,22 +47,22 @@ function LoadingSkeleton() {
     <div className="animate-pulse">
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
-            <div className="h-4 w-24 rounded bg-surface-tertiary" />
-            <div className="mt-2 h-7 w-8 rounded bg-surface-tertiary" />
+          <div key={i} className="rounded-lg border border-border bg-surface p-4 shadow-card">
+            <div className="h-4 w-24 rounded-lg bg-surface-tertiary" />
+            <div className="mt-2 h-7 w-8 rounded-lg bg-surface-tertiary" />
           </div>
         ))}
       </div>
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-[12px] border border-border bg-surface p-5 shadow-card">
+          <div key={i} className="rounded-lg border border-border bg-surface p-5 shadow-card">
             <div className="flex items-center gap-2 mb-2">
               <div className="h-5 w-16 rounded-full bg-surface-tertiary" />
-              <div className="h-4 w-20 rounded bg-surface-tertiary" />
-              <div className="h-3 w-24 rounded bg-surface-secondary" />
+              <div className="h-4 w-20 rounded-lg bg-surface-tertiary" />
+              <div className="h-3 w-24 rounded-lg bg-surface-secondary" />
             </div>
-            <div className="h-5 w-2/3 rounded bg-surface-tertiary" />
-            <div className="mt-2 h-4 w-full rounded bg-surface-secondary" />
+            <div className="h-5 w-2/3 rounded-lg bg-surface-tertiary" />
+            <div className="mt-2 h-4 w-full rounded-lg bg-surface-secondary" />
           </div>
         ))}
       </div>
@@ -174,11 +174,11 @@ export default function LaporanPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchReports}
-            className="mt-2 rounded-[12px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
             aria-label="Coba muat ulang daftar laporan"
           >
             Coba Lagi
@@ -196,7 +196,7 @@ export default function LaporanPage() {
               const Icon = config.icon;
               const count = statusCounts[key] ?? reports.filter((r) => r.status === key).length;
               return (
-                <div key={key} className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
+                <div key={key} className="rounded-lg border border-border bg-surface p-4 shadow-card">
                   <div className={`flex items-center gap-2 text-sm ${config.color}`}>
                     <Icon size={16} /> {config.label}
                   </div>
@@ -209,7 +209,7 @@ export default function LaporanPage() {
           {/* Reports list */}
           <div className="space-y-3">
             {reports.length === 0 ? (
-              <div className="rounded-[12px] border border-border bg-surface p-4 sm:p-8 text-center text-txt-secondary shadow-card">
+              <div className="rounded-lg border border-border bg-surface p-4 sm:p-8 text-center text-txt-secondary shadow-card">
                 Belum ada laporan.
               </div>
             ) : (
@@ -220,7 +220,7 @@ export default function LaporanPage() {
                 return (
                   <div
                     key={report.id}
-                    className="rounded-[12px] border border-border bg-surface p-5 shadow-card"
+                    className="rounded-lg border border-border bg-surface p-5 shadow-card"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -252,7 +252,7 @@ export default function LaporanPage() {
                           <button
                             onClick={() => handleUpdateStatus(report.id, "REVIEWED")}
                             disabled={updating === report.id}
-                            className="rounded-[12px] bg-primary-light px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                            className="rounded-lg bg-primary-light px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
                             aria-label="Tinjau laporan"
                           >
                             {updating === report.id ? "..." : "Tinjau"}
@@ -260,7 +260,7 @@ export default function LaporanPage() {
                           <button
                             onClick={() => handleUpdateStatus(report.id, "DISMISSED")}
                             disabled={updating === report.id}
-                            className="rounded-[12px] bg-surface-tertiary px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-border disabled:opacity-50"
+                            className="rounded-lg bg-surface-tertiary px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-border disabled:opacity-50"
                             aria-label="Tolak laporan"
                           >
                             {updating === report.id ? "..." : "Tolak"}
@@ -272,7 +272,7 @@ export default function LaporanPage() {
                           <button
                             onClick={() => handleUpdateStatus(report.id, "RESOLVED")}
                             disabled={updating === report.id}
-                            className="rounded-[12px] bg-primary-light px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                            className="rounded-lg bg-primary-light px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
                             aria-label="Tandai laporan selesai"
                           >
                             {updating === report.id ? "..." : "Tandai Selesai"}

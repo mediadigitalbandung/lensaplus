@@ -124,8 +124,8 @@ export default function CommentSection({ articleId }: { articleId: string }) {
               key={i}
               className="animate-pulse rounded-sm bg-surface-secondary p-4"
             >
-              <div className="h-4 w-1/4 rounded bg-surface-tertiary" />
-              <div className="mt-2 h-3 w-3/4 rounded bg-surface-tertiary" />
+              <div className="h-4 w-1/4 rounded-lg bg-surface-tertiary" />
+              <div className="mt-2 h-3 w-3/4 rounded-lg bg-surface-tertiary" />
             </div>
           ))}
         </div>

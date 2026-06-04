@@ -158,7 +158,7 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
           </Link>
 
           {/* Header card */}
-          <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
+          <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
             {/* Type + status badges */}
             <div className="flex flex-wrap gap-2 mb-4">
               <span
@@ -282,7 +282,7 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
 
           {/* Description */}
           {regulation.description && (
-            <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
+            <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
               <h2 className="text-title-md font-semibold text-txt-primary mb-4">
                 Ringkasan / Keterangan
               </h2>
@@ -294,7 +294,7 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
 
           {/* Linked article */}
           {linkedArticle && (
-            <div className="rounded-2xl border border-primary/20 bg-primary-light p-5 sm:p-6">
+            <div className="rounded-xl border border-primary/20 bg-primary-light p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-2">
                 Liputan Kartawarta
               </p>

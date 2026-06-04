@@ -179,11 +179,11 @@ export default function EditorTab() {
   return (
     <div>
       {error && (
-        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 p-4 text-center text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-sm text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchData}
-            className="mt-2 rounded-[12px] bg-red-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-red-700"
+            className="mt-2 rounded-lg bg-red-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-red-700"
           >
             Coba Lagi
           </button>
@@ -195,8 +195,8 @@ export default function EditorTab() {
         Performa Review {userRole === "SUPER_ADMIN" ? "(Semua)" : "(Anda)"}
       </h2>
       <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-        <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
-          <div className="inline-flex rounded-[12px] bg-blue-50 p-2 text-blue-500">
+        <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
+          <div className="inline-flex rounded-lg bg-blue-50 p-2 text-blue-500">
             <Clock size={18} />
           </div>
           <p className="mt-2 text-xl sm:text-3xl font-extrabold text-txt-primary">
@@ -204,8 +204,8 @@ export default function EditorTab() {
           </p>
           <p className="text-xs text-txt-secondary">Total Review</p>
         </div>
-        <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
-          <div className="inline-flex rounded-[12px] bg-primary-light p-2 text-primary">
+        <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
+          <div className="inline-flex rounded-lg bg-primary-light p-2 text-primary">
             <CheckCircle size={18} />
           </div>
           <p className="mt-2 text-xl sm:text-3xl font-extrabold text-primary">
@@ -213,8 +213,8 @@ export default function EditorTab() {
           </p>
           <p className="text-xs text-txt-secondary">Disetujui</p>
         </div>
-        <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
-          <div className="inline-flex rounded-[12px] bg-red-50 p-2 text-red-500">
+        <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
+          <div className="inline-flex rounded-lg bg-red-50 p-2 text-red-500">
             <XCircle size={18} />
           </div>
           <p className="mt-2 text-xl sm:text-3xl font-extrabold text-red-500">
@@ -222,8 +222,8 @@ export default function EditorTab() {
           </p>
           <p className="text-xs text-txt-secondary">Ditolak</p>
         </div>
-        <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
-          <div className="inline-flex rounded-[12px] bg-purple-50 p-2 text-purple-500">
+        <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
+          <div className="inline-flex rounded-lg bg-purple-50 p-2 text-purple-500">
             <TrendingUp size={18} />
           </div>
           <p className="mt-2 text-xl sm:text-3xl font-extrabold text-txt-primary">
@@ -234,7 +234,7 @@ export default function EditorTab() {
       </div>
 
       {/* Review Breakdown */}
-      <div className="mb-6 rounded-[12px] border border-border bg-surface p-5 shadow-card">
+      <div className="mb-6 rounded-lg border border-border bg-surface p-5 shadow-card">
         <h2 className="mb-4 text-lg font-semibold text-txt-primary">
           Review Breakdown
         </h2>
@@ -279,7 +279,7 @@ export default function EditorTab() {
       </div>
 
       {/* Recent Reviews Table */}
-      <div className="mb-8 overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+      <div className="mb-8 overflow-hidden rounded-lg border border-border bg-surface shadow-card">
         <div className="border-b border-border bg-surface-secondary px-5 py-4">
           <h2 className="font-semibold text-txt-primary">Review Terbaru</h2>
         </div>
@@ -381,7 +381,7 @@ export default function EditorTab() {
       </p>
 
       {authors.length === 0 ? (
-        <div className="rounded-[12px] border border-border bg-surface py-12 text-center text-txt-secondary shadow-card">
+        <div className="rounded-lg border border-border bg-surface py-12 text-center text-txt-secondary shadow-card">
           Belum ada Sorotan yang dibuat.
         </div>
       ) : (
@@ -391,7 +391,7 @@ export default function EditorTab() {
             return (
               <div
                 key={author.authorId}
-                className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card"
+                className="overflow-hidden rounded-lg border border-border bg-surface shadow-card"
               >
                 <button
                   onClick={() =>
@@ -446,7 +446,7 @@ export default function EditorTab() {
                               {item.title}
                             </p>
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                              <span className="rounded bg-surface-tertiary px-1.5 py-0.5 text-txt-secondary">
+                              <span className="rounded-lg bg-surface-tertiary px-1.5 py-0.5 text-txt-secondary">
                                 {ANGLE_LABELS[item.angle] || item.angle}
                               </span>
                               <span
@@ -463,7 +463,7 @@ export default function EditorTab() {
                             <Link
                               href={`/sorotan/${item.slug}`}
                               target="_blank"
-                              className="shrink-0 rounded p-1.5 text-txt-muted hover:bg-surface-secondary hover:text-primary"
+                              className="shrink-0 rounded-lg p-1.5 text-txt-muted hover:bg-surface-secondary hover:text-primary"
                               title="Lihat sorotan"
                             >
                               <ExternalLink size={15} />

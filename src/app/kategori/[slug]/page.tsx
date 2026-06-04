@@ -246,7 +246,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
             </div>
             <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
               {categoryPolling[params.slug].map((poll, idx) => (
-                <div key={idx} className="shrink-0 w-[300px] sm:w-[340px] rounded-[12px] border border-border bg-surface-secondary overflow-hidden">
+                <div key={idx} className="shrink-0 w-[300px] sm:w-[340px] rounded-lg border border-border bg-surface-secondary overflow-hidden">
                   {poll.image && (
                     <div className="relative w-full aspect-[2/1]">
                       <Image src={poll.image} alt={poll.question} fill className="object-cover" />
@@ -307,7 +307,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
             <PaginatedArticles articles={JSON.parse(JSON.stringify(articles.slice(11)))} perPage={6} />
 
             {articles.length === 0 && (
-              <div className="rounded-[12px] border-2 border-dashed border-border py-16 text-center">
+              <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
                 <p className="text-txt-muted">Belum ada artikel di kategori ini.</p>
               </div>
             )}

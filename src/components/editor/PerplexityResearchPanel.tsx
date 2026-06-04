@@ -187,7 +187,7 @@ export default function PerplexityResearchPanel({
   };
 
   return (
-    <div className="rounded-[12px] border border-primary/20 bg-primary-light/40 p-3">
+    <div className="rounded-lg border border-primary/20 bg-primary-light/40 p-3">
       {!showResearch ? (
         <button
           type="button"
@@ -265,7 +265,7 @@ export default function PerplexityResearchPanel({
               type="checkbox"
               checked={researchImages}
               onChange={(e) => setResearchImages(e.target.checked)}
-              className="h-4 w-4 rounded border-border accent-primary"
+              className="h-4 w-4 rounded-lg border-border accent-primary"
             />
             Sertakan foto dari sumber lain (2–3 foto, foto pertama jadi gambar utama)
           </label>

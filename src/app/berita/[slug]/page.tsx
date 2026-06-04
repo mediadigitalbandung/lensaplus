@@ -714,7 +714,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                   <Link
                     key={tag.slug}
                     href={`/tag/${tag.slug}`}
-                    className="text-xs font-medium text-primary border border-border rounded px-2 py-1 hover:bg-surface-secondary transition-colors"
+                    className="text-xs font-medium text-primary border border-border rounded-lg px-2 py-1 hover:bg-surface-secondary transition-colors"
                   >
                     #{tag.name}
                   </Link>
@@ -763,7 +763,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
 
               {/* Sorotan — analytical angles for this article */}
               {articleSorotan.length > 0 && (
-                <section className="mt-10 overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
+                <section className="mt-10 overflow-hidden rounded-xl border border-border bg-surface shadow-card">
                   {/* Header */}
                   <div className="flex items-center gap-3 border-b border-border px-5 py-4 sm:px-6">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary">

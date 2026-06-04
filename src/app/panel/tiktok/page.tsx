@@ -127,7 +127,7 @@ export default function TiktokListPage() {
 
   if (!canManage && !loading) {
     return (
-      <div className="rounded-[12px] border border-red-200 bg-red-50 p-5 text-red-700">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-700">
         Anda tidak memiliki izin untuk mengelola konten TikTok.
       </div>
     );
@@ -191,7 +191,7 @@ export default function TiktokListPage() {
       </div>
 
       {/* Phase warning banner */}
-      <div className="mb-5 flex items-start gap-3 rounded-[12px] border border-yellow-200 bg-yellow-50 p-4">
+      <div className="mb-5 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
         <AlertCircle size={18} className="mt-0.5 shrink-0 text-yellow-700" />
         <div className="text-sm text-yellow-800">
           <p className="font-semibold">Fase 1 — Workflow Manual</p>
@@ -204,7 +204,7 @@ export default function TiktokListPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error}
           <button onClick={fetchContents} className="ml-3 font-semibold underline">
             Coba lagi
@@ -217,12 +217,12 @@ export default function TiktokListPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-48 animate-pulse rounded-[12px] border border-border bg-surface"
+              className="h-48 animate-pulse rounded-lg border border-border bg-surface"
             />
           ))}
         </div>
       ) : contents.length === 0 ? (
-        <div className="rounded-[12px] border border-border bg-surface p-10 text-center shadow-card">
+        <div className="rounded-lg border border-border bg-surface p-10 text-center shadow-card">
           <Inbox size={36} className="mx-auto text-border" />
           <p className="mt-3 text-base text-txt-secondary">Belum ada konten TikTok.</p>
           <Link
@@ -243,7 +243,7 @@ export default function TiktokListPage() {
               <Link
                 key={c.id}
                 href={`/panel/tiktok/${c.id}`}
-                className="group flex flex-col overflow-hidden rounded-[12px] border border-border bg-surface shadow-card transition-all hover:shadow-lg"
+                className="group flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card transition-all hover:shadow-lg"
               >
                 <div className="relative aspect-[9/16] max-h-72 bg-surface-secondary">
                   {cover ? (
@@ -443,7 +443,7 @@ function YoutubeImportModal({
             <Youtube size={18} className="text-red-600" />
             Import & Auto-Clip dari YouTube
           </h3>
-          <button onClick={close} className="rounded p-1 text-txt-muted hover:bg-surface-secondary">
+          <button onClick={close} className="rounded-lg p-1 text-txt-muted hover:bg-surface-secondary">
             <X size={18} />
           </button>
         </div>
@@ -523,7 +523,7 @@ function YoutubeImportModal({
                     <Loader2 size={14} className="animate-spin text-primary" />
                     {job.stage ? YT_STAGE_LABEL[job.stage] || job.stage : "Menunggu antrean…"}
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded bg-surface-secondary">
+                  <div className="h-2 w-full overflow-hidden rounded-lg bg-surface-secondary">
                     <div className="h-full bg-primary transition-all" style={{ width: `${job.progress}%` }} />
                   </div>
                   <p className="text-[11px] text-txt-muted">

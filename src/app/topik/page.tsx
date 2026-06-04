@@ -95,9 +95,9 @@ export default async function TopikIndexPage() {
                 <Link
                   key={cat.slug}
                   href={`/topik/${cat.slug}`}
-                  className="group flex h-full flex-col gap-3 rounded-[12px] border border-border bg-surface-container-lowest p-5 shadow-card transition-all hover:border-primary hover:shadow-card-hover hover:-translate-y-0.5"
+                  className="group flex h-full flex-col gap-3 rounded-lg border border-border bg-surface-container-lowest p-5 shadow-card transition-all hover:border-primary hover:shadow-card-hover hover:-translate-y-0.5"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/10 group-hover:from-primary/25 group-hover:to-primary/10 transition-all">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/10 group-hover:from-primary/25 group-hover:to-primary/10 transition-all">
                     <Icon size={20} strokeWidth={2.2} />
                   </div>
                   <div>
@@ -118,7 +118,7 @@ export default async function TopikIndexPage() {
             })}
           </div>
         ) : (
-          <div className="rounded-[12px] border-2 border-dashed border-border py-16 text-center">
+          <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
             <Compass size={36} className="mx-auto text-border" />
             <p className="mt-4 text-on-surface-variant">Belum ada topik tersedia.</p>
           </div>

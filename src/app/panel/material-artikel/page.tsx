@@ -349,7 +349,7 @@ export default function MaterialArtikelPage() {
         </div>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+      <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
         <div className="flex items-start gap-3">
           <Info size={16} className="mt-0.5 text-blue-600 shrink-0" />
           <div className="text-xs text-blue-700 space-y-1">
@@ -369,7 +369,7 @@ export default function MaterialArtikelPage() {
       </div>
 
       {/* Batch settings */}
-      <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
         <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-txt-secondary">
           Pengaturan Batch
         </h2>
@@ -410,7 +410,7 @@ export default function MaterialArtikelPage() {
       </div>
 
       {/* Document uploader */}
-      <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
         <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-txt-secondary">
           Dokumen Sumber <span className="text-red-500">*</span>
         </h2>
@@ -418,7 +418,7 @@ export default function MaterialArtikelPage() {
           <button
             onClick={() => docInputRef.current?.click()}
             disabled={generating}
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-surface-secondary py-10 text-txt-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface-secondary py-10 text-txt-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
           >
             <FileText size={32} />
             <p className="text-sm font-medium">
@@ -429,7 +429,7 @@ export default function MaterialArtikelPage() {
             </p>
           </button>
         ) : (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary-light p-4">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary-light p-4">
             <div className="flex items-center gap-3 min-w-0">
               <FileText size={20} className="shrink-0 text-primary" />
               <div className="min-w-0">
@@ -466,7 +466,7 @@ export default function MaterialArtikelPage() {
       </div>
 
       {/* Photos */}
-      <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-bold uppercase tracking-wider text-txt-secondary">
             Foto ({slots.length}/{MAX_PHOTOS}) — 1 foto = 1 artikel
@@ -507,7 +507,7 @@ export default function MaterialArtikelPage() {
           <button
             onClick={() => photoInputRef.current?.click()}
             disabled={generating}
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-surface-secondary py-10 text-txt-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface-secondary py-10 text-txt-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
           >
             <ImageIcon size={32} />
             <p className="text-sm font-medium">Klik untuk upload foto</p>
@@ -520,7 +520,7 @@ export default function MaterialArtikelPage() {
             {slots.map((s, i) => (
               <div
                 key={s.uid}
-                className={`relative rounded-xl border p-2 transition-colors ${
+                className={`relative rounded-lg border p-2 transition-colors ${
                   s.status === "done"
                     ? "border-primary/40 bg-primary-light"
                     : s.status === "failed"
@@ -592,7 +592,7 @@ export default function MaterialArtikelPage() {
       </div>
 
       {(slots.length > 0 || docFile) && (
-        <div className="sticky bottom-4 z-30 flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-ambient sm:flex-row sm:items-center sm:justify-between">
+        <div className="sticky bottom-4 z-30 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-ambient sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-txt-secondary sm:text-sm">
             {allDone ? (
               <span className="font-semibold text-primary">

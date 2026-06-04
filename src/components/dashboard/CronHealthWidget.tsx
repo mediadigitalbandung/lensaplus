@@ -81,9 +81,9 @@ export default function CronHealthWidget() {
   if (error) return null;
   if (!jobs) {
     return (
-      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden animate-pulse">
+      <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden animate-pulse">
         <div className="border-b border-border px-5 py-3.5">
-          <div className="h-5 w-32 rounded bg-surface-tertiary" />
+          <div className="h-5 w-32 rounded-lg bg-surface-tertiary" />
         </div>
         <div className="p-5 grid grid-cols-2 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -99,7 +99,7 @@ export default function CronHealthWidget() {
   const allHealthy = totalErrored === 0 && totalStale === 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div

@@ -142,7 +142,7 @@ export default async function BeritaPage({ searchParams: searchParamsPromise }: 
         </div>
 
         {/* Filters bar */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-[12px] border border-border bg-surface-secondary p-4">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-border bg-surface-secondary p-4">
           {/* Search */}
           <form method="GET" action="/berita" className="relative flex-1 max-w-md">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />

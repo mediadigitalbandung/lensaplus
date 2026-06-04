@@ -88,7 +88,7 @@ export default async function GlossaryPage() {
           {/* Header */}
           <div className="mb-10">
             <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
                 <BookOpen size={20} strokeWidth={2.2} />
               </div>
               <span className="text-label-md uppercase tracking-widest text-primary font-bold">
@@ -159,7 +159,7 @@ export default async function GlossaryPage() {
                           {item.tags.slice(0, 3).map((tag) => (
                             <span
                               key={tag}
-                              className="rounded bg-primary/5 px-1.5 py-0.5 text-label-sm text-primary/70"
+                              className="rounded-lg bg-primary/5 px-1.5 py-0.5 text-label-sm text-primary/70"
                             >
                               {tag}
                             </span>

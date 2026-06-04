@@ -221,7 +221,7 @@ export default function TagsPage() {
       </div>
 
       {/* Create form */}
-      <div className="mb-6 rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="mb-6 rounded-xl border border-border bg-surface p-4 shadow-card">
         <h2 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
           <Plus size={14} className="text-primary" /> Tambah Tag
         </h2>
@@ -252,7 +252,7 @@ export default function TagsPage() {
       </div>
 
       {/* AI Research */}
-      <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
         <h2 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
           <Sparkles size={14} className="text-primary" /> AI Riset Keyword
         </h2>
@@ -319,7 +319,7 @@ export default function TagsPage() {
       </div>
 
       {/* List */}
-      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border bg-surface-secondary px-5 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="relative flex-1 max-w-xs">
             <Search
@@ -395,7 +395,7 @@ export default function TagsPage() {
                         {isManagement && (
                           <button
                             onClick={() => handleDelete(t.id, t.name, usage)}
-                            className="btn-ghost rounded p-2 hover:text-red-500"
+                            className="btn-ghost rounded-lg p-2 hover:text-red-500"
                             title="Hapus"
                           >
                             <Trash2 size={14} />

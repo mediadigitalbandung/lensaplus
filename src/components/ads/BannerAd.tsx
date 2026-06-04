@@ -250,8 +250,8 @@ export function NativeAd({ className = "" }: { className?: string }) {
         <div className="flex items-center gap-4">
           <div className="h-16 w-24 shrink-0 bg-surface-container animate-pulse" />
           <div className="flex-1 space-y-2">
-            <div className="h-3 w-3/4 rounded bg-surface-container animate-pulse" />
-            <div className="h-3 w-1/2 rounded bg-surface-container animate-pulse" />
+            <div className="h-3 w-3/4 rounded-lg bg-surface-container animate-pulse" />
+            <div className="h-3 w-1/2 rounded-lg bg-surface-container animate-pulse" />
           </div>
         </div>
       )}

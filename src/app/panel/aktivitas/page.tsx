@@ -73,17 +73,17 @@ const filterActions = ["", "CREATE", "UPDATE", "DELETE", "LOGIN", "PUBLISH", "AP
 
 function LoadingSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+    <div className="animate-pulse overflow-hidden rounded-lg border border-border bg-surface shadow-card">
       <div className="border-b border-border bg-surface-secondary px-5 py-3">
-        <div className="h-4 w-full rounded bg-surface-tertiary" />
+        <div className="h-4 w-full rounded-lg bg-surface-tertiary" />
       </div>
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4 border-b border-border px-5 py-3">
-          <div className="h-4 w-32 rounded bg-surface-tertiary" />
-          <div className="h-4 w-24 rounded bg-surface-tertiary" />
-          <div className="h-4 w-16 rounded bg-surface-tertiary" />
+          <div className="h-4 w-32 rounded-lg bg-surface-tertiary" />
+          <div className="h-4 w-24 rounded-lg bg-surface-tertiary" />
+          <div className="h-4 w-16 rounded-lg bg-surface-tertiary" />
           <div className="flex-1">
-            <div className="h-4 w-2/3 rounded bg-surface-tertiary" />
+            <div className="h-4 w-2/3 rounded-lg bg-surface-tertiary" />
           </div>
         </div>
       ))}
@@ -231,15 +231,15 @@ export default function AktivitasPage() {
       {loading ? (
         <LoadingSkeleton />
       ) : error ? (
-        <div className="rounded-[12px] border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
           {error}
         </div>
       ) : logs.length === 0 ? (
-        <div className="rounded-[12px] border border-border bg-surface p-4 sm:p-8 text-center text-txt-secondary">
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-8 text-center text-txt-secondary">
           Tidak ada log aktivitas ditemukan.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>

@@ -153,10 +153,10 @@ export default async function EmitenDetailPage({
               alt={company.name}
               width={80}
               height={80}
-              className="h-20 w-20 rounded-xl object-contain border border-border bg-white p-2"
+              className="h-20 w-20 rounded-lg object-contain border border-border bg-white p-2"
             />
           ) : (
-            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl bg-primary-light text-headline-sm font-bold text-primary">
+            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg bg-primary-light text-headline-sm font-bold text-primary">
               {ticker.slice(0, 2)}
             </div>
           )}

@@ -119,9 +119,9 @@ export default async function UnduhPage() {
             return (
               <div
                 key={b.label}
-                className="rounded-2xl border border-border bg-surface p-4 text-center shadow-card"
+                className="rounded-xl border border-border bg-surface p-4 text-center shadow-card"
               >
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light text-primary">
                   <Icon size={18} />
                 </div>
                 <p className="mt-2.5 text-sm font-bold text-txt-primary">{b.label}</p>
@@ -134,9 +134,9 @@ export default async function UnduhPage() {
         {/* Install per platform */}
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Android Chrome */}
-          <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50/40 to-surface p-6 shadow-card">
+          <div className="rounded-xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50/40 to-surface p-6 shadow-card">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
                 <Smartphone size={20} />
               </div>
               <div>
@@ -163,9 +163,9 @@ export default async function UnduhPage() {
           </div>
 
           {/* iPhone Safari */}
-          <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50/40 to-surface p-6 shadow-card">
+          <div className="rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50/40 to-surface p-6 shadow-card">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
                 <Apple size={20} />
               </div>
               <div>
@@ -186,9 +186,9 @@ export default async function UnduhPage() {
           </div>
 
           {/* Desktop */}
-          <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-card">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
                 <Chrome size={20} />
               </div>
               <div>
@@ -212,9 +212,9 @@ export default async function UnduhPage() {
         </div>
 
         {/* APK fallback (opsional, kalau user pengen file APK) */}
-        <div className="max-w-4xl mx-auto mt-10 rounded-2xl border border-border bg-surface-secondary/40 p-6 sm:p-8">
+        <div className="max-w-4xl mx-auto mt-10 rounded-xl border border-border bg-surface-secondary/40 p-6 sm:p-8">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
               <Download size={22} />
             </div>
             <div className="flex-1">
@@ -229,7 +229,7 @@ export default async function UnduhPage() {
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <a
                   href="/downloads/kartawarta.apk"
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-dark transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-dark transition-colors"
                   download
                 >
                   <Download size={16} /> Unduh APK (~2 MB)
@@ -274,7 +274,7 @@ export default async function UnduhPage() {
                     PWABuilder.com
                   </a>{" "}
                   (web tool resmi Microsoft + Google). Input{" "}
-                  <code className="rounded bg-surface-tertiary px-1.5 py-0.5 text-xs font-mono">https://kartawarta.com</code>{" "}
+                  <code className="rounded-lg bg-surface-tertiary px-1.5 py-0.5 text-xs font-mono">https://kartawarta.com</code>{" "}
                   → Package for Stores → Android → Download. APK siap install.
                 </p>
               </details>
@@ -283,10 +283,10 @@ export default async function UnduhPage() {
         </div>
 
         {/* QR + Share — bagikan ke teman / media sosial */}
-        <div className="max-w-4xl mx-auto mt-10 rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-surface to-surface p-6 sm:p-8">
+        <div className="max-w-4xl mx-auto mt-10 rounded-xl border border-border bg-gradient-to-br from-primary/5 via-surface to-surface p-6 sm:p-8">
           <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-6 items-center">
             <div
-              className="mx-auto sm:mx-0 shrink-0 rounded-xl bg-white p-3 shadow-sm border border-border w-[200px] h-[200px] flex items-center justify-center"
+              className="mx-auto sm:mx-0 shrink-0 rounded-lg bg-white p-3 shadow-sm border border-border w-[200px] h-[200px] flex items-center justify-center"
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
             <div className="text-center sm:text-left">
@@ -303,7 +303,7 @@ export default async function UnduhPage() {
                   href={`https://wa.me/?text=${encodeURIComponent(`Pasang aplikasi Kartawarta — berita digital Bandung: ${INSTALL_URL}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
                 >
                   💬 WhatsApp
                 </a>
@@ -311,7 +311,7 @@ export default async function UnduhPage() {
                   href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Pasang aplikasi Kartawarta — berita digital Bandung")}&url=${encodeURIComponent(INSTALL_URL)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition-colors"
                 >
                   𝕏 Twitter / X
                 </a>
@@ -319,7 +319,7 @@ export default async function UnduhPage() {
                   href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(INSTALL_URL)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
                 >
                   ƒ Facebook
                 </a>
@@ -375,7 +375,7 @@ function TrustCard({
   body: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <Icon size={20} className="mx-auto text-primary mb-2" />
       <p className="text-sm font-bold text-txt-primary">{title}</p>
       <p className="mt-1 text-xs text-txt-muted">{body}</p>
@@ -385,7 +385,7 @@ function TrustCard({
 
 function Faq({ q, a }: { q: string; a: string }) {
   return (
-    <details className="group rounded-xl border border-border bg-surface px-4 py-3 hover:border-primary/30 transition-colors">
+    <details className="group rounded-lg border border-border bg-surface px-4 py-3 hover:border-primary/30 transition-colors">
       <summary className="cursor-pointer text-sm font-semibold text-txt-primary list-none flex items-center justify-between gap-3">
         <span>{q}</span>
         <span className="text-txt-muted text-xs group-open:rotate-180 transition-transform">▾</span>

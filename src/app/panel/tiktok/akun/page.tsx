@@ -110,7 +110,7 @@ export default function TiktokAccountsPage() {
       </div>
 
       {/* Phase 3 disclaimer */}
-      <div className="mb-5 flex items-start gap-3 rounded-[12px] border border-yellow-200 bg-yellow-50 p-4">
+      <div className="mb-5 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
         <AlertCircle size={18} className="mt-0.5 shrink-0 text-yellow-700" />
         <div className="text-sm text-yellow-800">
           <p className="font-semibold">OAuth TikTok belum aktif (Fase 3)</p>
@@ -124,7 +124,7 @@ export default function TiktokAccountsPage() {
       </div>
 
       {showForm && (
-        <div className="mb-5 rounded-[12px] border border-primary/30 bg-primary-50 p-5">
+        <div className="mb-5 rounded-lg border border-primary/30 bg-primary-50 p-5">
           <h2 className="mb-3 text-base font-bold text-txt-primary">Tambah Akun Manual</h2>
           {error && (
             <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">
@@ -193,11 +193,11 @@ export default function TiktokAccountsPage() {
       )}
 
       {loading ? (
-        <div className="rounded-[12px] border border-border bg-surface p-10 text-center">
+        <div className="rounded-lg border border-border bg-surface p-10 text-center">
           <Loader2 className="mx-auto animate-spin text-primary" size={24} />
         </div>
       ) : accounts.length === 0 ? (
-        <div className="rounded-[12px] border border-border bg-surface p-10 text-center text-sm text-txt-secondary">
+        <div className="rounded-lg border border-border bg-surface p-10 text-center text-sm text-txt-secondary">
           Belum ada akun TikTok terdaftar.
         </div>
       ) : (
@@ -205,7 +205,7 @@ export default function TiktokAccountsPage() {
           {accounts.map((a) => (
             <div
               key={a.id}
-              className="flex items-center gap-3 rounded-[12px] border border-border bg-surface p-4 shadow-card"
+              className="flex items-center gap-3 rounded-lg border border-border bg-surface p-4 shadow-card"
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-lg font-bold text-white">
                 {a.avatarUrl ? (

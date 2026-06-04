@@ -187,7 +187,7 @@ export default function SyaratKetentuanPage() {
           </section>
 
           {/* Kontak */}
-          <div className="mt-8 rounded-[12px] bg-surface-secondary p-6">
+          <div className="mt-8 rounded-lg bg-surface-secondary p-6">
             <h2 className="text-lg font-bold text-txt-primary">Hubungi Kami</h2>
             <p className="mt-2 text-sm text-txt-secondary">
               Jika Anda memiliki pertanyaan mengenai syarat dan ketentuan ini, silakan hubungi:

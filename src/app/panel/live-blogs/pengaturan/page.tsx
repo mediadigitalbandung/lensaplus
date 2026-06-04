@@ -173,7 +173,7 @@ export default function LiveSyndicationSettingsPage() {
               type="checkbox"
               checked={tgEnabled}
               onChange={(e) => setTgEnabled(e.target.checked)}
-              className="h-4 w-4 rounded border-border text-primary"
+              className="h-4 w-4 rounded-lg border-border text-primary"
             />
             <span className="text-sm text-on-surface">Aktifkan kanal Telegram</span>
           </label>
@@ -218,7 +218,7 @@ export default function LiveSyndicationSettingsPage() {
               onChange={(e) =>
                 setToggles((t) => ({ ...t, liveSyndicateTelegram: e.target.checked }))
               }
-              className="h-4 w-4 rounded border-border text-primary mt-3"
+              className="h-4 w-4 rounded-lg border-border text-primary mt-3"
             />
             <span className="text-sm text-on-surface mt-3">
               Sebar update live ke Telegram
@@ -254,7 +254,7 @@ export default function LiveSyndicationSettingsPage() {
               onChange={(e) =>
                 setToggles((t) => ({ ...t, liveSyndicateThreads: e.target.checked }))
               }
-              className="h-4 w-4 rounded border-border text-primary"
+              className="h-4 w-4 rounded-lg border-border text-primary"
             />
             <span className="text-sm text-on-surface">Sebar update live ke Threads</span>
           </label>
@@ -270,7 +270,7 @@ export default function LiveSyndicationSettingsPage() {
               onChange={(e) =>
                 setToggles((t) => ({ ...t, liveSyndicateHighlightsOnly: e.target.checked }))
               }
-              className="h-4 w-4 rounded border-border text-primary"
+              className="h-4 w-4 rounded-lg border-border text-primary"
             />
             <span className="text-sm text-on-surface">
               Hanya sebar update ber-<b>Highlight</b>

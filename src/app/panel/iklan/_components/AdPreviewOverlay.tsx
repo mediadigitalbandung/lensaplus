@@ -33,7 +33,7 @@ function AdSlotBox({ label, spec, type, imageUrl, htmlCode }: {
 }) {
   return (
     <div className="relative border-2 border-dashed border-primary/40 rounded-lg overflow-hidden bg-surface">
-      <div className="absolute top-1 left-2 z-10 rounded bg-primary/90 px-2 py-0.5 text-[10px] font-bold text-white">
+      <div className="absolute top-1 left-2 z-10 rounded-lg bg-primary/90 px-2 py-0.5 text-[10px] font-bold text-white">
         IKLAN — {label}
       </div>
       <div className="flex items-center justify-center" style={{ minHeight: spec.height }}>
@@ -46,9 +46,9 @@ function AdSlotBox({ label, spec, type, imageUrl, htmlCode }: {
 function ContentBlock() {
   return (
     <div className="rounded-lg bg-surface p-4 border border-border space-y-2">
-      <div className="h-3 w-48 rounded bg-surface-tertiary" />
-      <div className="h-2 w-full rounded bg-surface-tertiary" />
-      <div className="h-2 w-3/4 rounded bg-surface-tertiary" />
+      <div className="h-3 w-48 rounded-lg bg-surface-tertiary" />
+      <div className="h-2 w-full rounded-lg bg-surface-tertiary" />
+      <div className="h-2 w-3/4 rounded-lg bg-surface-tertiary" />
     </div>
   );
 }
@@ -82,10 +82,10 @@ export default function AdPreviewOverlay({ slot, imageUrl, htmlCode, type, targe
         role="dialog"
         aria-modal="true"
         aria-labelledby="ad-preview-modal-title"
-        className="relative max-w-[95vw] max-h-[90vh] overflow-auto bg-surface rounded-2xl shadow-xl"
+        className="relative max-w-[95vw] max-h-[90vh] overflow-auto bg-surface rounded-xl shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-surface border-b border-border px-5 py-3 rounded-t-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-surface border-b border-border px-5 py-3 rounded-t-xl">
           <div>
             <h2 id="ad-preview-modal-title" className="text-sm font-bold text-txt-primary">Preview — {label}</h2>
             <p className="text-xs text-txt-muted">{spec?.ratio} • {spec?.desc}</p>

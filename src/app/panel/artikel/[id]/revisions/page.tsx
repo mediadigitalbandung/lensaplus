@@ -142,7 +142,7 @@ function DiffView({
           return (
             <span
               key={i}
-              className="rounded px-0.5 bg-red-900/40 text-red-400 line-through"
+              className="rounded-lg px-0.5 bg-red-900/40 text-red-400 line-through"
             >
               {seg.text}{" "}
             </span>
@@ -152,7 +152,7 @@ function DiffView({
           return (
             <span
               key={i}
-              className="rounded px-0.5 bg-emerald-900/40 text-emerald-400"
+              className="rounded-lg px-0.5 bg-emerald-900/40 text-emerald-400"
             >
               {seg.text}{" "}
             </span>
@@ -215,7 +215,7 @@ function CompareModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="relative flex max-h-[90vh] w-full max-w-6xl flex-col rounded-[12px] border border-border bg-surface shadow-2xl">
+      <div className="relative flex max-h-[90vh] w-full max-w-6xl flex-col rounded-lg border border-border bg-surface shadow-2xl">
         {/* Modal header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
@@ -287,15 +287,15 @@ function CompareModal({
         {/* Legend */}
         <div className="flex items-center gap-4 border-t border-border px-5 py-3">
           <span className="flex items-center gap-1.5 text-xs text-txt-muted">
-            <span className="inline-block h-3 w-3 rounded bg-red-900/40 border border-red-800" />
+            <span className="inline-block h-3 w-3 rounded-lg bg-red-900/40 border border-red-800" />
             Dihapus
           </span>
           <span className="flex items-center gap-1.5 text-xs text-txt-muted">
-            <span className="inline-block h-3 w-3 rounded bg-emerald-900/40 border border-emerald-800" />
+            <span className="inline-block h-3 w-3 rounded-lg bg-emerald-900/40 border border-emerald-800" />
             Ditambahkan
           </span>
           <span className="flex items-center gap-1.5 text-xs text-txt-muted">
-            <span className="inline-block h-3 w-3 rounded bg-surface-secondary border border-border" />
+            <span className="inline-block h-3 w-3 rounded-lg bg-surface-secondary border border-border" />
             Tidak berubah
           </span>
         </div>
@@ -308,17 +308,17 @@ function LoadingSkeleton() {
   return (
     <div className="mx-auto max-w-4xl animate-pulse">
       <div className="mb-6">
-        <div className="h-4 w-32 rounded bg-surface-tertiary" />
-        <div className="mt-2 h-7 w-64 rounded bg-surface-tertiary" />
+        <div className="h-4 w-32 rounded-lg bg-surface-tertiary" />
+        <div className="mt-2 h-7 w-64 rounded-lg bg-surface-tertiary" />
       </div>
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="mb-4 rounded-[12px] border border-border bg-surface p-5">
+        <div key={i} className="mb-4 rounded-lg border border-border bg-surface p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-full bg-surface-tertiary" />
               <div>
-                <div className="h-4 w-48 rounded bg-surface-tertiary" />
-                <div className="mt-1 h-3 w-32 rounded bg-surface-secondary" />
+                <div className="h-4 w-48 rounded-lg bg-surface-tertiary" />
+                <div className="mt-1 h-3 w-32 rounded-lg bg-surface-secondary" />
               </div>
             </div>
             <div className="h-8 w-24 rounded-[8px] bg-surface-tertiary" />
@@ -435,14 +435,14 @@ export default function RevisionsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-[12px] bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertCircle size={16} />
           {error}
         </div>
       )}
 
       {revisions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[12px] border border-border bg-surface p-12 text-center">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-surface p-12 text-center">
           <FileText size={48} className="mb-4 text-txt-muted" />
           <h2 className="text-lg font-semibold text-txt-primary">Belum Ada Revisi</h2>
           <p className="mt-1 text-sm text-txt-secondary">
@@ -461,7 +461,7 @@ export default function RevisionsPage() {
             return (
               <div
                 key={rev.id}
-                className="rounded-[12px] border border-border bg-surface shadow-card overflow-hidden"
+                className="rounded-lg border border-border bg-surface shadow-card overflow-hidden"
               >
                 {/* Revision header */}
                 <button

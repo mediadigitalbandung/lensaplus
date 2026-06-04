@@ -207,7 +207,7 @@ export default function NewsletterSubscribersPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 size={20} className="animate-spin text-txt-muted" />
@@ -300,8 +300,8 @@ function SummaryCard({
     danger: "text-red-600 bg-red-50",
   };
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${toneCls[tone]}`}>
+    <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${toneCls[tone]}`}>
         <Icon size={16} />
       </div>
       <p className="mt-2 text-2xl font-extrabold text-txt-primary tabular-nums">

@@ -66,7 +66,7 @@ export default function PrintButton() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="print-modal-title"
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col"
+            className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}

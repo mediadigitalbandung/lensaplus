@@ -275,7 +275,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
       onClick={onClose}
     >
       <div
-        className="flex h-full max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-surface shadow-2xl"
+        className="flex h-full max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with tabs */}
@@ -447,7 +447,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                   }}
                   onDragLeave={() => setDragActive(false)}
                   onClick={() => inputRef.current?.click()}
-                  className={`flex w-full max-w-lg cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-colors ${
+                  className={`flex w-full max-w-lg cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 transition-colors ${
                     dragActive
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
@@ -571,7 +571,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                             </div>
                           )}
                           {m.credit && (
-                            <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                            <span className="pointer-events-none absolute left-1 top-1 rounded-lg bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
                               {m.credit}
                             </span>
                           )}

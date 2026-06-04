@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 const RichTextEditor = dynamic(
   () => import("@/components/editor/RichTextEditor"),
-  { ssr: false, loading: () => <div className="h-[500px] animate-pulse rounded-[12px] bg-surface-secondary" /> }
+  { ssr: false, loading: () => <div className="h-[500px] animate-pulse rounded-lg bg-surface-secondary" /> }
 );
 
 interface Category {
@@ -591,7 +591,7 @@ export default function NewArticlePage() {
 
       {/* Schedule-publish panel — editors/chief editors only */}
       {EDITOR_ROLES.includes(userRole) && showSchedule && (
-        <div className="mb-4 rounded-[12px] border border-blue-300 bg-blue-50 p-4 shadow-sm">
+        <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-4 shadow-sm">
           <label className="mb-2 block text-sm font-medium text-blue-800">
             Pilih tanggal &amp; waktu publikasi artikel ini
           </label>
@@ -623,7 +623,7 @@ export default function NewArticlePage() {
 
       {/* Auto-save recovery banner */}
       {showAutosaveBanner && (
-        <div className="mb-4 flex items-center gap-3 rounded-[12px] border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
           <AlertCircle size={16} className="flex-shrink-0" />
           <span className="flex-1">Ada draf tersimpan otomatis. Muat draf?</span>
           <button
@@ -642,7 +642,7 @@ export default function NewArticlePage() {
       )}
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-[12px] bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertCircle size={16} />
           {error}
         </div>
@@ -650,7 +650,7 @@ export default function NewArticlePage() {
 
       {/* Trending Suggestions */}
       {trendingSuggestions.length > 0 && showSuggestions && (
-        <div className="mb-4 rounded-[12px] border border-border bg-surface p-4 shadow-card">
+        <div className="mb-4 rounded-lg border border-border bg-surface p-4 shadow-card">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-light">
@@ -721,7 +721,7 @@ export default function NewArticlePage() {
           />
 
           {/* Editor */}
-          <div className="rounded-[12px] border border-border overflow-hidden">
+          <div className="rounded-lg border border-border overflow-hidden">
             <RichTextEditor content={content} onChange={setContent} />
             <div className="flex items-center gap-4 px-4 py-2 border-t border-border text-sm text-txt-muted">
               <span>{wordCount} kata</span>
@@ -733,7 +733,7 @@ export default function NewArticlePage() {
           </div>
 
           {/* Sources */}
-          <div className="rounded-[12px] border border-border bg-surface p-6">
+          <div className="rounded-lg border border-border bg-surface p-6">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-medium text-txt-primary uppercase tracking-wider">
                 Sumber & Narasumber
@@ -748,7 +748,7 @@ export default function NewArticlePage() {
             </div>
             <div className="space-y-3">
               {sources.map((source, i) => (
-                <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-[12px] border border-border p-3">
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border border-border p-3">
                   <input
                     type="text"
                     placeholder="Nama narasumber *"
@@ -782,7 +782,7 @@ export default function NewArticlePage() {
                       <button
                         type="button"
                         onClick={() => removeSource(i)}
-                        className="rounded p-1.5 text-red-400 hover:bg-red-50"
+                        className="rounded-lg p-1.5 text-red-400 hover:bg-red-50"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -794,7 +794,7 @@ export default function NewArticlePage() {
           </div>
 
           {/* SEO Settings */}
-          <div className="rounded-[12px] border border-border bg-surface">
+          <div className="rounded-lg border border-border bg-surface">
             <button
               type="button"
               onClick={() => setShowSeo(!showSeo)}
@@ -843,7 +843,7 @@ export default function NewArticlePage() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Category */}
-          <div className="rounded-[12px] border border-border bg-surface p-6">
+          <div className="rounded-lg border border-border bg-surface p-6">
             <label htmlFor="artikel-kategori" className="mb-2 block text-sm font-medium text-txt-primary">
               Kategori *
             </label>
@@ -864,7 +864,7 @@ export default function NewArticlePage() {
 
           {/* Pilih Penulis — only for admin/editor */}
           {EDITOR_ROLES.includes(userRole) && (
-            <div className="rounded-[12px] border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <label htmlFor="artikel-penulis" className="mb-2 block text-sm font-medium text-txt-primary">
                 Penulis
               </label>
@@ -886,7 +886,7 @@ export default function NewArticlePage() {
           )}
 
           {/* Pilih Editor — for all roles */}
-          <div className="rounded-[12px] border border-border bg-surface p-6">
+          <div className="rounded-lg border border-border bg-surface p-6">
             <label htmlFor="artikel-editor" className="mb-2 block text-sm font-medium text-txt-primary">
               Editor
             </label>
@@ -911,7 +911,7 @@ export default function NewArticlePage() {
           </div>
 
           {/* Tags */}
-          <div className="rounded-[12px] border border-border bg-surface p-6">
+          <div className="rounded-lg border border-border bg-surface p-6">
             <div className="mb-2 flex items-center justify-between">
               <label htmlFor="artikel-tags" className="text-sm font-medium text-txt-primary">Tags</label>
               <AiButton feature="tags" setter={setTags} />
@@ -928,7 +928,7 @@ export default function NewArticlePage() {
           </div>
 
           {/* Excerpt */}
-          <div className="rounded-[12px] border border-border bg-surface p-6">
+          <div className="rounded-lg border border-border bg-surface p-6">
             <div className="mb-2 flex items-center justify-between">
               <label htmlFor="artikel-ringkasan" className="text-sm font-medium text-txt-primary">Ringkasan</label>
               <AiButton feature="summary" setter={setExcerpt} />
@@ -945,7 +945,7 @@ export default function NewArticlePage() {
           </div>
 
           {/* Journalism Checklist */}
-          <div className="rounded-[12px] border border-primary/20 bg-primary-50 p-4">
+          <div className="rounded-lg border border-primary/20 bg-primary-50 p-4">
             <button
               type="button"
               onClick={() => setShowChecklist(!showChecklist)}
@@ -973,7 +973,7 @@ export default function NewArticlePage() {
                       onChange={(e) =>
                         setChecklist({ ...checklist, [item.key]: e.target.checked })
                       }
-                      className="mt-0.5 rounded"
+                      className="mt-0.5 rounded-lg"
                     />
                     {item.label}
                   </label>

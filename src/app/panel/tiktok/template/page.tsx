@@ -47,7 +47,7 @@ export default function TiktokTemplatesPage() {
         </p>
       </div>
 
-      <div className="mb-5 flex items-start gap-3 rounded-[12px] border border-yellow-200 bg-yellow-50 p-4">
+      <div className="mb-5 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
         <AlertCircle size={18} className="mt-0.5 shrink-0 text-yellow-700" />
         <div className="text-sm text-yellow-800">
           <p className="font-semibold">Template hanya aktif di Fase 2</p>
@@ -61,11 +61,11 @@ export default function TiktokTemplatesPage() {
       </div>
 
       {loading ? (
-        <div className="rounded-[12px] border border-border bg-surface p-10 text-center text-sm text-txt-secondary">
+        <div className="rounded-lg border border-border bg-surface p-10 text-center text-sm text-txt-secondary">
           Memuat...
         </div>
       ) : templates.length === 0 ? (
-        <div className="rounded-[12px] border border-dashed border-border bg-surface p-10 text-center text-sm text-txt-secondary">
+        <div className="rounded-lg border border-dashed border-border bg-surface p-10 text-center text-sm text-txt-secondary">
           Belum ada template terdaftar.
         </div>
       ) : (
@@ -73,7 +73,7 @@ export default function TiktokTemplatesPage() {
           {templates.map((t) => (
             <div
               key={t.id}
-              className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card"
+              className="overflow-hidden rounded-lg border border-border bg-surface shadow-card"
             >
               {t.thumbnailUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */

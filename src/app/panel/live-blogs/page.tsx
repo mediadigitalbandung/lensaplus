@@ -236,7 +236,7 @@ export default function LiveBlogsPage() {
                       <Link
                         href={`/live/${blog.slug}`}
                         target="_blank"
-                        className="rounded p-1.5 text-txt-muted hover:text-primary hover:bg-surface-container-low transition-colors"
+                        className="rounded-lg p-1.5 text-txt-muted hover:text-primary hover:bg-surface-container-low transition-colors"
                         title="Lihat publik"
                       >
                         <ExternalLink size={15} />
@@ -244,7 +244,7 @@ export default function LiveBlogsPage() {
                       {canWrite && (
                         <Link
                           href={`/panel/live-blogs/${blog.id}`}
-                          className="rounded p-1.5 text-txt-muted hover:text-primary hover:bg-surface-container-low transition-colors"
+                          className="rounded-lg p-1.5 text-txt-muted hover:text-primary hover:bg-surface-container-low transition-colors"
                           title="Edit"
                         >
                           <Edit size={15} />
@@ -253,7 +253,7 @@ export default function LiveBlogsPage() {
                       {canDelete && (
                         <button
                           onClick={() => handleDelete(blog)}
-                          className="rounded p-1.5 text-txt-muted hover:text-secondary hover:bg-secondary-light transition-colors"
+                          className="rounded-lg p-1.5 text-txt-muted hover:text-secondary hover:bg-secondary-light transition-colors"
                           title="Hapus"
                         >
                           <Trash2 size={15} />

@@ -104,7 +104,7 @@ export default async function KalenderEmitenPage() {
     <main className="container-main py-8 sm:py-12">
       <header className="mb-8 sm:mb-12">
         <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-primary text-white shrink-0">
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-primary text-white shrink-0">
             <Calendar size={20} strokeWidth={2.5} />
           </div>
           <h1 className="font-serif text-headline-md sm:text-display-sm font-bold text-on-surface">
@@ -138,7 +138,7 @@ export default async function KalenderEmitenPage() {
       </div>
 
       {events.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface-secondary p-12 text-center">
+        <div className="rounded-xl border border-border bg-surface-secondary p-12 text-center">
           <Calendar size={40} className="mx-auto text-border mb-3" />
           <p className="text-body-md text-txt-muted">
             Belum ada event terjadwal dalam 90 hari ke depan.

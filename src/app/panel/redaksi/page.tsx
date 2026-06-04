@@ -216,7 +216,7 @@ export default function RedaksiPanelPage() {
       {showForm && (
         <div className="mb-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left: Form */}
-          <div className="lg:col-span-3 rounded-2xl border border-border bg-surface p-5 sm:p-6 shadow-card">
+          <div className="lg:col-span-3 rounded-xl border border-border bg-surface p-5 sm:p-6 shadow-card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold text-txt-primary">{editingId ? "Edit Anggota" : "Tambah Anggota Baru"}</h2>
               <button onClick={closeForm} className="p-1 hover:bg-surface-secondary rounded-lg"><X size={18} /></button>
@@ -243,7 +243,7 @@ export default function RedaksiPanelPage() {
                   ))}
                 </select>
                 {form.userId && !form.photo && (
-                  <div className="mt-2 flex items-start gap-2 rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3">
+                  <div className="mt-2 flex items-start gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3">
                     <span className="text-yellow-500 text-base leading-none mt-0.5">!</span>
                     <div className="text-sm">
                       <p className="font-semibold text-yellow-800">Pengguna ini belum memiliki foto</p>
@@ -294,7 +294,7 @@ export default function RedaksiPanelPage() {
                   </div>
                 ) : (
                   <label className="block cursor-pointer">
-                    <div className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border py-6 hover:border-primary hover:bg-primary-light/20 transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+                    <div className={`flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-border py-6 hover:border-primary hover:bg-primary-light/20 transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
                       <Upload size={20} className="text-txt-muted" />
                       <span className="text-sm font-medium text-txt-primary">{uploading ? "Mengupload..." : "Upload foto anggota"}</span>
                       <span className="text-xs text-txt-muted">JPEG, PNG, WebP — Maks 2MB</span>
@@ -332,11 +332,11 @@ export default function RedaksiPanelPage() {
 
           {/* Right: Live Preview */}
           <div className="lg:col-span-2">
-            <div className="lg:sticky lg:top-20 rounded-2xl border border-border bg-surface p-5 sm:p-6 shadow-card">
+            <div className="lg:sticky lg:top-20 rounded-xl border border-border bg-surface p-5 sm:p-6 shadow-card">
               <h3 className="text-sm font-bold text-txt-primary mb-4">Preview Tampilan</h3>
 
               {/* Preview card — sama persis seperti di halaman publik */}
-              <div className="flex items-center gap-4 rounded-[12px] border border-border bg-surface p-5">
+              <div className="flex items-center gap-4 rounded-lg border border-border bg-surface p-5">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-white overflow-hidden">
                   {form.photo ? (
                     // eslint-disable-next-line @next/next/no-img-element -- user-uploaded member photo URL, cannot whitelist all origins
@@ -403,13 +403,13 @@ export default function RedaksiPanelPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
-              <div className="flex gap-4"><div className="h-12 w-12 rounded-full bg-surface-tertiary" /><div className="flex-1 space-y-2"><div className="h-4 w-32 rounded bg-surface-tertiary" /><div className="h-3 w-48 rounded bg-surface-tertiary" /></div></div>
+            <div key={i} className="rounded-lg border border-border bg-surface p-4 shadow-card">
+              <div className="flex gap-4"><div className="h-12 w-12 rounded-full bg-surface-tertiary" /><div className="flex-1 space-y-2"><div className="h-4 w-32 rounded-lg bg-surface-tertiary" /><div className="h-3 w-48 rounded-lg bg-surface-tertiary" /></div></div>
             </div>
           ))}
         </div>
       ) : members.length === 0 && !showForm ? (
-        <div className="rounded-[12px] border-2 border-dashed border-border py-16 text-center">
+        <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
           <Users size={40} className="mx-auto text-txt-muted mb-3" />
           <p className="text-txt-muted text-base">Belum ada anggota redaksi.</p>
           <button onClick={openAdd} className="mt-3 btn-primary px-4 py-2 text-sm"><Plus size={14} className="mr-1" /> Tambah Anggota Pertama</button>
@@ -417,7 +417,7 @@ export default function RedaksiPanelPage() {
       ) : (
         <div className="space-y-3">
           {members.map((m) => (
-            <div key={m.id} className={`rounded-[12px] border bg-surface p-4 sm:p-5 shadow-card flex items-center gap-4 hover:shadow-card-hover transition-all ${editingId === m.id ? "border-primary bg-primary-light/10" : "border-border"}`}>
+            <div key={m.id} className={`rounded-lg border bg-surface p-4 sm:p-5 shadow-card flex items-center gap-4 hover:shadow-card-hover transition-all ${editingId === m.id ? "border-primary bg-primary-light/10" : "border-border"}`}>
               <GripVertical size={16} className="text-txt-muted shrink-0 hidden sm:block" />
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-white overflow-hidden">
                 {m.photo ? (
@@ -437,8 +437,8 @@ export default function RedaksiPanelPage() {
                 <span className="rounded-full bg-red-50 text-red-600 px-2.5 py-0.5 text-xs font-medium">Nonaktif</span>
               )}
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => openEdit(m)} className="btn-ghost rounded p-2" title="Edit"><Edit size={16} /></button>
-                <button onClick={() => handleDelete(m.id, m.name)} className="btn-ghost rounded p-2 hover:text-red-500" title="Hapus"><Trash2 size={16} /></button>
+                <button onClick={() => openEdit(m)} className="btn-ghost rounded-lg p-2" title="Edit"><Edit size={16} /></button>
+                <button onClick={() => handleDelete(m.id, m.name)} className="btn-ghost rounded-lg p-2 hover:text-red-500" title="Hapus"><Trash2 size={16} /></button>
               </div>
             </div>
           ))}

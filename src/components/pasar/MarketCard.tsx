@@ -89,7 +89,7 @@ export default function MarketCard({
             {sign}{changePercent.toFixed(2)}%
           </span>
           {change !== 0 && (
-            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${c.badge}`}>
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-lg ${c.badge}`}>
               {change > 0 ? "+" : ""}{change >= 1000 || change <= -1000
                 ? Math.round(change).toLocaleString("id-ID")
                 : change.toFixed(2)}

@@ -47,7 +47,7 @@ export default function TentangPage() {
             ].map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.title} className="rounded-[12px] border border-border bg-surface p-6">
+                <div key={item.title} className="rounded-lg border border-border bg-surface p-6">
                   <Icon size={24} className="text-primary" />
                   <h3 className="mt-3 font-bold text-txt-primary">{item.title}</h3>
                   <p className="mt-1 text-sm text-txt-secondary">{item.desc}</p>
@@ -59,7 +59,7 @@ export default function TentangPage() {
           {/* Contact / publisher identity. Legal entity, full address, phone and
               founding year render only when their env vars are set — never with
               placeholder data. */}
-          <div className="mt-12 rounded-[12px] border border-border bg-surface-secondary p-6">
+          <div className="mt-12 rounded-lg border border-border bg-surface-secondary p-6">
             <h2 className="text-lg font-bold text-txt-primary">Informasi Penerbit &amp; Kontak</h2>
             <div className="mt-3 space-y-2 text-sm text-txt-secondary">
               {process.env.NEXT_PUBLIC_PUBLISHER_LEGAL_NAME && (

@@ -104,7 +104,7 @@ export default function SearchableArticleList({ articles, categoryName }: Search
             {/* Thumbnail */}
             {article.featuredImage && (
               <Link href={`/berita/${article.slug}`} className="shrink-0">
-                <div className="relative h-[80px] w-[120px] sm:h-[90px] sm:w-[140px] overflow-hidden rounded">
+                <div className="relative h-[80px] w-[120px] sm:h-[90px] sm:w-[140px] overflow-hidden rounded-lg">
                   <Image
                     src={article.featuredImage}
                     alt={article.title}

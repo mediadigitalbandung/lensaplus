@@ -49,7 +49,7 @@ export default function KodeEtikPage() {
               ))}
             </div>
 
-            <div className="mt-10 rounded-[12px] border border-primary/20 bg-primary-light p-4">
+            <div className="mt-10 rounded-lg border border-primary/20 bg-primary-light p-4">
               <p className="text-sm text-primary-dark">
                 <strong>Sumber:</strong> Kode Etik Jurnalistik yang ditetapkan Dewan Pers melalui
                 Peraturan Dewan Pers Nomor: 6/Peraturan-DP/V/2008 tentang Pengesahan Surat Keputusan

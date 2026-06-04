@@ -73,7 +73,7 @@ export default function PedomanMediaPage() {
               yang menjadi pelaku kejahatan, dan informasi pribadi yang tidak relevan dengan kepentingan publik.
             </p>
 
-            <div className="mt-10 rounded-[12px] border border-primary/20 bg-primary-light p-4">
+            <div className="mt-10 rounded-lg border border-primary/20 bg-primary-light p-4">
               <p className="text-sm text-primary-dark">
                 Pedoman ini mengacu pada Peraturan Dewan Pers Nomor 1/Peraturan-DP/III/2012 tentang
                 Pedoman Pemberitaan Media Siber. Lihat juga{" "}

@@ -53,21 +53,21 @@ export default function KontakPage() {
           <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-3">
             {/* Contact info */}
             <div className="space-y-4">
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <MapPin size={20} className="text-primary" />
                 <h3 className="mt-2 font-bold text-txt-primary">Alamat</h3>
                 <p className="mt-1 text-sm text-txt-secondary">
                   Bandung, Jawa Barat<br />Indonesia
                 </p>
               </div>
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <Mail size={20} className="text-primary" />
                 <h3 className="mt-2 font-bold text-txt-primary">Email</h3>
                 <p className="mt-1 text-sm text-txt-secondary">
                   redaksi@kartawarta.com
                 </p>
               </div>
-              <div className="rounded-[12px] border border-border bg-surface p-5">
+              <div className="rounded-lg border border-border bg-surface p-5">
                 <Phone size={20} className="text-primary" />
                 <h3 className="mt-2 font-bold text-txt-primary">Telepon</h3>
                 <p className="mt-1 text-sm text-txt-secondary">
@@ -88,7 +88,7 @@ export default function KontakPage() {
             {/* Contact form */}
             <div className="md:col-span-2">
               {sent ? (
-                <div className="flex h-full items-center justify-center rounded-[12px] border border-primary/20 bg-primary-light p-8 text-center">
+                <div className="flex h-full items-center justify-center rounded-lg border border-primary/20 bg-primary-light p-8 text-center">
                   <div>
                     <Send size={40} className="mx-auto text-primary" />
                     <h3 className="mt-4 text-lg font-bold text-primary-dark">
@@ -106,7 +106,7 @@ export default function KontakPage() {
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="rounded-[12px] border border-border bg-surface p-6">
+                <form onSubmit={handleSubmit} className="rounded-lg border border-border bg-surface p-6">
                   <h2 className="mb-4 text-lg font-bold text-txt-primary">Kirim Pesan</h2>
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -124,18 +124,18 @@ function formatDate(dateStr: string): string {
 
 function LoadingSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+    <div className="animate-pulse overflow-hidden rounded-lg border border-border bg-surface shadow-card">
       <div className="border-b border-border bg-surface-secondary px-5 py-3">
-        <div className="h-4 w-full rounded bg-surface-tertiary" />
+        <div className="h-4 w-full rounded-lg bg-surface-tertiary" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4 border-b border-border px-5 py-3">
-          <div className="h-4 w-1/3 rounded bg-surface-tertiary" />
-          <div className="h-4 w-1/6 rounded bg-surface-tertiary" />
-          <div className="h-4 w-1/6 rounded bg-surface-tertiary" />
+          <div className="h-4 w-1/3 rounded-lg bg-surface-tertiary" />
+          <div className="h-4 w-1/6 rounded-lg bg-surface-tertiary" />
+          <div className="h-4 w-1/6 rounded-lg bg-surface-tertiary" />
           <div className="h-4 w-16 rounded-full bg-surface-tertiary" />
-          <div className="h-4 w-10 rounded bg-surface-tertiary" />
-          <div className="h-4 w-20 rounded bg-surface-tertiary" />
+          <div className="h-4 w-10 rounded-lg bg-surface-tertiary" />
+          <div className="h-4 w-20 rounded-lg bg-surface-tertiary" />
         </div>
       ))}
     </div>
@@ -662,11 +662,11 @@ export default function ArtikelPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchArticles}
-            className="mt-2 rounded-[12px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
             aria-label="Coba muat ulang daftar artikel"
           >
             Coba Lagi
@@ -685,7 +685,7 @@ export default function ArtikelPage() {
                  + status filter row (~50) + origin filter row (~50)
                  + paddings (~40) ≈ 340px
                min-h keeps it usable on 720p / Surface laptops. */}
-          <div className="rounded-[12px] border border-border bg-surface shadow-card overflow-hidden">
+          <div className="rounded-lg border border-border bg-surface shadow-card overflow-hidden">
             <div className="overflow-auto max-h-[calc(100vh-340px)] min-h-[360px]">
               <table className="w-full min-w-[1080px] text-sm">
                 <thead className="sticky top-0 z-10 border-b border-border bg-surface-secondary shadow-sm">
@@ -695,7 +695,7 @@ export default function ArtikelPage() {
                         type="checkbox"
                         checked={allFilteredSelected}
                         onChange={() => toggleSelectAll(filteredIds)}
-                        className="h-4 w-4 rounded border-border text-primary accent-primary"
+                        className="h-4 w-4 rounded-lg border-border text-primary accent-primary"
                         aria-label="Pilih semua artikel"
                       />
                     </th>
@@ -724,7 +724,7 @@ export default function ArtikelPage() {
                             type="checkbox"
                             checked={selectedIds.has(article.id)}
                             onChange={() => toggleSelect(article.id)}
-                            className="h-4 w-4 rounded border-border text-primary accent-primary"
+                            className="h-4 w-4 rounded-lg border-border text-primary accent-primary"
                             aria-label={`Pilih artikel ${article.title}`}
                           />
                         </td>
@@ -845,7 +845,7 @@ export default function ArtikelPage() {
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => router.push(`/berita/${article.slug}`)}
-                              className="btn-ghost rounded p-2"
+                              className="btn-ghost rounded-lg p-2"
                               title="Lihat"
                               aria-label="Lihat artikel"
                             >
@@ -853,7 +853,7 @@ export default function ArtikelPage() {
                             </button>
                             <button
                               onClick={() => router.push(`/panel/artikel/${article.id}/edit`)}
-                              className="btn-ghost rounded p-2"
+                              className="btn-ghost rounded-lg p-2"
                               title="Edit"
                               aria-label="Edit artikel"
                             >
@@ -865,7 +865,7 @@ export default function ArtikelPage() {
                                 <button
                                   onClick={() => handlePublish(article)}
                                   disabled={actioning === article.id}
-                                  className="btn-ghost rounded p-2 text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
+                                  className="btn-ghost rounded-lg p-2 text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
                                   title="Publikasikan langsung"
                                   aria-label="Publikasikan artikel"
                                 >
@@ -877,7 +877,7 @@ export default function ArtikelPage() {
                               <button
                                 onClick={() => handleTakedown(article)}
                                 disabled={actioning === article.id}
-                                className="btn-ghost rounded p-2 text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                                className="btn-ghost rounded-lg p-2 text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 title="Takedown — kembalikan ke draft"
                                 aria-label="Takedown artikel"
                               >
@@ -889,7 +889,7 @@ export default function ArtikelPage() {
                               <button
                                 onClick={() => handlePublishToSocial(article)}
                                 disabled={publishingSocial === article.id}
-                                className="btn-ghost rounded p-2 text-pink-500 hover:bg-pink-50 disabled:opacity-50"
+                                className="btn-ghost rounded-lg p-2 text-pink-500 hover:bg-pink-50 disabled:opacity-50"
                                 title="Bagikan ke Sosial Media"
                                 aria-label="Bagikan ke Sosial Media"
                               >
@@ -903,7 +903,7 @@ export default function ArtikelPage() {
                             <button
                               onClick={() => handleDelete(article.id, article.title)}
                               disabled={deleting === article.id}
-                              className="btn-ghost rounded p-2 hover:text-red-500 disabled:opacity-50"
+                              className="btn-ghost rounded-lg p-2 hover:text-red-500 disabled:opacity-50"
                               title="Hapus"
                               aria-label="Hapus artikel"
                             >

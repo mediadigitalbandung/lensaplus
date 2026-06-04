@@ -591,10 +591,10 @@ export default function AutoArtikelPage() {
       </div>
 
       {/* Master Toggle */}
-      <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light">
               <Sparkles size={18} className="text-primary" />
             </div>
             <div>
@@ -677,25 +677,25 @@ export default function AutoArtikelPage() {
 
       {/* Stats */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
           <p className="text-xs text-txt-secondary">Total Auto</p>
           <p className="mt-1 text-2xl font-extrabold text-txt-primary">
             {stats.total}
           </p>
         </div>
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
           <p className="text-xs text-txt-secondary">Draf</p>
           <p className="mt-1 text-2xl font-extrabold text-txt-secondary">
             {stats.draft}
           </p>
         </div>
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
           <p className="text-xs text-txt-secondary">Review</p>
           <p className="mt-1 text-2xl font-extrabold text-yellow-600">
             {stats.review}
           </p>
         </div>
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
           <p className="text-xs text-txt-secondary">Dipublikasi</p>
           <p className="mt-1 text-2xl font-extrabold text-primary">
             {stats.published}
@@ -704,7 +704,7 @@ export default function AutoArtikelPage() {
       </div>
 
       {/* Target Keywords Manager */}
-      <div className="mb-6 rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="mb-6 rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border bg-surface-secondary px-5 py-4 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-base font-bold text-txt-primary">
             <Hash size={16} className="text-primary" />
@@ -860,7 +860,7 @@ export default function AutoArtikelPage() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handleToggleKeyword(kw)}
-                          className="btn-ghost rounded p-2"
+                          className="btn-ghost rounded-lg p-2"
                           title={kw.isActive ? "Nonaktifkan" : "Aktifkan"}
                         >
                           {kw.isActive ? (
@@ -871,7 +871,7 @@ export default function AutoArtikelPage() {
                         </button>
                         <button
                           onClick={() => handleDeleteKeyword(kw)}
-                          className="btn-ghost rounded p-2 hover:text-red-500"
+                          className="btn-ghost rounded-lg p-2 hover:text-red-500"
                           title="Hapus"
                         >
                           <Trash2 size={14} />
@@ -904,7 +904,7 @@ export default function AutoArtikelPage() {
                   <button
                     onClick={() => setKeywordPage((p) => Math.max(1, p - 1))}
                     disabled={keywordPage === 1}
-                    className="btn-ghost flex items-center gap-1 rounded px-2 py-1 disabled:opacity-30"
+                    className="btn-ghost flex items-center gap-1 rounded-lg px-2 py-1 disabled:opacity-30"
                     aria-label="Halaman sebelumnya"
                   >
                     <ChevronLeft size={14} />
@@ -926,7 +926,7 @@ export default function AutoArtikelPage() {
                       keywordPage >=
                       Math.ceil(keywords.length / KEYWORDS_PER_PAGE)
                     }
-                    className="btn-ghost flex items-center gap-1 rounded px-2 py-1 disabled:opacity-30"
+                    className="btn-ghost flex items-center gap-1 rounded-lg px-2 py-1 disabled:opacity-30"
                     aria-label="Halaman berikutnya"
                   >
                     Next
@@ -940,7 +940,7 @@ export default function AutoArtikelPage() {
       </div>
 
       {/* Trigger Info */}
-      <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+      <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
         <div className="flex items-start gap-3">
           <Terminal size={18} className="mt-0.5 text-blue-600 shrink-0" />
           <div className="flex-1">
@@ -949,7 +949,7 @@ export default function AutoArtikelPage() {
             </h3>
             <p className="mt-1 text-xs text-blue-700">
               Endpoint{" "}
-              <code className="font-mono bg-blue-100 px-1 py-0.5 rounded">
+              <code className="font-mono bg-blue-100 px-1 py-0.5 rounded-lg">
                 POST /api/cron/auto-article
               </code>{" "}
               diproteksi <code className="font-mono">Authorization: Bearer $CRON_SECRET</code>.
@@ -964,7 +964,7 @@ export default function AutoArtikelPage() {
       </div>
 
       {/* Article list */}
-      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border bg-surface-secondary px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <h2 className="flex items-center gap-2 text-base font-bold text-txt-primary">
             <FileText size={16} className="text-primary" />
@@ -1151,7 +1151,7 @@ export default function AutoArtikelPage() {
                             href={`/berita/${a.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="btn-ghost rounded p-2 hover:text-primary"
+                            className="btn-ghost rounded-lg p-2 hover:text-primary"
                             title="Lihat artikel di publik"
                             aria-label="Lihat artikel"
                           >
@@ -1161,7 +1161,7 @@ export default function AutoArtikelPage() {
                         {a.status === "PUBLISHED" ? (
                           <button
                             onClick={() => handleTakedown(a.id, a.title)}
-                            className="btn-ghost rounded p-2 hover:text-yellow-700"
+                            className="btn-ghost rounded-lg p-2 hover:text-yellow-700"
                             title="Takedown — kembalikan ke DRAFT"
                             aria-label="Takedown artikel"
                           >
@@ -1170,7 +1170,7 @@ export default function AutoArtikelPage() {
                         ) : (
                           <button
                             onClick={() => handlePublish(a.id, a.title)}
-                            className="btn-ghost rounded p-2 hover:text-primary"
+                            className="btn-ghost rounded-lg p-2 hover:text-primary"
                             title="Publikasi sekarang"
                             aria-label="Publikasi artikel"
                           >
@@ -1179,14 +1179,14 @@ export default function AutoArtikelPage() {
                         )}
                         <Link
                           href={`/panel/artikel/${a.id}/edit`}
-                          className="btn-ghost rounded p-2"
+                          className="btn-ghost rounded-lg p-2"
                           title="Edit"
                         >
                           <Edit size={16} />
                         </Link>
                         <button
                           onClick={() => handleDelete(a.id)}
-                          className="btn-ghost rounded p-2 hover:text-red-500"
+                          className="btn-ghost rounded-lg p-2 hover:text-red-500"
                           title="Hapus"
                         >
                           <Trash2 size={16} />
@@ -1230,11 +1230,11 @@ export default function AutoArtikelPage() {
       <p className="mt-4 flex items-center gap-2 text-xs text-txt-muted">
         <Info size={12} />
         Auto-generation butuh: SystemSetting{" "}
-        <code className="font-mono bg-surface-secondary px-1 py-0.5 rounded">
+        <code className="font-mono bg-surface-secondary px-1 py-0.5 rounded-lg">
           auto_article_enabled
         </code>
         , row TargetKeyword aktif, dan{" "}
-        <code className="font-mono bg-surface-secondary px-1 py-0.5 rounded">
+        <code className="font-mono bg-surface-secondary px-1 py-0.5 rounded-lg">
           perplexity_api_key
         </code>{" "}
         (Pengaturan → AI). Generasi memakai Perplexity (riset web) — bukan

@@ -75,7 +75,7 @@ function Modal({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 py-10">
-      <div className="w-[calc(100%-2rem)] max-w-lg rounded-[12px] border border-border bg-surface p-8 shadow-xl">
+      <div className="w-[calc(100%-2rem)] max-w-lg rounded-lg border border-border bg-surface p-8 shadow-xl">
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-txt-primary">{title}</h3>
           <button
@@ -266,11 +266,11 @@ export default function PanelTopikPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-14 rounded-[12px] bg-surface-secondary" />
+            <div key={i} className="h-14 rounded-lg bg-surface-secondary" />
           ))}
         </div>
       ) : topics.length === 0 ? (
-        <div className="rounded-[12px] border-2 border-dashed border-border py-16 text-center">
+        <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
           <Layers size={36} className="mx-auto mb-3 text-txt-muted" />
           <p className="text-txt-secondary">Belum ada topic cluster.</p>
           <button onClick={openCreate} className="btn-primary mt-4 text-sm">
@@ -278,7 +278,7 @@ export default function PanelTopikPage() {
           </button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
           <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b border-border bg-surface-secondary text-left text-xs uppercase tracking-wider text-txt-muted">
@@ -324,21 +324,21 @@ export default function PanelTopikPage() {
                         href={`/topik/${topic.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded p-1.5 text-txt-muted hover:text-primary"
+                        className="rounded-lg p-1.5 text-txt-muted hover:text-primary"
                         title="Lihat di publik"
                       >
                         <ExternalLink size={15} />
                       </a>
                       <button
                         onClick={() => openEdit(topic)}
-                        className="rounded p-1.5 text-txt-muted hover:text-primary"
+                        className="rounded-lg p-1.5 text-txt-muted hover:text-primary"
                         title="Edit"
                       >
                         <Edit size={15} />
                       </button>
                       <button
                         onClick={() => handleDelete(topic)}
-                        className="rounded p-1.5 text-txt-muted hover:text-red-500"
+                        className="rounded-lg p-1.5 text-txt-muted hover:text-red-500"
                         title="Hapus"
                       >
                         <Trash2 size={15} />
@@ -478,7 +478,7 @@ export default function PanelTopikPage() {
               id="isPublished"
               checked={form.isPublished}
               onChange={(e) => setForm((f) => ({ ...f, isPublished: e.target.checked }))}
-              className="h-4 w-4 rounded border-border accent-primary"
+              className="h-4 w-4 rounded-lg border-border accent-primary"
             />
             <label htmlFor="isPublished" className="text-sm text-txt-primary">
               Publikasikan (tampil di halaman publik)

@@ -139,13 +139,13 @@ export default function PollingCarousel({ categorySlug }: Props) {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="shrink-0 w-[calc(50%-6px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] rounded-xl border border-border bg-surface-secondary p-3 sm:p-4 animate-pulse"
+            className="shrink-0 w-[calc(50%-6px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] rounded-lg border border-border bg-surface-secondary p-3 sm:p-4 animate-pulse"
           >
-            <div className="h-3 w-3/4 rounded bg-surface-tertiary mb-3" />
+            <div className="h-3 w-3/4 rounded-lg bg-surface-tertiary mb-3" />
             <div className="space-y-2">
               {[1, 2, 3].map((j) => (
                 <div key={j}>
-                  <div className="h-2 w-full rounded bg-surface-tertiary" />
+                  <div className="h-2 w-full rounded-lg bg-surface-tertiary" />
                   <div className="h-1 rounded-full bg-surface-tertiary mt-1" />
                 </div>
               ))}
@@ -208,7 +208,7 @@ export default function PollingCarousel({ categorySlug }: Props) {
           return (
             <div
               key={poll.id}
-              className="snap-start shrink-0 w-[calc(50%-6px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] flex flex-col rounded-xl border border-border bg-surface-secondary overflow-hidden hover:shadow-card-hover transition-shadow"
+              className="snap-start shrink-0 w-[calc(50%-6px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] flex flex-col rounded-lg border border-border bg-surface-secondary overflow-hidden hover:shadow-card-hover transition-shadow"
             >
               {poll.image && (
                 <div className="relative w-full aspect-[16/9]">

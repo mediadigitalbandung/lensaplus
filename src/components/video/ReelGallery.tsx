@@ -11,7 +11,7 @@ export default function ReelGallery({ items }: { items: VideoStoryItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-surface py-16 text-center shadow-card">
+      <div className="rounded-xl border border-border bg-surface py-16 text-center shadow-card">
         <p className="text-sm text-txt-secondary">
           Belum ada video story. Buat Reel di panel admin untuk menampilkannya di sini.
         </p>
@@ -78,7 +78,7 @@ export default function ReelGallery({ items }: { items: VideoStoryItem[] }) {
               autoPlay
               playsInline
               loop
-              className="h-full w-full rounded-xl bg-black object-contain"
+              className="h-full w-full rounded-lg bg-black object-contain"
             />
           </div>
         </div>

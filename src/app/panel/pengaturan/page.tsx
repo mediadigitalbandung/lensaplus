@@ -156,8 +156,8 @@ function KtaImageField({
   return (
     <div>
       <label className="mb-1.5 block text-sm font-medium text-txt-secondary">{label}</label>
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-secondary p-3">
-        <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded bg-[repeating-conic-gradient(#e8eaeb_0_25%,#fff_0_50%)] bg-[length:16px_16px]">
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-secondary p-3">
+        <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[repeating-conic-gradient(#e8eaeb_0_25%,#fff_0_50%)] bg-[length:16px_16px]">
           {url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={url} alt={label} className="max-h-14 max-w-24 object-contain" />
@@ -206,14 +206,14 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-surface-secondary/40 transition-colors text-left"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
             {icon}
           </div>
           <div className="min-w-0">
@@ -1208,7 +1208,7 @@ export default function PengaturanPage() {
               <option value="off">Nonaktif (tanpa suara)</option>
             </select>
           </Field>
-          <div className="flex items-center justify-between rounded-xl border border-border bg-surface-secondary px-4 py-3">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary px-4 py-3">
             <div>
               <p className="text-sm font-medium text-txt-primary">
                 Aktifkan AI
@@ -1282,7 +1282,7 @@ export default function PengaturanPage() {
               placeholder='{"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\\n...","client_email":"..."}'
             />
           </Field>
-          <div className="flex items-center justify-between rounded-xl border border-border bg-surface-secondary px-4 py-3">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary px-4 py-3">
             <div>
               <p className="text-sm font-medium text-txt-primary">
                 Google Indexing API
@@ -1372,7 +1372,7 @@ export default function PengaturanPage() {
           description="Token Meta Graph API v21 untuk auto-publish"
         >
           {/* Instagram */}
-          <div className="rounded-xl border border-border bg-surface-secondary/40 p-4 space-y-4">
+          <div className="rounded-lg border border-border bg-surface-secondary/40 p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Instagram size={16} className="text-primary" />
               <h3 className="text-sm font-bold text-txt-primary">Instagram</h3>
@@ -1449,7 +1449,7 @@ export default function PengaturanPage() {
           </div>
 
           {/* Facebook */}
-          <div className="rounded-xl border border-border bg-surface-secondary/40 p-4 space-y-4">
+          <div className="rounded-lg border border-border bg-surface-secondary/40 p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Facebook size={16} className="text-primary" />
               <h3 className="text-sm font-bold text-txt-primary">Facebook</h3>
@@ -1492,7 +1492,7 @@ export default function PengaturanPage() {
               </label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <label 
-                  className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                  className={`flex flex-col p-4 rounded-lg border transition-all cursor-pointer select-none ${
                     fbPostMode === "link" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
                   }`}
                 >
@@ -1515,7 +1515,7 @@ export default function PengaturanPage() {
                 </label>
 
                 <label 
-                  className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                  className={`flex flex-col p-4 rounded-lg border transition-all cursor-pointer select-none ${
                     fbPostMode === "photo" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
                   }`}
                 >
@@ -1538,7 +1538,7 @@ export default function PengaturanPage() {
                 </label>
 
                 <label 
-                  className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                  className={`flex flex-col p-4 rounded-lg border transition-all cursor-pointer select-none ${
                     fbPostMode === "both" ? "border-primary bg-primary/5" : "border-border hover:border-slate-400"
                   }`}
                 >
@@ -1599,7 +1599,7 @@ export default function PengaturanPage() {
           </div>
 
           {/* Threads */}
-          <div className="rounded-xl border border-border bg-surface-secondary/40 p-4 space-y-4">
+          <div className="rounded-lg border border-border bg-surface-secondary/40 p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Share2 size={16} className="text-primary" />
               <h3 className="text-sm font-bold text-txt-primary">Threads</h3>
@@ -1929,7 +1929,7 @@ export default function PengaturanPage() {
           title="8. Auto-Artikel"
           description="Pembuat draf otomatis via cron + AI"
         >
-          <div className="flex items-center justify-between rounded-xl border border-border bg-surface-secondary px-4 py-3">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary px-4 py-3">
             <div>
               <p className="text-sm font-medium text-txt-primary">
                 Aktifkan Auto-Artikel
@@ -2051,7 +2051,7 @@ export default function PengaturanPage() {
           title="9. Toggle Global"
           description="Switch komentar publik & mode maintenance"
         >
-          <div className="flex items-center justify-between rounded-xl border border-border bg-surface-secondary px-4 py-3">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary px-4 py-3">
             <div>
               <p className="text-sm font-medium text-txt-primary">
                 Aktifkan Komentar
@@ -2068,7 +2068,7 @@ export default function PengaturanPage() {
               }}
             />
           </div>
-          <div className="flex items-center justify-between rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3">
+          <div className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
             <div>
               <p className="text-sm font-medium text-yellow-900">
                 Mode Maintenance

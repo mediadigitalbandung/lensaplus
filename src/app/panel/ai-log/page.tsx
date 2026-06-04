@@ -184,9 +184,9 @@ export default function AIPage() {
       {/* ══════ TAB: GENERATE TAGS ══════ */}
       {activeTab === "generate" && (
         <>
-          <div className="rounded-2xl border border-border bg-surface shadow-card p-6 mb-6">
+          <div className="rounded-xl border border-border bg-surface shadow-card p-6 mb-6">
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-light shrink-0">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-light shrink-0">
                 <Sparkles size={24} className="text-primary" />
               </div>
               <div className="flex-1">
@@ -209,7 +209,7 @@ export default function AIPage() {
           </div>
 
           {bulkResult && (
-            <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+            <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
               <div className="border-b border-border px-5 py-3.5">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
                   <CheckCircle size={16} className="text-primary" />
@@ -218,19 +218,19 @@ export default function AIPage() {
               </div>
               <div className="p-5">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                  <div className="rounded-xl bg-surface-secondary p-3 text-center">
+                  <div className="rounded-lg bg-surface-secondary p-3 text-center">
                     <p className="text-2xl font-extrabold text-txt-primary">{bulkResult.processed}</p>
                     <p className="text-xs text-txt-muted">Artikel Diproses</p>
                   </div>
-                  <div className="rounded-xl bg-surface-secondary p-3 text-center">
+                  <div className="rounded-lg bg-surface-secondary p-3 text-center">
                     <p className="text-2xl font-extrabold text-primary">{bulkResult.totalTagsAdded}</p>
                     <p className="text-xs text-txt-muted">Tags Ditambahkan</p>
                   </div>
-                  <div className="rounded-xl bg-surface-secondary p-3 text-center">
+                  <div className="rounded-lg bg-surface-secondary p-3 text-center">
                     <p className="text-2xl font-extrabold text-txt-primary">{bulkResult.totalArticles}</p>
                     <p className="text-xs text-txt-muted">Total Artikel</p>
                   </div>
-                  <div className="rounded-xl bg-surface-secondary p-3 text-center">
+                  <div className="rounded-lg bg-surface-secondary p-3 text-center">
                     <p className="text-2xl font-extrabold text-txt-muted">{bulkResult.articlesSkipped}</p>
                     <p className="text-xs text-txt-muted">Sudah Cukup</p>
                   </div>
@@ -239,7 +239,7 @@ export default function AIPage() {
                   <div className="space-y-3 max-h-[400px] overflow-y-auto">
                     <p className="text-sm font-semibold text-txt-secondary">Detail per Artikel:</p>
                     {bulkResult.results.map((r, i) => (
-                      <div key={i} className="rounded-xl border border-border p-3">
+                      <div key={i} className="rounded-lg border border-border p-3">
                         <p className="text-sm font-semibold text-txt-primary mb-2">{r.title}</p>
                         <div className="flex flex-wrap gap-1.5">
                           {r.tags.map((tag) => (
@@ -265,7 +265,7 @@ export default function AIPage() {
           {/* Stats Cards */}
           {stats && (
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light">
                     <Cpu size={20} className="text-primary" />
@@ -276,7 +276,7 @@ export default function AIPage() {
                   </div>
                 </div>
               </div>
-              <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-50">
                     <Hash size={20} className="text-yellow-500" />
@@ -287,7 +287,7 @@ export default function AIPage() {
                   </div>
                 </div>
               </div>
-              <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
                     <Users size={20} className="text-blue-500" />
@@ -303,7 +303,7 @@ export default function AIPage() {
 
           {/* Per User */}
           {stats && stats.byUser.length > 0 && (
-            <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+            <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
               <h2 className="mb-3 text-sm font-semibold text-txt-primary">Penggunaan Per Pengguna</h2>
               <div className="space-y-2">
                 {stats.byUser.map((u) => (
@@ -337,7 +337,7 @@ export default function AIPage() {
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           ) : (
-            <div className="rounded-2xl border border-border bg-surface shadow-card overflow-x-auto">
+            <div className="rounded-xl border border-border bg-surface shadow-card overflow-x-auto">
               <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-border bg-surface-secondary">

@@ -183,7 +183,7 @@ function InstallStatsWidget({ data }: { data: ExtrasResponse["install"] }) {
   const max = Math.max(...channels.map((c) => c.count), 1);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
@@ -275,7 +275,7 @@ function PendingItemsWidget({ data }: { data: ExtrasResponse["pendingItems"] }) 
   ];
   const allClear = data.totalPending === 0;
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${allClear ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
@@ -327,7 +327,7 @@ function PipelineWidget({ data }: { data: ExtrasResponse["pipeline"] }) {
   ];
   const max = Math.max(...stages.map((s) => s.count), 1);
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
@@ -380,7 +380,7 @@ function PipelineWidget({ data }: { data: ExtrasResponse["pipeline"] }) {
 function AIBreakdownWidget({ data }: { data: ExtrasResponse["aiBreakdown"] }) {
   const total = data.reduce((s, f) => s + f.totalTokens, 0);
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -430,7 +430,7 @@ function TopAuthorsWidget({ data }: { data: ExtrasResponse["topAuthors"] }) {
   const [tab, setTab] = useState<"week" | "month">("week");
   const list = data[tab];
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
@@ -502,7 +502,7 @@ function BackupWidget({ data }: { data: ExtrasResponse["backup"] }) {
   const meta = statusMeta[data.status];
   const Icon = meta.Icon;
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${meta.cls}`}>

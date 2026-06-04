@@ -49,7 +49,7 @@ function LoginContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface-secondary px-4">
-      <div className="w-full max-w-sm rounded-[12px] border border-border bg-surface p-5 sm:p-8 shadow-card">
+      <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-card">
         {/* Logo */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
@@ -64,13 +64,13 @@ function LoginContent() {
         </div>
 
         {sessionExpired && (
-          <div className="mb-4 rounded-[12px] bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
+          <div className="mb-4 rounded-lg bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
             Sesi Anda telah berakhir. Silakan login kembali.
           </div>
         )}
 
         {error && (
-          <div className="mb-6 rounded-[12px] bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}

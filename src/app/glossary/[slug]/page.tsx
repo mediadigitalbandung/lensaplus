@@ -139,7 +139,7 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
                 {item.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded bg-surface-container-low px-2 py-0.5 text-label-sm text-on-surface-variant"
+                    className="rounded-lg bg-surface-container-low px-2 py-0.5 text-label-sm text-on-surface-variant"
                   >
                     {tag}
                   </span>

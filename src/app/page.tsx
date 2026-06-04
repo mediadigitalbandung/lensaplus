@@ -250,7 +250,7 @@ export default async function HomePage() {
             <div className="md:col-span-7">
               <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
                 <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                  <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20 shrink-0">
+                  <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary text-white shadow-md shadow-primary/20 shrink-0">
                     <Flame size={18} strokeWidth={2.5} />
                   </div>
                   <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface truncate">Berita Terkini</h2>
@@ -330,7 +330,7 @@ export default async function HomePage() {
               {/* Terpopuler */}
               <div className="mb-8">
                 <div className="flex items-center gap-2.5 sm:gap-3 mb-5 sm:mb-6">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
                     <TrendingUp size={16} strokeWidth={2.5} />
                   </div>
                   <h2 className="font-serif text-headline-sm text-on-surface">Terpopuler 24 Jam</h2>
@@ -400,7 +400,7 @@ export default async function HomePage() {
           <div className="container-main">
             <div className="flex items-start sm:items-center justify-between gap-3 mb-6 sm:mb-8">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
                   <Sparkles size={18} strokeWidth={2.5} />
                 </div>
                 <div className="min-w-0">
@@ -453,7 +453,7 @@ export default async function HomePage() {
       <section className="bg-surface py-8 sm:py-10 md:py-12 lg:py-14 2xl:py-20">
         <div className="container-main">
           <div className="flex items-center gap-2.5 sm:gap-3 mb-6 sm:mb-8">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
               <Shield size={18} strokeWidth={2.5} />
             </div>
             <div className="min-w-0">
@@ -484,7 +484,7 @@ export default async function HomePage() {
                 <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
                   <Link href={`/kategori/${catSlug}`} className="group flex items-center gap-2.5 sm:gap-3 min-w-0">
                     {(() => { const CatIcon = categoryIconMap[catSlug] || Scale; return (
-                      <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/10 group-hover:from-primary/25 group-hover:to-primary/10 transition-all shrink-0">
+                      <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/10 group-hover:from-primary/25 group-hover:to-primary/10 transition-all shrink-0">
                         <CatIcon size={18} strokeWidth={2.5} />
                       </div>
                     ); })()}

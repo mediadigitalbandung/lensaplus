@@ -257,7 +257,7 @@ export default function ImageUploader({
   // PRIORITY 1: pendingBlob → show metadata form
   if (pendingBlob) {
     return (
-      <div className="space-y-3 rounded-[12px] border border-primary/30 bg-primary-light/30 p-4">
+      <div className="space-y-3 rounded-lg border border-primary/30 bg-primary-light/30 p-4">
         <div className="flex items-start gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -385,7 +385,7 @@ export default function ImageUploader({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onClick={() => inputRef.current?.click()}
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-6 transition-colors ${
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
             dragActive
               ? "border-primary bg-primary/5"
               : "border-border hover:border-primary/50"

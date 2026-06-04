@@ -80,7 +80,7 @@ function ToolbarButton({
       disabled={disabled}
       title={title}
       className={cn(
-        "rounded p-1.5 transition-colors",
+        "rounded-lg p-1.5 transition-colors",
         active
           ? "bg-primary-light text-primary"
           : "text-txt-secondary hover:bg-surface-secondary",
@@ -323,7 +323,7 @@ export default function RichTextEditor({
   const inTable = editor.isActive("table");
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-0.5 border-b border-border px-2 py-1.5">
         {/* Text formatting */}
@@ -469,7 +469,7 @@ export default function RichTextEditor({
             }}
             title="Tabel"
             className={cn(
-              "flex items-center gap-0.5 rounded p-1.5 transition-colors",
+              "flex items-center gap-0.5 rounded-lg p-1.5 transition-colors",
               inTable
                 ? "bg-primary-light text-primary"
                 : "text-txt-secondary hover:bg-surface-secondary"
@@ -577,7 +577,7 @@ export default function RichTextEditor({
               setTableMenuOpen(false);
             }}
             title="AI Tools"
-            className="flex items-center gap-0.5 rounded p-1.5 text-primary transition-colors hover:bg-primary-light"
+            className="flex items-center gap-0.5 rounded-lg p-1.5 text-primary transition-colors hover:bg-primary-light"
           >
             {aiLoading ? (
               <Loader2 size={16} className="animate-spin" />

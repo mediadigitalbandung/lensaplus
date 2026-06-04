@@ -237,7 +237,7 @@ export default function ProfilPage() {
 
       {message && (
         <div
-          className={`mb-4 rounded-[12px] border p-4 text-sm ${
+          className={`mb-4 rounded-lg border p-4 text-sm ${
             message.type === "success"
               ? "border-primary/30 bg-primary/10 text-primary"
               : "border-red-300 bg-red-50 text-red-700"
@@ -249,7 +249,7 @@ export default function ProfilPage() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {/* Profile Card */}
-        <div className="rounded-[12px] border border-border bg-surface p-6 shadow-card">
+        <div className="rounded-lg border border-border bg-surface p-6 shadow-card">
           <div className="flex flex-col items-center text-center">
             {/* Avatar with upload */}
             <div className="relative mb-4 group">
@@ -317,7 +317,7 @@ export default function ProfilPage() {
         </div>
 
         {/* Edit Form */}
-        <div className="lg:col-span-2 rounded-[12px] border border-border bg-surface p-6 shadow-card">
+        <div className="lg:col-span-2 rounded-lg border border-border bg-surface p-6 shadow-card">
           <h3 className="mb-4 text-lg font-semibold text-txt-primary">Edit Profil</h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -441,7 +441,7 @@ export default function ProfilPage() {
       </div>
 
       {/* Ganti Password */}
-      <div className="mt-6 rounded-[12px] border border-border bg-surface p-6 shadow-card">
+      <div className="mt-6 rounded-lg border border-border bg-surface p-6 shadow-card">
         <div className="mb-1 flex items-center gap-2">
           <KeyRound size={20} className="text-primary" />
           <h3 className="text-lg font-semibold text-txt-primary">Ganti Password</h3>
@@ -452,7 +452,7 @@ export default function ProfilPage() {
 
         {pwMessage && (
           <div
-            className={`mb-4 rounded-[12px] border p-4 text-sm ${
+            className={`mb-4 rounded-lg border p-4 text-sm ${
               pwMessage.type === "success"
                 ? "border-primary/30 bg-primary/10 text-primary"
                 : "border-red-300 bg-red-50 text-red-700"

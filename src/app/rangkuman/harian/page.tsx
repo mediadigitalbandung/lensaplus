@@ -127,7 +127,7 @@ export default async function RangkumanHarianIndexPage() {
                       <CalendarDays size={36} className="text-primary/30" />
                     </div>
                   )}
-                  <div className="absolute left-3 top-3 rounded bg-primary px-2.5 py-1 text-xs font-bold text-white shadow">
+                  <div className="absolute left-3 top-3 rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-white shadow">
                     {day.date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
                   </div>
                 </div>
@@ -147,7 +147,7 @@ export default async function RangkumanHarianIndexPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-[12px] border-2 border-dashed border-border py-16 text-center">
+          <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
             <CalendarDays size={36} className="mx-auto text-border" />
             <p className="mt-4 text-on-surface-variant">Belum ada arsip rangkuman harian.</p>
             <p className="text-sm text-txt-muted">Arsip akan terisi otomatis seiring artikel diterbitkan.</p>

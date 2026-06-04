@@ -210,9 +210,9 @@ export default function SeoDashboardPage() {
   if (loading) {
     return (
       <div className="animate-pulse space-y-6">
-        <div className="h-8 w-48 rounded bg-surface-tertiary" />
+        <div className="h-8 w-48 rounded-lg bg-surface-tertiary" />
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-32 rounded-xl bg-surface-tertiary" />)}
+          {[1,2,3,4].map(i => <div key={i} className="h-32 rounded-lg bg-surface-tertiary" />)}
         </div>
       </div>
     );
@@ -236,7 +236,7 @@ export default function SeoDashboardPage() {
 
       {/* Banner: Google Indexing API status (informational, NOT alarming) */}
       {!indexing.googleIndexingEnabled && (
-        <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:p-5 text-sm">
+        <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 sm:p-5 text-sm">
           <div className="flex flex-col sm:flex-row sm:items-start gap-3">
             <Globe size={22} className="text-blue-600 shrink-0 mt-0.5" />
             <div className="flex-1 space-y-3">
@@ -297,14 +297,14 @@ export default function SeoDashboardPage() {
       {/* Score + Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
         {/* SEO Score */}
-        <div className="rounded-2xl border border-border bg-surface p-6 shadow-card flex flex-col items-center justify-center">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-card flex flex-col items-center justify-center">
           <ScoreCircle score={overview.seoScore} />
           <p className="mt-3 text-sm font-bold text-txt-primary">Skor SEO</p>
           <p className="text-xs text-txt-muted">dari 100</p>
         </div>
 
         {/* Stats */}
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card space-y-4">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card space-y-4">
           <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><FileText size={14} className="text-primary" /> Konten</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-txt-secondary">Artikel Dipublikasi</span><span className="font-bold">{overview.publishedArticles}</span></div>
@@ -315,7 +315,7 @@ export default function SeoDashboardPage() {
         </div>
 
         {/* Coverage */}
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card space-y-4">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card space-y-4">
           <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> Coverage</h3>
           <CoverageBar label="SEO Title" value={coverage.seoTitle} icon={Type} />
           <CoverageBar label="Gambar" value={coverage.image} icon={Image} />
@@ -324,7 +324,7 @@ export default function SeoDashboardPage() {
         </div>
 
         {/* Sitemap & Links */}
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card space-y-4">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card space-y-4">
           <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><Globe size={14} className="text-primary" /> Sitemap & Tools</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between items-center">
@@ -363,7 +363,7 @@ export default function SeoDashboardPage() {
       {/* Indexing Health — Google API quota + last submission */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {indexing.googleIndexingEnabled ? (
-          <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
             <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
               <Zap size={14} className="text-primary" /> Google Indexing API — Kuota Hari Ini
             </h3>
@@ -389,7 +389,7 @@ export default function SeoDashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+          <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
             <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
               <Zap size={14} className="text-txt-muted" /> Google Indexing API
             </h3>
@@ -408,7 +408,7 @@ export default function SeoDashboardPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
             <Activity size={14} className="text-primary" /> Submission Terakhir
           </h3>
@@ -467,7 +467,7 @@ export default function SeoDashboardPage() {
       </div>
 
       {/* SEO Features */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card mb-6">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card mb-6">
         <h3 className="text-sm font-bold text-txt-primary mb-4 flex items-center gap-1.5"><TrendingUp size={14} className="text-primary" /> Fitur SEO Aktif</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {[
@@ -494,7 +494,7 @@ export default function SeoDashboardPage() {
 
       {/* Bulk Generate SEO */}
       {articleAudit.some(a => a.issues.length > 0) && (
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card mb-6">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card mb-6">
           <h3 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
             <Wand2 size={14} className="text-primary" /> Generate SEO Otomatis
           </h3>
@@ -516,7 +516,7 @@ export default function SeoDashboardPage() {
       )}
 
       {/* Index Monitor */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card mb-6">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5">
             <Activity size={14} className="text-primary" /> Monitor Index (Google + IndexNow)
@@ -580,7 +580,7 @@ export default function SeoDashboardPage() {
             <ul className="space-y-1.5 mb-2">
               {indexStatus.topErrors.map((e, i) => (
                 <li key={i} className="text-amber-900">
-                  <span className="font-mono bg-amber-100 px-1.5 py-0.5 rounded text-[10px] mr-1.5">{e.count}×</span>
+                  <span className="font-mono bg-amber-100 px-1.5 py-0.5 rounded-lg text-[10px] mr-1.5">{e.count}×</span>
                   <span className="font-mono text-[11px]">{e.message}</span>
                 </li>
               ))}
@@ -610,31 +610,31 @@ export default function SeoDashboardPage() {
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="rounded-xl bg-surface-secondary p-3">
+          <div className="rounded-lg bg-surface-secondary p-3">
             <p className="text-xs text-txt-muted mb-1">Total</p>
             <p className="text-xl font-extrabold text-txt-primary">
               {indexStatus?.total ?? 0}
             </p>
           </div>
-          <div className="rounded-xl bg-yellow-50 p-3">
+          <div className="rounded-lg bg-yellow-50 p-3">
             <p className="text-xs text-yellow-700 mb-1">Pending</p>
             <p className="text-xl font-extrabold text-yellow-700">
               {indexStatus?.counts.pending ?? 0}
             </p>
           </div>
-          <div className="rounded-xl bg-blue-50 p-3">
+          <div className="rounded-lg bg-blue-50 p-3">
             <p className="text-xs text-blue-700 mb-1">Submitted</p>
             <p className="text-xl font-extrabold text-blue-700">
               {indexStatus?.counts.submitted ?? 0}
             </p>
           </div>
-          <div className="rounded-xl bg-primary-light p-3">
+          <div className="rounded-lg bg-primary-light p-3">
             <p className="text-xs text-primary mb-1">Indexed</p>
             <p className="text-xl font-extrabold text-primary">
               {indexStatus?.counts.indexed ?? 0}
             </p>
           </div>
-          <div className="rounded-xl bg-red-50 p-3">
+          <div className="rounded-lg bg-red-50 p-3">
             <p className="text-xs text-red-700 mb-1">Failed</p>
             <p className="text-xl font-extrabold text-red-700">
               {indexStatus?.counts.failed ?? 0}
@@ -658,37 +658,37 @@ export default function SeoDashboardPage() {
                 </p>
                 {sorotanStatus.topErrors.slice(0, 2).map((e, i) => (
                   <p key={i} className="font-mono text-amber-900 truncate">
-                    <span className="bg-amber-100 px-1 rounded mr-1">{e.count}×</span>{e.message}
+                    <span className="bg-amber-100 px-1 rounded-lg mr-1">{e.count}×</span>{e.message}
                   </p>
                 ))}
               </div>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              <div className="rounded-xl bg-surface-secondary p-3">
+              <div className="rounded-lg bg-surface-secondary p-3">
                 <p className="text-xs text-txt-muted mb-1">Total</p>
                 <p className="text-lg font-extrabold text-txt-primary">
                   {sorotanStatus.total}
                 </p>
               </div>
-              <div className="rounded-xl bg-yellow-50 p-3">
+              <div className="rounded-lg bg-yellow-50 p-3">
                 <p className="text-xs text-yellow-700 mb-1">Pending</p>
                 <p className="text-lg font-extrabold text-yellow-700">
                   {sorotanStatus.counts.pending}
                 </p>
               </div>
-              <div className="rounded-xl bg-blue-50 p-3">
+              <div className="rounded-lg bg-blue-50 p-3">
                 <p className="text-xs text-blue-700 mb-1">Submitted</p>
                 <p className="text-lg font-extrabold text-blue-700">
                   {sorotanStatus.counts.submitted}
                 </p>
               </div>
-              <div className="rounded-xl bg-primary-light p-3">
+              <div className="rounded-lg bg-primary-light p-3">
                 <p className="text-xs text-primary mb-1">Indexed</p>
                 <p className="text-lg font-extrabold text-primary">
                   {sorotanStatus.counts.indexed}
                 </p>
               </div>
-              <div className="rounded-xl bg-red-50 p-3">
+              <div className="rounded-lg bg-red-50 p-3">
                 <p className="text-xs text-red-700 mb-1">Failed</p>
                 <p className="text-lg font-extrabold text-red-700">
                   {sorotanStatus.counts.failed}
@@ -716,7 +716,7 @@ export default function SeoDashboardPage() {
         const paginated = filtered.slice((auditPage - 1) * AUDIT_PER_PAGE, auditPage * AUDIT_PER_PAGE);
 
         return (
-          <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+          <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
             <div className="px-5 py-4 border-b border-border">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                 <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><Search size={14} className="text-primary" /> Audit SEO Artikel</h3>

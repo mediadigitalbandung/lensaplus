@@ -189,8 +189,8 @@ function StatCard({
   color?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <div className={`inline-flex rounded-xl p-2 ${color}`}>
+    <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <div className={`inline-flex rounded-lg p-2 ${color}`}>
         <Icon size={16} />
       </div>
       <p className="mt-2 text-2xl font-extrabold text-txt-primary">{value}</p>
@@ -207,7 +207,7 @@ function NotConfiguredBanner({
   settingKey?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5">
+    <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-5">
       <div className="flex items-start gap-3">
         <AlertCircle size={18} className="mt-0.5 text-yellow-600 shrink-0" />
         <div className="flex-1">
@@ -218,7 +218,7 @@ function NotConfiguredBanner({
           {settingKey && (
             <p className="mt-2 text-xs text-yellow-700">
               Set SystemSetting{" "}
-              <code className="font-mono bg-yellow-100 px-1 py-0.5 rounded">
+              <code className="font-mono bg-yellow-100 px-1 py-0.5 rounded-lg">
                 {settingKey}
               </code>{" "}
               di{" "}
@@ -249,7 +249,7 @@ function ScopedInternalView({
 }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-primary-light/40 border border-primary/20 px-4 py-3 text-xs text-primary/90 flex flex-wrap items-center gap-2">
+      <div className="rounded-xl bg-primary-light/40 border border-primary/20 px-4 py-3 text-xs text-primary/90 flex flex-wrap items-center gap-2">
         <Activity size={12} />
         <span className="font-semibold">Statistik Anda</span>
         <span className="font-mono">{from}</span>
@@ -274,7 +274,7 @@ function ScopedInternalView({
       </div>
 
       {/* Personal AI usage — how much AI the viewer has used in this range. */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h3 className="text-base font-bold text-txt-primary mb-1">Pemakaian AI Anda (Periode)</h3>
         <p className="text-xs text-txt-muted mb-4">Token &amp; permintaan AI yang Anda gunakan di rentang dipilih.</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -298,7 +298,7 @@ function ScopedInternalView({
         )}
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h3 className="text-base font-bold text-txt-primary mb-1">Trend Publikasi &amp; Views (Artikel Anda)</h3>
         <p className="text-xs text-txt-muted mb-4">Artikel Anda yang terbit + view kumulatif per hari di rentang dipilih.</p>
         <div className="h-72">
@@ -317,7 +317,7 @@ function ScopedInternalView({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border bg-surface-secondary px-5 py-4">
           <h3 className="text-base font-bold text-txt-primary">Artikel Terpopuler Saya</h3>
           <p className="text-xs text-txt-muted mt-0.5">10 artikel Anda paling banyak dibaca (seluruh waktu)</p>
@@ -408,7 +408,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
   return (
     <div className="space-y-6">
       {/* ── Range header — semua kartu di bawah dipisah jelas: BARU ada di rentang yang dipilih, vs lifetime totals ── */}
-      <div className="rounded-2xl bg-primary-light/40 border border-primary/20 px-4 py-3 text-xs text-primary/90 flex flex-wrap items-center gap-2">
+      <div className="rounded-xl bg-primary-light/40 border border-primary/20 px-4 py-3 text-xs text-primary/90 flex flex-wrap items-center gap-2">
         <Activity size={12} />
         <span className="font-semibold">Periode:</span>
         <span className="font-mono">{from}</span>
@@ -474,7 +474,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
       </div>
 
       {/* Trend over selected range */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h3 className="text-base font-bold text-txt-primary mb-1">
           Trend Publikasi & Views
         </h3>
@@ -513,7 +513,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
 
       {/* Role distribution + AI + Sorotan */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-base font-bold text-txt-primary mb-4">
             Pengguna per Role
           </h3>
@@ -529,7 +529,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-base font-bold text-txt-primary mb-1">
             AI Usage (Periode)
           </h3>
@@ -573,7 +573,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
 
       {/* Top articles — split: in-range vs lifetime */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
           <div className="border-b border-border bg-surface-secondary px-5 py-4">
             <h3 className="text-base font-bold text-txt-primary">
               Top Artikel — Periode
@@ -608,7 +608,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
             </table>
           </div>
         </div>
-        <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
           <div className="border-b border-border bg-surface-secondary px-5 py-4">
             <h3 className="text-base font-bold text-txt-primary">
               Top Artikel — Lifetime
@@ -647,7 +647,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
 
       {/* Pipeline funnel: Sorotan + Social — kontekstual ke editorial workflow */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-base font-bold text-txt-primary mb-1">Sorotan SEO</h3>
           <p className="text-xs text-txt-muted mb-3">9-angle reframing untuk long-tail SEO</p>
           <div className="space-y-1.5 text-sm">
@@ -661,7 +661,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-base font-bold text-txt-primary mb-1">Social Media</h3>
           <p className="text-xs text-txt-muted mb-3">Auto-publish ke IG/FB/Twitter</p>
           <div className="space-y-1.5 text-sm">
@@ -673,7 +673,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-base font-bold text-txt-primary mb-1">Newsletter</h3>
           <p className="text-xs text-txt-muted mb-3">Pelanggan mailing list</p>
           <div className="space-y-1.5 text-sm">
@@ -687,7 +687,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
 
       {/* Glossary + Ads + Scraping */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-base font-bold text-txt-primary mb-1">Glossary</h3>
           <p className="text-xs text-txt-muted mb-3">Istilah hukum yang dilihat pembaca</p>
           <div className="flex justify-between text-sm mb-3">
@@ -713,7 +713,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-base font-bold text-txt-primary mb-1">Iklan</h3>
           <p className="text-xs text-txt-muted mb-3">Performance lifetime semua slot</p>
           <div className="space-y-1.5 text-sm mb-4">
@@ -741,7 +741,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-base font-bold text-txt-primary mb-1">Auto-Scraping</h3>
           <p className="text-xs text-txt-muted mb-3">Sumber berita & artikel hasil paraphrase</p>
           <div className="space-y-1.5 text-sm">
@@ -764,7 +764,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
       </div>
 
       {/* Audit log activity */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h3 className="text-base font-bold text-txt-primary mb-1">Aktivitas Sistem (Periode)</h3>
         <p className="text-xs text-txt-muted mb-4">Total {formatNumber(data.audit.totalInRange)} aksi tercatat di AuditLog dalam rentang dipilih.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -878,7 +878,7 @@ function GA4Tab({ from, to }: { from: string; to: string }) {
         />
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h3 className="text-base font-bold text-txt-primary mb-4">
           Daily Trend
         </h3>
@@ -909,7 +909,7 @@ function GA4Tab({ from, to }: { from: string; to: string }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border bg-surface-secondary px-5 py-4">
           <h3 className="text-base font-bold text-txt-primary">Top Pages</h3>
         </div>
@@ -1034,7 +1034,7 @@ function GSCTab({ from, to }: { from: string; to: string }) {
         />
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h3 className="text-base font-bold text-txt-primary mb-4">
           Daily Trend
         </h3>
@@ -1066,7 +1066,7 @@ function GSCTab({ from, to }: { from: string; to: string }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
           <div className="border-b border-border bg-surface-secondary px-5 py-4">
             <h3 className="text-base font-bold text-txt-primary">
               Top Queries
@@ -1116,7 +1116,7 @@ function GSCTab({ from, to }: { from: string; to: string }) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
           <div className="border-b border-border bg-surface-secondary px-5 py-4">
             <h3 className="text-base font-bold text-txt-primary">Top Pages</h3>
           </div>
@@ -1242,7 +1242,7 @@ function CloudflareTab({ from, to }: { from: string; to: string }) {
         />
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h3 className="text-base font-bold text-txt-primary mb-4">
           Requests vs Cache
         </h3>
@@ -1328,7 +1328,7 @@ export default function StatistikPage() {
       </div>
 
       {/* Date range */}
-      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-4 shadow-card">
         <div className="flex items-center gap-2">
           <label className="text-xs font-semibold text-txt-secondary">
             From

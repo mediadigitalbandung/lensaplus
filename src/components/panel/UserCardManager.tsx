@@ -100,7 +100,7 @@ export default function UserCardManager({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-[12px] border border-border bg-surface p-6 shadow-lg">
+      <div className="w-full max-w-md rounded-lg border border-border bg-surface p-6 shadow-lg">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CreditCard size={20} className="text-primary" />

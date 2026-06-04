@@ -136,7 +136,7 @@ export default function MembershipCardSection() {
 
   if (loading) {
     return (
-      <div className="mt-6 rounded-[12px] border border-border bg-surface p-6 shadow-card">
+      <div className="mt-6 rounded-lg border border-border bg-surface p-6 shadow-card">
         <Loader2 className="mx-auto animate-spin text-primary" size={22} />
       </div>
     );
@@ -153,7 +153,7 @@ export default function MembershipCardSection() {
   ];
 
   return (
-    <div className="mt-6 rounded-[12px] border border-border bg-surface p-6 shadow-card">
+    <div className="mt-6 rounded-lg border border-border bg-surface p-6 shadow-card">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <CreditCard size={20} className="text-primary" />
@@ -168,7 +168,7 @@ export default function MembershipCardSection() {
 
       {/* Completeness warning */}
       {!complete && (
-        <div className="mb-4 flex items-start gap-3 rounded-[12px] border border-yellow-300 bg-yellow-50/70 p-4">
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-yellow-300 bg-yellow-50/70 p-4">
           <AlertTriangle size={18} className="mt-0.5 shrink-0 text-yellow-600" />
           <div className="text-sm text-yellow-800">
             <p className="font-semibold">Lengkapi data berikut agar kartu bisa diterbitkan:</p>
@@ -184,7 +184,7 @@ export default function MembershipCardSection() {
         </div>
       )}
       {complete && status === "DRAFT" && (
-        <div className="mb-4 flex items-center gap-2 rounded-[12px] border border-primary/30 bg-primary/5 p-3 text-sm text-primary">
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary">
           <CheckCircle2 size={16} /> Data lengkap. Menunggu verifikasi & penerbitan oleh admin.
         </div>
       )}
@@ -197,7 +197,7 @@ export default function MembershipCardSection() {
               <span className="text-xs font-semibold uppercase tracking-wide text-txt-muted">{s.label}</span>
               <span className="h-px flex-1 bg-border" />
             </div>
-            <div className="overflow-hidden rounded-xl border border-border bg-surface-secondary">
+            <div className="overflow-hidden rounded-lg border border-border bg-surface-secondary">
               {imgLoading && !s.img ? (
                 <div className="flex aspect-[1012/638] items-center justify-center">
                   <Loader2 className="animate-spin text-primary" size={22} />

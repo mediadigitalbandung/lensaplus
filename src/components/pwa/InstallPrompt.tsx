@@ -133,7 +133,7 @@ export default function InstallPrompt() {
         <button
           onClick={handleDismiss}
           aria-label="Tutup prompt instalasi"
-          className="flex-shrink-0 p-0.5 rounded text-on-surface-variant hover:text-on-surface transition-colors"
+          className="flex-shrink-0 p-0.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

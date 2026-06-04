@@ -166,7 +166,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
           </Link>
 
           {/* Hero card */}
-          <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
+          <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
             <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
               {/* Photo / initials */}
               <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-light shadow-md">
@@ -311,7 +311,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
 
           {/* Bio */}
           {official.bio && (
-            <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
+            <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
               <h2 className="flex items-center gap-2 text-title-md font-semibold text-txt-primary mb-4">
                 <Users size={18} className="text-primary" />
                 Biografi
@@ -324,7 +324,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
 
           {/* Education */}
           {official.education && (
-            <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
+            <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
               <h2 className="flex items-center gap-2 text-title-md font-semibold text-txt-primary mb-4">
                 <GraduationCap size={18} className="text-primary" />
                 Pendidikan
@@ -337,7 +337,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
 
           {/* Career */}
           {official.career && (
-            <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
+            <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
               <h2 className="flex items-center gap-2 text-title-md font-semibold text-txt-primary mb-4">
                 <Briefcase size={18} className="text-primary" />
                 Riwayat Karier
@@ -350,7 +350,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
 
           {/* Related articles */}
           {relatedArticles.length > 0 && (
-            <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-card">
+            <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card">
               <h2 className="text-title-md font-semibold text-txt-primary mb-4">
                 Berita Terkait
               </h2>

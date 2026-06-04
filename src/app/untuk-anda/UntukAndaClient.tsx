@@ -52,7 +52,7 @@ export default function UntukAndaClient() {
     <main className="container-main py-8 sm:py-12">
       <header className="mb-8 sm:mb-12">
         <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-secondary text-white">
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-secondary text-white">
             <Sparkles size={20} strokeWidth={2.5} />
           </div>
           <h1 className="font-serif text-headline-md sm:text-display-sm font-bold text-on-surface">
@@ -95,12 +95,12 @@ export default function UntukAndaClient() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="card animate-pulse h-72 bg-surface-tertiary rounded-xl"
+              className="card animate-pulse h-72 bg-surface-tertiary rounded-lg"
             />
           ))}
         </div>
       ) : articles.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface-secondary p-8 text-center">
+        <div className="rounded-xl border border-border bg-surface-secondary p-8 text-center">
           <BookOpen size={48} className="mx-auto mb-4 text-txt-muted" />
           <p className="text-body-md text-txt-muted">
             Belum ada rekomendasi. Mulai baca artikel untuk personalisasi.
@@ -121,7 +121,7 @@ export default function UntukAndaClient() {
                 <img
                   src={a.featuredImage}
                   alt={a.title}
-                  className="h-40 w-full object-cover rounded-t-xl"
+                  className="h-40 w-full object-cover rounded-t-lg"
                   loading="lazy"
                 />
               )}

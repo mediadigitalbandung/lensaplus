@@ -21,7 +21,7 @@ export default function Loading() {
         </div>
 
         {/* Featured image */}
-        <div className="skeleton h-[400px] w-full mt-8 rounded-[12px]" />
+        <div className="skeleton h-[400px] w-full mt-8 rounded-lg" />
 
         {/* Article body */}
         <div className="mt-8 space-y-4">

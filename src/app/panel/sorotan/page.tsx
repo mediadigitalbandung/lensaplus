@@ -348,13 +348,13 @@ export default function SorotanPage() {
 
       {/* Summary — total saja, tanpa status index */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:max-w-md">
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
           <p className="text-xs text-txt-secondary">Total Halaman Sorotan</p>
           <p className="mt-1 text-2xl font-extrabold text-txt-primary">
             {totalSorotan.toLocaleString("id-ID")}
           </p>
         </div>
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
           <p className="text-xs text-txt-secondary">
             {onlyWithSorotan ? "Artikel ber-Sorotan" : "Artikel Dipublikasi"}
           </p>
@@ -366,10 +366,10 @@ export default function SorotanPage() {
 
       {/* Auto-generation panel — admin only */}
       {isAdmin && (
-        <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light">
                 <Bot size={18} className="text-primary" />
               </div>
               <div>
@@ -489,7 +489,7 @@ export default function SorotanPage() {
           <Loader2 size={24} className="mx-auto animate-spin text-primary" />
         </div>
       ) : articles.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface py-16 text-center shadow-card">
+        <div className="rounded-xl border border-border bg-surface py-16 text-center shadow-card">
           <p className="text-sm text-txt-secondary">
             {onlyWithSorotan
               ? "Belum ada artikel yang punya Sorotan. Klik “Generate Batch” atau pilih “Semua artikel” untuk membuat."
@@ -504,7 +504,7 @@ export default function SorotanPage() {
               return (
                 <div
                   key={a.id}
-                  className="overflow-hidden rounded-xl border border-border bg-surface shadow-card"
+                  className="overflow-hidden rounded-lg border border-border bg-surface shadow-card"
                 >
                   <div className="flex items-center gap-2 px-3 py-3 sm:px-4">
                     <button
@@ -594,7 +594,7 @@ export default function SorotanPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="btn-ghost rounded px-3 py-1.5 disabled:opacity-30"
+                className="btn-ghost rounded-lg px-3 py-1.5 disabled:opacity-30"
               >
                 Prev
               </button>
@@ -604,7 +604,7 @@ export default function SorotanPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="btn-ghost rounded px-3 py-1.5 disabled:opacity-30"
+                className="btn-ghost rounded-lg px-3 py-1.5 disabled:opacity-30"
               >
                 Next
               </button>

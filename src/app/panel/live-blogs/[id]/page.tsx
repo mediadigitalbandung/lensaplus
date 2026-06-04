@@ -424,7 +424,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
               type="checkbox"
               checked={meta.isPublished ?? true}
               onChange={(e) => setMeta((m) => ({ ...m, isPublished: e.target.checked }))}
-              className="h-4 w-4 rounded border-border text-primary"
+              className="h-4 w-4 rounded-lg border-border text-primary"
             />
             <span className="text-sm text-on-surface">Tampilkan ke publik</span>
           </label>
@@ -434,7 +434,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
               type="checkbox"
               checked={meta.syndicateToSocial ?? false}
               onChange={(e) => setMeta((m) => ({ ...m, syndicateToSocial: e.target.checked }))}
-              className="h-4 w-4 rounded border-border text-primary mt-0.5"
+              className="h-4 w-4 rounded-lg border-border text-primary mt-0.5"
             />
             <span className="text-sm text-on-surface">
               Sebar update ke sosmed
@@ -487,7 +487,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
                 type="checkbox"
                 checked={entryIsPinned}
                 onChange={(e) => setEntryIsPinned(e.target.checked)}
-                className="h-4 w-4 rounded border-border text-primary"
+                className="h-4 w-4 rounded-lg border-border text-primary"
               />
               <Pin size={13} />
               Sematkan
@@ -497,7 +497,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
                 type="checkbox"
                 checked={entryIsHighlight}
                 onChange={(e) => setEntryIsHighlight(e.target.checked)}
-                className="h-4 w-4 rounded border-border text-primary"
+                className="h-4 w-4 rounded-lg border-border text-primary"
               />
               <Zap size={13} />
               Highlight
@@ -557,7 +557,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => togglePin(entry)}
-                    className={`rounded p-1 text-xs transition-colors ${entry.isPinned ? "text-primary bg-primary-light" : "text-txt-muted hover:text-primary"}`}
+                    className={`rounded-lg p-1 text-xs transition-colors ${entry.isPinned ? "text-primary bg-primary-light" : "text-txt-muted hover:text-primary"}`}
                     title={entry.isPinned ? "Lepas sematan" : "Sematkan"}
                   >
                     <Pin size={13} />
@@ -565,7 +565,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
                   {canDelete && (
                     <button
                       onClick={() => deleteEntry(entry)}
-                      className="rounded p-1 text-txt-muted hover:text-secondary transition-colors"
+                      className="rounded-lg p-1 text-txt-muted hover:text-secondary transition-colors"
                       title="Hapus"
                     >
                       <Trash2 size={13} />
@@ -581,7 +581,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
                 <img
                   src={entry.imageUrl}
                   alt="Entry media"
-                  className="mt-2 rounded max-h-40 object-cover"
+                  className="mt-2 rounded-lg max-h-40 object-cover"
                 />
               )}
             </div>

@@ -111,7 +111,7 @@ export default function DocumentationClient({
             Dokumentasi
           </h1>
         </div>
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5">
           <p className="text-sm text-red-700">Gagal memuat: {errorMessage}</p>
         </div>
       </div>
@@ -247,7 +247,7 @@ export default function DocumentationClient({
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
         {/* Sidebar ToC */}
         <aside className="doc-sidebar hidden lg:block">
-          <div className="sticky top-20 rounded-2xl border border-border bg-surface p-4 shadow-card max-h-[calc(100vh-6rem)] overflow-y-auto">
+          <div className="sticky top-20 rounded-xl border border-border bg-surface p-4 shadow-card max-h-[calc(100vh-6rem)] overflow-y-auto">
             <h3 className="flex items-center gap-1.5 text-xs font-bold text-txt-secondary mb-3 uppercase tracking-wider">
               <List size={12} /> Daftar Isi
             </h3>
@@ -261,7 +261,7 @@ export default function DocumentationClient({
                   <button
                     key={t.id}
                     onClick={() => scrollToId(t.id)}
-                    className={`block w-full text-left text-xs leading-tight py-1.5 rounded px-2 transition-colors ${
+                    className={`block w-full text-left text-xs leading-tight py-1.5 rounded-lg px-2 transition-colors ${
                       activeId === t.id
                         ? "bg-primary-light text-primary font-semibold"
                         : "text-txt-secondary hover:bg-surface-secondary"
@@ -280,7 +280,7 @@ export default function DocumentationClient({
         {/* Content */}
         <div
           ref={contentRef}
-          className="doc-content rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-card max-w-4xl"
+          className="doc-content rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card max-w-4xl"
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </div>

@@ -547,7 +547,7 @@ function PostsTab() {
           <Loader2 size={24} className="mx-auto animate-spin text-primary" />
         </div>
       ) : posts.length === 0 ? (
-        <div className="py-16 text-center rounded-2xl border border-border bg-surface">
+        <div className="py-16 text-center rounded-xl border border-border bg-surface">
           <Share2 size={40} className="mx-auto text-border mb-3" />
           <p className="text-sm text-txt-secondary">Belum ada post.</p>
         </div>
@@ -558,7 +558,7 @@ function PostsTab() {
             return (
               <div
                 key={p.id}
-                className="rounded-2xl border border-border bg-surface p-4 shadow-card"
+                className="rounded-xl border border-border bg-surface p-4 shadow-card"
               >
                 <div className="flex items-start gap-4">
                   {/* Image / video thumbnail */}
@@ -738,7 +738,7 @@ function PostsTab() {
               src={videoPreview}
               controls
               autoPlay
-              className="max-h-[85vh] w-auto rounded-xl shadow-2xl"
+              className="max-h-[85vh] w-auto rounded-lg shadow-2xl"
               style={{ maxWidth: "min(90vw, 420px)" }}
             />
             <button
@@ -1283,7 +1283,7 @@ function TemplatesTab() {
           <Loader2 size={24} className="mx-auto animate-spin text-primary" />
         </div>
       ) : templates.length === 0 ? (
-        <div className="py-16 text-center rounded-2xl border border-border bg-surface">
+        <div className="py-16 text-center rounded-xl border border-border bg-surface">
           <ImageIcon size={40} className="mx-auto text-border mb-3" />
           <p className="text-sm text-txt-secondary">Belum ada template.</p>
         </div>
@@ -1294,7 +1294,7 @@ function TemplatesTab() {
             return (
               <div
                 key={t.id}
-                className="rounded-2xl border border-border bg-surface overflow-hidden shadow-card"
+                className="rounded-xl border border-border bg-surface overflow-hidden shadow-card"
               >
                 <div className="relative w-full h-40 bg-surface-secondary">
                   {t.backgroundUrl && (
@@ -1409,7 +1409,7 @@ function TemplatesTab() {
               {/* Left Column: Canvas and Layers Editor */}
               <div className="xl:col-span-7 space-y-6">
                 {/* Form Settings */}
-                <div className="rounded-xl border border-border bg-surface p-5 space-y-4 shadow-card">
+                <div className="rounded-lg border border-border bg-surface p-5 space-y-4 shadow-card">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-txt-secondary mb-1.5">
@@ -1524,14 +1524,14 @@ function TemplatesTab() {
                       onChange={(e) =>
                         setForm({ ...form, isActive: e.target.checked })
                       }
-                      className="h-4 w-4 rounded border-border bg-surface-secondary accent-primary"
+                      className="h-4 w-4 rounded-lg border-border bg-surface-secondary accent-primary"
                     />
                     Template Aktif
                   </label>
                 </div>
 
                 {/* Drag-and-resize Visual Canvas Box */}
-                <div className="rounded-xl border border-border bg-surface p-5 space-y-4 shadow-card">
+                <div className="rounded-lg border border-border bg-surface p-5 space-y-4 shadow-card">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-txt-primary">
                       Area Foto Artikel (drag untuk pindah, pojok kanan-bawah untuk resize)
@@ -1591,7 +1591,7 @@ function TemplatesTab() {
                             {/* Inner label / representation */}
                             {isPhoto ? (
                               <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                                <span className="bg-primary/90 border border-primary text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                                <span className="bg-primary/90 border border-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow">
                                   AREA FOTO
                                 </span>
                               </div>
@@ -1605,7 +1605,7 @@ function TemplatesTab() {
                                   color: layer.color || "#ffffff",
                                 }}
                               >
-                                <span className="bg-secondary-light border border-secondary/40 text-secondary px-1 py-0.5 rounded text-[8px] mr-1 font-sans select-none">
+                                <span className="bg-secondary-light border border-secondary/40 text-secondary px-1 py-0.5 rounded-lg text-[8px] mr-1 font-sans select-none">
                                   {`T${idx}: ${layer.text.replace(/[{}]/g, "")}`}
                                 </span>
                               </div>
@@ -1660,7 +1660,7 @@ function TemplatesTab() {
                     return (
                       <div
                         key={idx}
-                        className={`rounded-xl border transition-all ${
+                        className={`rounded-lg border transition-all ${
                           isSelected
                             ? isPhoto
                               ? "border-primary/40 bg-primary/5"
@@ -1838,7 +1838,7 @@ function TemplatesTab() {
                                     <div className="flex gap-1.5 items-center">
                                       <input
                                         type="color"
-                                        className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent p-0"
+                                        className="w-8 h-8 rounded-lg border border-border cursor-pointer bg-transparent p-0"
                                         value={layer.color || "#ffffff"}
                                         onChange={(e) => {
                                           const updated = [...layers];
@@ -1947,7 +1947,7 @@ function TemplatesTab() {
 
               {/* Right Column: High-Fidelity Responsive Preview Container */}
               <div className="xl:col-span-5 xl:sticky xl:top-[90px] space-y-6">
-                <div className="rounded-xl border border-border bg-surface p-5 space-y-4 shadow-card">
+                <div className="rounded-lg border border-border bg-surface p-5 space-y-4 shadow-card">
                   <div className="flex items-center justify-between select-none">
                     <h3 className="text-sm font-bold text-txt-primary">
                       Preview Template <span className="text-xs text-txt-muted font-normal ml-1">({dims.width}×{dims.height} · {Math.round(previewScale * 100)}%)</span>
@@ -2061,7 +2061,7 @@ function TemplatesTab() {
                                 }}
                               >
                                 {layer.text === "{{category}}" ? (
-                                  <span className="text-white font-extrabold rounded inline-block text-center uppercase tracking-wider mx-auto">
+                                  <span className="text-white font-extrabold rounded-lg inline-block text-center uppercase tracking-wider mx-auto">
                                     {resolvedText}
                                   </span>
                                 ) : (
@@ -2089,7 +2089,7 @@ function TemplatesTab() {
       {/* Preview modal */}
       {previewOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-surface rounded-2xl shadow-2xl border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+          <div className="bg-surface rounded-xl shadow-2xl border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
             <h3 className="text-xl font-bold text-txt-primary mb-4">
               Preview Template
             </h3>
@@ -2321,7 +2321,7 @@ function SettingsTab() {
   if (error && !loading) {
     return (
       <div className="py-16 text-center max-w-md mx-auto space-y-4">
-        <div className="p-6 rounded-2xl border border-red-200 bg-red-50 space-y-3">
+        <div className="p-6 rounded-xl border border-red-200 bg-red-50 space-y-3">
           <span className="text-3xl">⚠️</span>
           <h4 className="font-bold text-txt-primary text-sm">
             Gagal Memuat Pengaturan
@@ -2365,7 +2365,7 @@ function SettingsTab() {
     <div className="space-y-6">
       {/* Expiry Warning Alert Banner */}
       {(isIgExpired || isFbExpired || isIgExpiringSoon || isFbExpiringSoon) && (
-        <div className="rounded-2xl border border-red-200 bg-red-50/70 backdrop-blur p-5 text-sm text-red-800">
+        <div className="rounded-xl border border-red-200 bg-red-50/70 backdrop-blur p-5 text-sm text-red-800">
           <div className="flex items-start gap-3">
             <span className="text-2xl mt-0.5">⚠️</span>
             <div className="space-y-1">
@@ -2385,7 +2385,7 @@ function SettingsTab() {
       )}
 
       {/* Guide Accordion */}
-      <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <button
           type="button"
           onClick={() => setShowGuide(!showGuide)}
@@ -2402,7 +2402,7 @@ function SettingsTab() {
 
         {showGuide && (
           <div className="p-5 border-t border-border bg-surface-secondary/40 space-y-4 text-xs leading-relaxed text-txt-secondary">
-            <div className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-blue-950 space-y-1.5 backdrop-blur-sm">
+            <div className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-lg text-blue-950 space-y-1.5 backdrop-blur-sm">
               <strong className="text-blue-950 font-bold block text-xs">💡 Info Penting Tentang Tipe Token:</strong>
               Sangat direkomendasikan menggunakan <strong>Page Access Token</strong> yang didapatkan melalui proses &quot;Scan Akun&quot; di bawah. Token ini <strong>tidak akan pernah kedaluwarsa (Never Expires)</strong> jika Anda melakukan scan menggunakan <strong>User Access Token Jangka Panjang (Long-Lived, 60 hari)</strong>. 
               <br/>
@@ -2417,11 +2417,11 @@ function SettingsTab() {
                 <li>Pada bagian <strong>User or Page</strong>, pilih <strong>User Access Token</strong>.</li>
                 <li>Di kolom <strong>Permissions</strong> (sisi kanan), tambahkan minimal 5 izin wajib berikut:
                   <div className="flex flex-wrap gap-1.5 mt-1.5 mb-1.5">
-                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-pink-600">instagram_basic</code>
-                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-pink-600">instagram_content_publish</code>
-                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-blue-600">pages_read_engagement</code>
-                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-blue-600">pages_show_list</code>
-                    <code className="bg-surface px-2 py-0.5 border border-border rounded text-[10px] font-mono text-blue-600">pages_manage_posts</code>
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded-lg text-[10px] font-mono text-pink-600">instagram_basic</code>
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded-lg text-[10px] font-mono text-pink-600">instagram_content_publish</code>
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded-lg text-[10px] font-mono text-blue-600">pages_read_engagement</code>
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded-lg text-[10px] font-mono text-blue-600">pages_show_list</code>
+                    <code className="bg-surface px-2 py-0.5 border border-border rounded-lg text-[10px] font-mono text-blue-600">pages_manage_posts</code>
                   </div>
                 </li>
                 <li>Klik tombol biru <strong>Generate Access Token</strong>. Setujui login Facebook dan pastikan Anda mencentang Page Facebook &amp; Akun Instagram Business Anda yang ingin diposting.</li>
@@ -2457,7 +2457,7 @@ function SettingsTab() {
       </div>
 
       {/* Global */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h3 className="text-base font-bold text-txt-primary mb-4">Global</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex items-center gap-2 text-sm">
@@ -2467,7 +2467,7 @@ function SettingsTab() {
               onChange={(e) =>
                 setGlobal({ ...global, draftMode: e.target.checked })
               }
-              className="h-4 w-4 rounded border-border"
+              className="h-4 w-4 rounded-lg border-border"
             />
             Draft Mode (semua post butuh approval)
           </label>
@@ -2478,7 +2478,7 @@ function SettingsTab() {
               onChange={(e) =>
                 setGlobal({ ...global, autoPublishIG: e.target.checked })
               }
-              className="h-4 w-4 rounded border-border"
+              className="h-4 w-4 rounded-lg border-border"
             />
             Auto-publish Instagram
           </label>
@@ -2489,7 +2489,7 @@ function SettingsTab() {
               onChange={(e) =>
                 setGlobal({ ...global, autoPublishFB: e.target.checked })
               }
-              className="h-4 w-4 rounded border-border"
+              className="h-4 w-4 rounded-lg border-border"
             />
             Auto-publish Facebook
           </label>
@@ -2500,7 +2500,7 @@ function SettingsTab() {
               onChange={(e) =>
                 setGlobal({ ...global, autoPublishThreads: e.target.checked })
               }
-              className="h-4 w-4 rounded border-border"
+              className="h-4 w-4 rounded-lg border-border"
             />
             Auto-publish Threads
           </label>
@@ -2514,7 +2514,7 @@ function SettingsTab() {
                   autoPublishTwitter: e.target.checked,
                 })
               }
-              className="h-4 w-4 rounded border-border"
+              className="h-4 w-4 rounded-lg border-border"
             />
             Auto-publish Twitter
           </label>
@@ -2525,11 +2525,11 @@ function SettingsTab() {
               onChange={(e) =>
                 setGlobal({ ...global, autoPublishReels: e.target.checked })
               }
-              className="h-4 w-4 rounded border-border"
+              className="h-4 w-4 rounded-lg border-border"
             />
             Auto-buat Reel IG (saat artikel terbit)
           </label>
-          <div className="md:col-span-2 rounded-xl border border-border bg-surface-secondary/40 p-3.5">
+          <div className="md:col-span-2 rounded-lg border border-border bg-surface-secondary/40 p-3.5">
             <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-txt-secondary">
               <Music size={12} /> Musik latar default Reel (opsional)
             </label>
@@ -2588,7 +2588,7 @@ function SettingsTab() {
                 setGlobal({ ...global, captionTemplate: e.target.value })
               }
             />
-            <div className="rounded-xl border border-border bg-surface-secondary/40 p-3.5 space-y-2">
+            <div className="rounded-lg border border-border bg-surface-secondary/40 p-3.5 space-y-2">
               <span className="text-[11px] font-bold text-txt-primary block">
                 Placeholders yang didukung:
               </span>
@@ -2616,7 +2616,7 @@ function SettingsTab() {
               </div>
               <p className="text-[10px] text-txt-muted leading-relaxed mt-1">
                 * Kosongkan field ini jika ingin menggunakan template bawaan sistem:<br />
-                <code className="bg-surface px-1.5 py-0.5 rounded border border-border font-mono text-[9px]">
+                <code className="bg-surface px-1.5 py-0.5 rounded-lg border border-border font-mono text-[9px]">
                   {"{{title}} \n\n {{summary}} \n\n Baca selengkapnya di: {{link}} \n\n {{cta}} \n\n {{hashtags}}"}
                 </code>
               </p>
@@ -2654,7 +2654,7 @@ function SettingsTab() {
       </div>
 
       {/* Instagram */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <h3 className="text-base font-bold text-txt-primary flex items-center gap-2">
             <Instagram size={16} className="text-pink-500" />
@@ -2751,7 +2751,7 @@ function SettingsTab() {
             </button>
 
             {scannedAccounts.length > 0 && (
-              <div className="mt-3 p-3 bg-surface-secondary border border-border rounded-xl space-y-2">
+              <div className="mt-3 p-3 bg-surface-secondary border border-border rounded-lg space-y-2">
                 <p className="text-xs font-bold text-txt-secondary">
                   Pilih Akun Terhubung untuk mengisi ID secara otomatis:
                 </p>
@@ -2840,7 +2840,7 @@ function SettingsTab() {
               onChange={(e) =>
                 setInstagram({ ...instagram, enabled: e.target.checked })
               }
-              className="h-4 w-4 rounded border-border"
+              className="h-4 w-4 rounded-lg border-border"
             />
             Enabled
           </label>
@@ -2873,7 +2873,7 @@ function SettingsTab() {
       </div>
 
       {/* Facebook */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <h3 className="text-base font-bold text-txt-primary flex items-center gap-2">
             <Facebook size={16} className="text-blue-600" />
@@ -2959,7 +2959,7 @@ function SettingsTab() {
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <label 
-                className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                className={`flex flex-col p-4 rounded-lg border transition-all cursor-pointer select-none ${
                   facebook.postMode === "link" ? "border-primary bg-primary/5" : "border-border hover:border-outline-variant"
                 }`}
               >
@@ -2981,7 +2981,7 @@ function SettingsTab() {
               </label>
 
               <label 
-                className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                className={`flex flex-col p-4 rounded-lg border transition-all cursor-pointer select-none ${
                   facebook.postMode === "photo" ? "border-primary bg-primary/5" : "border-border hover:border-outline-variant"
                 }`}
               >
@@ -3003,7 +3003,7 @@ function SettingsTab() {
               </label>
 
               <label 
-                className={`flex flex-col p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                className={`flex flex-col p-4 rounded-lg border transition-all cursor-pointer select-none ${
                   facebook.postMode === "both" ? "border-primary bg-primary/5" : "border-border hover:border-outline-variant"
                 }`}
               >
@@ -3032,7 +3032,7 @@ function SettingsTab() {
               onChange={(e) =>
                 setFacebook({ ...facebook, enabled: e.target.checked })
               }
-              className="h-4 w-4 rounded border-border"
+              className="h-4 w-4 rounded-lg border-border"
             />
             Enabled
           </label>
@@ -3064,7 +3064,7 @@ function SettingsTab() {
       </div>
 
       {/* Threads */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <h3 className="text-base font-bold text-txt-primary flex items-center gap-2">
             <Share2 size={16} className="text-emerald-500" />
@@ -3087,7 +3087,7 @@ function SettingsTab() {
         </p>
 
         {/* Quick Connect Section */}
-        <div className="mb-6 p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-4">
+        <div className="mb-6 p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-4">
           <div>
             <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-1 flex items-center gap-1.5">
               ⚡ Cara Cepat: Hubungkan Threads Otomatis (Rekomendasi)
@@ -3198,7 +3198,7 @@ function SettingsTab() {
               onChange={(e) =>
                 setThreads({ ...threads, enabled: e.target.checked })
               }
-              className="h-4 w-4 rounded border-border"
+              className="h-4 w-4 rounded-lg border-border"
             />
             Enabled
           </label>

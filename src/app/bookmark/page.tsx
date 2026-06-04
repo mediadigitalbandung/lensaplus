@@ -87,16 +87,16 @@ export default function BookmarkPage() {
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="animate-pulse rounded-[12px] border border-border bg-surface-secondary p-4"
+                className="animate-pulse rounded-lg border border-border bg-surface-secondary p-4"
               >
                 <div className="aspect-[16/9] rounded-lg bg-surface-tertiary" />
-                <div className="mt-3 h-5 w-3/4 rounded bg-surface-tertiary" />
-                <div className="mt-2 h-4 w-full rounded bg-surface-secondary" />
+                <div className="mt-3 h-5 w-3/4 rounded-lg bg-surface-tertiary" />
+                <div className="mt-2 h-4 w-full rounded-lg bg-surface-secondary" />
               </div>
             ))}
           </div>
         ) : bookmarks.length === 0 ? (
-          <div className="rounded-[12px] border border-border bg-surface-secondary p-12 text-center">
+          <div className="rounded-lg border border-border bg-surface-secondary p-12 text-center">
             <Bookmark size={48} className="mx-auto mb-4 text-txt-muted" />
             <p className="text-lg font-semibold text-txt-primary">
               Belum ada bookmark
@@ -117,7 +117,7 @@ export default function BookmarkPage() {
             {articles.map((article) => (
               <div
                 key={article.slug}
-                className="group relative rounded-[12px] border border-border bg-surface overflow-hidden shadow-card transition-all hover:shadow-lg"
+                className="group relative rounded-lg border border-border bg-surface overflow-hidden shadow-card transition-all hover:shadow-lg"
               >
                 {/* Featured image */}
                 {article.featuredImage ? (

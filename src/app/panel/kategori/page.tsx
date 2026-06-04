@@ -38,17 +38,17 @@ function slugify(text: string): string {
 
 function LoadingSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+    <div className="animate-pulse overflow-hidden rounded-lg border border-border bg-surface shadow-card">
       <div className="border-b border-border bg-surface-secondary px-5 py-3">
-        <div className="h-4 w-full rounded bg-surface-tertiary" />
+        <div className="h-4 w-full rounded-lg bg-surface-tertiary" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4 border-b border-border px-5 py-3">
           <div className="flex-1">
-            <div className="h-4 w-1/3 rounded bg-surface-tertiary" />
+            <div className="h-4 w-1/3 rounded-lg bg-surface-tertiary" />
           </div>
-          <div className="h-4 w-20 rounded bg-surface-tertiary" />
-          <div className="h-4 w-16 rounded bg-surface-tertiary" />
+          <div className="h-4 w-20 rounded-lg bg-surface-tertiary" />
+          <div className="h-4 w-16 rounded-lg bg-surface-tertiary" />
         </div>
       ))}
     </div>
@@ -71,7 +71,7 @@ function Modal({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-[calc(100%-2rem)] max-w-lg mx-auto rounded-[12px] border border-border bg-surface p-8 shadow-xl">
+      <div className="w-[calc(100%-2rem)] max-w-lg mx-auto rounded-lg border border-border bg-surface p-8 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-txt-primary">{title}</h3>
           <button onClick={onClose} className="rounded-lg p-1 text-txt-secondary hover:text-txt-primary" aria-label="Tutup">
@@ -369,15 +369,15 @@ export default function KategoriPage() {
           {catLoading ? (
             <LoadingSkeleton />
           ) : catError ? (
-            <div className="rounded-[12px] border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
               {catError}
             </div>
           ) : categories.length === 0 ? (
-            <div className="rounded-[12px] border border-border bg-surface p-4 sm:p-8 text-center text-txt-secondary">
+            <div className="rounded-lg border border-border bg-surface p-4 sm:p-8 text-center text-txt-secondary">
               Belum ada kategori. Klik &quot;Tambah Kategori&quot; untuk memulai.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+            <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-sm">
                   <thead>
@@ -521,11 +521,11 @@ export default function KategoriPage() {
           {tagLoading ? (
             <LoadingSkeleton />
           ) : tags.length === 0 ? (
-            <div className="rounded-[12px] border border-border bg-surface p-4 sm:p-8 text-center text-txt-secondary">
+            <div className="rounded-lg border border-border bg-surface p-4 sm:p-8 text-center text-txt-secondary">
               Belum ada tag. Klik &quot;Tambah Tag&quot; untuk memulai.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+            <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-sm">
                   <thead>

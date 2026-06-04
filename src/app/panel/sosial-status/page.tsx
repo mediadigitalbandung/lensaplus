@@ -318,7 +318,7 @@ export default function SosialStatusPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : posts.length === 0 ? (
-        <div className="rounded-[12px] border border-dashed border-border bg-surface py-16 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-surface py-16 text-center">
           <Share2 className="mx-auto mb-3 h-10 w-10 text-border" />
           <p className="text-txt-secondary">Belum ada postingan sosial media untuk filter ini.</p>
         </div>
@@ -333,7 +333,7 @@ export default function SosialStatusPage() {
             return (
               <div
                 key={p.id}
-                className="flex flex-col overflow-hidden rounded-[12px] border border-border bg-surface shadow-card"
+                className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card"
               >
                 {/* Thumbnail */}
                 <div className="relative aspect-[4/3] bg-surface-secondary">
@@ -411,7 +411,7 @@ export default function SosialStatusPage() {
                         <Share2 size={14} /> Bagikan
                       </button>
                       {shareOpenId === p.id && canShare && (
-                        <div className="absolute bottom-full right-0 z-20 mb-2 w-44 overflow-hidden rounded-[10px] border border-border bg-surface shadow-lg">
+                        <div className="absolute bottom-full right-0 z-20 mb-2 w-44 overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
                           <button onClick={() => nativeShare(p)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-surface-secondary">
                             <Share2 size={14} className="text-txt-secondary" /> Bagikan…
                           </button>

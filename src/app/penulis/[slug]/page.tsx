@@ -87,7 +87,7 @@ export default async function PenulisPage({ params: paramsPromise }: { params: P
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(authorJsonLd) }} />
       <div className="container-main py-8">
         {/* Author profile */}
-        <div className="rounded-[12px] border border-border bg-surface p-6">
+        <div className="rounded-lg border border-border bg-surface p-6">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
             <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-primary text-4xl font-bold text-white">
               {author.name.charAt(0)}

@@ -65,7 +65,7 @@ export default function LokasiIndexPage() {
           {courtLocations.map((c) => (
             <article
               key={c.slug}
-              className="group flex h-full flex-col rounded-[12px] border border-border bg-surface-container-lowest p-5 shadow-card transition-all hover:border-primary/40 hover:shadow-card-hover hover:-translate-y-0.5"
+              className="group flex h-full flex-col rounded-lg border border-border bg-surface-container-lowest p-5 shadow-card transition-all hover:border-primary/40 hover:shadow-card-hover hover:-translate-y-0.5"
             >
               <div className="mb-3 flex items-center justify-between gap-2">
                 <span className="inline-block rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
@@ -116,7 +116,7 @@ export default function LokasiIndexPage() {
           ))}
         </div>
 
-        <div className="mt-10 rounded-[12px] border border-dashed border-border bg-surface-container-low p-6 text-sm text-on-surface-variant">
+        <div className="mt-10 rounded-lg border border-dashed border-border bg-surface-container-low p-6 text-sm text-on-surface-variant">
           <strong className="text-on-surface">Catatan:</strong> data alamat &amp; nomor telepon
           dirangkum dari sumber publik (situs Mahkamah Agung dan situs masing-masing pengadilan).
           Jam operasional dapat berubah pada hari libur nasional. Untuk koreksi data, silakan{" "}

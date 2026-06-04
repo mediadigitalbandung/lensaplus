@@ -190,7 +190,7 @@ export default async function RangkumanIndexPage() {
         </div>
 
         {/* Empty / placeholder note */}
-        <div className="mt-10 rounded-[12px] border border-dashed border-border bg-surface-container-low p-6 text-center text-sm text-on-surface-variant">
+        <div className="mt-10 rounded-lg border border-dashed border-border bg-surface-container-low p-6 text-center text-sm text-on-surface-variant">
           Lebih banyak rangkuman tematik akan hadir secara berkala. Saran topik?{" "}
           <Link href="/kontak" className="text-primary hover:underline">Kirim ke redaksi</Link>.
         </div>

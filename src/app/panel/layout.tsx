@@ -355,7 +355,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
             <div className="flex min-w-0 items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="rounded-xl p-2.5 text-txt-primary hover:bg-surface-secondary lg:hidden"
+                className="rounded-lg p-2.5 text-txt-primary hover:bg-surface-secondary lg:hidden"
                 aria-label="Buka menu navigasi panel"
                 aria-expanded={sidebarOpen}
                 aria-controls="panel-sidebar"
@@ -405,7 +405,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
               {/* Notification dropdown */}
               {notifOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-[12px] border border-border bg-surface shadow-lg">
+                <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
                   {/* Header */}
                   <div className="border-b border-border px-4 py-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-txt-primary">Notifikasi</h3>
@@ -491,7 +491,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
           {/* Warning: login attempt from another device */}
           {!!((session as unknown as Record<string, boolean>)?.loginAttempt) && (
-            <div className="mx-4 mt-4 sm:mx-6 rounded-[12px] bg-yellow-50 border border-yellow-200 px-4 py-3 flex items-start gap-3">
+            <div className="mx-4 mt-4 sm:mx-6 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3 flex items-start gap-3">
               <AlertCircle size={18} className="text-yellow-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-yellow-800">Percobaan login dari perangkat lain</p>

@@ -30,7 +30,7 @@ export default async function RedaksiPage() {
           </p>
 
           {members.length === 0 ? (
-            <div className="mt-8 rounded-[12px] border-2 border-dashed border-border py-12 text-center">
+            <div className="mt-8 rounded-lg border-2 border-dashed border-border py-12 text-center">
               <p className="text-txt-muted">Susunan redaksi akan segera diperbarui.</p>
             </div>
           ) : (
@@ -38,7 +38,7 @@ export default async function RedaksiPage() {
               {members.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-4 rounded-[12px] border border-border bg-surface p-5"
+                  className="flex items-center gap-4 rounded-lg border border-border bg-surface p-5"
                 >
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-white overflow-hidden">
                     {item.photo ? (
@@ -59,7 +59,7 @@ export default async function RedaksiPage() {
             </div>
           )}
 
-          <div className="mt-8 rounded-[12px] border border-border bg-surface-secondary p-5">
+          <div className="mt-8 rounded-lg border border-border bg-surface-secondary p-5">
             <p className="text-sm text-txt-muted">
               Susunan redaksi ini akan diperbarui seiring dengan perkembangan organisasi.
               Untuk informasi lebih lanjut, silakan hubungi{" "}

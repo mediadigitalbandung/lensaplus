@@ -61,19 +61,19 @@ function LoadingSkeleton() {
     <div className="animate-pulse">
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
-            <div className="h-4 w-24 rounded bg-surface-tertiary" />
-            <div className="mt-2 h-7 w-16 rounded bg-surface-tertiary" />
+          <div key={i} className="rounded-lg border border-border bg-surface p-4 shadow-card">
+            <div className="h-4 w-24 rounded-lg bg-surface-tertiary" />
+            <div className="mt-2 h-7 w-16 rounded-lg bg-surface-tertiary" />
           </div>
         ))}
       </div>
-      <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
-        <div className="border-b border-border bg-surface-secondary px-5 py-3"><div className="h-4 w-full rounded bg-surface-tertiary" /></div>
+      <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
+        <div className="border-b border-border bg-surface-secondary px-5 py-3"><div className="h-4 w-full rounded-lg bg-surface-tertiary" /></div>
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="flex items-center gap-4 border-b border-border px-5 py-3">
-            <div className="h-4 w-1/4 rounded bg-surface-tertiary" />
-            <div className="h-4 w-20 rounded bg-surface-tertiary" />
-            <div className="h-4 w-32 rounded bg-surface-tertiary" />
+            <div className="h-4 w-1/4 rounded-lg bg-surface-tertiary" />
+            <div className="h-4 w-20 rounded-lg bg-surface-tertiary" />
+            <div className="h-4 w-32 rounded-lg bg-surface-tertiary" />
           </div>
         ))}
       </div>
@@ -149,9 +149,9 @@ export default function IklanPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
           <p>{error}</p>
-          <button onClick={fetchAds} className="mt-2 rounded-[12px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Coba Lagi</button>
+          <button onClick={fetchAds} className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Coba Lagi</button>
         </div>
       )}
 
@@ -159,22 +159,22 @@ export default function IklanPage() {
         <>
           {/* Stats */}
           <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
+            <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
               <div className="flex items-center gap-2 text-sm text-txt-secondary"><Eye size={16} className="text-blue-500" /> Total Tayangan</div>
               <p className="mt-1 text-lg sm:text-2xl font-bold text-txt-primary">{totalImpressions.toLocaleString("id-ID")}</p>
             </div>
-            <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
+            <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
               <div className="flex items-center gap-2 text-sm text-txt-secondary"><MousePointer size={16} className="text-primary" /> Total Klik</div>
               <p className="mt-1 text-lg sm:text-2xl font-bold text-txt-primary">{totalClicks.toLocaleString("id-ID")}</p>
             </div>
-            <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
+            <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
               <div className="flex items-center gap-2 text-sm text-txt-secondary"><BarChart3 size={16} className="text-purple-500" /> Rata-rata CTR</div>
               <p className="mt-1 text-lg sm:text-2xl font-bold text-txt-primary">{avgCtr}%</p>
             </div>
           </div>
 
           {/* Table */}
-          <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+          <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-sm">
                 <thead className="border-b border-border bg-surface-secondary">
@@ -199,7 +199,7 @@ export default function IklanPage() {
                           <p className="text-xs text-txt-muted">{typeLabels[ad.type] || ad.type}</p>
                         </td>
                         <td className="px-3 sm:px-5 py-4">
-                          <span className="rounded bg-surface-tertiary px-3 py-0.5 text-sm font-medium text-txt-secondary">{slotLabels[ad.slot] || ad.slot}</span>
+                          <span className="rounded-lg bg-surface-tertiary px-3 py-0.5 text-sm font-medium text-txt-secondary">{slotLabels[ad.slot] || ad.slot}</span>
                         </td>
                         <td className="px-5 py-4 text-txt-secondary">
                           <div className="flex items-center gap-1 text-sm"><Calendar size={12} /> {formatDate(ad.startDate)} — {formatDate(ad.endDate)}</div>
@@ -214,8 +214,8 @@ export default function IklanPage() {
                         </td>
                         <td className="px-5 py-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Link href={`/panel/iklan/${ad.id}/edit`} className="btn-ghost rounded p-2" title="Edit"><Edit size={16} /></Link>
-                            <button onClick={() => handleDelete(ad.id)} disabled={deleting === ad.id} className="btn-ghost rounded p-2 hover:text-red-500 disabled:opacity-50" title="Hapus"><Trash2 size={16} /></button>
+                            <Link href={`/panel/iklan/${ad.id}/edit`} className="btn-ghost rounded-lg p-2" title="Edit"><Edit size={16} /></Link>
+                            <button onClick={() => handleDelete(ad.id)} disabled={deleting === ad.id} className="btn-ghost rounded-lg p-2 hover:text-red-500 disabled:opacity-50" title="Hapus"><Trash2 size={16} /></button>
                           </div>
                         </td>
                       </tr>

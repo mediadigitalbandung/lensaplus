@@ -78,7 +78,7 @@ export default function VideoStory({ items }: VideoStoryProps) {
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
             <Play size={12} className="text-white ml-0.5" fill="white" />
           </div>
-          <span className="rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+          <span className="rounded-lg bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
             {item.duration}
           </span>
         </div>
@@ -183,7 +183,7 @@ export default function VideoStory({ items }: VideoStoryProps) {
               autoPlay
               playsInline
               loop
-              className="h-full w-full rounded-xl bg-black object-contain"
+              className="h-full w-full rounded-lg bg-black object-contain"
             />
           </div>
         </div>

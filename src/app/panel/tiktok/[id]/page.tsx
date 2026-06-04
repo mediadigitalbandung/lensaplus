@@ -453,7 +453,7 @@ export default function TiktokEditorPage() {
             maxLength={150}
           />
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-txt-muted">
-            <span className="rounded bg-surface-tertiary px-2 py-0.5 font-medium text-txt-secondary">
+            <span className="rounded-lg bg-surface-tertiary px-2 py-0.5 font-medium text-txt-secondary">
               {STATUS_LABEL[status] || status}
             </span>
             <span>Total durasi: {(totalDurationMs / 1000).toFixed(1)}s</span>
@@ -496,7 +496,7 @@ export default function TiktokEditorPage() {
       <div className="grid gap-5 lg:grid-cols-12">
         {/* Left — slot list (4 cols) */}
         <div className="lg:col-span-4">
-          <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
+          <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
                 <Layers size={14} className="text-primary" />
@@ -566,7 +566,7 @@ export default function TiktokEditorPage() {
                       <p className="text-[10px] text-txt-muted flex flex-wrap items-center gap-1.5">
                         <span>{humanSize(s.size)}</span>
                         {s.kind === "VIDEO" && (s.trimStartMs > 0 || s.trimEndMs !== null) && (
-                          <span className="inline-flex items-center rounded bg-primary-light px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                          <span className="inline-flex items-center rounded-lg bg-primary-light px-1.5 py-0.5 text-[9px] font-semibold text-primary">
                             Trim: {(s.trimStartMs / 1000).toFixed(1)}s - {s.trimEndMs !== null ? `${(s.trimEndMs / 1000).toFixed(1)}s` : "end"}
                           </span>
                         )}
@@ -599,7 +599,7 @@ export default function TiktokEditorPage() {
                             if (ms !== s.durationMs) updateSlotDuration(s.id, ms);
                             else e.target.value = String(ms); // reflect clamped value
                           }}
-                          className="w-16 rounded border border-border bg-surface px-1.5 py-0.5 text-[10px]"
+                          className="w-16 rounded-lg border border-border bg-surface px-1.5 py-0.5 text-[10px]"
                         />
                         <span className="text-[10px] text-txt-muted">ms</span>
                       </div>
@@ -608,7 +608,7 @@ export default function TiktokEditorPage() {
                       <button
                         onClick={() => moveSlot(s.id, -1)}
                         disabled={idx === 0}
-                        className="rounded p-1 text-txt-secondary hover:bg-surface-container disabled:opacity-30"
+                        className="rounded-lg p-1 text-txt-secondary hover:bg-surface-container disabled:opacity-30"
                         title="Naik"
                       >
                         <ChevronUp size={12} />
@@ -616,7 +616,7 @@ export default function TiktokEditorPage() {
                       <button
                         onClick={() => moveSlot(s.id, 1)}
                         disabled={idx === content.slots.length - 1}
-                        className="rounded p-1 text-txt-secondary hover:bg-surface-container disabled:opacity-30"
+                        className="rounded-lg p-1 text-txt-secondary hover:bg-surface-container disabled:opacity-30"
                         title="Turun"
                       >
                         <ChevronDown size={12} />
@@ -627,7 +627,7 @@ export default function TiktokEditorPage() {
                             setSelectedSlotForEdit(s);
                             setIsClipperOpen(true);
                           }}
-                          className="rounded p-1 text-blue-600 hover:bg-blue-50"
+                          className="rounded-lg p-1 text-blue-600 hover:bg-blue-50"
                           title="Edit Trim Video"
                         >
                           <Scissors size={12} />
@@ -635,7 +635,7 @@ export default function TiktokEditorPage() {
                       )}
                       <button
                         onClick={() => removeSlot(s.id)}
-                        className="rounded p-1 text-red-500 hover:bg-red-50"
+                        className="rounded-lg p-1 text-red-500 hover:bg-red-50"
                         title="Hapus"
                       >
                         <Trash2 size={12} />
@@ -650,7 +650,7 @@ export default function TiktokEditorPage() {
 
         {/* Center — preview (4 cols) */}
         <div className="lg:col-span-4">
-          <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
+          <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-txt-primary">
               <Pencil size={14} className="text-primary" />
               Preview
@@ -693,7 +693,7 @@ export default function TiktokEditorPage() {
 
         {/* Right — settings tabs (4 cols) */}
         <div className="lg:col-span-4">
-          <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+          <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
             <div className="flex border-b border-border bg-surface-container-low">
               {(
                 [
@@ -1179,7 +1179,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
             <Scissors size={18} className="text-primary" />
             {editingSlot ? "Edit Trim Slot" : "Clipper Video TikTok"}
           </h3>
-          <button onClick={onClose} className="rounded p-1 text-txt-muted hover:bg-surface-secondary">
+          <button onClick={onClose} className="rounded-lg p-1 text-txt-muted hover:bg-surface-secondary">
             <X size={18} />
           </button>
         </div>
@@ -1248,7 +1248,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                 />
                 
                 {/* Visual playback time overlay */}
-                <div className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white">
+                <div className="absolute bottom-2 left-2 rounded-lg bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white">
                   {currentTime.toFixed(1)}s / {videoDuration.toFixed(1)}s
                 </div>
               </div>
@@ -1256,7 +1256,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
               {/* Player Timeline Click-to-Seek / Progress bar */}
               <div className="space-y-1">
                 <div 
-                  className="h-2 w-full bg-surface-secondary rounded cursor-pointer relative overflow-hidden"
+                  className="h-2 w-full bg-surface-secondary rounded-lg cursor-pointer relative overflow-hidden"
                   onClick={(e) => {
                     if (videoRef.current && videoDuration) {
                       const rect = e.currentTarget.getBoundingClientRect();
@@ -1295,7 +1295,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                   <button
                     type="button"
                     onClick={togglePlay}
-                    className="flex items-center gap-1 rounded bg-surface-secondary px-3 py-1.5 text-xs font-semibold hover:bg-surface-tertiary"
+                    className="flex items-center gap-1 rounded-lg bg-surface-secondary px-3 py-1.5 text-xs font-semibold hover:bg-surface-tertiary"
                   >
                     {isPlaying ? <Pause size={12} /> : <Play size={12} />}
                     {isPlaying ? "Pause" : "Play"}
@@ -1304,7 +1304,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                     type="button"
                     onClick={startPreview}
                     disabled={previewing}
-                    className="flex items-center gap-1 rounded bg-blue-50 text-blue-700 px-3 py-1.5 text-xs font-semibold hover:bg-blue-100 disabled:opacity-50"
+                    className="flex items-center gap-1 rounded-lg bg-blue-50 text-blue-700 px-3 py-1.5 text-xs font-semibold hover:bg-blue-100 disabled:opacity-50"
                   >
                     <Play size={12} className="text-blue-700" />
                     Preview Clip
@@ -1333,7 +1333,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                         setTrimStart(val);
                         if (videoRef.current) videoRef.current.currentTime = val;
                       }}
-                      className="w-full rounded border border-border bg-surface px-2 py-1 text-xs"
+                      className="w-full rounded-lg border border-border bg-surface px-2 py-1 text-xs"
                     />
                     <button
                       type="button"
@@ -1343,7 +1343,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                           setTrimStart(val);
                         }
                       }}
-                      className="shrink-0 bg-primary text-white rounded px-2 text-[10px] font-semibold hover:bg-primary-dark"
+                      className="shrink-0 bg-primary text-white rounded-lg px-2 text-[10px] font-semibold hover:bg-primary-dark"
                     >
                       Set Mulai
                     </button>
@@ -1356,7 +1356,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                         setTrimStart(val);
                         if (videoRef.current) videoRef.current.currentTime = val;
                       }}
-                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded"
+                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded-lg"
                     >
                       -1s
                     </button>
@@ -1367,7 +1367,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                         setTrimStart(val);
                         if (videoRef.current) videoRef.current.currentTime = val;
                       }}
-                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded"
+                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded-lg"
                     >
                       +1s
                     </button>
@@ -1389,7 +1389,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                         setTrimEnd(val);
                         if (videoRef.current) videoRef.current.currentTime = val;
                       }}
-                      className="w-full rounded border border-border bg-surface px-2 py-1 text-xs"
+                      className="w-full rounded-lg border border-border bg-surface px-2 py-1 text-xs"
                     />
                     <button
                       type="button"
@@ -1399,7 +1399,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                           setTrimEnd(val);
                         }
                       }}
-                      className="shrink-0 bg-primary text-white rounded px-2 text-[10px] font-semibold hover:bg-primary-dark"
+                      className="shrink-0 bg-primary text-white rounded-lg px-2 text-[10px] font-semibold hover:bg-primary-dark"
                     >
                       Set Selesai
                     </button>
@@ -1412,7 +1412,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                         setTrimEnd(val);
                         if (videoRef.current) videoRef.current.currentTime = val;
                       }}
-                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded"
+                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded-lg"
                     >
                       -1s
                     </button>
@@ -1423,7 +1423,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                         setTrimEnd(val);
                         if (videoRef.current) videoRef.current.currentTime = val;
                       }}
-                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded"
+                      className="flex-1 bg-surface border border-border hover:bg-surface-secondary text-[10px] py-0.5 rounded-lg"
                     >
                       +1s
                     </button>
@@ -1449,7 +1449,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="Keterangan untuk clip slot ini..."
-                  className="w-full rounded border border-border bg-surface px-3 py-2 text-xs"
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs"
                 />
               </div>
 
@@ -1474,7 +1474,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-border px-4 py-2 text-xs font-semibold text-txt-secondary hover:bg-surface-secondary"
+            className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-txt-secondary hover:bg-surface-secondary"
           >
             {editingSlot ? "Batal" : "Selesai"}
           </button>
@@ -1484,7 +1484,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
               type="button"
               onClick={handleSaveClip}
               disabled={saving || !isDurationValid}
-              className="flex items-center gap-1.5 rounded bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
             >
               {saving && <Loader2 size={12} className="animate-spin" />}
               {editingSlot ? "Simpan Perubahan" : "Buat Clip & Tambah ke Slot"}

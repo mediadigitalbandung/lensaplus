@@ -39,7 +39,7 @@ export default function ShareInstallButton({ url }: { url: string }) {
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary-dark transition-colors"
+      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary-dark transition-colors"
       aria-label={copied ? "Link disalin" : "Bagikan halaman pasang aplikasi"}
     >
       {copied ? (

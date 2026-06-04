@@ -72,8 +72,8 @@ export default function InstallTeaser() {
       aria-label="Pasang aplikasi Kartawarta"
       className="fixed bottom-3 left-3 right-3 z-[140] sm:hidden animate-in fade-in slide-in-from-bottom-2 duration-300"
     >
-      <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-white px-3 py-2.5 shadow-ambient">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary">
+      <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-white px-3 py-2.5 shadow-ambient">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
           <Smartphone size={18} />
         </div>
         <div className="flex-1 min-w-0">
@@ -86,7 +86,7 @@ export default function InstallTeaser() {
         </div>
         <Link
           href="/unduh"
-          className="shrink-0 inline-flex items-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary-dark transition-colors"
+          className="shrink-0 inline-flex items-center rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary-dark transition-colors"
         >
           Pasang
         </Link>

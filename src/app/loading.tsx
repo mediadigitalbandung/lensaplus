@@ -2,7 +2,7 @@ export default function Loading() {
   return (
     <div className="container-main py-8">
       {/* Hero skeleton */}
-      <div className="skeleton h-[400px] w-full rounded-[12px] mb-8" />
+      <div className="skeleton h-[400px] w-full rounded-lg mb-8" />
 
       {/* Section title */}
       <div className="skeleton h-8 w-48 mb-6" />

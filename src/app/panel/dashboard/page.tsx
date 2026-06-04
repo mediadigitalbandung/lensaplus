@@ -94,31 +94,31 @@ function LoadingSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-[12px] border border-border bg-surface p-4 shadow-card"
+            className="rounded-lg border border-border bg-surface p-4 shadow-card"
           >
-            <div className="h-8 w-8 rounded-[12px] bg-surface-tertiary" />
-            <div className="mt-2 h-7 w-16 rounded bg-surface-tertiary" />
-            <div className="mt-1 h-3 w-20 rounded bg-surface-secondary" />
+            <div className="h-8 w-8 rounded-lg bg-surface-tertiary" />
+            <div className="mt-2 h-7 w-16 rounded-lg bg-surface-tertiary" />
+            <div className="mt-1 h-3 w-20 rounded-lg bg-surface-secondary" />
           </div>
         ))}
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-[12px] border border-border bg-surface shadow-card">
+        <div className="rounded-lg border border-border bg-surface shadow-card">
           <div className="border-b border-border px-5 py-4">
-            <div className="h-5 w-32 rounded bg-surface-tertiary" />
+            <div className="h-5 w-32 rounded-lg bg-surface-tertiary" />
           </div>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between px-5 py-3">
               <div className="flex-1">
-                <div className="h-4 w-3/4 rounded bg-surface-tertiary" />
-                <div className="mt-1 h-3 w-24 rounded bg-surface-secondary" />
+                <div className="h-4 w-3/4 rounded-lg bg-surface-tertiary" />
+                <div className="mt-1 h-3 w-24 rounded-lg bg-surface-secondary" />
               </div>
               <div className="ml-4 h-5 w-20 rounded-full bg-surface-tertiary" />
             </div>
           ))}
         </div>
-        <div className="rounded-[12px] border border-border bg-surface p-5 shadow-card">
-          <div className="h-5 w-24 rounded bg-surface-tertiary" />
+        <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
+          <div className="h-5 w-24 rounded-lg bg-surface-tertiary" />
         </div>
       </div>
     </div>
@@ -153,7 +153,7 @@ function SectionHeader({
     <div className="kw-reveal mb-4 group">
       <div className="flex items-end justify-between gap-3 mb-2">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/20 transition-transform group-hover:scale-110 group-hover:rotate-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/20 transition-transform group-hover:scale-110 group-hover:rotate-3">
             <Icon size={16} strokeWidth={2.5} />
           </div>
           <div className="min-w-0">
@@ -195,7 +195,7 @@ function PremiumStatCard({ stat }: { stat: StatsItem }) {
   return (
     <Wrapper
       {...wrapperProps}
-      className={`kw-card-glow kw-fade-in-up group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface to-surface-secondary/30 p-3 sm:p-4 shadow-card transition-all duration-300 ${
+      className={`kw-card-glow kw-fade-in-up group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-gradient-to-br from-surface to-surface-secondary/30 p-3 sm:p-4 shadow-card transition-all duration-300 ${
         isClickable ? "hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 cursor-pointer" : ""
       } ${isLiveAlert ? "kw-pulse-live border-secondary/40" : ""}`}
       aria-label={isClickable ? `Buka ${stat.label}` : undefined}
@@ -213,7 +213,7 @@ function PremiumStatCard({ stat }: { stat: StatsItem }) {
 
       <div className="relative flex items-start justify-between gap-2">
         <div
-          className={`inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl ${stat.color} shadow-sm ring-1 ring-inset ring-black/5 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-md`}
+          className={`inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg ${stat.color} shadow-sm ring-1 ring-inset ring-black/5 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-md`}
         >
           <Icon size={18} />
         </div>
@@ -272,7 +272,7 @@ function RecentActivity({ articles }: { articles: Article[] }) {
   }, [articles]);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
@@ -294,7 +294,7 @@ function RecentActivity({ articles }: { articles: Article[] }) {
                   {a.author?.name || "—"} &middot; {a.timeAgo}
                 </p>
               </div>
-              <span className={`rounded px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${
+              <span className={`rounded-lg px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${
                 a.action.color === "text-primary" ? "bg-primary-light text-primary" :
                 a.action.color === "text-yellow-600" ? "bg-yellow-50 text-yellow-600" :
                 a.action.color === "text-blue-600" ? "bg-blue-50 text-blue-600" :
@@ -337,7 +337,7 @@ function ViewsRanking({ articles }: { articles: Article[] }) {
   const maxViews = data[0]?.viewCount || 1;
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-6 py-5">
         <h2 className="flex items-center gap-2.5 text-base font-bold text-txt-primary">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light">
@@ -349,15 +349,15 @@ function ViewsRanking({ articles }: { articles: Article[] }) {
       <div className="p-6">
         {/* Stats row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="rounded-xl bg-surface-secondary p-4">
+          <div className="rounded-lg bg-surface-secondary p-4">
             <p className="text-xs text-txt-muted mb-1">Total Tayangan</p>
             <p className="text-2xl font-extrabold text-txt-primary">{formatNumber(totalViews)}</p>
           </div>
-          <div className="rounded-xl bg-surface-secondary p-4">
+          <div className="rounded-lg bg-surface-secondary p-4">
             <p className="text-xs text-txt-muted mb-1">Artikel Terpublikasi</p>
             <p className="text-2xl font-extrabold text-txt-primary">{formatNumber(publishedCount)}</p>
           </div>
-          <div className="rounded-xl bg-surface-secondary p-4">
+          <div className="rounded-lg bg-surface-secondary p-4">
             <p className="text-xs text-txt-muted mb-1">Rata-rata/Artikel</p>
             <p className="text-2xl font-extrabold text-txt-primary">{formatNumber(avgViews)}</p>
           </div>
@@ -451,7 +451,7 @@ function MyArticleStats({ articles }: { articles: Article[] }) {
   const maxMonthly = Math.max(...monthlyData.map((m) => m.count), 1);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-6 py-5">
         <h2 className="flex items-center gap-2.5 text-base font-bold text-txt-primary">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light">
@@ -463,15 +463,15 @@ function MyArticleStats({ articles }: { articles: Article[] }) {
       <div className="p-6">
         {/* Stats row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="rounded-xl bg-surface-secondary p-4">
+          <div className="rounded-lg bg-surface-secondary p-4">
             <p className="text-xs text-txt-muted mb-1">Total Views Saya</p>
             <p className="text-2xl font-extrabold text-txt-primary">{formatNumber(totalViews)}</p>
           </div>
-          <div className="rounded-xl bg-surface-secondary p-4">
+          <div className="rounded-lg bg-surface-secondary p-4">
             <p className="text-xs text-txt-muted mb-1">Rata-rata Views/Artikel</p>
             <p className="text-2xl font-extrabold text-txt-primary">{formatNumber(avgViews)}</p>
           </div>
-          <div className="rounded-xl bg-surface-secondary p-4">
+          <div className="rounded-lg bg-surface-secondary p-4">
             <p className="text-xs text-txt-muted mb-1">Total Artikel Saya</p>
             <p className="text-2xl font-extrabold text-txt-primary">{formatNumber(totalArticles)}</p>
           </div>
@@ -588,7 +588,7 @@ function WeeklyArticleTrend({ articles }: { articles: Article[] }) {
   const totalWeek = weekData.reduce((s, d) => s + d.count, 0);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
@@ -640,7 +640,7 @@ function CategoryPerformance({ articles }: { articles: Article[] }) {
   }, [articles]);
 
   return (
-    <div className="rounded-[12px] border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border bg-surface-secondary px-5 py-4">
         <h2 className="flex items-center gap-2 font-semibold text-txt-primary">
           <Layers size={18} className="text-blue-500" />
@@ -735,7 +735,7 @@ function ArticleCalendar({ articles }: { articles: Article[] }) {
   const selectedArticles = selectedDay ? dayArticles.get(selectedDay) || [] : [];
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-light">
@@ -822,7 +822,7 @@ function ArticleCalendar({ articles }: { articles: Article[] }) {
                       a.status === "PUBLISHED" ? "bg-primary" : a.status === "APPROVED" ? "bg-blue-500" : a.status === "IN_REVIEW" ? "bg-yellow-500" : "bg-gray-400"
                     }`} />
                     <span className="flex-1 text-sm font-medium text-txt-primary truncate">{a.title}</span>
-                    <span className={`shrink-0 text-xs rounded px-2 py-0.5 font-semibold ${statusColors[a.status] || "bg-surface-tertiary text-txt-secondary"}`}>
+                    <span className={`shrink-0 text-xs rounded-lg px-2 py-0.5 font-semibold ${statusColors[a.status] || "bg-surface-tertiary text-txt-secondary"}`}>
                       {statusLabels[a.status] || a.status}
                     </span>
                   </Link>
@@ -1081,11 +1081,11 @@ export default function DashboardPage() {
             Selamat datang kembali, {session?.user?.name}!
           </p>
         </div>
-        <div className="rounded-[12px] border border-red-200 bg-red-50 p-6 text-center text-red-700">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchData}
-            className="mt-3 rounded-[12px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
             aria-label="Coba muat ulang data"
           >
             Coba Lagi
@@ -1123,7 +1123,7 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Premium hero header */}
-      <div className="mb-6 relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary via-primary to-primary-dark text-white shadow-card">
+      <div className="mb-6 relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-primary via-primary to-primary-dark text-white shadow-card">
         <div className="kw-aurora" aria-hidden />
         <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-white/5 blur-2xl" aria-hidden />
         <div className="absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-secondary/20 blur-3xl" aria-hidden />
@@ -1148,7 +1148,7 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Link
               href="/panel/artikel/baru"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-primary shadow-sm hover:bg-white/90 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-sm font-semibold text-primary shadow-sm hover:bg-white/90 transition-colors"
             >
               <FileText size={15} /> Tulis Artikel
             </Link>
@@ -1285,7 +1285,7 @@ export default function DashboardPage() {
               {visibleGroups.map((group) => {
                 const GIcon = group.icon;
                 return (
-                  <div key={group.id} className="kw-reveal rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+                  <div key={group.id} className="kw-reveal rounded-xl border border-border bg-surface shadow-card overflow-hidden">
                     <div className="flex items-center gap-2 border-b border-border bg-gradient-to-r from-surface-secondary/60 to-transparent px-4 py-2.5">
                       <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary-light text-primary">
                         <GIcon size={12} />
@@ -1304,12 +1304,12 @@ export default function DashboardPage() {
                           <Link
                             key={a.href}
                             href={a.href}
-                            className="kw-fade-in-up group/action relative flex flex-col items-center gap-2 rounded-xl border border-border bg-surface p-3 text-center transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md overflow-hidden"
+                            className="kw-fade-in-up group/action relative flex flex-col items-center gap-2 rounded-lg border border-border bg-surface p-3 text-center transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md overflow-hidden"
                             aria-label={a.label}
                           >
                             {/* Hover gradient overlay */}
                             <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${a.bg} opacity-0 group-hover/action:opacity-30 transition-opacity`} aria-hidden="true" />
-                            <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl ${a.bg} ${a.color} ring-1 ring-inset ring-black/5 transition-all duration-300 group-hover/action:scale-110 group-hover/action:rotate-3 group-hover/action:shadow-md`}>
+                            <div className={`relative flex h-10 w-10 items-center justify-center rounded-lg ${a.bg} ${a.color} ring-1 ring-inset ring-black/5 transition-all duration-300 group-hover/action:scale-110 group-hover/action:rotate-3 group-hover/action:shadow-md`}>
                               <Icon size={18} strokeWidth={2.2} />
                             </div>
                             <span className="relative text-[11px] sm:text-xs font-semibold text-txt-secondary leading-tight group-hover/action:text-txt-primary transition-colors">
@@ -1328,7 +1328,7 @@ export default function DashboardPage() {
       })()}
 
       {/* Recent articles - full width, rich info */}
-      <div className="mb-6 rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="mb-6 rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border px-6 py-5 flex items-center justify-between">
           <h2 className="flex items-center gap-2.5 text-base font-bold text-txt-primary">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
@@ -1436,7 +1436,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Editorial checklist reminder */}
-      <div className="mt-6 rounded-[12px] border border-primary/20 bg-primary-50 p-5">
+      <div className="mt-6 rounded-lg border border-primary/20 bg-primary-50 p-5">
         <h3 className="flex items-center gap-2 font-semibold text-primary-dark">
           <CheckCircle size={18} />
           Pengingat Standar Jurnalistik

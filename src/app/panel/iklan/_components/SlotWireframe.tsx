@@ -2,7 +2,7 @@
 
 import { slotLabels, slotSpecs } from "./ad-constants";
 
-const AD = "bg-primary/15 border-2 border-dashed border-primary text-primary font-bold flex items-center justify-center rounded";
+const AD = "bg-primary/15 border-2 border-dashed border-primary text-primary font-bold flex items-center justify-center rounded-lg";
 
 function Slot({ on, label, className }: { on: boolean; label: string; className?: string }) {
   if (!on) return null;
@@ -10,20 +10,20 @@ function Slot({ on, label, className }: { on: boolean; label: string; className?
 }
 
 /* tiny helpers */
-const Bar = ({ w, c = "bg-[#d1d5db]" }: { w: string; c?: string }) => <div className={`h-[3px] rounded ${c}`} style={{ width: w }} />;
+const Bar = ({ w, c = "bg-[#d1d5db]" }: { w: string; c?: string }) => <div className={`h-[3px] rounded-lg ${c}`} style={{ width: w }} />;
 const ImgBox = ({ h = 24, className = "" }: { h?: number; className?: string }) => (
-  <div className={`rounded bg-gradient-to-br from-[#e2e4e7] to-[#cfd2d6] ${className}`} style={{ height: h }} />
+  <div className={`rounded-lg bg-gradient-to-br from-[#e2e4e7] to-[#cfd2d6] ${className}`} style={{ height: h }} />
 );
 
 export default function SlotWireframe({ slot }: { slot: string }) {
   const spec = slotSpecs[slot];
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-card">
+    <div className="rounded-xl border border-border bg-surface p-4 sm:p-5 shadow-card">
       <h3 className="text-sm font-bold text-txt-primary mb-1">Posisi di Halaman</h3>
       <p className="text-xs text-txt-muted mb-3">Area hijau = lokasi iklan di website</p>
 
-      <div className="relative rounded-xl overflow-hidden border border-[#d1d5db] shadow-sm bg-white" style={{ fontSize: 0 }}>
+      <div className="relative rounded-lg overflow-hidden border border-[#d1d5db] shadow-sm bg-white" style={{ fontSize: 0 }}>
 
         {/* ── Browser Chrome ── */}
         <div className="flex items-center gap-1.5 bg-[#f1f1f1] px-2 py-1">
@@ -77,9 +77,9 @@ export default function SlotWireframe({ slot }: { slot: string }) {
         {/* ── Headline Slider + Breaking ── 2/3 + 1/3 */}
         <div className="px-2 mt-1 flex gap-1.5">
           {/* Headline slider */}
-          <div className="flex-[2] rounded overflow-hidden relative" style={{ height: 55 }}>
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1C1C1E] via-[#1C1C1E]/60 to-transparent rounded" />
-            <ImgBox h={55} className="rounded" />
+          <div className="flex-[2] rounded-lg overflow-hidden relative" style={{ height: 55 }}>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1C1C1E] via-[#1C1C1E]/60 to-transparent rounded-lg" />
+            <ImgBox h={55} className="rounded-lg" />
             <div className="absolute bottom-1 left-1.5 right-1.5">
               <div className="h-[3px] w-6 rounded-full bg-primary mb-[3px]" />
               <Bar w="80%" c="bg-white/70" />
@@ -87,7 +87,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
             </div>
           </div>
           {/* Breaking news */}
-          <div className="flex-[1] rounded border border-[#e5e7eb] bg-white p-1 flex flex-col">
+          <div className="flex-[1] rounded-lg border border-[#e5e7eb] bg-white p-1 flex flex-col">
             <div className="flex items-center gap-[3px] mb-1">
               <span className="h-[3px] w-[3px] rounded-full bg-red-500 animate-pulse" />
               <span className="text-[5px] font-bold text-red-500">Breaking</span>
@@ -117,7 +117,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
             </div>
             <div className="grid grid-cols-2 gap-1">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="rounded border border-[#e5e7eb] bg-white overflow-hidden">
+                <div key={i} className="rounded-lg border border-[#e5e7eb] bg-white overflow-hidden">
                   <ImgBox h={20} className="rounded-t" />
                   <div className="p-[3px] space-y-[2px]">
                     <Bar w="90%" c="bg-[#1C1C1E]/20" />
@@ -173,9 +173,9 @@ export default function SlotWireframe({ slot }: { slot: string }) {
           </div>
           <div className="flex gap-1 overflow-hidden">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="shrink-0 w-[50px] rounded border border-[#e5e7eb] bg-white p-[3px]">
+              <div key={i} className="shrink-0 w-[50px] rounded-lg border border-[#e5e7eb] bg-white p-[3px]">
                 <div className="flex items-center gap-[2px] mb-[2px]">
-                  <div className="h-[10px] w-[10px] rounded bg-primary flex items-center justify-center">
+                  <div className="h-[10px] w-[10px] rounded-lg bg-primary flex items-center justify-center">
                     <span className="text-[4px] font-bold text-white">{i + 2}</span>
                   </div>
                   <div>
@@ -235,7 +235,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
         {/* ── Popup ── */}
         {slot === "POPUP" && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
-            <div className={`${AD} rounded-xl px-3 py-5 text-[8px] shadow-2xl bg-white/95`}>
+            <div className={`${AD} rounded-lg px-3 py-5 text-[8px] shadow-2xl bg-white/95`}>
               POP-UP IKLAN<br />{spec?.ratio}
             </div>
           </div>
@@ -243,7 +243,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
       </div>
 
       {/* ── Spec Summary ── */}
-      <div className="mt-4 rounded-xl bg-primary-light/50 p-3 space-y-1.5">
+      <div className="mt-4 rounded-lg bg-primary-light/50 p-3 space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-txt-primary">{slotLabels[slot]}</span>
           <span className="rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold text-white">{spec?.ratio}</span>

@@ -205,7 +205,7 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
                 </div>
               </article>
             ) : (
-              <div className="rounded-[12px] border-2 border-dashed border-border py-16 text-center">
+              <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
                 <Layers size={36} className="mx-auto text-border" />
                 <p className="mt-4 text-on-surface-variant">Belum ada artikel pada periode ini.</p>
                 <p className="text-sm text-txt-muted">Coba kembali nanti — redaksi rutin menerbitkan berita baru.</p>
@@ -233,7 +233,7 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
           </div>
 
           <aside className="lg:col-span-1">
-            <div className="rounded-[12px] border border-border bg-surface-container-low p-5">
+            <div className="rounded-lg border border-border bg-surface-container-low p-5">
               <h3 className="mb-4 border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wider text-on-surface">
                 Rangkuman Lainnya
               </h3>

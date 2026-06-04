@@ -131,11 +131,11 @@ export default function RiwayatReviewPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 p-4 text-center text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-sm text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchReviews}
-            className="mt-2 rounded-[12px] bg-red-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-red-700"
+            className="mt-2 rounded-lg bg-red-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-red-700"
           >
             Coba Lagi
           </button>
@@ -143,22 +143,22 @@ export default function RiwayatReviewPage() {
       )}
 
       {loading ? (
-        <div className="animate-pulse overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+        <div className="animate-pulse overflow-hidden rounded-lg border border-border bg-surface shadow-card">
           <div className="border-b border-border bg-surface-secondary px-5 py-3">
-            <div className="h-4 w-full rounded bg-surface-tertiary" />
+            <div className="h-4 w-full rounded-lg bg-surface-tertiary" />
           </div>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 border-b border-border px-5 py-3">
-              <div className="h-4 w-1/3 rounded bg-surface-tertiary" />
-              <div className="h-4 w-1/6 rounded bg-surface-tertiary" />
+              <div className="h-4 w-1/3 rounded-lg bg-surface-tertiary" />
+              <div className="h-4 w-1/6 rounded-lg bg-surface-tertiary" />
               <div className="h-4 w-16 rounded-full bg-surface-tertiary" />
-              <div className="h-4 w-1/4 rounded bg-surface-tertiary" />
-              <div className="h-4 w-20 rounded bg-surface-tertiary" />
+              <div className="h-4 w-1/4 rounded-lg bg-surface-tertiary" />
+              <div className="h-4 w-20 rounded-lg bg-surface-tertiary" />
             </div>
           ))}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-sm">
               <thead className="border-b border-border bg-surface-secondary">
@@ -212,7 +212,7 @@ export default function RiwayatReviewPage() {
                       <td className="px-5 py-3 text-right">
                         <Link
                           href={`/berita/${article.slug}`}
-                          className="btn-ghost inline-flex items-center gap-1 rounded p-1 text-xs"
+                          className="btn-ghost inline-flex items-center gap-1 rounded-lg p-1 text-xs"
                           title="Lihat"
                         >
                           <Eye size={16} />

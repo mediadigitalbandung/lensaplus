@@ -125,9 +125,9 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
         >
           {/* Backdrop click to cancel */}
           <div className="absolute inset-0" onClick={handleCancel} aria-hidden="true" />
-          <div className="bg-surface rounded-2xl shadow-2xl border border-border max-w-lg w-full mx-4 p-8 relative z-10">
+          <div className="bg-surface rounded-xl shadow-2xl border border-border max-w-lg w-full mx-4 p-8 relative z-10">
             <div className="flex items-start gap-5">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconConfig.bg}`}>
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${iconConfig.bg}`}>
                 <iconConfig.Icon className={`h-6 w-6 ${iconConfig.color}`} aria-hidden="true" />
               </div>
               <div className="flex-1">
@@ -144,7 +144,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 ref={cancelBtnRef}
                 type="button"
                 onClick={handleCancel}
-                className="inline-flex items-center justify-center rounded-xl border border-border bg-surface-secondary px-6 py-3 text-base font-semibold text-txt-primary transition-all hover:bg-surface-tertiary"
+                className="inline-flex items-center justify-center rounded-lg border border-border bg-surface-secondary px-6 py-3 text-base font-semibold text-txt-primary transition-all hover:bg-surface-tertiary"
               >
                 {options.cancelText || "Batal"}
               </button>
@@ -152,7 +152,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 ref={confirmBtnRef}
                 type="button"
                 onClick={handleConfirm}
-                className={`inline-flex items-center justify-center rounded-xl px-6 py-3 text-base font-semibold transition-all ${btnColor}`}
+                className={`inline-flex items-center justify-center rounded-lg px-6 py-3 text-base font-semibold transition-all ${btnColor}`}
               >
                 {options.confirmText || "Ya, Lanjutkan"}
               </button>

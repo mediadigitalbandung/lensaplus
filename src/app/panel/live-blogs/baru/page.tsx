@@ -248,7 +248,7 @@ export default function NewLiveBlogPage() {
             type="checkbox"
             checked={form.isPublished}
             onChange={(e) => setForm((f) => ({ ...f, isPublished: e.target.checked }))}
-            className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+            className="h-4 w-4 rounded-lg border-border text-primary focus:ring-primary"
           />
           <span className="text-body-sm text-on-surface">Tampilkan ke publik</span>
         </label>
@@ -259,7 +259,7 @@ export default function NewLiveBlogPage() {
             type="checkbox"
             checked={form.syndicateToSocial}
             onChange={(e) => setForm((f) => ({ ...f, syndicateToSocial: e.target.checked }))}
-            className="h-4 w-4 rounded border-border text-primary focus:ring-primary mt-0.5"
+            className="h-4 w-4 rounded-lg border-border text-primary focus:ring-primary mt-0.5"
           />
           <span className="text-body-sm text-on-surface">
             Sebar update ke sosmed

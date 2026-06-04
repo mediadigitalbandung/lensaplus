@@ -56,21 +56,21 @@ function formatDate(dateStr: string): string {
 
 function LoadingSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+    <div className="animate-pulse overflow-hidden rounded-lg border border-border bg-surface shadow-card">
       <div className="border-b border-border bg-surface-secondary px-5 py-3">
-        <div className="h-4 w-full rounded bg-surface-tertiary" />
+        <div className="h-4 w-full rounded-lg bg-surface-tertiary" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4 border-b border-border px-5 py-3">
           <div className="h-9 w-9 rounded-full bg-surface-tertiary" />
           <div className="flex-1">
-            <div className="h-4 w-1/3 rounded bg-surface-tertiary" />
-            <div className="mt-1 h-3 w-1/4 rounded bg-surface-secondary" />
+            <div className="h-4 w-1/3 rounded-lg bg-surface-tertiary" />
+            <div className="mt-1 h-3 w-1/4 rounded-lg bg-surface-secondary" />
           </div>
           <div className="h-5 w-16 rounded-full bg-surface-tertiary" />
-          <div className="h-4 w-8 rounded bg-surface-tertiary" />
-          <div className="h-4 w-12 rounded bg-surface-tertiary" />
-          <div className="h-4 w-20 rounded bg-surface-tertiary" />
+          <div className="h-4 w-8 rounded-lg bg-surface-tertiary" />
+          <div className="h-4 w-12 rounded-lg bg-surface-tertiary" />
+          <div className="h-4 w-20 rounded-lg bg-surface-tertiary" />
         </div>
       ))}
     </div>
@@ -331,11 +331,11 @@ export default function PenggunaPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchUsers}
-            className="mt-2 rounded-[12px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
             aria-label="Coba muat ulang daftar pengguna"
           >
             Coba Lagi
@@ -347,7 +347,7 @@ export default function PenggunaPage() {
         <LoadingSkeleton />
       ) : (
         <>
-        <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
               <thead className="border-b border-border bg-surface-secondary">
@@ -420,7 +420,7 @@ export default function PenggunaPage() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => setCardUser({ id: user.id, name: user.name })}
-                            className="btn-ghost rounded p-2 hover:text-primary"
+                            className="btn-ghost rounded-lg p-2 hover:text-primary"
                             title="Kelola Kartu Anggota (KTA)"
                             aria-label="Kelola KTA"
                           >
@@ -428,7 +428,7 @@ export default function PenggunaPage() {
                           </button>
                           <button
                             onClick={() => openEditModal(user)}
-                            className="btn-ghost rounded p-2"
+                            className="btn-ghost rounded-lg p-2"
                             title="Edit"
                             aria-label="Edit pengguna"
                           >
@@ -437,7 +437,7 @@ export default function PenggunaPage() {
                           <button
                             onClick={() => handleDelete(user.id, user.name)}
                             disabled={deleting === user.id}
-                            className="btn-ghost rounded p-2 hover:text-red-500 disabled:opacity-50"
+                            className="btn-ghost rounded-lg p-2 hover:text-red-500 disabled:opacity-50"
                             title="Hapus"
                             aria-label="Hapus pengguna"
                           >
@@ -489,7 +489,7 @@ export default function PenggunaPage() {
       {/* Add User Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-[calc(100%-2rem)] max-w-lg mx-auto rounded-[12px] border border-border bg-surface p-6 sm:p-8 shadow-lg">
+          <div className="w-[calc(100%-2rem)] max-w-lg mx-auto rounded-lg border border-border bg-surface p-6 sm:p-8 shadow-lg">
             <h2 className="mb-4 text-lg font-bold text-txt-primary">
               {editingUser ? "Edit Pengguna" : "Tambah Pengguna Baru"}
             </h2>

@@ -191,7 +191,7 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
         </nav>
 
         {/* Hero */}
-        <div className="relative mb-10 overflow-hidden rounded-[16px] bg-primary">
+        <div className="relative mb-10 overflow-hidden rounded-xl bg-primary">
           {topic.coverImage && (
             <Image
               src={topic.coverImage}
@@ -269,7 +269,7 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
             ))}
           </div>
         ) : (
-          <div className="rounded-[12px] border border-border bg-surface p-12 text-center">
+          <div className="rounded-lg border border-border bg-surface p-12 text-center">
             <Layers size={40} className="mx-auto mb-3 text-txt-muted" />
             <p className="text-txt-secondary">
               Belum ada artikel yang dipublikasikan untuk topik ini.

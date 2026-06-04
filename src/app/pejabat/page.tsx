@@ -247,7 +247,7 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
 
         {/* Grid */}
         {officials.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-surface py-20 text-center">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface py-20 text-center">
             <Users size={40} className="mx-auto text-border mb-3" />
             <p className="text-sm text-txt-secondary">
               Belum ada pejabat yang sesuai.
@@ -259,7 +259,7 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
               <Link
                 key={official.id}
                 href={`/pejabat/${official.slug}`}
-                className="card group flex flex-col rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-card-hover hover:-translate-y-0.5"
+                className="card group flex flex-col rounded-lg border border-border bg-surface p-4 transition-all hover:shadow-card-hover hover:-translate-y-0.5"
               >
                 {/* Photo or initials */}
                 <div className="mx-auto mb-3 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-light">

@@ -194,7 +194,7 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
               <Link
                 key={s.id}
                 href={`/sorotan/${s.slug}`}
-                className="group flex h-full flex-col rounded-[12px] border border-border bg-surface p-5 shadow-card transition-all hover:border-primary"
+                className="group flex h-full flex-col rounded-lg border border-border bg-surface p-5 shadow-card transition-all hover:border-primary"
               >
                 <div className="mb-3 flex items-center gap-2">
                   <span

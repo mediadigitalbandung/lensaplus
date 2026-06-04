@@ -23,9 +23,9 @@ interface AnalyticsData {
 
 function StatCard({ label, value, icon: Icon, color, sub }: { label: string; value: string | number; icon: React.ElementType; color: string; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+    <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
       <div className="flex items-center justify-between mb-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>
           <Icon size={18} />
         </div>
         {sub && <span className="text-xs font-medium text-green-500 flex items-center gap-0.5"><ArrowUp size={10} /> {sub}</span>}
@@ -90,11 +90,11 @@ export default function AnalyticsDashboardPage() {
   if (loading) {
     return (
       <div className="animate-pulse space-y-6">
-        <div className="h-8 w-48 rounded bg-surface-tertiary" />
+        <div className="h-8 w-48 rounded-lg bg-surface-tertiary" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-28 rounded-xl bg-surface-tertiary" />)}
+          {[1,2,3,4].map(i => <div key={i} className="h-28 rounded-lg bg-surface-tertiary" />)}
         </div>
-        <div className="h-60 rounded-xl bg-surface-tertiary" />
+        <div className="h-60 rounded-lg bg-surface-tertiary" />
       </div>
     );
   }
@@ -125,15 +125,15 @@ export default function AnalyticsDashboardPage() {
 
       {/* Article Production Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card text-center">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card text-center">
           <p className="text-3xl font-bold text-primary">{overview.articlesToday}</p>
           <p className="text-xs text-txt-muted mt-1">Hari Ini</p>
         </div>
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card text-center">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card text-center">
           <p className="text-3xl font-bold text-primary">{overview.articlesWeek}</p>
           <p className="text-xs text-txt-muted mt-1">Minggu Ini</p>
         </div>
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card text-center">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card text-center">
           <p className="text-3xl font-bold text-primary">{overview.articlesMonth}</p>
           <p className="text-xs text-txt-muted mt-1">Bulan Ini</p>
         </div>
@@ -141,7 +141,7 @@ export default function AnalyticsDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Daily Chart */}
-        <div className="lg:col-span-2 rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="lg:col-span-2 rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-sm font-bold text-txt-primary mb-4 flex items-center gap-1.5">
             <Calendar size={14} className="text-primary" /> Artikel Dipublikasi (14 Hari Terakhir)
           </h3>
@@ -149,7 +149,7 @@ export default function AnalyticsDashboardPage() {
         </div>
 
         {/* Category Stats */}
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <h3 className="text-sm font-bold text-txt-primary mb-4 flex items-center gap-1.5">
             <BarChart3 size={14} className="text-primary" /> Performa Kategori
           </h3>
@@ -174,7 +174,7 @@ export default function AnalyticsDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Articles */}
-        <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
             <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><Trophy size={14} className="text-yellow-500" /> Top 10 Artikel</h3>
           </div>
@@ -198,7 +198,7 @@ export default function AnalyticsDashboardPage() {
         </div>
 
         {/* Recent Activity */}
-        <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
             <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><Clock size={14} className="text-primary" /> Artikel Terbaru</h3>
           </div>

@@ -44,14 +44,14 @@ function LoadingSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-[12px] border border-border bg-surface p-5 shadow-card"
+          className="rounded-lg border border-border bg-surface p-5 shadow-card"
         >
           <div className="flex items-center gap-2 mb-2">
             <div className="h-5 w-16 rounded-full bg-surface-tertiary" />
-            <div className="h-4 w-20 rounded bg-surface-tertiary" />
+            <div className="h-4 w-20 rounded-lg bg-surface-tertiary" />
           </div>
-          <div className="h-5 w-2/3 rounded bg-surface-tertiary" />
-          <div className="mt-2 h-4 w-full rounded bg-surface-secondary" />
+          <div className="h-5 w-2/3 rounded-lg bg-surface-tertiary" />
+          <div className="mt-2 h-4 w-full rounded-lg bg-surface-secondary" />
         </div>
       ))}
     </div>
@@ -185,11 +185,11 @@ export default function KomentarPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchComments}
-            className="mt-2 rounded-[12px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
           >
             Coba Lagi
           </button>
@@ -202,7 +202,7 @@ export default function KomentarPage() {
         <>
           {/* Stats */}
           <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
+            <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
               <div className="flex items-center gap-2 text-sm text-txt-secondary">
                 <MessageCircle size={16} /> Total
               </div>
@@ -210,7 +210,7 @@ export default function KomentarPage() {
                 {pendingCount + approvedCount}
               </p>
             </div>
-            <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
+            <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
               <div className="flex items-center gap-2 text-sm text-yellow-600">
                 <Clock size={16} /> Menunggu
               </div>
@@ -218,7 +218,7 @@ export default function KomentarPage() {
                 {pendingCount}
               </p>
             </div>
-            <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
+            <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
               <div className="flex items-center gap-2 text-sm text-primary">
                 <CheckCircle size={16} /> Disetujui
               </div>
@@ -255,7 +255,7 @@ export default function KomentarPage() {
           {/* Comments list */}
           <div className="space-y-3">
             {comments.length === 0 ? (
-              <div className="rounded-[12px] border border-border bg-surface p-8 text-center text-base text-txt-secondary shadow-card">
+              <div className="rounded-lg border border-border bg-surface p-8 text-center text-base text-txt-secondary shadow-card">
                 Tidak ada komentar
                 {filter === "pending"
                   ? " yang menunggu moderasi"
@@ -268,7 +268,7 @@ export default function KomentarPage() {
               comments.map((comment) => (
                 <div
                   key={comment.id}
-                  className="rounded-[12px] border border-border bg-surface p-5 shadow-card"
+                  className="rounded-lg border border-border bg-surface p-5 shadow-card"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">

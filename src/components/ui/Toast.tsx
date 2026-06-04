@@ -81,7 +81,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div
               key={t.id}
               role={ariaRoles[t.type]}
-              className={`${colors[t.type]} pointer-events-auto flex items-center gap-4 rounded-2xl px-5 py-4 shadow-xl text-base font-medium animate-fade-in`}
+              className={`${colors[t.type]} pointer-events-auto flex items-center gap-4 rounded-xl px-5 py-4 shadow-xl text-base font-medium animate-fade-in`}
             >
               <Icon className="h-6 w-6 shrink-0" aria-hidden="true" />
               <span className="flex-1 leading-snug">{t.message}</span>

@@ -69,7 +69,7 @@ function highlightText(text: string, keyword: string): React.ReactNode {
   const parts = text.split(regex);
   return parts.map((part, i) =>
     regex.test(part) ? (
-      <mark key={i} className="bg-primary-light text-primary font-semibold rounded px-0.5">
+      <mark key={i} className="bg-primary-light text-primary font-semibold rounded-lg px-0.5">
         {part}
       </mark>
     ) : (
@@ -294,7 +294,7 @@ function SearchContent() {
 
         {/* Autocomplete dropdown */}
         {shouldShowDropdown && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-[12px] border border-border bg-surface shadow-lg">
+          <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
             {/* Search suggestions */}
             {query.length >= 2 && suggestions.length > 0 && (
               <div>

@@ -82,7 +82,7 @@ export default function TiktokCreatePage() {
         Kembali ke daftar konten
       </Link>
 
-      <div className="rounded-[12px] border border-border bg-surface p-6 shadow-card">
+      <div className="rounded-lg border border-border bg-surface p-6 shadow-card">
         <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary">
           <Sparkles size={20} className="text-primary" />
           Buat Konten TikTok Baru

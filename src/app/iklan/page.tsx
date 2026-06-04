@@ -121,9 +121,9 @@ export default function IklanPage() {
         </nav>
 
         {/* Hero */}
-        <header className="mb-10 rounded-[12px] border border-border bg-gradient-to-br from-primary/5 to-surface-container-lowest p-8 shadow-card">
+        <header className="mb-10 rounded-lg border border-border bg-gradient-to-br from-primary/5 to-surface-container-lowest p-8 shadow-card">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20">
+            <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-white shadow-md shadow-primary/20">
               <Megaphone size={20} />
             </span>
             <span className="text-label-md uppercase tracking-widest text-primary font-bold">
@@ -170,14 +170,14 @@ export default function IklanPage() {
               return (
                 <article
                   key={pkg.slug}
-                  className={`flex h-full flex-col rounded-[12px] border p-6 shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5 ${
+                  className={`flex h-full flex-col rounded-lg border p-6 shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5 ${
                     pkg.highlight
                       ? "border-primary/40 bg-primary/[0.03] ring-1 ring-primary/10"
                       : "border-border bg-surface-container-lowest"
                   }`}
                 >
                   <div className="mb-4 flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                       <Icon size={18} />
                     </span>
                     {pkg.highlight && (
@@ -218,7 +218,7 @@ export default function IklanPage() {
             <ImageIcon size={18} className="text-primary" />
             Spesifikasi Teknis
           </h2>
-          <div className="overflow-hidden rounded-[12px] border border-border bg-surface-container-lowest shadow-card">
+          <div className="overflow-hidden rounded-lg border border-border bg-surface-container-lowest shadow-card">
             <table className="w-full text-sm">
               <tbody>
                 {specs.map((s, i) => (
@@ -238,7 +238,7 @@ export default function IklanPage() {
         </section>
 
         {/* CTA */}
-        <section className="rounded-[12px] border border-border bg-primary p-8 text-white shadow-card">
+        <section className="rounded-lg border border-border bg-primary p-8 text-white shadow-card">
           <h2 className="font-serif text-2xl font-bold">Tertarik beriklan? Mari bicara.</h2>
           <p className="mt-2 max-w-2xl text-sm text-white/80">
             Tim sales kami akan membantu memilih paket yang paling sesuai dengan target kampanye

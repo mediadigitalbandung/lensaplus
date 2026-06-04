@@ -250,7 +250,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
 
               {/* Featured image from source article */}
               {article.featuredImage && (
-                <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-[12px]">
+                <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-lg">
                   <Image
                     src={article.featuredImage}
                     alt={sorotan.title}
@@ -271,7 +271,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
 
               {/* Continue-reading CTA — prominent navy banner that funnels every
                   sorotan reader to the main article page. */}
-              <div className="mt-10 overflow-hidden rounded-[12px] border-2 border-primary/30 bg-gradient-to-br from-primary-light to-primary-light/40 shadow-card">
+              <div className="mt-10 overflow-hidden rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary-light to-primary-light/40 shadow-card">
                 <div className="px-6 pt-6 pb-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
                     <BookOpen size={12} />
@@ -327,7 +327,7 @@ async function OtherAngles({
   if (others.length === 0) return null;
 
   return (
-    <div className="rounded-[12px] border border-border bg-surface p-5 shadow-card">
+    <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
       <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-txt-primary">
         Sudut pandang lain
       </h3>

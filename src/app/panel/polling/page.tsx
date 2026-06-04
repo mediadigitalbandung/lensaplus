@@ -242,7 +242,7 @@ export default function PollingPanelPage() {
       {showForm && (
         <div className="mb-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left: Form */}
-          <div className="lg:col-span-3 rounded-2xl border border-border bg-surface p-5 sm:p-6 shadow-card">
+          <div className="lg:col-span-3 rounded-xl border border-border bg-surface p-5 sm:p-6 shadow-card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold text-txt-primary">{editingId ? "Edit Polling" : "Buat Polling Baru"}</h2>
               <button onClick={resetForm} className="p-1 hover:bg-surface-secondary rounded-lg"><X size={18} /></button>
@@ -345,9 +345,9 @@ export default function PollingPanelPage() {
 
           {/* Right: Preview */}
           <div className="lg:col-span-2">
-            <div className="lg:sticky lg:top-20 rounded-2xl border border-border bg-surface p-5 sm:p-6 shadow-card">
+            <div className="lg:sticky lg:top-20 rounded-xl border border-border bg-surface p-5 sm:p-6 shadow-card">
               <h3 className="text-sm font-bold text-txt-primary mb-4">Preview</h3>
-              <div className="rounded-xl border border-border bg-surface-secondary overflow-hidden">
+              <div className="rounded-lg border border-border bg-surface-secondary overflow-hidden">
                 {formImage && (
                   <div className="w-full aspect-[2/1] bg-surface-tertiary overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded poll image URL, cannot whitelist all origins */}
@@ -377,14 +377,14 @@ export default function PollingPanelPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="rounded-[12px] border border-border bg-surface p-5 shadow-card">
-              <div className="h-4 w-3/4 rounded bg-surface-tertiary mb-3" />
-              <div className="h-3 w-1/2 rounded bg-surface-tertiary" />
+            <div key={i} className="rounded-lg border border-border bg-surface p-5 shadow-card">
+              <div className="h-4 w-3/4 rounded-lg bg-surface-tertiary mb-3" />
+              <div className="h-3 w-1/2 rounded-lg bg-surface-tertiary" />
             </div>
           ))}
         </div>
       ) : polls.length === 0 && !showForm ? (
-        <div className="rounded-[12px] border-2 border-dashed border-border py-16 text-center">
+        <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
           <Vote size={40} className="mx-auto text-txt-muted mb-3" />
           <p className="text-txt-muted text-base">Belum ada polling.</p>
           <button onClick={openAdd} className="mt-3 btn-primary px-4 py-2 text-sm"><Plus size={14} className="mr-1" /> Buat Polling Pertama</button>
@@ -392,7 +392,7 @@ export default function PollingPanelPage() {
       ) : (
         <div className="space-y-3">
           {polls.map((poll) => (
-            <div key={poll.id} className={`rounded-[12px] border bg-surface p-5 shadow-card transition-all ${editingId === poll.id ? "border-primary bg-primary-light/10" : "border-border"}`}>
+            <div key={poll.id} className={`rounded-lg border bg-surface p-5 shadow-card transition-all ${editingId === poll.id ? "border-primary bg-primary-light/10" : "border-border"}`}>
               <div className="flex items-start gap-4">
                 {poll.image && (
                   <div className="shrink-0 w-20 h-14 rounded-lg overflow-hidden bg-surface-tertiary">
@@ -411,7 +411,7 @@ export default function PollingPanelPage() {
                       <Power size={10} /> {poll.isActive ? "Aktif" : "Nonaktif"}
                     </span>
                     {poll.category && (
-                      <span className="rounded bg-surface-tertiary px-2 py-0.5 text-xs text-txt-secondary">{poll.category.name}</span>
+                      <span className="rounded-lg bg-surface-tertiary px-2 py-0.5 text-xs text-txt-secondary">{poll.category.name}</span>
                     )}
                   </div>
                   <p className="font-bold text-txt-primary text-base">{poll.question}</p>
@@ -433,11 +433,11 @@ export default function PollingPanelPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => toggleActive(poll)} className={`btn-ghost rounded p-2 ${poll.isActive ? "hover:text-red-500" : "hover:text-primary"}`} title={poll.isActive ? "Nonaktifkan" : "Aktifkan"}>
+                  <button onClick={() => toggleActive(poll)} className={`btn-ghost rounded-lg p-2 ${poll.isActive ? "hover:text-red-500" : "hover:text-primary"}`} title={poll.isActive ? "Nonaktifkan" : "Aktifkan"}>
                     <Power size={16} />
                   </button>
-                  <button onClick={() => openEdit(poll)} className="btn-ghost rounded p-2" title="Edit"><Edit size={16} /></button>
-                  <button onClick={() => handleDelete(poll.id, poll.question)} className="btn-ghost rounded p-2 hover:text-red-500" title="Hapus"><Trash2 size={16} /></button>
+                  <button onClick={() => openEdit(poll)} className="btn-ghost rounded-lg p-2" title="Edit"><Edit size={16} /></button>
+                  <button onClick={() => handleDelete(poll.id, poll.question)} className="btn-ghost rounded-lg p-2 hover:text-red-500" title="Hapus"><Trash2 size={16} /></button>
                 </div>
               </div>
             </div>
