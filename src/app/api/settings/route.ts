@@ -31,6 +31,10 @@ const ALLOWED_KEYS = [
   // Perplexity (Sonar) — web-grounded research + sourced article drafting
   "perplexity_api_key",
   "perplexity_instructions",
+  // Perplexity cost controls (token-saving)
+  "perplexity_model",
+  "perplexity_max_tokens",
+  "perplexity_search_context",
   // Reel voiceover (TTS): Gemini (AI Studio) + ElevenLabs, with a provider switch
   "gemini_api_key",
   "elevenlabs_api_key",

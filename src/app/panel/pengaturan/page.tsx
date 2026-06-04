@@ -423,6 +423,10 @@ export default function PengaturanPage() {
   const [geminiKey, setGeminiKey] = useState("");
   const [perplexityKey, setPerplexityKey] = useState("");
   const [perplexityInstructions, setPerplexityInstructions] = useState("");
+  // Perplexity cost controls (token-saving)
+  const [perplexityModel, setPerplexityModel] = useState("");
+  const [perplexityMaxTokens, setPerplexityMaxTokens] = useState("");
+  const [perplexitySearchContext, setPerplexitySearchContext] = useState("");
   const [elevenlabsKey, setElevenlabsKey] = useState("");
   const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState("");
   const [ttsProvider, setTtsProvider] = useState("auto");
@@ -517,6 +521,9 @@ export default function PengaturanPage() {
         setGeminiKey(map.gemini_api_key || "");
         setPerplexityKey(map.perplexity_api_key || "");
         setPerplexityInstructions(map.perplexity_instructions || "");
+        setPerplexityModel(map.perplexity_model || "");
+        setPerplexityMaxTokens(map.perplexity_max_tokens || "");
+        setPerplexitySearchContext(map.perplexity_search_context || "");
         setElevenlabsKey(map.elevenlabs_api_key || "");
         setElevenlabsVoiceId(map.elevenlabs_voice_id || "");
         setTtsProvider(map.tts_provider || "auto");
@@ -1158,6 +1165,60 @@ export default function PengaturanPage() {
             />
           </Field>
           <Field
+            label="Model Perplexity (hemat token)"
+            hint="sonar = paling hemat: token output ~15× lebih murah dari sonar-pro, dan cukup untuk draf berita. sonar-pro = riset lebih dalam tapi jauh lebih boros. Kosongkan = default (sonar-pro)."
+          >
+            <select
+              value={perplexityModel}
+              onChange={(e) => {
+                setPerplexityModel(e.target.value);
+                markDirty("ai");
+              }}
+              className="input"
+            >
+              <option value="">Default (sonar-pro)</option>
+              <option value="sonar">sonar — Hemat (disarankan)</option>
+              <option value="sonar-pro">sonar-pro — Kualitas tinggi (boros)</option>
+              <option value="sonar-reasoning">sonar-reasoning — Penalaran (lebih boros)</option>
+              <option value="sonar-reasoning-pro">sonar-reasoning-pro — Paling boros</option>
+            </select>
+          </Field>
+          <Field
+            label="Batas Token Output Perplexity"
+            hint="Batas maksimum panjang jawaban — token output adalah biaya terbesar. Mis. isi 1500 untuk draf ringkas & hemat. Kosong/0 = tanpa batas tambahan (pakai bawaan tiap fitur)."
+          >
+            <input
+              type="number"
+              min={0}
+              step={100}
+              value={perplexityMaxTokens}
+              onChange={(e) => {
+                setPerplexityMaxTokens(e.target.value);
+                markDirty("ai");
+              }}
+              className="input"
+              placeholder="mis. 1500"
+            />
+          </Field>
+          <Field
+            label="Kedalaman Pencarian Web Perplexity"
+            hint="low = paling hemat (biaya pencarian kecil), high = sumber lebih kaya tapi lebih mahal. Kosongkan = high (default)."
+          >
+            <select
+              value={perplexitySearchContext}
+              onChange={(e) => {
+                setPerplexitySearchContext(e.target.value);
+                markDirty("ai");
+              }}
+              className="input"
+            >
+              <option value="">Default (high)</option>
+              <option value="low">low — Hemat</option>
+              <option value="medium">medium — Seimbang</option>
+              <option value="high">high — Kaya sumber (boros)</option>
+            </select>
+          </Field>
+          <Field
             label="ElevenLabs API Key (alternatif suara Reel)"
             hint={
               <>
@@ -1241,6 +1302,9 @@ export default function PengaturanPage() {
                 ["gemini_api_key", geminiKey],
                 ["perplexity_api_key", perplexityKey],
                 ["perplexity_instructions", perplexityInstructions],
+                ["perplexity_model", perplexityModel],
+                ["perplexity_max_tokens", perplexityMaxTokens],
+                ["perplexity_search_context", perplexitySearchContext],
                 ["elevenlabs_api_key", elevenlabsKey],
                 ["elevenlabs_voice_id", elevenlabsVoiceId],
                 ["tts_provider", ttsProvider],
