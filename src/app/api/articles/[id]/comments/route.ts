@@ -51,6 +51,17 @@ export async function GET(
     const [comments, total] = await Promise.all([
       prisma.comment.findMany({
         where,
+        // PII: NEVER expose `authorEmail` on this public endpoint — the bare
+        // findMany returned it to anyone, letting scrapers harvest commenter
+        // emails. Return display-safe fields only.
+        select: {
+          id: true,
+          authorName: true,
+          content: true,
+          isApproved: true,
+          parentId: true,
+          createdAt: true,
+        },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
