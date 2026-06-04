@@ -65,6 +65,15 @@ export async function POST(req: NextRequest) {
     const notes = (body.notes ?? "").toString().trim().slice(0, 2000);
     const personaKey = (body.persona ?? "").toString().trim();
     const includeImages = body.includeImages === true;
+    // Freshness window for the web search. "all" (or anything invalid) → no
+    // recency filter (search all time); default is the last month.
+    const recencyRaw = (body.recency ?? "").toString().trim();
+    const recency: "week" | "month" | "year" | undefined =
+      recencyRaw === "week" || recencyRaw === "month" || recencyRaw === "year"
+        ? recencyRaw
+        : recencyRaw === "all"
+          ? undefined
+          : "month";
     if (!topic) throw new ApiError("Topik/judul wajib diisi", 400);
 
     const userPrompt =
@@ -88,7 +97,7 @@ export async function POST(req: NextRequest) {
       result = await callPerplexity({
         systemPrompt,
         userPrompt,
-        recency: "month",
+        recency,
         domains: ID_OUTLETS,
         contextSize: "high",
         maxTokens: mode === "draft" ? 5000 : 1400,
