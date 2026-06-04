@@ -471,6 +471,9 @@ export default function PengaturanPage() {
   const [ktaPwiName, setKtaPwiName] = useState("");
   const [ktaPwiSig, setKtaPwiSig] = useState("");
   const [ktaCardLogo, setKtaCardLogo] = useState("");
+  const [ktaDewanPersLogo, setKtaDewanPersLogo] = useState("");
+  const [ktaDewanPersNumber, setKtaDewanPersNumber] = useState("");
+  const [ktaIssuePlace, setKtaIssuePlace] = useState("");
   const [ktaUploading, setKtaUploading] = useState<string | null>(null);
 
   // Resend
@@ -538,6 +541,9 @@ export default function PengaturanPage() {
         setKtaPwiName(map.kta_pwi_chairman_name || "");
         setKtaPwiSig(map.kta_pwi_chairman_signature || "");
         setKtaCardLogo(map.kta_card_logo || "");
+        setKtaDewanPersLogo(map.kta_dewan_pers_logo || "");
+        setKtaDewanPersNumber(map.kta_dewan_pers_number || "");
+        setKtaIssuePlace(map.kta_issue_place || "");
 
         setResendKey(map.resend_api_key || "");
         setEmailFrom(map.notification_email_from || "");
@@ -2015,8 +2021,8 @@ export default function PengaturanPage() {
         {/* ============== Kartu Anggota (KTA) ============== */}
         <Section
           icon={<CreditCard size={18} />}
-          title="Kartu Anggota (KTA) Pers"
-          description="Pejabat & tanda tangan yang tercetak di kartu anggota semua user"
+          title="Kartu Anggota (KTA) & Lanyard Pers"
+          description="Pejabat, tanda tangan, logo & No. Dewan Pers yang tercetak di KTA dan lanyard semua user"
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Nama Direktur Kartawarta" hint="Tercetak di kartu sebagai penanda tangan.">
@@ -2039,6 +2045,27 @@ export default function PengaturanPage() {
             </Field>
           </div>
 
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="No. Verifikasi Dewan Pers" hint="Tercetak di kartu & lanyard. Kosong = pakai default.">
+              <input
+                type="text"
+                value={ktaDewanPersNumber}
+                onChange={(e) => { setKtaDewanPersNumber(e.target.value); markDirty("kta"); }}
+                className="input"
+                placeholder="608/DP-Verifikasi/K/XI/2020"
+              />
+            </Field>
+            <Field label="Tempat Terbit" hint='Tercetak "Diterbitkan di …". Default: Bandung.'>
+              <input
+                type="text"
+                value={ktaIssuePlace}
+                onChange={(e) => { setKtaIssuePlace(e.target.value); markDirty("kta"); }}
+                className="input"
+                placeholder="Bandung"
+              />
+            </Field>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <KtaImageField label="TTD Direktur (PNG transparan)" url={ktaDirectorSig} uploading={ktaUploading === "dir"}
               onPick={(f) => uploadKtaImage("dir", f, setKtaDirectorSig)} onClear={() => { setKtaDirectorSig(""); markDirty("kta"); }} />
@@ -2046,6 +2073,8 @@ export default function PengaturanPage() {
               onPick={(f) => uploadKtaImage("pwi", f, setKtaPwiSig)} onClear={() => { setKtaPwiSig(""); markDirty("kta"); }} />
             <KtaImageField label="Logo kartu (opsional)" url={ktaCardLogo} uploading={ktaUploading === "logo"}
               onPick={(f) => uploadKtaImage("logo", f, setKtaCardLogo)} onClear={() => { setKtaCardLogo(""); markDirty("kta"); }} />
+            <KtaImageField label="Logo Dewan Pers (PNG, opsional)" url={ktaDewanPersLogo} uploading={ktaUploading === "dp"}
+              onPick={(f) => uploadKtaImage("dp", f, setKtaDewanPersLogo)} onClear={() => { setKtaDewanPersLogo(""); markDirty("kta"); }} />
           </div>
 
           <SaveBar
@@ -2056,6 +2085,9 @@ export default function PengaturanPage() {
                 ["kta_pwi_chairman_name", ktaPwiName],
                 ["kta_pwi_chairman_signature", ktaPwiSig],
                 ["kta_card_logo", ktaCardLogo],
+                ["kta_dewan_pers_logo", ktaDewanPersLogo],
+                ["kta_dewan_pers_number", ktaDewanPersNumber],
+                ["kta_issue_place", ktaIssuePlace],
               ])
             }
             saving={!!saving.kta}

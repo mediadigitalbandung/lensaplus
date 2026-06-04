@@ -75,6 +75,9 @@ const ALLOWED_KEYS = [
   "kta_pwi_chairman_name",
   "kta_pwi_chairman_signature",
   "kta_card_logo",
+  "kta_dewan_pers_logo",
+  "kta_dewan_pers_number",
+  "kta_issue_place",
   // YouTube auto-clipper (Deepgram STT). The worker reads DEEPGRAM_API_KEY from
   // env; this stored key powers the in-app /api/youtube/test smoke test.
   "deepgram_api_key",

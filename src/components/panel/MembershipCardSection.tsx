@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Membership card (KTA) section for the user's own profile page.
- * Shows status, a completeness warning (which required fields are missing),
- * a live preview of BOTH sides (front + back), and download buttons
- * (PNG front, PNG back, PDF with both pages).
+ * Membership card section for the user's own profile page.
+ * Offers TWO formats via a toggle: the landscape KTA card and the portrait
+ * lanyard. For each, shows status, a completeness warning, a live preview of
+ * BOTH sides (front + back), and download buttons (PNG front, PNG back, PDF).
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { CreditCard, AlertTriangle, Loader2, Download, FileText, RefreshCw, CheckCircle2 } from "lucide-react";
+import { CreditCard, AlertTriangle, Loader2, Download, FileText, RefreshCw, CheckCircle2, Tag } from "lucide-react";
 
 interface CardData {
   number: string;
@@ -38,14 +38,29 @@ function fmt(d: string | null) {
 
 type Side = "front" | "back";
 type DL = "png-front" | "png-back" | "pdf";
+type Variant = "kta" | "lanyard";
 
 export default function MembershipCardSection() {
   const [data, setData] = useState<CardResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [variant, setVariant] = useState<Variant>("kta");
   const [imgFront, setImgFront] = useState<string | null>(null);
   const [imgBack, setImgBack] = useState<string | null>(null);
   const [imgLoading, setImgLoading] = useState(false);
   const [downloading, setDownloading] = useState<DL | null>(null);
+
+  // Build a render URL for the active variant (KTA or lanyard).
+  const renderUrl = useCallback(
+    (opts: { side?: Side; pdf?: boolean } = {}) => {
+      const p = new URLSearchParams();
+      if (variant === "lanyard") p.set("type", "lanyard");
+      if (opts.side === "back") p.set("side", "back");
+      if (opts.pdf) p.set("pdf", "1");
+      const qs = p.toString();
+      return `/api/users/me/card/render${qs ? `?${qs}` : ""}`;
+    },
+    [variant],
+  );
 
   const fetchCard = useCallback(async () => {
     try {
@@ -62,8 +77,8 @@ export default function MembershipCardSection() {
     setImgLoading(true);
     try {
       const [frontRes, backRes] = await Promise.all([
-        fetch("/api/users/me/card/render"),
-        fetch("/api/users/me/card/render?side=back"),
+        fetch(renderUrl()),
+        fetch(renderUrl({ side: "back" })),
       ]);
       if (frontRes.ok) {
         const blob = await frontRes.blob();
@@ -84,16 +99,17 @@ export default function MembershipCardSection() {
     } finally {
       setImgLoading(false);
     }
-  }, []);
+  }, [renderUrl]);
 
   useEffect(() => {
     fetchCard();
   }, [fetchCard]);
 
+  // (Re)load the preview whenever the card loads OR the variant switches.
   useEffect(() => {
     if (data) loadPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, variant]);
 
   useEffect(() => {
     return () => {
@@ -107,24 +123,21 @@ export default function MembershipCardSection() {
     setDownloading(kind);
     try {
       const path =
-        kind === "pdf"
-          ? "/api/users/me/card/render?pdf=1"
-          : kind === "png-back"
-          ? "/api/users/me/card/render?side=back"
-          : "/api/users/me/card/render";
+        kind === "pdf" ? renderUrl({ pdf: true }) : kind === "png-back" ? renderUrl({ side: "back" }) : renderUrl();
       const res = await fetch(path);
       if (!res.ok) return;
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       const num = data?.card?.number || "kartawarta";
+      const label = variant === "lanyard" ? "Lanyard" : "KTA";
       a.href = url;
       a.download =
         kind === "pdf"
-          ? `KTA-${num}.pdf`
+          ? `${label}-${num}.pdf`
           : kind === "png-back"
-          ? `KTA-${num}-belakang.png`
-          : `KTA-${num}-depan.png`;
+          ? `${label}-${num}-belakang.png`
+          : `${label}-${num}-depan.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -146,24 +159,60 @@ export default function MembershipCardSection() {
   const missing = data?.completeness.missing || [];
   const complete = data?.completeness.complete ?? false;
   const status = card?.status || "DRAFT";
+  const isLanyard = variant === "lanyard";
+  const aspect = isLanyard ? "aspect-[648/1024]" : "aspect-[1012/638]";
 
   const sides: { key: Side; label: string; img: string | null }[] = [
     { key: "front", label: "Depan", img: imgFront },
     { key: "back", label: "Belakang", img: imgBack },
   ];
 
+  function switchVariant(v: Variant) {
+    if (v === variant) return;
+    // Clear previews so the placeholder (correct aspect) shows while reloading.
+    setImgFront((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setImgBack((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setVariant(v);
+  }
+
   return (
     <div className="mt-6 rounded-lg border border-border bg-surface p-6 shadow-card">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <CreditCard size={20} className="text-primary" />
-          <h3 className="text-lg font-semibold text-txt-primary">Kartu Tanda Anggota (KTA) Pers</h3>
+          <h3 className="text-lg font-semibold text-txt-primary">Kartu Anggota & Lanyard Pers</h3>
         </div>
         {card && (
           <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${STATUS_STYLE[status] || STATUS_STYLE.DRAFT}`}>
             {card.statusLabel}
           </span>
         )}
+      </div>
+
+      {/* Format toggle: KTA card vs lanyard */}
+      <div className="mb-4 inline-flex rounded-lg border border-border bg-surface-secondary p-1">
+        <button
+          onClick={() => switchVariant("kta")}
+          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${
+            !isLanyard ? "bg-primary text-on-primary shadow-sm" : "text-txt-secondary hover:text-txt-primary"
+          }`}
+        >
+          <CreditCard size={14} /> KTA (Kartu)
+        </button>
+        <button
+          onClick={() => switchVariant("lanyard")}
+          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition ${
+            isLanyard ? "bg-primary text-on-primary shadow-sm" : "text-txt-secondary hover:text-txt-primary"
+          }`}
+        >
+          <Tag size={14} /> Lanyard
+        </button>
       </div>
 
       {/* Completeness warning */}
@@ -190,7 +239,7 @@ export default function MembershipCardSection() {
       )}
 
       {/* Both sides preview */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className={`grid grid-cols-1 gap-4 ${isLanyard ? "sm:grid-cols-2 lg:max-w-md" : "lg:grid-cols-2"}`}>
         {sides.map((s) => (
           <div key={s.key}>
             <div className="mb-1.5 flex items-center gap-2">
@@ -199,14 +248,14 @@ export default function MembershipCardSection() {
             </div>
             <div className="overflow-hidden rounded-lg border border-border bg-surface-secondary">
               {imgLoading && !s.img ? (
-                <div className="flex aspect-[1012/638] items-center justify-center">
+                <div className={`flex ${aspect} items-center justify-center`}>
                   <Loader2 className="animate-spin text-primary" size={22} />
                 </div>
               ) : s.img ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={s.img} alt={`Pratinjau KTA ${s.label}`} className="w-full" />
+                <img src={s.img} alt={`Pratinjau ${isLanyard ? "lanyard" : "KTA"} ${s.label}`} className="w-full" />
               ) : (
-                <div className="flex aspect-[1012/638] items-center justify-center text-sm text-txt-muted">
+                <div className={`flex ${aspect} items-center justify-center text-sm text-txt-muted`}>
                   Pratinjau tidak tersedia
                 </div>
               )}
@@ -268,7 +317,7 @@ export default function MembershipCardSection() {
             className="btn-primary flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
           >
             {downloading === "pdf" ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
-            Unduh PDF (Depan &amp; Belakang)
+            Unduh PDF {isLanyard ? "Lanyard" : "KTA"} (Depan &amp; Belakang)
           </button>
           {status !== "ACTIVE" && (
             <p className="text-[11px] text-txt-muted">
