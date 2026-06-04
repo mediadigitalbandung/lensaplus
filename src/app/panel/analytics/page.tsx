@@ -124,7 +124,7 @@ export default function AnalyticsDashboardPage() {
       </div>
 
       {/* Article Production Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-card text-center">
           <p className="text-3xl font-bold text-primary">{overview.articlesToday}</p>
           <p className="text-xs text-txt-muted mt-1">Hari Ini</p>

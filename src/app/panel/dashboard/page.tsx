@@ -348,7 +348,7 @@ function ViewsRanking({ articles }: { articles: Article[] }) {
       </div>
       <div className="p-6">
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="rounded-xl bg-surface-secondary p-4">
             <p className="text-xs text-txt-muted mb-1">Total Tayangan</p>
             <p className="text-2xl font-extrabold text-txt-primary">{formatNumber(totalViews)}</p>
@@ -462,7 +462,7 @@ function MyArticleStats({ articles }: { articles: Article[] }) {
       </div>
       <div className="p-6">
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="rounded-xl bg-surface-secondary p-4">
             <p className="text-xs text-txt-muted mb-1">Total Views Saya</p>
             <p className="text-2xl font-extrabold text-txt-primary">{formatNumber(totalViews)}</p>

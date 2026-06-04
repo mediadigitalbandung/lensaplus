@@ -279,7 +279,8 @@ export default function PanelTopikPage() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b border-border bg-surface-secondary text-left text-xs uppercase tracking-wider text-txt-muted">
               <tr>
                 <th className="px-5 py-3">Nama / Slug</th>
@@ -348,6 +349,7 @@ export default function PanelTopikPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

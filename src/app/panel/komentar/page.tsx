@@ -201,7 +201,7 @@ export default function KomentarPage() {
       ) : (
         <>
           {/* Stats */}
-          <div className="mb-6 grid grid-cols-3 gap-3">
+          <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-[12px] border border-border bg-surface p-4 shadow-card">
               <div className="flex items-center gap-2 text-sm text-txt-secondary">
                 <MessageCircle size={16} /> Total
