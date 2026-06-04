@@ -9,6 +9,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
   Save,
   Send,
+  Rocket,
   ChevronDown,
   Plus,
   Trash2,
@@ -537,6 +538,80 @@ export default function NewArticlePage() {
     }
   };
 
+  // Direct publish — for editors/chief editors who may publish without review.
+  // The create API only accepts DRAFT/IN_REVIEW, so we save the draft first
+  // (or reuse the autosaved one) then transition it to PUBLISHED via PUT.
+  const handlePublish = async () => {
+    setError("");
+
+    if (!title.trim()) return setError("Judul wajib diisi");
+    if (!content.trim()) return setError("Konten tidak boleh kosong");
+    if (content.length < 50) return setError("Konten minimal 50 karakter");
+    if (!categoryId) return setError("Kategori harus dipilih");
+
+    const ok = await confirm({
+      message: "Artikel akan LANGSUNG diterbitkan dan tampil di situs tanpa melalui review. Lanjutkan?",
+      variant: "warning",
+      title: "Terbitkan Sekarang",
+    });
+    if (!ok) return;
+
+    setSaving(true);
+
+    try {
+      // Converge onto any autosaved draft so we publish that record, not a dup.
+      if (autosaveInFlightRef.current) {
+        try { await autosaveInFlightRef.current; } catch { /* ignore */ }
+      }
+
+      // Step 1 — ensure the article is persisted (create as DRAFT, or update the
+      // existing autosaved draft). Mirrors the proven autosave save path.
+      let id = draftIdRef.current;
+      const saveRes = await fetch(id ? `/api/articles/${id}` : "/api/articles", {
+        method: id ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildArticlePayload(latestRef.current, "DRAFT")),
+      });
+      const saveData = await saveRes.json();
+      if (!saveData.success) {
+        setError(saveData.error || "Gagal menyimpan artikel");
+        setSaving(false);
+        return;
+      }
+      id = id || saveData.data?.id;
+      if (!id) {
+        setError("Gagal mendapatkan ID artikel untuk diterbitkan");
+        setSaving(false);
+        return;
+      }
+
+      // Step 2 — transition the saved draft to PUBLISHED.
+      const pubRes = await fetch(`/api/articles/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PUBLISHED" }),
+      });
+      const pubData = await pubRes.json();
+      if (!pubData.success) {
+        setError(pubData.error || "Gagal menerbitkan artikel");
+        setSaving(false);
+        return;
+      }
+
+      try {
+        localStorage.removeItem(AUTOSAVE_KEY);
+        localStorage.removeItem(AUTOSAVE_DRAFTID_KEY);
+      } catch { /* ignore */ }
+      draftIdRef.current = null;
+      success("Artikel berhasil diterbitkan");
+      router.push("/panel/artikel");
+      router.refresh();
+    } catch {
+      setError("Terjadi kesalahan. Silakan coba lagi.");
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -581,6 +656,17 @@ export default function NewArticlePage() {
             >
               <Send size={16} />
               Kirim untuk Review
+            </button>
+          )}
+          {/* Direct publish — editors/chief editors only (no review needed) */}
+          {EDITOR_ROLES.includes(userRole) && (
+            <button
+              onClick={handlePublish}
+              disabled={saving}
+              className="flex items-center gap-1.5 rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-secondary-dark disabled:opacity-50"
+            >
+              <Rocket size={16} />
+              Terbitkan
             </button>
           )}
         </div>
@@ -976,8 +1062,12 @@ export default function NewArticlePage() {
               className="input w-full"
             >
               <option value="">Otomatis (random)</option>
+              {/* Editor / Kepala Editor boleh menugaskan dirinya sendiri sebagai editor */}
+              {["EDITOR", "CHIEF_EDITOR"].includes(userRole) && session?.user?.id && (
+                <option value={session.user.id}>Saya sendiri (sebagai editor)</option>
+              )}
               {users
-                .filter(u => ["EDITOR", "CHIEF_EDITOR", "SUPER_ADMIN"].includes(u.role))
+                .filter(u => ["EDITOR", "CHIEF_EDITOR", "SUPER_ADMIN"].includes(u.role) && u.id !== session?.user?.id)
                 .map(u => (
                   <option key={u.id} value={u.id}>{u.name} ({roleLabelsMap[u.role] || u.role})</option>
                 ))
