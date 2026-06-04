@@ -37,8 +37,6 @@ import {
   ArrowDownToLine,
   TrendingUp,
   Lightbulb,
-  Search,
-  X,
 } from "lucide-react";
 import { stripHtml, downloadTextFile, exportArticlePdf } from "@/lib/export-utils";
 import DOMPurify from "isomorphic-dompurify";
@@ -62,7 +60,7 @@ interface Source {
 }
 
 import { EDITOR_ROLES, ADMIN_ROLES, CAN_SUBMIT_REVIEW, roleLabelsMap } from "@/lib/roles";
-import { PERPLEXITY_PERSONAS, PERPLEXITY_NOTE_HINTS } from "@/lib/perplexity-personas";
+import PerplexityResearchPanel from "@/components/editor/PerplexityResearchPanel";
 
 function LoadingSkeleton() {
   return (
@@ -122,12 +120,6 @@ export default function EditArticlePage() {
   const [showSeo, setShowSeo] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   // Perplexity research-and-draft
-  const [showResearch, setShowResearch] = useState(false);
-  const [pplxNotes, setPplxNotes] = useState("");
-  const [researchMode, setResearchMode] = useState<"draft" | "research">("draft");
-  const [researchPersona, setResearchPersona] = useState("");
-  const [researchImages, setResearchImages] = useState(true);
-  const [researching, setResearching] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentStatus, setCurrentStatus] = useState("");
   const [articleSlug, setArticleSlug] = useState("");
@@ -463,234 +455,27 @@ export default function EditArticlePage() {
     </button>
   );
 
-  const runResearch = async () => {
-    const topic = (title.trim() || pplxNotes.trim());
-    if (!topic) {
-      setError("Isi Judul atau kolom arahan/topik dulu sebelum riset");
-      return;
-    }
-    setResearching(true);
-    setError("");
-    try {
-      const res = await fetch("/api/ai/research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, mode: researchMode, notes: pplxNotes, persona: researchPersona, includeImages: researchImages }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        setError(data.error || "Gagal menjalankan riset Perplexity");
-        return;
-      }
-      const d = data.data || {};
-
-      // Fill EVERY field directly — no review step. Empty fields filled; user input kept.
-      const f = d.fields;
-      const html = (f?.content ?? d.content ?? "").toString();
-      if (f) {
-        const fill = (v: unknown, cur: string, set: (s: string) => void, max?: number) => {
-          const val = (v ?? "").toString().trim();
-          if (val && !cur.trim()) set(max ? clampToMax(val, max) : val);
-        };
-        fill(f.title, title, setTitle, 255);
-        fill(f.excerpt, excerpt, setExcerpt);
-        fill(f.tags, tags, setTags);
-        fill(f.seoTitle, seoTitle, setSeoTitle, 60);
-        fill(f.metaDescription, seoDescription, setSeoDescription, 160);
-        if ((f.seoTitle || f.metaDescription) && (!seoTitle.trim() || !seoDescription.trim())) setShowSeo(true);
-      }
-      const imgs: { url: string; origin: string | null; title: string | null }[] = d.images || [];
-      let imgHtml = "";
-      if (imgs.length > 0) {
-        if (!featuredImage.trim()) setFeaturedImage(imgs[0].url);
-        const extra = featuredImage.trim() ? imgs : imgs.slice(1);
-        imgHtml = extra
-          .map((im) => {
-            const cap = im.title ? im.title.replace(/[<>]/g, "") : "";
-            let host = "";
-            try {
-              host = im.origin ? new URL(im.origin).hostname.replace(/^www\./, "") : "";
-            } catch {
-              /* ignore */
-            }
-            const credit = host ? `<em>Sumber: ${host}</em>` : "";
-            const sep = cap && credit ? " — " : "";
-            const figcap = cap || credit ? `<figcaption>${cap}${sep}${credit}</figcaption>` : "";
-            return `<figure><img src="${im.url}" alt="${cap}" />${figcap}</figure>`;
-          })
-          .join("");
-      }
-      const bodyHtml = `${html || ""}${imgHtml}`;
-      if (bodyHtml) setContent((prev) => (prev.trim() ? `${prev}\n${bodyHtml}` : bodyHtml));
-
-      const cited: { title: string | null; url: string }[] = d.sources || [];
-      if (cited.length > 0) {
-        const newSources: Source[] = cited.slice(0, 12).map((s) => {
-          let host = "";
-          try {
-            host = new URL(s.url).hostname.replace(/^www\./, "");
-          } catch {
-            /* keep blank */
-          }
-          return { name: s.title || host || "Sumber", title: "", institution: host, url: s.url };
-        });
-        setSources((prev) => {
-          const existing = prev.filter((p) => p.name.trim() || p.url.trim());
-          const seen = new Set(existing.map((e) => e.url));
-          const merged = [...existing];
-          for (const ns of newSources) {
-            if (!ns.url || !seen.has(ns.url)) {
-              merged.push(ns);
-              seen.add(ns.url);
-            }
-          }
-          return merged.length > 0 ? merged : prev;
-        });
-      }
-
-      success(
-        `Selesai — kolom artikel terisi dari riset${cited.length ? ` + ${cited.length} sumber` : ""}${imgs.length ? ` + ${imgs.length} foto` : ""}. Tinjau & sunting sebelum publikasi.`,
-      );
-      setShowResearch(false);
-      setPplxNotes("");
-    } catch {
-      setError("Gagal menghubungi layanan riset Perplexity");
-    } finally {
-      setResearching(false);
-    }
-  };
 
   const researchPanel = (
-    <div className="rounded-[12px] border border-primary/20 bg-primary-light/40 p-3">
-      {!showResearch ? (
-        <button
-          type="button"
-          onClick={() => setShowResearch(true)}
-          className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
-        >
-          <Search size={16} />
-          Riset &amp; Tulis dengan Perplexity AI
-          <span className="text-[10px] font-normal text-txt-muted">— riset web real-time + sumber otomatis</span>
-        </button>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-bold text-primary">
-              <Search size={16} /> Riset &amp; Tulis dengan Perplexity
-            </h3>
-            <button
-              type="button"
-              onClick={() => setShowResearch(false)}
-              className="text-txt-muted hover:text-txt-secondary"
-              aria-label="Tutup"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <p className="text-xs leading-relaxed text-txt-secondary">
-            Perplexity meriset topik dari berita Indonesia terbaru, lalu menambahkan
-            draf ke editor &amp; mengisi daftar Sumber otomatis. Hasil ditambahkan (tidak menimpa).
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setResearchMode("draft")}
-              className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                researchMode === "draft"
-                  ? "border-primary bg-primary text-white"
-                  : "border-border bg-surface text-txt-secondary"
-              }`}
-            >
-              Draf artikel lengkap
-            </button>
-            <button
-              type="button"
-              onClick={() => setResearchMode("research")}
-              className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                researchMode === "research"
-                  ? "border-primary bg-primary text-white"
-                  : "border-border bg-surface text-txt-secondary"
-              }`}
-            >
-              Bahan riset saja
-            </button>
-          </div>
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold text-txt-secondary">Gaya penulisan</label>
-            <select
-              value={researchPersona}
-              onChange={(e) => setResearchPersona(e.target.value)}
-              className="input w-full text-sm"
-            >
-              {PERPLEXITY_PERSONAS.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-txt-secondary">
-            <input
-              type="checkbox"
-              checked={researchImages}
-              onChange={(e) => setResearchImages(e.target.checked)}
-              className="h-4 w-4 rounded border-border accent-primary"
-            />
-            Sertakan foto dari sumber lain (2–3 foto, foto pertama jadi gambar utama)
-          </label>
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold text-txt-secondary">
-              Arahan / fokus tambahan (opsional)
-            </label>
-            <textarea
-              rows={4}
-              value={pplxNotes}
-              onChange={(e) => setPplxNotes(e.target.value)}
-              placeholder={"Tuliskan arahan khusus untuk artikel ini, mis:\n- Sudut: dampak ke pelaku UMKM Bandung\n- Sertakan jadwal & syarat terbaru\n- Bandingkan dengan kebijakan tahun lalu"}
-              className="input w-full resize-none text-sm leading-relaxed"
-            />
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {PERPLEXITY_NOTE_HINTS.map((h) => (
-                <button
-                  key={h}
-                  type="button"
-                  onClick={() =>
-                    setPplxNotes((prev) => {
-                      if (prev.includes(h)) return prev;
-                      const sep = prev.trim() ? (prev.trim().endsWith(".") ? " " : ". ") : "";
-                      return `${prev.trim()}${sep}${h}`;
-                    })
-                  }
-                  className="rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-txt-secondary hover:border-primary hover:text-primary transition-colors"
-                >
-                  + {h}
-                </button>
-              ))}
-            </div>
-            <p className="mt-1 text-[10px] text-txt-muted">
-              Arahan global (gaya & SEO) diatur di Pengaturan → AI. Kotak ini untuk fokus spesifik artikel ini.
-            </p>
-          </div>
-          {!title.trim() && !pplxNotes.trim() && (
-            <p className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
-              <AlertCircle size={12} /> Isi <strong>Judul</strong> atau tulis topik di kotak arahan di atas. (Judul bisa digenerate setelah draf jadi.)
-            </p>
-          )}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={runResearch}
-              disabled={researching}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-40"
-            >
-              {researching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-              {researching ? "Meriset & menulis…" : "Jalankan Riset"}
-            </button>
-            <span className="text-[10px] text-txt-muted">Hasil langsung mengisi kolom artikel (judul, ringkasan, tags, SEO, isi).</span>
-          </div>
-        </div>
-      )}
-    </div>
+    <PerplexityResearchPanel
+      title={title}
+      excerpt={excerpt}
+      tags={tags}
+      seoTitle={seoTitle}
+      seoDescription={seoDescription}
+      featuredImage={featuredImage}
+      setTitle={setTitle}
+      setExcerpt={setExcerpt}
+      setTags={setTags}
+      setSeoTitle={setSeoTitle}
+      setSeoDescription={setSeoDescription}
+      setFeaturedImage={setFeaturedImage}
+      setContent={setContent}
+      setSources={setSources}
+      setShowSeo={setShowSeo}
+      onError={setError}
+      onSuccess={success}
+    />
   );
 
   const generateTagsAI = async () => {
