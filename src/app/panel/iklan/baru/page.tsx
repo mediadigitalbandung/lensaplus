@@ -26,7 +26,15 @@ export default function TambahIklanPage() {
 
   const [formName, setFormName] = useState("");
   const [formType, setFormType] = useState("IMAGE");
-  const [formSlot, setFormSlot] = useState("HEADER");
+  // Prefill the slot from ?slot=… (the availability grid links here). Lazy
+  // initializer reads the URL on the client — avoids useSearchParams/Suspense.
+  const [formSlot, setFormSlot] = useState(() => {
+    if (typeof window !== "undefined") {
+      const s = new URLSearchParams(window.location.search).get("slot");
+      if (s && s in slotLabels) return s;
+    }
+    return "HEADER";
+  });
   const [formImageUrl, setFormImageUrl] = useState("");
   const [formHtmlCode, setFormHtmlCode] = useState("");
   const [formTargetUrl, setFormTargetUrl] = useState("");

@@ -36,6 +36,7 @@ const categoryNav = [
   { name: "Regulasi", href: "/regulasi" },
   { name: "Pejabat", href: "/pejabat" },
   { name: "Live", href: "/live" },
+  { name: "Pasang Iklan", href: "/pasang-iklan" },
 ];
 
 export default function Header() {

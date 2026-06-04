@@ -51,6 +51,38 @@ const typeLabels: Record<string, string> = {
   HTML: "Kode HTML",
 };
 
+// Display order for the slot-availability grid (matches the public rate card).
+const SLOT_ORDER = [
+  "HEADER",
+  "BETWEEN_SECTIONS",
+  "SIDEBAR",
+  "IN_ARTICLE",
+  "FLOATING_BOTTOM",
+  "FOOTER",
+  "POPUP",
+];
+
+type ServeStatus = "Tayang" | "Terjadwal" | "Berakhir" | "Nonaktif";
+
+// Effective serving status from the isActive flag AND the date window — an ad
+// can be isActive=true yet not actually serving (scheduled in the future or
+// past its endDate). Sales needs the real state, not just the toggle.
+function servingStatus(ad: Ad, now: number): ServeStatus {
+  if (!ad.isActive) return "Nonaktif";
+  const start = new Date(ad.startDate).getTime();
+  const end = new Date(ad.endDate).getTime();
+  if (now < start) return "Terjadwal";
+  if (now > end) return "Berakhir";
+  return "Tayang";
+}
+
+const STATUS_STYLE: Record<ServeStatus, string> = {
+  Tayang: "bg-primary-light text-primary",
+  Terjadwal: "bg-amber-50 text-amber-700",
+  Berakhir: "bg-surface-tertiary text-txt-muted",
+  Nonaktif: "bg-red-50 text-red-600",
+};
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
@@ -136,6 +168,16 @@ export default function IklanPage() {
   const totalClicks = ads.reduce((sum, ad) => sum + ad.clicks, 0);
   const avgCtr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00";
 
+  // How many ads are actually SERVING right now in each slot — so a salesperson
+  // can tell at a glance which positions are free to sell.
+  const now = Date.now();
+  const servingBySlot: Record<string, number> = {};
+  for (const ad of ads) {
+    if (servingStatus(ad, now) === "Tayang") {
+      servingBySlot[ad.slot] = (servingBySlot[ad.slot] || 0) + 1;
+    }
+  }
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -157,6 +199,35 @@ export default function IklanPage() {
 
       {loading ? <LoadingSkeleton /> : (
         <>
+          {/* Slot availability — which positions are free to sell right now */}
+          <div className="mb-6">
+            <h2 className="mb-2 text-sm font-semibold text-txt-secondary">Ketersediaan Slot</h2>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
+              {SLOT_ORDER.map((slot) => {
+                const count = servingBySlot[slot] || 0;
+                const free = count === 0;
+                return (
+                  <Link
+                    key={slot}
+                    href={`/panel/iklan/baru?slot=${slot}`}
+                    className="rounded-lg border border-border bg-surface p-3 shadow-card transition-colors hover:border-primary/40"
+                    title={free ? "Slot kosong — klik untuk isi" : `${count} iklan tayang`}
+                  >
+                    <p className="truncate text-xs font-medium text-txt-primary">{slotLabels[slot] || slot}</p>
+                    <span
+                      className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        free ? "bg-green-50 text-green-700" : "bg-primary-light text-primary"
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${free ? "bg-green-500" : "bg-primary"}`} />
+                      {free ? "Kosong" : `${count} tayang`}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Stats */}
           <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
@@ -192,6 +263,7 @@ export default function IklanPage() {
                 <tbody className="divide-y divide-border">
                   {paginatedAds.map((ad) => {
                     const ctr = ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(2) + "%" : "0.00%";
+                    const serve = servingStatus(ad, now);
                     return (
                       <tr key={ad.id} className="hover:bg-surface-secondary">
                         <td className="px-3 sm:px-5 py-4">
@@ -208,8 +280,8 @@ export default function IklanPage() {
                         <td className="px-5 py-4 text-sm text-txt-secondary">{ad.clicks.toLocaleString("id-ID")}</td>
                         <td className="px-5 py-4 text-sm font-bold text-txt-primary">{ctr}</td>
                         <td className="px-3 sm:px-5 py-4">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-sm font-medium ${ad.isActive ? "bg-primary-light text-primary" : "bg-red-50 text-red-600"}`}>
-                            <Power size={10} /> {ad.isActive ? "Aktif" : "Nonaktif"}
+                          <span className={`inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-sm font-medium ${STATUS_STYLE[serve]}`}>
+                            <Power size={10} /> {serve}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right">
