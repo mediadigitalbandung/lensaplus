@@ -197,14 +197,11 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
             <article className="lg:col-span-2">
               {/* Angle badge + category */}
               <div className="mb-4 flex flex-wrap items-center gap-3">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${
-                    ANGLE_COLOR[sorotan.angle] ??
-                    "bg-surface-secondary text-txt-secondary border-border"
-                  }`}
-                >
-                  <Sparkles size={12} />
-                  Sorotan · {angleLabel}
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-secondary to-secondary-dark px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm shadow-secondary/30 ring-1 ring-inset ring-white/15">
+                  <Sparkles size={12} className="opacity-90" />
+                  <span className="opacity-80">Sorotan</span>
+                  <span className="opacity-50">·</span>
+                  <span>{angleLabel}</span>
                 </span>
                 <Link
                   href={`/kategori/${article.category.slug}`}
