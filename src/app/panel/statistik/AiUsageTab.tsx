@@ -1,10 +1,15 @@
 "use client";
 
 /**
- * Statistik → AI tab (SUPER_ADMIN only). Token + cost (Rupiah) analytics over
- * AIUsageLog: totals, per-article average/min/max, and breakdowns by provider /
- * model. Perplexity research/draft calls are tracked here (logged with model +
- * computed USD cost; converted to IDR via the `usd_idr_rate` setting).
+ * Statistik → AI / Token (SUPER_ADMIN only).
+ *
+ * Concept: tokens from different providers are NOT comparable (1 Perplexity
+ * token ≠ 1 Claude token in price or meaning), so we never sum them into one
+ * headline number. The combinable metric across providers is COST in Rupiah
+ * (money is normalized) — and per-article totals (the related calls that
+ * produce one article). The "Ringkasan" view separates token volume per
+ * platform; each platform sub-view drills into one provider where a single
+ * token total IS meaningful.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -33,10 +38,19 @@ const num = (n: number) => numFmt.format(n || 0);
 
 const BAR_COLORS = ["#002045", "#b7102a", "#1a7f37", "#9a6700", "#3730a3"];
 
+// Friendly platform names. "unknown" = rows logged before provider was recorded.
+const PROVIDER_LABEL: Record<string, string> = {
+  perplexity: "Perplexity",
+  anthropic: "Claude (Anthropic)",
+  deepseek: "DeepSeek",
+  unknown: "Legacy (sebelum pelacakan)",
+};
+const providerLabel = (k: string) => PROVIDER_LABEL[k] || k;
+
 type Scope = "all" | "perplexity" | "anthropic" | "deepseek";
 
 export default function AiUsageTab() {
-  const [scope, setScope] = useState<Scope>("perplexity");
+  const [scope, setScope] = useState<Scope>("all");
   const [stats, setStats] = useState<AiStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,18 +70,19 @@ export default function AiUsageTab() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const isAll = scope === "all";
   const SCOPES: { key: Scope; label: string }[] = [
+    { key: "all", label: "Ringkasan" },
     { key: "perplexity", label: "Perplexity" },
-    { key: "all", label: "Semua" },
     { key: "anthropic", label: "Claude" },
     { key: "deepseek", label: "DeepSeek" },
   ];
 
   return (
     <div className="space-y-5">
-      {/* Scope toggle */}
+      {/* Scope toggle + live rate */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-lg border border-border bg-surface-secondary p-1">
+        <div className="inline-flex flex-wrap rounded-lg border border-border bg-surface-secondary p-1">
           {SCOPES.map((s) => (
             <button
               key={s.key}
@@ -96,25 +111,50 @@ export default function AiUsageTab() {
         <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-txt-secondary">
           Belum ada data penggunaan AI untuk cakupan ini.
           <p className="mt-1 text-xs text-txt-muted">
-            Token Perplexity mulai tercatat sejak fitur ini aktif — buat artikel dengan &quot;Riset &amp; Tulis&quot; untuk mengisinya.
+            Biaya per panggilan mulai tercatat sejak fitur ini aktif — buat artikel dengan &quot;Riset &amp; Tulis&quot; untuk mengisinya.
           </p>
         </div>
       ) : (
         <>
-          {/* Headline cards */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Card icon={<Hash size={16} />} label="Total Token" value={num(stats.totals.totalTokens)} />
+          {/* Headline — money + volume (combinable). Token total only shown per single platform. */}
+          <div className={`grid grid-cols-2 gap-3 ${isAll ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
+            {!isAll && <Card icon={<Hash size={16} />} label="Total Token" value={num(stats.totals.totalTokens)} />}
             <Card icon={<Coins size={16} />} label="Total Biaya" value={rp(stats.totals.totalCostIdr)} accent />
             <Card icon={<TrendingUp size={16} />} label="Total Request" value={num(stats.totals.totalRequests)} />
             <Card icon={<FileText size={16} />} label="Artikel Terlacak" value={num(stats.perArticle.count)} />
           </div>
 
+          {/* Ringkasan only: per-platform separation (tokens are NOT summed across platforms) */}
+          {isAll && stats.byProvider.length > 0 && (
+            <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
+              <div className="mb-1 flex items-center gap-2">
+                <Bot size={18} className="text-primary" />
+                <h4 className="text-sm font-bold text-txt-primary">Rincian per Platform</h4>
+              </div>
+              <p className="mb-4 text-xs text-txt-muted">
+                Token tiap platform dipisah (tidak dijumlahkan) karena jenis & harga token berbeda. Biaya (Rp) bisa dibandingkan.
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {stats.byProvider.map((p) => (
+                  <div key={p.key} className="rounded-lg border border-border bg-surface-secondary p-4">
+                    <p className="text-sm font-bold text-txt-primary">{providerLabel(p.key)}</p>
+                    <div className="mt-2 space-y-1 text-sm">
+                      <Row label="Biaya" value={rp(p.costIdr)} strong />
+                      <Row label="Token" value={num(p.tokens)} />
+                      <Row label="Request" value={num(p.requests)} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Per-article analysis */}
           <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
             <div className="mb-3 flex items-center gap-2">
-              <Bot size={18} className="text-primary" />
+              <FileText size={18} className="text-primary" />
               <h4 className="text-sm font-bold text-txt-primary">Analisis per Artikel</h4>
-              <span className="text-xs text-txt-muted">(total semua panggilan AI per judul artikel)</span>
+              <span className="text-xs text-txt-muted">(gabungan semua panggilan AI per judul)</span>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <MinAvgMax title="Token per artikel" min={num(stats.perArticle.minTokens)} avg={num(stats.perArticle.avgTokens)} max={num(stats.perArticle.maxTokens)} />
@@ -168,8 +208,8 @@ export default function AiUsageTab() {
           </div>
 
           <p className="text-xs text-txt-muted">
-            Estimasi biaya dihitung dari tarif token resmi (Perplexity Sonar, Claude, DeepSeek) per panggilan + biaya
-            per-request pencarian Perplexity, lalu dikonversi ke Rupiah. Total USD: ${stats.totals.totalCostUsd.toFixed(4)}.
+            Biaya dihitung dari tarif token resmi per platform (Perplexity Sonar, Claude, DeepSeek) + biaya per-request
+            pencarian Perplexity, dikonversi ke Rupiah pada kurs saat pemakaian. Total USD: ${stats.totals.totalCostUsd.toFixed(4)}.
           </p>
         </>
       )}
@@ -184,6 +224,15 @@ function Card({ icon, label, value, accent }: { icon: React.ReactNode; label: st
         {icon} {label}
       </div>
       <p className={`mt-1.5 text-xl font-bold ${accent ? "text-primary" : "text-txt-primary"}`}>{value}</p>
+    </div>
+  );
+}
+
+function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-txt-muted">{label}</span>
+      <span className={strong ? "font-bold text-primary" : "font-medium text-txt-primary"}>{value}</span>
     </div>
   );
 }
