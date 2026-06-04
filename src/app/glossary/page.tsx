@@ -6,11 +6,15 @@ import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 export const revalidate = 300; // 5 min ISR
 
+// Absolute base for JSON-LD url fields (which aren't resolved against
+// metadataBase the way metadata.alternates.canonical is).
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+
 export const metadata: Metadata = {
   title: "Glossary Hukum | Kartawarta",
   description:
     "Daftar istilah hukum yang sering muncul di pemberitaan Kartawarta. Dari Tipikor hingga Restorative Justice — definisi singkat, dasar hukum, dan konteks.",
-  alternates: { canonical: "https://kartawarta.com/glossary" },
+  alternates: { canonical: "/glossary" },
 };
 
 const RANAH_LABEL: Record<string, string> = {
@@ -72,12 +76,12 @@ export default async function GlossaryPage() {
             "@context": "https://schema.org",
             "@type": "DefinedTermSet",
             name: "Glossary Hukum Kartawarta",
-            url: "https://kartawarta.com/glossary",
+            url: `${SITE_URL}/glossary`,
             description: metadata.description,
             hasDefinedTerm: items.map((i) => ({
               "@type": "DefinedTerm",
               name: i.istilah,
-              url: `https://kartawarta.com/glossary/${i.slug}`,
+              url: `${SITE_URL}/glossary/${i.slug}`,
             })),
           }),
         }}

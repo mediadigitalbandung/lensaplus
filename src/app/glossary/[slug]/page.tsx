@@ -7,6 +7,10 @@ import DOMPurify from "isomorphic-dompurify";
 
 export const revalidate = 300;
 
+// Absolute base for JSON-LD url fields (metadata.canonical uses a relative
+// path, resolved against metadataBase in the root layout).
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+
 const RANAH_LABEL: Record<string, string> = {
   PIDANA: "Pidana",
   PERDATA: "Perdata",
@@ -35,12 +39,12 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
   return {
     title: `${title} | Glossary Hukum Kartawarta`,
     description,
-    alternates: { canonical: `https://kartawarta.com/glossary/${params.slug}` },
+    alternates: { canonical: `/glossary/${params.slug}` },
     openGraph: {
       title,
       description,
       type: "article",
-      url: `https://kartawarta.com/glossary/${params.slug}`,
+      url: `${SITE_URL}/glossary/${params.slug}`,
     },
   };
 }
@@ -79,9 +83,9 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
             inDefinedTermSet: {
               "@type": "DefinedTermSet",
               name: "Glossary Hukum Kartawarta",
-              url: "https://kartawarta.com/glossary",
+              url: `${SITE_URL}/glossary`,
             },
-            url: `https://kartawarta.com/glossary/${item.slug}`,
+            url: `${SITE_URL}/glossary/${item.slug}`,
             description: item.bodyHtml.replace(/<[^>]+>/g, " ").slice(0, 300),
           }),
         }}
@@ -93,13 +97,13 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "Home", item: "https://kartawarta.com" },
-              { "@type": "ListItem", position: 2, name: "Glossary", item: "https://kartawarta.com/glossary" },
+              { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+              { "@type": "ListItem", position: 2, name: "Glossary", item: `${SITE_URL}/glossary` },
               {
                 "@type": "ListItem",
                 position: 3,
                 name: item.istilah,
-                item: `https://kartawarta.com/glossary/${item.slug}`,
+                item: `${SITE_URL}/glossary/${item.slug}`,
               },
             ],
           }),
