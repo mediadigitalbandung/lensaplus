@@ -196,9 +196,10 @@ export default function ProfilPage() {
       const formData = new FormData();
       formData.append("file", file);
       const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!uploadRes.ok) throw new Error("Gagal mengupload foto");
-      const uploadJson = await uploadRes.json();
+      const uploadJson = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok) throw new Error(uploadJson.error || "Gagal mengupload foto");
       const avatarUrl = uploadJson.url || uploadJson.data?.url;
+      if (!avatarUrl) throw new Error("Gagal mengupload foto");
 
       // Update profile with avatar URL
       const res = await fetch("/api/users/me", {

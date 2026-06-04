@@ -56,12 +56,17 @@ export async function POST(request: NextRequest) {
       throw new ApiError("Ukuran gambar maksimal 5MB", 400);
     }
 
+    // Editorial attribution (title/caption/credit) is REQUIRED for article
+    // images, but that is enforced client-side by the editor's image picker
+    // (ImageUploader / ImagePickerModal). This shared endpoint ALSO serves
+    // avatars, ad creatives, KTA assets, poll images and redaksi photos — none
+    // of which carry a photo credit. So treat the three fields as OPTIONAL here
+    // (Media.title/caption/credit are nullable) and only guard the max lengths.
+    // Previously these were hard-required, which silently 400'd every
+    // non-article upload ("Gagal mengupload foto" on the profile avatar, etc.).
     const title = (formData.get("title")?.toString() || "").trim();
     const caption = (formData.get("caption")?.toString() || "").trim();
     const credit = (formData.get("credit")?.toString() || "").trim();
-    if (!title) throw new ApiError("Judul gambar wajib diisi", 400);
-    if (!caption) throw new ApiError("Keterangan gambar wajib diisi", 400);
-    if (!credit) throw new ApiError("Sumber gambar wajib diisi", 400);
     if (title.length > 255) throw new ApiError("Judul gambar maksimal 255 karakter", 400);
     if (caption.length > 1000) throw new ApiError("Keterangan gambar maksimal 1000 karakter", 400);
     if (credit.length > 255) throw new ApiError("Sumber gambar maksimal 255 karakter", 400);
@@ -117,9 +122,11 @@ export async function POST(request: NextRequest) {
         url: primary.url,
         type: primaryContentType,
         size: primaryBuffer.length,
-        title,
-        caption,
-        credit,
+        // Default a readable title (original filename) for non-article assets;
+        // leave caption/credit null when not supplied.
+        title: title || file.name || filename,
+        caption: caption || null,
+        credit: credit || null,
         uploadedBy: session.user.id,
         uploaderName: session.user.name,
       },
