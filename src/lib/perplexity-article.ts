@@ -1,7 +1,7 @@
 /**
  * generateArticleViaPerplexity — produce a full, web-grounded Indonesian news
  * article (title + body + excerpt + tags + SEO) from a keyword, using ONLY
- * Perplexity (sonar-pro).
+ * Perplexity (Sonar; model + cost knobs configurable in Pengaturan → AI).
  *
  * Unlike the Claude/DeepSeek paraphrase path (ai-client.ts), this researches the
  * live web and returns the sources it cited, so auto-articles are fresh and

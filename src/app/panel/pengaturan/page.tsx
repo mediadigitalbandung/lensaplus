@@ -1166,7 +1166,7 @@ export default function PengaturanPage() {
           </Field>
           <Field
             label="Model Perplexity (hemat token)"
-            hint="sonar = paling hemat: token output ~15× lebih murah dari sonar-pro, dan cukup untuk draf berita. sonar-pro = riset lebih dalam tapi jauh lebih boros. Kosongkan = default (sonar-pro)."
+            hint="Default sekarang sonar = paling hemat: token output ~15× lebih murah dari sonar-pro, dan cukup untuk draf berita. Naikkan ke sonar-pro hanya bila butuh riset lebih dalam (jauh lebih boros)."
           >
             <select
               value={perplexityModel}
@@ -1176,7 +1176,7 @@ export default function PengaturanPage() {
               }}
               className="input"
             >
-              <option value="">Default (sonar-pro)</option>
+              <option value="">Default (sonar — Hemat)</option>
               <option value="sonar">sonar — Hemat (disarankan)</option>
               <option value="sonar-pro">sonar-pro — Kualitas tinggi (boros)</option>
               <option value="sonar-reasoning">sonar-reasoning — Penalaran (lebih boros)</option>

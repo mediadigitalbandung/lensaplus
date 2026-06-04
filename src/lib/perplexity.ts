@@ -13,7 +13,10 @@ import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
 
 const ENDPOINT = "https://api.perplexity.ai/chat/completions";
-const DEFAULT_MODEL = process.env.PERPLEXITY_MODEL || "sonar-pro";
+// Economical by default: `sonar` output tokens are ~15× cheaper than sonar-pro
+// and it's plenty for news drafting. Editors can upgrade to sonar-pro per
+// SystemSetting `perplexity_model` (Pengaturan → AI) when they want deeper research.
+const DEFAULT_MODEL = process.env.PERPLEXITY_MODEL || "sonar";
 const TIMEOUT_MS = 90_000; // research can be slow
 
 // Sonar models, cheapest → most expensive. `sonar` is the economical default
