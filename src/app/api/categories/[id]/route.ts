@@ -19,7 +19,7 @@ export async function PUT(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
     const body = await request.json();
     const data = updateCategorySchema.parse(body);
 
@@ -56,7 +56,7 @@ export async function DELETE(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
 
     const category = await prisma.category.findUnique({
       where: { id: params.id },

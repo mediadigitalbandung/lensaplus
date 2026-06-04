@@ -67,7 +67,6 @@ export async function middleware(request: NextRequest) {
         "/panel/ai-log",
         "/panel/auto-artikel",
         "/panel/dokumentasi",
-        "/panel/sorotan",
       ];
       // SUPER_ADMIN | CHIEF_EDITOR.
       const MANAGEMENT = [
@@ -75,13 +74,13 @@ export async function middleware(request: NextRequest) {
         "/panel/analytics",
         "/panel/seo",
         "/panel/redaksi",
-        "/panel/kategori",
         "/panel/polling",
         "/panel/topik",
         "/panel/newsletter-subscribers",
       ];
       // SUPER_ADMIN | CHIEF_EDITOR | EDITOR.
       const EDITOR_PATHS = [
+        "/panel/kategori",
         "/panel/komentar",
         "/panel/media",
         "/panel/laporan",
@@ -89,6 +88,7 @@ export async function middleware(request: NextRequest) {
         "/panel/tags",
         "/panel/tiktok",
         "/panel/live-blogs",
+        "/panel/sorotan",
         // "/panel/statistik" is open to ALL writers — creators see only their
         // OWN stats; editors+ can switch between site-wide and personal — not
         // gated here.

@@ -112,7 +112,9 @@ export default function KategoriPage() {
   const [tagForm, setTagForm] = useState({ name: "", slug: "" });
 
   const isAllowed =
-    session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "CHIEF_EDITOR";
+    session?.user?.role === "SUPER_ADMIN" ||
+    session?.user?.role === "CHIEF_EDITOR" ||
+    session?.user?.role === "EDITOR";
 
   /* ── Fetch categories ── */
   const fetchCategories = useCallback(async () => {
