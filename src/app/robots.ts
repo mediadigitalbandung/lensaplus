@@ -5,6 +5,37 @@ export default function robots(): MetadataRoute.Robots {
     process.env.NEXT_PUBLIC_APP_URL ||
     "https://kartawarta.com";
 
+  // Known AI-training / scraper crawlers we opt OUT of entirely. These are
+  // SEPARATE from search-engine indexing: Googlebot, Bingbot, and social
+  // link-preview fetchers (facebookexternalhit, Twitterbot, WhatsApp) are NOT
+  // listed, so Search + Google News + share previews are unaffected.
+  // Note: robots.txt is advisory — well-behaved bots obey it; the honeypot
+  // (/api/trap) + rate limiting + Cloudflare handle the ones that don't.
+  const aiScrapers = [
+    "GPTBot",
+    "ChatGPT-User",
+    "OAI-SearchBot",
+    "CCBot",
+    "ClaudeBot",
+    "anthropic-ai",
+    "Claude-Web",
+    "Google-Extended", // Google's AI-training crawler — NOT Googlebot/Search.
+    "Bytespider",
+    "Amazonbot",
+    "PerplexityBot",
+    "Omgilibot",
+    "Omgili",
+    "Diffbot",
+    "ImagesiftBot",
+    "cohere-ai",
+    "YouBot",
+    "Meta-ExternalAgent",
+    "FacebookBot", // Meta AI crawler — NOT facebookexternalhit (share previews).
+    "Applebot-Extended",
+    "DataForSeoBot",
+    "magpie-crawler",
+  ];
+
   return {
     rules: [
       {
@@ -18,6 +49,8 @@ export default function robots(): MetadataRoute.Robots {
         allow: ["/", "/api/og"],
         disallow: ["/panel/", "/api/", "/login", "/search"],
       },
+      // Block AI scrapers from the ENTIRE site.
+      { userAgent: aiScrapers, disallow: ["/"] },
     ],
     sitemap: [
       `${siteUrl}/sitemap.xml`,

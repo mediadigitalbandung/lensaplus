@@ -14,6 +14,7 @@ import {
 } from "@/lib/api-utils";
 import { slugify, calculateReadTime } from "@/lib/utils";
 import { canWriteArticles, canApproveArticles, canViewAllArticles } from "@/lib/auth";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 const createArticleSchema = z.object({
   title: z.string().min(5, "Judul minimal 5 karakter").max(255),
@@ -48,6 +49,12 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "12")));
     const category = searchParams.get("category");
     const status = searchParams.get("status") || "PUBLISHED";
+    // Anti-scraping: throttle/honeypot-ban only the PUBLIC listing path. Authed
+    // panel queries (status=ALL or a specific non-published status) are exempt.
+    if (status === "PUBLISHED") {
+      const blocked = guardPublicRead(request);
+      if (blocked) return blocked;
+    }
     const authorId = searchParams.get("authorId");
     const reviewedBy = searchParams.get("reviewedBy");
     const sort = searchParams.get("sort") || "publishedAt";

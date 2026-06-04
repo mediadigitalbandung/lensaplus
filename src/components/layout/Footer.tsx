@@ -153,6 +153,21 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      {/* Honeypot: hidden trap link for scrapers. Humans never see it (off-screen
+          + aria-hidden + not focusable); Googlebot never follows it (robots.txt
+          disallows /api/trap + rel=nofollow). A bot that crawls every <a href>
+          requests it and gets its IP banned. Plain <a> = no Next prefetch, so a
+          real visitor's browser never trips it. */}
+      <a
+        href="/api/trap"
+        rel="nofollow noindex"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="pointer-events-none absolute -left-[9999px] top-0 h-px w-px overflow-hidden opacity-0"
+      >
+        Arsip lengkap
+      </a>
     </footer>
   );
 }

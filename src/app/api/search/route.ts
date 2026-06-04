@@ -1,11 +1,14 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-utils";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/search?q=keyword
 export async function GET(request: NextRequest) {
+  const blocked = guardPublicRead(request);
+  if (blocked) return blocked;
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q") || "";

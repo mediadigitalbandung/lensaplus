@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-utils";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 // POST /api/articles/by-slugs — fetch articles by slugs array (for bookmarks)
 export async function POST(request: NextRequest) {
+  const blocked = guardPublicRead(request);
+  if (blocked) return blocked;
   try {
     const body = await request.json();
     const slugs: string[] = body.slugs || [];
