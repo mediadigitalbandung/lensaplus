@@ -208,7 +208,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                         terpotong bingung. Skala naik di sm/lg ketika side
                         panel kembali jadi vertikal stack di kanan hero. */}
                     <div className="relative p-2 sm:p-4 lg:p-6 flex flex-col justify-end h-full min-h-[6rem] sm:min-h-[8rem]">
-                      <span className="text-[8px] sm:text-label-sm font-bold uppercase tracking-wider sm:tracking-widest text-secondary mb-0.5 sm:mb-1">
+                      <span className="mb-0.5 sm:mb-1 inline-flex items-center self-start rounded-md bg-white/15 px-1.5 py-0.5 sm:px-2 text-[8px] sm:text-label-sm font-bold uppercase tracking-wider sm:tracking-widest text-white backdrop-blur-sm transition-colors duration-300 group-hover:bg-secondary">
                         {a.category.name}
                       </span>
                       <h2 className="font-serif text-[11px] leading-tight sm:text-title-md sm:leading-snug lg:text-title-lg text-white line-clamp-3 sm:line-clamp-2 group-hover:text-white/90 transition-colors">
