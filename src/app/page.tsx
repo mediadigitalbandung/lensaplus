@@ -4,6 +4,7 @@
 // fails (e.g. AI auto-publish at scale, or cache cold-start after deploy).
 export const revalidate = 30;
 
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import HeroCarousel from "@/components/slider/HeroCarousel";
@@ -12,6 +13,26 @@ import BannerAd, { SidebarAd, InlineAd, NativeAd } from "@/components/ads/Banner
 import { Scale, Briefcase, Trophy, Film, Heart, Wheat, Cpu, Vote as VoteIcon, GraduationCap, Leaf, Compass, BookOpen, TrendingUp, LucideIcon, ArrowRight, Clock, Eye, Flame, Sparkles, ChevronRight, Shield } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCached } from "@/lib/cache";
+
+// Home-specific metadata. `title.absolute` bypasses the "%s | Kartawarta"
+// template so the homepage carries the full brand+keyword title, and an explicit
+// canonical "/" plus OG/url avoids the homepage being seen as a duplicate of any
+// query-string variant. OG images/siteName inherit from the root layout.
+export const metadata: Metadata = {
+  title: {
+    absolute: "Kartawarta — Berita Terkini Bandung: Ekonomi, Pemerintahan, Hukum & Olahraga",
+  },
+  description:
+    "Kartawarta — media berita digital Bandung. Berita terkini ekonomi-bisnis, pemerintahan, hukum, olahraga, teknologi, dan hiburan dari Bandung & Jawa Barat.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: "Kartawarta — Berita Terkini Bandung & Jawa Barat",
+    description:
+      "Berita terkini ekonomi-bisnis, pemerintahan, hukum, olahraga, dan teknologi dari Bandung & Jawa Barat.",
+  },
+};
 
 const categoryIconMap: Record<string, LucideIcon> = {
   "hukum": Scale, "bisnis-ekonomi": Briefcase, "olahraga": Trophy, "hiburan": Film,

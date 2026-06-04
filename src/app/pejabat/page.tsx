@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Direktori Pejabat Publik — Bandung & Jawa Barat | Kartawarta",
   description:
     "Direktori pejabat publik daerah Bandung dan Jawa Barat: Walikota, Bupati, anggota DPRD, Kapolda, Kajati, Gubernur, dan pejabat lainnya. Profil, jabatan, dan berita terkait.",
+  alternates: { canonical: "/pejabat" },
   openGraph: {
     title: "Direktori Pejabat Publik Bandung & Jabar | Kartawarta",
     description:
