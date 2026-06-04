@@ -786,13 +786,13 @@ export default function AutoArtikelPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead className="border-b border-border bg-surface-secondary">
                 <tr>
                   <th className="px-5 py-3 text-left font-medium text-txt-secondary">
                     Keyword
                   </th>
-                  <th className="hidden sm:table-cell px-5 py-3 text-left font-medium text-txt-secondary">
+                  <th className="px-5 py-3 text-left font-medium text-txt-secondary">
                     Kategori
                   </th>
                   <th className="px-5 py-3 text-right font-medium text-txt-secondary">
@@ -827,7 +827,7 @@ export default function AutoArtikelPage() {
                         </p>
                       )}
                     </td>
-                    <td className="hidden sm:table-cell px-5 py-3 text-xs text-txt-secondary">
+                    <td className="px-5 py-3 text-xs text-txt-secondary">
                       {kw.category?.name || "—"}
                     </td>
                     <td className="px-5 py-3 text-right">
@@ -1102,7 +1102,7 @@ export default function AutoArtikelPage() {
           const visible = visibleAll.slice(start, start + PAGE_SIZE);
           return (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead className="border-b border-border bg-surface-secondary">
                 <tr>
                   <th className="px-5 py-3 text-left font-medium text-txt-secondary">
@@ -1111,7 +1111,7 @@ export default function AutoArtikelPage() {
                   <th className="px-5 py-3 text-left font-medium text-txt-secondary">
                     Status
                   </th>
-                  <th className="hidden sm:table-cell px-5 py-3 text-left font-medium text-txt-secondary">
+                  <th className="px-5 py-3 text-left font-medium text-txt-secondary">
                     Dibuat
                   </th>
                   <th className="px-5 py-3 text-right font-medium text-txt-secondary">
@@ -1141,7 +1141,7 @@ export default function AutoArtikelPage() {
                         {statusLabels[a.status] || a.status}
                       </span>
                     </td>
-                    <td className="hidden sm:table-cell px-5 py-3 text-xs text-txt-secondary">
+                    <td className="px-5 py-3 text-xs text-txt-secondary">
                       {formatDate(a.createdAt)}
                     </td>
                     <td className="px-5 py-3 text-right">

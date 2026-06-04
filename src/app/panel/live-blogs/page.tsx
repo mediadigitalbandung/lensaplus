@@ -191,14 +191,14 @@ export default function LiveBlogsPage() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead className="bg-surface-container-low text-txt-muted">
               <tr>
                 <th className="px-4 py-3 text-left">Judul</th>
                 <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left hidden md:table-cell">Jadwal</th>
-                <th className="px-4 py-3 text-left hidden lg:table-cell">Update</th>
-                <th className="px-4 py-3 text-left hidden lg:table-cell">Views</th>
+                <th className="px-4 py-3 text-left ">Jadwal</th>
+                <th className="px-4 py-3 text-left ">Update</th>
+                <th className="px-4 py-3 text-left ">Views</th>
                 <th className="px-4 py-3 text-right">Aksi</th>
               </tr>
             </thead>
@@ -222,13 +222,13 @@ export default function LiveBlogsPage() {
                       {STATUS_LABELS[blog.status]}
                     </span>
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-txt-secondary text-xs whitespace-nowrap">
+                  <td className="px-4 py-3 text-txt-secondary text-xs whitespace-nowrap">
                     {formatDateTime(blog.scheduledAt)}
                   </td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-txt-muted text-xs">
+                  <td className="px-4 py-3 text-txt-muted text-xs">
                     {blog._count.entries}
                   </td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-txt-muted text-xs">
+                  <td className="px-4 py-3 text-txt-muted text-xs">
                     {blog.viewCount.toLocaleString("id-ID")}
                   </td>
                   <td className="px-4 py-3">

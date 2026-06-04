@@ -176,15 +176,15 @@ export default function IklanPage() {
           {/* Table */}
           <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[900px] text-sm">
                 <thead className="border-b border-border bg-surface-secondary">
                   <tr>
                     <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Nama Iklan</th>
                     <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Posisi</th>
-                    <th className="hidden md:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Periode</th>
-                    <th className="hidden sm:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Tayangan</th>
-                    <th className="hidden sm:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Klik</th>
-                    <th className="hidden lg:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">CTR</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Periode</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Tayangan</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Klik</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">CTR</th>
                     <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Status</th>
                     <th className="px-3 sm:px-5 py-3.5 text-right text-sm font-medium text-txt-secondary">Aksi</th>
                   </tr>
@@ -201,12 +201,12 @@ export default function IklanPage() {
                         <td className="px-3 sm:px-5 py-4">
                           <span className="rounded bg-surface-tertiary px-3 py-0.5 text-sm font-medium text-txt-secondary">{slotLabels[ad.slot] || ad.slot}</span>
                         </td>
-                        <td className="hidden md:table-cell px-5 py-4 text-txt-secondary">
+                        <td className="px-5 py-4 text-txt-secondary">
                           <div className="flex items-center gap-1 text-sm"><Calendar size={12} /> {formatDate(ad.startDate)} — {formatDate(ad.endDate)}</div>
                         </td>
-                        <td className="hidden sm:table-cell px-5 py-4 text-sm text-txt-secondary">{ad.impressions.toLocaleString("id-ID")}</td>
-                        <td className="hidden sm:table-cell px-5 py-4 text-sm text-txt-secondary">{ad.clicks.toLocaleString("id-ID")}</td>
-                        <td className="hidden lg:table-cell px-5 py-4 text-sm font-bold text-txt-primary">{ctr}</td>
+                        <td className="px-5 py-4 text-sm text-txt-secondary">{ad.impressions.toLocaleString("id-ID")}</td>
+                        <td className="px-5 py-4 text-sm text-txt-secondary">{ad.clicks.toLocaleString("id-ID")}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-txt-primary">{ctr}</td>
                         <td className="px-3 sm:px-5 py-4">
                           <span className={`inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-sm font-medium ${ad.isActive ? "bg-primary-light text-primary" : "bg-red-50 text-red-600"}`}>
                             <Power size={10} /> {ad.isActive ? "Aktif" : "Nonaktif"}

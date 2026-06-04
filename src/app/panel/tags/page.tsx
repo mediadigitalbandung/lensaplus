@@ -357,13 +357,13 @@ export default function TagsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[560px] text-sm">
               <thead className="border-b border-border bg-surface-secondary">
                 <tr>
                   <th className="px-5 py-3 text-left font-medium text-txt-secondary">
                     Nama
                   </th>
-                  <th className="hidden sm:table-cell px-5 py-3 text-left font-medium text-txt-secondary">
+                  <th className="px-5 py-3 text-left font-medium text-txt-secondary">
                     Slug
                   </th>
                   <th className="px-5 py-3 text-right font-medium text-txt-secondary">
@@ -385,7 +385,7 @@ export default function TagsPage() {
                           {t.name}
                         </span>
                       </td>
-                      <td className="hidden sm:table-cell px-5 py-3 text-xs text-txt-muted font-mono">
+                      <td className="px-5 py-3 text-xs text-txt-muted font-mono">
                         {t.slug}
                       </td>
                       <td className="px-5 py-3 text-right font-semibold text-txt-primary">

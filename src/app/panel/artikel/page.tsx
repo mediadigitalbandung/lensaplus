@@ -687,7 +687,7 @@ export default function ArtikelPage() {
                min-h keeps it usable on 720p / Surface laptops. */}
           <div className="rounded-[12px] border border-border bg-surface shadow-card overflow-hidden">
             <div className="overflow-auto max-h-[calc(100vh-340px)] min-h-[360px]">
-              <table className="w-full min-w-[320px] text-sm">
+              <table className="w-full min-w-[1080px] text-sm">
                 <thead className="sticky top-0 z-10 border-b border-border bg-surface-secondary shadow-sm">
                   <tr>
                     <th className="w-10 px-3 py-3.5 text-center">
@@ -699,17 +699,17 @@ export default function ArtikelPage() {
                         aria-label="Pilih semua artikel"
                       />
                     </th>
-                    <th className="hidden sm:table-cell w-16 px-2 py-3.5 text-center text-sm font-medium text-txt-secondary">Foto</th>
+                    <th className="w-16 px-2 py-3.5 text-center text-sm font-medium text-txt-secondary">Foto</th>
                     <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Judul</th>
-                    <th className="hidden md:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Kategori</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Kategori</th>
                     {isEditor && (
-                      <th className="hidden lg:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Penulis</th>
+                      <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Penulis</th>
                     )}
                     <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Status</th>
-                    <th className="hidden lg:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Progres</th>
-                    <th className="hidden xl:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Editor</th>
-                    <th className="hidden sm:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Views</th>
-                    <th className="hidden md:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Tanggal</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Progres</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Editor</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Views</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Tanggal</th>
                     <th className="px-3 sm:px-5 py-3.5 text-right text-sm font-medium text-txt-secondary">Aksi</th>
                   </tr>
                 </thead>
@@ -728,7 +728,7 @@ export default function ArtikelPage() {
                             aria-label={`Pilih artikel ${article.title}`}
                           />
                         </td>
-                        <td className="hidden sm:table-cell w-16 px-2 py-2 align-middle">
+                        <td className="w-16 px-2 py-2 align-middle">
                           {article.featuredImage ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img
@@ -782,11 +782,11 @@ export default function ArtikelPage() {
                             {article.title}
                           </button>
                         </td>
-                        <td className="hidden md:table-cell px-5 py-4 text-sm text-txt-secondary">
+                        <td className="px-5 py-4 text-sm text-txt-secondary">
                           {article.category?.name || "\u2014"}
                         </td>
                         {isEditor && (
-                          <td className="hidden lg:table-cell px-5 py-4 text-sm text-txt-secondary">
+                          <td className="px-5 py-4 text-sm text-txt-secondary">
                             {article.author?.name || "\u2014"}
                           </td>
                         )}
@@ -822,10 +822,10 @@ export default function ArtikelPage() {
                             })()}
                           </div>
                         </td>
-                        <td className="hidden lg:table-cell px-5 py-4">
+                        <td className="px-5 py-4">
                           <StatusTimeline status={article.status} />
                         </td>
-                        <td className="hidden xl:table-cell px-5 py-4 text-txt-secondary">
+                        <td className="px-5 py-4 text-txt-secondary">
                           {article.reviewerName ? (
                             <span className="inline-flex items-center gap-1 text-sm">
                               <UserCheck size={12} className="text-primary" />
@@ -835,10 +835,10 @@ export default function ArtikelPage() {
                             "\u2014"
                           )}
                         </td>
-                        <td className="hidden sm:table-cell px-5 py-4 text-sm text-txt-secondary">
+                        <td className="px-5 py-4 text-sm text-txt-secondary">
                           {article.viewCount > 0 ? article.viewCount.toLocaleString("id-ID") : "\u2014"}
                         </td>
-                        <td className="hidden md:table-cell px-5 py-4 text-sm text-txt-secondary">
+                        <td className="px-5 py-4 text-sm text-txt-secondary">
                           {formatDate(article.publishedAt || article.createdAt)}
                         </td>
                         <td className="px-5 py-4 text-right">

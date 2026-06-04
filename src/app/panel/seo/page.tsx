@@ -750,15 +750,15 @@ export default function SeoDashboardPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[780px] text-sm">
                 <thead className="bg-surface-secondary border-b border-border">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-txt-secondary">Artikel</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-txt-secondary">Skor</th>
-                    <th className="hidden sm:table-cell px-4 py-3 text-center text-xs font-medium text-txt-secondary">SEO Title</th>
-                    <th className="hidden sm:table-cell px-4 py-3 text-center text-xs font-medium text-txt-secondary">Meta Desc</th>
-                    <th className="hidden md:table-cell px-4 py-3 text-center text-xs font-medium text-txt-secondary">Gambar</th>
-                    <th className="hidden md:table-cell px-4 py-3 text-center text-xs font-medium text-txt-secondary">Excerpt</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-txt-secondary">SEO Title</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-txt-secondary">Meta Desc</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-txt-secondary">Gambar</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-txt-secondary">Excerpt</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-txt-secondary">Masalah</th>
                   </tr>
                 </thead>
@@ -778,16 +778,16 @@ export default function SeoDashboardPage() {
                           a.score >= 80 ? "bg-green-50 text-green-600" : a.score >= 50 ? "bg-yellow-50 text-yellow-600" : "bg-red-50 text-red-600"
                         }`}>{a.score}</span>
                       </td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         {a.seoTitle ? <CheckCircle size={14} className="mx-auto text-green-500" /> : <XCircle size={14} className="mx-auto text-red-400" />}
                       </td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         {a.seoDescription ? <CheckCircle size={14} className="mx-auto text-green-500" /> : <XCircle size={14} className="mx-auto text-red-400" />}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         {a.hasImage ? <CheckCircle size={14} className="mx-auto text-green-500" /> : <XCircle size={14} className="mx-auto text-red-400" />}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         {a.hasExcerpt ? <CheckCircle size={14} className="mx-auto text-green-500" /> : <XCircle size={14} className="mx-auto text-red-400" />}
                       </td>
                       <td className="px-4 py-3">

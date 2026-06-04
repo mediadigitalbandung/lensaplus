@@ -349,14 +349,14 @@ export default function PenggunaPage() {
         <>
         <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead className="border-b border-border bg-surface-secondary">
                 <tr>
                   <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Pengguna</th>
                   <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Role</th>
-                  <th className="hidden sm:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Artikel</th>
-                  <th className="hidden md:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Status</th>
-                  <th className="hidden lg:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Terdaftar</th>
+                  <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Artikel</th>
+                  <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Status</th>
+                  <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Terdaftar</th>
                   <th className="px-3 sm:px-5 py-3.5 text-right text-sm font-medium text-txt-secondary">Aksi</th>
                 </tr>
               </thead>
@@ -401,10 +401,10 @@ export default function PenggunaPage() {
                           <Shield size={10} /> {role.label}
                         </span>
                       </td>
-                      <td className="hidden sm:table-cell px-5 py-4 text-sm text-txt-secondary">
+                      <td className="px-5 py-4 text-sm text-txt-secondary">
                         {user._count?.articles ?? 0}
                       </td>
-                      <td className="hidden md:table-cell px-5 py-4">
+                      <td className="px-5 py-4">
                         {user.isActive ? (
                           <span className="flex items-center gap-1 text-sm text-primary">
                             <UserCheck size={12} /> Aktif
@@ -415,7 +415,7 @@ export default function PenggunaPage() {
                           </span>
                         )}
                       </td>
-                      <td className="hidden lg:table-cell px-5 py-4 text-sm text-txt-secondary">{formatDate(user.createdAt)}</td>
+                      <td className="px-5 py-4 text-sm text-txt-secondary">{formatDate(user.createdAt)}</td>
                       <td className="px-3 sm:px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button

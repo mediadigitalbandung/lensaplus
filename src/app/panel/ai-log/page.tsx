@@ -338,14 +338,14 @@ export default function AIPage() {
             </div>
           ) : (
             <div className="rounded-2xl border border-border bg-surface shadow-card overflow-x-auto">
-              <table className="w-full min-w-[320px]">
+              <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-border bg-surface-secondary">
                     <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Waktu</th>
-                    <th className="hidden sm:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Pengguna</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Pengguna</th>
                     <th className="px-3 sm:px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Fitur</th>
                     <th className="px-3 sm:px-5 py-3.5 text-right text-sm font-medium text-txt-secondary">Token</th>
-                    <th className="hidden md:table-cell px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Artikel</th>
+                    <th className="px-5 py-3.5 text-left text-sm font-medium text-txt-secondary">Artikel</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -357,14 +357,14 @@ export default function AIPage() {
                     logs.map((log) => (
                       <tr key={log.id} className="border-b border-border last:border-0 hover:bg-surface-secondary/50 transition-colors">
                         <td className="px-3 sm:px-5 py-4 text-xs sm:text-sm text-txt-secondary whitespace-nowrap">{formatDate(log.createdAt)}</td>
-                        <td className="hidden sm:table-cell px-5 py-4 text-sm text-txt-primary">{log.userName}</td>
+                        <td className="px-5 py-4 text-sm text-txt-primary">{log.userName}</td>
                         <td className="px-3 sm:px-5 py-4">
                           <span className="inline-block rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary">
                             {FEATURE_LABELS[log.feature] || log.feature}
                           </span>
                         </td>
                         <td className="px-3 sm:px-5 py-4 text-right text-sm font-medium text-txt-primary">{formatNumber(log.totalTokens)}</td>
-                        <td className="hidden md:table-cell px-5 py-4 text-sm text-txt-secondary max-w-[200px] truncate">{log.articleTitle || "-"}</td>
+                        <td className="px-5 py-4 text-sm text-txt-secondary max-w-[200px] truncate">{log.articleTitle || "-"}</td>
                       </tr>
                     ))
                   )}

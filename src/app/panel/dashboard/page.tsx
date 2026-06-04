@@ -648,7 +648,7 @@ function CategoryPerformance({ articles }: { articles: Article[] }) {
         </h2>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[480px] text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-secondary/50">
               <th className="px-5 py-2.5 text-left text-xs font-semibold text-txt-muted uppercase tracking-wider">
