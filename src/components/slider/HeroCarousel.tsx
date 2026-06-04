@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Pause, Play, ArrowRight } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import ClientDate from "@/components/ClientDate";
 
 interface HeroArticle {
@@ -118,7 +118,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 px-5 py-6 pb-12 sm:px-10 sm:py-10 lg:px-14 lg:py-12">
-                  <span className="inline-block text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-secondary mb-2 sm:mb-3">
+                  <span className="mb-2 sm:mb-3 inline-flex items-center rounded-md bg-white/15 px-2.5 py-1 text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-white backdrop-blur-sm transition-colors duration-300 group-hover:bg-secondary">
                     {a.category.name}
                   </span>
                   <h2 className="font-serif text-headline-sm sm:text-display-sm lg:text-display-md xl:text-display-lg text-white leading-[1.15] sm:leading-[1.1] max-w-2xl pr-4 line-clamp-3">
@@ -134,11 +134,6 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                     <span>/</span>
                     <span><ClientDate date={a.publishedAt} format="relative" /></span>
                   </div>
-                  {/* Premium red "Baca" pill — visual only (whole slide is the link) */}
-                  <span className="mt-4 sm:mt-5 inline-flex items-center gap-2 rounded-md bg-secondary px-4 py-2 sm:px-5 sm:py-2.5 text-[10px] sm:text-label-md font-bold uppercase tracking-wider text-white shadow-lg shadow-secondary/30 transition-all duration-300 group-hover:bg-secondary-dark group-hover:gap-3">
-                    Baca Selengkapnya
-                    <ArrowRight size={14} aria-hidden />
-                  </span>
                 </div>
               </Link>
             ))}
