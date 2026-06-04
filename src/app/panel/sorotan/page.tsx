@@ -76,6 +76,7 @@ export default function SorotanPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [onlyWithSorotan, setOnlyWithSorotan] = useState(true);
+  const [scope, setScope] = useState<"all" | "me">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [batchGenerating, setBatchGenerating] = useState(false);
@@ -104,6 +105,7 @@ export default function SorotanPage() {
       const params = new URLSearchParams({
         page: String(page),
         limit: "15",
+        scope,
         onlyWithSorotan: String(onlyWithSorotan),
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
@@ -120,7 +122,7 @@ export default function SorotanPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, onlyWithSorotan, debouncedSearch]);
+  }, [page, scope, onlyWithSorotan, debouncedSearch]);
 
   const fetchAutoSettings = useCallback(async () => {
     if (!isAdmin) return;
@@ -313,6 +315,32 @@ export default function SorotanPage() {
             Generate Batch (5)
           </button>
         </div>
+      </div>
+
+      {/* Tabs: Semua vs Sorotan Saya */}
+      <div className="mb-5 flex gap-1 overflow-x-auto border-b border-border">
+        {(
+          [
+            { key: "all", label: "Semua Sorotan" },
+            { key: "me", label: "Sorotan Saya" },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => {
+              setScope(t.key);
+              setPage(1);
+              setExpandedId(null);
+            }}
+            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+              scope === t.key
+                ? "border-primary text-primary"
+                : "border-transparent text-txt-secondary hover:text-txt-primary"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* Summary — total saja, tanpa status index */}

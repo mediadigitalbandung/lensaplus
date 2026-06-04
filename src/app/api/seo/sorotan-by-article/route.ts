@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -27,8 +27,11 @@ export async function GET(req: NextRequest) {
     const search = (searchParams.get("search") || "").trim();
     // Default: only show articles that already have Sorotan (the browse case).
     const onlyWithSorotan = searchParams.get("onlyWithSorotan") !== "false";
+    // scope=me → only articles the requester authored ("Sorotan Saya" tab).
+    const scope = searchParams.get("scope");
 
     const where: Record<string, unknown> = { status: "PUBLISHED" };
+    if (scope === "me") where.authorId = session.user.id;
     if (onlyWithSorotan) where.sorotan = { some: {} };
     if (search) where.title = { contains: search, mode: "insensitive" };
 
@@ -50,7 +53,11 @@ export async function GET(req: NextRequest) {
         take: limit,
       }),
       prisma.article.count({ where }),
-      prisma.sorotan.count(),
+      prisma.sorotan.count(
+        scope === "me"
+          ? { where: { article: { authorId: session.user.id } } }
+          : undefined,
+      ),
     ]);
 
     return successResponse({
