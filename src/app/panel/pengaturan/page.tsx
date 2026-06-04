@@ -432,6 +432,7 @@ export default function PengaturanPage() {
   const [googleCredentials, setGoogleCredentials] = useState("");
   const [googleIndexingEnabled, setGoogleIndexingEnabled] = useState(false);
   const [ga4PropertyId, setGa4PropertyId] = useState("");
+  const [ga4MeasurementId, setGa4MeasurementId] = useState("");
   const [gscSiteUrl, setGscSiteUrl] = useState("");
 
   // Meta — IG
@@ -521,6 +522,7 @@ export default function PengaturanPage() {
         setGoogleCredentials(map.google_credentials_json || "");
         setGoogleIndexingEnabled(map.google_indexing_enabled === "true");
         setGa4PropertyId(map.ga4_property_id || "");
+        setGa4MeasurementId(map.ga4_measurement_id || "");
         setGscSiteUrl(map.gsc_site_url || "");
 
         setTwBearer(map.twitter_bearer_token || "");
@@ -1315,6 +1317,21 @@ export default function PengaturanPage() {
             />
           </Field>
           <Field
+            label="GA4 Measurement ID (tag pelacak)"
+            hint="Format G-XXXXXXX. Cek di GA4 → Admin → Data Streams → pilih stream web. WAJIB diisi agar Google Analytics benar-benar menghitung pengunjung situs (tag dipasang otomatis di semua halaman publik)."
+          >
+            <input
+              type="text"
+              value={ga4MeasurementId}
+              onChange={(e) => {
+                setGa4MeasurementId(e.target.value.trim());
+                markDirty("google");
+              }}
+              className="input font-mono text-sm"
+              placeholder="G-XXXXXXXXXX"
+            />
+          </Field>
+          <Field
             label="GSC Site URL (opsional)"
             hint="Domain property cukup masukkan 'sc-domain:kartawarta.com'. URL property masukkan 'https://kartawarta.com/'."
           >
@@ -1345,6 +1362,7 @@ export default function PengaturanPage() {
                   googleIndexingEnabled ? "true" : "false",
                 ],
                 ["ga4_property_id", ga4PropertyId],
+                ["ga4_measurement_id", ga4MeasurementId],
                 ["gsc_site_url", gscSiteUrl],
               ]);
             }}

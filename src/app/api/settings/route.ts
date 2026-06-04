@@ -41,6 +41,10 @@ const ALLOWED_KEYS = [
   "google_indexing_enabled",
   "gsc_site_url",
   "ga4_property_id",
+  // GA4 Measurement ID (G-XXXXXXX) for the on-site gtag tracking tag. Public,
+  // non-secret value — injected into every public page so GA actually collects
+  // pageviews/users. Distinct from ga4_property_id (the Data-API read side).
+  "ga4_measurement_id",
   // Cloudflare
   "cloudflare_api_token",
   "cloudflare_zone_id",

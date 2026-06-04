@@ -32,7 +32,7 @@ const footerLinks = {
     { name: "Pejabat", href: "/pejabat" },
     { name: "Kebijakan Privasi", href: "/privasi" },
     { name: "Syarat & Ketentuan", href: "/syarat-ketentuan" },
-    { name: "Pasang Iklan", href: "/kontak" },
+    { name: "Pasang Iklan", href: "/pasang-iklan" },
   ],
 };
 

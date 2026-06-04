@@ -13,6 +13,7 @@ import InstallPrompt from "@/components/pwa/InstallPrompt";
 import InstallTracker from "@/components/pwa/InstallTracker";
 import InstallTeaser from "@/components/pwa/InstallTeaser";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 
 
 const newsreader = Newsreader({
@@ -167,6 +168,9 @@ export default function RootLayout({
         />
         {/* Google AdSense Meta Tag Verification */}
         <meta name="google-adsense-account" content={adsenseClientId} />
+        {/* Google Analytics 4 (gtag) — Measurement ID from Pengaturan → Google.
+            Renders nothing until configured, so safe to mount unconditionally. */}
+        <GoogleAnalytics />
       </head>
       <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased">
         <Providers>
