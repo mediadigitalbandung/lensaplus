@@ -278,8 +278,12 @@ const WRITER_ROLES: Role[] = [
   "CONTRIBUTOR",
 ];
 
+// Roles allowed to publish/schedule an article WITHOUT going through editorial
+// review. Must match the server-side workflow in api/articles/[id]: only
+// EDITOR_ROLES hit the publish branch; lower roles (incl. SENIOR_JOURNALIST)
+// are confined to DRAFT/IN_REVIEW. Keep this in sync with EDITOR_ROLES.
 export function canPublishDirectly(role: Role): boolean {
-  return role === "SUPER_ADMIN" || role === "CHIEF_EDITOR" || role === "EDITOR" || role === "SENIOR_JOURNALIST";
+  return role === "SUPER_ADMIN" || role === "CHIEF_EDITOR" || role === "EDITOR";
 }
 
 export function canApproveArticles(role: Role): boolean {

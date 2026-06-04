@@ -128,8 +128,6 @@ export async function PUT(
       session.user.role === "SUPER_ADMIN" ||
       session.user.role === "CHIEF_EDITOR" ||
       session.user.role === "EDITOR";
-    const isAssignedEditor = isEditor && article.reviewedBy === session.user.id;
-
     if (!isOwner && !isEditor) {
       throw new ApiError("Tidak memiliki akses untuk mengedit artikel ini", 403);
     }
@@ -309,173 +307,12 @@ export async function PUT(
       return successResponse(updated);
     }
 
-    // --- EDITOR (assigned editor reviewing) ---
-    if (isEditor && !isAdmin) {
-      // Editor publish: APPROVED -> PUBLISHED
-      if (data.status === "PUBLISHED" && article.status === "APPROVED") {
-        if (!isAssignedEditor) {
-          throw new ApiError("Hanya editor yang ditugaskan yang dapat mempublikasikan artikel ini", 403);
-        }
-
-        await prisma.revision.create({
-          data: { articleId: article.id, title: article.title, content: article.content, changedBy: session.user.name || session.user.email },
-        });
-
-        const updated = await prisma.article.update({
-          where: { id: params.id },
-          data: { status: "PUBLISHED", verificationLabel: "VERIFIED", publishedAt: new Date(), scheduledAt: null },
-          include: { author: { select: { id: true, name: true } }, category: { select: { id: true, name: true, slug: true } }, tags: true, sources: true },
-        });
-
-        await logAudit(session.user.id, "STATUS_CHANGE", "article", article.id, `Editor mempublikasi artikel: ${article.title}`);
-        await notifyArticleStatusChange(article.id, article.title, "PUBLISHED", article.authorId);
-        const authorPub = await prisma.user.findUnique({ where: { id: article.authorId }, select: { email: true } });
-        if (authorPub) await sendArticlePublishedEmail(authorPub.email, article.title, updated.slug);
-
-        // SEO: auto-fill seoTitle/seoDescription if empty, ping search engines
-        if (!article.seoTitle || !article.seoDescription) {
-          await prisma.article.update({
-            where: { id: article.id },
-            data: {
-              ...(!article.seoTitle && { seoTitle: generateSeoTitle(article.title) }),
-              ...(!article.seoDescription && { seoDescription: generateSeoDescription(article.excerpt, article.content) }),
-            },
-          });
-        }
-        // AWAITED so cache invalidation + revalidatePath finish before the
-        // PUT response returns — fire-and-forget here causes a window where
-        // the client refreshes the homepage and still sees stale data.
-        await onArticlePublished(updated.slug, updated.id);
-
-        return successResponse(updated);
-      }
-
-      // Editor "Batalkan Persetujuan": APPROVED -> IN_REVIEW (only by assigned editor)
-      if (data.status === "IN_REVIEW" && article.status === "APPROVED") {
-        if (!isAssignedEditor) {
-          throw new ApiError("Hanya editor yang ditugaskan yang dapat membatalkan persetujuan", 403);
-        }
-
-        const updated = await prisma.article.update({
-          where: { id: params.id },
-          data: {
-            status: "IN_REVIEW",
-            verificationLabel: "UNVERIFIED",
-            reviewNote: null,
-            reviewedAt: null,
-          },
-          include: {
-            author: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true, slug: true } },
-            tags: true,
-            sources: true,
-          },
-        });
-
-        await logAudit(
-          session.user.id,
-          "STATUS_CHANGE",
-          "article",
-          article.id,
-          `Editor batalkan persetujuan: APPROVED → IN_REVIEW. Artikel: ${article.title}`
-        );
-
-        return successResponse(updated);
-      }
-
-      // Editor can only work on articles IN_REVIEW assigned to them
-      if (article.status !== "IN_REVIEW") {
-        throw new ApiError("Artikel tidak dalam status review", 403);
-      }
-
-      if (!isAssignedEditor) {
-        throw new ApiError("Artikel ini tidak ditugaskan kepada Anda", 403);
-      }
-
-      // Editor can edit content (title, content, excerpt, category, tags)
-      if (!data.status || !["APPROVED", "REJECTED"].includes(data.status)) {
-        // Save revision before editor edits content
-        await prisma.revision.create({
-          data: {
-            articleId: article.id,
-            title: article.title,
-            content: article.content,
-            changedBy: session.user.name || session.user.email,
-          },
-        });
-
-        // Content edit by editor — save changes without status change
-        const updateData: Record<string, unknown> = {};
-        if (data.title) updateData.title = data.title;
-        if (data.content) updateData.content = data.content;
-        if (data.excerpt !== undefined) updateData.excerpt = data.excerpt;
-        if (data.categoryId) updateData.categoryId = data.categoryId;
-        if (tagNames && Array.isArray(tagNames)) {
-          updateData.tags = {
-            set: [],
-            connectOrCreate: tagNames.map((name: string) => {
-              const slug = slugify(name);
-              return { where: { slug }, create: { name, slug } };
-            }),
-          };
-        }
-
-        const updated = await prisma.article.update({
-          where: { id: params.id },
-          data: updateData,
-          include: { author: { select: { id: true, name: true } }, category: { select: { id: true, name: true, slug: true } }, tags: true, sources: true },
-        });
-
-        await logAudit(session.user.id, "UPDATE", "article", article.id, `Editor mengedit konten artikel: ${article.title}`);
-        return successResponse(updated);
-      }
-
-      if (data.status === "REJECTED" && !data.reviewNote?.trim()) {
-        throw new ApiError("Alasan penolakan wajib diisi", 400);
-      }
-
-      const verificationLabel = data.status === "APPROVED" ? "VERIFIED" : "UNVERIFIED";
-
-      const updated = await prisma.article.update({
-        where: { id: params.id },
-        data: {
-          status: data.status === "REJECTED" ? "DRAFT" : (data.status as "APPROVED" | "REJECTED"),
-          verificationLabel,
-          reviewNote: data.reviewNote || null,
-          reviewedBy: session.user.id,
-          reviewedAt: new Date(),
-        },
-        include: {
-          author: { select: { id: true, name: true } },
-          category: { select: { id: true, name: true, slug: true } },
-          tags: true,
-          sources: true,
-        },
-      });
-
-      await logAudit(
-        session.user.id,
-        "STATUS_CHANGE",
-        "article",
-        article.id,
-        `Editor ${data.status === "APPROVED" ? "menyetujui" : "menolak"} artikel: ${article.title}${data.reviewNote ? ` — Catatan: ${data.reviewNote}` : ""}`
-      );
-
-      // Notify & email article author about approval/rejection
-      await notifyArticleStatusChange(article.id, article.title, data.status!, article.authorId, data.reviewNote || undefined);
-      const authorForEmail = await prisma.user.findUnique({ where: { id: article.authorId }, select: { email: true } });
-      if (authorForEmail) {
-        if (data.status === "APPROVED") {
-          await sendArticleApprovedEmail(authorForEmail.email, article.title, article.slug);
-        } else {
-          await sendArticleRejectedEmail(authorForEmail.email, article.title, data.reviewNote || undefined);
-        }
-      }
-
-      return successResponse(updated);
-    }
-
-    // --- ADMIN (SUPER_ADMIN / CHIEF_EDITOR) ---
+    // --- EDITORS & ADMINS (SUPER_ADMIN / CHIEF_EDITOR / EDITOR) ---
+    // Every editor-tier role is `isAdmin` here, so they all flow through this
+    // branch and may act on ANY article (the newsroom-oversight model: editors
+    // are not limited to articles assigned to them). A former EDITOR-only branch
+    // that gated actions on `isAssignedEditor` lived here but was unreachable
+    // (isEditor and isAdmin cover the same role set) and has been removed.
     if (isAdmin) {
       // Admin "Kembalikan ke Editor": APPROVED -> IN_REVIEW
       if (data.status === "IN_REVIEW" && article.status === "APPROVED") {
@@ -578,6 +415,12 @@ export async function PUT(
         // and the dashboard "scheduled" count uses the same filter. Leaving it
         // DRAFT (as before) meant scheduled drafts were never auto-published.
         if (data.scheduledAt) {
+          // Guard: a past schedule time would let the publish cron fire it on
+          // its very next run (~5 min) — that's not "scheduling". Reject it so
+          // the caller either picks a future time or publishes immediately.
+          if (new Date(data.scheduledAt).getTime() <= Date.now()) {
+            throw new ApiError("Waktu jadwal harus di masa depan", 400);
+          }
           const updated = await prisma.article.update({
             where: { id: params.id },
             data: {
