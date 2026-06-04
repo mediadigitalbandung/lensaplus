@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireAuth, ApiError, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import { randomBytes } from "crypto";
 import sharp from "sharp";
 import { getStorageDriver } from "@/lib/storage";
@@ -40,6 +41,13 @@ export async function POST(request: NextRequest) {
   try {
     ensureProductionContext();
     const session = await requireAuth();
+
+    // Each upload runs sharp 3× (primary + webp + avif) — cap per-user to stop
+    // a single session from pinning CPU / filling storage.
+    const rl = rateLimit(`upload:${session.user.id}`, 40, 5 * 60 * 1000);
+    if (!rl.success) {
+      throw new ApiError("Terlalu banyak unggahan dalam waktu singkat. Coba lagi beberapa menit lagi.", 429);
+    }
 
     const formData = await request.formData();
     const file = formData.get("file") as File;

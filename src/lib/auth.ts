@@ -112,8 +112,11 @@ export const authOptions: NextAuthOptions = {
         // BEFORE the (expensive) bcrypt compare so a flood is cheap to reject.
         // Successful logins never increment the counter, so legitimate users
         // are never locked out. Fail OPEN if the client IP can't be determined.
-        const fwd = (req?.headers?.["x-forwarded-for"] as string | undefined) || "";
-        const ip = fwd.split(",")[0].trim();
+        // Behind Cloudflare, cf-connecting-ip is the TRUE visitor IP; x-forwarded-for
+        // can be a CF-edge chain. Match getClientIp()'s precedence so the guard
+        // buckets per real visitor, not per CF edge node.
+        const h = (req?.headers || {}) as Record<string, string | undefined>;
+        const ip = (h["cf-connecting-ip"] || (h["x-forwarded-for"] || "").split(",")[0] || h["x-real-ip"] || "").trim();
         if (ip && isLoginBlocked(ip)) {
           console.warn(`[auth] login blocked (brute-force guard): ${ip}`);
           throw new Error("Terlalu banyak percobaan login gagal. Coba lagi dalam 15 menit.");
