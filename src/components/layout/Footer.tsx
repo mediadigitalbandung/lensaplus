@@ -36,7 +36,7 @@ const footerLinks = {
   ],
 };
 
-export default function Footer() {
+export default function Footer({ dewanPersNumber }: { dewanPersNumber?: string }) {
   return (
     <footer className="bg-white text-on-surface border-t border-border" role="contentinfo" aria-label="Footer situs">
       <div className="container-main py-10 sm:py-12 lg:py-14 2xl:py-20">
@@ -95,7 +95,7 @@ export default function Footer() {
                   Terverifikasi Dewan Pers
                 </span>
                 <span className="mt-1 text-label-sm uppercase tracking-wider text-txt-muted">
-                  Sertifikat 608/DP-Verifikasi/K/XI/2020
+                  {dewanPersNumber ? `Sertifikat ${dewanPersNumber}` : "Anggota Dewan Pers Indonesia"}
                 </span>
               </div>
             </div>

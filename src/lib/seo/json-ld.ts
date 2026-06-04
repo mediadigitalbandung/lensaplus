@@ -60,6 +60,20 @@ function publisherContactPoint(): Record<string, unknown> {
   };
 }
 
+// NewsMediaOrganization policy links — Google News / Publisher Center trust
+// signals that map our existing transparency pages to schema.org policy
+// properties. All point to real, live routes; no operator input required.
+// Docs: https://developers.google.com/search/docs/appearance/structured-data/article#news
+function publisherPolicies(): Record<string, string> {
+  return {
+    ethicsPolicy: `${SITE_URL}/kode-etik`,
+    publishingPrinciples: `${SITE_URL}/pedoman-media`,
+    verificationFactCheckingPolicy: `${SITE_URL}/pedoman-media`,
+    actionableFeedbackPolicy: `${SITE_URL}/kontak`,
+    masthead: `${SITE_URL}/redaksi`,
+  };
+}
+
 export interface JsonLdAuthor {
   name: string;
   slug?: string;
@@ -143,6 +157,7 @@ function publisherBlock() {
     email: PUBLISHER_EMAIL,
     address: publisherAddress(),
     contactPoint: publisherContactPoint(),
+    ...publisherPolicies(),
     ...(PUBLISHER_FOUNDING && { foundingDate: PUBLISHER_FOUNDING }),
     sameAs: publisherSameAs(),
   };
@@ -385,6 +400,7 @@ export function organizationJsonLd(): object {
     email: PUBLISHER_EMAIL,
     address: publisherAddress(),
     contactPoint: publisherContactPoint(),
+    ...publisherPolicies(),
     ...(PUBLISHER_FOUNDING && { foundingDate: PUBLISHER_FOUNDING }),
     sameAs: publisherSameAs(),
   };

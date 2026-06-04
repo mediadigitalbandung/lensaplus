@@ -14,6 +14,7 @@ import InstallTracker from "@/components/pwa/InstallTracker";
 import InstallTeaser from "@/components/pwa/InstallTeaser";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
+import { getDewanPersNumber } from "@/lib/public-settings";
 
 
 const newsreader = Newsreader({
@@ -105,11 +106,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const dewanPersNumber = await getDewanPersNumber();
   const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-5936356841993880";
   // Funding Choices uses the bare publisher id (pub-XXXX), not the ca-pub form.
   const fundingPubId = adsenseClientId.replace(/^ca-/, "");
@@ -186,7 +188,7 @@ export default function RootLayout({
           <PublicNav />
           <PublicTicker />
           <main id="main-content" className="flex-1">{children}</main>
-          <PublicFooter />
+          <PublicFooter dewanPersNumber={dewanPersNumber} />
           <SideRailAds />
           <ServiceWorkerRegistration />
           <InstallPrompt />
