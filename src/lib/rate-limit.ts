@@ -40,6 +40,31 @@ export function loginRateLimit(ip: string): { success: boolean; remaining: numbe
   return rateLimit(`login:${ip}`, 5, 15 * 60 * 1000); // 5 attempts per 15 min
 }
 
+// ── Brute-force login guard ─────────────────────────────────────────────────
+// Counts ONLY FAILED login attempts per IP, so a legitimate user who logs in
+// successfully never contributes to the counter and is never locked out. After
+// LOGIN_FAIL_LIMIT failures within the window, that IP is blocked from further
+// attempts (the authorize() flow rejects before touching bcrypt). The counter
+// resets after the window or on process restart.
+const LOGIN_FAIL_LIMIT = 8;
+const LOGIN_FAIL_WINDOW_MS = 15 * 60 * 1000;
+
+export function isLoginBlocked(ip: string): boolean {
+  const entry = rateLimitMap.get(`loginfail:${ip}`);
+  return !!entry && entry.resetAt > Date.now() && entry.count >= LOGIN_FAIL_LIMIT;
+}
+
+export function registerLoginFailure(ip: string): void {
+  const key = `loginfail:${ip}`;
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + LOGIN_FAIL_WINDOW_MS });
+  } else {
+    entry.count++;
+  }
+}
+
 // General API rate limit
 export function apiRateLimit(ip: string): { success: boolean; remaining: number } {
   return rateLimit(`api:${ip}`, 60, 60 * 1000); // 60 requests per minute

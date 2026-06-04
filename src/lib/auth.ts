@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { Role } from "@prisma/client";
+import { isLoginBlocked, registerLoginFailure } from "./rate-limit";
 
 // MED-AUTH1 — Explicit cookie security flags (audit remediation 2026-05-07).
 // In production (HTTPS), the __Secure- prefix is added automatically so the
@@ -103,7 +104,18 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        // Brute-force guard: block an IP after too many FAILED attempts. Done
+        // BEFORE the (expensive) bcrypt compare so a flood is cheap to reject.
+        // Successful logins never increment the counter, so legitimate users
+        // are never locked out. Fail OPEN if the client IP can't be determined.
+        const fwd = (req?.headers?.["x-forwarded-for"] as string | undefined) || "";
+        const ip = fwd.split(",")[0].trim();
+        if (ip && isLoginBlocked(ip)) {
+          console.warn(`[auth] login blocked (brute-force guard): ${ip}`);
+          throw new Error("Terlalu banyak percobaan login gagal. Coba lagi dalam 15 menit.");
+        }
+
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email dan password diperlukan");
         }
@@ -114,6 +126,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.isActive) {
+          if (ip) registerLoginFailure(ip);
           throw new Error("Email atau password salah");
         }
 
@@ -123,6 +136,7 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isValid) {
+          if (ip) registerLoginFailure(ip);
           throw new Error("Email atau password salah");
         }
 
