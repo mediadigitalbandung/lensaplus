@@ -17,11 +17,6 @@ import {
   ChevronDown,
   Bookmark,
   User,
-  TrendingUp,
-  CalendarDays,
-  Scale,
-  Users,
-  Radio,
   Sparkles,
 } from "lucide-react";
 
@@ -38,10 +33,6 @@ const categoryNav = [
   { name: "Lingkungan", href: "/kategori/lingkungan" },
   { name: "Gaya Hidup", href: "/kategori/gaya-hidup" },
   { name: "Opini", href: "/kategori/opini" },
-  { name: "Pasar", href: "/pasar" },
-  { name: "Emiten", href: "/emiten" },
-  { name: "Ekonomi", href: "/ekonomi-bandung" },
-  { name: "Anggaran", href: "/anggaran" },
   { name: "Regulasi", href: "/regulasi" },
   { name: "Pejabat", href: "/pejabat" },
   { name: "Live", href: "/live" },
@@ -441,56 +432,6 @@ export default function Header() {
                 >
                   <Bookmark size={16} className="text-primary" />
                   Bookmark Saya
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/pasar"
-                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <TrendingUp size={16} className="text-primary" />
-                  Pasar &amp; Bursa
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/kalender-emiten"
-                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <CalendarDays size={16} className="text-primary" />
-                  Kalender Emiten
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/regulasi"
-                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Scale size={16} className="text-primary" />
-                  Regulasi
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/pejabat"
-                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Users size={16} className="text-primary" />
-                  Pejabat
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/live"
-                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Radio size={16} className="text-secondary" />
-                  Siaran Langsung
                 </Link>
               </li>
               {session && (
