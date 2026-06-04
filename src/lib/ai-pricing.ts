@@ -7,10 +7,8 @@
  *   - Anthropic / DeepSeek: public price lists (approximate; refine if needed)
  *
  * cost = inputTokens·inRate + outputTokens·outRate + perRequestSearchFee
- * The IDR rate is configurable via SystemSetting `usd_idr_rate` (default 16,500).
+ * USD→IDR conversion lives in lib/fx-rate.ts (live rate, frozen per usage row).
  */
-
-import { prisma } from "./prisma";
 
 type TokenRate = { input: number; output: number }; // USD per 1,000,000 tokens
 
@@ -37,8 +35,6 @@ const OTHER_TOKEN: Record<string, TokenRate> = {
   "deepseek-chat": { input: 0.27, output: 1.1 },
 };
 
-const DEFAULT_USD_IDR = 16_500;
-
 /** Compute the USD cost of a single AI call. Returns 0 if the model is unknown. */
 export function computeCostUsd(p: {
   provider: string;
@@ -63,17 +59,3 @@ export function computeCostUsd(p: {
   }
   return cost;
 }
-
-/** Editor-settable USD→IDR rate (SystemSetting `usd_idr_rate`), default 16,500. */
-export async function getUsdIdrRate(): Promise<number> {
-  try {
-    const row = await prisma.systemSetting.findUnique({ where: { key: "usd_idr_rate" } });
-    const v = parseFloat((row?.value ?? "").trim());
-    if (Number.isFinite(v) && v > 0) return v;
-  } catch {
-    /* DB unreachable — use default */
-  }
-  return DEFAULT_USD_IDR;
-}
-
-export { DEFAULT_USD_IDR };

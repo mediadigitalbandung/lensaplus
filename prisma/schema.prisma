@@ -417,6 +417,8 @@ model AIUsageLog {
   provider      String? // "perplexity" | "anthropic" | "deepseek"
   model         String? // model id used, e.g. "sonar-pro", "claude-haiku-4-5"
   costUsd       Float?  // computed USD cost of the call (tokens + per-request fee)
+  costIdr       Float?  // costUsd FROZEN to Rupiah at record time (never recomputed)
+  usdIdrRate    Float?  // the USD→IDR rate used at record time (audit/transparency)
   searchContext String? // Perplexity search_context_size: low | medium | high
   createdAt    DateTime @default(now())
 

@@ -13,10 +13,11 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell,
 } from "recharts";
 
-interface Breakdown { key: string; tokens: number; costUsd: number; costIdr: number; requests: number }
-interface ArticleRow { title: string; calls: number; tokens: number; costUsd: number; costIdr: number; providers: string[] }
+interface Breakdown { key: string; tokens: number; costIdr: number; requests: number }
+interface ArticleRow { title: string; calls: number; tokens: number; costIdr: number; providers: string[] }
 interface AiStats {
   usdIdrRate: number;
+  usdIdrManual: boolean;
   totals: { totalRequests: number; totalTokens: number; totalCostUsd: number; totalCostIdr: number };
   perArticle: { count: number; avgTokens: number; minTokens: number; maxTokens: number; avgCostIdr: number; minCostIdr: number; maxCostIdr: number };
   byProvider: Breakdown[];
@@ -80,8 +81,11 @@ export default function AiUsageTab() {
           ))}
         </div>
         {stats && (
-          <span className="text-xs text-txt-muted">
-            Kurs: 1 USD = {rp(stats.usdIdrRate)} <span className="text-txt-muted/70">(atur di Pengaturan → <code>usd_idr_rate</code>)</span>
+          <span className="text-right text-xs text-txt-muted">
+            Kurs USD→IDR: <strong className="text-txt-secondary">{rp(stats.usdIdrRate)}</strong>{" "}
+            {stats.usdIdrManual ? "(manual)" : "(realtime · auto)"}
+            <br />
+            <span className="text-txt-muted/80">Biaya tiap pemakaian dikunci pada kurs saat itu — total historis tak berubah.</span>
           </span>
         )}
       </div>
