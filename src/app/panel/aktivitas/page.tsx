@@ -241,7 +241,7 @@ export default function AktivitasPage() {
       ) : (
         <div className="overflow-hidden rounded-[12px] border border-border bg-surface shadow-card">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-secondary text-left">
                   <th className="px-5 py-3.5 text-sm font-medium text-txt-secondary">Waktu</th>
