@@ -1233,8 +1233,12 @@ export default function AutoArtikelPage() {
         <code className="font-mono bg-surface-secondary px-1 py-0.5 rounded">
           auto_article_enabled
         </code>
-        , row TargetKeyword aktif, dan AI provider (Anthropic / DeepSeek) di
-        Pengaturan.
+        , row TargetKeyword aktif, dan{" "}
+        <code className="font-mono bg-surface-secondary px-1 py-0.5 rounded">
+          perplexity_api_key
+        </code>{" "}
+        (Pengaturan → AI). Generasi memakai Perplexity (riset web) — bukan
+        DeepSeek/Claude.
       </p>
     </div>
   );
