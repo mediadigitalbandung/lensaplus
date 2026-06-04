@@ -1,17 +1,13 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { ReactionType } from "@prisma/client";
 
 const VALID_TYPES = Object.values(ReactionType) as ReactionType[];
 
 function getIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown"
-  );
+  return getClientIp(req);
 }
 
 const EMPTY_COUNTS = (): Record<string, number> => ({

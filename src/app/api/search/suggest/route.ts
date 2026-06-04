@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { apiRateLimit } from "@/lib/rate-limit";
+import { apiRateLimit, getClientIp } from "@/lib/rate-limit";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     // Rate limit per IP — endpoint is unauthenticated and runs a Prisma
     // contains-query, which is cheap individually but trivial to abuse for
     // database scanning if left unbounded.
-    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const ip = getClientIp(request);
     const { success: allowed } = apiRateLimit(ip);
     if (!allowed) {
       throw new ApiError("Terlalu banyak permintaan. Coba lagi nanti.", 429);

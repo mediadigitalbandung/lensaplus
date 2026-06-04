@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
 import { sendEmail } from "@/lib/email";
-import { commentRateLimit } from "@/lib/rate-limit";
+import { commentRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
  */
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const ip = getClientIp(request);
     const { success: allowed } = commentRateLimit(ip);
     if (!allowed) throw new ApiError("Terlalu banyak permintaan. Coba lagi nanti.", 429);
 

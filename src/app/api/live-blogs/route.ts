@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { errorResponse, successResponse } from "@/lib/api-utils";
+import { guardPublicRead } from "@/lib/rate-limit";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,8 @@ const querySchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  const blocked = guardPublicRead(req);
+  if (blocked) return blocked;
   try {
     const { searchParams } = new URL(req.url);
     const params = querySchema.parse({

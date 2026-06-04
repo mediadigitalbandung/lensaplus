@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,13 @@ export async function POST(req: NextRequest) {
 
     const allowed = ["pwa-install", "pwa-launch", "apk-download"];
     if (!allowed.includes(event)) {
+      return new Response(null, { status: 204 });
+    }
+
+    // Anti-abuse: this is an unauthenticated beacon that writes to the DB, so
+    // cap it per IP to stop a flood from inflating counters / hammering writes.
+    // Silently drop over-limit beacons (the caller uses sendBeacon, ignores it).
+    if (!rateLimit(`install:${getClientIp(req)}`, 20, 60 * 1000).success) {
       return new Response(null, { status: 204 });
     }
 

@@ -8,7 +8,7 @@ import {
   ApiError,
   logAudit,
 } from "@/lib/api-utils";
-import { commentRateLimit } from "@/lib/rate-limit";
+import { commentRateLimit, getClientIp } from "@/lib/rate-limit";
 import { sanitizeText, sanitizeEmail } from "@/lib/sanitize";
 import { checkSpam } from "@/lib/spam-filter";
 
@@ -83,7 +83,7 @@ export async function POST(
   const params = await paramsPromise;
   try {
     // Rate limit by IP
-    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const ip = getClientIp(request);
     const { success: allowed } = commentRateLimit(ip);
     if (!allowed) {
       throw new ApiError("Terlalu banyak komentar. Coba lagi dalam beberapa menit.", 429);

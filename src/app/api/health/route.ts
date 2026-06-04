@@ -36,15 +36,14 @@ export async function GET() {
     // db down
   }
 
-  const sha =
-    process.env.GIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || "unknown";
   const uptime = process.uptime();
 
+  // Deliberately NOT exposing the commit SHA publicly — version disclosure helps
+  // an attacker match the deploy to known CVEs. Uptime monitors only need ok/db.
   return NextResponse.json(
     {
       ok: dbOk,
       db: { ok: dbOk, latency_ms: dbLatency },
-      sha,
       uptime_s: Math.round(uptime),
       timestamp: new Date().toISOString(),
       duration_ms: Date.now() - start,

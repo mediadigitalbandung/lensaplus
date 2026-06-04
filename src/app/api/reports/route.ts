@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, requireAuth, ApiError } from "@/lib/api-utils";
-import { reportRateLimit } from "@/lib/rate-limit";
+import { reportRateLimit, getClientIp } from "@/lib/rate-limit";
 import { sanitizeText } from "@/lib/sanitize";
 
 const updateReportSchema = z.object({
@@ -95,7 +95,7 @@ export async function PATCH(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Rate limit report submissions
-    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const ip = getClientIp(request);
     const { success: allowed } = reportRateLimit(ip);
     if (!allowed) {
       throw new ApiError("Terlalu banyak laporan. Coba lagi nanti.", 429);

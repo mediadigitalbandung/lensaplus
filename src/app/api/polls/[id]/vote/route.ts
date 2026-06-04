@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
-import { pollVoteRateLimit } from "@/lib/rate-limit";
+import { pollVoteRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const voteSchema = z.object({
   optionId: z.string().min(1),
@@ -14,8 +14,7 @@ export async function POST(request: NextRequest, { params: paramsPromise }: { pa
   const params = await paramsPromise;
   try {
     // Get IP from headers
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : request.headers.get("x-real-ip") || "unknown";
+    const ip = getClientIp(request);
 
     // Rate limit to defend against IP-spoofed flood attempts
     const { success: allowed } = pollVoteRateLimit(ip);
@@ -97,8 +96,7 @@ export async function POST(request: NextRequest, { params: paramsPromise }: { pa
 export async function GET(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = await paramsPromise;
   try {
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : request.headers.get("x-real-ip") || "unknown";
+    const ip = getClientIp(request);
 
     const poll = await prisma.poll.findUnique({
       where: { id: params.id },
