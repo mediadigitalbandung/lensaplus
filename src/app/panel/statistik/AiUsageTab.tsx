@@ -15,11 +15,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Coins, Hash, FileText, Bot, TrendingUp } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell,
+  BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell,
 } from "recharts";
 
 interface Breakdown { key: string; tokens: number; costIdr: number; requests: number }
 interface ArticleRow { title: string; calls: number; tokens: number; costIdr: number; providers: string[] }
+interface DailyPoint { date: string; costIdr: number; tokens: number; requests: number }
 interface AiStats {
   usdIdrRate: number;
   usdIdrManual: boolean;
@@ -29,7 +30,12 @@ interface AiStats {
   byModel: Breakdown[];
   byFeature: Breakdown[];
   topArticles: ArticleRow[];
+  dailyCost: DailyPoint[];
 }
+
+const MONTHS_ID = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+const fmtDayShort = (d: string) => { const [, m, day] = d.split("-"); return `${+day}/${+m}`; };
+const fmtDayFull = (d: string) => { const [y, m, day] = d.split("-"); return `${+day} ${MONTHS_ID[+m]} ${y}`; };
 
 const idrFmt = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 const numFmt = new Intl.NumberFormat("id-ID");
@@ -123,6 +129,28 @@ export default function AiUsageTab() {
             <Card icon={<TrendingUp size={16} />} label="Total Request" value={num(stats.totals.totalRequests)} />
             <Card icon={<FileText size={16} />} label="Artikel Terlacak" value={num(stats.perArticle.count)} />
           </div>
+
+          {/* Daily cost trend */}
+          {stats.dailyCost.length > 1 && (
+            <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
+              <h4 className="mb-4 text-sm font-bold text-txt-primary">Tren Biaya Harian (Rp)</h4>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={stats.dailyCost} margin={{ left: 8, right: 16, top: 8 }}>
+                  <defs>
+                    <linearGradient id="aiCostGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#002045" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="#002045" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={fmtDayShort} fontSize={11} minTickGap={24} />
+                  <YAxis tickFormatter={(v) => num(v as number)} fontSize={11} width={64} />
+                  <Tooltip formatter={(v) => rp(v as number)} labelFormatter={(l) => fmtDayFull(l as string)} />
+                  <Area type="monotone" dataKey="costIdr" stroke="#002045" strokeWidth={2} fill="url(#aiCostGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           {/* Ringkasan only: per-platform separation (tokens are NOT summed across platforms) */}
           {isAll && stats.byProvider.length > 0 && (

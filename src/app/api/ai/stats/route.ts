@@ -101,6 +101,22 @@ export async function GET(req: NextRequest) {
 
     const topArticles = Array.from(articles).sort((a, b) => b.costIdr - a.costIdr).slice(0, 25);
 
+    // ── Daily cost trend (bucketed by WIB date, frozen IDR) ───────────────────
+    const dayMap = new Map<string, { costIdr: number; tokens: number; requests: number }>();
+    for (const l of logs) {
+      // createdAt is UTC; shift +7h so a row counts on its Jakarta (WIB) date.
+      const day = new Date(l.createdAt.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+      let d = dayMap.get(day);
+      if (!d) { d = { costIdr: 0, tokens: 0, requests: 0 }; dayMap.set(day, d); }
+      d.costIdr += rowIdr(l);
+      d.tokens += l.totalTokens;
+      d.requests += 1;
+    }
+    const dailyCost = Array.from(dayMap.entries())
+      .map(([date, v]) => ({ date, ...v }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-90); // last 90 active days
+
     return successResponse({
       usdIdrRate: currentRate, // current live rate (for display only)
       usdIdrManual: manual, // true = pinned via Pengaturan; false = auto/live
@@ -110,6 +126,7 @@ export async function GET(req: NextRequest) {
       byModel: groupBy((l) => l.model ?? "unknown"),
       byFeature: groupBy((l) => l.feature),
       topArticles,
+      dailyCost,
     });
   } catch (error) {
     return errorResponse(error);
