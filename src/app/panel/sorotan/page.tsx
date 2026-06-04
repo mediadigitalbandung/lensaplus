@@ -89,7 +89,10 @@ export default function SorotanPage() {
   const [savingToggle, setSavingToggle] = useState(false);
   const [savingInterval, setSavingInterval] = useState(false);
   const [savingBatch, setSavingBatch] = useState(false);
-  const isAdmin = userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR";
+  // Auto-generate settings live in SystemSetting, whose API (/api/settings read
+  // + write) is SUPER_ADMIN-only. Gate the panel to SA so CHIEF_EDITOR isn't
+  // shown controls that 403 on load/save. Editors still generate manually.
+  const isAdmin = userRole === "SUPER_ADMIN";
 
   if (
     sessionStatus !== "loading" &&
