@@ -36,6 +36,8 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { EDITOR_ROLES } from "@/lib/roles";
+import EditorTab from "./EditorTab";
 
 // --- Types (mirror src/lib/stats/internal.ts InternalStats) ---
 interface InternalStats {
@@ -1284,10 +1286,13 @@ export default function StatistikPage() {
   // (incl. CHIEF_EDITOR / EDITOR) sees ONLY their own ("Pribadi") stats, so
   // those site-wide sections are never shown to a non-superadmin.
   const canSeeGeneral = isSuperAdmin;
+  // Editor-tier (SA | CHIEF_EDITOR | EDITOR) also get the merged "Editor" tab —
+  // the former /panel/statistik-editor page (review performance + team Sorotan).
+  const isEditorTier = EDITOR_ROLES.includes(userRole);
   const [statScope, setStatScope] = useState<"all" | "me">("all");
-  const [tab, setTab] = useState<"internal" | "ga4" | "gsc" | "cf">(
-    "internal",
-  );
+  const [tab, setTab] = useState<
+    "internal" | "editor" | "ga4" | "gsc" | "cf"
+  >("internal");
   const now = new Date();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const [from, setFrom] = useState(ymd(thirtyDaysAgo));
@@ -1375,14 +1380,21 @@ export default function StatistikPage() {
         </div>
       )}
 
-      {/* Tabs — SUPER_ADMIN only; non-SA see only their own Internal stats. */}
-      {isSuperAdmin && (
+      {/* Tabs — editor-tier (SA | CHIEF_EDITOR | EDITOR). Editors get the merged
+          "Editor" tab; the GA4/GSC/Cloudflare tabs stay SUPER_ADMIN-only.
+          Creators see no tab bar — just their own Internal stats. */}
+      {isEditorTier && (
       <div className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
         {[
           { key: "internal", label: "Internal", icon: BarChart3 },
-          { key: "ga4", label: "Google Analytics", icon: TrendingUp },
-          { key: "gsc", label: "Search Console", icon: SearchIcon },
-          { key: "cf", label: "Cloudflare", icon: Cloud },
+          { key: "editor", label: "Editor", icon: Users },
+          ...(isSuperAdmin
+            ? [
+                { key: "ga4", label: "Google Analytics", icon: TrendingUp },
+                { key: "gsc", label: "Search Console", icon: SearchIcon },
+                { key: "cf", label: "Cloudflare", icon: Cloud },
+              ]
+            : []),
         ].map((t) => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -1390,7 +1402,7 @@ export default function StatistikPage() {
             <button
               key={t.key}
               onClick={() =>
-                setTab(t.key as "internal" | "ga4" | "gsc" | "cf")
+                setTab(t.key as "internal" | "editor" | "ga4" | "gsc" | "cf")
               }
               className={`px-4 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                 active
@@ -1413,6 +1425,9 @@ export default function StatistikPage() {
           to={to}
           scope={canSeeGeneral ? statScope : "me"}
         />
+      )}
+      {isEditorTier && tab === "editor" && (
+        <EditorTab key={`editor-${refreshKey}`} />
       )}
       {isSuperAdmin && tab === "ga4" && (
         <GA4Tab key={`ga4-${refreshKey}`} from={from} to={to} />

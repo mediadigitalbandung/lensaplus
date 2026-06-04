@@ -79,7 +79,6 @@ const menuItems: MenuItem[] = [
   { name: "Analytics", href: "/panel/analytics", icon: BarChart3, managementOnly: true },
   { name: "Statistik", href: "/panel/statistik", icon: TrendingUp },
   { name: "SEO", href: "/panel/seo", icon: Search, managementOnly: true },
-  { name: "Statistik Editor", href: "/panel/statistik-editor", icon: BarChart3, editorOnly: true },
   { name: "Email", href: "/panel/email", icon: Mail, adminOnly: true },
   { name: "Pengaturan", href: "/panel/pengaturan", icon: Settings, adminOnly: true },
   { name: "Dokumentasi", href: "/panel/dokumentasi", icon: BookOpen, adminOnly: true },
