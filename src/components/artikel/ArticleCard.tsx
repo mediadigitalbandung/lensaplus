@@ -1,6 +1,22 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Eye } from "lucide-react";
 import { truncate } from "@/lib/utils";
+
+// Small inline "X dilihat" badge shown next to the date in every card variant.
+// Hidden when the count is missing or zero so brand-new articles stay clean.
+function Views({ count }: { count?: number }) {
+  if (!count || count <= 0) return null;
+  return (
+    <>
+      <span className="mx-1 sm:mx-1.5">&middot;</span>
+      <span className="inline-flex items-center gap-0.5 align-middle normal-case">
+        <Eye size={11} aria-hidden />
+        {count.toLocaleString("id-ID")}
+      </span>
+    </>
+  );
+}
 
 interface ArticleCardProps {
   title: string;
@@ -91,6 +107,7 @@ export default function ArticleCard({
             {formatTime(publishedAt)}
             <span className="mx-1.5">&middot;</span>
             {author.name}
+            <Views count={viewCount} />
           </p>
         </div>
       </article>
@@ -122,6 +139,7 @@ export default function ArticleCard({
           </Link>
           <p className="mt-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
             {formatTime(publishedAt)}
+            <Views count={viewCount} />
           </p>
         </div>
       </article>
@@ -145,6 +163,7 @@ export default function ArticleCard({
         </Link>
         <p className="mt-1.5 text-label-sm uppercase tracking-wider text-on-surface-variant">
           {formatTime(publishedAt)}
+          <Views count={viewCount} />
         </p>
       </article>
     );
@@ -187,6 +206,7 @@ export default function ArticleCard({
           {formatTime(publishedAt)}
           <span className="mx-1 sm:mx-1.5">&middot;</span>
           {author.name}
+          <Views count={viewCount} />
         </p>
       </div>
     </article>

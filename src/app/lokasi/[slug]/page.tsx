@@ -174,6 +174,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
                       category={a.category}
                       author={a.author}
                       publishedAt={a.publishedAt}
+                      viewCount={a.viewCount}
                       variant="standard"
                     />
                   ))}

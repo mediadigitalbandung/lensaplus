@@ -224,6 +224,7 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
                     category={a.category}
                     author={a.author}
                     publishedAt={a.publishedAt}
+                    viewCount={a.viewCount}
                     variant="standard"
                   />
                 ))}

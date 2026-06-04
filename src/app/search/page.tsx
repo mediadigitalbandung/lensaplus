@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "rea
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Search as SearchIcon, SlidersHorizontal, Clock, Calendar, TrendingUp, ChevronLeft, ChevronRight, X, History } from "lucide-react";
+import { Search as SearchIcon, SlidersHorizontal, Clock, Calendar, TrendingUp, ChevronLeft, ChevronRight, X, History, Eye } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 
 interface SearchResult {
@@ -440,6 +440,15 @@ function SearchContent() {
                   {new Date(article.publishedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                   <span className="mx-1">&middot;</span>
                   {article.author.name}
+                  {(article.viewCount ?? 0) > 0 && (
+                    <>
+                      <span className="mx-1">&middot;</span>
+                      <span className="inline-flex items-center gap-0.5 align-middle">
+                        <Eye size={11} aria-hidden />
+                        {(article.viewCount ?? 0).toLocaleString("id-ID")}
+                      </span>
+                    </>
+                  )}
                 </p>
               </div>
             </article>

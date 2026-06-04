@@ -2,7 +2,7 @@ export const revalidate = 120;
 
 import Link from "next/link";
 import { Metadata } from "next";
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Eye } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
@@ -110,6 +110,7 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
             category: { select: { name: true, slug: true } },
             author: { select: { name: true } },
             publishedAt: true,
+            viewCount: true,
           },
         },
       },
@@ -224,6 +225,15 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
                       year: "numeric",
                     })}
                   </span>
+                  {(s.article.viewCount ?? 0) > 0 && (
+                    <>
+                      <span className="mx-1">·</span>
+                      <span className="inline-flex items-center gap-0.5 align-middle">
+                        <Eye size={11} aria-hidden />
+                        {(s.article.viewCount ?? 0).toLocaleString("id-ID")}
+                      </span>
+                    </>
+                  )}
                 </div>
               </Link>
             ))}

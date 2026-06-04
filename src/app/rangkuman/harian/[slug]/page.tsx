@@ -153,6 +153,7 @@ export default async function RangkumanHarianDetailPage({ params: paramsPromise 
               category={a.category}
               author={a.author}
               publishedAt={a.publishedAt}
+              viewCount={a.viewCount}
               variant="standard"
             />
           ))}
