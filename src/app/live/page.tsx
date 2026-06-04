@@ -92,7 +92,7 @@ function LiveCard({ blog }: { blog: LiveBlogCard }) {
           <span className="text-label-sm text-txt-muted">{blog.category}</span>
         )}
       </div>
-      <h3 className="font-serif text-title-md font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-2 mb-1">
+      <h3 className="font-serif text-title-md font-bold text-on-surface group-hover:text-secondary transition-colors line-clamp-2 mb-1">
         {blog.title}
       </h3>
       {blog.description && (

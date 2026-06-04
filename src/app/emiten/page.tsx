@@ -214,7 +214,7 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
                     </div>
                   </div>
 
-                  <p className="line-clamp-2 text-body-sm font-medium text-on-surface group-hover:text-primary">
+                  <p className="line-clamp-2 text-body-sm font-medium text-on-surface group-hover:text-secondary">
                     {c.shortName ?? c.name}
                   </p>
 

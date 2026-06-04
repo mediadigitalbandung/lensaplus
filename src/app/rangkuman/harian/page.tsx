@@ -120,7 +120,7 @@ export default async function RangkumanHarianIndexPage() {
                       src={day.image}
                       alt={fmtDay(day.date)}
                       fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-primary/5">
@@ -135,7 +135,7 @@ export default async function RangkumanHarianIndexPage() {
                   <p className="text-label-sm uppercase tracking-wider text-primary font-semibold">
                     {fmtDay(day.date)}
                   </p>
-                  <p className="mt-2 line-clamp-2 font-serif text-title-md leading-snug text-on-surface group-hover:text-primary transition-colors">
+                  <p className="mt-2 line-clamp-2 font-serif text-title-md leading-snug text-on-surface group-hover:text-secondary transition-colors">
                     {day.firstTitle}
                   </p>
                   <div className="mt-auto pt-4 flex items-center gap-1.5 text-xs uppercase tracking-wider text-on-surface-variant">

@@ -71,7 +71,7 @@ export default function VideoStory({ items }: VideoStoryProps) {
           src={item.thumbnail}
           alt={item.title}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
         <div className="absolute bottom-3 left-3 flex items-center gap-2">

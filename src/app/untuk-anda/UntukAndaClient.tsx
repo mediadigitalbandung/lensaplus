@@ -129,7 +129,7 @@ export default function UntukAndaClient() {
                 <p className="text-[10px] uppercase tracking-wider text-primary font-bold mb-2">
                   {a.category.name}
                 </p>
-                <h3 className="font-serif text-base sm:text-lg font-bold text-on-surface line-clamp-3 group-hover:text-primary transition-colors">
+                <h3 className="font-serif text-base sm:text-lg font-bold text-on-surface line-clamp-3 group-hover:text-secondary transition-colors">
                   {a.title}
                 </h3>
                 {a.excerpt && (

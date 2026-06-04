@@ -180,7 +180,7 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
                         alt={hero.title}
                         fill
                         priority
-                        className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       />
                     ) : (
                       <div className="h-full w-full bg-surface-container" />
@@ -195,7 +195,7 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
                     {hero.category.name}
                   </Link>
                   <Link href={`/berita/${hero.slug}`}>
-                    <h2 className="mt-2 font-serif text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
+                    <h2 className="mt-2 font-serif text-headline-md leading-tight text-on-surface group-hover:text-secondary transition-colors">
                       {hero.title}
                     </h2>
                   </Link>

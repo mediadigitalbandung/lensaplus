@@ -74,7 +74,7 @@ export default function LokasiIndexPage() {
                 <span className="text-xs text-on-surface-variant">{c.city}</span>
               </div>
               <Link href={`/lokasi/${c.slug}`}>
-                <h2 className="font-serif text-title-lg leading-snug text-on-surface group-hover:text-primary transition-colors">
+                <h2 className="font-serif text-title-lg leading-snug text-on-surface group-hover:text-secondary transition-colors">
                   {c.name}
                 </h2>
               </Link>

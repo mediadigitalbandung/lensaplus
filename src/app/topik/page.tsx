@@ -101,7 +101,7 @@ export default async function TopikIndexPage() {
                     <Icon size={20} strokeWidth={2.2} />
                   </div>
                   <div>
-                    <h2 className="font-serif text-title-md text-on-surface group-hover:text-primary transition-colors">
+                    <h2 className="font-serif text-title-md text-on-surface group-hover:text-secondary transition-colors">
                       {cat.name}
                     </h2>
                     <p className="mt-1 text-label-sm uppercase tracking-wider text-on-surface-variant">

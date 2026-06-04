@@ -355,7 +355,7 @@ function PipelineWidget({ data }: { data: ExtrasResponse["pipeline"] }) {
                 <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${s.bg} ${s.color} shrink-0`}>
                   <Icon size={14} />
                 </div>
-                <span className="flex-1 text-sm font-semibold text-txt-primary group-hover:text-primary transition-colors">
+                <span className="flex-1 text-sm font-semibold text-txt-primary group-hover:text-secondary transition-colors">
                   {s.label}
                 </span>
                 <span className="text-base font-bold text-txt-primary tabular-nums">

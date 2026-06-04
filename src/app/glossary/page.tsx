@@ -144,7 +144,7 @@ export default async function GlossaryPage() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="font-serif text-title-md text-on-surface group-hover:text-primary transition-colors">
+                          <h3 className="font-serif text-title-md text-on-surface group-hover:text-secondary transition-colors">
                             {item.istilah}
                           </h3>
                           {item.singkatan && (

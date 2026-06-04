@@ -79,11 +79,13 @@ export default function ArticleCard({
                 alt={title}
                 fill
                 priority
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
               />
             ) : (
               <div className="h-full w-full bg-surface-container-low" />
             )}
+            {/* Kartawarta-red accent line that wipes in left→right on hover */}
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-secondary transition-transform duration-500 ease-out group-hover:scale-x-100" />
           </div>
         </Link>
         <div className="mt-4">
@@ -94,7 +96,7 @@ export default function ArticleCard({
             {category.name}
           </Link>
           <Link href={`/berita/${slug}`}>
-            <h2 className="mt-2 font-serif text-headline-md leading-tight text-on-surface hover:text-primary transition-colors">
+            <h2 className="mt-2 font-serif text-headline-md leading-tight text-on-surface transition-colors duration-300 group-hover:text-secondary">
               {title}
             </h2>
           </Link>
@@ -124,16 +126,17 @@ export default function ArticleCard({
               src={featuredImage}
               alt={title}
               fill
-              className="object-cover"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             />
           ) : (
             <div className="h-full w-full bg-surface-container-low" />
           )}
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 bg-secondary transition-transform duration-500 ease-out group-hover:scale-x-100" />
         </div>
         <div className="flex flex-1 flex-col justify-center min-w-0">
           <Link
             href={`/berita/${slug}`}
-            className="line-clamp-2 text-title-sm leading-snug text-on-surface hover:text-primary transition-colors"
+            className="line-clamp-2 text-title-sm leading-snug text-on-surface transition-colors duration-300 group-hover:text-secondary"
           >
             {title}
           </Link>
@@ -149,7 +152,7 @@ export default function ArticleCard({
   /* ── Headline variant — no border, use spacing ── */
   if (variant === "headline") {
     return (
-      <article className="pb-4 mb-4">
+      <article className="group border-l-2 border-transparent pb-4 mb-4 pl-0 transition-all duration-300 ease-out hover:border-secondary hover:pl-3">
         <Link
           href={`/kategori/${category.slug}`}
           className="text-label-md font-bold uppercase tracking-wider text-primary"
@@ -157,7 +160,7 @@ export default function ArticleCard({
           {category.name}
         </Link>
         <Link href={`/berita/${slug}`}>
-          <h3 className="mt-1 text-title-sm leading-snug text-on-surface hover:text-primary transition-colors">
+          <h3 className="mt-1 text-title-sm leading-snug text-on-surface transition-colors duration-300 group-hover:text-secondary">
             {title}
           </h3>
         </Link>
@@ -183,11 +186,12 @@ export default function ArticleCard({
               src={featuredImage}
               alt={title}
               fill
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             />
           ) : (
             <div className="h-full w-full bg-surface-container-low" />
           )}
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 bg-secondary transition-transform duration-500 ease-out group-hover:scale-x-100" />
         </div>
       </Link>
       <div className="mt-2 sm:mt-3">
@@ -198,7 +202,7 @@ export default function ArticleCard({
           {category.name}
         </Link>
         <Link href={`/berita/${slug}`}>
-          <h3 className="mt-1 sm:mt-1.5 line-clamp-2 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface hover:text-primary transition-colors">
+          <h3 className="mt-1 sm:mt-1.5 line-clamp-2 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface transition-colors duration-300 group-hover:text-secondary">
             {title}
           </h3>
         </Link>

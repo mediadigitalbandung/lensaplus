@@ -35,7 +35,7 @@ export default function ReelGallery({ items }: { items: VideoStoryItem[] }) {
                   src={item.thumbnail}
                   alt={item.title}
                   fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
                 <div className="absolute inset-0 flex items-center justify-center">

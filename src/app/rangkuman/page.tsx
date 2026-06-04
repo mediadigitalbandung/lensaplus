@@ -162,7 +162,7 @@ export default async function RangkumanIndexPage() {
                     src={card.image}
                     alt={card.title}
                     fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-primary/5">
@@ -175,7 +175,7 @@ export default async function RangkumanIndexPage() {
                   <CalendarDays size={12} />
                   <span className="font-semibold">{card.dateRange}</span>
                 </div>
-                <h2 className="font-serif text-title-lg leading-snug text-on-surface group-hover:text-primary transition-colors">
+                <h2 className="font-serif text-title-lg leading-snug text-on-surface group-hover:text-secondary transition-colors">
                   {card.title}
                 </h2>
                 <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant">

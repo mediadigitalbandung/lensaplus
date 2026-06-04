@@ -417,7 +417,7 @@ function SearchContent() {
                       src={article.featuredImage}
                       alt={article.title}
                       fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
                   ) : (
                     <div className="h-full w-full bg-surface-secondary" />

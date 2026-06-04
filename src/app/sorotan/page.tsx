@@ -209,7 +209,7 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
                     {s.article.category.name}
                   </span>
                 </div>
-                <h2 className="line-clamp-3 text-base font-bold leading-snug text-txt-primary transition-colors group-hover:text-primary">
+                <h2 className="line-clamp-3 text-base font-bold leading-snug text-txt-primary transition-colors group-hover:text-secondary">
                   {s.title}
                 </h2>
                 <p className="mt-2 line-clamp-3 text-sm text-txt-secondary">
