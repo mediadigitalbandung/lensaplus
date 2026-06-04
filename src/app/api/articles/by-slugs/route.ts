@@ -20,7 +20,18 @@ export async function POST(request: NextRequest) {
         slug: { in: limitedSlugs },
         status: "PUBLISHED",
       },
-      include: {
+      // Anti-scraping: metadata only (NO `content`). Slugs are public via the
+      // sitemap, so an `include` here would let a scraper batch-pull full
+      // article bodies 50 at a time. Bookmarks only render cards.
+      select: {
+        title: true,
+        slug: true,
+        excerpt: true,
+        featuredImage: true,
+        readTime: true,
+        viewCount: true,
+        publishedAt: true,
+        verificationLabel: true,
         author: { select: { name: true } },
         category: { select: { name: true, slug: true } },
       },

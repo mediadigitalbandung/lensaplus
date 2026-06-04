@@ -189,10 +189,19 @@ export async function GET(request: NextRequest) {
       reviewerMap = Object.fromEntries(reviewers.map(r => [r.id, r.name]));
     }
 
-    const articlesWithReviewer = articles.map(a => ({
-      ...a,
-      reviewerName: a.reviewedBy ? reviewerMap[a.reviewedBy] || null : null,
-    }));
+    const articlesWithReviewer = articles.map(a => {
+      const row: Record<string, unknown> = {
+        ...a,
+        reviewerName: a.reviewedBy ? reviewerMap[a.reviewedBy] || null : null,
+      };
+      // Anti-scraping: the PUBLIC listing path (status=PUBLISHED, no auth) must
+      // never ship the full article body — that turns this endpoint into a
+      // paginated full-text JSON firehose for scrapers. The list UI only needs
+      // metadata; the body is rendered server-side on /berita/[slug] (still
+      // crawlable by Google for SEO) and fetched per-article for the editor.
+      if (status === "PUBLISHED") delete row.content;
+      return row;
+    });
 
     return successResponse({
       articles: articlesWithReviewer,

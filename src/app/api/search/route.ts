@@ -28,7 +28,18 @@ export async function GET(request: NextRequest) {
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
         where,
-        include: {
+        // Anti-scraping: return ONLY display metadata, never the full `content`.
+        // The search UI renders title/excerpt/image — exposing the article body
+        // here would hand scrapers a clean, paginated full-text JSON firehose.
+        select: {
+          title: true,
+          slug: true,
+          excerpt: true,
+          featuredImage: true,
+          readTime: true,
+          viewCount: true,
+          publishedAt: true,
+          verificationLabel: true,
           author: { select: { id: true, name: true } },
           category: { select: { id: true, name: true, slug: true } },
         },
