@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Sorotan Panel — SUPER_ADMIN only
+ * Sorotan Panel — SUPER_ADMIN | CHIEF_EDITOR | EDITOR
  * Manage Sorotan SEO pages generated per article (3 angles: KRONOLOGI, ANALISIS, DAMPAK)
  */
 
@@ -23,6 +23,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { EDITOR_ROLES } from "@/lib/roles";
 
 interface Article {
   id: string;
@@ -82,7 +83,7 @@ export default function SorotanPage() {
   if (
     sessionStatus !== "loading" &&
     session &&
-    userRole !== "SUPER_ADMIN"
+    !EDITOR_ROLES.includes(userRole)
   ) {
     redirect("/panel/dashboard");
   }
