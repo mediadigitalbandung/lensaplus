@@ -240,7 +240,7 @@ export default function ProfilPage() {
           className={`mb-4 rounded-[12px] border p-4 text-sm ${
             message.type === "success"
               ? "border-primary/30 bg-primary/10 text-primary"
-              : "border-red-500/30 bg-red-500/10 text-red-400"
+              : "border-red-300 bg-red-50 text-red-700"
           }`}
         >
           {message.text}
@@ -455,7 +455,7 @@ export default function ProfilPage() {
             className={`mb-4 rounded-[12px] border p-4 text-sm ${
               pwMessage.type === "success"
                 ? "border-primary/30 bg-primary/10 text-primary"
-                : "border-red-500/30 bg-red-500/10 text-red-400"
+                : "border-red-300 bg-red-50 text-red-700"
             }`}
           >
             {pwMessage.text}
