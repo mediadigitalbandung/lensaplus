@@ -135,7 +135,7 @@ export default async function RangkumanHarianIndexPage() {
                   <p className="text-label-sm uppercase tracking-wider text-primary font-semibold">
                     {fmtDay(day.date)}
                   </p>
-                  <p className="mt-2 line-clamp-2 font-serif text-title-md leading-snug text-on-surface group-hover:text-secondary transition-colors">
+                  <p className="mt-2 line-clamp-2 font-serif text-title-md leading-snug text-on-surface group-hover:text-primary transition-colors">
                     {day.firstTitle}
                   </p>
                   <div className="mt-auto pt-4 flex items-center gap-1.5 text-xs uppercase tracking-wider text-on-surface-variant">

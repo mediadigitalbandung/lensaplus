@@ -797,10 +797,10 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                           <span className="inline-flex w-fit items-center rounded-md bg-primary-light px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-primary ring-1 ring-inset ring-primary/10">
                             {angleLabel[s.angle] || s.angle.replace(/_/g, " ")}
                           </span>
-                          <p className="mt-2.5 font-serif text-[15px] font-semibold leading-snug text-txt-primary line-clamp-3 transition-colors group-hover:text-secondary">
+                          <p className="mt-2.5 font-serif text-[15px] font-semibold leading-snug text-txt-primary line-clamp-3 transition-colors group-hover:text-primary">
                             {s.title}
                           </p>
-                          <span className="mt-auto flex items-center gap-1 pt-3 text-[11px] font-semibold text-txt-muted transition-colors group-hover:text-secondary">
+                          <span className="mt-auto flex items-center gap-1 pt-3 text-[11px] font-semibold text-txt-muted transition-colors group-hover:text-primary">
                             Baca selengkapnya
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden>
                               <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />

@@ -276,7 +276,7 @@ export default async function HomePage() {
                   <div className="mt-3 sm:mt-4">
                     <span className="text-label-sm font-bold uppercase tracking-widest text-primary">{terkiniArticles[0].category.name}</span>
                     <Link href={`/berita/${terkiniArticles[0].slug}`}>
-                      <h3 className="mt-1 font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-secondary transition-colors">
+                      <h3 className="mt-1 font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
                         {terkiniArticles[0].title}
                       </h3>
                     </Link>
@@ -299,7 +299,7 @@ export default async function HomePage() {
                     )}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <Link href={`/berita/${a.slug}`}>
-                        <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-secondary transition-colors">
+                        <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
                           {a.title}
                         </h4>
                       </Link>
@@ -359,7 +359,7 @@ export default async function HomePage() {
                       </Link>
                       <div className="flex-1 min-w-0">
                         <Link href={`/berita/${a.slug}`}>
-                          <h3 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-secondary transition-colors">
+                          <h3 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
                             {a.title}
                           </h3>
                         </Link>
@@ -429,7 +429,7 @@ export default async function HomePage() {
                   <div className="mt-2 sm:mt-3">
                     <span className="text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-primary">{a.category.name}</span>
                     <Link href={`/berita/${a.slug}`}>
-                      <h3 className="mt-1 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-secondary transition-colors">
+                      <h3 className="mt-1 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-primary transition-colors">
                         {a.title}
                       </h3>
                     </Link>
@@ -488,7 +488,7 @@ export default async function HomePage() {
                         <CatIcon size={18} strokeWidth={2.5} />
                       </div>
                     ); })()}
-                    <h2 className="font-serif text-title-lg sm:text-headline-sm text-on-surface group-hover:text-secondary transition-colors truncate">
+                    <h2 className="font-serif text-title-lg sm:text-headline-sm text-on-surface group-hover:text-primary transition-colors truncate">
                       {catName}
                     </h2>
                   </Link>
@@ -528,7 +528,7 @@ export default async function HomePage() {
                                     </Link>
                                     <div className="mt-2.5">
                                       <Link href={`/berita/${a.slug}`}>
-                                        <h3 className="font-serif text-title-sm leading-snug text-on-surface line-clamp-3 group-hover:text-secondary transition-colors">
+                                        <h3 className="font-serif text-title-sm leading-snug text-on-surface line-clamp-3 group-hover:text-primary transition-colors">
                                           {a.title}
                                         </h3>
                                       </Link>
@@ -553,7 +553,7 @@ export default async function HomePage() {
                                     )}
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                       <Link href={`/berita/${a.slug}`}>
-                                        <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-secondary transition-colors">{a.title}</h4>
+                                        <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h4>
                                       </Link>
                                       <p className="mt-1 text-[10px] sm:text-label-sm uppercase tracking-wider text-on-surface-variant">{timeAgo(a.publishedAt)}</p>
                                     </div>
@@ -581,7 +581,7 @@ export default async function HomePage() {
                           </Link>
                           <div className="mt-4 sm:mt-5">
                             <Link href={`/berita/${main.slug}`}>
-                              <h3 className="font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-secondary transition-colors">
+                              <h3 className="font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
                                 {main.title}
                               </h3>
                             </Link>
@@ -605,7 +605,7 @@ export default async function HomePage() {
                               )}
                               <div className="flex-1 min-w-0 flex flex-col justify-center">
                                 <Link href={`/berita/${a.slug}`}>
-                                  <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-secondary transition-colors">{a.title}</h4>
+                                  <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h4>
                                 </Link>
                                 <p className="mt-1 text-label-sm uppercase tracking-wider text-on-surface-variant">{timeAgo(a.publishedAt)}</p>
                               </div>
@@ -633,7 +633,7 @@ export default async function HomePage() {
                         </Link>
                         <div className="mt-2 sm:mt-3">
                           <Link href={`/berita/${a.slug}`}>
-                            <h3 className="font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-secondary transition-colors">{a.title}</h3>
+                            <h3 className="font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
                           </Link>
                           <p className="mt-1.5 sm:mt-2 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-on-surface-variant truncate">
                             <span className="truncate">{a.author.name}</span> <span className="mx-0.5 text-on-surface-variant/20 shrink-0">/</span> <Clock size={10} className="text-on-surface-variant/50 shrink-0" /> {timeAgo(a.publishedAt)}

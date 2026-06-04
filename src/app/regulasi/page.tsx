@@ -306,7 +306,7 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
                     {reg.issuedBy && ` — ${reg.issuedBy}`}
                   </p>
                   <Link href={`/regulasi/${reg.id}`} className="group">
-                    <h2 className="text-body-lg font-semibold text-txt-primary group-hover:text-secondary line-clamp-2 transition-colors">
+                    <h2 className="text-body-lg font-semibold text-txt-primary group-hover:text-primary line-clamp-2 transition-colors">
                       {reg.shortTitle ? (
                         <>
                           <span className="text-primary mr-1.5">{reg.shortTitle}</span>

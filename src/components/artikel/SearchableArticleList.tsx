@@ -118,7 +118,7 @@ export default function SearchableArticleList({ articles, categoryName }: Search
             {/* Content */}
             <div className="flex-1 min-w-0">
               <Link href={`/berita/${article.slug}`}>
-                <h3 className="text-sm sm:text-base font-bold text-txt-primary leading-snug line-clamp-2 group-hover:text-secondary transition-colors">
+                <h3 className="text-sm sm:text-base font-bold text-txt-primary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                   {article.title}
                 </h3>
               </Link>

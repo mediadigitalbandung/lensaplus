@@ -175,7 +175,7 @@ export default async function RangkumanIndexPage() {
                   <CalendarDays size={12} />
                   <span className="font-semibold">{card.dateRange}</span>
                 </div>
-                <h2 className="font-serif text-title-lg leading-snug text-on-surface group-hover:text-secondary transition-colors">
+                <h2 className="font-serif text-title-lg leading-snug text-on-surface group-hover:text-primary transition-colors">
                   {card.title}
                 </h2>
                 <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant">

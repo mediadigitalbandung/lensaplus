@@ -195,7 +195,7 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
                     {hero.category.name}
                   </Link>
                   <Link href={`/berita/${hero.slug}`}>
-                    <h2 className="mt-2 font-serif text-headline-md leading-tight text-on-surface group-hover:text-secondary transition-colors">
+                    <h2 className="mt-2 font-serif text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
                       {hero.title}
                     </h2>
                   </Link>

@@ -96,7 +96,7 @@ export default function ArticleCard({
             {category.name}
           </Link>
           <Link href={`/berita/${slug}`}>
-            <h2 className="mt-2 font-serif text-headline-md leading-tight text-on-surface transition-colors duration-300 group-hover:text-secondary">
+            <h2 className="mt-2 font-serif text-headline-md leading-tight text-on-surface transition-colors duration-300 group-hover:text-primary">
               {title}
             </h2>
           </Link>
@@ -136,7 +136,7 @@ export default function ArticleCard({
         <div className="flex flex-1 flex-col justify-center min-w-0">
           <Link
             href={`/berita/${slug}`}
-            className="line-clamp-2 text-title-sm leading-snug text-on-surface transition-colors duration-300 group-hover:text-secondary"
+            className="line-clamp-2 text-title-sm leading-snug text-on-surface transition-colors duration-300 group-hover:text-primary"
           >
             {title}
           </Link>
@@ -160,7 +160,7 @@ export default function ArticleCard({
           {category.name}
         </Link>
         <Link href={`/berita/${slug}`}>
-          <h3 className="mt-1 text-title-sm leading-snug text-on-surface transition-colors duration-300 group-hover:text-secondary">
+          <h3 className="mt-1 text-title-sm leading-snug text-on-surface transition-colors duration-300 group-hover:text-primary">
             {title}
           </h3>
         </Link>
@@ -202,7 +202,7 @@ export default function ArticleCard({
           {category.name}
         </Link>
         <Link href={`/berita/${slug}`}>
-          <h3 className="mt-1 sm:mt-1.5 line-clamp-2 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface transition-colors duration-300 group-hover:text-secondary">
+          <h3 className="mt-1 sm:mt-1.5 line-clamp-2 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface transition-colors duration-300 group-hover:text-primary">
             {title}
           </h3>
         </Link>

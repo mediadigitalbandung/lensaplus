@@ -346,7 +346,7 @@ async function OtherAngles({
               >
                 {ANGLE_LABEL[o.angle] ?? o.angle}
               </span>
-              <p className="mt-1.5 text-sm font-medium text-txt-primary transition-colors group-hover:text-secondary line-clamp-2">
+              <p className="mt-1.5 text-sm font-medium text-txt-primary transition-colors group-hover:text-primary line-clamp-2">
                 {o.title}
               </p>
             </Link>

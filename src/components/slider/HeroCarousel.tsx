@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Pause, Play } from "lucide-react";
+import { Pause, Play, ArrowRight } from "lucide-react";
 import ClientDate from "@/components/ClientDate";
 
 interface HeroArticle {
@@ -134,6 +134,11 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                     <span>/</span>
                     <span><ClientDate date={a.publishedAt} format="relative" /></span>
                   </div>
+                  {/* Premium red "Baca" pill — visual only (whole slide is the link) */}
+                  <span className="mt-4 sm:mt-5 inline-flex items-center gap-2 rounded-md bg-secondary px-4 py-2 sm:px-5 sm:py-2.5 text-[10px] sm:text-label-md font-bold uppercase tracking-wider text-white shadow-lg shadow-secondary/30 transition-all duration-300 group-hover:bg-secondary-dark group-hover:gap-3">
+                    Baca Selengkapnya
+                    <ArrowRight size={14} aria-hidden />
+                  </span>
                 </div>
               </Link>
             ))}

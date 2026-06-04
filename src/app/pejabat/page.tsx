@@ -278,7 +278,7 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
                 </div>
 
                 {/* Name */}
-                <h2 className="text-center text-sm font-semibold text-txt-primary group-hover:text-secondary line-clamp-2 transition-colors">
+                <h2 className="text-center text-sm font-semibold text-txt-primary group-hover:text-primary line-clamp-2 transition-colors">
                   {official.name}
                 </h2>
 
