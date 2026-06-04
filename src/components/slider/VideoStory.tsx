@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 interface VideoStoryItem {
   title: string;
@@ -11,6 +11,8 @@ interface VideoStoryItem {
   thumbnail: string;
   duration: string;
   source: string;
+  /** Rendered Reel MP4 — when present, tapping the card plays the video. */
+  videoUrl?: string | null;
 }
 
 interface VideoStoryProps {
@@ -20,6 +22,7 @@ interface VideoStoryProps {
 export default function VideoStory({ items }: VideoStoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [playing, setPlaying] = useState<string | null>(null);
   const animRef = useRef<number | null>(null);
   const speedRef = useRef(0.5); // px per frame
 
@@ -61,30 +64,45 @@ export default function VideoStory({ items }: VideoStoryProps) {
 
   if (items.length === 0) return null;
 
-  const renderCard = (item: VideoStoryItem, idx: number) => (
+  const renderCard = (item: VideoStoryItem, idx: number) => {
+    const thumbInner = (
+      <div className="relative aspect-[9/16] w-full overflow-hidden rounded-lg bg-surface-dark">
+        <Image
+          src={item.thumbnail}
+          alt={item.title}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+        <div className="absolute bottom-3 left-3 flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+            <Play size={12} className="text-white ml-0.5" fill="white" />
+          </div>
+          <span className="rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+            {item.duration}
+          </span>
+        </div>
+      </div>
+    );
+    return (
     <article
       key={`${item.slug}-${idx}`}
       className="group w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px] shrink-0"
     >
-      <Link href={`/berita/${item.slug}`} className="block">
-        <div className="relative aspect-[9/16] w-full overflow-hidden rounded-lg bg-surface-dark">
-          <Image
-            src={item.thumbnail}
-            alt={item.title}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
-          <div className="absolute bottom-3 left-3 flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-              <Play size={12} className="text-white ml-0.5" fill="white" />
-            </div>
-            <span className="rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
-              {item.duration}
-            </span>
-          </div>
-        </div>
-      </Link>
+      {item.videoUrl ? (
+        <button
+          type="button"
+          onClick={() => setPlaying(item.videoUrl as string)}
+          className="block w-full"
+          aria-label={`Putar video: ${item.title}`}
+        >
+          {thumbInner}
+        </button>
+      ) : (
+        <Link href={`/berita/${item.slug}`} className="block">
+          {thumbInner}
+        </Link>
+      )}
       <div className="mt-2 flex items-start gap-2">
         <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary mt-0.5">
           <Play size={8} className="text-white ml-px" fill="white" />
@@ -104,7 +122,8 @@ export default function VideoStory({ items }: VideoStoryProps) {
         </div>
       </div>
     </article>
-  );
+    );
+  };
 
   return (
     <div
@@ -138,6 +157,37 @@ export default function VideoStory({ items }: VideoStoryProps) {
       >
         <ChevronRight size={18} strokeWidth={1.5} />
       </button>
+
+      {/* Reel player modal */}
+      {playing && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setPlaying(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setPlaying(null)}
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+            aria-label="Tutup"
+          >
+            <X size={20} />
+          </button>
+          <div
+            className="aspect-[9/16] h-full max-h-[88vh] w-auto max-w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src={playing}
+              controls
+              autoPlay
+              playsInline
+              loop
+              className="h-full w-full rounded-xl bg-black object-contain"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -11,7 +11,7 @@ import HeadlineSlider from "@/components/slider/HeadlineSlider";
 import SubHeadlineSlider from "@/components/slider/SubHeadlineSlider";
 import VideoStory from "@/components/slider/VideoStory";
 import BannerAd, { SidebarAd } from "@/components/ads/BannerAd";
-import { videoStoryData } from "@/lib/video-data";
+import { getPublishedReels } from "@/lib/video-story";
 
 type Poll = { question: string; image?: string; options: { label: string; percentage: number }[]; totalVotes: number };
 const categoryPolling: Record<string, Poll[]> = {
@@ -104,6 +104,9 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
   const params = await paramsPromise;
   const category = await getCategory(params.slug);
   if (!category) notFound();
+
+  // Real Instagram Reels (rendered in the CMS) for the Video Story strip.
+  const reels = await getPublishedReels(20);
 
   const [articles, trendingArticles] = await Promise.all([
     prisma.article.findMany({
@@ -277,18 +280,20 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
           <BannerAd slot="BETWEEN_SECTIONS" />
         </div>
 
-        {/* Video Story */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="border-l-[3px] border-primary pl-3 text-lg font-bold text-txt-primary flex items-center">
-              Video Story
-            </h2>
-            <Link href="/video" className="text-sm font-medium text-primary hover:underline">
-              Lihat Semua &rarr;
-            </Link>
+        {/* Video Story — real Instagram Reels made in the CMS */}
+        {reels.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="border-l-[3px] border-primary pl-3 text-lg font-bold text-txt-primary flex items-center">
+                Video Story
+              </h2>
+              <Link href="/video" className="text-sm font-medium text-primary hover:underline">
+                Lihat Semua &rarr;
+              </Link>
+            </div>
+            <VideoStory items={reels} />
           </div>
-          <VideoStory items={videoStoryData} />
-        </div>
+        )}
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           <div className="lg:col-span-2">
