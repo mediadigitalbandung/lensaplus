@@ -158,6 +158,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
       ? new Date(a.publishedAt).toLocaleDateString("id-ID")
       : "",
     viewCount: a.viewCount,
+    featuredImage: a.featuredImage,
   }));
 
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";

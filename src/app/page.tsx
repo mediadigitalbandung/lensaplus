@@ -341,6 +341,22 @@ export default async function HomePage() {
                       <span className="shrink-0 font-serif text-3xl font-bold text-primary/15 leading-none select-none w-7 text-right mt-0.5">
                         {i + 1}
                       </span>
+                      <Link
+                        href={`/berita/${a.slug}`}
+                        className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-surface-container-low"
+                        aria-hidden="true"
+                        tabIndex={-1}
+                      >
+                        {a.featuredImage && (
+                          <Image
+                            src={a.featuredImage}
+                            alt=""
+                            fill
+                            sizes="64px"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        )}
+                      </Link>
                       <div className="flex-1 min-w-0">
                         <Link href={`/berita/${a.slug}`}>
                           <h3 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">

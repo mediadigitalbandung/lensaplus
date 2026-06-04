@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 interface SidebarArticle {
   title: string;
@@ -6,6 +7,7 @@ interface SidebarArticle {
   category: string;
   publishedAt: string;
   viewCount?: number;
+  featuredImage?: string | null;
 }
 
 interface SidebarProps {
@@ -52,14 +54,38 @@ export default function Sidebar({ trending = [], recent = [], popular = [] }: Si
                 <span className="shrink-0 text-2xl font-extrabold leading-none text-primary/20">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <div className="flex-1">
+                <Link
+                  href={`/berita/${article.slug}`}
+                  className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-surface-secondary"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                >
+                  {article.featuredImage && (
+                    <Image
+                      src={article.featuredImage}
+                      alt=""
+                      fill
+                      sizes="56px"
+                      className="object-cover"
+                    />
+                  )}
+                </Link>
+                <div className="min-w-0 flex-1">
                   <Link
                     href={`/berita/${article.slug}`}
-                    className="text-sm font-semibold leading-snug text-txt-primary hover:underline"
+                    className="line-clamp-2 text-sm font-semibold leading-snug text-txt-primary hover:underline"
                   >
                     {article.title}
                   </Link>
-                  <p className="mt-1 text-xs text-txt-muted">{article.category}</p>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-txt-muted">
+                    <span>{article.category}</span>
+                    {article.viewCount ? (
+                      <>
+                        <span className="h-3 w-px bg-border" />
+                        <span>{article.viewCount.toLocaleString("id-ID")} views</span>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
               </li>
             ))}
