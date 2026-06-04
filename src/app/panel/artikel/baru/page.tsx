@@ -10,6 +10,7 @@ import {
   Save,
   Send,
   Rocket,
+  CalendarClock,
   ChevronDown,
   Plus,
   Trash2,
@@ -98,6 +99,9 @@ export default function NewArticlePage() {
   const [showSeo, setShowSeo] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [showAutosaveBanner, setShowAutosaveBanner] = useState(false);
+  // Schedule-publish (editors/chief editors only)
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
   // Perplexity research-and-draft
   const [showResearch, setShowResearch] = useState(false);
   const [researchNotes, setResearchNotes] = useState("");
@@ -541,7 +545,7 @@ export default function NewArticlePage() {
   // Direct publish — for editors/chief editors who may publish without review.
   // The create API only accepts DRAFT/IN_REVIEW, so we save the draft first
   // (or reuse the autosaved one) then transition it to PUBLISHED via PUT.
-  const handlePublish = async () => {
+  const handlePublish = async (schedTime?: string) => {
     setError("");
 
     if (!title.trim()) return setError("Judul wajib diisi");
@@ -549,10 +553,20 @@ export default function NewArticlePage() {
     if (content.length < 50) return setError("Konten minimal 50 karakter");
     if (!categoryId) return setError("Kategori harus dipilih");
 
+    let scheduledIso: string | undefined;
+    if (schedTime) {
+      const when = new Date(schedTime);
+      if (Number.isNaN(when.getTime())) return setError("Tanggal jadwal tidak valid");
+      if (when.getTime() <= Date.now()) return setError("Waktu jadwal harus di masa depan");
+      scheduledIso = when.toISOString();
+    }
+
     const ok = await confirm({
-      message: "Artikel akan LANGSUNG diterbitkan dan tampil di situs tanpa melalui review. Lanjutkan?",
+      message: scheduledIso
+        ? `Artikel akan dijadwalkan terbit pada ${new Date(scheduledIso).toLocaleString("id-ID")}. Lanjutkan?`
+        : "Artikel akan LANGSUNG diterbitkan dan tampil di situs tanpa melalui review. Lanjutkan?",
       variant: "warning",
-      title: "Terbitkan Sekarang",
+      title: scheduledIso ? "Jadwalkan Publikasi" : "Terbitkan Sekarang",
     });
     if (!ok) return;
 
@@ -585,15 +599,15 @@ export default function NewArticlePage() {
         return;
       }
 
-      // Step 2 — transition the saved draft to PUBLISHED.
+      // Step 2 — publish now, or schedule for later when scheduledIso is set.
       const pubRes = await fetch(`/api/articles/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "PUBLISHED" }),
+        body: JSON.stringify({ status: "PUBLISHED", ...(scheduledIso ? { scheduledAt: scheduledIso } : {}) }),
       });
       const pubData = await pubRes.json();
       if (!pubData.success) {
-        setError(pubData.error || "Gagal menerbitkan artikel");
+        setError(pubData.error || (scheduledIso ? "Gagal menjadwalkan artikel" : "Gagal menerbitkan artikel"));
         setSaving(false);
         return;
       }
@@ -603,7 +617,9 @@ export default function NewArticlePage() {
         localStorage.removeItem(AUTOSAVE_DRAFTID_KEY);
       } catch { /* ignore */ }
       draftIdRef.current = null;
-      success("Artikel berhasil diterbitkan");
+      setShowSchedule(false);
+      setScheduleDate("");
+      success(scheduledIso ? `Publikasi dijadwalkan pada ${new Date(scheduledIso).toLocaleString("id-ID")}` : "Artikel berhasil diterbitkan");
       router.push("/panel/artikel");
       router.refresh();
     } catch {
@@ -658,19 +674,61 @@ export default function NewArticlePage() {
               Kirim untuk Review
             </button>
           )}
-          {/* Direct publish — editors/chief editors only (no review needed) */}
+          {/* Direct publish + schedule — editors/chief editors only (no review needed) */}
           {EDITOR_ROLES.includes(userRole) && (
-            <button
-              onClick={handlePublish}
-              disabled={saving}
-              className="flex items-center gap-1.5 rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-secondary-dark disabled:opacity-50"
-            >
-              <Rocket size={16} />
-              Terbitkan
-            </button>
+            <>
+              <button
+                onClick={() => handlePublish()}
+                disabled={saving}
+                className="flex items-center gap-1.5 rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-secondary-dark disabled:opacity-50"
+              >
+                <Rocket size={16} />
+                Terbitkan
+              </button>
+              <button
+                onClick={() => setShowSchedule((v) => !v)}
+                disabled={saving}
+                className="flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50"
+              >
+                <CalendarClock size={16} />
+                Jadwalkan
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Schedule-publish panel — editors/chief editors only */}
+      {EDITOR_ROLES.includes(userRole) && showSchedule && (
+        <div className="mb-4 rounded-[12px] border border-blue-300 bg-blue-50 p-4 shadow-sm">
+          <label className="mb-2 block text-sm font-medium text-blue-800">
+            Pilih tanggal &amp; waktu publikasi artikel ini
+          </label>
+          <input
+            type="datetime-local"
+            value={scheduleDate}
+            onChange={(e) => setScheduleDate(e.target.value)}
+            min={new Date().toISOString().slice(0, 16)}
+            className="input w-full max-w-xs text-sm"
+          />
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              onClick={() => handlePublish(scheduleDate)}
+              disabled={saving || !scheduleDate}
+              className="flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              <CalendarClock size={14} />
+              Konfirmasi Jadwal
+            </button>
+            <button
+              onClick={() => { setShowSchedule(false); setScheduleDate(""); }}
+              className="rounded-md px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-surface-secondary"
+            >
+              Batal
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Auto-save recovery banner */}
       {showAutosaveBanner && (
