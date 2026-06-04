@@ -166,6 +166,10 @@ model User {
   twoFactorEnabled Boolean    @default(false) // TODO: 2FA placeholder — field exists but is never read by auth flow. Keep until 2FA sprint.
   activeSessionId  String?
   lastLoginAt      DateTime?
+  // Email ownership verification (soft: status only, does NOT block login).
+  emailVerified      DateTime?  // set when the user confirms their email via the link
+  emailVerifyToken   String?    // single-use token embedded in the verification link (random hex)
+  emailVerifyExpires DateTime?  // token expiry (24h from issue)
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   articles         Article[]

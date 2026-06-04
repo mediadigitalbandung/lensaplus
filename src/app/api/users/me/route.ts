@@ -29,7 +29,7 @@ const profileFields = {
   specialization: true, avatar: true, phone: true,
   nomorKartuPers: true, organisasiPers: true, pendidikan: true,
   pengalaman: true, keahlian: true, portofolio: true,
-  mediaSosial: true, alamat: true, createdAt: true,
+  mediaSosial: true, alamat: true, createdAt: true, emailVerified: true,
   _count: { select: { articles: true } },
 };
 

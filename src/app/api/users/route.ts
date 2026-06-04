@@ -4,6 +4,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { successResponse, errorResponse, requireRole, requireAuth, logAudit, ApiError } from "@/lib/api-utils";
 import { ensureMembershipCard } from "@/lib/membership";
+import { issueAndSendVerification } from "@/lib/email-verification";
 import { createEmailForward, addDestinationAddress } from "@/lib/cloudflare-email";
 
 // GET /api/users
@@ -111,6 +112,10 @@ export async function POST(request: NextRequest) {
     // Auto-create a DRAFT membership card (KTA) for every new user. Best-effort
     // — never blocks user creation.
     await ensureMembershipCard(user.id);
+
+    // Send an email-ownership verification link to the new address. Best-effort
+    // (swallows "no email provider" etc.) — never blocks user creation.
+    issueAndSendVerification(user.id).catch(() => {});
 
     // Create email@kartawarta.com if requested
     let emailCreated = false;

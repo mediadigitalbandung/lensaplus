@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
-import { UserCircle, Save, Loader2, Camera, KeyRound, Eye, EyeOff } from "lucide-react";
+import { UserCircle, Save, Loader2, Camera, KeyRound, Eye, EyeOff, MailCheck, MailWarning } from "lucide-react";
 
 import { roleLabelsMap } from "@/lib/roles";
 import MembershipCardSection from "@/components/panel/MembershipCardSection";
@@ -25,6 +25,7 @@ interface UserProfile {
   mediaSosial: string | null;
   alamat: string | null;
   avatar: string | null;
+  emailVerified: string | null;
   createdAt: string;
   _count: { articles: number };
 }
@@ -35,6 +36,7 @@ export default function ProfilPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -171,6 +173,25 @@ export default function ProfilPage() {
       });
     } finally {
       setChangingPassword(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    setVerifyingEmail(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/users/me/verify-email", { method: "POST" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Gagal mengirim email verifikasi");
+      if (json.data?.alreadyVerified) {
+        setMessage({ type: "success", text: "Email Anda sudah terverifikasi." });
+      } else {
+        setMessage({ type: "success", text: "Email verifikasi terkirim. Silakan cek kotak masuk (dan folder spam)." });
+      }
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Gagal mengirim email verifikasi." });
+    } finally {
+      setVerifyingEmail(false);
     }
   }
 
@@ -345,6 +366,26 @@ export default function ProfilPage() {
               <p className="mt-1 text-sm text-txt-muted">
                 Email tidak dapat diubah. Hubungi admin untuk perubahan.
               </p>
+              {/* Email ownership verification status */}
+              {profile?.emailVerified ? (
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
+                  <MailCheck size={14} /> Email terverifikasi
+                </div>
+              ) : (
+                <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-yellow-300 bg-yellow-50/70 px-3 py-2 text-xs text-yellow-800">
+                  <MailWarning size={14} className="shrink-0 text-yellow-600" />
+                  <span>Email belum terverifikasi.</span>
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={verifyingEmail}
+                    className="inline-flex items-center gap-1 font-semibold text-primary hover:underline disabled:opacity-50"
+                  >
+                    {verifyingEmail ? <Loader2 size={12} className="animate-spin" /> : null}
+                    Kirim email verifikasi
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>

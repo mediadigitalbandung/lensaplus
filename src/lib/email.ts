@@ -114,6 +114,19 @@ export async function sendEmail(
   }
 }
 
+export async function sendVerificationEmail(to: string, name: string, link: string) {
+  const safeName = (name || "").replace(/[<>]/g, "");
+  const html = baseTemplate("Verifikasi Email Anda", `
+    <p style="color:#6b7280;line-height:1.6;">Halo${safeName ? ` <strong style="color:#1c1c1e;">${safeName}</strong>` : ""}, konfirmasi bahwa alamat email ini benar milik Anda untuk mengamankan akun ${APP_NAME} Anda.</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${link}" style="display:inline-block;background:#002045;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Verifikasi Email</a>
+    </div>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.6;">Tautan berlaku 24 jam. Jika tombol tidak berfungsi, salin URL ini ke browser:<br><span style="color:#002045;word-break:break-all;">${link}</span></p>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.6;">Jika Anda tidak merasa membuat akun ini, abaikan email ini.</p>
+  `);
+  return sendEmail(to, `Verifikasi email Anda — ${APP_NAME}`, html);
+}
+
 export async function sendArticleApprovedEmail(to: string, articleTitle: string, articleSlug: string) {
   // articleSlug retained for future deep-link use
   void articleSlug;
