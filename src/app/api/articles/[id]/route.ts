@@ -521,12 +521,10 @@ export async function PUT(
           `Admin mempublikasi artikel: ${article.title}`
         );
 
-        // Notify & email article author about publication
+        // In-app notification (fast DB write) — the user-visible confirmation.
         await notifyArticleStatusChange(article.id, article.title, "PUBLISHED", article.authorId);
-        const authorPub = await prisma.user.findUnique({ where: { id: article.authorId }, select: { email: true } });
-        if (authorPub) await sendArticlePublishedEmail(authorPub.email, article.title, updated.slug);
 
-        // SEO: auto-fill seoTitle/seoDescription if empty, ping search engines
+        // SEO: auto-fill seoTitle/seoDescription if empty (fast DB write).
         if (!article.seoTitle || !article.seoDescription) {
           await prisma.article.update({
             where: { id: article.id },
@@ -536,8 +534,30 @@ export async function PUT(
             },
           });
         }
-        // AWAITED — see comment in editor publish branch.
-        await onArticlePublished(updated.slug, updated.id);
+
+        // Fire-and-forget the SLOW post-publish work so the publish response
+        // returns immediately. Previously these were awaited, so the publish
+        // blocked on the author email AND the SEO/Social/Cloudflare/Sorotan
+        // chain — which makes slow external calls (AI Sorotan generation
+        // ~10-30s, social posting). On a gateway timeout the publish looked
+        // like it FAILED ("Terjadi kesalahan") even though the article was
+        // already PUBLISHED, so the user retried and double-published it.
+        // Detaching is safe on the long-lived PM2 `next start` server (not
+        // serverless), and matches the bulk-publish path; both functions are
+        // internally defensive (timeouts + Promise.allSettled).
+        void (async () => {
+          try {
+            const authorPub = await prisma.user.findUnique({ where: { id: article.authorId }, select: { email: true } });
+            if (authorPub) await sendArticlePublishedEmail(authorPub.email, article.title, updated.slug);
+          } catch (e) {
+            console.error("[publish-email] fail for", updated.slug, e);
+          }
+          try {
+            await onArticlePublished(updated.slug, updated.id);
+          } catch (e) {
+            console.error("[publish-seo] fail for", updated.slug, e);
+          }
+        })();
 
         return successResponse(updated);
       }
