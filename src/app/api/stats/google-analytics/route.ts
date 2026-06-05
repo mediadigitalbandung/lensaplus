@@ -1,7 +1,7 @@
 /**
  * GET /api/stats/google-analytics?from=YYYY-MM-DD&to=YYYY-MM-DD
  * Returns GA4 Data API aggregates + top pages + daily trend.
- * Auth: EDITOR+
+ * Auth: SUPER_ADMIN (cost/analytics telemetry — admin-only).
  *
  * If credentials are missing or the API call fails, responds HTTP 200 with
  * `{ success: false, error, data: <empty struct> }` so the UI doesn't crash.

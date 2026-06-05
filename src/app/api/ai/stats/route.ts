@@ -1,10 +1,11 @@
 /**
  * GET /api/ai/stats  — SUPER_ADMIN only.
- * Cost analytics over AIUsageLog: total tokens & cost (Rupiah), and PER-ARTICLE
- * aggregation (one article = sum of all AI calls attributed to its title) with
- * average / min / max tokens & Rupiah.
+ * Cost analytics over AIUsageLog: total tokens & cost (Rupiah), PER-ARTICLE
+ * aggregation (avg/min/max), per provider/model/feature, top articles, and a
+ * daily cost trend. Result is cached 5 min per provider scope (the table grows
+ * with every AI call, so we don't re-scan + re-aggregate it on each tab view).
  *
- * Rupiah is the FROZEN per-row `costIdr` (the rate at the moment of use), so
+ * Rupiah is the FROZEN per-row `costIdr` (rate at the moment of use), so
  * historical spend never changes when the rupiah moves. Legacy rows logged
  * before costIdr existed fall back to costUsd × the current live rate.
  *
@@ -13,6 +14,7 @@
 import { NextRequest } from "next/server";
 import { requireRole, successResponse, errorResponse } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { getCached } from "@/lib/cache";
 import { getUsdIdrRate, isUsdIdrManual } from "@/lib/fx-rate";
 
 export const dynamic = "force-dynamic";
@@ -22,117 +24,120 @@ export async function GET(req: NextRequest) {
     await requireRole(["SUPER_ADMIN"]);
 
     const providerFilter = new URL(req.url).searchParams.get("provider") || undefined;
-    const where = providerFilter ? { provider: providerFilter } : {};
 
-    const [currentRate, manual, logs] = await Promise.all([
-      getUsdIdrRate(),
-      isUsdIdrManual(),
-      prisma.aIUsageLog.findMany({
-        where,
-        select: {
-          feature: true, provider: true, model: true,
-          totalTokens: true, costUsd: true, costIdr: true, articleTitle: true, createdAt: true,
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+    const data = await getCached(`ai:stats:${providerFilter ?? "all"}`, 5 * 60 * 1000, async () => {
+      const where = providerFilter ? { provider: providerFilter } : {};
 
-    // Frozen Rupiah per row; legacy rows (no costIdr) estimated at the current rate.
-    const rowIdr = (l: { costIdr: number | null; costUsd: number | null }) =>
-      l.costIdr ?? Math.round((l.costUsd ?? 0) * currentRate);
+      const [currentRate, manual, logs] = await Promise.all([
+        getUsdIdrRate(),
+        isUsdIdrManual(),
+        prisma.aIUsageLog.findMany({
+          where,
+          select: {
+            feature: true, provider: true, model: true,
+            totalTokens: true, costUsd: true, costIdr: true, articleTitle: true, createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
 
-    const totalRequests = logs.length;
-    const totalTokens = logs.reduce((s, l) => s + l.totalTokens, 0);
-    const totalCostUsd = logs.reduce((s, l) => s + (l.costUsd ?? 0), 0);
-    const totalCostIdr = logs.reduce((s, l) => s + rowIdr(l), 0);
+      // Frozen Rupiah per row; legacy rows (no costIdr) estimated at the current rate.
+      const rowIdr = (l: { costIdr: number | null; costUsd: number | null }) =>
+        l.costIdr ?? Math.round((l.costUsd ?? 0) * currentRate);
 
-    // ── Per-article aggregation (articleTitle = attribution key) ──────────────
-    const artMap = new Map<string, { title: string; calls: number; tokens: number; costIdr: number; providers: Set<string> }>();
-    for (const l of logs) {
-      const t = (l.articleTitle ?? "").trim();
-      if (!t) continue;
-      let a = artMap.get(t);
-      if (!a) { a = { title: t, calls: 0, tokens: 0, costIdr: 0, providers: new Set() }; artMap.set(t, a); }
-      a.calls += 1;
-      a.tokens += l.totalTokens;
-      a.costIdr += rowIdr(l);
-      if (l.provider) a.providers.add(l.provider);
-    }
-    const articlesAll = Array.from(artMap.values()).map((a) => ({
-      title: a.title,
-      calls: a.calls,
-      tokens: a.tokens,
-      costIdr: a.costIdr,
-      providers: Array.from(a.providers),
-    }));
+      const totalRequests = logs.length;
+      const totalTokens = logs.reduce((s, l) => s + l.totalTokens, 0);
+      const totalCostUsd = logs.reduce((s, l) => s + (l.costUsd ?? 0), 0);
+      const totalCostIdr = logs.reduce((s, l) => s + rowIdr(l), 0);
 
-    // Only articles that ACTUALLY cost money (Rp > 0) feed the per-article
-    // analysis & the "most expensive" list. Rp 0 articles = legacy/untracked
-    // rows with no recorded token cost — not meaningful here, so excluded.
-    const articles = articlesAll.filter((a) => a.costIdr > 0);
-
-    // avg / min / max ACROSS per-article totals
-    const n = articles.length;
-    const tokensArr = articles.map((a) => a.tokens);
-    const idrArr = articles.map((a) => a.costIdr);
-    const sum = (arr: number[]) => arr.reduce((s, x) => s + x, 0);
-    const perArticle = n > 0
-      ? {
-          count: n,
-          avgTokens: Math.round(sum(tokensArr) / n),
-          minTokens: Math.min(...tokensArr),
-          maxTokens: Math.max(...tokensArr),
-          avgCostIdr: Math.round(sum(idrArr) / n),
-          minCostIdr: Math.min(...idrArr),
-          maxCostIdr: Math.max(...idrArr),
-        }
-      : { count: 0, avgTokens: 0, minTokens: 0, maxTokens: 0, avgCostIdr: 0, minCostIdr: 0, maxCostIdr: 0 };
-
-    // ── Breakdown by provider / model / feature (frozen IDR) ──────────────────
-    const groupBy = (pick: (l: (typeof logs)[number]) => string) => {
-      const m = new Map<string, { tokens: number; costIdr: number; requests: number }>();
+      // ── Per-article aggregation (articleTitle = attribution key) ──────────────
+      const artMap = new Map<string, { title: string; calls: number; tokens: number; costIdr: number; providers: Set<string> }>();
       for (const l of logs) {
-        const k = pick(l) || "unknown";
-        let g = m.get(k);
-        if (!g) { g = { tokens: 0, costIdr: 0, requests: 0 }; m.set(k, g); }
-        g.tokens += l.totalTokens;
-        g.costIdr += rowIdr(l);
-        g.requests += 1;
+        const t = (l.articleTitle ?? "").trim();
+        if (!t) continue;
+        let a = artMap.get(t);
+        if (!a) { a = { title: t, calls: 0, tokens: 0, costIdr: 0, providers: new Set() }; artMap.set(t, a); }
+        a.calls += 1;
+        a.tokens += l.totalTokens;
+        a.costIdr += rowIdr(l);
+        if (l.provider) a.providers.add(l.provider);
       }
-      return Array.from(m.entries())
-        .map(([key, v]) => ({ key, tokens: v.tokens, costIdr: v.costIdr, requests: v.requests }))
-        .sort((a, b) => b.costIdr - a.costIdr);
-    };
+      const articlesAll = Array.from(artMap.values()).map((a) => ({
+        title: a.title,
+        calls: a.calls,
+        tokens: a.tokens,
+        costIdr: a.costIdr,
+        providers: Array.from(a.providers),
+      }));
 
-    const topArticles = Array.from(articles).sort((a, b) => b.costIdr - a.costIdr).slice(0, 25);
+      // Only articles that ACTUALLY cost money (Rp > 0) feed the per-article
+      // analysis & the "most expensive" list. Rp 0 articles = legacy/untracked
+      // rows with no recorded token cost — not meaningful here, so excluded.
+      const articles = articlesAll.filter((a) => a.costIdr > 0);
 
-    // ── Daily cost trend (bucketed by WIB date, frozen IDR) ───────────────────
-    const dayMap = new Map<string, { costIdr: number; tokens: number; requests: number }>();
-    for (const l of logs) {
-      // createdAt is UTC; shift +7h so a row counts on its Jakarta (WIB) date.
-      const day = new Date(l.createdAt.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
-      let d = dayMap.get(day);
-      if (!d) { d = { costIdr: 0, tokens: 0, requests: 0 }; dayMap.set(day, d); }
-      d.costIdr += rowIdr(l);
-      d.tokens += l.totalTokens;
-      d.requests += 1;
-    }
-    const dailyCost = Array.from(dayMap.entries())
-      .map(([date, v]) => ({ date, ...v }))
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-90); // last 90 active days
+      const n = articles.length;
+      const tokensArr = articles.map((a) => a.tokens);
+      const idrArr = articles.map((a) => a.costIdr);
+      const sum = (arr: number[]) => arr.reduce((s, x) => s + x, 0);
+      const perArticle = n > 0
+        ? {
+            count: n,
+            avgTokens: Math.round(sum(tokensArr) / n),
+            minTokens: Math.min(...tokensArr),
+            maxTokens: Math.max(...tokensArr),
+            avgCostIdr: Math.round(sum(idrArr) / n),
+            minCostIdr: Math.min(...idrArr),
+            maxCostIdr: Math.max(...idrArr),
+          }
+        : { count: 0, avgTokens: 0, minTokens: 0, maxTokens: 0, avgCostIdr: 0, minCostIdr: 0, maxCostIdr: 0 };
 
-    return successResponse({
-      usdIdrRate: currentRate, // current live rate (for display only)
-      usdIdrManual: manual, // true = pinned via Pengaturan; false = auto/live
-      totals: { totalRequests, totalTokens, totalCostUsd, totalCostIdr },
-      perArticle,
-      byProvider: groupBy((l) => l.provider ?? "unknown"),
-      byModel: groupBy((l) => l.model ?? "unknown"),
-      byFeature: groupBy((l) => l.feature),
-      topArticles,
-      dailyCost,
+      // ── Breakdown by provider / model / feature (frozen IDR) ──────────────────
+      const groupBy = (pick: (l: (typeof logs)[number]) => string) => {
+        const m = new Map<string, { tokens: number; costIdr: number; requests: number }>();
+        for (const l of logs) {
+          const k = pick(l) || "unknown";
+          let g = m.get(k);
+          if (!g) { g = { tokens: 0, costIdr: 0, requests: 0 }; m.set(k, g); }
+          g.tokens += l.totalTokens;
+          g.costIdr += rowIdr(l);
+          g.requests += 1;
+        }
+        return Array.from(m.entries())
+          .map(([key, v]) => ({ key, tokens: v.tokens, costIdr: v.costIdr, requests: v.requests }))
+          .sort((a, b) => b.costIdr - a.costIdr);
+      };
+
+      const topArticles = Array.from(articles).sort((a, b) => b.costIdr - a.costIdr).slice(0, 25);
+
+      // ── Daily cost trend (bucketed by WIB date, frozen IDR) ───────────────────
+      const dayMap = new Map<string, { costIdr: number; tokens: number; requests: number }>();
+      for (const l of logs) {
+        const day = new Date(l.createdAt.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+        let d = dayMap.get(day);
+        if (!d) { d = { costIdr: 0, tokens: 0, requests: 0 }; dayMap.set(day, d); }
+        d.costIdr += rowIdr(l);
+        d.tokens += l.totalTokens;
+        d.requests += 1;
+      }
+      const dailyCost = Array.from(dayMap.entries())
+        .map(([date, v]) => ({ date, ...v }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-90);
+
+      return {
+        usdIdrRate: currentRate,
+        usdIdrManual: manual,
+        totals: { totalRequests, totalTokens, totalCostUsd, totalCostIdr },
+        perArticle,
+        byProvider: groupBy((l) => l.provider ?? "unknown"),
+        byModel: groupBy((l) => l.model ?? "unknown"),
+        byFeature: groupBy((l) => l.feature),
+        topArticles,
+        dailyCost,
+      };
     });
+
+    return successResponse(data);
   } catch (error) {
     return errorResponse(error);
   }
