@@ -171,8 +171,13 @@ export function invalidateInternalStatsCache(): void {
 
 // ---------- Helpers ----------
 
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000; // Asia/Jakarta (UTC+7), no DST
+
+/** Jakarta (WIB) calendar date "YYYY-MM-DD". Buckets the daily trend by the
+ *  Indonesian calendar day so "today" matches the rest of the panel (e.g. the
+ *  AI cost trend), instead of rolling over at 07:00 WIB (UTC midnight). */
 function ymd(d: Date) {
-  return d.toISOString().slice(0, 10);
+  return new Date(d.getTime() + WIB_OFFSET_MS).toISOString().slice(0, 10);
 }
 
 function defaultRange(opts?: InternalStatsOptions): { from: Date; to: Date } {
@@ -191,11 +196,13 @@ function buildTrendBuckets(
   rows: Array<{ publishedAt: Date | null; viewCount: number }>,
 ): Array<{ date: string; publishedCount: number; viewCount: number }> {
   const trendMap = new Map<string, { publishedCount: number; viewCount: number }>();
-  // Walk from the start day to end day at UTC midnight.
-  const start = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
-  const end = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()));
-  for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
-    trendMap.set(ymd(d), { publishedCount: 0, viewCount: 0 });
+  // Walk WIB calendar days from→to inclusive. Keys are WIB date strings, which
+  // match the per-row WIB key below, so a post made in the early WIB hours
+  // (before 07:00 = UTC midnight) lands on the correct Jakarta day.
+  let cur = new Date(`${ymd(from)}T00:00:00Z`);
+  const end = new Date(`${ymd(to)}T00:00:00Z`);
+  for (; cur <= end; cur.setUTCDate(cur.getUTCDate() + 1)) {
+    trendMap.set(cur.toISOString().slice(0, 10), { publishedCount: 0, viewCount: 0 });
   }
   for (const r of rows) {
     if (!r.publishedAt) continue;
