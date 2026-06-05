@@ -125,8 +125,10 @@ function wrapText(text: string, maxChars: number): string[] {
   return lines;
 }
 
-/** Load a local (/uploads or public) or allowlisted-remote image → resized Buffer. */
-async function loadImage(src: string | null | undefined, w: number, h: number, fit: "cover" | "inside" = "cover"): Promise<Buffer | null> {
+/** Load a local (/uploads or public) or allowlisted-remote image → resized Buffer.
+ * fit "contain" pads to EXACTLY w×h with transparent margins so a non-square
+ * logo ends up centred inside its badge (avoids the off-centre look). */
+async function loadImage(src: string | null | undefined, w: number, h: number, fit: "cover" | "inside" | "contain" = "cover"): Promise<Buffer | null> {
   if (!src) return null;
   try {
     let buf: Buffer | null = null;
@@ -146,7 +148,10 @@ async function loadImage(src: string | null | undefined, w: number, h: number, f
       buf = await fs.readFile(local);
     }
     if (!buf) return null;
-    return await sharp(buf).resize(w, h, { fit, position: "centre" }).png().toBuffer();
+    return await sharp(buf)
+      .resize(w, h, { fit, position: "centre", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png()
+      .toBuffer();
   } catch {
     return null;
   }
@@ -186,6 +191,9 @@ export interface CardRenderInput {
 const DEFAULT_DEWAN_PERS = "608/DP-Verifikasi/K/XI/2020";
 /** Fallback logo so the card always shows branding even before an admin uploads one. */
 const DEFAULT_LOGO = "/kartawarta-icon.png";
+/** Press designation printed on every card — uniform "Jurnalis" regardless of the
+ * holder's internal system role (a press card shouldn't read "Super Admin"). */
+const CARD_DESIGNATION = "Jurnalis";
 
 const STATUS_COLOR: Record<string, string> = {
   ACTIVE: "#1a7f37",
@@ -207,31 +215,31 @@ const STATUS_TEXT: Record<string, string> = {
 
 /** Render the front of the card as a PNG buffer. */
 export async function renderMembershipCard(input: CardRenderInput): Promise<Buffer> {
-  const [photo, qrBuf, logo, dirSig, pwiSig, dpLogo] = await Promise.all([
+  const [photo, qrBuf, logo, dirSig, pwiSig] = await Promise.all([
     loadImage(input.photoUrl, 260, 320, "cover"),
     QRCode.toBuffer(input.verifyUrl, { width: 200, margin: 1, errorCorrectionLevel: "M" }).catch(() => null),
-    loadImage(input.cardLogo, 78, 78, "inside"),
-    loadImage(input.directorSignature, 220, 90, "inside"),
-    loadImage(input.pwiChairmanSignature, 220, 90, "inside"),
-    loadImage(input.dewanPersLogo, 70, 70, "inside"),
+    loadImage(input.cardLogo, 78, 78, "contain"),
+    loadImage(input.directorSignature, 190, 80, "inside"),
+    loadImage(input.pwiChairmanSignature, 190, 80, "inside"),
   ]);
 
   const statusColor = STATUS_COLOR[input.status] || "#57606a";
   const statusText = STATUS_TEXT[input.status] || input.status;
-  const dewanPers = input.dewanPersNumber || DEFAULT_DEWAN_PERS;
   const issuePlace = input.issuePlace || "Bandung";
 
   // Layout regions. Images and text occupy DISJOINT areas, so we can draw the
   // SVG (background + frames + all text) first and composite the photo/QR/logo/
-  // signatures on top without hiding any text.
+  // signatures on top without hiding any text. The QR sits in the far-right
+  // column; the two signatures share the middle-bottom band to its left so they
+  // never overlap.
   const PHOTO_X = 56, PHOTO_Y = 168, PHOTO_W = 260, PHOTO_H = 320;
-  const QR = 168, QR_X = W - QR - 56, QR_Y = H - QR - 70;
-  const SIG_Y = H - 150;
+  const QR = 156, QR_X = W - QR - 50, QR_Y = H - QR - 66;
+  const SIG_X1 = PHOTO_X + 300, SIG_X2 = SIG_X1 + 220, SIG_W = 190, SIG_Y = H - 150;
   const qr = qrBuf ? await sharp(qrBuf).resize(QR, QR).png().toBuffer() : null;
 
   const fields = [
     { label: "Nama", value: input.holderName || "-" },
-    { label: "Jabatan", value: input.role || "-" },
+    { label: "Jabatan", value: CARD_DESIGNATION },
     { label: "No. Anggota", value: input.number },
     { label: "Berlaku", value: `${fmtDate(input.issuedAt)} s/d ${fmtDate(input.expiresAt)}` },
     ...(input.bloodType ? [{ label: "Gol. Darah", value: input.bloodType }] : []),
@@ -261,31 +269,27 @@ export async function renderMembershipCard(input: CardRenderInput): Promise<Buff
   <path d="M0,28 Q0,0 28,0 L${W - 28},0 Q${W},0 ${W},28 L${W},132 L0,132 Z" fill="#001530"/>
   <!-- White badge so a coloured logo stays visible on the navy header -->
   ${logo ? `<rect x="40" y="18" width="98" height="98" rx="16" fill="#ffffff"/>` : ""}
-  ${dpLogo ? `<rect x="884" y="22" width="86" height="86" rx="14" fill="#ffffff"/>` : ""}
   <text x="180" y="58" font-family="'Newsreader','Georgia',serif" font-size="40" font-weight="800" fill="#ffffff" letter-spacing="1">KARTAWARTA</text>
   <text x="182" y="92" font-family="'Work Sans','Helvetica',sans-serif" font-size="19" fill="#9fb2c9" letter-spacing="3">KARTU TANDA ANGGOTA PERS</text>
   <rect x="40" y="158" width="6" height="${H - 230}" fill="#b7102a"/>
   <!-- Photo frame -->
   <rect x="${PHOTO_X - 4}" y="${PHOTO_Y - 4}" width="${PHOTO_W + 8}" height="${PHOTO_H + 8}" rx="8" fill="none" stroke="#c4c6d0" stroke-width="2"/>
   ${!photo ? `<rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="6" fill="#e8eaeb"/><text x="${PHOTO_X + PHOTO_W / 2}" y="${PHOTO_Y + PHOTO_H / 2}" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#9aa0a6">FOTO</text>` : ""}
-  <!-- Dewan Pers verification badge (under the photo) -->
-  <rect x="${PHOTO_X}" y="504" width="${PHOTO_W}" height="62" rx="8" fill="#f1f3f4" stroke="#c4c6d0" stroke-width="1.5"/>
-  <text x="${PHOTO_X + PHOTO_W / 2}" y="528" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" font-weight="700" fill="#001530" letter-spacing="0.5">TERVERIFIKASI DEWAN PERS</text>
-  <text x="${PHOTO_X + PHOTO_W / 2}" y="550" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="13" fill="#5d6066">No. ${escapeXml(dewanPers)}</text>
-  ${input.issuedAt ? `<text x="${PHOTO_X}" y="594" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#5d6066">Diterbitkan di ${escapeXml(issuePlace)}, ${escapeXml(fmtDate(input.issuedAt))}</text>` : ""}
+  <!-- Issue place & date (under the photo, once the card is issued) -->
+  ${input.issuedAt ? `<text x="${PHOTO_X + PHOTO_W / 2}" y="536" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#5d6066">Diterbitkan di ${escapeXml(issuePlace)},</text><text x="${PHOTO_X + PHOTO_W / 2}" y="560" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="15" font-weight="700" fill="#001530">${escapeXml(fmtDate(input.issuedAt))}</text>` : ""}
   <!-- Status pill -->
   <rect x="${FIELD_X}" y="150" rx="6" width="${statusText.length * 11 + 40}" height="34" fill="${statusColor}"/>
   <text x="${FIELD_X + 16}" y="173" font-family="'Work Sans','Helvetica',sans-serif" font-size="18" font-weight="700" fill="#ffffff" letter-spacing="1">${escapeXml(statusText)}</text>
   ${fieldSvg}
-  <!-- Signature labels -->
-  <line x1="${PHOTO_X + 300}" y1="${H - 56}" x2="${PHOTO_X + 300 + 220}" y2="${H - 56}" stroke="#c4c6d0" stroke-width="1.5"/>
-  <text x="${PHOTO_X + 300}" y="${H - 34}" font-family="'Work Sans','Helvetica',sans-serif" font-size="15" fill="#5d6066">Ketua Umum PWI Pusat</text>
-  <text x="${PHOTO_X + 300}" y="${H - 14}" font-family="'Work Sans','Helvetica',sans-serif" font-size="16" font-weight="700" fill="#001530">${escapeXml(input.pwiChairmanName || "-")}</text>
-  <line x1="${PHOTO_X + 300 + 250}" y1="${H - 56}" x2="${PHOTO_X + 300 + 250 + 220}" y2="${H - 56}" stroke="#c4c6d0" stroke-width="1.5"/>
-  <text x="${PHOTO_X + 300 + 250}" y="${H - 34}" font-family="'Work Sans','Helvetica',sans-serif" font-size="15" fill="#5d6066">Direktur Kartawarta</text>
-  <text x="${PHOTO_X + 300 + 250}" y="${H - 14}" font-family="'Work Sans','Helvetica',sans-serif" font-size="16" font-weight="700" fill="#001530">${escapeXml(input.directorName || "-")}</text>
+  <!-- Signature labels (two columns to the left of the QR) -->
+  <line x1="${SIG_X1}" y1="${H - 56}" x2="${SIG_X1 + SIG_W}" y2="${H - 56}" stroke="#c4c6d0" stroke-width="1.5"/>
+  <text x="${SIG_X1}" y="${H - 34}" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#5d6066">Ketua Umum PWI Pusat</text>
+  <text x="${SIG_X1}" y="${H - 13}" font-family="'Work Sans','Helvetica',sans-serif" font-size="16" font-weight="700" fill="#001530">${escapeXml(input.pwiChairmanName || "-")}</text>
+  <line x1="${SIG_X2}" y1="${H - 56}" x2="${SIG_X2 + SIG_W}" y2="${H - 56}" stroke="#c4c6d0" stroke-width="1.5"/>
+  <text x="${SIG_X2}" y="${H - 34}" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#5d6066">Direktur Kartawarta</text>
+  <text x="${SIG_X2}" y="${H - 13}" font-family="'Work Sans','Helvetica',sans-serif" font-size="16" font-weight="700" fill="#001530">${escapeXml(input.directorName || "-")}</text>
   <!-- QR caption -->
-  <text x="${QR_X + QR / 2}" y="${QR_Y + QR + 22}" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#5d6066">Pindai untuk verifikasi</text>
+  <text x="${QR_X + QR / 2}" y="${QR_Y + QR + 22}" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="13" fill="#5d6066">Pindai untuk verifikasi</text>
 </svg>`;
 
   const overlays: sharp.OverlayOptions[] = [
@@ -294,9 +298,8 @@ export async function renderMembershipCard(input: CardRenderInput): Promise<Buff
   if (photo) overlays.push({ input: photo, left: PHOTO_X, top: PHOTO_Y });
   if (qr) overlays.push({ input: qr, left: QR_X, top: QR_Y });
   if (logo) overlays.push({ input: logo, left: 50, top: 28 });
-  if (dpLogo) overlays.push({ input: dpLogo, left: 892, top: 30 });
-  if (pwiSig) overlays.push({ input: pwiSig, left: PHOTO_X + 300, top: SIG_Y });
-  if (dirSig) overlays.push({ input: dirSig, left: PHOTO_X + 300 + 250, top: SIG_Y });
+  if (pwiSig) overlays.push({ input: pwiSig, left: SIG_X1, top: SIG_Y });
+  if (dirSig) overlays.push({ input: dirSig, left: SIG_X2, top: SIG_Y });
 
   return sharp({ create: { width: W, height: H, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } })
     .composite(overlays)
@@ -317,7 +320,7 @@ const RETURN_EMAIL = "admin@kartawarta.com";
 
 /** Render the BACK of the card (terms + return notice + Code 128 barcode) as a PNG buffer. */
 export async function renderMembershipCardBack(input: CardRenderInput): Promise<Buffer> {
-  const logo = await loadImage(input.cardLogo, 68, 68, "inside");
+  const logo = await loadImage(input.cardLogo, 68, 68, "contain");
   const dewanPers = input.dewanPersNumber || DEFAULT_DEWAN_PERS;
 
   const PAD = 64;
@@ -396,8 +399,8 @@ export async function renderLanyardFront(input: CardRenderInput): Promise<Buffer
   const [photo, qrBuf, logo, dpLogo] = await Promise.all([
     loadImage(input.photoUrl, 300, 330, "cover"),
     QRCode.toBuffer(input.verifyUrl, { width: 220, margin: 1, errorCorrectionLevel: "M" }).catch(() => null),
-    loadImage(input.cardLogo, 84, 84, "inside"),
-    loadImage(input.dewanPersLogo, 60, 60, "inside"),
+    loadImage(input.cardLogo, 84, 84, "contain"),
+    loadImage(input.dewanPersLogo, 60, 60, "contain"),
   ]);
   const statusColor = STATUS_COLOR[input.status] || "#57606a";
   const statusText = STATUS_TEXT[input.status] || input.status;
@@ -425,7 +428,7 @@ export async function renderLanyardFront(input: CardRenderInput): Promise<Buffer
   <rect x="${cx - pillW / 2}" y="604" width="${pillW}" height="34" rx="17" fill="${statusColor}"/>
   <text x="${cx}" y="627" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="17" font-weight="700" fill="#ffffff" letter-spacing="1">${escapeXml(statusText)}</text>
   <text x="${cx}" y="678" text-anchor="middle" font-family="'Newsreader','Georgia',serif" font-size="32" font-weight="800" fill="#001530">${escapeXml(input.holderName || "-")}</text>
-  <text x="${cx}" y="708" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="20" fill="#44474e">${escapeXml(input.role || "-")}</text>
+  <text x="${cx}" y="708" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="20" fill="#44474e">${escapeXml(CARD_DESIGNATION)}</text>
   <text x="${cx}" y="736" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="17" font-weight="700" fill="#001530" letter-spacing="1">${escapeXml(input.number)}</text>
   <text x="${cx}" y="762" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#5d6066">Berlaku s/d ${escapeXml(fmtDate(input.expiresAt))}</text>
   <text x="${cx}" y="${QR_Y + QRS + 24}" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="14" fill="#5d6066">Pindai untuk verifikasi</text>
@@ -446,7 +449,7 @@ export async function renderLanyardFront(input: CardRenderInput): Promise<Buffer
 
 /** Render the BACK of the portrait lanyard card as a PNG buffer. */
 export async function renderLanyardBack(input: CardRenderInput): Promise<Buffer> {
-  const logo = await loadImage(input.cardLogo, 64, 64, "inside");
+  const logo = await loadImage(input.cardLogo, 64, 64, "contain");
   const dewanPers = input.dewanPersNumber || DEFAULT_DEWAN_PERS;
   const siteHost = (() => {
     try { return new URL(SITE).hostname.replace(/^www\./, ""); } catch { return "kartawarta.com"; }
