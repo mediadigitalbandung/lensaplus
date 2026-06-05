@@ -265,8 +265,18 @@
   @apply font-semibold text-on-surface no-underline transition-colors hover:text-primary hover:underline;
 }
 
-.article-content table { @apply my-8 w-full border-collapse overflow-hidden rounded-sm; }
-.article-content th, .article-content td { @apply px-4 py-3 text-left text-body-sm; }
+/* Tables in article bodies come from the rich-text editor (injected HTML), so we
+   can't wrap each one in a scroll container. Making the <table> itself a block
+   with overflow-x:auto turns it into its own horizontal scroller on small
+   screens — columns keep a readable min-width and you can swipe to the ones that
+   used to get clipped off-screen, instead of the old overflow-hidden cut-off. */
+.article-content table {
+  @apply my-8 w-full border-collapse rounded-sm;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.article-content th, .article-content td { @apply px-4 py-3 text-left text-body-sm min-w-[7rem]; }
 .article-content th { @apply bg-surface-container-low font-semibold text-on-surface; }
 .article-content td { @apply bg-surface-container-lowest; }
 
