@@ -90,6 +90,25 @@ export async function GET(
       reviewerName = reviewer?.name || null;
     }
 
+    // Resolve approver name. Prefer the dedicated approvedById; for articles
+    // approved before that field existed, fall back to reviewedBy when the
+    // article is already APPROVED/PUBLISHED (best-effort historical).
+    const approverId =
+      article.approvedById ||
+      (["APPROVED", "PUBLISHED"].includes(article.status) ? article.reviewedBy : null);
+    let approverName: string | null = null;
+    if (approverId) {
+      const approver =
+        approverId === article.reviewedBy
+          ? { name: reviewerName }
+          : await prisma.user.findUnique({
+              where: { id: approverId },
+              select: { name: true },
+            });
+      approverName = approver?.name || null;
+    }
+    const approvedAt = article.approvedAt || (approverId ? article.reviewedAt : null);
+
     // MED-DB2: fire-and-forget — don't block GET response on a write.
     // Non-critical counter; swallow errors silently.
     if (article.status === "PUBLISHED") {
@@ -99,7 +118,7 @@ export async function GET(
       }).catch(() => {/* non-critical */});
     }
 
-    return successResponse({ ...article, reviewerName });
+    return successResponse({ ...article, reviewerName, approverName, approvedAt });
   } catch (error) {
     return errorResponse(error);
   }
@@ -323,6 +342,9 @@ export async function PUT(
             verificationLabel: "UNVERIFIED",
             reviewNote: data.reviewNote || "Dikembalikan oleh admin untuk review ulang",
             reviewedAt: new Date(),
+            // No longer approved — clear the approver stamp.
+            approvedById: null,
+            approvedAt: null,
           },
           include: {
             author: { select: { id: true, name: true } },
@@ -360,6 +382,9 @@ export async function PUT(
             reviewNote: data.reviewNote || null,
             reviewedBy: session.user.id,
             reviewedAt: new Date(),
+            // Record the approver on approval; clear it on rejection.
+            approvedById: data.status === "APPROVED" ? session.user.id : null,
+            approvedAt: data.status === "APPROVED" ? new Date() : null,
           },
           include: {
             author: { select: { id: true, name: true } },
@@ -409,6 +434,19 @@ export async function PUT(
           },
         });
 
+        // Approver attribution: keep the original approver if the article was
+        // already approved (dedicated field, or historical reviewedBy); when
+        // publishing straight from DRAFT/REJECTED the publishing admin IS the
+        // approver.
+        const publishApprovedById =
+          article.approvedById ??
+          (article.status === "APPROVED" ? article.reviewedBy : null) ??
+          session.user.id;
+        const publishApprovedAt =
+          article.approvedAt ??
+          (article.status === "APPROVED" ? article.reviewedAt : null) ??
+          new Date();
+
         // If scheduledAt is provided, schedule instead of publishing immediately.
         // The article MUST be marked APPROVED here: the publish cron
         // (/api/cron/publish) only picks up { status: APPROVED, scheduledAt<=now },
@@ -430,6 +468,8 @@ export async function PUT(
                   ? "VERIFIED"
                   : (article.verificationLabel || "UNVERIFIED"),
               scheduledAt: new Date(data.scheduledAt),
+              approvedById: publishApprovedById,
+              approvedAt: publishApprovedAt,
             },
             include: {
               author: { select: { id: true, name: true } },
@@ -462,6 +502,8 @@ export async function PUT(
             verificationLabel: verificationLabelForPublish,
             publishedAt: new Date(),
             scheduledAt: null,
+            approvedById: publishApprovedById,
+            approvedAt: publishApprovedAt,
           },
           include: {
             author: { select: { id: true, name: true } },

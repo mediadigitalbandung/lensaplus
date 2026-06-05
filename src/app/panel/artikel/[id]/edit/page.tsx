@@ -127,6 +127,8 @@ export default function EditArticlePage() {
   const [existingReviewedBy, setExistingReviewedBy] = useState("");
   const [existingReviewerName, setExistingReviewerName] = useState("");
   const [existingReviewedAt, setExistingReviewedAt] = useState("");
+  const [existingApproverName, setExistingApproverName] = useState("");
+  const [existingApprovedAt, setExistingApprovedAt] = useState("");
   const [articleAuthorId, setArticleAuthorId] = useState("");
   const [articleAuthorName, setArticleAuthorName] = useState("");
   const [articleCreatedAt, setArticleCreatedAt] = useState("");
@@ -542,6 +544,8 @@ export default function EditArticlePage() {
       setExistingReviewedBy(article.reviewedBy || "");
       setExistingReviewerName(article.reviewerName || "");
       setExistingReviewedAt(article.reviewedAt || "");
+      setExistingApproverName(article.approverName || "");
+      setExistingApprovedAt(article.approvedAt || "");
       setArticleAuthorId(article.authorId || article.author?.id || "");
       setArticleAuthorName(article.author?.name || "");
       setArticleCreatedAt(article.createdAt || "");
@@ -1210,6 +1214,20 @@ export default function EditArticlePage() {
                 {existingReviewedAt ? new Date(existingReviewedAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
               </span>
             </div>
+            {["APPROVED", "PUBLISHED"].includes(currentStatus) && (
+              <>
+                <div>
+                  <span className="text-txt-muted">Disetujui oleh:</span>{" "}
+                  <span className="font-medium text-primary">{existingApproverName || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-txt-muted">Waktu disetujui:</span>{" "}
+                  <span className="text-txt-primary">
+                    {existingApprovedAt ? new Date(existingApprovedAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                  </span>
+                </div>
+              </>
+            )}
             {existingReviewNote && (
               <div className="sm:col-span-2">
                 <span className="text-txt-muted">Catatan review:</span>{" "}
@@ -1291,7 +1309,12 @@ export default function EditArticlePage() {
               Artikel Disetujui — Siap Dipublikasi
             </h3>
             <p className="mt-1 text-sm text-primary">
-              Artikel ini telah disetujui oleh editor. Anda dapat mempublikasi sekarang, menjadwalkan, atau mengembalikan ke editor.
+              Artikel ini telah disetujui
+              {existingApproverName ? ` oleh ${existingApproverName}` : " oleh editor"}
+              {existingApprovedAt
+                ? ` pada ${new Date(existingApprovedAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`
+                : ""}
+              . Anda dapat mempublikasi sekarang, menjadwalkan, atau mengembalikan ke editor.
             </p>
 
             <div className="mt-4 space-y-3">
@@ -1780,7 +1803,9 @@ export default function EditArticlePage() {
               Artikel Telah Disetujui — Siap Dipublikasi
             </h3>
             <p className="mt-1 text-sm text-primary">
-              Artikel siap dipublikasi. Anda dapat mempublikasi atau membatalkan persetujuan.
+              Artikel siap dipublikasi.
+              {existingApproverName ? ` Disetujui oleh ${existingApproverName}.` : ""} Anda dapat
+              mempublikasi atau membatalkan persetujuan.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <button
@@ -2255,7 +2280,11 @@ export default function EditArticlePage() {
             Artikel Telah Disetujui
           </h3>
           <p className="mt-1 text-sm text-blue-600">
-            Artikel telah disetujui oleh editor. Artikel siap dipublikasi.
+            Artikel telah disetujui{existingApproverName ? ` oleh ${existingApproverName}` : " oleh editor"}
+            {existingApprovedAt
+              ? ` pada ${new Date(existingApprovedAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`
+              : ""}
+            . Artikel siap dipublikasi.
           </p>
           {existingReviewNote && (
             <p className="mt-2 text-sm text-blue-500">Catatan editor: {existingReviewNote}</p>
