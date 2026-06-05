@@ -127,7 +127,7 @@ export default function AiUsageTab() {
             {!isAll && <Card icon={<Hash size={16} />} label="Total Token" value={num(stats.totals.totalTokens)} />}
             <Card icon={<Coins size={16} />} label="Total Biaya" value={rp(stats.totals.totalCostIdr)} accent />
             <Card icon={<TrendingUp size={16} />} label="Total Request" value={num(stats.totals.totalRequests)} />
-            <Card icon={<FileText size={16} />} label="Artikel Terlacak" value={num(stats.perArticle.count)} />
+            <Card icon={<FileText size={16} />} label="Artikel Berbiaya" value={num(stats.perArticle.count)} />
           </div>
 
           {/* Daily cost trend */}
@@ -182,7 +182,7 @@ export default function AiUsageTab() {
             <div className="mb-3 flex items-center gap-2">
               <FileText size={18} className="text-primary" />
               <h4 className="text-sm font-bold text-txt-primary">Analisis per Artikel</h4>
-              <span className="text-xs text-txt-muted">(gabungan semua panggilan AI per judul)</span>
+              <span className="text-xs text-txt-muted">(hanya artikel yang memakai token berbayar — Rp 0 diabaikan)</span>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <MinAvgMax title="Token per artikel" min={num(stats.perArticle.minTokens)} avg={num(stats.perArticle.avgTokens)} max={num(stats.perArticle.maxTokens)} />

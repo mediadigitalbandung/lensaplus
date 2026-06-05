@@ -58,13 +58,18 @@ export async function GET(req: NextRequest) {
       a.costIdr += rowIdr(l);
       if (l.provider) a.providers.add(l.provider);
     }
-    const articles = Array.from(artMap.values()).map((a) => ({
+    const articlesAll = Array.from(artMap.values()).map((a) => ({
       title: a.title,
       calls: a.calls,
       tokens: a.tokens,
       costIdr: a.costIdr,
       providers: Array.from(a.providers),
     }));
+
+    // Only articles that ACTUALLY cost money (Rp > 0) feed the per-article
+    // analysis & the "most expensive" list. Rp 0 articles = legacy/untracked
+    // rows with no recorded token cost — not meaningful here, so excluded.
+    const articles = articlesAll.filter((a) => a.costIdr > 0);
 
     // avg / min / max ACROSS per-article totals
     const n = articles.length;
