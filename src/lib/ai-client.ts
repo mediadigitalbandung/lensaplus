@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "./prisma";
 import { decryptSecret } from "./crypto-secrets";
-import { computeCostUsd } from "./ai-pricing";
+import { recordAiUsage } from "./ai-usage";
 
 /**
  * Shared AI client for Kartawarta.
@@ -251,30 +251,20 @@ async function callDeepSeek(
  */
 function logUsage(opts: CallAIOptions, result: CallAIResult): void {
   const model = result.provider === "anthropic" ? ANTHROPIC_MODEL : DEEPSEEK_MODEL;
-  const costUsd = computeCostUsd({
+  // Route through the shared chokepoint so these rows ALSO get a frozen costIdr +
+  // usdIdrRate (previously only Perplexity rows did), keeping the AI stats'
+  // historical Rupiah consistent across providers. Fire-and-forget inside.
+  recordAiUsage({
+    userId: opts.userId ?? "system",
+    userName: opts.userId ? "user" : "system",
+    feature: opts.feature,
     provider: result.provider,
     model,
     inputTokens: result.inputTokens,
     outputTokens: result.outputTokens,
+    totalTokens: result.totalTokens,
+    articleTitle: opts.articleTitle,
   });
-  void prisma.aIUsageLog
-    .create({
-      data: {
-        userId: opts.userId ?? "system",
-        userName: opts.userId ? "user" : "system",
-        feature: opts.feature,
-        inputTokens: result.inputTokens,
-        outputTokens: result.outputTokens,
-        totalTokens: result.totalTokens,
-        provider: result.provider,
-        model,
-        costUsd,
-        articleTitle: opts.articleTitle,
-      },
-    })
-    .catch(() => {
-      // swallow — never block caller on logging
-    });
 }
 
 /**

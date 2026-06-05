@@ -1328,7 +1328,7 @@ export default function PengaturanPage() {
           </Field>
           <Field
             label="Mode Kombinasi (riset bagus → tulis hemat)"
-            hint="Saat AKTIF: tahap-1 RISET pakai 'Model Riset' (sumber lebih berkualitas, output pendek = murah), tahap-2 MENULIS pakai model di atas yang hemat. Hasil: kualitas riset mendekati sonar-pro dengan biaya jauh di bawahnya — di antara sonar & sonar-pro. MATI = satu model saja (paling hemat)."
+            hint="Saat AKTIF: tahap-1 RISET pakai 'Model Riset' (sumber lebih berkualitas, output pendek = murah), tahap-2 MENULIS pakai model di atas yang hemat. Hasil: kualitas riset mendekati sonar-pro dengan biaya jauh di bawahnya — di antara sonar & sonar-pro. Hanya berlaku untuk PEMBUATAN ARTIKEL PENUH (Riset & Tulis mode draf + auto-artikel); tombol Generate AI kecil tetap 1 panggilan. MATI = satu model saja (paling hemat)."
           >
             <label className="flex items-center gap-2 text-sm text-txt-secondary">
               <input

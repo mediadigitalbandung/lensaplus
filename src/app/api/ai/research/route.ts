@@ -103,6 +103,8 @@ export async function POST(req: NextRequest) {
         contextSize: "high",
         maxTokens: mode === "draft" ? 5000 : 1400,
         includeImages,
+        // Combo only for the full-article DRAFT (not the short research briefing).
+        allowCombo: mode === "draft",
         // Centralised, per-stage cost telemetry (Combo mode logs 2 rows, each at
         // its own model). Replaces the manual recordAiUsage that mispriced combo.
         usageMeta: {

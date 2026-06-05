@@ -44,6 +44,12 @@ vi.mock("../prisma", () => ({
   },
 }));
 
+// callAI's logUsage routes through recordAiUsage (ai-usage), which reads the
+// USD→IDR rate from fx-rate. Mock it so the fire-and-forget telemetry never
+// makes a live FX `fetch` during tests (which would corrupt fetch-call counts).
+vi.mock("@/lib/fx-rate", () => ({ getUsdIdrRate: () => Promise.resolve(16500) }));
+vi.mock("../fx-rate", () => ({ getUsdIdrRate: () => Promise.resolve(16500) }));
+
 // Import AFTER mocks.
 import { callAI, isRetryable } from "../ai-client";
 

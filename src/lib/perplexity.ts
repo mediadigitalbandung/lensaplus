@@ -147,6 +147,10 @@ export interface PerplexityOptions {
   /** When set, callPerplexity records cost telemetry (one AIUsageLog row PER
    *  stage, each at its own model) so callers don't have to. */
   usageMeta?: { userId?: string; userName?: string; feature: string; articleTitle?: string };
+  /** Opt INTO Combo mode (2-stage research→write). Only FULL-DRAFT callers set
+   *  this; short field generations / research briefs stay single-call even when
+   *  the editor enabled Combo globally, so they don't pay for a 2nd API call. */
+  allowCombo?: boolean;
 }
 
 async function getApiKey(): Promise<string | null> {
@@ -345,8 +349,9 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
   // The editor's cost setting wins; else the caller value; else "high".
   const searchContext: "low" | "medium" | "high" = cfg.contextSize ?? opts.contextSize ?? "high";
 
-  // ── Single-model path (default, and when research==draft model) ──
-  if (!cfg.comboEnabled || cfg.researchModel === cfg.model) {
+  // ── Single-model path (default; also when the caller didn't opt into Combo,
+  // or research==draft model) ──
+  if (!cfg.comboEnabled || !opts.allowCombo || cfg.researchModel === cfg.model) {
     const r = await runPerplexity({
       key,
       model: cfg.model,
