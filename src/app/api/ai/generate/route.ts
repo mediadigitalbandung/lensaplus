@@ -3,7 +3,6 @@ import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from 
 import { aiRateLimit } from "@/lib/rate-limit";
 import { callAI, type AIFeature } from "@/lib/ai-client";
 import { callPerplexity, isPerplexityConfigured, getPerplexityInstructions } from "@/lib/perplexity";
-import { recordAiUsage } from "@/lib/ai-usage";
 import { cleanAIShortText } from "@/lib/sanitize";
 
 // System prompt for Perplexity when generating short article fields. Perplexity
@@ -97,22 +96,18 @@ export async function POST(req: NextRequest) {
           contextSize: isShort ? "low" : "medium",
           maxTokens: isShort ? 400 : 1600,
           temperature: 0.4,
+          // Cost telemetry recorded inside callPerplexity (per stage → Combo
+          // mode prices each model correctly instead of one fused row).
+          usageMeta: {
+            userId: session.user.id,
+            userName: session.user.name || "user",
+            feature: `perplexity_${aiFeature}`,
+            articleTitle: title,
+          },
         });
         resultText = stripCitations(r.text);
         provider = "perplexity";
         tokensUsed = r.usage.totalTokens;
-        recordAiUsage({
-          userId: session.user.id,
-          userName: session.user.name || "user",
-          feature: `perplexity_${aiFeature}`,
-          provider: "perplexity",
-          model: r.model,
-          inputTokens: r.usage.inputTokens,
-          outputTokens: r.usage.outputTokens,
-          totalTokens: r.usage.totalTokens,
-          searchContext: r.searchContext,
-          articleTitle: title,
-        });
       } catch (err) {
         console.error("Perplexity generate failed, falling back:", err);
       }

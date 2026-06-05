@@ -17,7 +17,6 @@ import { callPerplexity, getPerplexityInstructions } from "@/lib/perplexity";
 import { shouldOffloadSmallFields, deriveSmallFieldsViaDeepSeek } from "@/lib/ai-small-fields";
 import { getPersonaInstruction } from "@/lib/perplexity-personas";
 import { localizePerplexityImages } from "@/lib/perplexity-images";
-import { recordAiUsage } from "@/lib/ai-usage";
 
 // Indonesian outlets to bias sourcing toward (allowlist, not exclusive — Perplexity
 // still ranks within these first). Kept broad so niche topics aren't starved.
@@ -104,6 +103,14 @@ export async function POST(req: NextRequest) {
         contextSize: "high",
         maxTokens: mode === "draft" ? 5000 : 1400,
         includeImages,
+        // Centralised, per-stage cost telemetry (Combo mode logs 2 rows, each at
+        // its own model). Replaces the manual recordAiUsage that mispriced combo.
+        usageMeta: {
+          userId: session.user.id,
+          userName: session.user.name || "user",
+          feature: mode === "draft" ? "perplexity_draft" : "perplexity_research",
+          articleTitle: topic,
+        },
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Perplexity error";
@@ -128,20 +135,8 @@ export async function POST(req: NextRequest) {
     // article doesn't hotlink external CDNs (licensing/expiry). `url` is local.
     const images = includeImages ? await localizePerplexityImages(result.images, 3) : [];
 
-    // Cost telemetry: record Perplexity token usage + computed cost, attributed
-    // to this topic/title so the AI stats tab can total tokens & Rupiah per article.
-    recordAiUsage({
-      userId: session.user.id,
-      userName: session.user.name || "user",
-      feature: mode === "draft" ? "perplexity_draft" : "perplexity_research",
-      provider: "perplexity",
-      model: result.model,
-      inputTokens: result.usage.inputTokens,
-      outputTokens: result.usage.outputTokens,
-      totalTokens: result.usage.totalTokens,
-      searchContext: result.searchContext,
-      articleTitle: topic,
-    });
+    // Cost telemetry is now recorded inside callPerplexity (per stage, via
+    // usageMeta) so Combo mode prices each model correctly — see callPerplexity.
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
     await logAudit(

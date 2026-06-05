@@ -11,6 +11,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
+import { recordAiUsage } from "@/lib/ai-usage";
 
 const ENDPOINT = "https://api.perplexity.ai/chat/completions";
 // Economical by default: `sonar` output tokens are ~15× cheaper than sonar-pro
@@ -107,6 +108,16 @@ export interface PerplexityImage {
   height: number | null;
 }
 
+/** One Perplexity API call's usage — Combo mode produces TWO of these so each
+ *  is priced at ITS OWN model (a summed "sonar-pro+sonar" row would misprice). */
+export interface PerplexityStage {
+  model: string;
+  searchContext: "low" | "medium" | "high";
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
 export interface PerplexityResult {
   text: string;
   sources: PerplexitySource[];
@@ -116,6 +127,8 @@ export interface PerplexityResult {
   usage: { inputTokens: number; outputTokens: number; totalTokens: number };
   model: string;
   searchContext: "low" | "medium" | "high";
+  /** Per-API-call breakdown (1 normally, 2 in Combo mode) for accurate pricing. */
+  stages: PerplexityStage[];
 }
 
 export interface PerplexityOptions {
@@ -131,6 +144,9 @@ export interface PerplexityOptions {
   contextSize?: "low" | "medium" | "high";
   /** When true, ask Perplexity to also return related images from the web. */
   includeImages?: boolean;
+  /** When set, callPerplexity records cost telemetry (one AIUsageLog row PER
+   *  stage, each at its own model) so callers don't have to. */
+  usageMeta?: { userId?: string; userName?: string; feature: string; articleTitle?: string };
 }
 
 async function getApiKey(): Promise<string | null> {
@@ -189,7 +205,7 @@ async function runPerplexity(p: {
   recency?: "hour" | "day" | "week" | "month" | "year";
   domains?: string[];
   includeImages?: boolean;
-}): Promise<PerplexityResult> {
+}): Promise<Omit<PerplexityResult, "stages">> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -285,6 +301,37 @@ async function runPerplexity(p: {
  * then the long write on the cheap draft model (low extra search). Transparent to
  * every caller; the returned `model` is "research+draft" and `usage` is summed.
  */
+function stageOf(r: Omit<PerplexityResult, "stages">): PerplexityStage {
+  return {
+    model: r.model,
+    searchContext: r.searchContext,
+    inputTokens: r.usage.inputTokens,
+    outputTokens: r.usage.outputTokens,
+    totalTokens: r.usage.totalTokens,
+  };
+}
+
+// Record one AIUsageLog row PER stage (each at its OWN model + search depth) so
+// Combo cost is accurate, instead of being squashed into one mispriced
+// "sonar-pro+sonar" row. Fire-and-forget inside recordAiUsage.
+function recordStages(stages: PerplexityStage[], meta?: PerplexityOptions["usageMeta"]): void {
+  if (!meta) return;
+  for (const s of stages) {
+    recordAiUsage({
+      provider: "perplexity",
+      model: s.model,
+      inputTokens: s.inputTokens,
+      outputTokens: s.outputTokens,
+      totalTokens: s.totalTokens,
+      searchContext: s.searchContext,
+      feature: meta.feature,
+      userId: meta.userId ?? "system",
+      userName: meta.userName ?? "system",
+      articleTitle: meta.articleTitle,
+    });
+  }
+}
+
 export async function callPerplexity(opts: PerplexityOptions): Promise<PerplexityResult> {
   const key = await getApiKey();
   if (!key) {
@@ -300,7 +347,7 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
 
   // ── Single-model path (default, and when research==draft model) ──
   if (!cfg.comboEnabled || cfg.researchModel === cfg.model) {
-    return runPerplexity({
+    const r = await runPerplexity({
       key,
       model: cfg.model,
       systemPrompt: opts.systemPrompt,
@@ -312,6 +359,9 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
       domains: opts.domains,
       includeImages: opts.includeImages,
     });
+    const stages = [stageOf(r)];
+    recordStages(stages, opts.usageMeta);
+    return { ...r, stages };
   }
 
   // ── Combo: stronger model researches (short → cheap), cheap model writes ──
@@ -350,6 +400,9 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
     }
   }
 
+  const stages = [stageOf(research), stageOf(draft)];
+  recordStages(stages, opts.usageMeta);
+
   return {
     text: draft.text,
     sources: mergedSources,
@@ -362,5 +415,6 @@ export async function callPerplexity(opts: PerplexityOptions): Promise<Perplexit
     },
     model: `${cfg.researchModel}+${cfg.model}`,
     searchContext: draft.searchContext,
+    stages,
   };
 }

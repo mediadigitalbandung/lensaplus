@@ -63,6 +63,7 @@ export async function deriveSmallFieldsViaDeepSeek(
   title: string,
   contentHtml: string,
   userId?: string,
+  articleTitle?: string,
 ): Promise<SmallFields | null> {
   const plain = contentHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 4000);
   if (plain.length < 50) return null;
@@ -75,6 +76,8 @@ export async function deriveSmallFieldsViaDeepSeek(
       systemPrompt: SYSTEM,
       userPrompt: `JUDUL: ${title}\n\nISI ARTIKEL:\n${plain}`,
       userId,
+      // Attribute the DeepSeek cost to the article so per-article stats include it.
+      articleTitle: articleTitle ?? title,
     });
     const out = res.text
       .replace(/^```(?:json|html)?\s*/i, "")

@@ -78,6 +78,9 @@ export async function generateArticleViaPerplexity(keyword: string): Promise<Per
     maxTokens: 5000,
     temperature: 0.3,
     includeImages: true,
+    // Auto-article cron previously logged NO Perplexity cost — record it now
+    // (per stage, so Combo prices correctly). Attributed to the source keyword.
+    usageMeta: { userId: "system", userName: "system", feature: "perplexity_draft", articleTitle: keyword },
   });
 
   // Parse the delimiter blocks (robust against the long HTML body — no JSON
