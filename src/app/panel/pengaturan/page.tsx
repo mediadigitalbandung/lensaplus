@@ -34,7 +34,6 @@ import {
   Share2,
   Cloud,
   Mail,
-  Bot,
   ToggleRight,
   CreditCard,
   Loader2,
@@ -435,10 +434,7 @@ const SETTINGS_TABS: {
   {
     key: "ai",
     label: "AI & Otomasi",
-    subs: [
-      { id: "ai", label: "Penyedia AI" },
-      { id: "auto", label: "Auto-Artikel" },
-    ],
+    subs: [{ id: "ai", label: "Penyedia AI" }],
   },
   {
     key: "google",
@@ -574,11 +570,6 @@ export default function PengaturanPage() {
   const [resendKey, setResendKey] = useState("");
   const [emailFrom, setEmailFrom] = useState("");
 
-  // Auto-Artikel
-  const [autoEnabled, setAutoEnabled] = useState(false);
-  const [autoCount, setAutoCount] = useState<number>(1);
-  const [autoInterval, setAutoInterval] = useState<number>(60);
-
   // Toggle Global
   const [enableComments, setEnableComments] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -647,10 +638,6 @@ export default function PengaturanPage() {
 
         setResendKey(map.resend_api_key || "");
         setEmailFrom(map.notification_email_from || "");
-
-        setAutoEnabled(map.auto_article_enabled === "true");
-        setAutoCount(parseInt(map.auto_article_batch_size || "1") || 1);
-        setAutoInterval(parseInt(map.auto_article_interval_minutes || "60") || 60);
 
         setEnableComments(map.enable_comments !== "false");
         setMaintenanceMode(map.maintenance_mode === "true");
@@ -2221,78 +2208,6 @@ export default function PengaturanPage() {
                 Kirim Email Tes
               </button>
             }
-          />
-        </Section>
-
-        {/* ============== 8. Auto-Artikel ============== */}
-        <Section
-          icon={<Bot size={18} />}
-          title="8. Auto-Artikel"
-          description="Pembuat draf otomatis via cron + AI"
-          active={activeSub === "auto"}
-        >
-          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-txt-primary">
-                Aktifkan Auto-Artikel
-              </p>
-              <p className="text-xs text-txt-muted">
-                Cron <code className="font-mono">/api/cron/auto-article</code>{" "}
-                akan jalan kalau toggle ini aktif.
-              </p>
-            </div>
-            <ToggleSwitch
-              checked={autoEnabled}
-              onChange={(v) => {
-                setAutoEnabled(v);
-                markDirty("auto");
-              }}
-            />
-          </div>
-          <Field
-            label="Jumlah Artikel per Eksekusi"
-            hint="Berapa draf yang dibuat tiap kali cron dipanggil. Disarankan 1-3."
-          >
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={autoCount}
-              onChange={(e) => {
-                const n = parseInt(e.target.value);
-                setAutoCount(Number.isFinite(n) && n > 0 ? n : 1);
-                markDirty("auto");
-              }}
-              className="input w-32"
-            />
-          </Field>
-          <Field
-            label="Interval (menit)"
-            hint="Sekedar info — interval real diatur di crontab VPS, bukan di sini."
-          >
-            <input
-              type="number"
-              min={5}
-              max={1440}
-              value={autoInterval}
-              onChange={(e) => {
-                const n = parseInt(e.target.value);
-                setAutoInterval(Number.isFinite(n) && n > 0 ? n : 60);
-                markDirty("auto");
-              }}
-              className="input w-32"
-            />
-          </Field>
-          <SaveBar
-            onSave={() =>
-              saveSection("auto", [
-                ["auto_article_enabled", autoEnabled ? "true" : "false"],
-                ["auto_article_batch_size", String(autoCount)],
-                ["auto_article_interval_minutes", String(autoInterval)],
-              ])
-            }
-            saving={!!saving.auto}
-            dirty={!!dirty.auto}
           />
         </Section>
 
