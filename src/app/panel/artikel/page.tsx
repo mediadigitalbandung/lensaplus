@@ -28,6 +28,7 @@ import {
   Share2,
   Instagram,
   Facebook,
+  Copy,
 } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-utils";
 
@@ -617,6 +618,16 @@ export default function ArtikelPage() {
             <Download size={14} />
             Export CSV
           </button>
+          {(userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR") && (
+            <Link
+              href="/panel/artikel/duplikat"
+              className="btn-secondary flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold whitespace-nowrap"
+              title="Temukan & hapus artikel berjudul sama (duplikat)"
+            >
+              <Copy size={14} />
+              Cek Duplikat
+            </Link>
+          )}
         </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
