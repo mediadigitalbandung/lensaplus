@@ -68,6 +68,12 @@ export async function generateMetadata({ params: paramsPromise }: {
   return {
     title,
     description,
+    // AdSense compliance: Sorotan pages are AI re-framings of an existing
+    // article ("scaled content"). Keep them crawlable (follow) but OUT of the
+    // index so they don't count as thin/duplicate content. noindex is the
+    // correct de-indexing signal — do NOT also robots.txt-disallow /sorotan,
+    // or Google can't crawl the page to see this tag.
+    robots: { index: false, follow: true, googleBot: { index: false } },
     openGraph: {
       title,
       description,

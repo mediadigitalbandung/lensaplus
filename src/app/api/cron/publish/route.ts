@@ -4,6 +4,7 @@ import { notifyArticleStatusChange } from "@/lib/notifications";
 import { sendArticlePublishedEmail } from "@/lib/email";
 import { successResponse, errorResponse, verifyCronSecret, logAudit } from "@/lib/api-utils";
 import { onArticlePublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
+import { checkArticleQuality } from "@/lib/article-quality";
 import { recordCronRun } from "@/lib/cron-tracker";
 import * as Sentry from "@sentry/nextjs";
 
@@ -30,7 +31,7 @@ async function handler(request: NextRequest) {
     verifyCronSecret(request);
 
     const now = new Date();
-    const articles = await prisma.article.findMany({
+    const candidates = await prisma.article.findMany({
       where: {
         status: "APPROVED",
         scheduledAt: { lte: now },
@@ -43,9 +44,23 @@ async function handler(request: NextRequest) {
         scheduledAt: true,
         excerpt: true,
         content: true,
+        featuredImage: true,
         seoTitle: true,
         seoDescription: true,
       },
+    });
+
+    // AdSense thin-content gate: never auto-publish a low-substance article.
+    // Failing ones stay APPROVED (not lost) and are reported as `skipped` so an
+    // editor can beef them up; they simply won't go live automatically.
+    const skipped: string[] = [];
+    const articles = candidates.filter((a) => {
+      const q = checkArticleQuality(a.content, a.featuredImage);
+      if (!q.ok) {
+        skipped.push(`${a.title} (±${q.words} kata)`);
+        return false;
+      }
+      return true;
     });
 
     if (articles.length === 0) {
@@ -54,6 +69,7 @@ async function handler(request: NextRequest) {
         processed: 0,
         published: 0,
         titles: [],
+        skipped,
         errors: [],
         durationMs: Date.now() - started,
       });
@@ -177,9 +193,10 @@ async function handler(request: NextRequest) {
       error: errors.length > 0 ? errors.slice(0, 3).join(" | ") : undefined,
     });
     return successResponse({
-      processed: articles.length,
+      processed: candidates.length,
       published: published.length,
       titles: published,
+      skipped,
       errors,
       durationMs: Date.now() - started,
     });

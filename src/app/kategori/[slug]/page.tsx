@@ -83,9 +83,19 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
   const title = `${category.name} - Berita Terkini`;
   const description = `Kumpulan berita ${category.name.toLowerCase()} terbaru dari Kartawarta — portal berita digital Bandung & Jawa Barat. Menyajikan liputan terpercaya dan terverifikasi Dewan Pers.`;
 
+  // AdSense thin-content: an empty category page (no published articles) has
+  // no value — noindex it. Non-empty categories stay indexable.
+  const publishedCount = await prisma.article.count({
+    where: { status: "PUBLISHED", categoryId: category.id },
+  });
+  const indexable = publishedCount > 0;
+
   return {
     title,
     description,
+    robots: indexable
+      ? undefined
+      : { index: false, follow: true, googleBot: { index: false } },
     openGraph: {
       title: `${title} | Kartawarta`,
       description,

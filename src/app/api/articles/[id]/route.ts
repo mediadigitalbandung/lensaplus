@@ -21,6 +21,7 @@ import {
 } from "@/lib/email";
 import { onArticlePublished, onArticleUnpublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
 import { extractFirstImageUrl } from "@/lib/image-extract";
+import { checkArticleQuality } from "@/lib/article-quality";
 import { revalidatePath } from "next/cache";
 import { invalidateCachePrefix } from "@/lib/cache";
 import { purgeCache } from "@/lib/cloudflare/purge";
@@ -372,6 +373,16 @@ export async function PUT(
           throw new ApiError("Alasan penolakan wajib diisi", 400);
         }
 
+        // AdSense thin-content gate: an approval queues the article for the
+        // publish cron, so enforce substance here too (not just at publish).
+        if (data.status === "APPROVED") {
+          const q = checkArticleQuality(
+            data.content ?? article.content,
+            data.featuredImage ?? article.featuredImage,
+          );
+          if (!q.ok) throw new ApiError(q.reason!, 400);
+        }
+
         const verificationLabel = data.status === "APPROVED" ? "VERIFIED" : "UNVERIFIED";
 
         const updated = await prisma.article.update({
@@ -424,6 +435,15 @@ export async function PUT(
         data.status === "PUBLISHED" &&
         ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED"].includes(article.status)
       ) {
+        // AdSense thin-content gate: block publishing low-substance pages.
+        // Applies to every publish entry point incl. one-click DRAFT→PUBLISH
+        // used by the auto-artikel panel, so thin AI/scrape drafts can't go live.
+        const q = checkArticleQuality(
+          data.content ?? article.content,
+          data.featuredImage ?? article.featuredImage,
+        );
+        if (!q.ok) throw new ApiError(q.reason!, 400);
+
         // Save revision before publish
         await prisma.revision.create({
           data: {

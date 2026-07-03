@@ -34,6 +34,12 @@ export async function generateMetadata({
     title: `Semua Berita${titleSuffix}`,
     description:
       "Daftar berita terbaru dari Kartawarta — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal di Bandung, Jawa Barat & Indonesia.",
+    // AdSense thin-content: index only page 1 of the archive. Paginated views
+    // (page > 1) are noindexed but crawlable so article links stay reachable.
+    robots:
+      page > 1
+        ? { index: false, follow: true, googleBot: { index: false } }
+        : undefined,
     openGraph: {
       title: `Semua Berita${titleSuffix} | Kartawarta`,
       description:

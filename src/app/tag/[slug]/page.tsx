@@ -40,12 +40,21 @@ export async function generateMetadata({ params: paramsPromise, searchParams: se
   const description =
     override?.description ||
     `${articleCount} artikel terbaru tentang ${tag.name} dari Kartawarta — liputan, analisis, dan perkembangan terkini.`;
-  // Pagination self-canonical so Google indexes page 2..N articles instead of
-  // collapsing every paginated view onto page 1.
-  const canonical = page > 1 ? `/tag/${params.slug}?page=${page}` : `/tag/${params.slug}`;
+  // AdSense thin-content: index a tag hub ONLY when it is substantial
+  // (>= MIN_INDEXABLE_TAG_ARTICLES on page 1). Sparse/empty tags and every
+  // paginated view (page > 1) are noindexed but still crawlable (follow) so
+  // article links keep flowing. Hand-tuned override hubs stay indexable.
+  const MIN_INDEXABLE_TAG_ARTICLES = 5;
+  const indexable = !!override || (page === 1 && articleCount >= MIN_INDEXABLE_TAG_ARTICLES);
+  // Paginated views collapse onto the base tag canonical (no per-page canonical)
+  // since they are no longer independently indexed.
+  const canonical = `/tag/${params.slug}`;
   return {
     title,
     description,
+    robots: indexable
+      ? undefined
+      : { index: false, follow: true, googleBot: { index: false } },
     openGraph: { title: `${title} — Kartawarta`, description, type: "website" },
     alternates: { canonical },
   };
@@ -144,8 +153,9 @@ export default async function TagPage({ params: paramsPromise, searchParams: sea
           </p>
         </div>
 
-        {/* Ad slot above articles */}
-        <BannerAd size="slim" />
+        {/* Ad slot above articles — suppressed on empty tag pages (no ads on
+            content-less pages, per AdSense policy) */}
+        {articles.length > 0 && <BannerAd size="slim" />}
 
         {/* Article grid */}
         {articles.length > 0 ? (
@@ -164,8 +174,8 @@ export default async function TagPage({ params: paramsPromise, searchParams: sea
           </div>
         )}
 
-        {/* Ad slot below articles */}
-        <BannerAd size="slim" />
+        {/* Ad slot below articles — suppressed on empty tag pages */}
+        {articles.length > 0 && <BannerAd size="slim" />}
 
         {/* Pagination */}
         {totalPages > 1 && (

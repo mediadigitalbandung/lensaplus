@@ -87,15 +87,21 @@ export async function GET() {
     url(`${SITE_URL}/berita/${a.slug}`, a.updatedAt, "weekly", 0.6),
   );
 
-  // Tag pages
-  const tags = await prisma.tag.findMany({ select: { slug: true } });
+  // Tag pages — only tags that actually have published articles. Empty/sparse
+  // tags are thin content (AdSense) and are noindexed at the page level, so we
+  // must not advertise them in the sitemap either.
+  const tags = await prisma.tag.findMany({
+    where: { articles: { some: { status: "PUBLISHED" } } },
+    select: { slug: true },
+  });
   const tagUrls = tags.map((t) =>
     url(`${SITE_URL}/tag/${t.slug}`, now, "daily", 0.5),
   );
 
-  // Author pages
+  // Author pages — only real bylines (>= 1 published article). Excludes
+  // system/auto-content accounts with empty profiles (thin content).
   const authors = await prisma.user.findMany({
-    where: { isActive: true },
+    where: { isActive: true, articles: { some: { status: "PUBLISHED" } } },
     select: { name: true },
   });
   const authorUrls = authors.map((u) =>

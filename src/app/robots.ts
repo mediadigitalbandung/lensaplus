@@ -56,7 +56,8 @@ export default function robots(): MetadataRoute.Robots {
       `${siteUrl}/sitemap.xml`,
       `${siteUrl}/sitemap-news.xml`,
       `${siteUrl}/sitemap-glossary.xml`,
-      `${siteUrl}/sitemap-sorotan.xml`,
+      // sitemap-sorotan.xml intentionally removed — Sorotan pages are
+      // noindexed (AI re-framings), so we no longer advertise them to Google.
       `${siteUrl}/sitemap-lokasi.xml`,
     ],
   };

@@ -29,9 +29,20 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
   const author = await getAuthorBySlug(params.slug);
   if (!author) return { title: "Penulis Tidak Ditemukan" };
 
+  // AdSense thin-content: a profile with zero published articles (e.g. a
+  // system/auto-content account) is a thin page — noindex it. Real bylines
+  // with published work stay indexable (E-E-A-T signal).
+  const publishedCount = await prisma.article.count({
+    where: { status: "PUBLISHED", authorId: author.id },
+  });
+  const indexable = publishedCount > 0;
+
   return {
     title: `${author.name} - Penulis`,
     description: author.bio || `Profil penulis ${author.name} di Kartawarta.`,
+    robots: indexable
+      ? undefined
+      : { index: false, follow: true, googleBot: { index: false } },
     alternates: {
       canonical: `/penulis/${params.slug}`,
     },
