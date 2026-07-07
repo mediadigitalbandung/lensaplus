@@ -28,6 +28,13 @@ const ALLOWED_KEYS = [
   // AI providers
   "deepseek_api_key",
   "anthropic_api_key",
+  // Local / self-hosted AI (OpenAI-compatible, e.g. Ollama/LM Studio on a Mac
+  // mini over Tailscale) — extra drafting engine alongside Perplexity.
+  "localai_enabled",
+  "localai_base_url",
+  "localai_model",
+  "localai_api_key",
+  "localai_prefer",
   // Perplexity (Sonar) — web-grounded research + sourced article drafting
   "perplexity_api_key",
   "perplexity_instructions",

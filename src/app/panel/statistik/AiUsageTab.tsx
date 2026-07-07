@@ -49,11 +49,12 @@ const PROVIDER_LABEL: Record<string, string> = {
   perplexity: "Perplexity",
   anthropic: "Claude (Anthropic)",
   deepseek: "DeepSeek",
+  local: "Local AI (self-hosted)",
   unknown: "Legacy (sebelum pelacakan)",
 };
 const providerLabel = (k: string) => PROVIDER_LABEL[k] || k;
 
-type Scope = "all" | "perplexity" | "anthropic" | "deepseek";
+type Scope = "all" | "perplexity" | "local" | "anthropic" | "deepseek";
 
 export default function AiUsageTab() {
   const [scope, setScope] = useState<Scope>("all");
@@ -80,6 +81,7 @@ export default function AiUsageTab() {
   const SCOPES: { key: Scope; label: string }[] = [
     { key: "all", label: "Ringkasan" },
     { key: "perplexity", label: "Perplexity" },
+    { key: "local", label: "Local AI" },
     { key: "anthropic", label: "Claude" },
     { key: "deepseek", label: "DeepSeek" },
   ];

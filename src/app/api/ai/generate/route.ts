@@ -3,6 +3,7 @@ import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from 
 import { aiRateLimit } from "@/lib/rate-limit";
 import { callAI, type AIFeature } from "@/lib/ai-client";
 import { callPerplexity, isPerplexityConfigured, getPerplexityInstructions } from "@/lib/perplexity";
+import { callLocalAI, getLocalAiConfig, isLocalAiReady } from "@/lib/local-ai";
 import { cleanAIShortText } from "@/lib/sanitize";
 
 // System prompt for Perplexity when generating short article fields. Perplexity
@@ -12,6 +13,12 @@ const PPLX_SYSTEM =
   "Kamu editor SEO Kartawarta — media berita digital Bandung. Manfaatkan pencarian web untuk hasil " +
   "yang kompetitif di Google & Discover. Jawab LANGSUNG dengan nilai yang diminta saja — tanpa basa-basi, " +
   "tanpa penanda sitasi [1][2], tanpa markdown/code fence, tanpa daftar sumber. Bahasa Indonesia.";
+
+// System prompt for the local/self-hosted model (no web access — pure writing).
+const LOCAL_SYSTEM =
+  "Kamu editor Kartawarta — media berita digital Bandung. Tulis dalam Bahasa Indonesia yang faktual, " +
+  "jelas, dan SEO-friendly. Jawab LANGSUNG dengan nilai yang diminta saja — tanpa basa-basi, tanpa " +
+  "penanda sitasi, tanpa markdown/code fence.";
 
 /** Remove Perplexity citation markers like [1], [2][3] from generated text. */
 function stripCitations(s: string): string {
@@ -82,9 +89,39 @@ export async function POST(req: NextRequest) {
     let provider = "";
     let tokensUsed = 0;
 
-    // Prefer Perplexity (web-grounded → checks competitors/SEO in real time) when
-    // configured; fall back to Claude/DeepSeek so nothing breaks if it's unset/fails.
-    const usePerplexity = await isPerplexityConfigured();
+    // Local / self-hosted AI (OpenAI-compatible) as an EXTRA drafting engine.
+    const localai = await getLocalAiConfig();
+    async function tryLocalAI(): Promise<void> {
+      if (resultText || !isLocalAiReady(localai)) return;
+      try {
+        const persona = await getPerplexityInstructions(); // shared editor persona
+        const sys = persona ? `${LOCAL_SYSTEM}\n\nARAHAN PENULIS: ${persona}` : LOCAL_SYSTEM;
+        const r = await callLocalAI({
+          systemPrompt: sys,
+          userPrompt: prompt,
+          maxTokens: isShort ? 400 : 1600,
+          temperature: 0.4,
+          usageMeta: {
+            userId: session.user.id,
+            userName: session.user.name || "user",
+            feature: `local_${aiFeature}`,
+            articleTitle: title,
+          },
+        });
+        resultText = stripCitations(r.text);
+        provider = "local";
+        tokensUsed = r.usage.totalTokens;
+      } catch (err) {
+        console.error("Local AI generate failed:", err);
+      }
+    }
+
+    // If preferred, Local AI goes first (before Perplexity).
+    if (localai.prefer) await tryLocalAI();
+
+    // Perplexity (web-grounded) when configured; fall back to Local AI, then
+    // Claude/DeepSeek so nothing breaks if an engine is unset/fails.
+    const usePerplexity = !resultText && (await isPerplexityConfigured());
     if (usePerplexity) {
       try {
         const persona = await getPerplexityInstructions();
@@ -112,6 +149,9 @@ export async function POST(req: NextRequest) {
         console.error("Perplexity generate failed, falling back:", err);
       }
     }
+
+    // Local AI as fallback (enabled but not preferred) before Claude/DeepSeek.
+    if (!localai.prefer) await tryLocalAI();
 
     if (!resultText) {
       try {

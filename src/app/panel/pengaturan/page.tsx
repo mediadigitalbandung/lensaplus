@@ -513,6 +513,12 @@ export default function PengaturanPage() {
   const [perplexityComboEnabled, setPerplexityComboEnabled] = useState(false);
   const [perplexityResearchModel, setPerplexityResearchModel] = useState("");
   const [perplexitySmallFieldsDeepseek, setPerplexitySmallFieldsDeepseek] = useState(false);
+  // Local / self-hosted AI (OpenAI-compatible, e.g. Ollama/LM Studio via Tailscale)
+  const [localaiEnabled, setLocalaiEnabled] = useState(false);
+  const [localaiBaseUrl, setLocalaiBaseUrl] = useState("");
+  const [localaiModel, setLocalaiModel] = useState("");
+  const [localaiKey, setLocalaiKey] = useState("");
+  const [localaiPrefer, setLocalaiPrefer] = useState(false);
   const [elevenlabsKey, setElevenlabsKey] = useState("");
   const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState("");
   const [ttsProvider, setTtsProvider] = useState("auto");
@@ -608,6 +614,11 @@ export default function PengaturanPage() {
         setPerplexityComboEnabled(map.perplexity_combo_enabled === "true");
         setPerplexityResearchModel(map.perplexity_research_model || "");
         setPerplexitySmallFieldsDeepseek(map.perplexity_small_fields_deepseek === "true");
+        setLocalaiEnabled(map.localai_enabled === "true");
+        setLocalaiBaseUrl(map.localai_base_url || "");
+        setLocalaiModel(map.localai_model || "");
+        setLocalaiKey(map.localai_api_key || "");
+        setLocalaiPrefer(map.localai_prefer === "true");
         setElevenlabsKey(map.elevenlabs_api_key || "");
         setElevenlabsVoiceId(map.elevenlabs_voice_id || "");
         setTtsProvider(map.tts_provider || "auto");
@@ -841,6 +852,26 @@ export default function PengaturanPage() {
       });
     } catch (err) {
       setTest("perplexity", {
+        loading: false,
+        success: false,
+        message: err instanceof Error ? err.message : "Network error",
+      });
+    }
+  }
+
+  async function handleTestLocalAI() {
+    setTest("localai", { loading: true });
+    try {
+      const res = await fetch("/api/ai/test-localai", { method: "POST" });
+      const json = await res.json();
+      const d = json.data;
+      setTest("localai", {
+        loading: false,
+        success: !!(json.success && d?.success),
+        message: d?.message || json.error || "Test gagal",
+      });
+    } catch (err) {
+      setTest("localai", {
         loading: false,
         success: false,
         message: err instanceof Error ? err.message : "Network error",
@@ -1469,6 +1500,82 @@ export default function PengaturanPage() {
               <option value="off">Nonaktif (tanpa suara)</option>
             </select>
           </Field>
+          {/* Local / self-hosted AI (OpenAI-compatible) — extra drafting engine */}
+          <div className="space-y-3 rounded-lg border border-border bg-surface-secondary p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-txt-primary">Local AI (self-hosted / Tailscale)</p>
+                <p className="text-xs text-txt-muted">
+                  Server AI pribadi (Ollama / LM Studio / vLLM) sebagai opsi tulis artikel selain Perplexity —
+                  gratis (self-hosted), tapi tanpa akses web (riset bersumber tetap Perplexity).
+                </p>
+              </div>
+              <ToggleSwitch
+                checked={localaiEnabled}
+                onChange={(v) => { setLocalaiEnabled(v); markDirty("ai"); }}
+              />
+            </div>
+
+            {localaiEnabled && (
+              <div className="space-y-3">
+                <Field
+                  label="Base URL"
+                  hint="URL server OpenAI-compatible. Pakai IP Tailscale Mac mini — mis. http://100.81.47.91:11434 (Ollama) atau :1234 (LM Studio). PENTING: VPS produksi harus berada di tailnet yang sama agar bisa menjangkaunya."
+                >
+                  <input
+                    className="input"
+                    value={localaiBaseUrl}
+                    onChange={(e) => { setLocalaiBaseUrl(e.target.value); markDirty("ai"); }}
+                    placeholder="http://100.81.47.91:11434"
+                  />
+                </Field>
+                <Field label="Model" hint="Nama model di server tersebut, mis. hermes3, llama3.1:8b, qwen2.5.">
+                  <input
+                    className="input"
+                    value={localaiModel}
+                    onChange={(e) => { setLocalaiModel(e.target.value); markDirty("ai"); }}
+                    placeholder="hermes3"
+                  />
+                </Field>
+                <Field label="API Key (opsional)" hint="Kosongkan bila server tak butuh auth (Ollama default). Isi bila server Anda memakai token bearer.">
+                  <SecretInput
+                    value={localaiKey}
+                    onChange={(v) => { setLocalaiKey(v); markDirty("ai"); }}
+                    placeholder="(opsional)"
+                  />
+                </Field>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-txt-primary">Utamakan Local AI</p>
+                    <p className="text-xs text-txt-muted">Pakai Local AI lebih dulu daripada Perplexity saat menulis field artikel.</p>
+                  </div>
+                  <ToggleSwitch
+                    checked={localaiPrefer}
+                    onChange={(v) => { setLocalaiPrefer(v); markDirty("ai"); }}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleTestLocalAI}
+                    disabled={testResults.localai?.loading}
+                    className="btn-secondary flex items-center gap-2 text-xs"
+                  >
+                    {testResults.localai?.loading ? <Loader2 size={14} className="animate-spin" /> : <PlugZap size={14} />}
+                    Tes Koneksi Local AI
+                  </button>
+                  {testResults.localai && !testResults.localai.loading && (
+                    <span className={`inline-flex items-center gap-1 text-xs ${testResults.localai.success ? "text-green-600" : "text-red-600"}`}>
+                      {testResults.localai.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                      {testResults.localai.message}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-txt-muted">Simpan dulu sebelum tes (tes memakai konfigurasi tersimpan).</p>
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary px-4 py-3">
             <div>
               <p className="text-sm font-medium text-txt-primary">
@@ -1500,6 +1607,11 @@ export default function PengaturanPage() {
                 ["perplexity_combo_enabled", perplexityComboEnabled ? "true" : "false"],
                 ["perplexity_research_model", perplexityResearchModel],
                 ["perplexity_small_fields_deepseek", perplexitySmallFieldsDeepseek ? "true" : "false"],
+                ["localai_enabled", localaiEnabled ? "true" : "false"],
+                ["localai_base_url", localaiBaseUrl],
+                ["localai_model", localaiModel],
+                ["localai_api_key", localaiKey],
+                ["localai_prefer", localaiPrefer ? "true" : "false"],
                 ["elevenlabs_api_key", elevenlabsKey],
                 ["elevenlabs_voice_id", elevenlabsVoiceId],
                 ["tts_provider", ttsProvider],
