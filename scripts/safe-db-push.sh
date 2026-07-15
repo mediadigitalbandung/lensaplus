@@ -4,17 +4,17 @@
 # bad migrations can be rolled back from a snapshot taken seconds before push.
 #
 # Usage:
-#   /var/www/kartawarta/scripts/safe-db-push.sh
-#   /var/www/kartawarta/scripts/safe-db-push.sh --accept-data-loss
+#   /var/www/lensaplus/scripts/safe-db-push.sh
+#   /var/www/lensaplus/scripts/safe-db-push.sh --accept-data-loss
 #
-# Snapshots land in /var/backups/kartawarta/pre-push and are kept for 14 days.
+# Snapshots land in /var/backups/lensaplus/pre-push and are kept for 14 days.
 # If the snapshot itself is corrupt the script ABORTS the push.
 #
 
 set -euo pipefail
 
-LOG_FILE="/var/log/kartawarta-deploy.log"
-SNAPSHOT_DIR="/var/backups/kartawarta/pre-push"
+LOG_FILE="/var/log/lensaplus-deploy.log"
+SNAPSHOT_DIR="/var/backups/lensaplus/pre-push"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 SNAPSHOT_FILE="$SNAPSHOT_DIR/pre-push-$TIMESTAMP.sql.gz"
 
@@ -26,7 +26,7 @@ alert() {
   if [ -n "$hook" ]; then
     curl -sS -X POST "$hook" \
       -H "Content-Type: application/json" \
-      -d "{\"text\":\"[Kartawarta safe-db-push] ${subject}: ${body}\"}" \
+      -d "{\"text\":\"[Lensaplus safe-db-push] ${subject}: ${body}\"}" \
       --max-time 10 \
       >/dev/null 2>&1 || true
   fi
@@ -39,7 +39,7 @@ echo "[$(date -Iseconds)] Pre-push snapshot..." >> "$LOG_FILE"
 
 # Reuse the same DATABASE_URL parsing as backup-db.sh.
 if [ -z "${DATABASE_URL:-}" ]; then
-  ENV_FILE="/var/www/kartawarta/.env"
+  ENV_FILE="/var/www/lensaplus/.env"
   if [ -f "$ENV_FILE" ]; then
     set -a
     # shellcheck disable=SC1090
@@ -68,7 +68,7 @@ echo "[$(date -Iseconds)] Snapshot OK: $SNAPSHOT_FILE" >> "$LOG_FILE"
 
 # Now run db push.
 echo "[$(date -Iseconds)] Running prisma db push $* ..." >> "$LOG_FILE"
-cd /var/www/kartawarta
+cd /var/www/lensaplus
 if npx prisma db push "$@" 2>>"$LOG_FILE"; then
   echo "[$(date -Iseconds)] db push OK" >> "$LOG_FILE"
   # Retain pre-push snapshots for 14 days

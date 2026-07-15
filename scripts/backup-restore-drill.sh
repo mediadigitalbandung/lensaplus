@@ -3,21 +3,21 @@
 # backup-restore-drill.sh — Once-a-month restore test.
 #
 # Picks the latest backup, restores it to a temporary database
-# `kartawarta_drill`, runs a few sanity SELECTs, then drops the temp DB.
+# `lensaplus_drill`, runs a few sanity SELECTs, then drops the temp DB.
 # A backup that hasn't been test-restored is not a backup.
 #
 # Usage:
-#   /var/www/kartawarta/scripts/backup-restore-drill.sh
+#   /var/www/lensaplus/scripts/backup-restore-drill.sh
 #
 # Optional cron (1st of month at 04:00):
-#   0 4 1 * * /var/www/kartawarta/scripts/backup-restore-drill.sh >> /var/log/kartawarta-restore-drill.log 2>&1
+#   0 4 1 * * /var/www/lensaplus/scripts/backup-restore-drill.sh >> /var/log/lensaplus-restore-drill.log 2>&1
 #
 
 set -euo pipefail
 
-BACKUP_DIR="/var/backups/kartawarta"
-DRILL_DB="kartawarta_drill"
-ENV_FILE="/var/www/kartawarta/.env"
+BACKUP_DIR="/var/backups/lensaplus"
+DRILL_DB="lensaplus_drill"
+ENV_FILE="/var/www/lensaplus/.env"
 
 if [ -f "$ENV_FILE" ]; then
   set -a
@@ -35,7 +35,7 @@ fi
 ADMIN_URL="${DATABASE_URL%/*}/postgres"
 DRILL_URL="${DATABASE_URL%/*}/$DRILL_DB"
 
-LATEST=$(ls -1t "$BACKUP_DIR"/kartawarta-*.sql.gz 2>/dev/null | head -1 || true)
+LATEST=$(ls -1t "$BACKUP_DIR"/lensaplus-*.sql.gz 2>/dev/null | head -1 || true)
 if [ -z "$LATEST" ]; then
   echo "[$(date -Is)] ERROR: No backup found in $BACKUP_DIR" >&2
   exit 1

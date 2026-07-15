@@ -53,7 +53,7 @@ export async function getPublishedReels(limit = 20): Promise<VideoStoryItem[]> {
         slug: p.article.slug,
         thumbnail: thumb,
         duration: "Reel",
-        source: "Kartawarta",
+        source: "Lensaplus",
         videoUrl: p.videoUrl,
       };
     })

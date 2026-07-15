@@ -126,8 +126,8 @@ export default function Header() {
             {/* Logo */}
             <Link href="/" className="group flex shrink-0 items-center gap-3 relative z-10">
               <Image
-                src="/kartawarta-icon.png"
-                alt="Kartawarta"
+                src="/lensaplus-icon.png"
+                alt="Lensaplus"
                 width={96}
                 height={96}
                 className="h-9 w-9 sm:h-12 sm:w-12 object-contain"
@@ -136,7 +136,7 @@ export default function Header() {
               />
               <span className="flex items-baseline gap-1.5 sm:gap-2">
                 <span className="font-serif text-lg font-bold text-primary sm:text-2xl lg:text-3xl tracking-tight">
-                  Kartawarta
+                  Lensaplus
                 </span>
               </span>
             </Link>

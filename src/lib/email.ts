@@ -42,35 +42,35 @@ async function getFromEmail(): Promise<string> {
     });
     if (setting?.value && setting.value.trim().length > 0) return setting.value.trim();
   } catch { /* ignore */ }
-  return process.env.EMAIL_FROM || "Kartawarta <noreply@kartawarta.com>";
+  return process.env.EMAIL_FROM || "Lensaplus <noreply@lensaplus.com>";
 }
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Kartawarta";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Lensaplus";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 // ---------------------------------------------------------------------------
 // CRIT-15: baseTemplate uses navy #002045 + primary-light #e8edf3, rounded-md
 // ---------------------------------------------------------------------------
 function baseTemplate(title: string, body: string): string {
   return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f7f7f8;font-family:'Work Sans',system-ui,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:40px 20px;">
-    <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
-      <div style="text-align:center;margin-bottom:24px;">
-        <h2 style="margin:0;color:#002045;font-size:18px;">${APP_NAME}</h2>
-      </div>
-      <h1 style="margin:0 0 16px;font-size:20px;color:#1c1c1e;">${title}</h1>
-      ${body}
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center;">
-        <a href="${APP_URL}" style="color:#002045;font-size:12px;text-decoration:none;">${APP_NAME}</a>
+  <!DOCTYPE html>
+  <html>
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+  <body style="margin:0;padding:0;background:#f7f7f8;font-family:'Inter',system-ui,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;padding:40px 20px;">
+      <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <h2 style="margin:0;color:#0F172A;font-size:18px;">${APP_NAME}</h2>
+        </div>
+        <h1 style="margin:0 0 16px;font-size:20px;color:#1c1c1e;">${title}</h1>
+        ${body}
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center;">
+          <a href="${APP_URL}" style="color:#0F172A;font-size:12px;text-decoration:none;">${APP_NAME}</a>
+        </div>
       </div>
     </div>
-  </div>
-</body>
-</html>`;
+  </body>
+  </html>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,9 +119,9 @@ export async function sendVerificationEmail(to: string, name: string, link: stri
   const html = baseTemplate("Verifikasi Email Anda", `
     <p style="color:#6b7280;line-height:1.6;">Halo${safeName ? ` <strong style="color:#1c1c1e;">${safeName}</strong>` : ""}, konfirmasi bahwa alamat email ini benar milik Anda untuk mengamankan akun ${APP_NAME} Anda.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${link}" style="display:inline-block;background:#002045;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Verifikasi Email</a>
+      <a href="${link}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Verifikasi Email</a>
     </div>
-    <p style="color:#9ca3af;font-size:12px;line-height:1.6;">Tautan berlaku 24 jam. Jika tombol tidak berfungsi, salin URL ini ke browser:<br><span style="color:#002045;word-break:break-all;">${link}</span></p>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.6;">Tautan berlaku 24 jam. Jika tombol tidak berfungsi, salin URL ini ke browser:<br><span style="color:#0F172A;word-break:break-all;">${link}</span></p>
     <p style="color:#9ca3af;font-size:12px;line-height:1.6;">Jika Anda tidak merasa membuat akun ini, abaikan email ini.</p>
   `);
   return sendEmail(to, `Verifikasi email Anda — ${APP_NAME}`, html);
@@ -133,7 +133,7 @@ export async function sendArticleApprovedEmail(to: string, articleTitle: string,
   const html = baseTemplate("Artikel Anda Disetujui!", `
     <p style="color:#6b7280;line-height:1.6;">Artikel <strong style="color:#1c1c1e;">"${articleTitle}"</strong> telah disetujui oleh editor dan siap untuk dipublikasikan.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${APP_URL}/panel/artikel" style="display:inline-block;background:#002045;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Lihat di Panel</a>
+      <a href="${APP_URL}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Lihat di Panel</a>
     </div>
   `);
   await sendEmail(to, `Artikel Disetujui: ${articleTitle}`, html);
@@ -145,7 +145,7 @@ export async function sendArticleRejectedEmail(to: string, articleTitle: string,
     ${reviewNote ? `<div style="background:#fef2f2;border-left:4px solid #ef4444;padding:12px 16px;border-radius:8px;margin:16px 0;"><p style="margin:0;color:#991b1b;font-size:14px;"><strong>Catatan editor:</strong> ${reviewNote}</p></div>` : ""}
     <p style="color:#6b7280;line-height:1.6;">Silakan revisi dan ajukan kembali.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${APP_URL}/panel/artikel" style="display:inline-block;background:#002045;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Revisi Artikel</a>
+      <a href="${APP_URL}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Revisi Artikel</a>
     </div>
   `);
   await sendEmail(to, `Artikel Ditolak: ${articleTitle}`, html);
@@ -155,7 +155,7 @@ export async function sendArticlePublishedEmail(to: string, articleTitle: string
   const html = baseTemplate("Artikel Anda Dipublikasikan!", `
     <p style="color:#6b7280;line-height:1.6;">Selamat! Artikel <strong style="color:#1c1c1e;">"${articleTitle}"</strong> telah dipublikasikan dan dapat dibaca oleh publik.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${APP_URL}/berita/${articleSlug}" style="display:inline-block;background:#002045;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Baca Artikel</a>
+      <a href="${APP_URL}/berita/${articleSlug}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Baca Artikel</a>
     </div>
   `);
   await sendEmail(to, `Artikel Dipublikasikan: ${articleTitle}`, html);
@@ -165,7 +165,7 @@ export async function sendNewReviewEmail(to: string, articleTitle: string, autho
   const html = baseTemplate("Artikel Baru untuk Direview", `
     <p style="color:#6b7280;line-height:1.6;">Artikel <strong style="color:#1c1c1e;">"${articleTitle}"</strong> dari <strong>${authorName}</strong> telah diajukan untuk review.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${APP_URL}/panel/artikel" style="display:inline-block;background:#002045;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Review Sekarang</a>
+      <a href="${APP_URL}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Review Sekarang</a>
     </div>
   `);
   await sendEmail(to, `Review Baru: ${articleTitle}`, html);

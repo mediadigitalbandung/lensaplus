@@ -5,67 +5,67 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        /* ── The Editorial Authority Palette ── */
+        /* ── The Vibrant Corporate Palette (Lensaplus) ── */
         primary: {
-          DEFAULT: "#002045",
-          dark: "#001530",
-          light: "#e8edf3",
-          container: "#1a3a5c",
-          50: "#f0f4f8",
+          DEFAULT: "#0F172A", // Deep Slate Navy
+          dark: "#020617",
+          light: "#F1F5F9",
+          container: "#1E293B",
+          50: "#F8FAFC", // Clean Light Gray
         },
         secondary: {
-          DEFAULT: "#b7102a",
-          dark: "#8f0c20",
-          light: "#fce8eb",
-          container: "#d4364d",
+          DEFAULT: "#0EA5E9", // Electric Teal
+          dark: "#0284C7",
+          light: "#E0F2FE", // Soft Teal / Ice Blue
+          container: "#0369A1",
         },
         tertiary: {
-          DEFAULT: "#371800",
-          light: "#f5ede8",
+          DEFAULT: "#F97316", // Energetic Coral / Orange
+          light: "#FFEDD5",
         },
         surface: {
-          DEFAULT: "#f8f9fa",
+          DEFAULT: "#F8FAFC", // Clean Light Gray
           "container-lowest": "#ffffff",
-          "container-low": "#f1f3f4",
-          container: "#e8eaeb",
-          "container-high": "#dcdfe0",
-          "container-highest": "#e1e3e4",
-          secondary: "#f1f3f4",
-          tertiary: "#e8eaeb",
-          dark: "#002045",
+          "container-low": "#F1F5F9",
+          container: "#E2E8F0",
+          "container-high": "#CBD5E1",
+          "container-highest": "#94A3B8",
+          secondary: "#F1F5F9",
+          tertiary: "#E2E8F0",
+          dark: "#0F172A",
         },
         "on-surface": {
-          DEFAULT: "#191c1d",
-          variant: "#44474e",
+          DEFAULT: "#0F172A",
+          variant: "#475569",
         },
         "on-primary": "#ffffff",
         outline: {
-          DEFAULT: "#74777f",
-          variant: "#c4c6d0",
+          DEFAULT: "#64748B",
+          variant: "#E2E8F0",
         },
-        "inverse-surface": "#2e3132",
-        "inverse-on-surface": "#eff1f1",
+        "inverse-surface": "#1E293B",
+        "inverse-on-surface": "#F8FAFC",
         txt: {
-          primary: "#191c1d",
-          secondary: "#44474e",
-          muted: "#5d6066",
+          primary: "#0F172A", // Deep Slate Navy text on Light Gray BG
+          secondary: "#334155",
+          muted: "#475569",
           inverse: "#ffffff",
         },
         border: {
-          DEFAULT: "#c4c6d020",
-          light: "#c4c6d010",
+          DEFAULT: "#E2E8F030",
+          light: "#E2E8F015",
         },
-        /* Legacy aliases for gradual migration */
+        /* Legacy aliases mapped to Deep Slate Navy / Electric Teal */
         goto: {
-          green: "#002045",
-          dark: "#001530",
-          light: "#e8edf3",
-          50: "#f0f4f8",
+          green: "#0F172A",
+          dark: "#020617",
+          light: "#F1F5F9",
+          50: "#F8FAFC",
         },
       },
       fontFamily: {
-        serif: ["var(--font-newsreader)", "Georgia", "Times New Roman", "serif"],
-        sans: ["var(--font-work-sans)", "system-ui", "sans-serif"],
+        serif: ["var(--font-plus-jakarta-sans)", "system-ui", "sans-serif"], // Map to Plus Jakarta Sans for headings
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],            // Map to Inter for body
       },
       fontSize: {
         "display-lg": ["3.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "800" }],

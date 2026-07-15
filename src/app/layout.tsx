@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Newsreader, Work_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Suspense } from "react";
@@ -17,18 +17,17 @@ import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import { getDewanPersNumber } from "@/lib/public-settings";
 
 
-const newsreader = Newsreader({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-newsreader",
+  variable: "--font-plus-jakarta-sans",
   weight: ["400", "500", "600", "700", "800"],
-  style: ["normal", "italic"],
 });
 
-const workSans = Work_Sans({
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-work-sans",
+  variable: "--font-inter",
   weight: ["400", "500", "600", "700", "800"],
 });
 
@@ -39,11 +38,11 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com"
   ),
   title: {
-    default: "Kartawarta — Media Berita Digital Bandung",
-    template: "%s | Kartawarta",
+    default: "Lensaplus — Portal Berita Digital Modern",
+    template: "%s | Lensaplus",
   },
   description:
-    "Portal berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia. Terverifikasi Dewan Pers.",
+    "Portal berita digital modern — menyajikan informasi terkini seputar bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal tepercaya.",
   keywords: [
     "berita Bandung",
     "berita Jawa Barat",
@@ -56,26 +55,26 @@ export const metadata: Metadata = {
     "olahraga",
     "hiburan",
     "teknologi",
-    "media digital Bandung",
-    "Kartawarta",
-    "berita terverifikasi Dewan Pers",
+    "media digital",
+    "Lensaplus",
+    "Lensa+",
   ],
-  authors: [{ name: "Kartawarta" }],
+  authors: [{ name: "Lensaplus" }],
   openGraph: {
     type: "website",
     locale: "id_ID",
-    siteName: "Kartawarta",
-    title: "Kartawarta — Media Berita Digital Bandung",
+    siteName: "Lensaplus",
+    title: "Lensaplus — Portal Berita Digital Modern",
     description:
-      "Berita Bandung & Indonesia — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal. Terverifikasi Dewan Pers.",
-    images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
+      "Informasi digital terkini — menyajikan berita bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal tepercaya.",
+    images: [{ url: "/lensaplus-icon.png", width: 512, height: 512, alt: "Lensaplus" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kartawarta — Media Berita Digital Bandung",
+    title: "Lensaplus — Portal Berita Digital Modern",
     description:
-      "Berita Bandung & Indonesia — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal.",
-    images: ["/kartawarta-icon.png"],
+      "Informasi digital terkini — menyajikan berita bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal tepercaya.",
+    images: ["/lensaplus-icon.png"],
   },
   verification: {
     google: "aOYlnEshfJKwCD4v8OePC3vgPACRIRt2bO5s9dziFj0",
@@ -90,8 +89,8 @@ export const metadata: Metadata = {
   },
   category: "news",
   icons: {
-    icon: "/kartawarta-icon.png",
-    apple: "/kartawarta-icon.png",
+    icon: "/lensaplus-icon.png",
+    apple: "/lensaplus-icon.png",
   },
   manifest: "/manifest.json",
   robots: {
@@ -117,7 +116,7 @@ export default async function RootLayout({
   const fundingPubId = adsenseClientId.replace(/^ca-/, "");
 
   return (
-    <html lang="id" className={`${newsreader.variable} ${workSans.variable}`}>
+    <html lang="id" className={`${plusJakartaSans.variable} ${inter.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -126,20 +125,18 @@ export default async function RootLayout({
         <link
           rel="alternate"
           type="application/rss+xml"
-          title="Kartawarta — Media Berita Digital Bandung"
+          title="Lensaplus — Feed RSS Berita"
           href="/feed.xml"
         />
-        <meta name="theme-color" content="#002045" />
+        <meta name="theme-color" content="#0F172A" />
         <meta name="google" content="notranslate" />
         {/* PWA / Add-to-Home-Screen */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Kartawarta" />
-        {/* Dedicated 180x180 with white background — iOS doesn't apply
-            mask shapes but does benefit from a non-transparent BG so the
-            logo reads on any home-screen wallpaper. */}
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-title" content="Lensaplus" />
+        {/* Dedicated 180x180 with white background */}
+        <link rel="apple-touch-icon" sizes="180x180" href="/lensaplus-icon.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

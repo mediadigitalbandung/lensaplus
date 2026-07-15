@@ -17,8 +17,8 @@
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
-const SITE_NAME = "Kartawarta";
-const LOGO_URL = `${SITE_URL}/kartawarta-icon.png`;
+const SITE_NAME = "Lensaplus";
+const LOGO_URL = `${SITE_URL}/lensaplus-icon.png`;
 
 // Sister media properties under the same publisher. Listed in `sameAs` of
 // the NewsMediaOrganization so Google understands these belong to the same
@@ -31,7 +31,7 @@ const SISTER_BRANDS: string[] = [
 // City/region/country/email are already public on the site, so they're inlined.
 // Sensitive specifics (legal entity, street, postal code, phone, founding year)
 // come from env and render ONLY when the operator sets them — never fabricated.
-const PUBLISHER_EMAIL = "redaksi@kartawarta.com";
+const PUBLISHER_EMAIL = "redaksi@lensaplus.com";
 const PUBLISHER_PHONE = process.env.NEXT_PUBLIC_PUBLISHER_PHONE || "";
 const PUBLISHER_STREET = process.env.NEXT_PUBLIC_PUBLISHER_STREET || "";
 const PUBLISHER_POSTAL = process.env.NEXT_PUBLIC_PUBLISHER_POSTAL || "";

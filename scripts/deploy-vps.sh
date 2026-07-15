@@ -1,7 +1,7 @@
 #!/bin/bash
 # Async-safe deploy script. Designed to run detached (via nohup + setsid)
 # so the GitHub Actions SSH session can disconnect immediately while the
-# build continues on the VPS. Status is reported via /tmp/kartawarta-deploy-status
+# build continues on the VPS. Status is reported via /tmp/lensaplus-deploy-status
 # (written as "OK" or "FAIL: <reason>"); the workflow polls that file.
 #
 # Why this exists: the previous synchronous deploy held an SSH connection
@@ -12,19 +12,19 @@
 #
 # Downtime handling: the real app is stopped during the (RAM-heavy) build, so
 # while it rebuilds a tiny zero-dependency maintenance server takes over port
-# 3000 and serves a branded Kartawarta "sedang memperbarui" page (HTTP 503)
+# 3000 and serves a branded Lensaplus "sedang memperbarui" page (HTTP 503)
 # instead of Cloudflare's default "Bad gateway 502". The previous build is
 # kept as .next.old so a failed build rolls back and the site comes straight
 # back up.
 
 set -u
 
-STATUS_FILE=/tmp/kartawarta-deploy-status
-LOG_FILE=/tmp/kartawarta-deploy.log
-APP_DIR=/var/www/kartawarta
-LOCK=/tmp/kartawarta-build.lock
-MAINT_PID_FILE=/tmp/kartawarta-maintenance.pid
-MAINT_LOG=/tmp/kartawarta-maintenance.log
+STATUS_FILE=/tmp/lensaplus-deploy-status
+LOG_FILE=/tmp/lensaplus-deploy.log
+APP_DIR=/var/www/lensaplus
+LOCK=/tmp/lensaplus-build.lock
+MAINT_PID_FILE=/tmp/lensaplus-maintenance.pid
+MAINT_LOG=/tmp/lensaplus-maintenance.log
 PORT=3000
 
 # Reset status — anything that consumed an old "OK" before this run started
@@ -60,7 +60,7 @@ fail() {
     mv .next.old .next
   fi
   stop_maintenance
-  pm2 restart kartawarta --update-env 2>/dev/null \
+  pm2 restart lensaplus --update-env 2>/dev/null \
     || pm2 start ecosystem.config.js 2>/dev/null || true
   rm -f "$LOCK"
   exit 1
@@ -103,8 +103,8 @@ git fetch origin master || fail "git fetch failed"
 git reset --hard origin/master || fail "git reset failed"
 
 # Take the app down and immediately put up the branded maintenance page so
-# visitors see Kartawarta's page (not Cloudflare's 502) for the whole rebuild.
-pm2 stop kartawarta || true
+# visitors see Lensaplus's page (not Cloudflare's 502) for the whole rebuild.
+pm2 stop lensaplus || true
 sleep 1
 start_maintenance
 
@@ -131,11 +131,11 @@ NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 \
 
 # Hand port 3000 back to the real app: stop maintenance, then (re)start.
 stop_maintenance
-pm2 restart kartawarta --update-env \
+pm2 restart lensaplus --update-env \
   || pm2 start ecosystem.config.js \
   || fail "pm2 restart failed"
 sleep 3
-pm2 list | grep kartawarta || true
+pm2 list | grep lensaplus || true
 
 # Build succeeded and the app is back — drop the rollback copy.
 rm -rf .next.old

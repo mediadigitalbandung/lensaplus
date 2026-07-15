@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
 #
-# backup-uploads.sh — Tar+gzip the /uploads/ media directory to /var/backups/kartawarta.
+# backup-uploads.sh — Tar+gzip the /uploads/ media directory to /var/backups/lensaplus.
 #
-# Addresses CRIT-14: /var/www/kartawarta/public/uploads/ was not backed up.
+# Addresses CRIT-14: /var/www/lensaplus/public/uploads/ was not backed up.
 # A VPS loss would destroy all article hero images and editor-uploaded media.
 #
-# Produces: /var/backups/kartawarta/uploads-YYYY-MM-DD.tgz
+# Produces: /var/backups/lensaplus/uploads-YYYY-MM-DD.tgz
 # Keeps last UPLOADS_RETENTION_DAYS (default 7) tarballs locally.
 # Off-site sync is handled by backup-offsite.sh (runs at 04:00 after this).
 #
 # Install:
-#   sudo chmod +x /var/www/kartawarta/scripts/backup-uploads.sh
+#   sudo chmod +x /var/www/lensaplus/scripts/backup-uploads.sh
 #
 # Cron (jam 3:30 AM, between backup-db.sh at 03:00 and backup-offsite.sh at 04:00):
-#   30 3 * * * /var/www/kartawarta/scripts/backup-uploads.sh >> /var/log/kartawarta-uploads-backup.log 2>&1
+#   30 3 * * * /var/www/lensaplus/scripts/backup-uploads.sh >> /var/log/lensaplus-uploads-backup.log 2>&1
 #
 
 set -euo pipefail
 
-UPLOADS_DIR="/var/www/kartawarta/public/uploads"
-BACKUP_DIR="/var/backups/kartawarta"
+UPLOADS_DIR="/var/www/lensaplus/public/uploads"
+BACKUP_DIR="/var/backups/lensaplus"
 RETENTION_DAYS="${UPLOADS_RETENTION_DAYS:-7}"
-LOG_FILE="/var/log/kartawarta-uploads-backup.log"
+LOG_FILE="/var/log/lensaplus-uploads-backup.log"
 TIMESTAMP=$(date +%F)
 OUTPUT_FILE="$BACKUP_DIR/uploads-$TIMESTAMP.tgz"
 
@@ -33,7 +33,7 @@ alert() {
   if [ -n "$hook" ]; then
     curl -sS -X POST "$hook" \
       -H "Content-Type: application/json" \
-      -d "{\"text\":\"[Kartawarta uploads-backup] ${subject}: ${body}\"}" \
+      -d "{\"text\":\"[Lensaplus uploads-backup] ${subject}: ${body}\"}" \
       --max-time 10 \
       >/dev/null 2>&1 || true
   fi

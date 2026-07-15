@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 export const metadata: Metadata = {
   title: "Susunan Redaksi",
   description:
-    "Susunan redaksi, legalitas, dan verifikasi Dewan Pers Kartawarta — media berita digital Bandung.",
+    "Susunan redaksi, legalitas, dan verifikasi Dewan Pers Lensaplus — portal berita digital modern.",
 };
 
 export default async function RedaksiPage() {
@@ -45,7 +45,7 @@ export default async function RedaksiPage() {
           </h1>
 
           <p className="mt-6 text-txt-secondary">
-            Berikut susunan redaksi Kartawarta yang bertanggung jawab atas
+            Berikut susunan redaksi Lensaplus yang bertanggung jawab atas
             seluruh proses produksi dan distribusi konten.
           </p>
 
@@ -94,7 +94,7 @@ export default async function RedaksiPage() {
                   <h3 className="font-bold text-txt-primary">Terverifikasi Dewan Pers</h3>
                 </div>
                 <p className="mt-2 text-sm text-txt-secondary">
-                  Kartawarta tunduk pada Kode Etik Jurnalistik dan Pedoman Pemberitaan
+                  Lensaplus tunduk pada Kode Etik Jurnalistik dan Pedoman Pemberitaan
                   Media Siber yang ditetapkan Dewan Pers.
                 </p>
                 {dewanPersNumber && (
@@ -111,7 +111,7 @@ export default async function RedaksiPage() {
                   <h3 className="font-bold text-txt-primary">Penerbit</h3>
                 </div>
                 <p className="mt-2 text-sm text-txt-primary">
-                  {legalName || "Kartawarta"}
+                  {legalName || "Lensaplus"}
                   {founding && (
                     <span className="text-txt-muted"> · berdiri {founding}</span>
                   )}
@@ -141,8 +141,8 @@ export default async function RedaksiPage() {
               <Mail size={16} className="mt-0.5 shrink-0 text-primary" />
               <span>
                 Untuk pengaduan pemberitaan, hak jawab, atau koreksi, hubungi{" "}
-                <a href="mailto:redaksi@kartawarta.com" className="text-primary hover:underline">
-                  redaksi@kartawarta.com
+                <a href="mailto:redaksi@lensaplus.com" className="text-primary hover:underline">
+                  redaksi@lensaplus.com
                 </a>
                 . Setiap masukan ditindaklanjuti sesuai mekanisme Dewan Pers.
               </span>

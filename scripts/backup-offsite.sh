@@ -10,20 +10,20 @@
 #   - rclone installed: curl https://rclone.org/install.sh | sudo bash
 #   - rclone remote configured: rclone config  (Cloudflare R2, Backblaze B2, or any S3)
 #
-# Configuration via environment (set in /var/www/kartawarta/.env or /etc/environment):
-#   OFFSITE_RCLONE_REMOTE  — rclone remote + bucket path, e.g. "r2:kartawarta-backup"
+# Configuration via environment (set in /var/www/lensaplus/.env or /etc/environment):
+#   OFFSITE_RCLONE_REMOTE  — rclone remote + bucket path, e.g. "r2:lensaplus-backup"
 #   OFFSITE_RETENTION_DAYS — days to keep remote files (default: 90)
 #
 # Cron (jam 4 pagi, AFTER backup-db.sh jam 3 dan backup-uploads.sh jam 3:30):
-#   0 4 * * * /var/www/kartawarta/scripts/backup-offsite.sh >> /var/log/kartawarta-offsite.log 2>&1
+#   0 4 * * * /var/www/lensaplus/scripts/backup-offsite.sh >> /var/log/lensaplus-offsite.log 2>&1
 #
 
 set -euo pipefail
 
-BACKUP_DIR="/var/backups/kartawarta"
+BACKUP_DIR="/var/backups/lensaplus"
 REMOTE="${OFFSITE_RCLONE_REMOTE:-}"
 RETENTION_DAYS="${OFFSITE_RETENTION_DAYS:-90}"
-LOG_FILE="/var/log/kartawarta-offsite.log"
+LOG_FILE="/var/log/lensaplus-offsite.log"
 
 # --- Alerting ---------------------------------------------------------------
 alert() {
@@ -33,7 +33,7 @@ alert() {
   if [ -n "$hook" ]; then
     curl -sS -X POST "$hook" \
       -H "Content-Type: application/json" \
-      -d "{\"text\":\"[Kartawarta offsite-backup] ${subject}: ${body}\"}" \
+      -d "{\"text\":\"[Lensaplus offsite-backup] ${subject}: ${body}\"}" \
       --max-time 10 \
       >/dev/null 2>&1 || true
   fi
@@ -41,7 +41,7 @@ alert() {
 trap 'alert "Offsite backup FAIL" "Script $(basename "$0") exited with code $?"' ERR
 
 # Load env from app's .env if the variable isn't already set.
-ENV_FILE="/var/www/kartawarta/.env"
+ENV_FILE="/var/www/lensaplus/.env"
 if [ -z "$REMOTE" ] && [ -f "$ENV_FILE" ]; then
   set -a
   # shellcheck disable=SC1090

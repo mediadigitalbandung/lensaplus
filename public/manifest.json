@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "Kartawarta — Media Berita Digital Bandung",
-  "short_name": "Kartawarta",
-  "description": "Portal berita digital Bandung — bisnis, ekonomi, hukum, politik, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia. Terverifikasi Dewan Pers.",
+  "name": "Lensaplus — Portal Berita Digital Modern",
+  "short_name": "Lensaplus",
+  "description": "Portal berita digital modern — menyajikan informasi terkini seputar bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal tepercaya.",
   "start_url": "/?utm_source=pwa",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#ffffff",
-  "theme_color": "#002045",
+  "theme_color": "#0F172A",
   "orientation": "portrait-primary",
   "lang": "id-ID",
   "dir": "ltr",
@@ -47,14 +47,14 @@
       "sizes": "1024x500",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Kartawarta — Media Berita Digital Bandung"
+      "label": "Lensaplus — Portal Berita Digital Modern"
     },
     {
       "src": "/twa/playstore-assets/phone-screenshot-1.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Beranda Kartawarta"
+      "label": "Beranda Lensaplus"
     },
     {
       "src": "/twa/playstore-assets/phone-screenshot-2.png",

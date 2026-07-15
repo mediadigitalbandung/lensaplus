@@ -45,7 +45,7 @@ export default function Footer({ dewanPersNumber }: { dewanPersNumber?: string }
           <div className="col-span-1 sm:col-span-2 md:col-span-5">
             <div className="flex items-center gap-2">
               <span className="font-serif text-2xl font-bold text-on-surface tracking-tight">
-                Kartawarta
+                Lensaplus
               </span>
             </div>
             <p className="mt-4 max-w-sm text-body-md leading-relaxed text-txt-muted">
@@ -144,7 +144,7 @@ export default function Footer({ dewanPersNumber }: { dewanPersNumber?: string }
         <div className="mt-14 pt-6 border-t border-border">
           <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
             <p className="text-label-sm text-txt-muted uppercase tracking-wider">
-              &copy; <ClientYear /> Kartawarta. Seluruh hak cipta dilindungi.
+              &copy; <ClientYear /> Lensaplus. Seluruh hak cipta dilindungi.
             </p>
             <p className="text-label-sm text-txt-muted">
               Anggota{" "}

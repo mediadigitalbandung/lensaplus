@@ -14,8 +14,8 @@
     touch-action: manipulation;
   }
   ::selection {
-    background-color: rgba(0, 32, 69, 0.12);
-    color: #191c1d;
+    background-color: rgba(14, 165, 233, 0.15);
+    color: #0F172A;
   }
   /* Accessibility: focus-visible ring */
   a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
@@ -227,7 +227,7 @@
   background-color: #f1f3f4;
 }
 .ProseMirror img.ProseMirror-selectednode {
-  outline: 2px solid #002045;
+  outline: 2px solid #0F172A;
   outline-offset: 2px;
 }
 
@@ -305,7 +305,7 @@
     display: flex !important;
     align-items: center;
     gap: 12px;
-    border-bottom: 2px solid #002045;
+    border-bottom: 2px solid #0F172A;
     padding-bottom: 12px;
     margin-bottom: 20px;
   }
@@ -316,14 +316,14 @@
   .print-header .print-title {
     font-size: 14pt;
     font-weight: 800;
-    color: #002045;
+    color: #0F172A;
   }
   .print-header .print-subtitle {
     font-size: 8pt;
     color: #44474e;
   }
   .print-article-title {
-    font-family: "Newsreader", Georgia, serif;
+    font-family: "Plus Jakarta Sans", var(--font-plus-jakarta-sans), sans-serif;
     font-size: 18pt !important;
     font-weight: 800 !important;
     line-height: 1.3 !important;
@@ -339,8 +339,8 @@
   }
   .print-category {
     display: inline-block;
-    background: #e8edf3 !important;
-    color: #002045 !important;
+    background: #F1F5F9 !important;
+    color: #0F172A !important;
     font-size: 8pt;
     font-weight: 700;
     padding: 2px 8px;
@@ -376,7 +376,7 @@
     page-break-inside: avoid;
   }
   .article-content blockquote {
-    border-left: 3px solid #002045 !important;
+    border-left: 3px solid #0F172A !important;
     padding-left: 12px !important;
     margin: 12px 0 !important;
     font-style: italic;
@@ -461,7 +461,7 @@
 
 /* Section header gradient underline — shimmer halus berjalan terus, lebih cepat on hover */
 .kw-section-bar {
-  background: linear-gradient(90deg, #002045 0%, #b7102a 50%, #002045 100%);
+  background: linear-gradient(90deg, #0F172A 0%, #0EA5E9 50%, #0F172A 100%);
   background-size: 200% 100%;
   animation: shimmer 6s linear infinite;
   transition: opacity 0.3s;
@@ -495,7 +495,7 @@
   transition: color 0.2s, transform 0.2s;
 }
 .kw-card-glow:hover .kw-stat-number {
-  color: var(--primary, #002045);
+  color: var(--primary, #0F172A);
   transform: scale(1.02);
 }
 
@@ -512,8 +512,8 @@
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(38% 38% at 25% 30%, rgba(183, 16, 42, 0.45) 0%, transparent 60%),
-    radial-gradient(34% 34% at 78% 65%, rgba(56, 132, 255, 0.40) 0%, transparent 60%),
+    radial-gradient(38% 38% at 25% 30%, rgba(14, 165, 233, 0.35) 0%, transparent 60%),
+    radial-gradient(34% 34% at 78% 65%, rgba(15, 23, 42, 0.25) 0%, transparent 60%),
     radial-gradient(30% 30% at 60% 20%, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
   filter: blur(36px);
   opacity: 0.55;

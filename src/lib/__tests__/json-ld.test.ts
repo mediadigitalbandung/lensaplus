@@ -30,7 +30,7 @@ describe("newsArticleJsonLd", () => {
 
     const publisher = out.publisher as Record<string, unknown>;
     expect(publisher["@type"]).toBe("NewsMediaOrganization");
-    expect(publisher.name).toBe("Kartawarta");
+    expect(publisher.name).toBe("Lensaplus");
 
     const sameAs = publisher.sameAs as string[];
     expect(sameAs).toContain("https://jurnalishukumbandung.com");
@@ -98,7 +98,7 @@ describe("organizationJsonLd", () => {
     const out = organizationJsonLd() as Record<string, unknown>;
 
     expect(out["@type"]).toBe("NewsMediaOrganization");
-    expect(out.name).toBe("Kartawarta");
+    expect(out.name).toBe("Lensaplus");
     const sameAs = out.sameAs as string[];
     expect(sameAs).toContain("https://twitter.com/kartawarta");
     expect(sameAs).toContain("https://facebook.com/kartawarta");

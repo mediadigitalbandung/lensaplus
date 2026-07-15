@@ -61,7 +61,7 @@ describe("websiteJsonLd", () => {
     const { websiteJsonLd } = await import("../seo/json-ld");
     const out = websiteJsonLd() as Record<string, unknown>;
     expect(out["@type"]).toBe("WebSite");
-    expect(out.name).toBe("Kartawarta");
+    expect(out.name).toBe("Lensaplus");
     expect(out.url).toBe("https://kartawarta.com");
     const action = out.potentialAction as Record<string, unknown>;
     expect(action["@type"]).toBe("SearchAction");
@@ -165,7 +165,7 @@ describe("organizationJsonLd — publisher transparency", () => {
   it("includes address (Bandung/Jawa Barat/ID), email and an editorial contactPoint", async () => {
     const { organizationJsonLd } = await import("../seo/json-ld");
     const out = organizationJsonLd() as Record<string, unknown>;
-    expect(out.email).toBe("redaksi@kartawarta.com");
+    expect(out.email).toBe("redaksi@lensaplus.com");
     const addr = out.address as Record<string, unknown>;
     expect(addr["@type"]).toBe("PostalAddress");
     expect(addr.addressLocality).toBe("Bandung");
@@ -173,7 +173,7 @@ describe("organizationJsonLd — publisher transparency", () => {
     expect(addr.addressCountry).toBe("ID");
     const cp = out.contactPoint as Record<string, unknown>;
     expect(cp["@type"]).toBe("ContactPoint");
-    expect(cp.email).toBe("redaksi@kartawarta.com");
+    expect(cp.email).toBe("redaksi@lensaplus.com");
   });
 
   it("emits foundingDate + telephone only when env is set", async () => {

@@ -4,7 +4,7 @@ import { Shield, Eye, Users, Award } from "lucide-react";
 export const metadata: Metadata = {
   title: "Tentang Kami",
   description:
-    "Kartawarta — media berita digital terpercaya berbasis di Bandung: bisnis & ekonomi, pemerintahan, hukum, serta topik umum lainnya.",
+    "Lensaplus — portal berita digital terpercaya: bisnis & ekonomi, pemerintahan, hukum, serta topik umum lainnya.",
 };
 
 export default function TentangPage() {
@@ -19,8 +19,8 @@ export default function TentangPage() {
 
           <div className="mt-8 space-y-6 font-serif text-[17px] leading-relaxed text-txt-secondary">
             <p>
-              <strong className="text-txt-primary">Kartawarta</strong> adalah media berita digital yang berbasis di
-              Bandung, Jawa Barat. Kami meliput beragam isu — dengan prioritas pada bisnis &amp; ekonomi,
+              <strong className="text-txt-primary">Lensaplus</strong> adalah portal berita digital yang menyajikan
+              beragam isu — dengan prioritas pada bisnis &amp; ekonomi,
               pemerintahan, dan hukum — di samping topik umum lain seperti olahraga, hiburan, dan teknologi.
               Kami berdiri dengan visi menjadi sumber informasi yang terpercaya, akurat, dan berimbang bagi masyarakat.
             </p>
@@ -79,14 +79,14 @@ export default function TentangPage() {
                   : ""}
                 , Indonesia
               </p>
-              <p><strong className="text-txt-primary">Email:</strong> redaksi@kartawarta.com</p>
+              <p><strong className="text-txt-primary">Email:</strong> redaksi@lensaplus.com</p>
               {process.env.NEXT_PUBLIC_PUBLISHER_PHONE && (
                 <p>
                   <strong className="text-txt-primary">Telepon:</strong>{" "}
                   {process.env.NEXT_PUBLIC_PUBLISHER_PHONE}
                 </p>
               )}
-              <p><strong className="text-txt-primary">Website:</strong> kartawarta.com</p>
+              <p><strong className="text-txt-primary">Website:</strong> lensaplus.com</p>
               {process.env.NEXT_PUBLIC_PUBLISHER_FOUNDING && (
                 <p>
                   <strong className="text-txt-primary">Didirikan:</strong>{" "}

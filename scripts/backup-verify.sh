@@ -3,10 +3,10 @@
 # backup-verify.sh — Sanity check that the backup pipeline is alive.
 #
 # Run via cron after backup-db.sh OR manually:
-#   /var/www/kartawarta/scripts/backup-verify.sh
+#   /var/www/lensaplus/scripts/backup-verify.sh
 #
 # Behavior:
-#   - Confirms /var/backups/kartawarta has a *.sql.gz from < 36h ago
+#   - Confirms /var/backups/lensaplus has a *.sql.gz from < 36h ago
 #   - Verifies gzip integrity via `gzip -t` (full CRC, not a heuristic)
 #   - Secondary truncation guard via decompressed line count (>=100 lines)
 #   - Posts an alert webhook if BACKUP_WEBHOOK_URL or WEBHOOK_URL is set
@@ -19,8 +19,8 @@
 
 set -euo pipefail
 
-LOG_FILE="${LOG_FILE:-/var/log/kartawarta-backup-verify.log}"
-BACKUP_DIR="/var/backups/kartawarta"
+LOG_FILE="${LOG_FILE:-/var/log/lensaplus-backup-verify.log}"
+BACKUP_DIR="/var/backups/lensaplus"
 MAX_AGE_HOURS=36
 
 # --- Alerting ---------------------------------------------------------------
@@ -33,7 +33,7 @@ alert() {
   if [ -n "$hook" ]; then
     curl -sS -X POST "$hook" \
       -H "Content-Type: application/json" \
-      -d "{\"text\":\"[Kartawarta backup] ${subject}: ${body}\"}" \
+      -d "{\"text\":\"[Lensaplus backup] ${subject}: ${body}\"}" \
       --max-time 10 \
       >/dev/null 2>&1 || true
   fi
@@ -46,10 +46,10 @@ if [ ! -d "$BACKUP_DIR" ]; then
   exit 2
 fi
 
-LATEST="$(ls -1t "$BACKUP_DIR"/kartawarta-*.sql.gz 2>/dev/null | head -1 || true)"
+LATEST="$(ls -1t "$BACKUP_DIR"/lensaplus-*.sql.gz 2>/dev/null | head -1 || true)"
 if [ -z "$LATEST" ]; then
   echo "[$(date -Is)] FAIL: No backup files found in $BACKUP_DIR." | tee -a "$LOG_FILE"
-  alert "Backup VERIFY FAIL" "no kartawarta-*.sql.gz found"
+  alert "Backup VERIFY FAIL" "no lensaplus-*.sql.gz found"
   exit 1
 fi
 

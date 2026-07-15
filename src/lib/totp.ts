@@ -87,7 +87,7 @@ export function verifyTotp(secretBase32: string, token: string, window = 1, atMs
 }
 
 /** Build the otpauth:// URI for QR enrollment. */
-export function otpauthUri(secretBase32: string, account: string, issuer = "Kartawarta"): string {
+export function otpauthUri(secretBase32: string, account: string, issuer = "Lensaplus"): string {
   const label = encodeURIComponent(`${issuer}:${account}`);
   const params = new URLSearchParams({
     secret: secretBase32,

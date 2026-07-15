@@ -15,32 +15,32 @@ import {
 } from "lucide-react";
 import ShareInstallButton from "./ShareInstallButton";
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 const INSTALL_URL = `${SITE_URL}/unduh`;
 
 export const metadata: Metadata = {
-  title: "Unduh Aplikasi Kartawarta",
+  title: "Unduh Aplikasi Lensaplus",
   description:
-    "Pasang aplikasi Kartawarta di HP Anda — Android, iPhone, atau desktop. Berita digital Bandung kapan saja, hemat data, bisa offline. Gratis tanpa app store.",
+    "Pasang aplikasi Lensaplus di HP Anda — Android, iPhone, atau desktop. Berita digital modern kapan saja, hemat data, bisa offline. Gratis tanpa app store.",
   alternates: { canonical: "/unduh" },
   openGraph: {
     type: "website",
-    title: "Pasang Aplikasi Kartawarta — Gratis",
+    title: "Pasang Aplikasi Lensaplus — Gratis",
     description:
-      "Berita digital Bandung dalam aplikasi — lebih cepat, hemat data, bisa offline. Tersedia untuk Android, iPhone, dan Desktop.",
+      "Berita digital modern dalam aplikasi — lebih cepat, hemat data, bisa offline. Tersedia untuk Android, iPhone, dan Desktop.",
     images: [
       {
         url: "/twa/playstore-assets/feature-graphic.png",
         width: 1024,
         height: 500,
-        alt: "Kartawarta — Media Berita Digital Bandung",
+        alt: "Lensaplus — Portal Berita Digital Modern",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pasang Aplikasi Kartawarta — Gratis",
-    description: "Berita Bandung dalam aplikasi. Lebih cepat, hemat data, bisa offline.",
+    title: "Pasang Aplikasi Lensaplus — Gratis",
+    description: "Berita digital modern dalam aplikasi. Lebih cepat, hemat data, bisa offline.",
     images: ["/twa/playstore-assets/feature-graphic.png"],
   },
 };
@@ -52,7 +52,7 @@ export default async function UnduhPage() {
     type: "svg",
     margin: 1,
     width: 200,
-    color: { dark: "#002045", light: "#ffffff00" },
+    color: { dark: "#0F172A", light: "#ffffff00" },
     errorCorrectionLevel: "M",
   });
 
@@ -62,9 +62,9 @@ export default async function UnduhPage() {
   const softwareJsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "Kartawarta",
+    name: "Lensaplus",
     description:
-      "Portal berita digital Bandung — bisnis, ekonomi, hukum, politik, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia. Terverifikasi Dewan Pers.",
+      "Portal berita digital modern — menyajikan informasi terkini seputar bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal tepercaya.",
     applicationCategory: "NewsApplication",
     operatingSystem: "Android, iOS, Windows, macOS, Linux",
     offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
@@ -75,13 +75,13 @@ export default async function UnduhPage() {
     },
     publisher: {
       "@type": "NewsMediaOrganization",
-      name: "Kartawarta",
+      name: "Lensaplus",
       url: SITE_URL,
     },
     downloadUrl: INSTALL_URL,
     screenshot: `${SITE_URL}/twa/playstore-assets/feature-graphic.png`,
     featureList:
-      "Berita harian Bandung, Notifikasi push, Bisa offline, Bookmark, Newsletter mingguan, Topic cluster",
+      "Berita harian modern, Notifikasi push, Bisa offline, Bookmark, Newsletter mingguan, Topic cluster",
     inLanguage: "id-ID",
   };
 
@@ -98,10 +98,10 @@ export default async function UnduhPage() {
             Aplikasi
           </span>
           <h1 className="mt-4 font-serif text-3xl sm:text-5xl font-extrabold text-txt-primary tracking-tight leading-tight">
-            Pasang Kartawarta di HP Anda
+            Pasang Lensaplus di HP Anda
           </h1>
           <p className="mt-4 text-lg text-txt-secondary leading-relaxed">
-            Berita Bandung kapan saja, hemat data, bisa baca offline. Tanpa
+            Berita digital modern kapan saja, hemat data, bisa baca offline. Tanpa
             iklan tambahan, tanpa permintaan data pribadi yang berlebihan.
             Gratis selamanya.
           </p>
@@ -148,12 +148,12 @@ export default async function UnduhPage() {
               </span>
             </div>
             <ol className="space-y-2.5 text-sm text-txt-secondary">
-              <Step n={1}>Buka kartawarta.com di Chrome</Step>
+              <Step n={1}>Buka lensaplus.com di Chrome</Step>
               <Step n={2}>
                 Tap menu ⋮ pojok kanan atas → <b className="text-txt-primary">&quot;Pasang aplikasi&quot;</b> /
                 &quot;Add to Home screen&quot;
               </Step>
-              <Step n={3}>Konfirmasi → ikon Kartawarta muncul di home screen</Step>
+              <Step n={3}>Konfirmasi → ikon Lensaplus muncul di home screen</Step>
               <Step n={4}>Tap ikon → langsung fullscreen tanpa browser</Step>
             </ol>
             <div className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
@@ -174,7 +174,7 @@ export default async function UnduhPage() {
               </div>
             </div>
             <ol className="space-y-2.5 text-sm text-txt-secondary">
-              <Step n={1}>Buka kartawarta.com di <b className="text-txt-primary">Safari</b> (bukan Chrome — iOS hanya support PWA dari Safari)</Step>
+              <Step n={1}>Buka lensaplus.com di <b className="text-txt-primary">Safari</b> (bukan Chrome — iOS hanya support PWA dari Safari)</Step>
               <Step n={2}>Tap ikon Share di bawah (kotak dengan panah ke atas)</Step>
               <Step n={3}>Scroll &amp; tap <b className="text-txt-primary">&quot;Add to Home Screen&quot;</b></Step>
               <Step n={4}>Tap &quot;Add&quot; → ikon muncul di home screen</Step>
@@ -197,11 +197,11 @@ export default async function UnduhPage() {
               </div>
             </div>
             <ol className="space-y-2.5 text-sm text-txt-secondary">
-              <Step n={1}>Buka kartawarta.com di Chrome / Edge</Step>
+              <Step n={1}>Buka lensaplus.com di Chrome / Edge</Step>
               <Step n={2}>
                 Klik ikon <b className="text-txt-primary">&quot;Install&quot;</b> di address bar (sebelah bookmark)
               </Step>
-              <Step n={3}>Atau menu ⋮ → &quot;Install Kartawarta...&quot;</Step>
+              <Step n={3}>Atau menu ⋮ → &quot;Install Lensaplus...&quot;</Step>
               <Step n={4}>App muncul di Start Menu / Launchpad / Apps</Step>
             </ol>
             <div className="mt-4 rounded-lg bg-purple-50 px-3 py-2 text-xs text-purple-800">
@@ -228,7 +228,7 @@ export default async function UnduhPage() {
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <a
-                  href="/downloads/kartawarta.apk"
+                  href="/downloads/lensaplus.apk"
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-dark transition-colors"
                   download
                 >
@@ -246,7 +246,7 @@ export default async function UnduhPage() {
                   <li>Download file APK ke HP Android (atau transfer dari komputer)</li>
                   <li>Buka file → Android akan minta izin &quot;Install unknown apps&quot; → izinkan untuk browser/file manager</li>
                   <li>Tap &quot;Install&quot; → tunggu beberapa detik</li>
-                  <li>Buka Kartawarta dari home screen / app drawer</li>
+                  <li>Buka Lensaplus dari home screen / app drawer</li>
                 </ol>
                 <p className="mt-3 text-xs text-txt-muted">
                   ⚠️ Pesan &quot;Pemindaian Play Protect&quot; mungkin muncul karena APK belum lewat Play Store —
@@ -255,7 +255,7 @@ export default async function UnduhPage() {
                   <Link href="/.well-known/assetlinks.json" className="underline">
                     Digital Asset Links
                   </Link>{" "}
-                  ke domain kartawarta.com.
+                  ke domain lensaplus.com.
                 </p>
               </details>
               <details className="mt-3 text-sm">
@@ -263,10 +263,10 @@ export default async function UnduhPage() {
                   Generate APK sendiri (developer)
                 </summary>
                 <p className="mt-2 text-txt-secondary leading-relaxed">
-                  Anda bisa generate APK Kartawarta sendiri secara gratis tanpa install
+                  Anda bisa generate APK Lensaplus sendiri secara gratis tanpa install
                   tooling lokal — pakai{" "}
                   <a
-                    href="https://www.pwabuilder.com/?url=https%3A%2F%2Fkartawarta.com"
+                    href="https://www.pwabuilder.com/?url=https%3A%2F%2Flensaplus.com"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-semibold text-primary underline"
@@ -274,7 +274,7 @@ export default async function UnduhPage() {
                     PWABuilder.com
                   </a>{" "}
                   (web tool resmi Microsoft + Google). Input{" "}
-                  <code className="rounded-lg bg-surface-tertiary px-1.5 py-0.5 text-xs font-mono">https://kartawarta.com</code>{" "}
+                  <code className="rounded-lg bg-surface-tertiary px-1.5 py-0.5 text-xs font-mono">https://lensaplus.com</code>{" "}
                   → Package for Stores → Android → Download. APK siap install.
                 </p>
               </details>
@@ -294,13 +294,13 @@ export default async function UnduhPage() {
                 Bagikan ke teman atau pasang dari HP lain
               </h3>
               <p className="mt-2 text-sm text-txt-secondary leading-relaxed">
-                Scan QR code ini dari kamera HP — langsung buka halaman pasang Kartawarta.
+                Scan QR code ini dari kamera HP — langsung buka halaman pasang Lensaplus.
                 Cocok untuk poster fisik, WA story, atau share di grup.
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
                 <ShareInstallButton url={INSTALL_URL} />
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`Pasang aplikasi Kartawarta — berita digital Bandung: ${INSTALL_URL}`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`Pasang aplikasi Lensaplus: ${INSTALL_URL}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
@@ -308,7 +308,7 @@ export default async function UnduhPage() {
                   💬 WhatsApp
                 </a>
                 <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Pasang aplikasi Kartawarta — berita digital Bandung")}&url=${encodeURIComponent(INSTALL_URL)}`}
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Pasang aplikasi Lensaplus")}&url=${encodeURIComponent(INSTALL_URL)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition-colors"
@@ -342,10 +342,10 @@ export default async function UnduhPage() {
           </h2>
           <div className="space-y-3">
             <Faq q="Kenapa belum ada di Play Store?" a="Sedang dalam proses submission. Sementara ini, Anda bisa install langsung dari Chrome (tap menu → 'Pasang aplikasi') — sama saja dengan app Play Store, hanya tanpa lewat store." />
-            <Faq q="Aman tidak install dari luar Play Store?" a="Aman. APK kami ditandatangani digital dan terverifikasi via Digital Asset Links ke domain kartawarta.com — sama dengan standar app Play Store. Anda bisa cek hash APK kami sebelum install." />
-            <Faq q="Berapa besar ukurannya?" a="Hanya ~2 MB untuk APK. Konten (artikel, gambar) di-stream dari kartawarta.com, jadi gak makan storage besar." />
+            <Faq q="Aman tidak install dari luar Play Store?" a="Aman. APK kami ditandatangani digital dan terverifikasi via Digital Asset Links ke domain lensaplus.com — sama dengan standar app Play Store. Anda bisa cek hash APK kami sebelum install." />
+            <Faq q="Berapa besar ukurannya?" a="Hanya ~2 MB untuk APK. Konten (artikel, gambar) di-stream dari lensaplus.com, jadi gak makan storage besar." />
             <Faq q="Bisa update otomatis?" a="Ya. Karena kontennya dari web, setiap kali kami update artikel/fitur, Anda langsung dapat tanpa perlu update app." />
-            <Faq q="Bedanya dengan buka kartawarta.com di browser?" a="App: fullscreen tanpa URL bar, splash screen Kartawarta, ikon di home screen, push notification, dan halaman yang sudah dibaca tetap bisa diakses offline." />
+            <Faq q="Bedanya dengan buka lensaplus.com di browser?" a="App: fullscreen tanpa URL bar, splash screen Lensaplus, ikon di home screen, push notification, dan halaman yang sudah dibaca tetap bisa diakses offline." />
             <Faq q="Apakah collect data saya?" a="Hanya yang perlu untuk fitur (mis. preferensi font, bookmark di local device, email kalau langganan newsletter). Tidak ada tracking iklan pihak ketiga di luar yang sudah ada di website." />
           </div>
         </div>

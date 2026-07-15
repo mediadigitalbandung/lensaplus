@@ -1,5 +1,5 @@
 /**
- * PM2 ecosystem config for Kartawarta production.
+ * PM2 ecosystem config for Lensaplus production.
  *
  * Default: single fork mode (current production setup).
  * To enable cluster mode (multi-core), set CLUSTER=1 env or pass --instances 2.
@@ -19,10 +19,10 @@ const isCluster = process.env.CLUSTER === "1" || process.env.CLUSTER === "true";
 module.exports = {
   apps: [
     {
-      name: "kartawarta",
+      name: "lensaplus",
       script: "node_modules/next/dist/bin/next",
       args: "start --port 3000",
-      cwd: "/var/www/kartawarta",
+      cwd: "/var/www/lensaplus",
       exec_mode: isCluster ? "cluster" : "fork",
       instances: isCluster ? "max" : 1,
       autorestart: true,
@@ -33,8 +33,8 @@ module.exports = {
         PORT: "3000",
       },
       // Logs
-      out_file: "/root/.pm2/logs/kartawarta-out.log",
-      error_file: "/root/.pm2/logs/kartawarta-error.log",
+      out_file: "/root/.pm2/logs/lensaplus-out.log",
+      error_file: "/root/.pm2/logs/lensaplus-error.log",
       merge_logs: true,
       log_date_format: "YYYY-MM-DD HH:mm:ss Z",
       // Graceful shutdown
@@ -47,9 +47,9 @@ module.exports = {
       // YouTube auto-clip worker — separate process (heavy yt-dlp + ffmpeg +
       // Deepgram). Requires ffmpeg + yt-dlp installed on the VPS and env:
       // DATABASE_URL, DEEPGRAM_API_KEY, CRON_SECRET, APP_URL.
-      name: "kartawarta-youtube-worker",
+      name: "lensaplus-youtube-worker",
       script: "tools/youtube-clip-worker.mjs",
-      cwd: "/var/www/kartawarta",
+      cwd: "/var/www/lensaplus",
       exec_mode: "fork",
       instances: 1,
       autorestart: true,
@@ -62,8 +62,8 @@ module.exports = {
         // and ffmpeg are resolvable when the worker spawns them.
         PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       },
-      out_file: "/root/.pm2/logs/kartawarta-youtube-worker-out.log",
-      error_file: "/root/.pm2/logs/kartawarta-youtube-worker-error.log",
+      out_file: "/root/.pm2/logs/lensaplus-youtube-worker-out.log",
+      error_file: "/root/.pm2/logs/lensaplus-youtube-worker-error.log",
       merge_logs: true,
       log_date_format: "YYYY-MM-DD HH:mm:ss Z",
       kill_timeout: 15000,
