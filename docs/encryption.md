@@ -48,12 +48,12 @@ This outputs a 44-character base64 string that encodes 32 random bytes
 SETTINGS_ENCRYPTION_KEY=<output from openssl command>
 ```
 
-**Production (VPS)** — add to `/var/www/kartawarta/.env` on the server:
+**Production (VPS)** — add to `/var/www/lensaplus/.env` on the server:
 
 ```bash
 ssh root@145.79.15.99
-echo 'SETTINGS_ENCRYPTION_KEY=<key>' >> /var/www/kartawarta/.env
-pm2 restart kartawarta
+echo 'SETTINGS_ENCRYPTION_KEY=<key>' >> /var/www/lensaplus/.env
+pm2 restart lensaplus
 ```
 
 ### 3. Run one-shot migration (existing plaintext values)

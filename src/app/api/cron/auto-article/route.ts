@@ -8,7 +8,7 @@
  * Provider: Perplexity ONLY (no DeepSeek/Claude here — per editor request
  * 2026-06-04). Perplexity is web-grounded, so each draft is a fresh,
  * source-cited article about the keyword rather than a reword of an existing
- * Kartawarta article. The web sources Perplexity used are stored as the
+ * Lensaplus article. The web sources Perplexity used are stored as the
  * article's Sources for attribution.
  *
  * Flow:

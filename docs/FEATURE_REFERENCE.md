@@ -1,13 +1,13 @@
-# FEATURE_REFERENCE — Spesifikasi Fitur Target Kartawarta
+# FEATURE_REFERENCE — Spesifikasi Fitur Target Lensaplus
 
-> **Project:** **Kartawarta v2.0** (kartawarta.com). Ini BUKAN project JHB.
+> **Project:** **Lensaplus v2.0** (lensaplus.com). Ini BUKAN project JHB.
 > **Sumber referensi:** Dokumen master dari jurnalishukumbandung.com, dikirim user tgl 2026-04-24.
-> Dokumen itu dipakai sebagai **daftar fitur target** — Kartawarta akan disamakan metode & fiturnya.
-> Tidak ada rename/fork. Kode, brand, domain, repo tetap Kartawarta.
+> Dokumen itu dipakai sebagai **daftar fitur target** — Lensaplus akan disamakan metode & fiturnya.
+> Tidak ada rename/fork. Kode, brand, domain, repo tetap Lensaplus.
 >
 > **Cara baca:** Ketika dokumen ini menyebut "JHB", baca itu sebagai "metode/fitur yang harus
-> ada di Kartawarta". Domain/brand JHB hanya muncul di konstanta lama; semua implementasi baru
-> pakai brand Kartawarta (kartawarta.com, PM2 process `kartawarta`, dst.).
+> ada di Lensaplus". Domain/brand JHB hanya muncul di konstanta lama; semua implementasi baru
+> pakai brand Lensaplus (lensaplus.com, PM2 process `lensaplus`, dst.).
 
 ---
 
@@ -35,7 +35,7 @@
 
 Hierarki 4 tingkat: `SUPER_ADMIN → EDITOR → JOURNALIST → CONTRIBUTOR`.
 
-> **Catatan Kartawarta:** Role existing ada 6 (`SUPER_ADMIN`, `CHIEF_EDITOR`, `EDITOR`, `SENIOR_JOURNALIST`, `JOURNALIST`, `CONTRIBUTOR`). Opsi: (a) tetap 6, petakan 4-role logic ke 6-role; atau (b) kompres jadi 4. Default migrasi: **tetap 6**, Editor = {CHIEF_EDITOR, EDITOR}, Jurnalis = {SENIOR_JOURNALIST, JOURNALIST}.
+> **Catatan Lensaplus:** Role existing ada 6 (`SUPER_ADMIN`, `CHIEF_EDITOR`, `EDITOR`, `SENIOR_JOURNALIST`, `JOURNALIST`, `CONTRIBUTOR`). Opsi: (a) tetap 6, petakan 4-role logic ke 6-role; atau (b) kompres jadi 4. Default migrasi: **tetap 6**, Editor = {CHIEF_EDITOR, EDITOR}, Jurnalis = {SENIOR_JOURNALIST, JOURNALIST}.
 
 ### Matriks Izin (dari dokumentasi JHB)
 
@@ -480,7 +480,7 @@ Format response: `{ success: boolean, data?, error? }`. Cron endpoint butuh head
 
 Setup di VPS via `crontab -e`:
 ```
-*/5 * * * * curl -X POST https://kartawarta.com/api/cron/publish -H "Authorization: Bearer ${CRON_SECRET}"
+*/5 * * * * curl -X POST https://lensaplus.com/api/cron/publish -H "Authorization: Bearer ${CRON_SECRET}"
 ```
 
 | Endpoint | Jadwal | Fungsi |
@@ -497,7 +497,7 @@ Setup di VPS via `crontab -e`:
 
 ### Model DB (27 target)
 
-Kartawarta saat ini punya 18 model. Yang perlu **DITAMBAH**:
+Lensaplus saat ini punya 18 model. Yang perlu **DITAMBAH**:
 
 1. **Sorotan** — 3 halaman substantif SEO per artikel (angle berbeda: kronologi/analisis/dampak). Fields: `id`, `slug`, `articleId`, `angle`, `title`, `content`, `indexStatus`, `lastIndexedAt`.
 2. **SocialPost** — record post ke IG/FB/Twitter. Fields: `id`, `articleId`, `platform`, `status` (DRAFT/PENDING/PUBLISHED/REJECTED/DELETED), `externalId`, `imageUrl`, `caption`, `publishedAt`, `errorMessage`, `deletedAt`.
@@ -553,7 +553,7 @@ VPS Ubuntu 24.04 (145.79.15.99, port 3001 internal, 443 public), PM2 cluster (4 
 
 ### Autentikasi & Session
 - bcrypt 12 rounds (min 8 char password)
-- Session JWT signed `NEXTAUTH_SECRET`, expire 30 hari (JHB) — Kartawarta saat ini 24 jam; pertahankan 24 jam atau ikuti 30 hari (opsi konfigurasi)
+- Session JWT signed `NEXTAUTH_SECRET`, expire 30 hari (JHB) — Lensaplus saat ini 24 jam; pertahankan 24 jam atau ikuti 30 hari (opsi konfigurasi)
 - Invalidate session on password reset
 - Email identifier unik, lowercase
 
@@ -597,9 +597,9 @@ VPS Ubuntu 24.04 (145.79.15.99, port 3001 internal, 443 public), PM2 cluster (4 
 
 ### Info VPS (JHB)
 - IP: `145.79.15.99`
-- Domain: `jurnalishukumbandung.com` → **Kartawarta: `kartawarta.com`**
-- App dir: `/var/www/jhb` → **Kartawarta: `/var/www/kartawarta`**
-- PM2 process: `jhb` → **Kartawarta: `kartawarta`**
+- Domain: `jurnalishukumbandung.com` → **Lensaplus: `lensaplus.com`**
+- App dir: `/var/www/jhb` → **Lensaplus: `/var/www/lensaplus`**
+- PM2 process: `jhb` → **Lensaplus: `lensaplus`**
 - Port internal: 3001
 - OS: Ubuntu 24.04 LTS
 - Node: v20.x LTS
@@ -609,18 +609,18 @@ VPS Ubuntu 24.04 (145.79.15.99, port 3001 internal, 443 public), PM2 cluster (4 
 ```
 1. npx next build                          # lokal
 2. git add [files] && git commit && git push origin master
-3. ssh root@145.79.15.99 "cd /var/www/kartawarta && git pull && npm install && rm -rf .next/types && npm run build && pm2 restart kartawarta"
+3. ssh root@145.79.15.99 "cd /var/www/lensaplus && git pull && npm install && rm -rf .next/types && npm run build && pm2 restart lensaplus"
 4. ssh root@145.79.15.99 "pm2 list"       # verify online
 ```
 
 ### Backup
 ```
 # DB
-pg_dump -U kartawarta_user kartawarta > /var/backups/kartawarta-$(date +%Y%m%d).sql
+pg_dump -U lensaplus_user lensaplus > /var/backups/lensaplus-$(date +%Y%m%d).sql
 # Restore
-psql -U kartawarta_user kartawarta < /var/backups/kartawarta-YYYYMMDD.sql
+psql -U lensaplus_user lensaplus < /var/backups/lensaplus-YYYYMMDD.sql
 
-# Media: rsync /var/www/kartawarta/public/uploads harian
+# Media: rsync /var/www/lensaplus/public/uploads harian
 # Code: git clone dari GitHub
 # Settings & keys: backup bareng DB + backup .env manual
 ```
@@ -654,11 +654,11 @@ psql -U kartawarta_user kartawarta < /var/backups/kartawarta-YYYYMMDD.sql
 
 ### Environment Variables (`.env` — WAJIB, tidak di DB)
 ```
-DATABASE_URL="postgresql://kartawarta_user:PASSWORD@localhost:5432/kartawarta"
-DIRECT_URL="postgresql://kartawarta_user:PASSWORD@localhost:5432/kartawarta"
+DATABASE_URL="postgresql://lensaplus_user:PASSWORD@localhost:5432/lensaplus"
+DIRECT_URL="postgresql://lensaplus_user:PASSWORD@localhost:5432/lensaplus"
 NEXTAUTH_SECRET="..."                    # random 32+ char
-NEXTAUTH_URL="https://kartawarta.com"
-NEXT_PUBLIC_APP_URL="https://kartawarta.com"
+NEXTAUTH_URL="https://lensaplus.com"
+NEXT_PUBLIC_APP_URL="https://lensaplus.com"
 CRON_SECRET="..."                        # Bearer token cron endpoints
 UPLOAD_DIR="public/uploads"
 NODE_ENV="production"
@@ -675,20 +675,20 @@ npx next build
 
 # VPS via SSH
 ssh root@145.79.15.99
-cd /var/www/kartawarta
+cd /var/www/lensaplus
 git pull origin master
 npm install
 rm -rf .next/types
 npm run build
-pm2 restart kartawarta
+pm2 restart lensaplus
 pm2 list
-pm2 logs kartawarta --lines 100
+pm2 logs lensaplus --lines 100
 pm2 monit
 
 # DB
-psql -U kartawarta_user -d kartawarta
-pg_dump -U kartawarta_user kartawarta > bck.sql
-psql -U kartawarta_user kartawarta < bck.sql
+psql -U lensaplus_user -d lensaplus
+pg_dump -U lensaplus_user lensaplus > bck.sql
+psql -U lensaplus_user lensaplus < bck.sql
 
 # SSL & Nginx
 certbot renew --dry-run
@@ -708,7 +708,7 @@ nginx -t
 | `/api/health` atau `/api/status` | Health check |
 
 ### Kontak & Kredensial
-- GitHub Repo: github.com/mediadigitalbandung/kartawarta
+- GitHub Repo: github.com/mediadigitalbandung/lensaplus
 - VPS Provider: Hostinger (hpanel.hostinger.com)
 - DNS: Cloudflare (dash.cloudflare.com)
 - Meta Developer: developers.facebook.com/apps
@@ -753,9 +753,9 @@ Kategori masalah yang harus tersedia di `/panel/dokumentasi`:
 
 ---
 
-## Catatan Migrasi Kartawarta
+## Catatan Migrasi Lensaplus
 
-Kartawarta saat ini punya ~60% fitur target. Yang **sudah ada** (tinggal review/polish):
+Lensaplus saat ini punya ~60% fitur target. Yang **sudah ada** (tinggal review/polish):
 - Workflow artikel DRAFT→IN_REVIEW→APPROVED→PUBLISHED + REJECTED + ARCHIVED
 - 18 model DB + AuditLog + AIUsageLog + Notification
 - NextAuth JWT, bcrypt 12, Zod validasi, rate-limit, sanitasi HTML
@@ -778,4 +778,4 @@ Yang **belum ada** / butuh dibangun:
 - Halaman `/panel/dokumentasi`
 - Email notifikasi Resend (aktifkan)
 - Cron: `auto-article`, `sorotan`, `seo-submit`, `backup`
-- Design sistem: doc pakai hijau; Kartawarta sudah rebrand ke navy `#002045` — pertahankan rebrand
+- Design sistem: doc pakai hijau; Lensaplus sudah rebrand ke navy `#002045` — pertahankan rebrand

@@ -36,30 +36,30 @@ async function main() {
   // Create super admin
   const hashedPassword = await bcrypt.hash("Admin@2026!", 12);
   await prisma.users.upsert({
-    where: { email: "admin@kartawarta.com" },
+    where: { email: "admin@lensaplus.com" },
     update: {},
     create: {
       id: genId(),
-      email: "admin@kartawarta.com",
+      email: "admin@lensaplus.com",
       password: hashedPassword,
       name: "Super Admin",
       role: Role.SUPER_ADMIN,
-      bio: "Administrator Kartawarta",
+      bio: "Administrator Lensaplus",
     },
   });
 
   // Create demo editor
   const editorPassword = await bcrypt.hash("Editor@2026!", 12);
   await prisma.users.upsert({
-    where: { email: "editor@kartawarta.com" },
+    where: { email: "editor@lensaplus.com" },
     update: {},
     create: {
       id: genId(),
-      email: "editor@kartawarta.com",
+      email: "editor@lensaplus.com",
       password: editorPassword,
       name: "Editor Kepala",
       role: Role.CHIEF_EDITOR,
-      bio: "Editor Kepala Kartawarta",
+      bio: "Editor Kepala Lensaplus",
     },
   });
 

@@ -1,7 +1,7 @@
 /**
  * POST /api/external/articles/from-obsidian
  *
- * External sync endpoint for Obsidian editorial vault → Kartawarta DB.
+ * External sync endpoint for Obsidian editorial vault → Lensaplus DB.
  * Auth: Bearer ${OBSIDIAN_SYNC_TOKEN} (timing-safe verify, non-empty guard).
  *
  * Body:
@@ -51,7 +51,7 @@ const BodySchema = z.object({
   featuredImage: z.string().optional(),
 });
 
-const BOT_EMAIL = "obsidian-sync-bot@kartawarta.local";
+const BOT_EMAIL = "obsidian-sync-bot@lensaplus.local";
 const BOT_NAME = "Obsidian Sync Bot";
 
 function verifySyncToken(req: NextRequest): void {
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
         articleId: existing.id,
         slug: existing.slug,
         status: existing.status,
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com"}/berita/${existing.slug}`,
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com"}/berita/${existing.slug}`,
         idempotent: true,
         message: "Article with this slug already exists",
       });
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
       articleId: article.id,
       slug: article.slug,
       status: article.status,
-      url: `${process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com"}/berita/${article.slug}`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com"}/berita/${article.slug}`,
       idempotent: false,
       message: "Article created as DRAFT — review/publish via panel",
     });

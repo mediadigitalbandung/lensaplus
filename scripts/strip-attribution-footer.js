@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Strip the legacy "Disarikan dari … Versi Kartawarta ditulis ulang oleh tim
+ * Strip the legacy "Disarikan dari … Versi Lensaplus ditulis ulang oleh tim
  * editorial dengan dukungan AI" attribution footer from every article body
  * that still carries it.
  *
@@ -12,7 +12,7 @@
  * Idempotent: rows whose body does not match the marker are left alone.
  *
  * Run on the VPS:
- *   cd /var/www/kartawarta && node scripts/strip-attribution-footer.js
+ *   cd /var/www/lensaplus && node scripts/strip-attribution-footer.js
  *
  * Flags:
  *   --dry-run   Print what would change, do not write.

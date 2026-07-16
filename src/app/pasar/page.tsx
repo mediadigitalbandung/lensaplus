@@ -10,18 +10,18 @@ export const revalidate = 60;
 // ─── Metadata ────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: "Pasar & Bursa — IHSG, Forex, Komoditas, Kripto Terkini | Kartawarta",
+  title: "Pasar & Bursa — IHSG, Forex, Komoditas, Kripto Terkini | Lensaplus",
   description:
     "Data pasar real-time: IHSG, kurs USD/IDR/EUR/SGD/JPY/CNY, harga emas, minyak, Bitcoin, Ethereum. Update otomatis tiap menit.",
   openGraph: {
-    title: "Pasar & Bursa — IHSG, Forex, Komoditas, Kripto | Kartawarta",
+    title: "Pasar & Bursa — IHSG, Forex, Komoditas, Kripto | Lensaplus",
     description:
       "Data pasar real-time: IHSG, kurs USD/IDR/EUR/SGD/JPY/CNY, harga emas, minyak, Bitcoin, Ethereum.",
     type: "website",
-    url: "https://kartawarta.com/pasar",
-    siteName: "Kartawarta",
+    url: "https://lensaplus.com/pasar",
+    siteName: "Lensaplus",
   },
-  alternates: { canonical: "https://kartawarta.com/pasar" },
+  alternates: { canonical: "https://lensaplus.com/pasar" },
   robots: { index: true, follow: true },
 };
 
@@ -91,7 +91,7 @@ async function getMarketData(): Promise<MarketData | null> {
   try {
     // Call the route handler logic directly via Yahoo Finance (same origin
     // fetch would require absolute URL in RSC — use internal URL pattern).
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kartawarta.com";
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://lensaplus.com";
     const res = await fetch(`${baseUrl}/api/market`, {
       next: { revalidate: 60 },
     });
@@ -144,31 +144,31 @@ function JsonLd({ updatedAt }: { updatedAt: string }) {
     "@graph": [
       {
         "@type": "WebPage",
-        "@id": "https://kartawarta.com/pasar",
-        url: "https://kartawarta.com/pasar",
-        name: "Pasar & Bursa — IHSG, Forex, Komoditas, Kripto | Kartawarta",
+        "@id": "https://lensaplus.com/pasar",
+        url: "https://lensaplus.com/pasar",
+        name: "Pasar & Bursa — IHSG, Forex, Komoditas, Kripto | Lensaplus",
         description:
           "Data pasar real-time: IHSG, kurs USD/IDR/EUR/SGD/JPY/CNY, harga emas, minyak, Bitcoin, Ethereum.",
         inLanguage: "id",
         publisher: {
           "@type": "Organization",
-          name: "Kartawarta",
-          url: "https://kartawarta.com",
+          name: "Lensaplus",
+          url: "https://lensaplus.com",
         },
         dateModified: updatedAt,
       },
       {
         "@type": "Dataset",
-        "@id": "https://kartawarta.com/pasar#dataset",
+        "@id": "https://lensaplus.com/pasar#dataset",
         name: "Data Pasar Keuangan Indonesia",
         description:
           "IHSG, kurs valuta asing, harga emas, minyak, dan kripto. Bersumber dari Yahoo Finance.",
-        url: "https://kartawarta.com/pasar",
-        creator: { "@type": "Organization", name: "Kartawarta" },
+        url: "https://lensaplus.com/pasar",
+        creator: { "@type": "Organization", name: "Lensaplus" },
         distribution: [
           {
             "@type": "DataDownload",
-            contentUrl: "https://kartawarta.com/api/market",
+            contentUrl: "https://lensaplus.com/api/market",
             encodingFormat: "application/json",
           },
         ],

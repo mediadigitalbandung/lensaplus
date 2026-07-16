@@ -26,7 +26,7 @@ export async function GET() {
     const res = await fetch(
       `https://query2.finance.yahoo.com/v8/finance/spark?symbols=${ids}&range=1d&interval=1d`,
       {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; Kartawarta/1.0)" },
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; Lensaplus/1.0)" },
         next: { revalidate: 15 },
       }
     );

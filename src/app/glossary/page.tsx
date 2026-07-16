@@ -8,12 +8,12 @@ export const revalidate = 300; // 5 min ISR
 
 // Absolute base for JSON-LD url fields (which aren't resolved against
 // metadataBase the way metadata.alternates.canonical is).
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 export const metadata: Metadata = {
-  title: "Glossary Hukum | Kartawarta",
+  title: "Glossary Hukum | Lensaplus",
   description:
-    "Daftar istilah hukum yang sering muncul di pemberitaan Kartawarta. Dari Tipikor hingga Restorative Justice — definisi singkat, dasar hukum, dan konteks.",
+    "Daftar istilah hukum yang sering muncul di pemberitaan Lensaplus. Dari Tipikor hingga Restorative Justice — definisi singkat, dasar hukum, dan konteks.",
   alternates: { canonical: "/glossary" },
 };
 
@@ -75,7 +75,7 @@ export default async function GlossaryPage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "DefinedTermSet",
-            name: "Glossary Hukum Kartawarta",
+            name: "Glossary Hukum Lensaplus",
             url: `${SITE_URL}/glossary`,
             description: metadata.description,
             hasDefinedTerm: items.map((i) => ({
@@ -100,7 +100,7 @@ export default async function GlossaryPage() {
               </span>
             </div>
             <h1 className="font-serif text-display-sm text-on-surface max-w-3xl">
-              Istilah Hukum di Pemberitaan Kartawarta
+              Istilah Hukum di Pemberitaan Lensaplus
             </h1>
             <p className="mt-4 max-w-2xl text-body-md text-on-surface-variant">
               Definisi singkat istilah hukum yang sering muncul di artikel kami — dari Tipikor

@@ -7,7 +7,7 @@ const page = await ctx.newPage();
 const go = async (url)=>{ try{ await page.goto(url,{waitUntil:"domcontentloaded",timeout:30000}); }catch{} await page.waitForTimeout(2500); };
 
 // Footer element
-await go("https://kartawarta.com/");
+await go("https://lensaplus.com/");
 try{ const f = page.locator("footer").first(); await f.scrollIntoViewIfNeeded(); await page.waitForTimeout(800); await f.screenshot({path:"proposal/shot-footer.png"}); console.log("footer OK"); }catch(e){console.log("footer FAIL",e.message);}
 
 // A category page
@@ -17,7 +17,7 @@ if(cat){ await go(cat); try{ await page.screenshot({path:"proposal/shot-category
 else console.log("no category link");
 
 // Market / bursa page
-await go("https://kartawarta.com/pasar");
+await go("https://lensaplus.com/pasar");
 try{ await page.screenshot({path:"proposal/shot-pasar.png"}); console.log("pasar OK"); }catch(e){console.log("pasar FAIL",e.message);}
 
 await ctx.close(); await browser.close(); console.log("done");

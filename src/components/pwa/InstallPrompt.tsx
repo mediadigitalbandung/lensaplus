@@ -11,7 +11,7 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
-const DISMISS_KEY   = "kartawarta-pwa-dismissed-at";
+const DISMISS_KEY   = "lensaplus-pwa-dismissed-at";
 const DISMISS_DAYS  = 30;
 
 /** Returns true if the user dismissed the prompt within the cooldown window. */
@@ -89,14 +89,14 @@ export default function InstallPrompt() {
   return (
     <div
       role="banner"
-      aria-label="Prompt pasang aplikasi Kartawarta"
+      aria-label="Prompt pasang aplikasi Lensaplus"
       className="fixed bottom-4 left-4 right-4 z-[150] sm:left-auto sm:right-6 sm:w-80"
     >
       <div className="card shadow-ambient border border-border-default flex items-start gap-3 p-4 rounded-md">
         {/* App icon */}
         <Image
           src="/icons/icon-192.png"
-          alt="Logo Kartawarta"
+          alt="Logo Lensaplus"
           width={44}
           height={44}
           className="rounded-sm flex-shrink-0 mt-0.5"
@@ -105,7 +105,7 @@ export default function InstallPrompt() {
         {/* Text */}
         <div className="flex-1 min-w-0">
           <p className="text-label-md font-semibold text-on-surface leading-snug">
-            Pasang Kartawarta
+            Pasang Lensaplus
           </p>
           <p className="text-label-md text-on-surface-variant mt-0.5 leading-snug">
             Baca berita Bandung & Indonesia lebih cepat dari layar utama Anda.

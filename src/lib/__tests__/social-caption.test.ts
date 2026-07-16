@@ -68,7 +68,7 @@ describe("generateSocialCaption", () => {
       `),
     });
 
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://lensaplus.com");
   });
 
   it("appends hashtags, CTA, and the article link by default", async () => {
@@ -77,13 +77,13 @@ describe("generateSocialCaption", () => {
       article: makeArticle(),
       platform: "FACEBOOK",
       hashtags: ["Bandung", "#Hukum"],
-      cta: "Baca selengkapnya di Kartawarta.",
+      cta: "Baca selengkapnya di Lensaplus.",
     });
 
     expect(result).toContain("Inti berita putusan.");
-    expect(result).toContain("Baca selengkapnya di Kartawarta.");
+    expect(result).toContain("Baca selengkapnya di Lensaplus.");
     expect(result).toContain(
-      "https://kartawarta.com/berita/putusan-pn-bandung",
+      "https://lensaplus.com/berita/putusan-pn-bandung",
     );
     expect(result).toMatch(/#Bandung/);
     expect(result).toMatch(/#Hukum/);
@@ -127,7 +127,7 @@ describe("generateSocialCaption", () => {
       platform: "THREADS",
     });
 
-    expect(result).toBe("[ Putusan PN Bandung ]\n\nBaca selengkapnya di: https://kartawarta.com/berita/putusan-pn-bandung");
+    expect(result).toBe("[ Putusan PN Bandung ]\n\nBaca selengkapnya di: https://lensaplus.com/berita/putusan-pn-bandung");
     expect(result).not.toContain("Ringkasan");
     expect(result).not.toContain("#");
   });

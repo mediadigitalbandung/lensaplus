@@ -9,7 +9,7 @@
  * alone — the in-body image is already the visible cover.
  *
  * Run on the VPS so DATABASE_URL points at production:
- *   cd /var/www/kartawarta && node scripts/backfill-featured-into-content.js
+ *   cd /var/www/lensaplus && node scripts/backfill-featured-into-content.js
  *
  * Flags:
  *   --dry-run   Print what would change, do not write.

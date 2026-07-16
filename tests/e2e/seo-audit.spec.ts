@@ -65,7 +65,7 @@ for (const p of PAGES) {
     if (p.path !== "/") {
       const canonical = await page.locator('link[rel="canonical"]').first().getAttribute("href");
       expect(canonical, "missing canonical").toBeTruthy();
-      expect(canonical).toMatch(/^https:\/\/kartawarta\.com/);
+      expect(canonical).toMatch(/^https:\/\/lensaplus\.com/);
     }
 
     // 5. OG essentials

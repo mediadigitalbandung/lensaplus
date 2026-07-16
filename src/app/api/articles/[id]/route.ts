@@ -807,7 +807,7 @@ export async function PUT(
           revalidatePath(`/berita/${updated.slug}`);
           invalidateCachePrefix("home:");
           invalidateCachePrefix("trending:");
-          const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+          const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
           purgeCache([`${SITE}/berita/${updated.slug}`]).catch(() => {});
         } catch {/* swallow */}
       }

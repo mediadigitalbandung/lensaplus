@@ -117,13 +117,13 @@ export async function POST(request: NextRequest) {
     // (swallows "no email provider" etc.) — never blocks user creation.
     issueAndSendVerification(user.id).catch(() => {});
 
-    // Create email@kartawarta.com if requested
+    // Create email@lensaplus.com if requested
     let emailCreated = false;
-    const kartawartaEmail = body.kartawartaEmail as string | undefined;
-    if (kartawartaEmail && kartawartaEmail.length >= 2) {
+    const lensaplusEmail = body.lensaplusEmail as string | undefined;
+    if (lensaplusEmail && lensaplusEmail.length >= 2) {
       try {
         await addDestinationAddress(data.email);
-        await createEmailForward(kartawartaEmail, data.email);
+        await createEmailForward(lensaplusEmail, data.email);
         emailCreated = true;
       } catch {
         // Non-critical — email routing might not be active yet

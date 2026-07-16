@@ -101,7 +101,7 @@ export default function NewsletterForm({ source }: { source: string }) {
         <a href="/privasi" className="underline">
           Kebijakan Privasi
         </a>{" "}
-        Kartawarta.
+        Lensaplus.
       </p>
     </form>
   );

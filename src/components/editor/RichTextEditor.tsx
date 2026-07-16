@@ -241,7 +241,7 @@ export default function RichTextEditor({
 
       let topic = "";
       if (feature === "content_ideas") {
-        const input = window.prompt("bantu saya membuat beberapa ide artikel untuk kartawarta.com. terkait topik [[SPMB Jabar 2026]]...\n\nMasukkan topik/keyword untuk ide konten (contoh: SPMB Jabar 2026):");
+        const input = window.prompt("bantu saya membuat beberapa ide artikel untuk lensaplus.com. terkait topik [[SPMB Jabar 2026]]...\n\nMasukkan topik/keyword untuk ide konten (contoh: SPMB Jabar 2026):");
         if (!input?.trim()) return;
         topic = input.trim();
       } else if (feature === "write_article") {

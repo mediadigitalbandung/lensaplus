@@ -19,7 +19,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const LOGO = join(ROOT, "public", "kartawarta-icon.png");
+const LOGO = join(ROOT, "public", "lensaplus-icon.png");
 const OUT = join(ROOT, "twa", "playstore-assets");
 const NAVY = "#002045";
 const NAVY_DARK = "#001530";
@@ -55,7 +55,7 @@ const tagline = `
     </defs>
     <rect width="1024" height="500" fill="url(#g)" />
     <text x="380" y="200" font-family="Georgia, serif" font-size="64" font-weight="800" fill="#ffffff">
-      Kartawarta
+      Lensaplus
     </text>
     <text x="380" y="260" font-family="Arial, sans-serif" font-size="22" font-weight="500" fill="#c9d3e6" letter-spacing="1.5">
       MEDIA BERITA DIGITAL BANDUNG
@@ -87,7 +87,7 @@ for (let i = 1; i <= 2; i++) {
       <rect width="1080" height="1920" fill="#f8f9fa" />
       <rect width="1080" height="120" fill="${NAVY}" />
       <text x="540" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="42" font-weight="800" fill="#ffffff">
-        Kartawarta
+        Lensaplus
       </text>
       <text x="540" y="960" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" fill="#74777f">
         Screenshot Placeholder ${i}
@@ -105,4 +105,4 @@ for (let i = 1; i <= 2; i++) {
 
 console.log("\nDone. Required Play Store assets generated.");
 console.log("\nNext: Replace phone-screenshot-*.png dengan screenshot asli dari device.");
-console.log("Cara: Buka kartawarta.com di Chrome mobile, screenshot, save 1080×1920.");
+console.log("Cara: Buka lensaplus.com di Chrome mobile, screenshot, save 1080×1920.");

@@ -12,7 +12,7 @@ const subscribeSchema = z.object({
   source: z.string().max(40).optional(),
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 /**
  * POST /api/newsletter/subscribe — public, double-opt-in.
@@ -71,9 +71,9 @@ export async function POST(request: NextRequest) {
     const confirmUrl = `${SITE_URL}/api/newsletter/confirm?token=${subscriber.token}`;
     const html = `
       <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #191c1d;">
-        <h2 style="color: #002045;">Konfirmasi Berlangganan Kartawarta</h2>
+        <h2 style="color: #002045;">Konfirmasi Berlangganan Lensaplus</h2>
         <p>Halo,</p>
-        <p>Terima kasih telah berlangganan newsletter mingguan Kartawarta — kabar hukum dan investigasi pilihan dari Bandung.</p>
+        <p>Terima kasih telah berlangganan newsletter mingguan Lensaplus — kabar hukum dan investigasi pilihan dari Bandung.</p>
         <p>Klik tombol di bawah untuk mengaktifkan langganan Anda:</p>
         <p style="margin: 24px 0;">
           <a href="${confirmUrl}" style="display:inline-block; background:#002045; color:#fff; padding:12px 24px; border-radius:6px; text-decoration:none; font-weight:600;">Konfirmasi Email</a>
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         <p style="color:#74777f; font-size:12px;">Jika Anda tidak mendaftar, abaikan saja email ini — Anda tidak akan menerima email lain.</p>
       </div>
     `;
-    await sendEmail(data.email, "Konfirmasi Berlangganan Kartawarta", html);
+    await sendEmail(data.email, "Konfirmasi Berlangganan Lensaplus", html);
 
     return successResponse({
       status: "pending-confirmation",

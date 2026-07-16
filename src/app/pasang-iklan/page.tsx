@@ -20,7 +20,7 @@ import AdInquiryForm from "@/components/ads/AdInquiryForm";
 export const metadata: Metadata = {
   title: "Pasang Iklan & Kerjasama",
   description:
-    "Jangkau pembaca Bandung & Jawa Barat lewat Kartawarta — media terverifikasi Dewan Pers. Banner display, advertorial, dan kerjasama media pemerintah daerah.",
+    "Jangkau pembaca Bandung & Jawa Barat lewat Lensaplus — media terverifikasi Dewan Pers. Banner display, advertorial, dan kerjasama media pemerintah daerah.",
   alternates: { canonical: "/pasang-iklan" },
 };
 
@@ -44,7 +44,7 @@ const PACKAGES = [
     title: "Advertorial / Berita Berbayar",
     price: "Mulai Rp 1.000.000",
     unit: "/ artikel",
-    desc: "Konten promosi ditulis gaya jurnalistik, dimuat permanen, diberi label 'Advertorial', plus distribusi ke Google News & media sosial Kartawarta.",
+    desc: "Konten promosi ditulis gaya jurnalistik, dimuat permanen, diberi label 'Advertorial', plus distribusi ke Google News & media sosial Lensaplus.",
     points: ["Penulisan oleh tim redaksi", "Tayang permanen + label transparan", "Distribusi sosial media"],
   },
   {
@@ -79,7 +79,7 @@ const WHY = [
   {
     icon: Newspaper,
     title: "Multi-Kanal",
-    desc: "Konten Anda tersebar ke Website, Google News, serta Instagram & kanal sosial Kartawarta.",
+    desc: "Konten Anda tersebar ke Website, Google News, serta Instagram & kanal sosial Lensaplus.",
   },
   {
     icon: TrendingUp,
@@ -120,7 +120,7 @@ export default async function PasangIklanPage() {
             </h1>
             <p className="mt-4 text-base text-white/85 sm:text-lg">
               Jangkau pembaca Bandung &amp; Jawa Barat lewat banner display, advertorial, dan
-              kerjasama media. Kartawarta — terverifikasi Dewan Pers, terindeks Google News.
+              kerjasama media. Lensaplus — terverifikasi Dewan Pers, terindeks Google News.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="#formulir" className="btn-primary bg-secondary hover:bg-secondary-dark">
@@ -153,7 +153,7 @@ export default async function PasangIklanPage() {
       <section className="container-main py-12 sm:py-14">
         <h2 className="flex items-center gap-3 font-serif text-headline-sm font-bold text-txt-primary sm:text-headline-md">
           <span className="block h-7 w-[3px] rounded-full bg-secondary" />
-          Mengapa Beriklan di Kartawarta?
+          Mengapa Beriklan di Lensaplus?
         </h2>
         <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {WHY.map((w) => (
@@ -255,7 +255,7 @@ export default async function PasangIklanPage() {
                 Siap Beriklan?
               </h2>
               <p className="mt-3 text-txt-secondary">
-                Kirim permintaan Anda dan tim pemasaran Kartawarta akan menghubungi Anda dengan
+                Kirim permintaan Anda dan tim pemasaran Lensaplus akan menghubungi Anda dengan
                 <strong className="text-txt-primary"> media kit lengkap</strong> berisi data audiens
                 terbaru (Google Analytics) serta penawaran tarif yang sesuai kebutuhan.
               </p>
@@ -273,8 +273,8 @@ export default async function PasangIklanPage() {
               </ul>
               <p className="mt-6 text-sm text-txt-secondary">
                 Atau email langsung:{" "}
-                <a href="mailto:redaksi@kartawarta.com" className="font-semibold text-primary hover:underline">
-                  redaksi@kartawarta.com
+                <a href="mailto:redaksi@lensaplus.com" className="font-semibold text-primary hover:underline">
+                  redaksi@lensaplus.com
                 </a>
               </p>
             </div>

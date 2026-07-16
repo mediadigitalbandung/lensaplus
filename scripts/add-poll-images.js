@@ -47,7 +47,7 @@ async function main() {
   const uploadDir = path.join(process.cwd(), "public", "uploads");
   fs.mkdirSync(uploadDir, { recursive: true });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
   let updated = 0;
   for (const { q, url } of pollImages) {

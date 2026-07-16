@@ -67,7 +67,7 @@ jobs:
           timeout: 240s
           script: |
             set -e
-            cd /var/www/kartawarta
+            cd /var/www/lensaplus
 
             # Pull just the deploy script first so we always run the latest
             # version from master, even if the rest of the working tree is
@@ -80,13 +80,13 @@ jobs:
             # nohup ignores HUP, setsid breaks the controlling terminal,
             # </dev/null severs stdin, &>file redirects stdio to log.
             nohup setsid bash scripts/deploy-vps.sh \
-              > /tmp/kartawarta-deploy.log 2>&1 < /dev/null &
+              > /tmp/lensaplus-deploy.log 2>&1 < /dev/null &
             disown
 
             # Sanity check that the background process actually launched.
             sleep 1
             pgrep -f scripts/deploy-vps.sh > /dev/null \
-              || { echo "deploy-vps.sh failed to start"; cat /tmp/kartawarta-deploy.log; exit 1; }
+              || { echo "deploy-vps.sh failed to start"; cat /tmp/lensaplus-deploy.log; exit 1; }
             echo "deploy-vps.sh running in background"
 
       # ── Step 2: Poll for completion via appleboy/ssh-action ──
@@ -107,8 +107,8 @@ jobs:
           # land during the busy window — give the dial the same long timeout.
           timeout: 240s
           script: |
-            STATUS_FILE=/tmp/kartawarta-deploy-status
-            LOG_FILE=/tmp/kartawarta-deploy.log
+            STATUS_FILE=/tmp/lensaplus-deploy-status
+            LOG_FILE=/tmp/lensaplus-deploy.log
 
             for i in $(seq 1 84); do
               if [ -f "$STATUS_FILE" ]; then
@@ -170,7 +170,7 @@ jobs:
       - name: Verify production
         run: |
           for i in 1 2 3 4 5; do
-            STATUS=$(curl -sIo /dev/null -w '%{http_code}' https://kartawarta.com)
+            STATUS=$(curl -sIo /dev/null -w '%{http_code}' https://lensaplus.com)
             if [ "$STATUS" = "200" ]; then
               echo "✅ Production responding: HTTP $STATUS"
               exit 0

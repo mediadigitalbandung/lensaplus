@@ -1,13 +1,13 @@
-# Kartawarta — Submit ke Google Play Store via TWA
+# Lensaplus — Submit ke Google Play Store via TWA
 
-Panduan lengkap menerbitkan Kartawarta ke Play Store sebagai **Trusted Web Activity (TWA)** — wrapper Android untuk PWA. Tetap satu codebase (Next.js).
+Panduan lengkap menerbitkan Lensaplus ke Play Store sebagai **Trusted Web Activity (TWA)** — wrapper Android untuk PWA. Tetap satu codebase (Next.js).
 
 ---
 
 ## Apa itu TWA & kenapa pakai pendekatan ini
 
 - **TWA = Trusted Web Activity**: Chrome Custom Tab versi premium yang menampilkan PWA Anda fullscreen tanpa URL bar, terlihat persis seperti app native.
-- **Codebase tetap satu** — yang Anda submit ke Play Store hanya wrapper APK ~1MB. Kontennya tetap dari kartawarta.com.
+- **Codebase tetap satu** — yang Anda submit ke Play Store hanya wrapper APK ~1MB. Kontennya tetap dari lensaplus.com.
 - **Update content** = push commit ke web. Tidak perlu submit update APK setiap kali ada fitur baru.
 - **Update APK** hanya kalau wrapper logic berubah (jarang).
 - **Zero "Unsafe app blocked"** karena Google sign + verify TWA APK Anda.
@@ -48,20 +48,20 @@ Bubblewrap akan tanya saat first run dan auto-download Android SDK + build tools
 
 ### Langkah A1: Initialize Bubblewrap project
 ```bash
-cd /c/Users/Owen/Documents/Aureon/Kartawarta/Kartawarta/twa
-bubblewrap init --manifest=https://kartawarta.com/manifest.json
+cd /c/Users/Owen/Documents/Aureon/Lensaplus/Lensaplus/twa
+bubblewrap init --manifest=https://lensaplus.com/manifest.json
 ```
 
 Bubblewrap akan tanya beberapa input:
-- **Package name**: `com.kartawarta.app` (sudah di twa-manifest.json — ketik ulang sama persis)
-- **App name**: `Kartawarta`
-- **Launcher name**: `Kartawarta`
+- **Package name**: `com.lensaplus.app` (sudah di twa-manifest.json — ketik ulang sama persis)
+- **App name**: `Lensaplus`
+- **Launcher name**: `Lensaplus`
 - **App version**: `1.0.0`
 - **Display mode**: `standalone`
 - **Status bar color**: `#002045`
 - **Splash background**: `#ffffff`
-- **Icon URL**: `https://kartawarta.com/icons/icon-512.png`
-- **Maskable icon URL**: `https://kartawarta.com/icons/icon-512-maskable.png`
+- **Icon URL**: `https://lensaplus.com/icons/icon-512.png`
+- **Maskable icon URL**: `https://lensaplus.com/icons/icon-512-maskable.png`
 - **Signing key location**: `./android.keystore`
 - **Signing key alias**: `android`
 - **Keystore password**: pilih yang aman (16+ karakter), **CATAT BAIK-BAIK** — kalau hilang, Anda gak bisa update APK lagi selamanya. Backup ke password manager + cloud encrypted storage.
@@ -83,7 +83,7 @@ Masukkan keystore password. Cari baris `SHA256:` — copy seluruh fingerprint (f
 # Generate file lengkap
 bubblewrap fingerprint generateAssetLinks
 ```
-Bubblewrap akan generate `assetlinks.json` dengan format yang benar. Replace isi file `/public/.well-known/assetlinks.json` di repo Kartawarta dengan yang ini.
+Bubblewrap akan generate `assetlinks.json` dengan format yang benar. Replace isi file `/public/.well-known/assetlinks.json` di repo Lensaplus dengan yang ini.
 
 Atau manual — replace existing file dengan:
 ```json
@@ -92,7 +92,7 @@ Atau manual — replace existing file dengan:
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.kartawarta.app",
+      "package_name": "com.lensaplus.app",
       "sha256_cert_fingerprints": ["XX:XX:XX:..."]
     }
   }
@@ -101,15 +101,15 @@ Atau manual — replace existing file dengan:
 
 Commit & push & deploy:
 ```bash
-cd /c/Users/Owen/Documents/Aureon/Kartawarta/Kartawarta
+cd /c/Users/Owen/Documents/Aureon/Lensaplus/Lensaplus
 git add public/.well-known/assetlinks.json
-git commit -m "fix(twa): add Play Store assetlinks for com.kartawarta.app"
+git commit -m "fix(twa): add Play Store assetlinks for com.lensaplus.app"
 git push origin master
 ```
 
 ### Langkah A4: Build AAB (Android App Bundle — format Play Store butuh)
 ```bash
-cd /c/Users/Owen/Documents/Aureon/Kartawarta/Kartawarta/twa
+cd /c/Users/Owen/Documents/Aureon/Lensaplus/Lensaplus/twa
 bubblewrap build
 ```
 Output: `app-release-bundle.aab` dan `app-release-signed.apk` di folder `twa/`.
@@ -125,14 +125,14 @@ adb install app-release-signed.apk
 ```
 
 Buka app — harus:
-- ✅ Buka langsung ke kartawarta.com fullscreen, **tanpa URL bar**
+- ✅ Buka langsung ke lensaplus.com fullscreen, **tanpa URL bar**
 - ✅ Status bar warna navy
 - ✅ Splash screen putih dengan logo
 - ✅ Long-press icon → 4 shortcut (Berita Terkini, Hukum, Bisnis, Cari)
 
 Kalau masih muncul URL bar — `assetlinks.json` belum verified. Cek:
 ```bash
-adb shell pm get-app-links com.kartawarta.app
+adb shell pm get-app-links com.lensaplus.app
 ```
 Harus `verified`. Kalau `legacy_failure`, deploy `assetlinks.json` belum live atau format salah.
 
@@ -144,7 +144,7 @@ Harus `verified`. Kalau `legacy_failure`, deploy `assetlinks.json` belum live at
 1. Buka https://play.google.com/console
 2. Klik **Create app**
 3. Isi:
-   - **App name**: Kartawarta
+   - **App name**: Lensaplus
    - **Default language**: Indonesian (id-ID)
    - **App or game**: App
    - **Free or paid**: Free
@@ -152,12 +152,12 @@ Harus `verified`. Kalau `legacy_failure`, deploy `assetlinks.json` belum live at
 
 ### Langkah B2: Setup Store Listing
 **Main Store Listing** menu kiri:
-- **App name**: Kartawarta
+- **App name**: Lensaplus
 - **Short description** (max 80 char):
   > Berita digital Bandung — bisnis, ekonomi, hukum, politik. Terverifikasi Dewan Pers.
 - **Full description** (max 4000 char):
   ```
-  Kartawarta adalah portal berita digital terpercaya untuk Bandung dan Jawa Barat.
+  Lensaplus adalah portal berita digital terpercaya untuk Bandung dan Jawa Barat.
   
   📰 LIPUTAN HARIAN
   Berita terbaru bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, kesehatan, pendidikan, dan peristiwa lokal.
@@ -183,7 +183,7 @@ Harus `verified`. Kalau `legacy_failure`, deploy `assetlinks.json` belum live at
   💌 NEWSLETTER MINGGUAN
   Berita pilihan editor langsung ke email Anda setiap Senin pagi.
   
-  Kunjungi kami di https://kartawarta.com
+  Kunjungi kami di https://lensaplus.com
   ```
 - **App icon**: upload `twa/playstore-assets/icon-512.png`
 - **Feature graphic**: upload `twa/playstore-assets/feature-graphic.png`
@@ -195,9 +195,9 @@ Harus `verified`. Kalau `legacy_failure`, deploy `assetlinks.json` belum live at
   5. Sorotan box
 - **App category**: News & Magazines
 - **Tags**: News, Indonesia, Bandung, Hukum
-- **Email**: hello@kartawarta.com (atau email Anda)
-- **Website**: https://kartawarta.com
-- **Privacy policy URL**: https://kartawarta.com/privasi
+- **Email**: hello@lensaplus.com (atau email Anda)
+- **Website**: https://lensaplus.com
+- **Privacy policy URL**: https://lensaplus.com/privasi
 
 ### Langkah B3: Upload Bundle ke Internal Testing
 1. Menu kiri → **Testing → Internal testing**
@@ -206,7 +206,7 @@ Harus `verified`. Kalau `legacy_failure`, deploy `assetlinks.json` belum live at
 4. **Release name**: auto (versi 1)
 5. **Release notes**: 
    ```
-   id-ID: Versi pertama Kartawarta — portal berita digital Bandung & Jawa Barat. Liputan bisnis, ekonomi, hukum, politik, olahraga, dan peristiwa lokal terverifikasi.
+   id-ID: Versi pertama Lensaplus — portal berita digital Bandung & Jawa Barat. Liputan bisnis, ekonomi, hukum, politik, olahraga, dan peristiwa lokal terverifikasi.
    ```
 6. Klik **Save → Review release → Start rollout to Internal testing**
 
@@ -214,14 +214,14 @@ Harus `verified`. Kalau `legacy_failure`, deploy `assetlinks.json` belum live at
 1. Menu **Testers** tab
 2. Email lists → Create email list → tambah email Anda
 3. Save → klik link "Copy link" → buka di browser HP Android Anda
-4. Akan redirect ke Play Store, install Kartawarta dari sana
+4. Akan redirect ke Play Store, install Lensaplus dari sana
 5. Test semua flow
 
 ### Langkah B5: Lengkapi compliance forms (REQUIRED sebelum production)
 Menu kiri → **Policy** → isi semua section:
 
 **Privacy Policy**:
-- URL: `https://kartawarta.com/privasi` (sudah ada di site Anda)
+- URL: `https://lensaplus.com/privasi` (sudah ada di site Anda)
 
 **App access**:
 - "All functionality is available without restrictions" (kalau publik bisa baca semua)
@@ -271,15 +271,15 @@ Setelah Internal Testing OK + semua compliance form filled:
 
 ### Langkah B7: Setelah approved
 - App live di Play Store
-- Search "Kartawarta" akan muncul
-- Direct URL: `https://play.google.com/store/apps/details?id=com.kartawarta.app`
+- Search "Lensaplus" akan muncul
+- Direct URL: `https://play.google.com/store/apps/details?id=com.lensaplus.app`
 
 ---
 
 ## Phase C — Update aplikasi di kemudian hari
 
 **Update konten** (artikel, fitur, layout, dll):
-- Cukup `git push` ke master → CI deploy ke kartawarta.com
+- Cukup `git push` ke master → CI deploy ke lensaplus.com
 - TWA users akan langsung lihat versi baru (karena app cuma wrapper, kontent dari web)
 - **Tidak perlu** submit ulang ke Play Store
 
@@ -340,13 +340,13 @@ Bubblewrap butuh JDK 17. Kalau Anda punya JDK 11, install ulang ke 17 (atau paka
 
 **"App muncul URL bar walau sudah install"**
 `assetlinks.json` belum verified. Pastikan:
-- File dapat diakses publik: `curl https://kartawarta.com/.well-known/assetlinks.json`
+- File dapat diakses publik: `curl https://lensaplus.com/.well-known/assetlinks.json`
 - SHA-256 fingerprint **persis sama** (case-sensitive, dengan semua colons)
 - Sudah deploy ke production sebelum install APK
 - Restart app setelah deploy
 
 **"Play Console reject — privacy policy missing/invalid"**
-URL `https://kartawarta.com/privasi` harus accessible publik (tidak login-walled), berbahasa Indonesia (atau English), dan menjelaskan:
+URL `https://lensaplus.com/privasi` harus accessible publik (tidak login-walled), berbahasa Indonesia (atau English), dan menjelaskan:
 - Data apa yang dikumpulkan
 - Untuk apa
 - Disimpan berapa lama
@@ -368,7 +368,7 @@ TWA standar gak butuh permission sensitif (camera/location/contacts). Kalau Bubb
 - Tool gratis: bikin di Figma / Canva, export 1080×1920
 
 ### Install conversion booster
-- Setelah app live, tambahin link "Install di Play Store" di footer Kartawarta — boost install rate dari pembaca website existing
+- Setelah app live, tambahin link "Install di Play Store" di footer Lensaplus — boost install rate dari pembaca website existing
 
 ### Localization (kalau mau Bahasa Inggris juga)
 - Play Console support per-language listings

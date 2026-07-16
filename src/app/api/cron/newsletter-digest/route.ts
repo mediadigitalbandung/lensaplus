@@ -8,7 +8,7 @@
  * Protected by `Authorization: Bearer ${CRON_SECRET}`.
  *
  * Recommend invocation: every Monday at 07:00 WIB:
- *   0 0 * * 1 curl -sH "Authorization: Bearer $CRON_SECRET" https://kartawarta.com/api/cron/newsletter-digest
+ *   0 0 * * 1 curl -sH "Authorization: Bearer $CRON_SECRET" https://lensaplus.com/api/cron/newsletter-digest
  */
 
 import { NextRequest } from "next/server";
@@ -20,7 +20,7 @@ import { trackCron } from "@/lib/cron-tracker";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 async function handler(req: NextRequest) {
   try {
@@ -101,7 +101,7 @@ async function handler(req: NextRequest) {
       <div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#191c1d;">
         <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-bottom:2px solid #002045;padding-bottom:12px;margin-bottom:24px;">
           <tr>
-            <td style="font-family:Georgia,serif;font-size:24px;font-weight:800;color:#002045;letter-spacing:-0.5px;">Kartawarta</td>
+            <td style="font-family:Georgia,serif;font-size:24px;font-weight:800;color:#002045;letter-spacing:-0.5px;">Lensaplus</td>
             <td align="right" style="font-size:12px;color:#74777f;">Pekanan · ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</td>
           </tr>
         </table>
@@ -110,7 +110,7 @@ async function handler(req: NextRequest) {
         ${articleListHtml}
         <hr style="margin:32px 0;border:0;border-top:1px solid #c4c6d0;">
         <p style="font-size:11px;color:#74777f;line-height:1.6;text-align:center;">
-          Email ini dikirim ke ${sub.email} karena Anda berlangganan newsletter Kartawarta.<br>
+          Email ini dikirim ke ${sub.email} karena Anda berlangganan newsletter Lensaplus.<br>
           <a href="${unsubUrl}" style="color:#74777f;text-decoration:underline;">Berhenti berlangganan</a>
           &middot;
           <a href="${SITE_URL}" style="color:#74777f;text-decoration:underline;">Kunjungi situs</a>
@@ -118,7 +118,7 @@ async function handler(req: NextRequest) {
       </div>
     `;
     try {
-      await sendEmail(sub.email, "Pekan Ini di Kartawarta", html);
+      await sendEmail(sub.email, "Pekan Ini di Lensaplus", html);
       await prisma.newsletterSubscriber.update({
         where: { id: sub.id },
         data: { lastSentAt: new Date() },

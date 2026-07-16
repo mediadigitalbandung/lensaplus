@@ -1,7 +1,7 @@
 /**
  * Local / self-hosted AI provider (OpenAI-compatible chat completions).
  *
- * Lets Kartawarta use a private LLM server — e.g. an Ollama / LM Studio / vLLM /
+ * Lets Lensaplus use a private LLM server — e.g. an Ollama / LM Studio / vLLM /
  * llama.cpp box on the editor's Mac mini reachable over Tailscale — as an extra
  * article-drafting engine ALONGSIDE Perplexity. Self-hosted = no per-token cost.
  *

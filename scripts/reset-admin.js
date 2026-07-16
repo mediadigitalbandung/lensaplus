@@ -12,9 +12,9 @@ async function main() {
   // Reset admin password
   const hash = await bcrypt.hash("Admin@2026!", 12);
 
-  if (users.some(u => u.email === "admin@kartawarta.com")) {
+  if (users.some(u => u.email === "admin@lensaplus.com")) {
     await prisma.user.update({
-      where: { email: "admin@kartawarta.com" },
+      where: { email: "admin@lensaplus.com" },
       data: { password: hash },
     });
     console.log("Admin password reset OK");
@@ -22,11 +22,11 @@ async function main() {
     // Create admin if not exists
     await prisma.user.create({
       data: {
-        email: "admin@kartawarta.com",
+        email: "admin@lensaplus.com",
         password: hash,
         name: "Super Admin",
         role: "SUPER_ADMIN",
-        bio: "Administrator Kartawarta",
+        bio: "Administrator Lensaplus",
       },
     });
     console.log("Admin created OK");

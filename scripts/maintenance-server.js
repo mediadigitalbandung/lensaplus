@@ -2,7 +2,7 @@
  * Tiny zero-dependency maintenance server.
  *
  * Stands in for the Next.js app on the same port (default 3000) while a deploy
- * rebuilds the app. Every request gets a branded Kartawarta "we're updating"
+ * rebuilds the app. Every request gets a branded Lensaplus "we're updating"
  * page with HTTP 503 + Retry-After, so visitors (and Cloudflare) see an
  * on-brand page instead of Cloudflare's default "Bad gateway 502".
  *
@@ -27,9 +27,9 @@ try {
   // Minimal inline fallback if the HTML file is somehow missing.
   pageHtml =
     "<!doctype html><html lang=\"id\"><head><meta charset=\"utf-8\">" +
-    "<meta http-equiv=\"refresh\" content=\"15\"><title>Sedang Memperbarui — Kartawarta</title></head>" +
+    "<meta http-equiv=\"refresh\" content=\"15\"><title>Sedang Memperbarui — Lensaplus</title></head>" +
     "<body style=\"font-family:sans-serif;text-align:center;padding:60px;color:#002045\">" +
-    "<h1>Kartawarta sedang memperbarui</h1>" +
+    "<h1>Lensaplus sedang memperbarui</h1>" +
     "<p>Mohon tunggu sebentar, halaman akan termuat ulang otomatis.</p></body></html>";
 }
 

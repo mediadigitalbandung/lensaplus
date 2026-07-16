@@ -1,10 +1,10 @@
-// Kartawarta Service Worker — lite custom PWA
+// Lensaplus Service Worker — lite custom PWA
 // Strategy: cache-first static, cache-first images, network-first HTML
 
 const CACHE_VERSION = 'v2';
-const STATIC_CACHE  = 'kartawarta-static-' + CACHE_VERSION;
-const IMAGE_CACHE   = 'kartawarta-images-' + CACHE_VERSION;
-const PAGE_CACHE    = 'kartawarta-pages-'  + CACHE_VERSION;
+const STATIC_CACHE  = 'lensaplus-static-' + CACHE_VERSION;
+const IMAGE_CACHE   = 'lensaplus-images-' + CACHE_VERSION;
+const PAGE_CACHE    = 'lensaplus-pages-'  + CACHE_VERSION;
 
 const OFFLINE_URL   = '/offline';
 
@@ -85,7 +85,7 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle same-origin or kartawarta.com requests
+  // Only handle same-origin or lensaplus.com requests
   if (url.origin !== self.location.origin) return;
 
   // Skip non-GET

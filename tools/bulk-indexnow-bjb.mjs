@@ -8,7 +8,7 @@ import { PrismaClient } from "@prisma/client";
 const apply = process.argv.includes("--apply");
 const prisma = new PrismaClient();
 
-const SITE = "https://kartawarta.com";
+const SITE = "https://lensaplus.com";
 const KEY_LOCATION = `${SITE}/indexnow-key.txt`;
 
 // Read key from the same file the live app reads from
@@ -40,7 +40,7 @@ const resp = await fetch("https://api.indexnow.org/indexnow", {
   method: "POST",
   headers: { "Content-Type": "application/json; charset=utf-8" },
   body: JSON.stringify({
-    host: "kartawarta.com",
+    host: "lensaplus.com",
     key,
     keyLocation: KEY_LOCATION,
     urlList: urls,

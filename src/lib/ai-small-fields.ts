@@ -36,7 +36,7 @@ export async function shouldOffloadSmallFields(): Promise<boolean> {
 }
 
 const SYSTEM =
-  "Anda editor SEO Kartawarta (media berita Bandung). Dari JUDUL + ISI artikel, hasilkan metadata " +
+  "Anda editor SEO Lensaplus (media berita Bandung). Dari JUDUL + ISI artikel, hasilkan metadata " +
   "ringkas berbahasa Indonesia. HANYA rangkum dari isi — jangan menambah fakta baru. Jawab PERSIS " +
   "dengan format blok berpenanda, tiap penanda di barisnya sendiri lalu isinya di bawahnya, tanpa " +
   "teks lain:\n" +

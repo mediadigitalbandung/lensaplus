@@ -948,7 +948,7 @@ export default function PengaturanPage() {
       const res = await fetch("/api/cloudflare/purge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ urls: ["https://kartawarta.com/?test=1"] }),
+        body: JSON.stringify({ urls: ["https://lensaplus.com/?test=1"] }),
       });
       const json = await res.json();
       if (!json.success) {
@@ -1121,7 +1121,7 @@ export default function PengaturanPage() {
                 markDirty("umum");
               }}
               className="input"
-              placeholder="Kartawarta"
+              placeholder="Lensaplus"
             />
           </Field>
           <Field label="Deskripsi Situs">
@@ -1145,7 +1145,7 @@ export default function PengaturanPage() {
                 markDirty("umum");
               }}
               className="input"
-              placeholder="redaksi@kartawarta.com"
+              placeholder="redaksi@lensaplus.com"
             />
           </Field>
           <Field label="Alamat Redaksi">
@@ -1168,7 +1168,7 @@ export default function PengaturanPage() {
                 markDirty("umum");
               }}
               className="input"
-              placeholder="https://kartawarta.com"
+              placeholder="https://lensaplus.com"
             />
           </Field>
           <SaveBar
@@ -1325,7 +1325,7 @@ export default function PengaturanPage() {
           </Field>
           <Field
             label="Arahan Penulis Perplexity (gaya & karakter)"
-            hint="Arahan untuk agent Perplexity saat meriset & menulis: gaya bahasa, sudut pandang, panjang, hal yang harus/dihindari. Dipakai di setiap 'Riset & Tulis'. Kosongkan untuk gaya default Kartawarta."
+            hint="Arahan untuk agent Perplexity saat meriset & menulis: gaya bahasa, sudut pandang, panjang, hal yang harus/dihindari. Dipakai di setiap 'Riset & Tulis'. Kosongkan untuk gaya default Lensaplus."
           >
             <textarea
               rows={5}
@@ -1711,7 +1711,7 @@ export default function PengaturanPage() {
           </Field>
           <Field
             label="GSC Site URL (opsional)"
-            hint="Domain property cukup masukkan 'sc-domain:kartawarta.com'. URL property masukkan 'https://kartawarta.com/'."
+            hint="Domain property cukup masukkan 'sc-domain:lensaplus.com'. URL property masukkan 'https://lensaplus.com/'."
           >
             <input
               type="text"
@@ -1721,7 +1721,7 @@ export default function PengaturanPage() {
                 markDirty("google");
               }}
               className="input font-mono text-sm"
-              placeholder="sc-domain:kartawarta.com"
+              placeholder="sc-domain:lensaplus.com"
             />
           </Field>
           <SaveBar
@@ -2296,7 +2296,7 @@ export default function PengaturanPage() {
                 markDirty("email");
               }}
               className="input"
-              placeholder="Kartawarta <noreply@kartawarta.com>"
+              placeholder="Lensaplus <noreply@lensaplus.com>"
             />
           </Field>
           <SaveBar
@@ -2331,7 +2331,7 @@ export default function PengaturanPage() {
           active={activeSub === "kta"}
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Nama Direktur Kartawarta" hint="Tercetak di kartu sebagai penanda tangan.">
+            <Field label="Nama Direktur Lensaplus" hint="Tercetak di kartu sebagai penanda tangan.">
               <input
                 type="text"
                 value={ktaDirectorName}

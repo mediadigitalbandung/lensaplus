@@ -207,7 +207,7 @@ export default function LiveSyndicationSettingsPage() {
               value={tgChatId}
               onChange={(e) => setTgChatId(e.target.value)}
               className="input w-full text-sm font-mono"
-              placeholder="@kartawarta atau -1001234567890"
+              placeholder="@lensaplus atau -1001234567890"
             />
           </div>
 

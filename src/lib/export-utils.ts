@@ -156,7 +156,7 @@ export async function exportArticlePdf(opts: ExportPdfOptions) {
     doc.setFontSize(8);
     doc.setTextColor(160, 160, 160);
     doc.text(
-      `© ${new Date().getFullYear()} Kartawarta — kartawarta.com`,
+      `© ${new Date().getFullYear()} Lensaplus — lensaplus.com`,
       marginL,
       pageH - 10
     );
@@ -173,7 +173,7 @@ export async function exportArticlePdf(opts: ExportPdfOptions) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(0, 170, 19);
-  doc.text("KARTAWARTA", marginL, y);
+  doc.text("LENSAPLUS", marginL, y);
 
   y += 3;
   doc.setDrawColor(230, 230, 230);

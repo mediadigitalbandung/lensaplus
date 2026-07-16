@@ -8,8 +8,8 @@
  *
  * Recommended VPS crontab cadence: every Monday at 09:00 WIB (UTC+7 = 02:00 UTC)
  *   0 2 * * 1 curl -sS -X GET -H "Authorization: Bearer ${CRON_SECRET}" \
- *     https://kartawarta.com/api/cron/check-meta-tokens \
- *     >> /var/log/kartawarta-cron.log 2>&1
+ *     https://lensaplus.com/api/cron/check-meta-tokens \
+ *     >> /var/log/lensaplus-cron.log 2>&1
  *
  * Endpoint never throws — returns HTTP 200 with {success, ...} so cron does
  * not retry-spam.
@@ -189,8 +189,8 @@ async function handler(req: NextRequest) {
         const isExpired = r.warning === "expired";
         const label = r.platform === "instagram" ? "Instagram" : "Facebook Page";
         const subject = isExpired
-          ? `[KARTAWARTA] EXPIRED — Meta ${label} token sudah kedaluwarsa`
-          : `[KARTAWARTA] Peringatan — Meta ${label} token habis dalam ${r.daysLeft} hari`;
+          ? `[LENSAPLUS] EXPIRED — Meta ${label} token sudah kedaluwarsa`
+          : `[LENSAPLUS] Peringatan — Meta ${label} token habis dalam ${r.daysLeft} hari`;
         const bodyHtml = `
           <div style="font-family:Work Sans,system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px 20px;">
             <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
@@ -211,7 +211,7 @@ async function handler(req: NextRequest) {
                 Perbarui token di: Panel &rarr; Pengaturan &rarr; Media Sosial
               </p>
               <div style="text-align:center;margin:24px 0;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com"}/panel/social/settings"
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com"}/panel/social/settings"
                    style="display:inline-block;background:#002045;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">
                   Perbarui Token Sekarang
                 </a>

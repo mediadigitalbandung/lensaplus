@@ -68,7 +68,7 @@ function LoginContent() {
             Masuk ke Panel
           </h1>
           <p className="mt-2 text-sm text-txt-secondary">
-            Kartawarta
+            Lensaplus
           </p>
         </div>
 

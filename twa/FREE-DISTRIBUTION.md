@@ -1,10 +1,10 @@
-# Distribusi Aplikasi Kartawarta — Tanpa Biaya
+# Distribusi Aplikasi Lensaplus — Tanpa Biaya
 
 3 jalur free, ranked by ROI untuk audience Indonesia (Android-dominant).
 
 ## 🥇 Jalur 1: PWA Install via Browser (FREE, sudah aktif)
 
-**Apa**: User install Kartawarta langsung dari browser tanpa app store.
+**Apa**: User install Lensaplus langsung dari browser tanpa app store.
 **Cost**: Rp 0
 **Setup**: Sudah jalan — `InstallPrompt` component sudah deploy.
 **Reach**: 95%+ Android user pakai Chrome → bisa install.
@@ -22,14 +22,14 @@
 - Bundling di Google Play recommendations
 
 **Action item Anda**: Promote `/unduh` page (sudah saya buat) di:
-- Footer kartawarta.com (sudah link)
+- Footer lensaplus.com (sudah link)
 - Banner di homepage (mau saya tambahin?)
 - Bio Instagram/Twitter
 - Email signature redaksi
 
 ## 🥈 Jalur 2: APK Sideload — Free, butuh build
 
-**Apa**: Generate APK file pakai Bubblewrap (FREE), host di kartawarta.com, user download + install manual.
+**Apa**: Generate APK file pakai Bubblewrap (FREE), host di lensaplus.com, user download + install manual.
 
 **Cost**: Rp 0 (cuma butuh laptop Anda)
 **Setup time**: 30-60 menit sekali
@@ -46,8 +46,8 @@ npm install -g @bubblewrap/cli
 
 ### B. Generate APK
 ```bash
-cd /c/Users/Owen/Documents/Aureon/Kartawarta/Kartawarta/twa
-bubblewrap init --manifest=https://kartawarta.com/manifest.json
+cd /c/Users/Owen/Documents/Aureon/Lensaplus/Lensaplus/twa
+bubblewrap init --manifest=https://lensaplus.com/manifest.json
 ```
 
 Bubblewrap akan tanya beberapa input — pakai default semua kecuali:
@@ -65,19 +65,19 @@ keytool -list -v -keystore android.keystore -alias android
 # Copy baris SHA256: dan kirim ke saya — saya update assetlinks.json
 ```
 
-### D. Host APK di kartawarta.com
+### D. Host APK di lensaplus.com
 ```bash
 # Copy APK ke folder public/downloads/
-mkdir -p /c/Users/Owen/Documents/Aureon/Kartawarta/Kartawarta/public/downloads
-cp twa/app-release-signed.apk public/downloads/kartawarta.apk
+mkdir -p /c/Users/Owen/Documents/Aureon/Lensaplus/Lensaplus/public/downloads
+cp twa/app-release-signed.apk public/downloads/lensaplus.apk
 
 # Commit + deploy
-git add public/downloads/kartawarta.apk
+git add public/downloads/lensaplus.apk
 git commit -m "feat: ship signed APK for sideload install"
 git push origin master
 ```
 
-User download via tombol "Unduh APK" di **https://kartawarta.com/unduh** (halaman sudah saya buat).
+User download via tombol "Unduh APK" di **https://lensaplus.com/unduh** (halaman sudah saya buat).
 
 **Pesan Play Protect**: User akan lihat "Pemindaian Play Protect" warning saat install APK luar Play Store. Ini NORMAL untuk semua APK sideload. User tap "Tetap install" / "Install anyway". Setelah verified via assetlinks.json (Step C), warning ini berkurang significantly.
 
@@ -91,7 +91,7 @@ User download via tombol "Unduh APK" di **https://kartawarta.com/unduh** (halama
 
 **Step**:
 1. Buka **https://www.pwabuilder.com**
-2. Input: `https://kartawarta.com`
+2. Input: `https://lensaplus.com`
 3. Klik "Start" → PWABuilder akan audit PWA Anda
 4. Klik "Package for stores" → pilih "Windows"
 5. Download `.msixbundle` file
@@ -101,7 +101,7 @@ User download via tombol "Unduh APK" di **https://kartawarta.com/unduh** (halama
 9. Isi listing (sama-sama copy-paste dari PLAY-STORE-GUIDE.md)
 10. Submit → review 1-3 hari
 
-**Hasil**: Kartawarta muncul di Microsoft Store. Windows user search "Kartawarta" → install dari Store, no friction.
+**Hasil**: Lensaplus muncul di Microsoft Store. Windows user search "Lensaplus" → install dari Store, no friction.
 
 ## ❌ Jalur yang TIDAK direkomendasi
 
@@ -112,7 +112,7 @@ User download via tombol "Unduh APK" di **https://kartawarta.com/unduh** (halama
 
 ### Aptoide
 - FREE, audience lumayan di Indonesia
-- Tapi reputasi store rendah (banyak APK clone), brand Kartawarta jadi lemah
+- Tapi reputasi store rendah (banyak APK clone), brand Lensaplus jadi lemah
 - Skip kecuali Anda desperate
 
 ### Galaxy Store / Huawei AppGallery

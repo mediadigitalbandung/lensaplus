@@ -285,9 +285,9 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
 
 // SSRF guard for template background fetches
 const ALLOWED_TPL_BG_HOSTS = new Set([
-  (() => { try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com").hostname; } catch { return "kartawarta.com"; } })(),
-  "kartawarta.com",
-  "www.kartawarta.com",
+  (() => { try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname; } catch { return "lensaplus.com"; } })(),
+  "lensaplus.com",
+  "www.lensaplus.com",
   "images.unsplash.com",
   "145.79.15.99",
 ]);
@@ -296,7 +296,7 @@ function isAllowedTemplateHost(rawUrl: string): boolean {
   try {
     const h = new URL(rawUrl).hostname.toLowerCase();
     if (ALLOWED_TPL_BG_HOSTS.has(h)) return true;
-    return h.endsWith(".kartawarta.com");
+    return h.endsWith(".lensaplus.com");
   } catch { return false; }
 }
 

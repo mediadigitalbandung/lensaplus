@@ -17,7 +17,7 @@ import { invalidateCachePrefix } from "./cache";
 import { invalidateInternalStatsCache } from "./stats/internal";
 import { sendPushToSubscribers } from "./push/send";
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 // ─── Ping Search Engines ───────────────────────────────────────────
 
@@ -60,7 +60,7 @@ export async function pingSitemaps() {
 /** Generate seoTitle from article title (max 60 chars, append brand) */
 export function generateSeoTitle(title: string): string {
   const clean = title.trim();
-  if (clean.length <= 50) return `${clean} | Kartawarta`;
+  if (clean.length <= 50) return `${clean} | Lensaplus`;
   // Truncate at word boundary
   const truncated = clean.substring(0, 57).replace(/\s+\S*$/, "");
   return `${truncated}...`;
@@ -236,7 +236,7 @@ export async function onArticlePublished(
         title: articleTitle,
         body: articleExcerpt || articleTitle,
         url,
-        icon: "/kartawarta-icon-192.png",
+        icon: "/lensaplus-icon-192.png",
         tag: resolvedId || slug,
       },
       { categorySlug: categorySlug ?? undefined },

@@ -15,8 +15,8 @@ import { Metadata } from "next";
  * expansion in real articles. NOT dynamic title/H1 from query string.
  */
 export const metadata: Metadata = {
-  title: "Cari Artikel | Kartawarta",
-  description: "Cari berita Bandung & Indonesia — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi — di Kartawarta.",
+  title: "Cari Artikel | Lensaplus",
+  description: "Cari berita Bandung & Indonesia — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi — di Lensaplus.",
   robots: {
     index: false,
     follow: true,

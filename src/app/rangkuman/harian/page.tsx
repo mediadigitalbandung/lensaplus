@@ -9,9 +9,9 @@ import { prisma } from "@/lib/prisma";
 export const metadata: Metadata = {
   title: "Rangkuman Harian",
   description:
-    "Arsip rangkuman berita harian Kartawarta — pilih tanggal untuk membaca ringkasan berita pada hari tersebut.",
+    "Arsip rangkuman berita harian Lensaplus — pilih tanggal untuk membaca ringkasan berita pada hari tersebut.",
   openGraph: {
-    title: "Rangkuman Harian - Kartawarta",
+    title: "Rangkuman Harian - Lensaplus",
     description: "Arsip rangkuman berita per tanggal.",
     type: "website",
   },

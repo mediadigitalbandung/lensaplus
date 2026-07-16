@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 describe("newsArticleJsonLd", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://lensaplus.com");
   });
 
   afterEach(() => {
@@ -36,7 +36,7 @@ describe("newsArticleJsonLd", () => {
     expect(sameAs).toContain("https://jurnalishukumbandung.com");
 
     const mainEntity = out.mainEntityOfPage as Record<string, unknown>;
-    expect(mainEntity["@id"]).toBe("https://kartawarta.com/berita/test");
+    expect(mainEntity["@id"]).toBe("https://lensaplus.com/berita/test");
   });
 });
 
@@ -83,7 +83,7 @@ describe("faqJsonLd", () => {
 describe("organizationJsonLd", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://lensaplus.com");
   });
 
   afterEach(() => {
@@ -91,8 +91,8 @@ describe("organizationJsonLd", () => {
   });
 
   it("includes sameAs with social URLs from env + sister brands, deduped", async () => {
-    vi.stubEnv("KARTAWARTA_TWITTER_URL", "https://twitter.com/kartawarta");
-    vi.stubEnv("KARTAWARTA_FACEBOOK_URL", "https://facebook.com/kartawarta");
+    vi.stubEnv("LENSAPLUS_TWITTER_URL", "https://twitter.com/lensaplus");
+    vi.stubEnv("LENSAPLUS_FACEBOOK_URL", "https://facebook.com/lensaplus");
 
     const { organizationJsonLd } = await import("../seo/json-ld");
     const out = organizationJsonLd() as Record<string, unknown>;
@@ -100,8 +100,8 @@ describe("organizationJsonLd", () => {
     expect(out["@type"]).toBe("NewsMediaOrganization");
     expect(out.name).toBe("Lensaplus");
     const sameAs = out.sameAs as string[];
-    expect(sameAs).toContain("https://twitter.com/kartawarta");
-    expect(sameAs).toContain("https://facebook.com/kartawarta");
+    expect(sameAs).toContain("https://twitter.com/lensaplus");
+    expect(sameAs).toContain("https://facebook.com/lensaplus");
     expect(sameAs).toContain("https://jurnalishukumbandung.com");
     // de-dup: each URL should appear only once
     expect(new Set(sameAs).size).toBe(sameAs.length);

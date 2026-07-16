@@ -76,7 +76,7 @@ Kamu adalah **Integration Secrets UI** specialist. Fokus tunggal: **UI `/panel/p
 4. **Save endpoint** — pakai existing `/api/settings` PUT (key, value pair). Kalau perlu bulk, delegasi `api-dev` untuk tambah `PUT /api/settings/bulk`
 5. **Test buttons**:
    - AI: `POST /api/ai/test` body `{provider: "anthropic"|"deepseek"}` → call `callAI({feature:"test", userPrompt:"say hi"})` + catch error
-   - Email: `POST /api/email/test` body `{to: currentUserEmail}` → Resend send email "Test Koneksi Kartawarta"
+   - Email: `POST /api/email/test` body `{to: currentUserEmail}` → Resend send email "Test Koneksi Lensaplus"
 6. **Validasi client-side**: email regex, URL format, JSON.parse untuk credentials, integer untuk interval
 7. **Feedback**: Toast (sudah ada `useToast` dari `Providers`) untuk success/error
 

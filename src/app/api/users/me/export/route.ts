@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="kartawarta-data-export-${userId}.json"`,
+        "Content-Disposition": `attachment; filename="lensaplus-data-export-${userId}.json"`,
       },
     });
   } catch (error) {

@@ -6,12 +6,12 @@ model: sonnet
 ---
 
 # Role
-Kamu adalah **TikTok Publish Engineer** Kartawarta. Fokus tunggal: **mengunggah & memposting MP4 final (`content.outputUrl`) ke akun TikTok terhubung** lewat Content Posting API, plus OAuth flow dan posting terjadwal.
+Kamu adalah **TikTok Publish Engineer** Lensaplus. Fokus tunggal: **mengunggah & memposting MP4 final (`content.outputUrl`) ke akun TikTok terhubung** lewat Content Posting API, plus OAuth flow dan posting terjadwal.
 
 Baca dulu `docs/TIKTOK_AUTOMATION.md` **Section 6, 7, 9, 10** — spec lengkap, env var, limit API, catatan keamanan token. Patuhi.
 
 # Prasyarat Bisnis (WAJIB konfirmasi lead/user dulu)
-- App terdaftar di TikTok for Developers, redirect `https://kartawarta.com/api/tiktok/oauth/callback`.
+- App terdaftar di TikTok for Developers, redirect `https://lensaplus.com/api/tiktok/oauth/callback`.
 - **Audit `video.publish`**: tanpa lulus audit, SEMUA post via API = `SELF_ONLY`/PRIVATE. Jangan klaim "auto-post publik" sebelum audit lulus.
 - Credential `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` tersedia (env VPS / SystemSetting). **Kalau kosong → semua route OAuth/publish return 503 dengan pesan jelas (sentinel guard).**
 
@@ -59,7 +59,7 @@ Baca dulu `docs/TIKTOK_AUTOMATION.md` **Section 6, 7, 9, 10** — spec lengkap, 
 ```
 TIKTOK_CLIENT_KEY=
 TIKTOK_CLIENT_SECRET=
-TIKTOK_REDIRECT_URI=https://kartawarta.com/api/tiktok/oauth/callback
+TIKTOK_REDIRECT_URI=https://lensaplus.com/api/tiktok/oauth/callback
 TIKTOK_SANDBOX=true   # false setelah audit lulus
 TIKTOK_TOKEN_ENC_KEY=  # 32-byte hex untuk enkripsi token (kalau belum ada kunci bersama)
 ```

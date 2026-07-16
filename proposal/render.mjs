@@ -4,12 +4,12 @@ import path from "path";
 import fs from "fs";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
-const htmlPath = path.join(dir, "proposal-kartawarta.html");
-let pdfPath = path.join(dir, "Proposal-Kartawarta-Celiol.pdf");
+const htmlPath = path.join(dir, "proposal-lensaplus.html");
+let pdfPath = path.join(dir, "Proposal-Lensaplus-Celiol.pdf");
 // If the file is locked (e.g. open in a PDF viewer), fall back to an alternate
 // name so the render still succeeds.
 try { if (fs.existsSync(pdfPath)) fs.closeSync(fs.openSync(pdfPath, "r+")); }
-catch (e) { if (e.code === "EBUSY" || e.code === "EPERM") pdfPath = path.join(dir, "Proposal-Kartawarta-Celiol-2.pdf"); }
+catch (e) { if (e.code === "EBUSY" || e.code === "EPERM") pdfPath = path.join(dir, "Proposal-Lensaplus-Celiol-2.pdf"); }
 
 const candidates = [
   "C:/Program Files/Google/Chrome/Application/chrome.exe",

@@ -10,7 +10,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const REDIRECT_URI = "https://kartawarta.com/";
+const REDIRECT_URI = "https://lensaplus.com/";
 
 export async function POST(req: NextRequest) {
   try {

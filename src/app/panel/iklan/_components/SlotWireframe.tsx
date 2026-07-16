@@ -38,10 +38,10 @@ export default function SlotWireframe({ slot }: { slot: string }) {
         {/* ── Header Dark ── */}
         <div className="bg-[#1C1C1E] px-2.5 py-1.5 flex items-center">
           <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
-            <span className="text-[4px] font-extrabold text-white">Kartawarta</span>
+            <span className="text-[4px] font-extrabold text-white">Lensaplus</span>
           </div>
           <div className="ml-1.5 leading-none">
-            <span className="text-[7px] font-bold text-white block">Kartawarta</span>
+            <span className="text-[7px] font-bold text-white block">Lensaplus</span>
             <span className="text-[5px] text-white/40">Bandung</span>
           </div>
           <div className="flex-1" />
@@ -197,9 +197,9 @@ export default function SlotWireframe({ slot }: { slot: string }) {
             <div>
               <div className="flex items-center gap-1 mb-[3px]">
                 <div className="h-[8px] w-[8px] rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-[3px] text-white font-bold">Kartawarta</span>
+                  <span className="text-[3px] text-white font-bold">Lensaplus</span>
                 </div>
-                <span className="text-[5px] font-bold text-white">Kartawarta</span>
+                <span className="text-[5px] font-bold text-white">Lensaplus</span>
               </div>
               <Bar w="50px" c="bg-white/10" />
               <div className="mt-[2px]"><Bar w="40px" c="bg-white/10" /></div>
@@ -218,7 +218,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
             </div>
           </div>
           <div className="mt-1.5 pt-1 border-t border-white/10 flex justify-between">
-            <span className="text-[3px] text-white/20">2026 Kartawarta</span>
+            <span className="text-[3px] text-white/20">2026 Lensaplus</span>
             <span className="text-[3px] text-white/20">Dewan Pers Indonesia</span>
           </div>
         </div>

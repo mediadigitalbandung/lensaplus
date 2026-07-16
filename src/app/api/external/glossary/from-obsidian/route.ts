@@ -46,7 +46,7 @@ const BodySchema = z.object({
   isPublished: z.boolean().optional(),
 });
 
-const BOT_EMAIL = "obsidian-sync-bot@kartawarta.local";
+const BOT_EMAIL = "obsidian-sync-bot@lensaplus.local";
 
 function verifyToken(req: NextRequest): void {
   const expected = process.env.OBSIDIAN_SYNC_TOKEN;
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
       slug: glossary.slug,
       istilah: glossary.istilah,
       ranah: glossary.ranah,
-      url: `${process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com"}/glossary/${glossary.slug}`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com"}/glossary/${glossary.slug}`,
     });
   } catch (err) {
     return errorResponse(err);

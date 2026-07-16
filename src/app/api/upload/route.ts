@@ -21,7 +21,7 @@ function ensureProductionContext(): void {
   if (process.env.NODE_ENV === "production") return;
 
   const dbUrl = process.env.DATABASE_URL || "";
-  const blocked = (process.env.BLOCKED_PROD_DB_HOSTS || "145.79.15.99,kartawarta.com")
+  const blocked = (process.env.BLOCKED_PROD_DB_HOSTS || "145.79.15.99,lensaplus.com")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -31,7 +31,7 @@ function ensureProductionContext(): void {
     throw new ApiError(
       `Upload diblok: dev environment terhubung ke DB produksi (terdeteksi "${matched}" di DATABASE_URL). ` +
         `File akan tersimpan di laptop ini, tapi DB record di server — produksi tidak bisa menampilkan gambar. ` +
-        `Solusi: pakai DB lokal di .env, atau buka panel dari https://kartawarta.com.`,
+        `Solusi: pakai DB lokal di .env, atau buka panel dari https://lensaplus.com.`,
       403,
     );
   }

@@ -1,4 +1,4 @@
-# GitHub Actions — Kartawarta
+# GitHub Actions — Lensaplus
 
 ## `deploy.yml` — Auto-deploy ke VPS on push to master
 
@@ -15,10 +15,10 @@ Tambahkan 3 secrets di Repo Settings → Secrets and variables → Actions:
 ### Cara generate SSH key untuk Actions (di local)
 
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/kartawarta_deploy -N ""
+ssh-keygen -t ed25519 -f ~/.ssh/lensaplus_deploy -N ""
 # Tambahkan ke VPS authorized_keys:
-ssh-copy-id -i ~/.ssh/kartawarta_deploy.pub root@145.79.15.99
-# Paste isi private key (~/.ssh/kartawarta_deploy) ke GitHub secret VPS_SSH_KEY
+ssh-copy-id -i ~/.ssh/lensaplus_deploy.pub root@145.79.15.99
+# Paste isi private key (~/.ssh/lensaplus_deploy) ke GitHub secret VPS_SSH_KEY
 ```
 
 ### Behavior
@@ -32,11 +32,11 @@ ssh-copy-id -i ~/.ssh/kartawarta_deploy.pub root@145.79.15.99
 
 Kalau deploy fail dan production down, SSH ke VPS:
 ```bash
-cd /var/www/kartawarta
+cd /var/www/lensaplus
 git log --oneline -10                  # cari commit lama yang stable
 git checkout <commit-hash>
 rm -rf .next && npm run build
-pm2 restart kartawarta
+pm2 restart lensaplus
 ```
 
 ### Disable temporarily

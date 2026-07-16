@@ -58,7 +58,7 @@ const prisma = new PrismaClient();
 
     const indexing = google.indexing({ version: "v3", auth: jwt });
     const url =
-      "https://kartawarta.com/berita/regulasi-ai-di-indonesia-terlambat-atau-tepat-waktu";
+      "https://lensaplus.com/berita/regulasi-ai-di-indonesia-terlambat-atau-tepat-waktu";
     const res = await indexing.urlNotifications.publish({
       requestBody: { url, type: "URL_UPDATED" },
     });

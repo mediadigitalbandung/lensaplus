@@ -7,12 +7,12 @@ import type { OfficialLevel, OfficialStatus } from "@prisma/client";
 export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: "Direktori Pejabat Publik — Bandung & Jawa Barat | Kartawarta",
+  title: "Direktori Pejabat Publik — Bandung & Jawa Barat | Lensaplus",
   description:
     "Direktori pejabat publik daerah Bandung dan Jawa Barat: Walikota, Bupati, anggota DPRD, Kapolda, Kajati, Gubernur, dan pejabat lainnya. Profil, jabatan, dan berita terkait.",
   alternates: { canonical: "/pejabat" },
   openGraph: {
-    title: "Direktori Pejabat Publik Bandung & Jabar | Kartawarta",
+    title: "Direktori Pejabat Publik Bandung & Jabar | Lensaplus",
     description:
       "Profil pejabat publik daerah Bandung dan Jawa Barat beserta berita terkait.",
   },
@@ -130,11 +130,11 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
     name: "Direktori Pejabat Publik Bandung & Jawa Barat",
     description:
       "Direktori pejabat publik daerah Bandung dan Jawa Barat: profil, jabatan, dan berita terkait.",
-    url: "https://kartawarta.com/pejabat",
+    url: "https://lensaplus.com/pejabat",
     publisher: {
       "@type": "Organization",
-      name: "Kartawarta",
-      url: "https://kartawarta.com",
+      name: "Lensaplus",
+      url: "https://lensaplus.com",
     },
   };
 

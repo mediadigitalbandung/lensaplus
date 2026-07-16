@@ -63,9 +63,9 @@ export async function generateMetadata({ params: paramsPromise }: PageProps): Pr
     where: { slug, isPublished: true },
     select: { name: true, position: true, institution: true, bio: true, region: true },
   });
-  if (!official) return { title: "Pejabat tidak ditemukan | Kartawarta" };
+  if (!official) return { title: "Pejabat tidak ditemukan | Lensaplus" };
 
-  const pageTitle = `${official.name} — ${official.position} | Kartawarta`;
+  const pageTitle = `${official.name} — ${official.position} | Lensaplus`;
   const description =
     official.bio?.slice(0, 160) ||
     `Profil ${official.position} ${official.institution}${official.region ? `, ${official.region}` : ""}.`;

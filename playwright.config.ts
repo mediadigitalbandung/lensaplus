@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Playwright config for Kartawarta production smoke tests.
+ * Playwright config for Lensaplus production smoke tests.
  *
  * Usage:
  *   npx playwright test                    — run all e2e
@@ -9,7 +9,7 @@ import { defineConfig, devices } from "@playwright/test";
  *   npx playwright test --ui               — interactive UI mode
  *   npx playwright show-report             — open last HTML report
  *
- * BASE_URL env override (default https://kartawarta.com):
+ * BASE_URL env override (default https://lensaplus.com):
  *   $env:BASE_URL='http://localhost:3000'; npx playwright test
  */
 export default defineConfig({
@@ -24,7 +24,7 @@ export default defineConfig({
     ["html", { open: "never", outputFolder: "tests/e2e/.report" }],
   ],
   use: {
-    baseURL: process.env.BASE_URL || "https://kartawarta.com",
+    baseURL: process.env.BASE_URL || "https://lensaplus.com",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

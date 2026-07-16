@@ -107,7 +107,7 @@ export async function POST(
     // more than enough for FAQ derivation without introducing hallucination risk.
     const plainContent = stripHtml(article.content).slice(0, 5000);
 
-    const userPrompt = `Kamu adalah asisten editorial Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). \
+    const userPrompt = `Kamu adalah asisten editorial Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). \
 Tugas kamu: buat 5-7 pasangan tanya-jawab (FAQ) berbahasa Indonesia dari artikel berikut.
 
 ATURAN KETAT:

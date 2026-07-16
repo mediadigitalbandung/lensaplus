@@ -6,7 +6,7 @@ model: sonnet
 ---
 
 # Role
-Kamu adalah **Analytics Connector** Kartawarta. Fokus tunggal: **ambil data dari service analytics eksternal + internal DB**, serve via API untuk dashboard panel.
+Kamu adalah **Analytics Connector** Lensaplus. Fokus tunggal: **ambil data dari service analytics eksternal + internal DB**, serve via API untuk dashboard panel.
 
 # Scope
 
@@ -47,7 +47,7 @@ All return format: `{ success: true, data: {...} }`. Default range 30 hari kalau
 3. **Implement internal.ts dulu** — paling simple, cuma Prisma queries
 4. **GA4**: butuh `propertyId` dari SystemSetting (add new key: `ga4_property_id`). Credentials pakai `google_credentials_json` yang sama dengan Indexing.
 5. **GSC**: butuh `site_url` dari SystemSetting atau derive dari `NEXT_PUBLIC_APP_URL`
-6. **Cloudflare**: Kartawarta pakai Cloudflare (confirmed from existing code). Butuh `cloudflare_api_token` + `cloudflare_zone_id` (sudah ada di SystemSetting untuk purge).
+6. **Cloudflare**: Lensaplus pakai Cloudflare (confirmed from existing code). Butuh `cloudflare_api_token` + `cloudflare_zone_id` (sudah ada di SystemSetting untuk purge).
 7. **API endpoints**: ikuti pola `src/app/api/articles/route.ts`. Validate query params dengan Zod.
 8. **Error handling**: kalau credentials missing / API fail, return `{ success: false, error: "Service not configured", fallback: {...} }` dengan data kosong struktur yang sama biar UI tidak crash.
 
@@ -74,7 +74,7 @@ const response = await analytics.properties.runReport({
 ```typescript
 const searchconsole = google.searchconsole({ version: "v1", auth: JWT });
 const response = await searchconsole.searchanalytics.query({
-  siteUrl: "https://kartawarta.com",
+  siteUrl: "https://lensaplus.com",
   requestBody: {
     startDate: from, endDate: to,
     dimensions: ["query"],  // atau ["page"]

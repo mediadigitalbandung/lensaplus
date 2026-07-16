@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 describe("articleJsonLd", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://lensaplus.com");
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -28,7 +28,7 @@ describe("articleJsonLd", () => {
     expect(out["@type"]).toBe("Article");
     expect(out.headline).toBe("Sebuah Artikel");
     const main = out.mainEntityOfPage as Record<string, unknown>;
-    expect(main["@id"]).toBe("https://kartawarta.com/berita/sebuah-artikel");
+    expect(main["@id"]).toBe("https://lensaplus.com/berita/sebuah-artikel");
     const author = out.author as Record<string, unknown>;
     expect(author["@type"]).toBe("Person");
     expect(author.name).toBe("Penulis");
@@ -46,14 +46,14 @@ describe("articleJsonLd", () => {
       "/sorotan/x-analisis",
     ) as Record<string, unknown>;
     const main = out.mainEntityOfPage as Record<string, unknown>;
-    expect(main["@id"]).toBe("https://kartawarta.com/sorotan/x-analisis");
+    expect(main["@id"]).toBe("https://lensaplus.com/sorotan/x-analisis");
   });
 });
 
 describe("websiteJsonLd", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://lensaplus.com");
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -62,13 +62,13 @@ describe("websiteJsonLd", () => {
     const out = websiteJsonLd() as Record<string, unknown>;
     expect(out["@type"]).toBe("WebSite");
     expect(out.name).toBe("Lensaplus");
-    expect(out.url).toBe("https://kartawarta.com");
+    expect(out.url).toBe("https://lensaplus.com");
     const action = out.potentialAction as Record<string, unknown>;
     expect(action["@type"]).toBe("SearchAction");
     const target = action.target as Record<string, unknown>;
     expect(target["@type"]).toBe("EntryPoint");
     expect(String(target.urlTemplate)).toContain(
-      "https://kartawarta.com/search?q=",
+      "https://lensaplus.com/search?q=",
     );
     expect(String(target.urlTemplate)).toContain("{search_term_string}");
   });
@@ -95,7 +95,7 @@ describe("howToJsonLd", () => {
 describe("newsArticleJsonLd — Google News compliance", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://lensaplus.com");
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -132,7 +132,7 @@ describe("newsArticleJsonLd — Google News compliance", () => {
     const images = out.image as Array<Record<string, unknown>>;
     expect(images.length).toBeGreaterThanOrEqual(1);
     expect(images[0]["@type"]).toBe("ImageObject");
-    expect(images[0].url).toBe("https://kartawarta.com/api/og?slug=x&v=1");
+    expect(images[0].url).toBe("https://lensaplus.com/api/og?slug=x&v=1");
     expect(images[0].width).toBe(1200);
   });
 
@@ -145,7 +145,7 @@ describe("newsArticleJsonLd — Google News compliance", () => {
       ogImageUrl: "/api/og?slug=x",
     }) as Record<string, unknown>;
     const images = out.image as Array<Record<string, unknown>>;
-    expect(images[0].url).toBe("https://kartawarta.com/uploads/foo.jpg");
+    expect(images[0].url).toBe("https://lensaplus.com/uploads/foo.jpg");
   });
 
   it("omits description when excerpt is empty", async () => {
@@ -158,7 +158,7 @@ describe("newsArticleJsonLd — Google News compliance", () => {
 describe("organizationJsonLd — publisher transparency", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://lensaplus.com");
   });
   afterEach(() => vi.unstubAllEnvs());
 

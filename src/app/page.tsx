@@ -14,21 +14,21 @@ import { Scale, Briefcase, Trophy, Film, Heart, Wheat, Cpu, Vote as VoteIcon, Gr
 import { prisma } from "@/lib/prisma";
 import { getCached } from "@/lib/cache";
 
-// Home-specific metadata. `title.absolute` bypasses the "%s | Kartawarta"
+// Home-specific metadata. `title.absolute` bypasses the "%s | Lensaplus"
 // template so the homepage carries the full brand+keyword title, and an explicit
 // canonical "/" plus OG/url avoids the homepage being seen as a duplicate of any
 // query-string variant. OG images/siteName inherit from the root layout.
 export const metadata: Metadata = {
   title: {
-    absolute: "Kartawarta — Berita Terkini Bandung: Ekonomi, Pemerintahan, Hukum & Olahraga",
+    absolute: "Lensaplus — Berita Terkini Bandung: Ekonomi, Pemerintahan, Hukum & Olahraga",
   },
   description:
-    "Kartawarta — media berita digital Bandung. Berita terkini ekonomi-bisnis, pemerintahan, hukum, olahraga, teknologi, dan hiburan dari Bandung & Jawa Barat.",
+    "Lensaplus — media berita digital Bandung. Berita terkini ekonomi-bisnis, pemerintahan, hukum, olahraga, teknologi, dan hiburan dari Bandung & Jawa Barat.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: "/",
-    title: "Kartawarta — Berita Terkini Bandung & Jawa Barat",
+    title: "Lensaplus — Berita Terkini Bandung & Jawa Barat",
     description:
       "Berita terkini ekonomi-bisnis, pemerintahan, hukum, olahraga, dan teknologi dari Bandung & Jawa Barat.",
   },
@@ -163,19 +163,19 @@ export default async function HomePage() {
   const catEntries = Object.entries(articlesByCategory);
 
   // sameAs: pulled from env so we don't need a redeploy to add/remove a profile.
-  const socialUrls = (process.env.KARTAWARTA_SOCIAL_URLS || "")
+  const socialUrls = (process.env.LENSAPLUS_SOCIAL_URLS || "")
     .split(",")
     .map((s) => s.trim())
     .filter((s) => /^https?:\/\//i.test(s));
   const fallbackSocialUrls = [
-    process.env.KARTAWARTA_TWITTER_URL,
-    process.env.KARTAWARTA_FACEBOOK_URL,
-    process.env.KARTAWARTA_INSTAGRAM_URL,
-    process.env.KARTAWARTA_LINKEDIN_URL,
-    process.env.KARTAWARTA_YOUTUBE_URL,
-    process.env.KARTAWARTA_TIKTOK_URL,
+    process.env.LENSAPLUS_TWITTER_URL,
+    process.env.LENSAPLUS_FACEBOOK_URL,
+    process.env.LENSAPLUS_INSTAGRAM_URL,
+    process.env.LENSAPLUS_LINKEDIN_URL,
+    process.env.LENSAPLUS_YOUTUBE_URL,
+    process.env.LENSAPLUS_TIKTOK_URL,
   ].filter((s): s is string => !!s && /^https?:\/\//i.test(s));
-  // Sister media properties — knowledge-graph signal that JHB and Kartawarta
+  // Sister media properties — knowledge-graph signal that JHB and Lensaplus
   // share a publisher entity. De-dupe in case it's already in the social list.
   const sisterBrands = ["https://jurnalishukumbandung.com"];
   const baseSameAs = socialUrls.length > 0 ? socialUrls : fallbackSocialUrls;
@@ -190,21 +190,21 @@ export default async function HomePage() {
             {
               "@context": "https://schema.org",
               "@type": "NewsMediaOrganization",
-              "@id": "https://kartawarta.com/#organization",
-              name: "Kartawarta",
-              alternateName: "Kartawarta Bandung",
-              url: "https://kartawarta.com",
-              logo: { "@type": "ImageObject", url: "https://kartawarta.com/kartawarta-icon.png", width: 512, height: 512 },
-              image: { "@type": "ImageObject", url: "https://kartawarta.com/kartawarta-icon.png" },
+              "@id": "https://lensaplus.com/#organization",
+              name: "Lensaplus",
+              alternateName: "Lensaplus Bandung",
+              url: "https://lensaplus.com",
+              logo: { "@type": "ImageObject", url: "https://lensaplus.com/lensaplus-icon.png", width: 512, height: 512 },
+              image: { "@type": "ImageObject", url: "https://lensaplus.com/lensaplus-icon.png" },
               description:
                 "Portal berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia.",
               foundingDate: "2024",
               sameAs,
-              publishingPrinciples: "https://kartawarta.com/pedoman-media",
-              ethicsPolicy: "https://kartawarta.com/kode-etik",
-              missionCoveragePrioritiesPolicy: "https://kartawarta.com/pedoman-media",
-              correctionsPolicy: "https://kartawarta.com/kode-etik",
-              diversityPolicy: "https://kartawarta.com/kode-etik",
+              publishingPrinciples: "https://lensaplus.com/pedoman-media",
+              ethicsPolicy: "https://lensaplus.com/kode-etik",
+              missionCoveragePrioritiesPolicy: "https://lensaplus.com/pedoman-media",
+              correctionsPolicy: "https://lensaplus.com/kode-etik",
+              diversityPolicy: "https://lensaplus.com/kode-etik",
               areaServed: [
                 { "@type": "City", name: "Bandung" },
                 { "@type": "AdministrativeArea", name: "Jawa Barat" },
@@ -218,8 +218,8 @@ export default async function HomePage() {
                 "Berita Bandung", "Berita Jawa Barat", "Berita Indonesia",
               ],
               contactPoint: [
-                { "@type": "ContactPoint", contactType: "customer service", url: "https://kartawarta.com/kontak", areaServed: "ID", availableLanguage: ["Indonesian"] },
-                { "@type": "ContactPoint", contactType: "editorial", url: "https://kartawarta.com/redaksi", areaServed: "ID", availableLanguage: ["Indonesian"] },
+                { "@type": "ContactPoint", contactType: "customer service", url: "https://lensaplus.com/kontak", areaServed: "ID", availableLanguage: ["Indonesian"] },
+                { "@type": "ContactPoint", contactType: "editorial", url: "https://lensaplus.com/redaksi", areaServed: "ID", availableLanguage: ["Indonesian"] },
               ],
               address: {
                 "@type": "PostalAddress",
@@ -231,15 +231,15 @@ export default async function HomePage() {
             {
               "@context": "https://schema.org",
               "@type": "WebSite",
-              "@id": "https://kartawarta.com/#website",
-              name: "Kartawarta",
-              alternateName: "Kartawarta — Media Berita Digital Bandung",
-              url: "https://kartawarta.com",
+              "@id": "https://lensaplus.com/#website",
+              name: "Lensaplus",
+              alternateName: "Lensaplus — Media Berita Digital Bandung",
+              url: "https://lensaplus.com",
               inLanguage: "id-ID",
-              publisher: { "@id": "https://kartawarta.com/#organization" },
+              publisher: { "@id": "https://lensaplus.com/#organization" },
               potentialAction: {
                 "@type": "SearchAction",
-                target: { "@type": "EntryPoint", urlTemplate: "https://kartawarta.com/search?q={search_term_string}" },
+                target: { "@type": "EntryPoint", urlTemplate: "https://lensaplus.com/search?q={search_term_string}" },
                 "query-input": "required name=search_term_string",
               },
             },
@@ -253,7 +253,7 @@ export default async function HomePage() {
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {/* AD: Banner di bawah ticker market, di atas hero — visibility tinggi */}
       {/* Single h1 for screen readers and search engines — HeroCarousel uses h2 per slide */}
-      <h1 className="sr-only">Kartawarta — Media Berita Digital Bandung</h1>
+      <h1 className="sr-only">Lensaplus — Media Berita Digital Bandung</h1>
       <BannerAd size="leaderboard" slot="HEADER" className="bg-surface" />
 
       <HeroCarousel

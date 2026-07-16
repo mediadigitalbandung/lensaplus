@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import NewsletterForm from "./NewsletterForm";
 
 export const metadata: Metadata = {
-  title: "Newsletter — Kartawarta",
+  title: "Newsletter — Lensaplus",
   description:
-    "Berlangganan newsletter mingguan Kartawarta — kabar hukum, investigasi, dan analisis pilihan dari Bandung. Gratis, sekali seminggu, mudah berhenti.",
+    "Berlangganan newsletter mingguan Lensaplus — kabar hukum, investigasi, dan analisis pilihan dari Bandung. Gratis, sekali seminggu, mudah berhenti.",
   alternates: { canonical: "/newsletter" },
 };
 
@@ -49,7 +49,7 @@ export default async function NewsletterPage({ searchParams: searchParamsPromise
           </h1>
           <p className="mt-4 text-lg text-txt-secondary leading-relaxed">
             Setiap Senin pagi, kami kirim 8 laporan terbaik pekan ini — putusan, investigasi,
-            wawancara, dan analisis dari redaksi Kartawarta. Gratis. Tidak ada spam. Mudah berhenti.
+            wawancara, dan analisis dari redaksi Lensaplus. Gratis. Tidak ada spam. Mudah berhenti.
           </p>
 
           {banner && (

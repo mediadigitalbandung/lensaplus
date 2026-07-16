@@ -6,8 +6,8 @@ dan honeypot `/api/trap`. **Tapi penegak sebenarnya ada di edge Cloudflare** —
 karena rate-limit/ban app bersifat in-memory (reset tiap deploy) dan tidak
 melindungi halaman HTML `/berita/[slug]` (yang memang harus bisa dibaca Google).
 
-Kartawarta sudah berada di belakang Cloudflare. Login ke
-**dash.cloudflare.com → pilih zona `kartawarta.com`**, lalu lakukan berikut.
+Lensaplus sudah berada di belakang Cloudflare. Login ke
+**dash.cloudflare.com → pilih zona `lensaplus.com`**, lalu lakukan berikut.
 Semua aman untuk SEO: Googlebot/Bingbot/preview-share TIDAK terpengaruh.
 
 ---
@@ -76,5 +76,5 @@ skripnya kalau mau menempuh ini (butuh Workers + KV diaktifkan).
 ## Verifikasi
 - Security → **Events**: pantau rule mana yang memicu, sesuaikan ambang.
 - Uji sebagai pembaca biasa (browser) — tak boleh kena challenge.
-- `curl https://kartawarta.com/api/articles` berulang cepat → harus kena 429
+- `curl https://lensaplus.com/api/articles` berulang cepat → harus kena 429
   (app-layer) lalu Managed Challenge (CF) setelah >100/menit.

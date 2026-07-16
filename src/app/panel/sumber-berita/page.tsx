@@ -265,7 +265,7 @@ export default function SumberBeritaPage() {
             Sumber Berita
           </h1>
           <p className="mt-1 max-w-3xl text-sm text-txt-secondary">
-            Pilih sumber, <strong>Preview</strong>, lalu <strong>Generate</strong> — Kartawarta ambil judul, isi, dan
+            Pilih sumber, <strong>Preview</strong>, lalu <strong>Generate</strong> — Lensaplus ambil judul, isi, dan
             gambar, paraphrase via AI jadi draft baru atas nama Anda. Setiap artikel <strong>dikunci begitu diambil</strong>:
             kalau penulis lain sudah mengambilnya, artikel itu otomatis terkunci dan tidak bisa diambil dobel.
             <> Daftar sumber ini <strong>milik akun Anda sendiri</strong> — tambah situs yang ingin Anda scrape.</>
@@ -465,7 +465,7 @@ export default function SumberBeritaPage() {
               Endpoint <code className="rounded-lg bg-surface-tertiary px-1.5 py-0.5 text-xs font-mono">POST /api/cron/scrape-sources</code> sudah dilindungi <code className="text-xs font-mono">CRON_SECRET</code>.
               Setting di crontab VPS (per jam):
             </p>
-            <pre className="mt-2 overflow-x-auto rounded-md bg-primary px-3 py-2 text-[11px] text-white">{`0 * * * * curl -s -X POST https://kartawarta.com/api/cron/scrape-sources -H "Authorization: Bearer $CRON_SECRET" >> /var/log/karta-scrape.log 2>&1`}</pre>
+            <pre className="mt-2 overflow-x-auto rounded-md bg-primary px-3 py-2 text-[11px] text-white">{`0 * * * * curl -s -X POST https://lensaplus.com/api/cron/scrape-sources -H "Authorization: Bearer $CRON_SECRET" >> /var/log/karta-scrape.log 2>&1`}</pre>
             <p className="mt-2 text-xs">
               Tiap jam cron akan walk semua sumber aktif yang sudah lewat <em>frequencyHours</em>-nya, ambil maks 2 artikel baru per sumber, dan stop setelah total 6 draft.
             </p>

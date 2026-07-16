@@ -102,7 +102,7 @@ export function cleanAIShortText(raw: string | null | undefined): string {
     //   - "Inilah"/"Ini adalah" REMOVED dari preface list — too commonly
     //     used in legit Indonesian headlines ("Inilah Dirut BJB yang…").
     //   - Match also without colon when preface ends with newline (AI often
-    //     writes "Berikut usulan SEO title untuk artikel ini\n\nKartawarta…").
+    //     writes "Berikut usulan SEO title untuk artikel ini\n\nLensaplus…").
     s = s.replace(/^(?:berikut|here is|silakan|terlampir)[^\n:]{0,150}[:\n]\s*\n?/i, "").trim();
     // Markdown bold label with colon: "**SEO Title:**" or "**Judul SEO (60 karakter):**"
     s = s.replace(/^\*\*[^*\n:]{1,80}:\*\*\s*\n?/i, "").trim();

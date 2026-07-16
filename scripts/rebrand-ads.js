@@ -6,14 +6,14 @@ const prisma = new PrismaClient();
 // Secondary: #b7102a (red), #8f0c20 (dark), #d4364d (container), #fce8eb (light)
 // Tertiary: #371800 (warm dark)
 
-const LOGO = `<img src="/kartawarta-icon.png" alt="Kartawarta" style="width:48px;height:48px;object-fit:contain;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.25)">`;
-const LOGO_SM = `<img src="/kartawarta-icon.png" alt="K" style="width:36px;height:36px;object-fit:contain;border-radius:10px;box-shadow:0 3px 12px rgba(0,0,0,0.2)">`;
-const LOGO_LG = `<img src="/kartawarta-icon.png" alt="Kartawarta" style="width:60px;height:60px;object-fit:contain;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.25)">`;
+const LOGO = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:48px;height:48px;object-fit:contain;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.25)">`;
+const LOGO_SM = `<img src="/lensaplus-icon.png" alt="K" style="width:36px;height:36px;object-fit:contain;border-radius:10px;box-shadow:0 3px 12px rgba(0,0,0,0.2)">`;
+const LOGO_LG = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:60px;height:60px;object-fit:contain;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.25)">`;
 
 const updates = {
 
 // ═══ HEADER AD ═══
-"Kartawarta — Pasang Iklan Header": `<div style="width:100%;min-height:220px;background:linear-gradient(135deg,#001530 0%,#002045 40%,#1a3a5c 70%,#002045 100%);border-radius:14px;display:flex;align-items:center;justify-content:space-between;padding:clamp(28px,4vw,44px) clamp(28px,5vw,56px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden;position:relative;gap:24px">
+"Lensaplus — Pasang Iklan Header": `<div style="width:100%;min-height:220px;background:linear-gradient(135deg,#001530 0%,#002045 40%,#1a3a5c 70%,#002045 100%);border-radius:14px;display:flex;align-items:center;justify-content:space-between;padding:clamp(28px,4vw,44px) clamp(28px,5vw,56px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden;position:relative;gap:24px">
   <style>
     @keyframes htLine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
     @keyframes htGlow{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:.8;transform:scale(1.15)}}
@@ -38,7 +38,7 @@ const updates = {
     <div style="animation:htFloat 4s ease-in-out infinite;flex-shrink:0">${LOGO}</div>
     <div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="color:#d4364d;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;letter-spacing:1.5px;text-transform:uppercase;animation:htBadge 3s ease-in-out infinite">⚡ Ruang Iklan Premium</span></div>
-      <div style="font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-0.5px;line-height:1.15;background:linear-gradient(90deg,#fff 0%,#fff 30%,#e8edf3 48%,#d4364d 52%,#fff 70%,#fff 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:htShine 5s linear infinite">Tampilkan Brand Anda<br>di Kartawarta</div>
+      <div style="font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-0.5px;line-height:1.15;background:linear-gradient(90deg,#fff 0%,#fff 30%,#e8edf3 48%,#d4364d 52%,#fff 70%,#fff 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:htShine 5s linear infinite">Tampilkan Brand Anda<br>di Lensaplus</div>
       <div style="color:rgba(255,255,255,0.45);font-size:clamp(13px,1.5vw,16px);margin-top:8px;line-height:1.5;animation:htSubPulse 5s ease-in-out infinite">Jangkau <strong style="color:rgba(255,255,255,0.75)">audiens yang tepat</strong> setiap hari<br>di media digital terpercaya Indonesia</div>
       <div style="display:flex;align-items:center;gap:16px;margin-top:14px;flex-wrap:wrap">
         <span style="display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,0.5);font-size:12px;animation:htTagFloat 3s ease-in-out infinite"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#b7102a;animation:htDotPing 2s ease-in-out infinite"></span> 12 Kategori</span>
@@ -51,7 +51,7 @@ const updates = {
 </div>`,
 
 // ═══ BANNER PROMO ═══
-"Kartawarta — Banner Promo": `<div style="width:100%;min-height:200px;padding:clamp(28px,4vw,44px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#001530 0%,#002045 40%,#1a3a5c 70%,#002045 100%);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative;overflow:hidden;gap:24px">
+"Lensaplus — Banner Promo": `<div style="width:100%;min-height:200px;padding:clamp(28px,4vw,44px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#001530 0%,#002045 40%,#1a3a5c 70%,#002045 100%);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative;overflow:hidden;gap:24px">
   <style>
     @keyframes bpLine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
     @keyframes bpGlow{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:.7;transform:scale(1.12)}}
@@ -69,7 +69,7 @@ const updates = {
     <div style="position:relative;flex-shrink:0;animation:bpFloat 5s ease-in-out infinite">${LOGO}<div style="position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:#b7102a;border:2.5px solid #001530;animation:bpDot 2s ease-in-out infinite"></div></div>
     <div style="min-width:0">
       <div style="display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(183,16,42,0.2);padding:4px 14px;border-radius:20px;margin-bottom:10px;animation:bpBadge 3s ease-in-out infinite"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#b7102a;animation:bpDot 2s ease-in-out infinite"></span><span style="color:#d4364d;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Media Terpercaya</span></div>
-      <div style="font-size:clamp(20px,2.8vw,28px);font-weight:800;line-height:1.15;letter-spacing:-0.5px;background:linear-gradient(90deg,#fff 0%,#fff 30%,#e8edf3 48%,#d4364d 52%,#fff 70%,#fff 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:bpShine 5s linear infinite">Kartawarta — Berita Akurat<br>& Terverifikasi</div>
+      <div style="font-size:clamp(20px,2.8vw,28px);font-weight:800;line-height:1.15;letter-spacing:-0.5px;background:linear-gradient(90deg,#fff 0%,#fff 30%,#e8edf3 48%,#d4364d 52%,#fff 70%,#fff 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:bpShine 5s linear infinite">Lensaplus — Berita Akurat<br>& Terverifikasi</div>
       <div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap">
         <span style="display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,0.5);font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b7102a" stroke-width="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> 12 Kategori</span>
         <span style="display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,0.5);font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Update 24/7</span>
@@ -81,7 +81,7 @@ const updates = {
 </div>`,
 
 // ═══ IKLAN BANNER SPACE (light) ═══
-"Kartawarta — Iklan Banner Space": `<div style="width:100%;min-height:180px;padding:clamp(24px,3.5vw,40px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#fff,#f0f4f8,#e8edf3);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;gap:24px;position:relative;overflow:hidden;border:1px solid #e8edf3">
+"Lensaplus — Iklan Banner Space": `<div style="width:100%;min-height:180px;padding:clamp(24px,3.5vw,40px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#fff,#f0f4f8,#e8edf3);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;gap:24px;position:relative;overflow:hidden;border:1px solid #e8edf3">
   <style>
     @keyframes ibsFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-5px) rotate(2deg)}}
     @keyframes ibsGlow{0%,100%{box-shadow:0 0 0 0 rgba(0,32,69,0.08)}50%{box-shadow:0 0 0 12px rgba(0,32,69,0)}}
@@ -107,7 +107,7 @@ const updates = {
 </div>`,
 
 // ═══ INLINE PROMO ═══
-"Kartawarta — Inline Promo": `<div style="width:100%;min-height:180px;padding:clamp(28px,4vw,40px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#001530 0%,#002045 50%,#1a3a5c 100%);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative;overflow:hidden;gap:24px">
+"Lensaplus — Inline Promo": `<div style="width:100%;min-height:180px;padding:clamp(28px,4vw,40px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#001530 0%,#002045 50%,#1a3a5c 100%);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative;overflow:hidden;gap:24px">
   <style>
     @keyframes ipLine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
     @keyframes ipFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
@@ -131,7 +131,7 @@ const updates = {
 </div>`,
 
 // ═══ KATEGORI PROMO ═══
-"Kartawarta — Kategori Promo": `<div style="width:100%;min-height:170px;padding:clamp(24px,3.5vw,36px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#fff,#f0f4f8);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;gap:24px;position:relative;overflow:hidden;border:1px solid #e8edf3">
+"Lensaplus — Kategori Promo": `<div style="width:100%;min-height:170px;padding:clamp(24px,3.5vw,36px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#fff,#f0f4f8);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;gap:24px;position:relative;overflow:hidden;border:1px solid #e8edf3">
   <style>
     @keyframes kpLine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
     @keyframes kpBadge{0%{transform:translateY(0)}100%{transform:translateY(-2px)}}
@@ -160,7 +160,7 @@ const updates = {
 </div>`,
 
 // ═══ FOOTER CTA ═══
-"Kartawarta — Footer CTA": `<div style="width:100%;min-height:200px;padding:clamp(28px,4vw,44px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#001530 0%,#002045 30%,#1a3a5c 60%,#371800 100%);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative;overflow:hidden;gap:24px">
+"Lensaplus — Footer CTA": `<div style="width:100%;min-height:200px;padding:clamp(28px,4vw,44px) clamp(28px,5vw,56px);background:linear-gradient(135deg,#001530 0%,#002045 30%,#1a3a5c 60%,#371800 100%);border-radius:14px;display:flex;align-items:center;justify-content:space-between;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative;overflow:hidden;gap:24px">
   <style>
     @keyframes fcLine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
     @keyframes fcGlow{0%,100%{opacity:.3}50%{opacity:.6}}
@@ -179,8 +179,8 @@ const updates = {
   <div style="display:flex;align-items:center;gap:clamp(18px,3vw,28px);z-index:1;min-width:0">
     <div style="animation:fcFloat 4.5s ease-in-out infinite;flex-shrink:0">${LOGO}</div>
     <div style="min-width:0">
-      <div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="#d4364d" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span style="color:#d4364d;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Kartawarta</span></div>
-      <div style="font-size:clamp(20px,2.8vw,28px);font-weight:800;line-height:1.15;letter-spacing:-0.5px;background:linear-gradient(90deg,#fff 0%,#fff 30%,#e8edf3 48%,#d4364d 52%,#fff 70%,#fff 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fcShine 5s linear infinite">Jadikan Kartawarta<br>Sumber Berita Utama Anda</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="#d4364d" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span style="color:#d4364d;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Lensaplus</span></div>
+      <div style="font-size:clamp(20px,2.8vw,28px);font-weight:800;line-height:1.15;letter-spacing:-0.5px;background:linear-gradient(90deg,#fff 0%,#fff 30%,#e8edf3 48%,#d4364d 52%,#fff 70%,#fff 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fcShine 5s linear infinite">Jadikan Lensaplus<br>Sumber Berita Utama Anda</div>
       <div style="color:rgba(255,255,255,0.4);font-size:clamp(12px,1.3vw,15px);margin-top:8px">Berita akurat, terverifikasi, dari sumber terpercaya Indonesia</div>
     </div>
   </div>
@@ -188,7 +188,7 @@ const updates = {
 </div>`,
 
 // ═══ SIDEBAR — Newsletter ═══
-"Kartawarta — Newsletter Sidebar": `<div style="width:100%;aspect-ratio:6/5;background:linear-gradient(160deg,#001530 0%,#002045 30%,#1a3a5c 60%,#002045 100%);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,3.5vw,32px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden">
+"Lensaplus — Newsletter Sidebar": `<div style="width:100%;aspect-ratio:6/5;background:linear-gradient(160deg,#001530 0%,#002045 30%,#1a3a5c 60%,#002045 100%);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,3.5vw,32px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden">
   <style>
     @keyframes ns2Line{0%{background-position:0% 50%}100%{background-position:200% 50%}}
     @keyframes ns2Float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -204,9 +204,9 @@ const updates = {
   <div style="position:absolute;top:15%;right:10%;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(183,16,42,0.1),transparent 70%);animation:ns2Orb 6s ease-in-out infinite;filter:blur(20px)"></div>
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none"><div style="position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.02),transparent);animation:ns2Shimmer 6s ease-in-out infinite"></div></div>
   <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center">
-    <div style="animation:ns2Float 4s ease-in-out infinite;margin-bottom:18px"><div style="position:relative"><img src="/kartawarta-icon.png" alt="Kartawarta" style="width:52px;height:52px;object-fit:contain;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.06)"><div style="position:absolute;inset:-3px;border-radius:17px;border:1px solid rgba(255,255,255,0.08)"></div></div></div>
+    <div style="animation:ns2Float 4s ease-in-out infinite;margin-bottom:18px"><div style="position:relative"><img src="/lensaplus-icon.png" alt="Lensaplus" style="width:52px;height:52px;object-fit:contain;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.06)"><div style="position:absolute;inset:-3px;border-radius:17px;border:1px solid rgba(255,255,255,0.08)"></div></div></div>
     <div style="font-size:clamp(18px,2.5vw,22px);font-weight:800;line-height:1.2;letter-spacing:-0.3px;background:linear-gradient(90deg,#fff 0%,#fff 30%,#e8edf3 48%,#d4364d 52%,#fff 70%,#fff 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:ns2Shine 5s linear infinite">Berita Terbaru<br>Setiap Hari</div>
-    <div style="margin-top:10px;padding:6px 16px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"><span style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:500">Newsletter Kartawarta — berita penting ke inbox</span></div>
+    <div style="margin-top:10px;padding:6px 16px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"><span style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:500">Newsletter Lensaplus — berita penting ke inbox</span></div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
       <span style="display:flex;align-items:center;gap:3px;color:rgba(255,255,255,0.25);font-size:9px"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Gratis</span>
       <span style="color:rgba(255,255,255,0.1)">·</span>
@@ -219,7 +219,7 @@ const updates = {
 </div>`,
 
 // ═══ SIDEBAR — Pasang Iklan ═══
-"Kartawarta — Pasang Iklan Sidebar": `<div style="width:100%;aspect-ratio:6/5;background:linear-gradient(160deg,#fff 0%,#f0f4f8 40%,#e8edf3 100%);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,3.5vw,32px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden;border:1px solid rgba(0,32,69,0.04)">
+"Lensaplus — Pasang Iklan Sidebar": `<div style="width:100%;aspect-ratio:6/5;background:linear-gradient(160deg,#fff 0%,#f0f4f8 40%,#e8edf3 100%);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,3.5vw,32px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden;border:1px solid rgba(0,32,69,0.04)">
   <style>
     @keyframes ps2Line{0%{background-position:0% 50%}100%{background-position:200% 50%}}
     @keyframes ps2Float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
@@ -233,7 +233,7 @@ const updates = {
   <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;border:1px solid rgba(0,32,69,0.04);animation:ps2Ring 4s ease-in-out infinite"></div>
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none"><div style="position:absolute;top:0;left:0;width:35%;height:100%;background:linear-gradient(90deg,transparent,rgba(0,32,69,0.015),transparent);animation:ps2Shimmer 7s ease-in-out infinite"></div></div>
   <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center">
-    <div style="animation:ps2Float 5s ease-in-out infinite;margin-bottom:16px"><div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(145deg,#fff,#f0f4f8);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,32,69,0.06),0 0 0 1px rgba(0,32,69,0.03)"><img src="/kartawarta-icon.png" alt="K" style="width:38px;height:38px;object-fit:contain;border-radius:10px"></div></div>
+    <div style="animation:ps2Float 5s ease-in-out infinite;margin-bottom:16px"><div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(145deg,#fff,#f0f4f8);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,32,69,0.06),0 0 0 1px rgba(0,32,69,0.03)"><img src="/lensaplus-icon.png" alt="K" style="width:38px;height:38px;object-fit:contain;border-radius:10px"></div></div>
     <div style="font-size:clamp(18px,2.5vw,22px);font-weight:800;line-height:1.2;letter-spacing:-0.3px;background:linear-gradient(90deg,#002045 0%,#002045 30%,#1a3a5c 48%,#b7102a 52%,#002045 70%,#002045 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:ps2Shine 5s linear infinite">Ruang Iklan<br>Premium</div>
     <div style="margin-top:8px;padding:5px 14px;border-radius:20px;background:rgba(0,32,69,0.03);border:1px solid rgba(0,32,69,0.04)"><span style="color:#44474e;font-size:11px;font-weight:500">300 × 250 · Sidebar homepage</span></div>
     <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;justify-content:center">
@@ -247,7 +247,7 @@ const updates = {
 </div>`,
 
 // ═══ POPUP ═══
-"Kartawarta — Popup Newsletter": `<div style="width:100%;max-width:480px;background:#fff;border-radius:20px;padding:clamp(36px,5vw,52px) clamp(32px,4vw,48px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden">
+"Lensaplus — Popup Newsletter": `<div style="width:100%;max-width:480px;background:#fff;border-radius:20px;padding:clamp(36px,5vw,52px) clamp(32px,4vw,48px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden">
   <style>
     @keyframes ppLine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
     @keyframes ppFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -268,7 +268,7 @@ const updates = {
 </div>`,
 
 // ═══ FLOATING BAR ═══
-"Kartawarta — Floating Bar": `<div style="width:100%;padding:14px clamp(18px,3vw,28px);background:linear-gradient(135deg,#001530,#002045);display:flex;align-items:center;justify-content:center;gap:clamp(14px,2.5vw,24px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative;overflow:hidden">
+"Lensaplus — Floating Bar": `<div style="width:100%;padding:14px clamp(18px,3vw,28px);background:linear-gradient(135deg,#001530,#002045);display:flex;align-items:center;justify-content:center;gap:clamp(14px,2.5vw,24px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative;overflow:hidden">
   <style>
     @keyframes fbLine{0%{background-position:0% 50%}100%{background-position:200% 50%}}
     @keyframes fbPulse{0%,100%{box-shadow:0 2px 10px rgba(183,16,42,0.2)}50%{box-shadow:0 4px 18px rgba(183,16,42,0.4)}}
@@ -278,8 +278,8 @@ const updates = {
   <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#b7102a,#d4364d,#1a3a5c,#b7102a);background-size:200% 100%;animation:fbLine 4s linear infinite"></div>
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none"><div style="position:absolute;top:0;left:0;width:30%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.02),transparent);animation:fbShimmer 5s ease-in-out infinite"></div></div>
   <div style="display:flex;align-items:center;gap:10px;z-index:1">
-    <img src="/kartawarta-icon.png" alt="K" style="width:28px;height:28px;object-fit:contain;border-radius:7px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
-    <span style="display:inline-flex;align-items:center;gap:6px;color:#fff;font-size:clamp(12px,1.3vw,14px);font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:#b7102a;animation:fbDot 2s ease-in-out infinite"></span> Baca berita terbaru dari <strong>Kartawarta</strong></span>
+    <img src="/lensaplus-icon.png" alt="K" style="width:28px;height:28px;object-fit:contain;border-radius:7px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+    <span style="display:inline-flex;align-items:center;gap:6px;color:#fff;font-size:clamp(12px,1.3vw,14px);font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:#b7102a;animation:fbDot 2s ease-in-out infinite"></span> Baca berita terbaru dari <strong>Lensaplus</strong></span>
   </div>
   <div style="background:linear-gradient(135deg,#b7102a,#8f0c20);color:#fff;font-size:clamp(11px,1.2vw,13px);font-weight:700;padding:9px clamp(16px,2vw,22px);border-radius:8px;white-space:nowrap;animation:fbPulse 3s ease-in-out infinite;z-index:1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Lihat Berita →</div>
 </div>`,
@@ -287,7 +287,7 @@ const updates = {
 };
 
 async function main() {
-  console.log("=== Rebranding All Ads to Kartawarta Colors ===\n");
+  console.log("=== Rebranding All Ads to Lensaplus Colors ===\n");
   let updated = 0;
   for (const [name, htmlCode] of Object.entries(updates)) {
     const result = await prisma.ad.updateMany({ where: { name }, data: { htmlCode } });

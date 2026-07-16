@@ -90,11 +90,11 @@ function heuristicCheck(input: SpamCheckInput): SpamCheckResult {
 
 /**
  * Hit Akismet REST API. Free for non-commercial; paid otherwise.
- * Set AKISMET_API_KEY + AKISMET_BLOG_URL (e.g. https://kartawarta.com).
+ * Set AKISMET_API_KEY + AKISMET_BLOG_URL (e.g. https://lensaplus.com).
  */
 async function akismetCheck(input: SpamCheckInput): Promise<SpamCheckResult> {
   const key = process.env.AKISMET_API_KEY;
-  const blog = process.env.AKISMET_BLOG_URL || "https://kartawarta.com";
+  const blog = process.env.AKISMET_BLOG_URL || "https://lensaplus.com";
   if (!key) return { verdict: "ok" }; // Akismet not configured — skip silently.
 
   try {
@@ -114,7 +114,7 @@ async function akismetCheck(input: SpamCheckInput): Promise<SpamCheckResult> {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "Kartawarta/2.0 | Akismet/1.0",
+          "User-Agent": "Lensaplus/2.0 | Akismet/1.0",
         },
         body: params.toString(),
         // 5s timeout — don't block comment submit on a slow Akismet

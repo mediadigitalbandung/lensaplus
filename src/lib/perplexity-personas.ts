@@ -15,7 +15,7 @@ export interface PerplexityPersona {
 export const PERPLEXITY_PERSONAS: PerplexityPersona[] = [
   {
     key: "",
-    label: "Default (gaya Kartawarta)",
+    label: "Default (gaya Lensaplus)",
     instruction: "",
   },
   {

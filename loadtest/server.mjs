@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────
-// Kartawarta — Load / Stress Test Tool (LOCALHOST ONLY)
+// Lensaplus — Load / Stress Test Tool (LOCALHOST ONLY)
 //
 // This is a CONTROLLED LOAD TESTER for measuring the capacity & resilience of
 // a site you OWN or are AUTHORIZED to test. It is NOT a DDoS weapon:
@@ -131,7 +131,7 @@ async function runTest(opts, onProgress) {
           method,
           redirect: "manual",
           signal: reqAbort.signal,
-          headers: { "user-agent": "Kartawarta-LoadTest/1.0 (authorized self-test)" },
+          headers: { "user-agent": "Lensaplus-LoadTest/1.0 (authorized self-test)" },
         });
         const body = await res.arrayBuffer();
         record(performance.now() - t0, res.status, body.byteLength);
@@ -230,7 +230,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`\n  Kartawarta Load Test — buka di browser:\n  → http://${HOST}:${PORT}\n`);
+  console.log(`\n  Lensaplus Load Test — buka di browser:\n  → http://${HOST}:${PORT}\n`);
   console.log("  Tekan Ctrl+C untuk berhenti.\n");
 });
 
@@ -240,7 +240,7 @@ const HTML = `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Kartawarta — Uji Beban</title>
+<title>Lensaplus — Uji Beban</title>
 <style>
   :root { --navy:#002045; --navy2:#001530; --crimson:#b7102a; --bd:#c4c6d0; --muted:#74777f; --bg:#f8f9fa; }
   * { box-sizing: border-box; }
@@ -274,7 +274,7 @@ const HTML = `<!doctype html>
 </head>
 <body>
 <header>
-  <h1>Kartawarta — Uji Beban (Load / Stress Test)</h1>
+  <h1>Lensaplus — Uji Beban (Load / Stress Test)</h1>
   <p>Alat lokal untuk mengukur kapasitas & ketahanan situs milik sendiri. Bukan alat serangan.</p>
 </header>
 <main>
@@ -288,7 +288,7 @@ const HTML = `<!doctype html>
     <div class="grid">
       <div style="grid-column:1 / -1">
         <label>Target URL</label>
-        <input id="url" type="text" value="http://localhost:3000" placeholder="https://kartawarta.com" />
+        <input id="url" type="text" value="http://localhost:3000" placeholder="https://lensaplus.com" />
       </div>
     </div>
     <div class="grid4" style="margin-top:14px">

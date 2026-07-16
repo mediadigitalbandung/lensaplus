@@ -14,7 +14,7 @@ import { effectiveStatus, STATUS_LABELS } from "@/lib/membership";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Verifikasi Kartu Anggota — Kartawarta",
+  title: "Verifikasi Kartu Anggota — Lensaplus",
   robots: { index: false, follow: false },
 };
 
@@ -38,7 +38,7 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
     <main className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-5 py-12">
       <div className="w-full rounded-xl border border-border bg-surface p-8 shadow-card">
         <div className="mb-6 text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-primary">Kartawarta</p>
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary">Lensaplus</p>
           <p className="text-xs text-txt-muted">Verifikasi Kartu Tanda Anggota Pers</p>
         </div>
 
@@ -47,7 +47,7 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
             <ShieldX size={56} className="text-red-500" />
             <h1 className="text-xl font-bold text-txt-primary">Kartu Tidak Ditemukan</h1>
             <p className="text-sm text-txt-secondary">
-              Nomor <span className="font-mono">{decodeURIComponent(number)}</span> tidak terdaftar di sistem Kartawarta.
+              Nomor <span className="font-mono">{decodeURIComponent(number)}</span> tidak terdaftar di sistem Lensaplus.
               Kartu ini kemungkinan tidak sah.
             </p>
           </div>
@@ -79,9 +79,9 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
         )}
 
         <div className="mt-6 border-t border-border pt-4 text-center">
-          <p className="text-xs text-txt-muted">Kartawarta — Media Berita Digital Bandung</p>
+          <p className="text-xs text-txt-muted">Lensaplus — Media Berita Digital Bandung</p>
           <Link href="/" className="text-xs font-medium text-primary hover:underline">
-            kartawarta.com
+            lensaplus.com
           </Link>
         </div>
       </div>

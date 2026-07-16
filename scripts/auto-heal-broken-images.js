@@ -3,7 +3,7 @@
  * Auto-heal broken /uploads/* references in articles.
  *
  * Strategy:
- *   1. Generate ONE branded WebP placeholder at /uploads/_kartawarta-placeholder.webp
+ *   1. Generate ONE branded WebP placeholder at /uploads/_lensaplus-placeholder.webp
  *      (only if it doesn't already exist).
  *   2. Scan every Article row for /uploads/* references in featuredImage and
  *      in the body HTML content.
@@ -21,7 +21,7 @@
  * Idempotent: re-running is safe. Already-placeholder URLs are skipped.
  *
  * Run on the VPS so the file existence check inspects production storage:
- *   cd /var/www/kartawarta && node scripts/auto-heal-broken-images.js
+ *   cd /var/www/lensaplus && node scripts/auto-heal-broken-images.js
  *
  * Optional flags:
  *   --dry-run    Report what would change without writing.
@@ -38,9 +38,9 @@ const uploadsDir = join(process.cwd(), "public", "uploads");
 // IMPORTANT: filename must NOT start with "_" — Next.js refuses to serve
 // public/ files whose name begins with an underscore (reserved for _next,
 // _app, _document and other framework internals). The first heal run used
-// "_kartawarta-placeholder.webp" and produced silent 404s.
-const PLACEHOLDER_FILENAME = "kartawarta-placeholder.webp";
-const LEGACY_PLACEHOLDER_FILENAME = "_kartawarta-placeholder.webp";
+// "_lensaplus-placeholder.webp" and produced silent 404s.
+const PLACEHOLDER_FILENAME = "lensaplus-placeholder.webp";
+const LEGACY_PLACEHOLDER_FILENAME = "_lensaplus-placeholder.webp";
 const PLACEHOLDER_PATH = join(uploadsDir, PLACEHOLDER_FILENAME);
 const PLACEHOLDER_URL = `/uploads/${PLACEHOLDER_FILENAME}`;
 const LEGACY_PLACEHOLDER_URL = `/uploads/${LEGACY_PLACEHOLDER_FILENAME}`;
@@ -116,7 +116,7 @@ async function ensurePlaceholder() {
       </g>
       <text x="600" y="430" font-family="Georgia, serif" font-size="40" font-weight="600" fill="#e8edf3" text-anchor="middle">Gambar belum tersedia</text>
       <text x="600" y="475" font-family="sans-serif" font-size="22" fill="#a7b6c8" text-anchor="middle">Akan segera diperbarui</text>
-      <text x="600" y="600" font-family="sans-serif" font-size="18" fill="#a7b6c8" text-anchor="middle">kartawarta.com</text>
+      <text x="600" y="600" font-family="sans-serif" font-size="18" fill="#a7b6c8" text-anchor="middle">lensaplus.com</text>
     </svg>
   `;
   await sharp(Buffer.from(svg)).webp({ quality: 85 }).toFile(PLACEHOLDER_PATH);
@@ -124,7 +124,7 @@ async function ensurePlaceholder() {
 }
 
 async function main() {
-  console.log("Kartawarta auto-heal broken images");
+  console.log("Lensaplus auto-heal broken images");
   console.log("=".repeat(60));
   console.log(`Mode: ${dryRun ? "DRY RUN (no DB writes)" : "LIVE"}`);
   console.log(`Uploads dir: ${uploadsDir}`);
@@ -266,7 +266,7 @@ async function main() {
     console.log("");
     console.log("✓ DB updated. Production should serve the branded placeholder for");
     console.log("  every previously-broken /uploads/* reference. Test:");
-    console.log("    curl -I https://kartawarta.com/uploads/_kartawarta-placeholder.webp");
+    console.log("    curl -I https://lensaplus.com/uploads/_lensaplus-placeholder.webp");
     console.log("");
     console.log("Editorial team can replace each placeholder via panel admin when a real");
     console.log("source image becomes available — no code changes required.");

@@ -22,8 +22,8 @@ import { pingIndexNow } from "@/lib/seo/indexnow";
 export const dynamic = "force-dynamic";
 
 const SITE_HOSTNAME = (() => {
-  try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com").hostname; }
-  catch { return "kartawarta.com"; }
+  try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname; }
+  catch { return "lensaplus.com"; }
 })();
 
 function isOwnDomain(rawUrl: string): boolean {

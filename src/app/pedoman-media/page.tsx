@@ -2,7 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Pedoman Media Siber",
-  description: "Pedoman pemberitaan media siber Kartawarta.",
+  description: "Pedoman pemberitaan media siber Lensaplus.",
 };
 
 export default function PedomanMediaPage() {
@@ -17,7 +17,7 @@ export default function PedomanMediaPage() {
 
           <div className="mt-8 space-y-6 font-serif text-[17px] leading-relaxed text-txt-secondary">
             <p>
-              Kartawarta sebagai media siber mematuhi <strong className="text-txt-primary">Pedoman Pemberitaan Media Siber</strong> yang
+              Lensaplus sebagai media siber mematuhi <strong className="text-txt-primary">Pedoman Pemberitaan Media Siber</strong> yang
               ditetapkan oleh Dewan Pers Indonesia. Berikut adalah prinsip-prinsip yang kami terapkan:
             </p>
 
@@ -39,7 +39,7 @@ export default function PedomanMediaPage() {
               Kami menyediakan mekanisme hak jawab bagi pihak yang merasa dirugikan oleh pemberitaan.
               Koreksi dan klarifikasi dipublikasikan secara transparan dan dapat diakses oleh publik.
               Permohonan hak jawab atau koreksi dapat diajukan melalui email{" "}
-              <a href="mailto:redaksi@kartawarta.com" className="text-primary hover:underline">redaksi@kartawarta.com</a>{" "}
+              <a href="mailto:redaksi@lensaplus.com" className="text-primary hover:underline">redaksi@lensaplus.com</a>{" "}
               atau formulir pada halaman{" "}
               <a href="/kontak" className="text-primary hover:underline">Kontak</a> dengan subjek
               &quot;Koreksi Berita&quot;. Redaksi menindaklanjuti setiap permohonan dalam waktu wajar dan
@@ -62,7 +62,7 @@ export default function PedomanMediaPage() {
 
             <h2 className="!mt-8 text-lg font-bold text-txt-primary sm:text-xl">6. Perlindungan Hak Cipta</h2>
             <p>
-              Seluruh konten yang dipublikasikan di Kartawarta dilindungi hak cipta.
+              Seluruh konten yang dipublikasikan di Lensaplus dilindungi hak cipta.
               Pengutipan diperbolehkan dengan mencantumkan sumber dan link ke artikel asli.
               Sistem kami secara otomatis menyertakan informasi atribusi penulis ketika konten disalin.
             </p>

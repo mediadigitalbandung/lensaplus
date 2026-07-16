@@ -121,7 +121,7 @@ async function main() {
     out(`  atau prompt AI yang mungkin meng-hallucinate path /uploads/.`);
   }
   out("  Untuk fix per artikel: edit via panel admin, ganti featuredImage / image inline");
-  out("  dengan upload baru via panel di kartawarta.com.");
+  out("  dengan upload baru via panel di lensaplus.com.");
 
   await prisma.$disconnect();
 }

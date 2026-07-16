@@ -6,7 +6,7 @@ const updates = {
 // ═══════════════════════════════════════════════════
 // SIDEBAR — Newsletter (dark premium glassmorphism)
 // ═══════════════════════════════════════════════════
-"Kartawarta — Newsletter Sidebar": `<div style="width:100%;aspect-ratio:6/5;background:linear-gradient(160deg,#080e1a 0%,#0f1d36 30%,#162a4a 60%,#1a2040 100%);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,3.5vw,32px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden">
+"Lensaplus — Newsletter Sidebar": `<div style="width:100%;aspect-ratio:6/5;background:linear-gradient(160deg,#080e1a 0%,#0f1d36 30%,#162a4a 60%,#1a2040 100%);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,3.5vw,32px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden">
   <style>
     @keyframes nsOrb1{0%,100%{transform:translate(0,0) scale(1);opacity:.12}50%{transform:translate(15px,-20px) scale(1.2);opacity:.2}}
     @keyframes nsOrb2{0%,100%{transform:translate(0,0) scale(1);opacity:.08}50%{transform:translate(-20px,15px) scale(1.15);opacity:.15}}
@@ -40,7 +40,7 @@ const updates = {
     <!-- Logo -->
     <div style="animation:nsFloat 4s ease-in-out infinite;margin-bottom:18px">
       <div style="position:relative">
-        <img src="/kartawarta-icon.png" alt="Kartawarta" style="width:52px;height:52px;object-fit:contain;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.06)">
+        <img src="/lensaplus-icon.png" alt="Lensaplus" style="width:52px;height:52px;object-fit:contain;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.06)">
         <div style="position:absolute;inset:-3px;border-radius:17px;border:1px solid rgba(255,255,255,0.08);pointer-events:none"></div>
       </div>
     </div>
@@ -50,7 +50,7 @@ const updates = {
 
     <!-- Subtitle with glass pill -->
     <div style="margin-top:10px;padding:6px 16px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)">
-      <span style="color:rgba(255,255,255,0.4);font-size:11px;line-height:1.5;font-weight:500">Newsletter Kartawarta — berita penting langsung ke inbox</span>
+      <span style="color:rgba(255,255,255,0.4);font-size:11px;line-height:1.5;font-weight:500">Newsletter Lensaplus — berita penting langsung ke inbox</span>
     </div>
 
     <!-- Stats -->
@@ -93,7 +93,7 @@ const updates = {
 // ═══════════════════════════════════════════════════
 // SIDEBAR — Pasang Iklan (light premium glassmorphism)
 // ═══════════════════════════════════════════════════
-"Kartawarta — Pasang Iklan Sidebar": `<div style="width:100%;aspect-ratio:6/5;background:linear-gradient(160deg,#fcfdfe 0%,#f4f7fb 30%,#eef2f8 60%,#f8fafD 100%);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,3.5vw,32px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden;border:1px solid rgba(0,0,0,0.04)">
+"Lensaplus — Pasang Iklan Sidebar": `<div style="width:100%;aspect-ratio:6/5;background:linear-gradient(160deg,#fcfdfe 0%,#f4f7fb 30%,#eef2f8 60%,#f8fafD 100%);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,3.5vw,32px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;text-align:center;position:relative;overflow:hidden;border:1px solid rgba(0,0,0,0.04)">
   <style>
     @keyframes psOrb1{0%,100%{transform:translate(0,0);opacity:.04}50%{transform:translate(10px,-15px);opacity:.08}}
     @keyframes psOrb2{0%,100%{transform:translate(0,0);opacity:.03}50%{transform:translate(-12px,10px);opacity:.06}}
@@ -126,7 +126,7 @@ const updates = {
     <!-- Logo in glass container -->
     <div style="animation:psFloat 5s ease-in-out infinite;margin-bottom:16px">
       <div style="position:relative;width:60px;height:60px;border-radius:18px;background:linear-gradient(145deg,#fff,#f1f5f9);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.03)">
-        <img src="/kartawarta-icon.png" alt="K" style="width:38px;height:38px;object-fit:contain;border-radius:10px">
+        <img src="/lensaplus-icon.png" alt="K" style="width:38px;height:38px;object-fit:contain;border-radius:10px">
         <div style="position:absolute;inset:-2px;border-radius:20px;border:1px solid rgba(59,130,246,0.08);pointer-events:none"></div>
       </div>
     </div>

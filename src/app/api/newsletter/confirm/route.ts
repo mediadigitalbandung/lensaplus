@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 /**
  * GET /api/newsletter/confirm?token=...

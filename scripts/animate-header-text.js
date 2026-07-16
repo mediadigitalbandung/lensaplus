@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-const LOGO = `<img src="/kartawarta-icon.png" alt="Kartawarta" style="width:64px;height:64px;object-fit:contain;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.3)">`;
+const LOGO = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:64px;height:64px;object-fit:contain;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.3)">`;
 
 const headerAd = `<div style="width:100%;min-height:220px;background:linear-gradient(135deg,#0a1628 0%,#162a4a 40%,#1e3a5f 70%,#0d2240 100%);border-radius:14px;display:flex;align-items:center;justify-content:space-between;padding:clamp(28px,4vw,44px) clamp(28px,5vw,56px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden;position:relative;gap:24px">
 
@@ -51,7 +51,7 @@ const headerAd = `<div style="width:100%;min-height:220px;background:linear-grad
       </div>
 
       <!-- HEADLINE: Shining gradient text sweep -->
-      <div style="font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-0.5px;line-height:1.15;background:linear-gradient(90deg,#fff 0%,#fff 30%,#93c5fd 45%,#c4b5fd 55%,#fff 70%,#fff 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:htShine 5s linear infinite">Tampilkan Brand Anda<br>di Kartawarta</div>
+      <div style="font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-0.5px;line-height:1.15;background:linear-gradient(90deg,#fff 0%,#fff 30%,#93c5fd 45%,#c4b5fd 55%,#fff 70%,#fff 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:htShine 5s linear infinite">Tampilkan Brand Anda<br>di Lensaplus</div>
 
       <!-- SUBTITLE: Gentle pulse -->
       <div style="color:rgba(255,255,255,0.45);font-size:clamp(13px,1.5vw,16px);margin-top:8px;line-height:1.5;animation:htSubPulse 5s ease-in-out infinite">Jangkau <strong style="color:rgba(255,255,255,0.75)">ribuan pembaca aktif</strong> setiap hari<br>di media digital terpercaya Indonesia</div>
@@ -79,7 +79,7 @@ const headerAd = `<div style="width:100%;min-height:220px;background:linear-grad
 
 async function main() {
   const result = await prisma.ad.updateMany({
-    where: { name: "Kartawarta — Pasang Iklan Header" },
+    where: { name: "Lensaplus — Pasang Iklan Header" },
     data: { htmlCode: headerAd },
   });
   console.log(result.count > 0 ? "✓ Header ad updated with animated text" : "⏭ Not found");

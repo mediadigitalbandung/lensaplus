@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description:
     "Direktori pengadilan utama di Bandung dan sekitarnya — alamat, kontak, jam operasional, dan tautan peta.",
   openGraph: {
-    title: "Lokasi Pengadilan - Kartawarta",
+    title: "Lokasi Pengadilan - Lensaplus",
     description: "Direktori pengadilan utama di wilayah Bandung.",
     type: "website",
   },

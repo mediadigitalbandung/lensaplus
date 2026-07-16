@@ -1,10 +1,10 @@
 /**
- * One-time script: register all images already in use on kartawarta.com
+ * One-time script: register all images already in use on lensaplus.com
  * (article featured images, images embedded in article content, ad creatives,
  * poll covers, redaksi photos, user avatars) into the Media library so
  * they appear in the in-editor image picker gallery.
  *
- * Run on VPS: cd /var/www/kartawarta && node scripts/import-existing-images.js
+ * Run on VPS: cd /var/www/lensaplus && node scripts/import-existing-images.js
  * Safe to run multiple times — skips URLs that are already registered.
  */
 const { PrismaClient } = require("@prisma/client");
@@ -24,7 +24,7 @@ function extractImgSrcs(html) {
 
 function filenameFromUrl(url) {
   try {
-    const parsed = new URL(url, "https://kartawarta.com");
+    const parsed = new URL(url, "https://lensaplus.com");
     const base = path.basename(parsed.pathname) || "image";
     return decodeURIComponent(base);
   } catch {

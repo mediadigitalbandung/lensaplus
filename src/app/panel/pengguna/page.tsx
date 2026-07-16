@@ -100,7 +100,7 @@ export default function PenggunaPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formRole, setFormRole] = useState("");
   const [formSpec, setFormSpec] = useState("");
-  const [formKartawartaEmail, setFormKartawartaEmail] = useState("");
+  const [formLensaplusEmail, setFormLensaplusEmail] = useState("");
   const [emailRoutes, setEmailRoutes] = useState<EmailRoute[]>([]);
 
   const fetchUsers = useCallback(async () => {
@@ -153,7 +153,7 @@ export default function PenggunaPage() {
     setFormPassword("");
     setFormRole("");
     setFormSpec("");
-    setFormKartawartaEmail("");
+    setFormLensaplusEmail("");
     setEditingUser(null);
   }
 
@@ -164,7 +164,7 @@ export default function PenggunaPage() {
     setFormPassword("");
     setFormRole(user.role);
     setFormSpec(user.specialization || "");
-    setFormKartawartaEmail("");
+    setFormLensaplusEmail("");
     setShowModal(true);
   }
 
@@ -221,7 +221,7 @@ export default function PenggunaPage() {
             password: formPassword,
             role: formRole,
             specialization: formSpec || undefined,
-            kartawartaEmail: formKartawartaEmail || undefined,
+            lensaplusEmail: formLensaplusEmail || undefined,
           }),
         });
 
@@ -231,7 +231,7 @@ export default function PenggunaPage() {
         }
 
         const json = await res.json();
-        const emailInfo = json.data?.emailCreated ? ` — Email ${formKartawartaEmail}@kartawarta.com dibuat` : "";
+        const emailInfo = json.data?.emailCreated ? ` — Email ${formLensaplusEmail}@lensaplus.com dibuat` : "";
         success(`Pengguna berhasil ditambahkan${emailInfo}`);
       }
 
@@ -367,9 +367,9 @@ export default function PenggunaPage() {
                     <tr key={user.id} className="hover:bg-surface-secondary">
                       <td className="px-3 sm:px-5 py-4">
                         {(() => {
-                          const isKartawarta = user.email.endsWith("@kartawarta.com");
-                          const kartawartaRoute = emailRoutes.find(r => r.to === user.email && r.enabled);
-                          const kartawartaEmail = isKartawarta ? user.email : kartawartaRoute?.from || null;
+                          const isLensaplus = user.email.endsWith("@lensaplus.com");
+                          const lensaplusRoute = emailRoutes.find(r => r.to === user.email && r.enabled);
+                          const lensaplusEmail = isLensaplus ? user.email : lensaplusRoute?.from || null;
                           return (
                             <div className="flex items-center gap-2 sm:gap-3">
                               <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-primary text-xs sm:text-sm font-bold text-white">
@@ -377,9 +377,9 @@ export default function PenggunaPage() {
                               </div>
                               <div className="min-w-0">
                                 <p className="font-medium text-txt-primary text-sm truncate">{user.name}</p>
-                                {kartawartaEmail ? (
+                                {lensaplusEmail ? (
                                   <p className="flex items-center gap-1 text-xs text-primary font-medium truncate">
-                                    <AtSign size={10} /> {kartawartaEmail}
+                                    <AtSign size={10} /> {lensaplusEmail}
                                   </p>
                                 ) : (
                                   <div className="flex items-center gap-1.5">
@@ -387,7 +387,7 @@ export default function PenggunaPage() {
                                       <Mail size={10} /> {user.email}
                                     </p>
                                     <Link href="/panel/email" className="inline-flex items-center gap-0.5 text-[9px] text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded-full shrink-0 hover:bg-yellow-100">
-                                      <AlertCircle size={8} /> Buat @kartawarta
+                                      <AlertCircle size={8} /> Buat @lensaplus
                                     </Link>
                                   </div>
                                 )}
@@ -562,26 +562,26 @@ export default function PenggunaPage() {
               />
               {!editingUser && (
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Email @kartawarta.com (opsional)</label>
+                  <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Email @lensaplus.com (opsional)</label>
                   <div className="flex items-center gap-0">
                     <input
                       type="text"
                       placeholder="contoh: owen"
-                      value={formKartawartaEmail}
-                      onChange={(e) => setFormKartawartaEmail(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
+                      value={formLensaplusEmail}
+                      onChange={(e) => setFormLensaplusEmail(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
                       className="input rounded-r-none flex-1"
                     />
                     <span className="inline-flex items-center px-3 py-2 border border-l-0 border-border bg-surface-secondary text-sm text-txt-secondary rounded-r-lg whitespace-nowrap">
-                      @kartawarta.com
+                      @lensaplus.com
                     </span>
                   </div>
-                  {formKartawartaEmail && formEmail && (
+                  {formLensaplusEmail && formEmail && (
                     <p className="mt-1.5 flex items-center gap-1.5 text-xs text-txt-muted">
                       <AtSign size={10} className="text-primary shrink-0" />
-                      <span><strong className="text-primary">{formKartawartaEmail}@kartawarta.com</strong> akan forward ke <strong>{formEmail}</strong></span>
+                      <span><strong className="text-primary">{formLensaplusEmail}@lensaplus.com</strong> akan forward ke <strong>{formEmail}</strong></span>
                     </p>
                   )}
-                  <p className="mt-1 text-[10px] text-txt-muted">Kosongkan jika tidak perlu email @kartawarta.com</p>
+                  <p className="mt-1 text-[10px] text-txt-muted">Kosongkan jika tidak perlu email @lensaplus.com</p>
                 </div>
               )}
               <div className="flex justify-end gap-2 pt-2">

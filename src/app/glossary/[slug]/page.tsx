@@ -9,7 +9,7 @@ export const revalidate = 300;
 
 // Absolute base for JSON-LD url fields (metadata.canonical uses a relative
 // path, resolved against metadataBase in the root layout).
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 const RANAH_LABEL: Record<string, string> = {
   PIDANA: "Pidana",
@@ -26,7 +26,7 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
     where: { slug: params.slug },
     select: { istilah: true, singkatan: true, ranah: true, bodyHtml: true },
   });
-  if (!item) return { title: "Istilah tidak ditemukan | Kartawarta" };
+  if (!item) return { title: "Istilah tidak ditemukan | Lensaplus" };
 
   // Extract first sentence from HTML for description
   const text = item.bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -37,7 +37,7 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
     : item.istilah;
 
   return {
-    title: `${title} | Glossary Hukum Kartawarta`,
+    title: `${title} | Glossary Hukum Lensaplus`,
     description,
     alternates: { canonical: `/glossary/${params.slug}` },
     openGraph: {
@@ -82,7 +82,7 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
             ...(item.singkatan && { alternateName: item.singkatan }),
             inDefinedTermSet: {
               "@type": "DefinedTermSet",
-              name: "Glossary Hukum Kartawarta",
+              name: "Glossary Hukum Lensaplus",
               url: `${SITE_URL}/glossary`,
             },
             url: `${SITE_URL}/glossary/${item.slug}`,

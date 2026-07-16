@@ -12,6 +12,6 @@
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   return Response.redirect(`${siteUrl}/sitemap-news.xml`, 301);
 }

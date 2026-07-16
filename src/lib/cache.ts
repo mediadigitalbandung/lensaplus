@@ -1,6 +1,6 @@
 /**
  * In-process cache with TTL — for hot read-heavy data (homepage articles,
- * trending sidebar, category counts). Works because PM2 runs Kartawarta in
+ * trending sidebar, category counts). Works because PM2 runs Lensaplus in
  * fork mode (single Node process), so the Map is shared across requests.
  *
  * If we ever scale horizontally (cluster mode or multiple PM2 instances),

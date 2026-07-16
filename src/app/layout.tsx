@@ -35,7 +35,7 @@ export const viewport = { width: "device-width", initialScale: 1 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com"
+    process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com"
   ),
   title: {
     default: "Lensaplus — Portal Berita Digital Modern",

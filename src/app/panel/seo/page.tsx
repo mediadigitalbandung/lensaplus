@@ -227,7 +227,7 @@ export default function SeoDashboardPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">SEO Dashboard</h1>
-          <p className="text-base text-txt-secondary">Monitor kesehatan SEO website Kartawarta</p>
+          <p className="text-base text-txt-secondary">Monitor kesehatan SEO website Lensaplus</p>
         </div>
         <button onClick={fetchData} className="btn-ghost flex items-center gap-2 px-3 py-2.5 text-sm">
           <RefreshCw size={14} /> Refresh
@@ -275,12 +275,12 @@ export default function SeoDashboardPage() {
                   <ExternalLink size={11} /> GSC URL Inspection
                 </a>
                 <a
-                  href="https://www.google.com/search?q=site%3Akartawarta.com"
+                  href="https://www.google.com/search?q=site%3Alensaplus.com"
                   target="_blank"
                   rel="noopener"
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
                 >
-                  <Search size={11} /> site:kartawarta.com
+                  <Search size={11} /> site:lensaplus.com
                 </a>
                 <Link
                   href="/panel/pengaturan"

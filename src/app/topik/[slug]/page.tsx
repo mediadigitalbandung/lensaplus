@@ -78,8 +78,8 @@ export async function generateMetadata({ params: paramsPromise }: {
 
   if (!topic) return {};
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
-  const title = topic.metaTitle || `${topic.name} — Kartawarta`;
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
+  const title = topic.metaTitle || `${topic.name} — Lensaplus`;
   const description = topic.metaDescription || topic.description.slice(0, 160);
   const canonical = `${siteUrl}/topik/${topic.slug}`;
 
@@ -122,7 +122,7 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
   const tagIds = topic.tags.map((t: TopicTag) => t.id);
   const { articles, total, totalPages } = await getArticlesForTopic(tagIds, page);
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const canonical = `${siteUrl}/topik/${topic.slug}`;
 
   const collectionPageJsonLd = {

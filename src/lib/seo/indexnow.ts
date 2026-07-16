@@ -2,7 +2,7 @@
  * IndexNow ping — notifies Bing, Yandex, Seznam, Naver, etc. when URLs change.
  *
  * Key is read from `public/indexnow-key.txt` (file must also be served at
- * `https://kartawarta.com/indexnow-key.txt` for the spec-required `keyLocation`
+ * `https://lensaplus.com/indexnow-key.txt` for the spec-required `keyLocation`
  * verification). Falls back to `SystemSetting.indexnow_key` then env
  * `INDEXNOW_KEY` for edge cases (e.g. serverless without fs access).
  *
@@ -125,7 +125,7 @@ export async function pingIndexNow(urls: string[]): Promise<IndexNowResult> {
     return { success: false, error: "IndexNow key not configured" };
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const host = new URL(siteUrl).hostname;
   const keyLocation = `${siteUrl.replace(/\/$/, "")}/indexnow-key.txt`;
 

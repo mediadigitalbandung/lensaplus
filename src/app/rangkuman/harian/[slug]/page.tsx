@@ -48,9 +48,9 @@ export async function generateMetadata({ params: paramsPromise }: PageProps): Pr
   const dateStr = fmtDay(range.from);
   return {
     title: `Rangkuman ${dateStr}`,
-    description: `Ringkasan berita yang terbit pada ${dateStr} di Kartawarta.`,
+    description: `Ringkasan berita yang terbit pada ${dateStr} di Lensaplus.`,
     openGraph: {
-      title: `Rangkuman ${dateStr} - Kartawarta`,
+      title: `Rangkuman ${dateStr} - Lensaplus`,
       description: `Ringkasan berita yang terbit pada ${dateStr}.`,
       type: "website",
     },
@@ -75,15 +75,15 @@ export default async function RangkumanHarianDetailPage({ params: paramsPromise 
   if (articles.length === 0) notFound();
 
   const dateStr = fmtDay(range.from);
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: `Rangkuman ${dateStr}`,
-    description: `Ringkasan berita Kartawarta pada ${dateStr}.`,
+    description: `Ringkasan berita Lensaplus pada ${dateStr}.`,
     url: `${siteUrl}/rangkuman/harian/${params.slug}`,
-    isPartOf: { "@type": "WebSite", name: "Kartawarta", url: siteUrl },
+    isPartOf: { "@type": "WebSite", name: "Lensaplus", url: siteUrl },
     breadcrumb: {
       "@type": "BreadcrumbList",
       itemListElement: [
@@ -130,7 +130,7 @@ export default async function RangkumanHarianDetailPage({ params: paramsPromise 
             </h1>
           </div>
           <p className="mt-3 text-sm text-on-surface-variant">
-            Berikut ringkasan berita Kartawarta yang terbit pada hari ini. Total{" "}
+            Berikut ringkasan berita Lensaplus yang terbit pada hari ini. Total{" "}
             <span className="font-semibold text-on-surface">
               {articles.length.toLocaleString("id-ID")} artikel
             </span>

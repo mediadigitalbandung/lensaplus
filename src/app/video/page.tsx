@@ -7,7 +7,7 @@ import ReelGallery from "@/components/video/ReelGallery";
 export const metadata: Metadata = {
   title: "Video Story",
   description:
-    "Kumpulan Video Story (Reels) Kartawarta — cuplikan berita dalam format video vertikal.",
+    "Kumpulan Video Story (Reels) Lensaplus — cuplikan berita dalam format video vertikal.",
   alternates: { canonical: "/video" },
 };
 
@@ -22,7 +22,7 @@ export default async function VideoPage() {
           Video Story
         </h1>
         <p className="mt-1 text-sm text-txt-secondary">
-          Reels Kartawarta — ketuk salah satu untuk memutar videonya.
+          Reels Lensaplus — ketuk salah satu untuk memutar videonya.
         </p>
 
         <div className="mt-6">

@@ -12,7 +12,7 @@ const escapeXml = (str: string) =>
 
 export async function GET() {
   const siteUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+    process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
   const articles = await prisma.article.findMany({
     where: { status: "PUBLISHED" },
@@ -69,7 +69,7 @@ export async function GET() {
       <pubDate>${pubDate}</pubDate>
       <guid isPermaLink="false">${a.id}</guid>
       <category>${escapeXml(a.category.name)}</category>
-      <author>noreply@kartawarta.com (${escapeXml(a.author.name)})</author>${enclosure}
+      <author>noreply@lensaplus.com (${escapeXml(a.author.name)})</author>${enclosure}
     </item>`;
     })
     .join("\n");
@@ -77,14 +77,14 @@ export async function GET() {
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>Kartawarta</title>
+    <title>Lensaplus</title>
     <link>${siteUrl}</link>
     <description>Portal berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia.</description>
     <language>id-ID</language>
-    <copyright>Copyright ${new Date().getFullYear()} Kartawarta</copyright>
+    <copyright>Copyright ${new Date().getFullYear()} Lensaplus</copyright>
     <pubDate>${lastBuildDate}</pubDate>
     <lastBuildDate>${lastBuildDate}</lastBuildDate>
-    <generator>Kartawarta CMS (Next.js)</generator>
+    <generator>Lensaplus CMS (Next.js)</generator>
     <atom:link href="${siteUrl}/feed.xml" rel="self" type="application/rss+xml" />
 ${items}
   </channel>

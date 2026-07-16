@@ -19,19 +19,19 @@ import sharp from "sharp";
 const WIDTH = 1080;
 const HEIGHT = 1920;
 const IMG_H = 1080; // featured image occupies the top square
-const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 // SSRF guard — same allowlist spirit as /api/og/story.
 const ALLOWED_IMG_HOSTS = new Set([
   (() => {
     try {
-      return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com").hostname;
+      return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname;
     } catch {
-      return "kartawarta.com";
+      return "lensaplus.com";
     }
   })(),
-  "kartawarta.com",
-  "www.kartawarta.com",
+  "lensaplus.com",
+  "www.lensaplus.com",
   "images.unsplash.com",
   "graph.facebook.com",
   "scontent.cdninstagram.com",
@@ -42,7 +42,7 @@ function isAllowedImageHost(rawUrl: string): boolean {
   try {
     const h = new URL(rawUrl).hostname.toLowerCase();
     if (ALLOWED_IMG_HOSTS.has(h)) return true;
-    return h.endsWith(".kartawarta.com");
+    return h.endsWith(".lensaplus.com");
   } catch {
     return false;
   }
@@ -206,7 +206,7 @@ function buildBaseSvg({
   </text>
   <rect x="0" y="${BRAND_BAR_Y}" width="${WIDTH}" height="170" fill="#000000" fill-opacity="0.35" />
   <rect x="60" y="${BRAND_BAR_Y + 56}" width="6" height="38" fill="#b7102a" />
-  <text x="84" y="${BRAND_BAR_Y + 86}" font-family="'Newsreader','Georgia',serif" font-size="36" font-weight="800" fill="#ffffff" letter-spacing="1">KARTAWARTA</text>
+  <text x="84" y="${BRAND_BAR_Y + 86}" font-family="'Newsreader','Georgia',serif" font-size="36" font-weight="800" fill="#ffffff" letter-spacing="1">LENSAPLUS</text>
 </svg>`;
 }
 
@@ -257,7 +257,7 @@ function buildOpeningSvg(category: string, hasImage: boolean): string {
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   ${bg}
   <text x="${cx}" y="1300" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="30" font-weight="700" fill="#b7102a" letter-spacing="6">${escapeXml(cat)}</text>
-  <text x="${cx}" y="1432" text-anchor="middle" font-family="'Newsreader','Georgia',serif" font-size="104" font-weight="800" fill="#ffffff" letter-spacing="2">KARTAWARTA</text>
+  <text x="${cx}" y="1432" text-anchor="middle" font-family="'Newsreader','Georgia',serif" font-size="104" font-weight="800" fill="#ffffff" letter-spacing="2">LENSAPLUS</text>
   <rect x="${cx - 170}" y="1474" width="340" height="5" fill="#b7102a" />
   <text x="${cx}" y="1548" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="31" font-weight="500" fill="#ffffff" fill-opacity="0.88" letter-spacing="4">MEDIA BERITA DIGITAL BANDUNG</text>
 </svg>`;
@@ -268,9 +268,9 @@ function buildClosingSvg(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <rect x="0" y="0" width="${WIDTH}" height="${HEIGHT}" fill="#001530" />
-  <text x="${cx}" y="900" text-anchor="middle" font-family="'Newsreader','Georgia',serif" font-size="110" font-weight="800" fill="#ffffff" letter-spacing="2">KARTAWARTA</text>
+  <text x="${cx}" y="900" text-anchor="middle" font-family="'Newsreader','Georgia',serif" font-size="110" font-weight="800" fill="#ffffff" letter-spacing="2">LENSAPLUS</text>
   <rect x="${cx - 180}" y="946" width="360" height="5" fill="#b7102a" />
-  <text x="${cx}" y="1028" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="40" font-weight="700" fill="#ffffff" letter-spacing="1">kartawarta.com</text>
+  <text x="${cx}" y="1028" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="40" font-weight="700" fill="#ffffff" letter-spacing="1">lensaplus.com</text>
   <text x="${cx}" y="1108" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="30" font-weight="400" fill="#ffffff" fill-opacity="0.82">Ikuti untuk berita terkini Bandung</text>
 </svg>`;
 }

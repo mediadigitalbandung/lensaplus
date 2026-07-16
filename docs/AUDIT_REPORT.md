@@ -1,4 +1,4 @@
-# Kartawarta v2.0 — Audit Report Menyeluruh
+# Lensaplus v2.0 — Audit Report Menyeluruh
 
 > **Tanggal audit:** 2026-05-07 → 2026-05-08
 > **Mode:** Full audit (18 dimensi · 14 sub-auditor)
@@ -128,16 +128,16 @@
 
 ### CRIT-13 · [Backup/DR] No off-site backup — single point of failure
 - **File:** `scripts/backup-db.sh`, `docs/DEPLOY_VPS.md`
-- **Detail:** Semua `/var/backups/kartawarta/*.sql.gz` tinggal di VPS yang sama dengan DB. Disk fail / ransomware / Hostinger account loss = total data loss.
+- **Detail:** Semua `/var/backups/lensaplus/*.sql.gz` tinggal di VPS yang sama dengan DB. Disk fail / ransomware / Hostinger account loss = total data loss.
 - **Impact:** RPO infinite kalau VPS hilang.
-- **Fix:** Cron nightly `rclone copy /var/backups/kartawarta remote:bucket` ke Backblaze B2 / R2 / S3 dengan kredensial terpisah.
+- **Fix:** Cron nightly `rclone copy /var/backups/lensaplus remote:bucket` ke Backblaze B2 / R2 / S3 dengan kredensial terpisah.
 - **Delegasi:** `cron-engineer` + `tech-lead`
 
 ### CRIT-14 · [Backup/DR] /uploads tidak di-backup
 - **File:** scripts/ tidak ada `backup-uploads.sh`
-- **Detail:** `/var/www/kartawarta/public/uploads/` (article hero images, editor uploads) hanya tergantung disk VPS. backup-db.sh hanya pg_dump.
+- **Detail:** `/var/www/lensaplus/public/uploads/` (article hero images, editor uploads) hanya tergantung disk VPS. backup-db.sh hanya pg_dump.
 - **Impact:** VPS loss = semua media file hilang. Articles render dengan broken `<img>`.
-- **Fix:** Tambah `tar -czf uploads-$(date +%F).tgz /var/www/kartawarta/public/uploads/` ke pipeline backup + off-site sync.
+- **Fix:** Tambah `tar -czf uploads-$(date +%F).tgz /var/www/lensaplus/public/uploads/` ke pipeline backup + off-site sync.
 - **Delegasi:** `cron-engineer`
 
 ### CRIT-15 · [Design] email.ts hardcode #00AA13 (GoTo Green legacy)
@@ -239,7 +239,7 @@ Detail per kategori, summary singkat (full per-finding ada di session log audito
 - AuditLog DB failure swallow (10-min stale session window)
 - Glossary `bodyHtml` defense-in-depth resanitize
 - `/api/og` `force-dynamic` despite immutable cache header (CPU waste)
-- IndexNow file orphan (`kartawarta-indexnow-key.txt`)
+- IndexNow file orphan (`lensaplus-indexnow-key.txt`)
 - Email template GoTo green (covered di CRIT-15)
 - `User.twoFactorEnabled` set tapi never read
 - `Article.coAuthors` CSV (unindexable)
@@ -325,7 +325,7 @@ Hygiene tasks: img element migration, dead column drop (User.twoFactorEnabled, A
 
 ## Sign-off
 
-- **Audit Lead:** `audit-lead` agent (Kartawarta v2.0)
+- **Audit Lead:** `audit-lead` agent (Lensaplus v2.0)
 - **Sub-auditors invoked:** 14 (security-auditor, auth-guardian, build-test-validator, design-guardian, dep-auditor, db-auditor, perf-auditor, seo-auditor, a11y-auditor, api-design-auditor, observability-auditor, integration-health-auditor, content-safety-auditor, backup-dr-auditor, privacy-compliance-auditor)
 - **Total token usage estimate:** ~1.2M tokens
 - **Audit duration:** ~50 menit (3 wave paralel)

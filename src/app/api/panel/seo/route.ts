@@ -31,7 +31,7 @@ export async function GET() {
   try {
     await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
 
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
     const [
       totalArticles,

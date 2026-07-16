@@ -2,9 +2,9 @@ import { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Kebijakan Privasi — Kartawarta",
+  title: "Kebijakan Privasi — Lensaplus",
   description:
-    "Kebijakan privasi Kartawarta sesuai UU No. 27/2022 tentang Pelindungan Data Pribadi — informasi lengkap mengenai pengumpulan, penggunaan, retensi, dan hak subjek data.",
+    "Kebijakan privasi Lensaplus sesuai UU No. 27/2022 tentang Pelindungan Data Pribadi — informasi lengkap mengenai pengumpulan, penggunaan, retensi, dan hak subjek data.",
 };
 
 const SECTION_HEADING =
@@ -28,7 +28,7 @@ export default function PrivasiPage() {
         <p className="mt-4 text-sm text-on-surface-variant">
           Dokumen ini berlaku sesuai{" "}
           <strong>UU No. 27/2022 tentang Pelindungan Data Pribadi (UU PDP)</strong>.
-          Dengan mengakses atau menggunakan kartawarta.com, Anda menyetujui
+          Dengan mengakses atau menggunakan lensaplus.com, Anda menyetujui
           pengumpulan dan penggunaan data sebagaimana dijelaskan di bawah ini.
         </p>
 
@@ -67,10 +67,10 @@ export default function PrivasiPage() {
           <section id="section-1">
             <h2 className={SECTION_HEADING}>1. Pendahuluan &amp; Dasar Hukum</h2>
             <p>
-              <strong>Kartawarta</strong> adalah platform media berita digital untuk
+              <strong>Lensaplus</strong> adalah platform media berita digital untuk
               Kota Bandung dan Indonesia (fokus bisnis, ekonomi, pemerintahan, hukum,
               dan topik general lain seperti olahraga, hiburan, teknologi) yang
-              dioperasikan oleh redaksi Kartawarta. Kebijakan ini menetapkan cara
+              dioperasikan oleh redaksi Lensaplus. Kebijakan ini menetapkan cara
               kami mengumpulkan, menggunakan, menyimpan, dan melindungi data pribadi
               sesuai:
             </p>
@@ -84,7 +84,7 @@ export default function PrivasiPage() {
               <li>UU No. 11/2008 jo. UU No. 19/2016 tentang Informasi dan Transaksi Elektronik (UU ITE)</li>
             </ul>
             <p className="mt-3">
-              Ruang lingkup: seluruh pengguna kartawarta.com, termasuk pembaca
+              Ruang lingkup: seluruh pengguna lensaplus.com, termasuk pembaca
               umum, komentator, jurnalis dan kontributor yang memiliki akun, serta
               pengirim newsletter, form kontak, dan form laporan.
             </p>
@@ -402,7 +402,7 @@ export default function PrivasiPage() {
           <section id="section-9">
             <h2 className={SECTION_HEADING}>9. Cookie</h2>
             <p>
-              Kartawarta menggunakan <strong>cookie esensial</strong> untuk operasional
+              Lensaplus menggunakan <strong>cookie esensial</strong> untuk operasional
               situs, serta <strong>cookie iklan pihak ketiga</strong> (Google AdSense)
               yang dijelaskan pada bagian di bawah. Cookie esensial yang kami gunakan:
             </p>
@@ -429,7 +429,7 @@ export default function PrivasiPage() {
               Cookie Iklan Pihak Ketiga (Google AdSense)
             </h3>
             <p className="mt-2">
-              Kartawarta menampilkan iklan melalui <strong>Google AdSense</strong>.
+              Lensaplus menampilkan iklan melalui <strong>Google AdSense</strong>.
               Untuk menayangkan iklan, Google dan mitra (vendor pihak ketiga) menggunakan
               cookie — termasuk cookie <strong>DoubleClick/DART</strong> — guna menayangkan
               iklan berdasarkan kunjungan Anda ke situs ini dan situs lain di internet.
@@ -472,7 +472,7 @@ export default function PrivasiPage() {
           <section id="section-10">
             <h2 className={SECTION_HEADING}>10. Anak Bawah Umur</h2>
             <p>
-              Layanan Kartawarta tidak ditujukan untuk anak-anak di bawah usia 13
+              Layanan Lensaplus tidak ditujukan untuk anak-anak di bawah usia 13
               tahun. Pembuatan akun jurnalis atau kontributor mensyaratkan nomor kartu
               pers yang secara prosedural mengonfirmasi usia dewasa (minimal 18 tahun).
               Apabila kami mendapati bahwa data anak di bawah umur telah dikumpulkan
@@ -490,7 +490,7 @@ export default function PrivasiPage() {
             </p>
             <ul className="ml-6 mt-2 list-disc space-y-1">
               <li>Email kepada seluruh subscriber newsletter aktif.</li>
-              <li>Banner pengumuman di halaman utama kartawarta.com.</li>
+              <li>Banner pengumuman di halaman utama lensaplus.com.</li>
             </ul>
             <p className="mt-3">
               Penggunaan situs setelah tanggal berlaku perubahan merupakan persetujuan
@@ -503,20 +503,20 @@ export default function PrivasiPage() {
             <h2 className={SECTION_HEADING}>12. Kontak &amp; DPO</h2>
             <p>
               Untuk pertanyaan, permintaan DSR, atau keluhan terkait kebijakan privasi
-              ini, hubungi Data Protection Officer (DPO) Kartawarta:
+              ini, hubungi Data Protection Officer (DPO) Lensaplus:
             </p>
             <div className="mt-4 rounded-sm border border-border-default bg-surface-container p-6">
               <div className="space-y-2 text-base">
                 <p>
-                  <strong>Kartawarta — Redaksi Media Berita Digital Bandung</strong>
+                  <strong>Lensaplus — Redaksi Media Berita Digital Bandung</strong>
                 </p>
                 <p>
                   <strong>Email DPO:</strong>{" "}
                   <a
-                    href="mailto:privasi@kartawarta.com"
+                    href="mailto:privasi@lensaplus.com"
                     className="text-primary underline hover:text-primary-dark"
                   >
-                    privasi@kartawarta.com
+                    privasi@lensaplus.com
                   </a>
                 </p>
                 <p>

@@ -15,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
@@ -65,7 +65,7 @@ export async function GET() {
     <loc>${escapeXml(loc)}</loc>
     <news:news>
       <news:publication>
-        <news:name>Kartawarta</news:name>
+        <news:name>Lensaplus</news:name>
         <news:language>id</news:language>
       </news:publication>
       <news:publication_date>${a.publishedAt!.toISOString()}</news:publication_date>

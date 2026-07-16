@@ -1,6 +1,6 @@
-# Kartawarta Agent System
+# Lensaplus Agent System
 
-Struktur agent khusus untuk Kartawarta v2.0. Setiap agent punya **1 tanggung jawab tunggal** — tidak overlap.
+Struktur agent khusus untuk Lensaplus v2.0. Setiap agent punya **1 tanggung jawab tunggal** — tidak overlap.
 
 ## Cara Invoke
 
@@ -83,7 +83,7 @@ Agent dipanggil otomatis oleh Claude berdasarkan `description` di frontmatter, a
 | viewport-widescreen | 1441px+ (iMac 24"/27", ultrawide, 4K) |
 | responsive-fix-applier | Konsolidasi finding multi-tier per file → Edit class Tailwind responsif |
 
-### 🚧 Domain Feature Migration — Samakan Kartawarta dengan `docs/FEATURE_REFERENCE.md`
+### 🚧 Domain Feature Migration — Samakan Lensaplus dengan `docs/FEATURE_REFERENCE.md`
 | Agent | Fokus Tunggal |
 |---|---|
 | **migration-lead** | Orchestrator: baca `docs/MIGRATION_PROGRESS.md`, pick task, delegasi, update progress |

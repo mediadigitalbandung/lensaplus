@@ -2,7 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Syarat & Ketentuan",
-  description: "Syarat dan ketentuan penggunaan platform Kartawarta.",
+  description: "Syarat dan ketentuan penggunaan platform Lensaplus.",
 };
 
 export default function SyaratKetentuanPage() {
@@ -17,7 +17,7 @@ export default function SyaratKetentuanPage() {
 
         <div className="mt-8 space-y-8 font-serif text-[17px] leading-relaxed text-txt-secondary">
           <p>
-            Dengan mengakses dan menggunakan situs <strong>Kartawarta</strong>, Anda
+            Dengan mengakses dan menggunakan situs <strong>Lensaplus</strong>, Anda
             menyetujui dan terikat oleh syarat dan ketentuan berikut. Jika Anda tidak menyetujui
             ketentuan ini, mohon untuk tidak menggunakan layanan kami.
           </p>
@@ -27,7 +27,7 @@ export default function SyaratKetentuanPage() {
             <h2 className="mb-3 border-l-[3px] border-primary pl-3 text-xl font-bold text-txt-primary">1. Ketentuan Umum</h2>
             <ul className="ml-6 list-disc space-y-2">
               <li>
-                Kartawarta adalah platform media digital yang menyajikan berita dan
+                Lensaplus adalah platform media digital yang menyajikan berita dan
                 informasi hukum di wilayah Bandung dan sekitarnya.
               </li>
               <li>
@@ -67,7 +67,7 @@ export default function SyaratKetentuanPage() {
               </li>
               <li>
                 Konten tidak boleh digunakan untuk tujuan komersial tanpa persetujuan tertulis dari
-                Kartawarta.
+                Lensaplus.
               </li>
             </ul>
           </section>
@@ -76,13 +76,13 @@ export default function SyaratKetentuanPage() {
           <section>
             <h2 className="mb-3 border-l-[3px] border-primary pl-3 text-xl font-bold text-txt-primary">3. Hak Cipta</h2>
             <p>
-              Seluruh konten yang dipublikasikan di Kartawarta, termasuk namun tidak
+              Seluruh konten yang dipublikasikan di Lensaplus, termasuk namun tidak
               terbatas pada artikel, foto, grafis, video, dan desain, dilindungi oleh hukum hak
               cipta Republik Indonesia.
             </p>
             <ul className="ml-6 mt-3 list-disc space-y-2">
               <li>
-                Hak cipta atas konten dimiliki oleh Kartawarta dan/atau pembuat konten
+                Hak cipta atas konten dimiliki oleh Lensaplus dan/atau pembuat konten
                 yang bersangkutan.
               </li>
               <li>
@@ -145,7 +145,7 @@ export default function SyaratKetentuanPage() {
             <h2 className="mb-3 border-l-[3px] border-primary pl-3 text-xl font-bold text-txt-primary">6. Batasan Tanggung Jawab</h2>
             <ul className="ml-6 list-disc space-y-2">
               <li>
-                Kartawarta berusaha menyajikan informasi yang akurat dan terkini, namun
+                Lensaplus berusaha menyajikan informasi yang akurat dan terkini, namun
                 tidak menjamin bahwa seluruh konten bebas dari kesalahan.
               </li>
               <li>
@@ -173,7 +173,7 @@ export default function SyaratKetentuanPage() {
           <section>
             <h2 className="mb-3 border-l-[3px] border-primary pl-3 text-xl font-bold text-txt-primary">7. Perubahan Ketentuan</h2>
             <p>
-              Kartawarta berhak mengubah syarat dan ketentuan ini kapan saja.
+              Lensaplus berhak mengubah syarat dan ketentuan ini kapan saja.
               Perubahan akan berlaku efektif setelah dipublikasikan di halaman ini.
             </p>
             <p className="mt-3">
@@ -193,7 +193,7 @@ export default function SyaratKetentuanPage() {
               Jika Anda memiliki pertanyaan mengenai syarat dan ketentuan ini, silakan hubungi:
             </p>
             <div className="mt-3 space-y-1 text-sm text-txt-secondary">
-              <p><strong>Email:</strong> redaksi@kartawarta.com</p>
+              <p><strong>Email:</strong> redaksi@lensaplus.com</p>
               <p><strong>Alamat:</strong> Bandung, Jawa Barat, Indonesia</p>
             </div>
           </div>

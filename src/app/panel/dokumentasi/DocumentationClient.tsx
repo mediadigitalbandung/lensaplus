@@ -232,7 +232,7 @@ export default function DocumentationClient({
             </h1>
           </div>
           <p className="mt-1 text-sm text-txt-secondary">
-            docs/FEATURE_REFERENCE.md — referensi lengkap fitur Kartawarta.
+            docs/FEATURE_REFERENCE.md — referensi lengkap fitur Lensaplus.
           </p>
         </div>
         <button

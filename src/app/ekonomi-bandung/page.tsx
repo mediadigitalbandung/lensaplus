@@ -9,7 +9,7 @@ import {
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: "Dashboard Ekonomi Bandung | Kartawarta",
+  title: "Dashboard Ekonomi Bandung | Lensaplus",
   description:
     "Indikator ekonomi terkini Kota Bandung: inflasi, PDRB, UMK, pengangguran, dan data perekonomian Jawa Barat dari BPS.",
 };
@@ -43,15 +43,15 @@ export default function EkonomiBandungPage() {
     name: "Dashboard Ekonomi Bandung",
     description:
       "Indikator ekonomi terkini Kota Bandung dan Jawa Barat dari BPS Jawa Barat.",
-    url: "https://kartawarta.com/ekonomi-bandung",
+    url: "https://lensaplus.com/ekonomi-bandung",
     about: [
       {
         "@type": "Dataset",
-        "@id": "https://kartawarta.com/ekonomi-bandung#dataset",
+        "@id": "https://lensaplus.com/ekonomi-bandung#dataset",
         name: "Indikator Ekonomi Bandung 2026",
         description:
           "Indikator ekonomi Kota Bandung dan Jawa Barat 2026 — PDRB, inflasi, tingkat pengangguran, kemiskinan, dan kunjungan wisatawan — dirangkum dari publikasi resmi BPS Jawa Barat dan instansi pemerintah daerah.",
-        url: "https://kartawarta.com/ekonomi-bandung",
+        url: "https://lensaplus.com/ekonomi-bandung",
         creator: {
           "@type": "Organization",
           name: "BPS Jawa Barat",
@@ -59,8 +59,8 @@ export default function EkonomiBandungPage() {
         },
         publisher: {
           "@type": "Organization",
-          name: "Kartawarta",
-          url: "https://kartawarta.com",
+          name: "Lensaplus",
+          url: "https://lensaplus.com",
         },
         license: "https://creativecommons.org/licenses/by/4.0/",
         isAccessibleForFree: true,
@@ -222,7 +222,7 @@ export default function EkonomiBandungPage() {
         <div className="flex flex-col items-start gap-4 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-label-sm text-txt-muted">
             Data bersumber dari <strong>BPS Jawa Barat</strong>, Pemerintah Kota Bandung, dan
-            Pergub Jabar. Diperbarui secara berkala oleh redaksi Kartawarta.
+            Pergub Jabar. Diperbarui secara berkala oleh redaksi Lensaplus.
           </p>
           <Link
             href="/kategori/bisnis-ekonomi"

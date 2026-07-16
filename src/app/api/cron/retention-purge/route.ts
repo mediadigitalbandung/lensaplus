@@ -3,8 +3,8 @@
  *
  * Data minimization / retention enforcement cron.
  * Should be invoked weekly (every Sunday at 03:00) via:
- *   0 3 * * 0 curl -sS https://kartawarta.com/api/cron/retention-purge \
- *     -H "Authorization: Bearer ${CRON_SECRET}" >> /var/log/kartawarta-cron.log 2>&1
+ *   0 3 * * 0 curl -sS https://lensaplus.com/api/cron/retention-purge \
+ *     -H "Authorization: Bearer ${CRON_SECRET}" >> /var/log/lensaplus-cron.log 2>&1
  *
  * Actions:
  *   1. AuditLog older than 12 months → delete

@@ -20,7 +20,7 @@ import { Smartphone, X } from "lucide-react";
  *   - Hanya di /, tidak di sub-pages (avoid distraction saat baca artikel)
  *   - Delay 5 detik setelah load supaya gak ganggu first impression
  */
-const STORAGE_KEY = "kartawarta_install_teaser_dismissed_at";
+const STORAGE_KEY = "lensaplus_install_teaser_dismissed_at";
 const DISMISS_DAYS = 7;
 
 export default function InstallTeaser() {
@@ -69,7 +69,7 @@ export default function InstallTeaser() {
   return (
     <div
       role="region"
-      aria-label="Pasang aplikasi Kartawarta"
+      aria-label="Pasang aplikasi Lensaplus"
       className="fixed bottom-3 left-3 right-3 z-[140] sm:hidden animate-in fade-in slide-in-from-bottom-2 duration-300"
     >
       <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-white px-3 py-2.5 shadow-ambient">
@@ -78,7 +78,7 @@ export default function InstallTeaser() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-bold text-txt-primary leading-tight">
-            Pasang Kartawarta
+            Pasang Lensaplus
           </p>
           <p className="mt-0.5 text-[11px] text-txt-muted leading-tight truncate">
             Lebih cepat, hemat data, bisa offline

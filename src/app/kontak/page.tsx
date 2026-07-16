@@ -64,7 +64,7 @@ export default function KontakPage() {
                 <Mail size={20} className="text-primary" />
                 <h3 className="mt-2 font-bold text-txt-primary">Email</h3>
                 <p className="mt-1 text-sm text-txt-secondary">
-                  redaksi@kartawarta.com
+                  redaksi@lensaplus.com
                 </p>
               </div>
               <div className="rounded-lg border border-border bg-surface p-5">
@@ -144,7 +144,7 @@ export default function KontakPage() {
                       <Link href="/privasi" className="text-primary underline hover:text-primary-dark">
                         Kebijakan Privasi
                       </Link>{" "}
-                      Kartawarta sesuai UU PDP No. 27/2022.
+                      Lensaplus sesuai UU PDP No. 27/2022.
                     </p>
                     <button type="submit" disabled={sending || !captchaToken} className="btn-primary flex items-center gap-2 disabled:opacity-50">
                       <Send size={16} /> {sending ? "Mengirim..." : "Kirim Pesan"}

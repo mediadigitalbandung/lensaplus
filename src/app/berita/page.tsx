@@ -33,7 +33,7 @@ export async function generateMetadata({
   return {
     title: `Semua Berita${titleSuffix}`,
     description:
-      "Daftar berita terbaru dari Kartawarta — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal di Bandung, Jawa Barat & Indonesia.",
+      "Daftar berita terbaru dari Lensaplus — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal di Bandung, Jawa Barat & Indonesia.",
     // AdSense thin-content: index only page 1 of the archive. Paginated views
     // (page > 1) are noindexed but crawlable so article links stay reachable.
     robots:
@@ -41,13 +41,13 @@ export async function generateMetadata({
         ? { index: false, follow: true, googleBot: { index: false } }
         : undefined,
     openGraph: {
-      title: `Semua Berita${titleSuffix} | Kartawarta`,
+      title: `Semua Berita${titleSuffix} | Lensaplus`,
       description:
-        "Daftar berita terbaru dari Kartawarta — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal di Bandung, Jawa Barat & Indonesia.",
+        "Daftar berita terbaru dari Lensaplus — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal di Bandung, Jawa Barat & Indonesia.",
       type: "website",
       locale: "id_ID",
-      siteName: "Kartawarta",
-      images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
+      siteName: "Lensaplus",
+      images: [{ url: "/lensaplus-icon.png", width: 512, height: 512, alt: "Lensaplus" }],
     },
     alternates: { canonical },
   };

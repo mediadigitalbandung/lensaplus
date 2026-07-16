@@ -133,7 +133,7 @@ export default function EmailRoutingPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">Email Routing</h1>
-          <p className="text-base text-txt-secondary">Kelola email @kartawarta.com — forward ke Gmail/email pribadi</p>
+          <p className="text-base text-txt-secondary">Kelola email @lensaplus.com — forward ke Gmail/email pribadi</p>
         </div>
         <div className="flex gap-2">
           <Link href="/panel/pengguna" className="btn-ghost flex items-center gap-2 px-3 py-2.5 text-sm">
@@ -185,7 +185,7 @@ export default function EmailRoutingPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Email Kartawarta</label>
+                <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Email Lensaplus</label>
                 <div className="flex items-center gap-0">
                   <input
                     type="text"
@@ -196,7 +196,7 @@ export default function EmailRoutingPage() {
                     required
                   />
                   <span className="inline-flex items-center px-3 py-2 border border-l-0 border-border bg-surface-secondary text-sm text-txt-secondary rounded-r-lg">
-                    @kartawarta.com
+                    @lensaplus.com
                   </span>
                 </div>
               </div>
@@ -217,7 +217,7 @@ export default function EmailRoutingPage() {
             {localPart && (
               <div className="flex items-center gap-2 text-sm text-txt-secondary bg-surface-secondary rounded-lg px-4 py-3">
                 <Mail size={14} className="text-primary shrink-0" />
-                <span className="font-semibold text-primary">{localPart}@kartawarta.com</span>
+                <span className="font-semibold text-primary">{localPart}@lensaplus.com</span>
                 <ArrowRight size={14} className="text-txt-muted shrink-0" />
                 <span>{destinationEmail || "..."}</span>
               </div>
@@ -246,7 +246,7 @@ export default function EmailRoutingPage() {
       ) : emails.length === 0 && !showForm ? (
         <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
           <AtSign size={40} className="mx-auto text-txt-muted mb-3" />
-          <p className="text-txt-muted text-base">Belum ada email @kartawarta.com</p>
+          <p className="text-txt-muted text-base">Belum ada email @lensaplus.com</p>
           <p className="text-txt-muted text-sm mt-1">Buat email pertama untuk tim redaksi</p>
           <button onClick={() => setShowForm(true)} className="mt-4 btn-primary px-4 py-2 text-sm">
             <Plus size={14} className="mr-1 inline" /> Buat Email Pertama
@@ -367,7 +367,7 @@ export default function EmailRoutingPage() {
         <ul className="text-sm text-txt-secondary space-y-1.5">
           <li>• Email yang dibuat di sini akan forward ke email pribadi (Gmail, dll)</li>
           <li>• Penerima harus verifikasi email dari Cloudflare (cek inbox/spam)</li>
-          <li>• Untuk mengirim email DARI @kartawarta.com, setup &quot;Send as&quot; di Gmail Settings</li>
+          <li>• Untuk mengirim email DARI @lensaplus.com, setup &quot;Send as&quot; di Gmail Settings</li>
           <li>• Maksimal 200 alamat email</li>
         </ul>
       </div>

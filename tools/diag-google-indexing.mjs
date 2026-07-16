@@ -27,7 +27,7 @@ try {
   console.log("AUTH_OK token len:", token.access_token?.length);
 
   const indexing = google.indexing({ version: "v3", auth });
-  const url = process.argv[2] || "https://kartawarta.com/";
+  const url = process.argv[2] || "https://lensaplus.com/";
   const resp = await indexing.urlNotifications.publish({
     requestBody: { url, type: "URL_UPDATED" },
   });

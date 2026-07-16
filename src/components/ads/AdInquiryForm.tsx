@@ -76,7 +76,7 @@ export default function AdInquiryForm() {
           <CheckCircle2 size={40} className="mx-auto text-primary" />
           <h3 className="mt-4 text-lg font-bold text-primary-dark">Permintaan Terkirim!</h3>
           <p className="mt-2 text-sm text-primary">
-            Terima kasih. Tim pemasaran Kartawarta akan menghubungi Anda dalam 1&ndash;2 hari kerja
+            Terima kasih. Tim pemasaran Lensaplus akan menghubungi Anda dalam 1&ndash;2 hari kerja
             dengan media kit &amp; penawaran tarif.
           </p>
         </div>

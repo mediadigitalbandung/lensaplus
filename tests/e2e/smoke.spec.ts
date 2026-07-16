@@ -1,10 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
 /**
- * Smoke tests for Kartawarta — verify all public routes render without
+ * Smoke tests for Lensaplus — verify all public routes render without
  * 5xx, expected key elements are present, and no console errors fire.
  *
- * Default target is production (https://kartawarta.com). Override via:
+ * Default target is production (https://lensaplus.com). Override via:
  *   BASE_URL=http://localhost:3000 npx playwright test
  *
  * These tests do NOT submit forms (no comments/votes/contact) to avoid
@@ -12,7 +12,7 @@ import { test, expect, type Page } from "@playwright/test";
  */
 
 const PUBLIC_ROUTES = [
-  { path: "/", title: /Kartawarta/i, h1OrH2: true },
+  { path: "/", title: /Lensaplus/i, h1OrH2: true },
   { path: "/berita", title: /Berita/i, h1OrH2: true },
   { path: "/redaksi", title: /Redaksi/i, h1OrH2: true },
   { path: "/tentang", title: /Tentang/i, h1OrH2: true },
@@ -21,8 +21,8 @@ const PUBLIC_ROUTES = [
   { path: "/syarat-ketentuan", title: /Syarat/i, h1OrH2: true },
   { path: "/privasi", title: /Privasi/i, h1OrH2: true },
   { path: "/kontak", title: /Hubungi|Kontak/i, h1OrH2: true },
-  { path: "/login", title: /Kartawarta/i, h1OrH2: false },
-  { path: "/search?q=hukum", title: /Kartawarta/i, h1OrH2: false },
+  { path: "/login", title: /Lensaplus/i, h1OrH2: false },
+  { path: "/search?q=hukum", title: /Lensaplus/i, h1OrH2: false },
 ];
 
 /**

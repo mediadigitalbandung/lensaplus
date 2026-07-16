@@ -13,7 +13,7 @@ import {
 } from "./types";
 
 const SITE_URL = (() => {
-  const url = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const url = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   try {
     const parsed = new URL(url);
     if (
@@ -22,14 +22,14 @@ const SITE_URL = (() => {
       parsed.hostname.includes("127.0.0.1") ||
       /^[0-9.]+$/.test(parsed.hostname)
     ) {
-      return "https://kartawarta.com";
+      return "https://lensaplus.com";
     }
   } catch {}
   return url;
 })();
 
 const SYSTEM_PROMPT =
-  "Kamu adalah copywriter media sosial untuk Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). Tulis caption natural, informatif, tidak clickbait, memakai bahasa Indonesia baku yang mudah dibaca. Tulis sesuai format yang diminta secara ketat.";
+  "Kamu adalah copywriter media sosial untuk Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). Tulis caption natural, informatif, tidak clickbait, memakai bahasa Indonesia baku yang mudah dibaca. Tulis sesuai format yang diminta secara ketat.";
 
 function stripHtml(html: string): string {
   return html
@@ -146,7 +146,7 @@ Aturan:
 1. Bahasa Indonesia baku, natural, tidak kaku.
 2. Sebutkan inti berita dalam 1-2 kalimat pertama.
 3. Lakukan Analisis Bobot Relevansi (Word Weight Relevance Analysis) secara mendalam antara artikel ini dengan daftar TREN TERKINI (Google Trends) di atas:
-   a. Evaluasi setiap kata kunci/topik dalam TREN TERKINI. Berikan "bobot keterkaitan" (relevance weight) berdasarkan kecocokan konsep, kategori, nama tokoh, lokasi, atau instansi yang sedang viral dengan isi berita Kartawarta ini.
+   a. Evaluasi setiap kata kunci/topik dalam TREN TERKINI. Berikan "bobot keterkaitan" (relevance weight) berdasarkan kecocokan konsep, kategori, nama tokoh, lokasi, atau instansi yang sedang viral dengan isi berita Lensaplus ini.
    b. Prioritaskan 3-5 kata kunci/topik yang memiliki bobot keterkaitan tertinggi, lalu ubah kata kunci tersebut menjadi hashtag viral yang bersih (CamelCase, tanpa spasi/simbol, contoh: jika trennya "persib vs madura united", ubah menjadi #Persib atau #MaduraUnited).
    c. Jika tidak ada topik dalam TREN TERKINI yang memiliki bobot keterkaitan yang kuat dengan berita (bobot rendah), jangan memaksakan memakai tren yang tidak relevan. Sebagai gantinya, ciptakan 3-5 hashtag kreatif/spesifik bertema viral yang berkaitan langsung dengan berita tersebut (misalnya, nama tempat/isu di Bandung/Jawa Barat seperti #KulinerBandung, #InfoJabar, atau topik berita spesifik seperti #PajakKini, #EkonomiBandung).
 4. Format output Anda wajib terbagi menjadi dua bagian seperti di bawah ini secara persis:

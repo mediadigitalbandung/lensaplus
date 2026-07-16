@@ -64,7 +64,7 @@ export function sanitizeSocialImageUrl(urlStr: string): string {
       url.hostname.includes("127.0.0.1") ||
       /^[0-9.]+$/.test(url.hostname)
     ) {
-      url.hostname = "kartawarta.com";
+      url.hostname = "lensaplus.com";
       url.protocol = "https:";
     }
     return url.toString();
@@ -74,7 +74,7 @@ export function sanitizeSocialImageUrl(urlStr: string): string {
 }
 
 const SITE_URL = (() => {
-  const raw = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const raw = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   return sanitizeSocialImageUrl(raw);
 })();
 
@@ -562,7 +562,7 @@ export async function approveDraft(postId: string): Promise<PublishResult> {
   }
 
   // Canonicalize every Meta-facing URL (Meta fetches these server-side, so a
-  // bare IP / nip.io host would fail; sanitize rewrites them to kartawarta.com).
+  // bare IP / nip.io host would fail; sanitize rewrites them to lensaplus.com).
   const sanitizedImageUrl = post.imageUrl ? sanitizeSocialImageUrl(post.imageUrl) : post.imageUrl;
   const sanitizedVideoUrl = post.videoUrl ? sanitizeSocialImageUrl(post.videoUrl) : post.videoUrl;
   const sanitizedThumbUrl = post.thumbnailUrl ? sanitizeSocialImageUrl(post.thumbnailUrl) : post.thumbnailUrl;

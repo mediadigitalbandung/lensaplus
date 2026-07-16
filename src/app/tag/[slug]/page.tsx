@@ -21,7 +21,7 @@ const TAG_META_OVERRIDES: Record<string, { title: string; description: string }>
   "bank-bjb": {
     title: "Bank BJB — Liputan Lengkap RUPST, Direksi & Kinerja",
     description:
-      "Liputan terverifikasi Kartawarta tentang Bank BJB: RUPST 2025, jajaran direksi & komisaris, dividen, kinerja keuangan, dan kerja sama strategis Bank Pembangunan Daerah Jawa Barat dan Banten.",
+      "Liputan terverifikasi Lensaplus tentang Bank BJB: RUPST 2025, jajaran direksi & komisaris, dividen, kinerja keuangan, dan kerja sama strategis Bank Pembangunan Daerah Jawa Barat dan Banten.",
   },
 };
 
@@ -39,7 +39,7 @@ export async function generateMetadata({ params: paramsPromise, searchParams: se
   const title = page > 1 ? `${baseTitle} — Halaman ${page}` : baseTitle;
   const description =
     override?.description ||
-    `${articleCount} artikel terbaru tentang ${tag.name} dari Kartawarta — liputan, analisis, dan perkembangan terkini.`;
+    `${articleCount} artikel terbaru tentang ${tag.name} dari Lensaplus — liputan, analisis, dan perkembangan terkini.`;
   // AdSense thin-content: index a tag hub ONLY when it is substantial
   // (>= MIN_INDEXABLE_TAG_ARTICLES on page 1). Sparse/empty tags and every
   // paginated view (page > 1) are noindexed but still crawlable (follow) so
@@ -55,7 +55,7 @@ export async function generateMetadata({ params: paramsPromise, searchParams: se
     robots: indexable
       ? undefined
       : { index: false, follow: true, googleBot: { index: false } },
-    openGraph: { title: `${title} — Kartawarta`, description, type: "website" },
+    openGraph: { title: `${title} — Lensaplus`, description, type: "website" },
     alternates: { canonical },
   };
 }
@@ -97,17 +97,17 @@ export default async function TagPage({ params: paramsPromise, searchParams: sea
     pageNumbers.push(i);
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   // CollectionPage with an ItemList of articles so crawlers can see what's in
   // the collection. BreadcrumbList is emitted as a SIBLING <script>, not
   // nested — Google only reads top-level BreadcrumbList for rich results.
   const collectionJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: `Berita ${tag.name} — Kartawarta`,
+    name: `Berita ${tag.name} — Lensaplus`,
     url: `${siteUrl}/tag/${tag.slug}`,
-    isPartOf: { "@type": "WebSite", name: "Kartawarta", url: siteUrl },
-    description: `${total.toLocaleString("id-ID")} artikel Kartawarta dengan tag ${tag.name}.`,
+    isPartOf: { "@type": "WebSite", name: "Lensaplus", url: siteUrl },
+    description: `${total.toLocaleString("id-ID")} artikel Lensaplus dengan tag ${tag.name}.`,
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: articles.length,

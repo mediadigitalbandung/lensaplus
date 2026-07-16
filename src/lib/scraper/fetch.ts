@@ -1,13 +1,13 @@
 /**
  * Polite fetch wrapper for upstream news sites.
- * - Identifies as "Kartawarta-Scraper" so admins can see who is hitting them.
+ * - Identifies as "Lensaplus-Scraper" so admins can see who is hitting them.
  * - Hard timeout to keep cron predictable.
  * - Forwards a sane Accept-Language header for ID-first content negotiation.
  * - SSRF guard: blocks private/loopback/link-local hosts before any network I/O.
  */
 
 const DEFAULT_USER_AGENT =
-  "Kartawarta-Scraper/1.0 (+https://kartawarta.com/kontak)";
+  "Lensaplus-Scraper/1.0 (+https://lensaplus.com/kontak)";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 

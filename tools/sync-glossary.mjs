@@ -2,14 +2,14 @@
 /**
  * sync-glossary.mjs
  *
- * Scan Obsidian editorial vault → upsert glossary istilah hukum ke DB Kartawarta
+ * Scan Obsidian editorial vault → upsert glossary istilah hukum ke DB Lensaplus
  * via /api/external/glossary/from-obsidian endpoint.
  *
  * Usage:
  *   node tools/sync-glossary.mjs                  # dry-run
  *   node tools/sync-glossary.mjs --apply          # actually upsert
  *
- * Environment: same as sync-obsidian.mjs (OBSIDIAN_SYNC_TOKEN, KARTAWARTA_API_URL, VAULT_PATH)
+ * Environment: same as sync-obsidian.mjs (OBSIDIAN_SYNC_TOKEN, LENSAPLUS_API_URL, VAULT_PATH)
  */
 
 import { readFile, readdir } from "node:fs/promises";
@@ -91,8 +91,8 @@ function markdownToHtml(md) {
 const args = argv.slice(2);
 const apply = args.includes("--apply");
 const vaultIdx = args.indexOf("--vault");
-const vaultPath = vaultIdx >= 0 ? args[vaultIdx + 1] : env.VAULT_PATH || "c:/Users/Owen/Documents/Aureon/kartawarta-editorial";
-const apiUrl = env.KARTAWARTA_API_URL || "https://kartawarta.com";
+const vaultPath = vaultIdx >= 0 ? args[vaultIdx + 1] : env.VAULT_PATH || "c:/Users/Owen/Documents/Aureon/lensaplus-editorial";
+const apiUrl = env.LENSAPLUS_API_URL || "https://lensaplus.com";
 const token = env.OBSIDIAN_SYNC_TOKEN;
 
 if (!token) {

@@ -84,7 +84,7 @@ describe("checkSpam — heuristic-only path (no Akismet)", () => {
 describe("checkSpam — Akismet path", () => {
   beforeEach(() => {
     vi.stubEnv("AKISMET_API_KEY", "test-key");
-    vi.stubEnv("AKISMET_BLOG_URL", "https://kartawarta.com");
+    vi.stubEnv("AKISMET_BLOG_URL", "https://lensaplus.com");
   });
 
   afterEach(() => {

@@ -37,7 +37,7 @@ const THREADS = 2;
 export const SOCIAL_REELS_DIR = path.join(process.cwd(), "public", "uploads", "social-reels");
 
 const APP_URL = (() => {
-  const url = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const url = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   try {
     const parsed = new URL(url);
     if (
@@ -46,7 +46,7 @@ const APP_URL = (() => {
       parsed.hostname.includes("127.0.0.1") ||
       /^[0-9.]+$/.test(parsed.hostname)
     ) {
-      return "https://kartawarta.com";
+      return "https://lensaplus.com";
     }
   } catch {
     /* fall through */

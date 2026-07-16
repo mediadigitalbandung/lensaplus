@@ -28,7 +28,7 @@ export async function POST() {
       data: { twoFactorSecret: encryptSecret(secret) },
     });
 
-    const uri = otpauthUri(secret, user.email, "Kartawarta");
+    const uri = otpauthUri(secret, user.email, "Lensaplus");
     const qr = await QRCode.toDataURL(uri, { width: 240, margin: 1 });
     // `secret` returned so the user can enter it manually if they can't scan.
     return successResponse({ secret, otpauth: uri, qr });

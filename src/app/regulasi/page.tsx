@@ -7,11 +7,11 @@ import type { RegulationType, RegulationStatus } from "@prisma/client";
 export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: "Regulasi Hukum Indonesia — UU, PP, Perpres, Perda | Kartawarta",
+  title: "Regulasi Hukum Indonesia — UU, PP, Perpres, Perda | Lensaplus",
   description:
     "Direktori peraturan perundang-undangan Indonesia: Undang-Undang, Peraturan Pemerintah, Peraturan Presiden, Peraturan Menteri, Perda, dan Putusan MK/MA.",
   openGraph: {
-    title: "Regulasi Hukum Indonesia | Kartawarta",
+    title: "Regulasi Hukum Indonesia | Lensaplus",
     description:
       "Direktori UU, PP, Perpres, Permen, Perda, dan Putusan Mahkamah terlengkap.",
   },
@@ -152,11 +152,11 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
     name: "Regulasi Hukum Indonesia",
     description:
       "Direktori peraturan perundang-undangan Indonesia: UU, PP, Perpres, Permen, Perda, Putusan MK/MA.",
-    url: "https://kartawarta.com/regulasi",
+    url: "https://lensaplus.com/regulasi",
     publisher: {
       "@type": "Organization",
-      name: "Kartawarta",
-      url: "https://kartawarta.com",
+      name: "Lensaplus",
+      url: "https://lensaplus.com",
     },
   };
 

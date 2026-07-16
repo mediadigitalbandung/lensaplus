@@ -32,7 +32,7 @@ export default function CopyProtection({
         `Dipublikasikan: ${publishedAt}`,
         `Penulis: ${authorName}`,
         "",
-        `\u00A9 ${new Date().getFullYear()} Kartawarta — kartawarta.com`,
+        `\u00A9 ${new Date().getFullYear()} Lensaplus — lensaplus.com`,
         "Seluruh hak cipta dilindungi. Dilarang mengutip tanpa mencantumkan sumber.",
       ].join("\n");
 

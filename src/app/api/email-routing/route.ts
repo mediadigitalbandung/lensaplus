@@ -68,9 +68,9 @@ export async function POST(request: NextRequest) {
 
     return successResponse({
       id: rule.id,
-      from: `${localPart}@kartawarta.com`,
+      from: `${localPart}@lensaplus.com`,
       to: destinationEmail,
-      message: `Email ${localPart}@kartawarta.com berhasil dibuat. Penerima (${destinationEmail}) perlu verifikasi email dari Cloudflare.`,
+      message: `Email ${localPart}@lensaplus.com berhasil dibuat. Penerima (${destinationEmail}) perlu verifikasi email dari Cloudflare.`,
     });
   } catch (error) {
     return errorResponse(error);

@@ -16,13 +16,13 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Beriklan di Kartawarta",
+  title: "Beriklan di Lensaplus",
   description:
-    "Paket iklan, tarif, spesifikasi, dan kontak pemasangan iklan di Kartawarta — media berita digital tepercaya di Bandung (bisnis, ekonomi, pemerintahan, hukum, dan topik general lain).",
+    "Paket iklan, tarif, spesifikasi, dan kontak pemasangan iklan di Lensaplus — media berita digital tepercaya di Bandung (bisnis, ekonomi, pemerintahan, hukum, dan topik general lain).",
   openGraph: {
-    title: "Beriklan di Kartawarta",
+    title: "Beriklan di Lensaplus",
     description:
-      "Paket iklan, tarif, dan spesifikasi pemasangan iklan di Kartawarta.",
+      "Paket iklan, tarif, dan spesifikasi pemasangan iklan di Lensaplus.",
     type: "website",
   },
   alternates: { canonical: "/iklan" },
@@ -88,12 +88,12 @@ const packages: AdPackage[] = [
     name: "Sponsored Article",
     price: "Rp 10.000.000",
     unit: "/ artikel",
-    description: "Artikel bersponsor lengkap — ditulis tim editorial Kartawarta dengan label transparan.",
+    description: "Artikel bersponsor lengkap — ditulis tim editorial Lensaplus dengan label transparan.",
     bullets: [
       "Artikel 800–1500 kata",
-      "Ditulis & disunting tim Kartawarta",
+      "Ditulis & disunting tim Lensaplus",
       "Label “Bersponsor” transparan",
-      "Promosi di kanal sosial Kartawarta",
+      "Promosi di kanal sosial Lensaplus",
       "Permanen di arsip selama domain aktif",
     ],
     icon: FileText,
@@ -131,7 +131,7 @@ export default function IklanPage() {
             </span>
           </div>
           <h1 className="mt-4 max-w-3xl font-serif text-3xl font-extrabold leading-tight text-on-surface sm:text-4xl">
-            Beriklan di Kartawarta
+            Beriklan di Lensaplus
           </h1>
           <p className="mt-4 max-w-2xl text-base text-on-surface-variant">
             Jangkau pembaca berita Bandung dan nasional — bisnis, ekonomi, pemerintahan, hukum,
@@ -141,7 +141,7 @@ export default function IklanPage() {
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <a
-              href="https://wa.me/628000000000?text=Halo%20Kartawarta%2C%20saya%20tertarik%20beriklan."
+              href="https://wa.me/628000000000?text=Halo%20Lensaplus%2C%20saya%20tertarik%20beriklan."
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm"
@@ -150,11 +150,11 @@ export default function IklanPage() {
               Hubungi via WhatsApp
             </a>
             <a
-              href="mailto:iklan@kartawarta.com?subject=Pemasangan%20Iklan"
+              href="mailto:iklan@lensaplus.com?subject=Pemasangan%20Iklan"
               className="btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-sm"
             >
               <Mail size={16} />
-              iklan@kartawarta.com
+              iklan@lensaplus.com
             </a>
           </div>
         </header>
@@ -246,7 +246,7 @@ export default function IklanPage() {
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <a
-              href="https://wa.me/628000000000?text=Halo%20Kartawarta%2C%20saya%20tertarik%20beriklan."
+              href="https://wa.me/628000000000?text=Halo%20Lensaplus%2C%20saya%20tertarik%20beriklan."
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-primary hover:bg-white/90 transition-colors"
@@ -255,7 +255,7 @@ export default function IklanPage() {
               WhatsApp Kami
             </a>
             <a
-              href="mailto:iklan@kartawarta.com?subject=Pemasangan%20Iklan"
+              href="mailto:iklan@lensaplus.com?subject=Pemasangan%20Iklan"
               className="inline-flex items-center gap-2 rounded-md border border-white/30 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
             >
               <Mail size={16} />
@@ -270,7 +270,7 @@ export default function IklanPage() {
           </div>
           <p className="mt-4 text-[11px] uppercase tracking-wider text-white/60">
             *Nomor WhatsApp dan email di atas adalah placeholder — silakan ganti dengan kontak resmi
-            tim iklan Kartawarta.
+            tim iklan Lensaplus.
           </p>
         </section>
       </div>

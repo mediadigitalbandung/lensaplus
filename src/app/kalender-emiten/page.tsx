@@ -15,11 +15,11 @@ import { prisma } from "@/lib/prisma";
 export const revalidate = 600; // 10-min ISR
 
 export const metadata: Metadata = {
-  title: "Kalender Emiten — Earnings, IPO, RUPS, Dividen | Kartawarta",
+  title: "Kalender Emiten — Earnings, IPO, RUPS, Dividen | Lensaplus",
   description:
     "Jadwal lengkap event emiten Indonesia: release laporan keuangan kuartalan, IPO upcoming, RUPS, pengumuman dividen, stock split, rights issue.",
   openGraph: {
-    title: "Kalender Emiten Indonesia | Kartawarta",
+    title: "Kalender Emiten Indonesia | Lensaplus",
     description:
       "Jadwal lengkap event emiten: earnings, IPO, RUPS, dividen.",
   },
@@ -254,10 +254,10 @@ export default async function KalenderEmitenPage() {
           Data diperbarui oleh redaksi. Untuk kontribusi event atau koreksi
           jadwal, hubungi{" "}
           <a
-            href="mailto:redaksi@kartawarta.com"
+            href="mailto:redaksi@lensaplus.com"
             className="text-primary hover:underline"
           >
-            redaksi@kartawarta.com
+            redaksi@lensaplus.com
           </a>
           .
         </p>

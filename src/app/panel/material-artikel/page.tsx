@@ -4,7 +4,7 @@
  * Material Artikel — bulk-generate Article DRAFTs from one source document
  * + N photos. Document is the only source of facts. AI splits the document
  * into N angles, one per photo. Each draft ships with the photo embedded
- * as a <figure> at the top, with AI-written caption + "Sumber: Kartawarta"
+ * as a <figure> at the top, with AI-written caption + "Sumber: Lensaplus"
  * credit.
  */
 
@@ -362,7 +362,7 @@ export default function MaterialArtikelPage() {
               AI parafrase dokumen menjadi N artikel. Tiap artikel dapat
               angle berbeda dari dokumen yang sama. Foto otomatis dipasang
               di atas body dengan caption + sumber{" "}
-              <em>Kartawarta</em> yang ditulis AI.
+              <em>Lensaplus</em> yang ditulis AI.
             </p>
           </div>
         </div>

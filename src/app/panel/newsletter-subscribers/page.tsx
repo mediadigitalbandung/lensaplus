@@ -121,7 +121,7 @@ export default function NewsletterSubscribersPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `kartawarta-newsletter-${filter}-${Date.now()}.csv`;
+    a.download = `lensaplus-newsletter-${filter}-${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -132,7 +132,7 @@ export default function NewsletterSubscribersPage() {
         <div>
           <h1 className="text-lg sm:text-2xl font-bold text-txt-primary">Newsletter Subscribers</h1>
           <p className="mt-1 text-sm text-txt-secondary">
-            Daftar pelanggan newsletter mingguan Kartawarta
+            Daftar pelanggan newsletter mingguan Lensaplus
           </p>
         </div>
         <button

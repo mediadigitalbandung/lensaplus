@@ -46,16 +46,16 @@ describe("sourceLabelFromUrl", () => {
 });
 
 describe("rewriteCreditsInContent", () => {
-  it("replaces scraper figcaption credits that say Kartawarta", () => {
+  it("replaces scraper figcaption credits that say Lensaplus", () => {
     const html =
-      '<figure><img src="/uploads/a.jpg" /><figcaption class="text-xs">Foto: Kartawarta</figcaption></figure>';
+      '<figure><img src="/uploads/a.jpg" /><figcaption class="text-xs">Foto: Lensaplus</figcaption></figure>';
     expect(rewriteCreditsInContent(html, "Bola")).toContain("Foto: Bola");
-    expect(rewriteCreditsInContent(html, "Bola")).not.toContain("Kartawarta");
+    expect(rewriteCreditsInContent(html, "Bola")).not.toContain("Lensaplus");
   });
 
-  it("replaces rich-text <em>Sumber: Kartawarta</em> credits", () => {
+  it("replaces rich-text <em>Sumber: Lensaplus</em> credits", () => {
     const html =
-      "<figcaption>Suasana laga — <em>Sumber: Kartawarta</em></figcaption>";
+      "<figcaption>Suasana laga — <em>Sumber: Lensaplus</em></figcaption>";
     expect(rewriteCreditsInContent(html, "Detik")).toContain(
       "<em>Sumber: Detik</em>",
     );
@@ -63,28 +63,28 @@ describe("rewriteCreditsInContent", () => {
 
   it("rewrites the attribution footer link text", () => {
     const html =
-      '<p class="x">Disarikan dari rilis <a href="https://www.bola.com/news/123" rel="nofollow">Kartawarta — "Judul Asli"</a>. Versi Kartawarta ditulis ulang.</p>';
+      '<p class="x">Disarikan dari rilis <a href="https://www.bola.com/news/123" rel="nofollow">Lensaplus — "Judul Asli"</a>. Versi Lensaplus ditulis ulang.</p>';
     const out = rewriteCreditsInContent(html, "Bola");
     expect(out).toContain('>Bola — "Judul Asli"');
-    expect(out).not.toContain(">Kartawarta —");
-    // The trailing "Versi Kartawarta" sentence must stay untouched.
-    expect(out).toContain("Versi Kartawarta ditulis ulang");
+    expect(out).not.toContain(">Lensaplus —");
+    // The trailing "Versi Lensaplus" sentence must stay untouched.
+    expect(out).toContain("Versi Lensaplus ditulis ulang");
   });
 
-  it("leaves non-credit body mentions of Kartawarta alone", () => {
-    const html = "<p>Menurut Kartawarta, acara berjalan lancar.</p>";
+  it("leaves non-credit body mentions of Lensaplus alone", () => {
+    const html = "<p>Menurut Lensaplus, acara berjalan lancar.</p>";
     expect(rewriteCreditsInContent(html, "Bola")).toBe(html);
   });
 
   it("is idempotent once credits already point at the real source", () => {
     const html =
-      '<figcaption class="t">Foto: Kartawarta</figcaption>';
+      '<figcaption class="t">Foto: Lensaplus</figcaption>';
     const once = rewriteCreditsInContent(html, "Bola");
     expect(rewriteCreditsInContent(once, "Bola")).toBe(once);
   });
 
   it("escapes HTML-special characters in the label", () => {
-    const html = '<figcaption>Foto: Kartawarta</figcaption>';
+    const html = '<figcaption>Foto: Lensaplus</figcaption>';
     expect(rewriteCreditsInContent(html, 'A&B')).toContain("Foto: A&amp;B");
   });
 });
@@ -92,7 +92,7 @@ describe("rewriteCreditsInContent", () => {
 describe("footerSourceHref", () => {
   it("extracts the upstream href from the footer", () => {
     const html =
-      'Disarikan dari rilis <a href="https://sport.detik.com/abc" target="_blank">Kartawarta — "x"</a>';
+      'Disarikan dari rilis <a href="https://sport.detik.com/abc" target="_blank">Lensaplus — "x"</a>';
     expect(footerSourceHref(html)).toBe("https://sport.detik.com/abc");
   });
   it("returns null when there is no footer", () => {

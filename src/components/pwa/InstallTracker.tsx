@@ -24,7 +24,7 @@ export default function InstallTracker() {
     window.addEventListener("appinstalled", onAppInstalled);
 
     // 2. Standalone detection (user opens from home screen) — fire once per session
-    const sessionKey = "kartawarta_pwa_session_logged";
+    const sessionKey = "lensaplus_pwa_session_logged";
     if (!sessionStorage.getItem(sessionKey)) {
       const display = detectDisplayMode();
       if (display !== "browser") {
@@ -40,7 +40,7 @@ export default function InstallTracker() {
       const a = target.closest("a") as HTMLAnchorElement | null;
       if (!a) return;
       const href = a.getAttribute("href") || "";
-      if (href.endsWith(".apk") || href.includes("/downloads/kartawarta")) {
+      if (href.endsWith(".apk") || href.includes("/downloads/lensaplus")) {
         track("apk-download", { source: location.pathname });
       }
     };

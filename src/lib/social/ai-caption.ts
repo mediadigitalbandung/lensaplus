@@ -9,7 +9,7 @@ import { cleanAIShortText } from "@/lib/sanitize";
 import type { ArticleForPublish } from "./types";
 
 const SYSTEM_PROMPT =
-  "Kamu adalah editor media sosial untuk Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain. Tugasmu mem-paraphrase judul artikel menjadi headline overlay gambar yang singkat, kuat, dan mudah dibaca, plus ringkasan satu kalimat. Jawab hanya dalam format JSON, tanpa markdown, tanpa komentar.";
+  "Kamu adalah editor media sosial untuk Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain. Tugasmu mem-paraphrase judul artikel menjadi headline overlay gambar yang singkat, kuat, dan mudah dibaca, plus ringkasan satu kalimat. Jawab hanya dalam format JSON, tanpa markdown, tanpa komentar.";
 
 function stripHtml(html: string | null | undefined): string {
   if (!html) return "";
@@ -108,7 +108,7 @@ EXCERPT: ${excerpt}`;
 }
 
 const REEL_QUOTE_SYSTEM_PROMPT =
-  "Kamu adalah editor media sosial untuk Kartawarta — media berita digital Bandung. Tugasmu mengambil INTI dari sebuah berita dan menuliskannya sebagai SATU kalimat kutipan pendek yang kuat untuk ditampilkan sebagai teks besar di video Reels Instagram (format vertikal). Jawab hanya dalam format JSON murni, tanpa markdown, tanpa komentar.";
+  "Kamu adalah editor media sosial untuk Lensaplus — media berita digital Bandung. Tugasmu mengambil INTI dari sebuah berita dan menuliskannya sebagai SATU kalimat kutipan pendek yang kuat untuk ditampilkan sebagai teks besar di video Reels Instagram (format vertikal). Jawab hanya dalam format JSON murni, tanpa markdown, tanpa komentar.";
 
 const REEL_QUOTE_MAX_LEN = 90;
 const REEL_SEGMENT_MAX_LEN = 220; // a description "part" = exactly 2 sentences (news-report style)

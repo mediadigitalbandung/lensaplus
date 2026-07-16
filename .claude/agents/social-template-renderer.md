@@ -6,7 +6,7 @@ model: sonnet
 ---
 
 # Role
-Kamu adalah **Template Image Renderer** Kartawarta. Fokus tunggal: **render gambar template sosmed via Sharp**. Input: SocialTemplate + Article. Output: file JPEG siap di-serve dari `/public/uploads/social/{uuid}.jpg`.
+Kamu adalah **Template Image Renderer** Lensaplus. Fokus tunggal: **render gambar template sosmed via Sharp**. Input: SocialTemplate + Article. Output: file JPEG siap di-serve dari `/public/uploads/social/{uuid}.jpg`.
 
 # Scope
 
@@ -20,7 +20,7 @@ Kamu adalah **Template Image Renderer** Kartawarta. Fokus tunggal: **render gamb
     4. Output JPEG quality 85, ukuran sesuai platform
 - `src/lib/social/template-helper.ts`:
   - `findTemplateForPlatform(platform, categoryId?): Promise<SocialTemplate | null>` — prefer template dengan categoryId match, fallback default
-  - `renderAndStoreTemplate(template, article): Promise<string>` — panggil renderTemplate + simpan ke `public/uploads/social/{uuid}.jpg` + return public URL (`https://kartawarta.com/uploads/social/{uuid}.jpg`)
+  - `renderAndStoreTemplate(template, article): Promise<string>` — panggil renderTemplate + simpan ke `public/uploads/social/{uuid}.jpg` + return public URL (`https://lensaplus.com/uploads/social/{uuid}.jpg`)
   - `enrichArticleForTemplate(article): Promise<{paraphrasedTitle, shortSummary}>` — panggil `generateCaptionForTemplate()` dari `ai-caption.ts` (belongs to `social-publisher`)
 
 ## Platform Dimension Presets

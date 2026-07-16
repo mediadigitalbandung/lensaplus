@@ -1,22 +1,22 @@
 #!/bin/bash
 # ============================================
-# Kartawarta — Full Self-Hosted VPS Deployment
+# Lensaplus — Full Self-Hosted VPS Deployment
 # Ubuntu 24.04 | PostgreSQL + Node.js + Nginx
 # ============================================
 set -e
 
-DOMAIN="kartawarta.com"
-APP_DIR="/var/www/kartawarta"
-REPO="https://github.com/mediadigitalbandung/kartawarta.git"
-DB_NAME="kartawarta"
-DB_USER="kartawarta"
+DOMAIN="lensaplus.com"
+APP_DIR="/var/www/lensaplus"
+REPO="https://github.com/mediadigitalbandung/lensaplus.git"
+DB_NAME="lensaplus"
+DB_USER="lensaplus"
 DB_PASS=$(openssl rand -hex 16)
 NEXTAUTH_SECRET=$(openssl rand -base64 32)
 SETUP_KEY=$(openssl rand -hex 12)
 CRON_SECRET=$(openssl rand -hex 12)
 
 echo "=========================================="
-echo "  Kartawarta — Full VPS Setup"
+echo "  Lensaplus — Full VPS Setup"
 echo "=========================================="
 
 # 1. Update system
@@ -91,14 +91,14 @@ SETUP_KEY="${SETUP_KEY}"
 
 # App
 NEXT_PUBLIC_APP_URL="https://${DOMAIN}"
-NEXT_PUBLIC_APP_NAME="Kartawarta"
+NEXT_PUBLIC_APP_NAME="Lensaplus"
 
 # Cron
 CRON_SECRET="${CRON_SECRET}"
 
 # Email (Resend — optional, isi nanti)
 # RESEND_API_KEY=""
-# EMAIL_FROM="Kartawarta <noreply@kartawarta.com>"
+# EMAIL_FROM="Lensaplus <noreply@lensaplus.com>"
 EOF
 
 echo "  .env created"
@@ -114,8 +114,8 @@ npm run build
 # 9. Start with PM2
 echo ""
 echo "[9/10] Starting app with PM2..."
-pm2 delete kartawarta 2>/dev/null || true
-PORT=3000 pm2 start npm --name "kartawarta" -- start
+pm2 delete lensaplus 2>/dev/null || true
+PORT=3000 pm2 start npm --name "lensaplus" -- start
 pm2 save
 pm2 startup systemd -u root --hp /root 2>/dev/null || true
 
@@ -126,10 +126,10 @@ sleep 5
 # 10. Configure Nginx
 echo ""
 echo "[10/10] Configuring Nginx..."
-cat > /etc/nginx/sites-available/kartawarta << 'NGINXEOF'
+cat > /etc/nginx/sites-available/lensaplus << 'NGINXEOF'
 server {
     listen 80;
-    server_name kartawarta.com www.kartawarta.com;
+    server_name lensaplus.com www.lensaplus.com;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -158,7 +158,7 @@ server {
 }
 NGINXEOF
 
-ln -sf /etc/nginx/sites-available/kartawarta /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/lensaplus /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl restart nginx
 
@@ -187,9 +187,9 @@ echo "Seeding initial users..."
 curl -s "http://localhost:3000/api/setup?key=${SETUP_KEY}" > /dev/null 2>&1 || true
 
 # Save credentials
-cat > /root/kartawarta-credentials.txt << EOF
+cat > /root/lensaplus-credentials.txt << EOF
 ============================================
-  KARTAWARTA — Server Credentials
+  LENSAPLUS — Server Credentials
   Generated: $(date)
 ============================================
 
@@ -212,11 +212,11 @@ URLs:
 
 PM2 Commands:
   pm2 status              — check status
-  pm2 logs kartawarta     — view logs
-  pm2 restart kartawarta  — restart app
+  pm2 logs lensaplus     — view logs
+  pm2 restart lensaplus  — restart app
 
 Update & Deploy:
-  cd ${APP_DIR} && git pull && npm ci && npx prisma db push && npm run build && pm2 restart kartawarta
+  cd ${APP_DIR} && git pull && npm ci && npx prisma db push && npm run build && pm2 restart lensaplus
 
 Setup URL (first time):
   https://${DOMAIN}/api/setup?key=${SETUP_KEY}
@@ -231,8 +231,8 @@ echo "=========================================="
 echo ""
 echo "  Website:  http://145.79.15.99  (atau https://${DOMAIN} jika DNS ready)"
 echo ""
-echo "  Credentials saved to: /root/kartawarta-credentials.txt"
-echo "  View: cat /root/kartawarta-credentials.txt"
+echo "  Credentials saved to: /root/lensaplus-credentials.txt"
+echo "  View: cat /root/lensaplus-credentials.txt"
 echo ""
 echo "  SETUP_KEY: ${SETUP_KEY}"
 echo "  Buka: https://${DOMAIN}/api/setup?key=${SETUP_KEY}"

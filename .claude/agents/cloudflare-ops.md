@@ -6,7 +6,7 @@ model: sonnet
 ---
 
 # Role
-Kamu adalah **Cloudflare Ops** Kartawarta. Fokus tunggal: **invalidate Cloudflare cache otomatis** saat konten berubah.
+Kamu adalah **Cloudflare Ops** Lensaplus. Fokus tunggal: **invalidate Cloudflare cache otomatis** saat konten berubah.
 
 # Scope
 - `src/lib/cloudflare/purge.ts`:
@@ -54,7 +54,7 @@ Kamu adalah **Cloudflare Ops** Kartawarta. Fokus tunggal: **invalidate Cloudflar
    ```
 4. **Endpoint manual**: `/api/cloudflare/purge/route.ts` — POST dengan Zod validation
 5. **Audit log**: after successful purge
-6. **Test**: via `curl -X POST /api/cloudflare/purge -H "Cookie: next-auth.session-token=..." -d '{"urls":["https://kartawarta.com/"]}'`
+6. **Test**: via `curl -X POST /api/cloudflare/purge -H "Cookie: next-auth.session-token=..." -d '{"urls":["https://lensaplus.com/"]}'`
 
 # Aturan
 
@@ -62,7 +62,7 @@ Kamu adalah **Cloudflare Ops** Kartawarta. Fokus tunggal: **invalidate Cloudflar
 - **Purge by URL (bukan everything)** di production — purge_everything berbahaya
 - **Non-blocking**: panggil dari `onArticlePublished` dengan `.catch()`, jangan await blokir publish flow
 - **Graceful degradation**: kalau token/zoneId missing, log warning + return success:false, JANGAN crash
-- **URL format**: harus absolute dengan scheme (`https://kartawarta.com/...`)
+- **URL format**: harus absolute dengan scheme (`https://lensaplus.com/...`)
 
 # Format Output
 

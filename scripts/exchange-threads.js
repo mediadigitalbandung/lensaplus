@@ -37,7 +37,7 @@ try {
 
 const CLIENT_ID = process.env.THREADS_APP_ID || "4402452543382960";
 const CLIENT_SECRET = process.env.THREADS_APP_SECRET || "8c98020e4904e3feae5fb9f0427123dd";
-const REDIRECT_URI = "https://kartawarta.com/";
+const REDIRECT_URI = "https://lensaplus.com/";
 
 const prisma = new PrismaClient();
 

@@ -67,7 +67,7 @@ const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
 };
 
 const SYSTEM_PROMPT =
-  "Kamu adalah editor senior Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). Tugasmu menulis ringkasan sudut-pandang (sorotan) yang akurat, profesional, dan tidak menambah fakta baru. Output hanya teks artikel (tanpa judul, tanpa markdown header, tanpa list bullet kecuali ditulis dalam prosa).";
+  "Kamu adalah editor senior Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). Tugasmu menulis ringkasan sudut-pandang (sorotan) yang akurat, profesional, dan tidak menambah fakta baru. Output hanya teks artikel (tanpa judul, tanpa markdown header, tanpa list bullet kecuali ditulis dalam prosa).";
 
 export interface GenerateSorotanResult {
   articleId: string;

@@ -18,7 +18,7 @@ import { slugify } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 function escapeXml(str: string): string {
   return str

@@ -1,6 +1,6 @@
-# Setup Email @kartawarta.com
+# Setup Email @lensaplus.com
 
-Panduan lengkap untuk membuat dan menggunakan email `@kartawarta.com`.
+Panduan lengkap untuk membuat dan menggunakan email `@lensaplus.com`.
 
 ---
 
@@ -8,35 +8,35 @@ Panduan lengkap untuk membuat dan menggunakan email `@kartawarta.com`.
 
 ```
 Email masuk → Cloudflare Email Routing → Forward ke Gmail pribadi
-Email keluar → Gmail "Send as" → Brevo SMTP → owen@kartawarta.com
+Email keluar → Gmail "Send as" → Brevo SMTP → owen@lensaplus.com
 ```
 
 **Service yang digunakan:**
 - **Cloudflare Email Routing** (gratis) — terima email, forward ke Gmail
-- **Brevo SMTP** (gratis, 300 email keluar/hari) — kirim email dari Gmail sebagai @kartawarta.com
+- **Brevo SMTP** (gratis, 300 email keluar/hari) — kirim email dari Gmail sebagai @lensaplus.com
 - **Gmail** — interface email sehari-hari
 
 ---
 
 ## Cara 1: Buat Email dari Panel Admin (Otomatis)
 
-1. Login ke `https://kartawarta.com/panel`
+1. Login ke `https://lensaplus.com/panel`
 2. Klik **Email** di sidebar
 3. Klik **Buat Email Baru**
 4. Isi:
-   - **Email Kartawarta:** nama (misal: `owen`) → jadi `owen@kartawarta.com`
+   - **Email Lensaplus:** nama (misal: `owen`) → jadi `owen@lensaplus.com`
    - **Forward ke:** email Gmail pribadi user
 5. Klik **Buat Email**
 6. User akan terima **email verifikasi dari Cloudflare** di Gmail → klik verify
 
-> **Catatan:** Saat membuat user baru di menu **Pengguna**, email `namapertama@kartawarta.com` otomatis dibuat.
+> **Catatan:** Saat membuat user baru di menu **Pengguna**, email `namapertama@lensaplus.com` otomatis dibuat.
 
 ---
 
 ## Cara 2: Buat Email dari Cloudflare Dashboard (Manual)
 
 1. Buka [Cloudflare Dashboard](https://dash.cloudflare.com) → login
-2. Pilih domain `kartawarta.com`
+2. Pilih domain `lensaplus.com`
 3. Klik **Email** → **Email Routing** → **Routing rules**
 4. Klik **Create address**
 5. Isi:
@@ -49,7 +49,7 @@ Email keluar → Gmail "Send as" → Brevo SMTP → owen@kartawarta.com
 
 ## Setup "Send As" di Gmail (Per User)
 
-Agar user bisa **mengirim email** dari Gmail sebagai `nama@kartawarta.com`:
+Agar user bisa **mengirim email** dari Gmail sebagai `nama@lensaplus.com`:
 
 ### Langkah 1: Buka Gmail Settings
 1. Buka Gmail → klik **Settings (⚙️)** → **See all settings**
@@ -58,7 +58,7 @@ Agar user bisa **mengirim email** dari Gmail sebagai `nama@kartawarta.com`:
 
 ### Langkah 2: Isi Informasi Email
 1. **Name:** Nama lengkap (misal: Owen Jacob)
-2. **Email address:** `owen@kartawarta.com`
+2. **Email address:** `owen@lensaplus.com`
 3. Centang **"Treat as an alias"**
 4. Klik **Next Step**
 
@@ -74,14 +74,14 @@ Agar user bisa **mengirim email** dari Gmail sebagai `nama@kartawarta.com`:
 5. Klik **Add Account**
 
 ### Langkah 4: Verifikasi
-1. Gmail akan kirim kode verifikasi ke `nama@kartawarta.com`
+1. Gmail akan kirim kode verifikasi ke `nama@lensaplus.com`
 2. Karena email forward ke Gmail, cek inbox
 3. Masukkan kode atau klik link verifikasi
 4. Selesai!
 
 ### Langkah 5: Set Default (Opsional)
 1. Di Gmail Settings → **Accounts and Import**
-2. "Send mail as" → klik **"make default"** di sebelah `nama@kartawarta.com`
+2. "Send mail as" → klik **"make default"** di sebelah `nama@lensaplus.com`
 3. Ubah **"When replying to a message"** → pilih **"Reply from the same address the message was sent to"**
 
 ---
@@ -97,13 +97,13 @@ Agar user bisa **mengirim email** dari Gmail sebagai `nama@kartawarta.com`:
 
 ### Brevo (SMTP)
 - **Dashboard:** https://app.brevo.com
-- **Email:** owen@kartawarta.com
+- **Email:** owen@lensaplus.com
 - **SMTP Server:** `smtp-relay.brevo.com`
 - **Port:** `587`
 - **Login:** `a715cf001@smtp-brevo.com`
 - **Password:** `4UhR5vsHMc3PIqrD`
 - **Limit:** 300 email keluar/hari (gratis)
-- **Domain:** kartawarta.com (Authenticated ✅)
+- **Domain:** lensaplus.com (Authenticated ✅)
 
 ### DNS Records (Cloudflare)
 Email-related DNS records yang sudah dikonfigurasi:
@@ -111,8 +111,8 @@ Email-related DNS records yang sudah dikonfigurasi:
 - **MX** → `route2.mx.cloudflare.net` (priority 78)
 - **MX** → `route3.mx.cloudflare.net` (priority 63)
 - **TXT** → `brevo-code:8c87835008d223dc067e68299b63cd4a`
-- **CNAME** → `brevo1._domainkey` → `b1.kartawarta-com.dkim.brevo.com`
-- **CNAME** → `brevo2._domainkey` → `b2.kartawarta-com.dkim.brevo.com`
+- **CNAME** → `brevo1._domainkey` → `b1.lensaplus-com.dkim.brevo.com`
+- **CNAME** → `brevo2._domainkey` → `b2.lensaplus-com.dkim.brevo.com`
 - **TXT** → `_dmarc` → `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com`
 - **TXT** → SPF (Cloudflare auto)
 - **TXT** → DKIM domainkey (Cloudflare auto)
@@ -123,13 +123,13 @@ Email-related DNS records yang sudah dikonfigurasi:
 
 | Email | Forward ke | Status |
 |---|---|---|
-| owen@kartawarta.com | owenjacobn@gmail.com | ✅ Aktif |
+| owen@lensaplus.com | owenjacobn@gmail.com | ✅ Aktif |
 
 ---
 
 ## Limitasi
 
-1. **Foto profil** — Gmail tidak support Gravatar. Foto profil email `@kartawarta.com` akan tampil sebagai default icon di Gmail. Untuk foto profil terpisah butuh Google Workspace (berbayar ~Rp 90rb/user/bulan).
+1. **Foto profil** — Gmail tidak support Gravatar. Foto profil email `@lensaplus.com` akan tampil sebagai default icon di Gmail. Untuk foto profil terpisah butuh Google Workspace (berbayar ~Rp 90rb/user/bulan).
 
 2. **Email keluar** — Maksimal 300/hari via Brevo gratis. Cukup untuk kebutuhan redaksi.
 
@@ -172,6 +172,6 @@ Jika di masa depan butuh:
 - Unlimited email tanpa batasan
 
 **Harga:** ~Rp 90.000/user/bulan (Starter plan)
-**Cara:** Daftar di https://workspace.google.com dengan domain `kartawarta.com`
+**Cara:** Daftar di https://workspace.google.com dengan domain `lensaplus.com`
 
-> `kartawarta@gmail.com` milik orang lain TIDAK mempengaruhi — Google Workspace menggunakan domain `kartawarta.com` yang kamu miliki.
+> `lensaplus@gmail.com` milik orang lain TIDAK mempengaruhi — Google Workspace menggunakan domain `lensaplus.com` yang kamu miliki.

@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 const bodySchema = z.object({
   articleIds: z.array(z.string().min(1)).min(1).max(200),

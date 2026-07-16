@@ -46,7 +46,7 @@ async function resolveDigest(slug: string): Promise<ResolvedDigest | null> {
   const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   return {
     title: `Rangkuman ${category.name}`,
-    intro: `Ringkasan berita ${category.name.toLowerCase()} dalam 30 hari terakhir di Kartawarta.`,
+    intro: `Ringkasan berita ${category.name.toLowerCase()} dalam 30 hari terakhir di Lensaplus.`,
     range: { from, to: now },
     category: { name: category.name, slug: category.slug },
   };
@@ -61,14 +61,14 @@ export async function generateMetadata({ params: paramsPromise }: PageProps): Pr
     title: digest.title,
     description: digest.intro,
     openGraph: {
-      title: `${digest.title} - Kartawarta`,
+      title: `${digest.title} - Lensaplus`,
       description: digest.intro,
       type: "website",
       images: [{ url: ogImage, width: 1200, height: 630, alt: digest.title }],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${digest.title} - Kartawarta`,
+      title: `${digest.title} - Lensaplus`,
       description: digest.intro,
       images: [ogImage],
     },
@@ -109,14 +109,14 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
   const hero = articles[0];
   const rest = articles.slice(1);
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: `${digest.title} — Kartawarta`,
+    name: `${digest.title} — Lensaplus`,
     description: digest.intro,
     url: `${siteUrl}/rangkuman/${params.slug}`,
-    isPartOf: { "@type": "WebSite", name: "Kartawarta", url: siteUrl },
+    isPartOf: { "@type": "WebSite", name: "Lensaplus", url: siteUrl },
     breadcrumb: {
       "@type": "BreadcrumbList",
       itemListElement: [

@@ -2,7 +2,7 @@
 <html lang="id">
   <head>
     <meta charset="utf-8" />
-    <title>Sistem Email Routing Kartawarta — Dokumentasi</title>
+    <title>Sistem Email Routing Lensaplus — Dokumentasi</title>
     <style>
       @page {
         size: A4;
@@ -210,24 +210,24 @@
   <body>
     <div class="page">
       <div class="header-bar">
-        <h1>Sistem Email Routing Kartawarta</h1>
+        <h1>Sistem Email Routing Lensaplus</h1>
         <div class="subtitle">
           Dokumentasi cara kerja inbound, outbound transactional, dan Send-As
           via Gmail
         </div>
         <div class="meta">
-          Untuk tim editorial &amp; admin · Versi April 2026 · kartawarta.com
+          Untuk tim editorial &amp; admin · Versi April 2026 · lensaplus.com
         </div>
       </div>
 
       <h2>1. Ringkasan Arsitektur</h2>
       <p>
-        Email Kartawarta jalan di tiga jalur terpisah yang masing-masing
+        Email Lensaplus jalan di tiga jalur terpisah yang masing-masing
         memakai provider berbeda. Pemahaman cepat: <strong>Resend</strong>
         kirim notifikasi sistem ke jurnalis, <strong>Cloudflare</strong>
-        terima email masuk ke <code>@kartawarta.com</code>, dan
+        terima email masuk ke <code>@lensaplus.com</code>, dan
         <strong>Brevo</strong> jadi pintu keluar saat tim balas dari Gmail
-        memakai alamat <code>@kartawarta.com</code>.
+        memakai alamat <code>@lensaplus.com</code>.
       </p>
 
       <div class="ascii">
@@ -235,11 +235,11 @@
 │   JALUR 1 — OUTBOUND TRANSACTIONAL  (Sistem → Jurnalis)         │
 │       Article workflow → Resend API → email penerima             │
 +──────────────────────────────────────────────────────────────────+
-│   JALUR 2 — INBOUND ROUTING         (Dunia → @kartawarta.com)    │
-│       redaksi@kartawarta.com → Cloudflare MX → forward Gmail     │
+│   JALUR 2 — INBOUND ROUTING         (Dunia → @lensaplus.com)    │
+│       redaksi@lensaplus.com → Cloudflare MX → forward Gmail     │
 +──────────────────────────────────────────────────────────────────+
 │   JALUR 3 — OUTBOUND SEND-AS        (Tim → Dunia, atas nama @kw) │
-│       Gmail compose → Brevo SMTP → keluar dari @kartawarta.com   │
+│       Gmail compose → Brevo SMTP → keluar dari @lensaplus.com   │
 +──────────────────────────────────────────────────────────────────+
       </div>
 
@@ -264,7 +264,7 @@
           <tr>
             <td><strong>Cloudflare Email Routing</strong></td>
             <td>
-              Tampung MX record <code>kartawarta.com</code>, terapkan rule
+              Tampung MX record <code>lensaplus.com</code>, terapkan rule
               forwarding per alamat ke inbox Gmail tim
             </td>
             <td>Unlimited</td>
@@ -273,7 +273,7 @@
             <td><strong>Brevo SMTP relay</strong></td>
             <td>
               SMTP keluar untuk Gmail "Send As" — supaya balasan terlihat
-              berasal dari <code>@kartawarta.com</code>
+              berasal dari <code>@lensaplus.com</code>
             </td>
             <td>300 email/hari</td>
           </tr>
@@ -337,12 +337,12 @@
       <h3>Template &amp; identitas pengirim</h3>
       <p>
         Semua email pakai <code>baseTemplate()</code> — HTML responsif
-        dengan logo Kartawarta, accent navy <code>#002045</code> /
+        dengan logo Lensaplus, accent navy <code>#002045</code> /
         crimson <code>#b7102a</code>, dan tombol CTA yang membawa
         penerima kembali ke panel atau halaman publik.
       </p>
       <p>
-        From-address default <code>Kartawarta &lt;noreply@kartawarta.com&gt;</code>
+        From-address default <code>Lensaplus &lt;noreply@lensaplus.com&gt;</code>
         di-set lewat env <code>EMAIL_FROM</code>, dengan fallback ke
         <code>SystemSetting.notification_email_from</code> yang bisa
         diubah dari <code>/panel/pengaturan</code> tanpa redeploy.
@@ -358,17 +358,17 @@
 
       <h3>Yang dibutuhkan supaya jalur ini aktif</h3>
       <pre><code>RESEND_API_KEY="re_xxxxxxxx"
-EMAIL_FROM="Kartawarta &lt;noreply@kartawarta.com&gt;"
-NEXT_PUBLIC_APP_URL="https://kartawarta.com"</code></pre>
+EMAIL_FROM="Lensaplus &lt;noreply@lensaplus.com&gt;"
+NEXT_PUBLIC_APP_URL="https://lensaplus.com"</code></pre>
       <p class="small">
-        Domain <code>kartawarta.com</code> harus diverifikasi di Resend
+        Domain <code>lensaplus.com</code> harus diverifikasi di Resend
         dashboard (DNS record) supaya from-address tidak masuk spam.
       </p>
 
-      <h2>3. Inbound Email (@kartawarta.com → Gmail tim)</h2>
+      <h2>3. Inbound Email (@lensaplus.com → Gmail tim)</h2>
       <p>
         Cloudflare Email Routing duduk di MX record domain. Saat ada
-        email masuk ke <code>nama@kartawarta.com</code>, Cloudflare
+        email masuk ke <code>nama@lensaplus.com</code>, Cloudflare
         mencocokkan dengan <em>rule</em> yang sudah dibuat dan
         meneruskan ke email pribadi tim (biasanya Gmail).
       </p>
@@ -376,15 +376,15 @@ NEXT_PUBLIC_APP_URL="https://kartawarta.com"</code></pre>
       <ol>
         <li>
           Pengirim eksternal compose email ke
-          <code>redaksi@kartawarta.com</code>.
+          <code>redaksi@lensaplus.com</code>.
         </li>
         <li>
           Server pengirim cek MX record →
           <code>route1.mx.cloudflare.net</code> dst.
         </li>
         <li>
-          Cloudflare cek rule. Misal "redaksi@kartawarta.com →
-          forward ke owen.kartawarta@gmail.com".
+          Cloudflare cek rule. Misal "redaksi@lensaplus.com →
+          forward ke owen.lensaplus@gmail.com".
         </li>
         <li>
           Email diteruskan ke Gmail penerima. Penerima baca, label,
@@ -392,14 +392,14 @@ NEXT_PUBLIC_APP_URL="https://kartawarta.com"</code></pre>
         </li>
         <li>
           Kalau penerima ingin balas <em>atas nama
-          @kartawarta.com</em> bukan @gmail.com, dia pakai Send-As
+          @lensaplus.com</em> bukan @gmail.com, dia pakai Send-As
           (Jalur 3 di bawah).
         </li>
       </ol>
       <h3>MX record yang sudah aktif</h3>
-      <pre><code>kartawarta.com  MX  10  route1.mx.cloudflare.net
-kartawarta.com  MX  10  route2.mx.cloudflare.net
-kartawarta.com  MX  10  route3.mx.cloudflare.net</code></pre>
+      <pre><code>lensaplus.com  MX  10  route1.mx.cloudflare.net
+lensaplus.com  MX  10  route2.mx.cloudflare.net
+lensaplus.com  MX  10  route3.mx.cloudflare.net</code></pre>
       <h3>Verifikasi destination</h3>
       <p>
         Saat dibuatkan email baru di panel admin atau lewat Cloudflare
@@ -419,7 +419,7 @@ kartawarta.com  MX  10  route3.mx.cloudflare.net</code></pre>
       <ul>
         <li>
           <strong>List semua email</strong> — alamat
-          <code>@kartawarta.com</code> yang sudah dibuat, status aktif/
+          <code>@lensaplus.com</code> yang sudah dibuat, status aktif/
           nonaktif, dan tujuan forwarding-nya.
         </li>
         <li>
@@ -481,11 +481,11 @@ kartawarta.com  MX  10  route3.mx.cloudflare.net</code></pre>
         — semua request lewat <code>api.cloudflare.com/client/v4/zones/{zoneId}/email/routing/...</code>.
       </p>
 
-      <h2>5. Outbound Send-As (Reply dari @kartawarta.com via Gmail)</h2>
+      <h2>5. Outbound Send-As (Reply dari @lensaplus.com via Gmail)</h2>
       <p>
         Cloudflare Email Routing <em>tidak</em> bisa mengirim email
         keluar — dia hanya untuk inbound. Untuk reply atau compose baru
-        atas nama <code>@kartawarta.com</code>, Gmail user perlu
+        atas nama <code>@lensaplus.com</code>, Gmail user perlu
         konfigurasi <strong>Send-As</strong> dengan SMTP Brevo sebagai
         relay.
       </p>
@@ -497,7 +497,7 @@ kartawarta.com  MX  10  route3.mx.cloudflare.net</code></pre>
           <p>Isi:</p>
           <ul>
             <li>Name: <em>nama lengkap</em></li>
-            <li>Email address: <code>nama@kartawarta.com</code></li>
+            <li>Email address: <code>nama@lensaplus.com</code></li>
             <li>Centang <strong>Treat as an alias</strong></li>
           </ul>
         </li>
@@ -514,13 +514,13 @@ kartawarta.com  MX  10  route3.mx.cloudflare.net</code></pre>
         </li>
         <li>
           Gmail kirim kode konfirmasi ke
-          <code>nama@kartawarta.com</code>. Karena alamat itu sudah
+          <code>nama@lensaplus.com</code>. Karena alamat itu sudah
           di-forward ke Gmail user (Jalur 2), kode masuk otomatis ke
           inbox Gmail-nya. Masukkan kodenya → done.
         </li>
         <li>
           Setelah ini, saat compose, ada dropdown "From" — pilih
-          <code>nama@kartawarta.com</code>. Email keluar lewat Brevo,
+          <code>nama@lensaplus.com</code>. Email keluar lewat Brevo,
           headernya bersih (DKIM + DMARC sudah authenticated di domain),
           tidak masuk spam.
         </li>
@@ -549,7 +549,7 @@ TXT     _dmarc                  v=DMARC1; p=none; rua=...</code></pre>
       <pre><code>POST /api/email/test
 { "to": "alamat-anda@gmail.com" }
 
-→ { "success": true, "to": "...", "from": "Kartawarta &lt;...&gt;" }</code></pre>
+→ { "success": true, "to": "...", "from": "Lensaplus &lt;...&gt;" }</code></pre>
       <p>
         Yang dicek: API key valid, from-address authenticated, Resend
         accept payload. Kalau gagal, response berisi
@@ -640,7 +640,7 @@ TXT     _dmarc                  v=DMARC1; p=none; rua=...</code></pre>
         </thead>
         <tbody>
           <tr>
-            <td><code>owen@kartawarta.com</code></td>
+            <td><code>owen@lensaplus.com</code></td>
             <td>owenjacobn@gmail.com</td>
             <td>Aktif &amp; verified</td>
           </tr>
@@ -661,13 +661,13 @@ TXT     _dmarc                  v=DMARC1; p=none; rua=...</code></pre>
         </li>
         <li>
           Setiap anggota tim bisa punya alamat
-          <code>@kartawarta.com</code> sendiri yang
+          <code>@lensaplus.com</code> sendiri yang
           <strong>auto-forward ke Gmail</strong> mereka. Admin bikin
           via <code>/panel/email</code>.
         </li>
         <li>
           Untuk <strong>balas dari alamat
-          @kartawarta.com</strong> (bukan dari @gmail.com), tiap
+          @lensaplus.com</strong> (bukan dari @gmail.com), tiap
           anggota tim setup Send-As di Gmail-nya satu kali — pakai
           SMTP Brevo. Panduan ada di tombol "Setup Gmail" di panel.
         </li>
@@ -680,11 +680,11 @@ TXT     _dmarc                  v=DMARC1; p=none; rua=...</code></pre>
 
       <div class="footer-note">
         Dokumen ini di-generate dari kode &amp; dokumentasi internal
-        Kartawarta. Source kode: <code>src/lib/email.ts</code>,
+        Lensaplus. Source kode: <code>src/lib/email.ts</code>,
         <code>src/lib/cloudflare-email.ts</code>,
         <code>src/app/api/email-routing/route.ts</code>,
         <code>src/app/api/email/test/route.ts</code>,
-        <code>docs/setup-email-kartawarta.md</code>. Untuk update,
+        <code>docs/setup-email-lensaplus.md</code>. Untuk update,
         regenerate via <code>scripts/render-pdf.mjs</code>.
       </div>
     </div>

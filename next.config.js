@@ -34,7 +34,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "kartawarta.com",
+        hostname: "lensaplus.com",
       },
       {
         protocol: "https",

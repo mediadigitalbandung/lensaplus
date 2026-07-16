@@ -17,7 +17,7 @@ async function main() {
     html = html.replace(/ribuan pembaca aktif/gi, "audiens yang tepat");
     html = html.replace(/<strong[^>]*>ribuan pembaca<\/strong>/gi, "<strong style=\"color:rgba(255,255,255,0.75)\">audiens yang tepat</strong>");
     // "10.000+ pembaca" anywhere
-    html = html.replace(/10\.000\+\s*pembaca\s*(Kartawarta)?/gi, "");
+    html = html.replace(/10\.000\+\s*pembaca\s*(Lensaplus)?/gi, "");
     // "ribuan pembaca" standalone
     html = html.replace(/<strong[^>]*>ribuan pembaca aktif<\/strong>/gi, "<strong style=\"color:rgba(255,255,255,0.75)\">audiens yang tepat</strong>");
 

@@ -48,7 +48,7 @@ export async function createEmailForward(
   destinationEmail: string
 ): Promise<EmailRule> {
   const { zoneId } = getConfig();
-  const address = `${localPart}@kartawarta.com`;
+  const address = `${localPart}@lensaplus.com`;
 
   const res = await fetch(`${CF_API}/zones/${zoneId}/email/routing/rules`, {
     method: "POST",

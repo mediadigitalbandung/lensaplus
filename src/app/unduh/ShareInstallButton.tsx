@@ -12,8 +12,8 @@ export default function ShareInstallButton({ url }: { url: string }) {
 
   async function onClick() {
     const shareData = {
-      title: "Kartawarta",
-      text: "Pasang aplikasi Kartawarta — berita digital Bandung",
+      title: "Lensaplus",
+      text: "Pasang aplikasi Lensaplus — berita digital Bandung",
       url,
     };
     // Try Web Share API first (mobile + recent desktop)
@@ -32,7 +32,7 @@ export default function ShareInstallButton({ url }: { url: string }) {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Worst-case fallback: open share dialog manually
-      window.open(`mailto:?subject=Pasang%20Kartawarta&body=${encodeURIComponent(url)}`, "_blank");
+      window.open(`mailto:?subject=Pasang%20Lensaplus&body=${encodeURIComponent(url)}`, "_blank");
     }
   }
 

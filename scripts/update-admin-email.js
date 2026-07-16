@@ -3,20 +3,20 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
-  // Update admin email to owen@kartawarta.com and reset password
-  const hash = await bcrypt.hash("Owen@kartawarta2026!", 12);
+  // Update admin email to owen@lensaplus.com and reset password
+  const hash = await bcrypt.hash("Owen@lensaplus2026!", 12);
 
   const result = await prisma.user.update({
-    where: { email: "admin@kartawarta.com" },
+    where: { email: "admin@lensaplus.com" },
     data: {
-      email: "owen@kartawarta.com",
+      email: "owen@lensaplus.com",
       name: "Owen Jacob",
       password: hash,
     },
   });
 
-  console.log("✓ Admin email updated to owen@kartawarta.com");
-  console.log("  Password: Owen@kartawarta2026!");
+  console.log("✓ Admin email updated to owen@lensaplus.com");
+  console.log("  Password: Owen@lensaplus2026!");
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

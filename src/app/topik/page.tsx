@@ -23,10 +23,10 @@ import { prisma } from "@/lib/prisma";
 export const metadata: Metadata = {
   title: "Topik",
   description:
-    "Telusuri seluruh topik dan kategori berita di Kartawarta — hukum, bisnis, politik, lingkungan, dan banyak lagi.",
+    "Telusuri seluruh topik dan kategori berita di Lensaplus — hukum, bisnis, politik, lingkungan, dan banyak lagi.",
   openGraph: {
-    title: "Topik - Kartawarta",
-    description: "Telusuri seluruh topik berita di Kartawarta.",
+    title: "Topik - Lensaplus",
+    description: "Telusuri seluruh topik berita di Lensaplus.",
     type: "website",
   },
   alternates: { canonical: "/topik" },
@@ -81,7 +81,7 @@ export default async function TopikIndexPage() {
             </h1>
           </div>
           <p className="mt-3 text-sm text-on-surface-variant">
-            Pilih topik di bawah ini untuk membaca berita berdasarkan kategori. Kartawarta
+            Pilih topik di bawah ini untuk membaca berita berdasarkan kategori. Lensaplus
             mengelompokkan liputan berdasarkan ranah hukum, isu sosial, dan tema editorial
             agar pembaca lebih mudah mengikuti perkembangan.
           </p>

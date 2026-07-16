@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 600; // 10 min
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 function esc(input: string): string {
   return input

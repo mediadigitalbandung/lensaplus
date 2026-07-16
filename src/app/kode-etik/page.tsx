@@ -2,7 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Kode Etik Jurnalistik",
-  description: "Kode etik jurnalistik yang dianut oleh Kartawarta dalam menjalankan kegiatan pers.",
+  description: "Kode etik jurnalistik yang dianut oleh Lensaplus dalam menjalankan kegiatan pers.",
 };
 
 const articles = [
@@ -31,7 +31,7 @@ export default function KodeEtikPage() {
 
           <div className="mt-8 space-y-6 font-serif text-[17px] leading-relaxed text-txt-secondary">
             <p>
-              Kartawarta menganut dan mematuhi <strong className="text-txt-primary">Kode Etik Jurnalistik</strong> yang
+              Lensaplus menganut dan mematuhi <strong className="text-txt-primary">Kode Etik Jurnalistik</strong> yang
               ditetapkan oleh Dewan Pers Indonesia, serta <strong className="text-txt-primary">Pedoman Pemberitaan Media Siber</strong>.
             </p>
 

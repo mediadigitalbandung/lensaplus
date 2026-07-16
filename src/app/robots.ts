@@ -3,7 +3,7 @@ import { MetadataRoute } from "next";
 export default function robots(): MetadataRoute.Robots {
   const siteUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://kartawarta.com";
+    "https://lensaplus.com";
 
   // Known AI-training / scraper crawlers we opt OUT of entirely. These are
   // SEPARATE from search-engine indexing: Googlebot, Bingbot, and social

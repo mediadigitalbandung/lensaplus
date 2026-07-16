@@ -1,5 +1,9 @@
 const GRAPH_BASE = "https://graph.facebook.com/v21.0";
-const token = "EAATm6YSnzcUBRovdeYgQDSZCZAIcgKZBn3CtluASGCeqv4M3s6wSdeMaYORBcemfhf218rU7sd5kZAOmhRdV8NLZAZABZB0QEiM7nP4rLRChQGbMfQPRY99IWCIzGbfoPyHdJfIDweoyF8uIojIYDhdCDtV5FfZBnu1DI6qWXZCW2sTTFwHCw2QX79UzHIYF1unSS4NgnIGNHsZASGyE0jynPKxcmWNDEO548ZC9UXRFe9C5lNQEnTtHAXJHvDCGidC235KE6UVoixEsmMYt0MZD";
+const token = process.env.META_ACCESS_TOKEN || "";
+if (!token) {
+  console.error("ERROR: META_ACCESS_TOKEN environment variable is not set.");
+  process.exit(1);
+}
 
 async function main() {
   console.log("=== RAW META API RESPONSES ===");

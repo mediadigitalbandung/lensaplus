@@ -197,7 +197,7 @@ export function checkArticle(generated: string, source: string): GuardrailResult
   const genNames = extractProperNouns(generated);
   for (const name of genNames) {
     // Skip very common generic proper nouns that appear in boilerplate
-    if (["Indonesia", "Bandung", "Jakarta", "Kartawarta"].includes(name)) continue;
+    if (["Indonesia", "Bandung", "Jakarta", "Lensaplus"].includes(name)) continue;
     if (!presentInSource(name, source)) {
       warnings.push({
         type: "fabricated-name",

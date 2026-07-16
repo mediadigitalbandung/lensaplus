@@ -3,8 +3,8 @@
  * baked-in photo credits inside already-stored article HTML.
  *
  * Why this exists: the scraper used to credit photos with the configured
- * `NewsSource.name`. Several sources were named "Kartawarta", so scraped
- * articles ended up crediting their own site ("Foto: Kartawarta") instead
+ * `NewsSource.name`. Several sources were named "Lensaplus", so scraped
+ * articles ended up crediting their own site ("Foto: Lensaplus") instead
  * of the website the photo actually came from. We now derive the credit
  * from the upstream article's domain — e.g. https://www.bola.com/... → "Bola",
  * https://bandung.go.id/... → "Bandung" — so the photo source always points
@@ -85,15 +85,15 @@ function escapeHtml(s: string): string {
 
 /**
  * Rewrite the photo-credit text that the scraper baked into stored article
- * HTML, replacing only credits that still say "Kartawarta" with `label`.
+ * HTML, replacing only credits that still say "Lensaplus" with `label`.
  *
  * Targets exactly three credit-bearing shapes, leaving all other content
- * (including legitimate body mentions of "Kartawarta") untouched:
- *   1. scraper figcaptions   <figcaption ...>Foto: Kartawarta</figcaption>
- *   2. rich-text image credit <em>Sumber: Kartawarta</em>
- *   3. attribution footer link Disarikan dari rilis <a ...>Kartawarta — "…"</a>
+ * (including legitimate body mentions of "Lensaplus") untouched:
+ *   1. scraper figcaptions   <figcaption ...>Foto: Lensaplus</figcaption>
+ *   2. rich-text image credit <em>Sumber: Lensaplus</em>
+ *   3. attribution footer link Disarikan dari rilis <a ...>Lensaplus — "…"</a>
  *
- * Idempotent: once a credit reads `label` (no longer "Kartawarta") it is no
+ * Idempotent: once a credit reads `label` (no longer "Lensaplus") it is no
  * longer matched, so re-running is a no-op.
  */
 export function rewriteCreditsInContent(html: string, label: string): string {
@@ -101,16 +101,16 @@ export function rewriteCreditsInContent(html: string, label: string): string {
   const esc = escapeHtml(label);
   return (
     html
-      // 1. photo credit phrase "Foto: Kartawarta" (scraper figcaptions).
+      // 1. photo credit phrase "Foto: Lensaplus" (scraper figcaptions).
       //    Tag-agnostic so it matches regardless of how the figcaption is
       //    wrapped or whether sanitize stripped its classes.
-      .replace(/(\bFoto:\s*)Kartawarta\b/gi, `$1${esc}`)
-      // 2. image credit phrase "Sumber: Kartawarta" (rich-text inserts).
-      .replace(/(\bSumber:\s*)Kartawarta\b/gi, `$1${esc}`)
-      // 3. attribution footer link text: Disarikan dari rilis <a ...>Kartawarta — "…"
-      //    Only the link's leading name — never the trailing "Versi Kartawarta" sentence.
+      .replace(/(\bFoto:\s*)Lensaplus\b/gi, `$1${esc}`)
+      // 2. image credit phrase "Sumber: Lensaplus" (rich-text inserts).
+      .replace(/(\bSumber:\s*)Lensaplus\b/gi, `$1${esc}`)
+      // 3. attribution footer link text: Disarikan dari rilis <a ...>Lensaplus — "…"
+      //    Only the link's leading name — never the trailing "Versi Lensaplus" sentence.
       .replace(
-        /(Disarikan dari rilis\s*<a\b[^>]*>\s*)Kartawarta(\s*—)/gi,
+        /(Disarikan dari rilis\s*<a\b[^>]*>\s*)Lensaplus(\s*—)/gi,
         `$1${esc}$2`,
       )
   );

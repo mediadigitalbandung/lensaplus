@@ -28,7 +28,7 @@ export function configureWebPush(): boolean {
   const keys = getVapidKeys();
   if (!keys) return false;
   const subject =
-    process.env.VAPID_SUBJECT || "mailto:redaksi@kartawarta.com";
+    process.env.VAPID_SUBJECT || "mailto:redaksi@lensaplus.com";
   webpush.setVapidDetails(subject, keys.publicKey, keys.privateKey);
   return true;
 }

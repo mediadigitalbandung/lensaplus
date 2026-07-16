@@ -826,7 +826,7 @@ export default function TiktokEditorPage() {
                     value={overlayJson}
                     onChange={(e) => setOverlayJson(e.target.value)}
                     rows={10}
-                    placeholder={`{\n  "intro": {"text": "BREAKING", "color": "#b7102a"},\n  "outro": {"text": "Selengkapnya di kartawarta.com"}\n}`}
+                    placeholder={`{\n  "intro": {"text": "BREAKING", "color": "#b7102a"},\n  "outro": {"text": "Selengkapnya di lensaplus.com"}\n}`}
                     className="input w-full resize-none font-mono text-[11px]"
                   />
                   <p className="text-[10px] text-txt-muted">

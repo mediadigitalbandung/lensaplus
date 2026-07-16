@@ -22,11 +22,11 @@ export async function generateMetadata({ params: paramsPromise }: Props): Promis
   });
 
   if (!blog) {
-    return { title: "Siaran Langsung | Kartawarta" };
+    return { title: "Siaran Langsung | Lensaplus" };
   }
 
   return {
-    title: `${blog.title} | Siaran Langsung Kartawarta`,
+    title: `${blog.title} | Siaran Langsung Lensaplus`,
     description:
       blog.description ||
       `Ikuti siaran langsung: ${blog.title}`,
@@ -85,7 +85,7 @@ function buildJsonLd(blog: {
   author: { name: string };
   entries: Array<{ id: string; content: string; postedAt: Date }>;
 }) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kartawarta.com";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://lensaplus.com";
   const liveEntry = blog.entries.map((e) => ({
     "@type": "BlogPosting",
     "@id": `${baseUrl}/live/${blog.slug}#${e.id}`,
@@ -110,10 +110,10 @@ function buildJsonLd(blog: {
     },
     publisher: {
       "@type": "Organization",
-      name: "Kartawarta",
+      name: "Lensaplus",
       logo: {
         "@type": "ImageObject",
-        url: `${baseUrl}/kartawarta-icon.png`,
+        url: `${baseUrl}/lensaplus-icon.png`,
       },
     },
     liveBlogUpdate: liveEntry,

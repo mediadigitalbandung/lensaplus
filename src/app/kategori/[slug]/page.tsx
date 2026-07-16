@@ -81,7 +81,7 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
   if (!category) return { title: "Kategori Tidak Ditemukan" };
 
   const title = `${category.name} - Berita Terkini`;
-  const description = `Kumpulan berita ${category.name.toLowerCase()} terbaru dari Kartawarta — portal berita digital Bandung & Jawa Barat. Menyajikan liputan terpercaya dan terverifikasi Dewan Pers.`;
+  const description = `Kumpulan berita ${category.name.toLowerCase()} terbaru dari Lensaplus — portal berita digital Bandung & Jawa Barat. Menyajikan liputan terpercaya dan terverifikasi Dewan Pers.`;
 
   // AdSense thin-content: an empty category page (no published articles) has
   // no value — noindex it. Non-empty categories stay indexable.
@@ -97,12 +97,12 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
       ? undefined
       : { index: false, follow: true, googleBot: { index: false } },
     openGraph: {
-      title: `${title} | Kartawarta`,
+      title: `${title} | Lensaplus`,
       description,
       type: "website",
       locale: "id_ID",
-      siteName: "Kartawarta",
-      images: [{ url: "/kartawarta-icon.png", width: 512, height: 512, alt: "Kartawarta" }],
+      siteName: "Lensaplus",
+      images: [{ url: "/lensaplus-icon.png", width: 512, height: 512, alt: "Lensaplus" }],
     },
     alternates: {
       canonical: `/kategori/${params.slug}`,
@@ -174,16 +174,16 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
     featuredImage: a.featuredImage,
   }));
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   // CollectionPage + ItemList so crawlers see what's in this category, plus a
   // sibling BreadcrumbList script for rich-result eligibility.
   const categoryJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: `${category.name} — Kartawarta`,
-    description: category.description || `Berita ${category.name} terbaru dari Kartawarta.`,
+    name: `${category.name} — Lensaplus`,
+    description: category.description || `Berita ${category.name} terbaru dari Lensaplus.`,
     url: `${siteUrl}/kategori/${category.slug}`,
-    isPartOf: { "@type": "WebSite", name: "Kartawarta", url: siteUrl },
+    isPartOf: { "@type": "WebSite", name: "Lensaplus", url: siteUrl },
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: articles.length,

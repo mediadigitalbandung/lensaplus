@@ -956,7 +956,7 @@ export default function AutoArtikelPage() {
               Jalankan dari terminal VPS:
             </p>
             <pre className="mt-2 overflow-x-auto rounded-lg bg-blue-900 p-3 text-[11px] text-blue-100">
-{`curl -X POST https://kartawarta.com/api/cron/auto-article \\
+{`curl -X POST https://lensaplus.com/api/cron/auto-article \\
   -H "Authorization: Bearer $CRON_SECRET"`}
             </pre>
           </div>

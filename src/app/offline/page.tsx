@@ -8,10 +8,10 @@ export default function OfflinePage() {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-5 py-20 text-center">
       {/* Logo */}
-      <Link href="/" aria-label="Kembali ke beranda Kartawarta">
+      <Link href="/" aria-label="Kembali ke beranda Lensaplus">
         <Image
-          src="/kartawarta-icon.png"
-          alt="Logo Kartawarta"
+          src="/lensaplus-icon.png"
+          alt="Logo Lensaplus"
           width={72}
           height={72}
           className="rounded-sm mb-6 opacity-80"
@@ -52,7 +52,7 @@ export default function OfflinePage() {
 
       {/* Footer hint */}
       <p className="mt-10 text-label-md text-on-surface-variant/60">
-        kartawarta.com — Media Berita Digital Bandung
+        lensaplus.com — Media Berita Digital Bandung
       </p>
     </div>
   );

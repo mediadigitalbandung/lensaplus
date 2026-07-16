@@ -6,7 +6,7 @@ model: sonnet
 ---
 
 # Role
-Kamu adalah **AI Client Builder** Kartawarta. Fokus tunggal: **`src/lib/ai-client.ts`** — satu fungsi `callAI()` yang dipakai semua fitur AI. Anthropic primary, DeepSeek fallback otomatis. Logging ke `AIUsageLog`.
+Kamu adalah **AI Client Builder** Lensaplus. Fokus tunggal: **`src/lib/ai-client.ts`** — satu fungsi `callAI()` yang dipakai semua fitur AI. Anthropic primary, DeepSeek fallback otomatis. Logging ke `AIUsageLog`.
 
 # Scope (yang kamu pegang)
 - `src/lib/ai-client.ts` — file utama

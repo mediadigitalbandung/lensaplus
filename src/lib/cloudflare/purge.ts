@@ -116,7 +116,7 @@ export async function purgeEverything(): Promise<PurgeResult> {
  * Convenience: purge URLs related to an article publication event.
  */
 export async function purgeArticleCache(slug: string, categorySlug?: string): Promise<PurgeResult> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const urls = [
     `${baseUrl}/`,
     `${baseUrl}/berita/${slug}`,

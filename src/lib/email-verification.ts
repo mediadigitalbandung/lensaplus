@@ -16,7 +16,7 @@ import { sendVerificationEmail } from "@/lib/email";
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 /**
  * Issue (or re-issue) a verification token for a user and email them the link.

@@ -1,5 +1,5 @@
 /**
- * Paraphrase a single ScrapedArticle into a Kartawarta DRAFT article.
+ * Paraphrase a single ScrapedArticle into a Lensaplus DRAFT article.
  *
  * Strict 1:1: one source URL → one draft. The cron's listing pass walks
  * candidates and calls this for the first one not already in
@@ -236,7 +236,7 @@ function buildAttribution(
   originalTitle: string,
 ): string {
   const safeTitle = originalTitle.replace(/[<>"]/g, "");
-  return `<p class="text-sm italic text-txt-muted mt-8 pt-4 border-t border-border">Disarikan dari rilis <a href="${sourceUrl}" target="_blank" rel="nofollow noopener">${sourceName} — "${safeTitle}"</a>. Versi Kartawarta ditulis ulang oleh tim editorial dengan dukungan AI; fakta dan kutipan tetap mengacu ke publikasi asli.</p>`;
+  return `<p class="text-sm italic text-txt-muted mt-8 pt-4 border-t border-border">Disarikan dari rilis <a href="${sourceUrl}" target="_blank" rel="nofollow noopener">${sourceName} — "${safeTitle}"</a>. Versi Lensaplus ditulis ulang oleh tim editorial dengan dukungan AI; fakta dan kutipan tetap mengacu ke publikasi asli.</p>`;
 }
 
 export interface ParaphraseInput {
@@ -277,7 +277,7 @@ export async function paraphraseAndCreateDraft(
 
   // Photo credit = the real publisher derived from the upstream URL's domain
   // (e.g. https://www.bola.com/... → "Bola"), NOT the configured source name —
-  // editors sometimes name a source "Kartawarta", which wrongly credited our
+  // editors sometimes name a source "Lensaplus", which wrongly credited our
   // own site as the photo source. Falls back to sourceName if the URL can't
   // be parsed into a brand.
   const creditLabel = sourceLabelFromUrl(source.url) ?? sourceName;
@@ -287,7 +287,7 @@ export async function paraphraseAndCreateDraft(
     ? `Sumber dalam Bahasa Inggris — terjemahkan SEKALIGUS parafrase ke Bahasa Indonesia jurnalistik yang baik dan benar.`
     : `Sumber dalam Bahasa Indonesia — parafrase ulang dengan kalimat yang berbeda namun mempertahankan fakta.`;
 
-  const userPrompt = `Anda menulis ulang sebuah artikel berita untuk Kartawarta (media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain) dengan gaya jurnalistik objektif.
+  const userPrompt = `Anda menulis ulang sebuah artikel berita untuk Lensaplus (media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain) dengan gaya jurnalistik objektif.
 
 ${langInstruction}
 
@@ -308,7 +308,7 @@ ${source.contentHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 6_00
 
 Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
 {
-  "title": "judul Kartawarta yang fresh & menarik (50-80 karakter, hindari clickbait)",
+  "title": "judul Lensaplus yang fresh & menarik (50-80 karakter, hindari clickbait)",
   "excerpt": "ringkasan 130-160 karakter dalam Bahasa Indonesia",
   "content": "body artikel HTML 500-800 kata, lead 5W+1H, paragraf rapi",
   "suggestedTags": ["tag1", "tag2", "tag3", "tag4", "tag5"]

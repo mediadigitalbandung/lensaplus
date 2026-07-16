@@ -1,7 +1,7 @@
 /**
  * tools/seed-topics.mjs
  *
- * Seed initial Topic Cluster records for Kartawarta.
+ * Seed initial Topic Cluster records for Lensaplus.
  * Run once after prisma db push:
  *   node tools/seed-topics.mjs
  *
@@ -21,9 +21,9 @@ const TOPICS = [
       "Liputan mendalam tentang Bank Pembangunan Daerah Jawa Barat dan Banten (Bank BJB) — " +
       "termasuk kinerja keuangan, tata kelola perusahaan, RUPST, ekspansi bisnis, dan isu-isu " +
       "strategis yang berpengaruh pada perbankan daerah Jawa Barat.",
-    metaTitle: "Bank BJB — Liputan Terkini Kartawarta",
+    metaTitle: "Bank BJB — Liputan Terkini Lensaplus",
     metaDescription:
-      "Temukan semua berita dan analisis terkini tentang Bank BJB di Kartawarta — kinerja, RUPST, tata kelola, dan perkembangan bisnis.",
+      "Temukan semua berita dan analisis terkini tentang Bank BJB di Lensaplus — kinerja, RUPST, tata kelola, dan perkembangan bisnis.",
     tags: ["bank-bjb", "bank-jabar-banten", "bjb-bandung"],
   },
   {
@@ -33,9 +33,9 @@ const TOPICS = [
       "Semua liputan tentang Susi Pudjiastuti — mantan Menteri Kelautan dan Perikanan Indonesia " +
       "yang dikenal dengan kebijakan pemberantasan illegal fishing, hingga aktivitas bisnis " +
       "dan pernyataan publiknya pasca-jabatan.",
-    metaTitle: "Susi Pudjiastuti — Liputan Kartawarta",
+    metaTitle: "Susi Pudjiastuti — Liputan Lensaplus",
     metaDescription:
-      "Berita dan profil lengkap Susi Pudjiastuti di Kartawarta — dari kebijakan kelautan hingga aktivitas terkini.",
+      "Berita dan profil lengkap Susi Pudjiastuti di Lensaplus — dari kebijakan kelautan hingga aktivitas terkini.",
     tags: ["susi-pudjiastuti"],
   },
   {
@@ -47,7 +47,7 @@ const TOPICS = [
       "bagi investor dan tata kelola perusahaan terbuka di Indonesia.",
     metaTitle: "RUPST 2026 — Berita dan Keputusan Strategis",
     metaDescription:
-      "Ikuti perkembangan RUPST 2026 di Kartawarta — keputusan direksi, dividen, dan tata kelola perusahaan terbuka.",
+      "Ikuti perkembangan RUPST 2026 di Lensaplus — keputusan direksi, dividen, dan tata kelola perusahaan terbuka.",
     tags: ["rupst", "tata-kelola-perusahaan"],
   },
 ];

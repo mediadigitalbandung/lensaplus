@@ -108,7 +108,7 @@ export default function AnalyticsDashboardPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">Analytics</h1>
-          <p className="text-base text-txt-secondary">Performa website Kartawarta</p>
+          <p className="text-base text-txt-secondary">Performa website Lensaplus</p>
         </div>
         <button onClick={fetchData} className="btn-ghost flex items-center gap-2 px-3 py-2.5 text-sm">
           <RefreshCw size={14} /> Refresh

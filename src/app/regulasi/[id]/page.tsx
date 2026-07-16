@@ -68,10 +68,10 @@ export async function generateMetadata({ params: paramsPromise }: PageProps): Pr
     where: { id, isPublished: true },
     select: { type: true, number: true, year: true, title: true, shortTitle: true, description: true },
   });
-  if (!reg) return { title: "Regulasi tidak ditemukan | Kartawarta" };
+  if (!reg) return { title: "Regulasi tidak ditemukan | Lensaplus" };
 
   const typeLabel = TYPE_LABELS[reg.type];
-  const pageTitle = `${reg.shortTitle || typeLabel} No. ${reg.number} Tahun ${reg.year} | Kartawarta`;
+  const pageTitle = `${reg.shortTitle || typeLabel} No. ${reg.number} Tahun ${reg.year} | Lensaplus`;
   const description =
     reg.description?.slice(0, 160) ||
     `${typeLabel} Nomor ${reg.number} Tahun ${reg.year} tentang ${reg.title.slice(0, 100)}`;
@@ -296,7 +296,7 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
           {linkedArticle && (
             <div className="rounded-xl border border-primary/20 bg-primary-light p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-2">
-                Liputan Kartawarta
+                Liputan Lensaplus
               </p>
               <Link
                 href={`/artikel/${linkedArticle.slug}`}

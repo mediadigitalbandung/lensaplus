@@ -129,7 +129,7 @@ export default function MembershipCardSection() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const num = data?.card?.number || "kartawarta";
+      const num = data?.card?.number || "lensaplus";
       const label = variant === "lanyard" ? "Lanyard" : "KTA";
       a.href = url;
       a.download =

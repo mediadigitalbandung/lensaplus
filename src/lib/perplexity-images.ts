@@ -78,7 +78,7 @@ async function downloadOne(img: PerplexityImage): Promise<LocalizedImage | null>
   try {
     const res = await fetch(img.imageUrl, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      headers: { "User-Agent": "Mozilla/5.0 (KartawartaBot; +https://kartawarta.com)" },
+      headers: { "User-Agent": "Mozilla/5.0 (LensaplusBot; +https://lensaplus.com)" },
       redirect: "follow",
     });
     if (!res.ok) return null;

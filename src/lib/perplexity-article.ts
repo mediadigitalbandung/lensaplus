@@ -29,7 +29,7 @@ const ID_OUTLETS = [
 ];
 
 const SYSTEM_DRAFT =
-  "Anda jurnalis senior Kartawarta — media berita digital Bandung (fokus bisnis, ekonomi, " +
+  "Anda jurnalis senior Lensaplus — media berita digital Bandung (fokus bisnis, ekonomi, " +
   "pemerintahan, hukum, plus topik general). Riset topik dari sumber berita Indonesia yang " +
   "kredibel dan TERBARU, lalu hasilkan PAKET artikel lengkap berbahasa Indonesia yang faktual " +
   "dan SEO-friendly. JANGAN mengarang fakta — hanya yang didukung sumber. " +

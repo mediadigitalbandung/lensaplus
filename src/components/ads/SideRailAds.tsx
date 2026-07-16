@@ -60,7 +60,7 @@ function trackClick(adId: string) {
  * Inner content of one rail. Always fills its parent (h-full w-full).
  * Strategy:
  *  - Image ad → cover the full rail (cropped if necessary, no ugly gap).
- *  - Anything else (HTML / no ad) → a branded Kartawarta newsletter promo
+ *  - Anything else (HTML / no ad) → a branded Lensaplus newsletter promo
  *    that's intentionally shaped as a 160×720 column.
  */
 function RailContent() {
@@ -93,7 +93,7 @@ function RailContent() {
   }
 
   // Default branded promo — looks intentional as a tall column even when
-  // there's no real skyscraper inventory. Mirrors the "Newsletter Kartawarta"
+  // there's no real skyscraper inventory. Mirrors the "Newsletter Lensaplus"
   // creative the user already runs in SIDEBAR.
   return (
     <Link
@@ -105,7 +105,7 @@ function RailContent() {
           Setiap Hari
         </span>
         <h3 className="mt-4 font-serif text-xl font-bold leading-tight">
-          Newsletter Kartawarta
+          Newsletter Lensaplus
         </h3>
         <p className="mt-2 text-xs leading-relaxed text-white/70">
           Ringkasan berita Bandung & Indonesia — langsung ke inbox Anda.

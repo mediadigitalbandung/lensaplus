@@ -2,7 +2,7 @@
 /**
  * sync-obsidian.mjs
  *
- * Scan Obsidian editorial vault → push articles with status=ready to Kartawarta DB
+ * Scan Obsidian editorial vault → push articles with status=ready to Lensaplus DB
  * via /api/external/articles/from-obsidian endpoint.
  *
  * Usage:
@@ -11,9 +11,9 @@
  *   node tools/sync-obsidian.mjs --apply --vault PATH # custom vault path
  *
  * Environment:
- *   KARTAWARTA_API_URL   default https://kartawarta.com
+ *   LENSAPLUS_API_URL   default https://lensaplus.com
  *   OBSIDIAN_SYNC_TOKEN  required (must match server .env)
- *   VAULT_PATH           default c:/Users/Owen/Documents/Aureon/kartawarta-editorial
+ *   VAULT_PATH           default c:/Users/Owen/Documents/Aureon/lensaplus-editorial
  *
  * Behavior:
  *   1. Glob VAULT_PATH/03-Artikel-Plan/*.md
@@ -173,8 +173,8 @@ function markdownToHtml(md) {
 const args = argv.slice(2);
 const apply = args.includes("--apply");
 const vaultIdx = args.indexOf("--vault");
-const vaultPath = vaultIdx >= 0 ? args[vaultIdx + 1] : env.VAULT_PATH || "c:/Users/Owen/Documents/Aureon/kartawarta-editorial";
-const apiUrl = env.KARTAWARTA_API_URL || "https://kartawarta.com";
+const vaultPath = vaultIdx >= 0 ? args[vaultIdx + 1] : env.VAULT_PATH || "c:/Users/Owen/Documents/Aureon/lensaplus-editorial";
+const apiUrl = env.LENSAPLUS_API_URL || "https://lensaplus.com";
 const token = env.OBSIDIAN_SYNC_TOKEN;
 
 if (!token) {

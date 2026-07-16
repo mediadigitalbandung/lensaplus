@@ -3,16 +3,16 @@ import { organizationJsonLd } from "@/lib/seo/json-ld";
 
 export const metadata: Metadata = {
   title: "Hubungi Kami",
-  description: "Hubungi redaksi Kartawarta untuk pertanyaan, masukan, kerjasama iklan, atau laporan berita. Kami siap melayani Anda.",
+  description: "Hubungi redaksi Lensaplus untuk pertanyaan, masukan, kerjasama iklan, atau laporan berita. Kami siap melayani Anda.",
   alternates: { canonical: "/kontak" },
   openGraph: {
-    title: "Hubungi Kami — Kartawarta",
-    description: "Hubungi redaksi Kartawarta untuk pertanyaan, masukan, kerjasama iklan, atau laporan berita.",
+    title: "Hubungi Kami — Lensaplus",
+    description: "Hubungi redaksi Lensaplus untuk pertanyaan, masukan, kerjasama iklan, atau laporan berita.",
     type: "website",
   },
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 export default function KontakLayout({ children }: { children: React.ReactNode }) {
   // ContactPage JSON-LD whose `about` is the publisher Organization (carries
@@ -23,7 +23,7 @@ export default function KontakLayout({ children }: { children: React.ReactNode }
   const contactJsonLd = {
     "@context": "https://schema.org",
     "@type": "ContactPage",
-    name: "Hubungi Kami — Kartawarta",
+    name: "Hubungi Kami — Lensaplus",
     url: `${SITE_URL}/kontak`,
     about: orgNode,
   };

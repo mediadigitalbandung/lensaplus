@@ -37,7 +37,7 @@ export async function GET(_req: NextRequest, { params: p }: { params: Promise<{ 
       statusLabel: STATUS_LABELS[status] || status,
       issuedAt: card.issuedAt,
       expiresAt: card.expiresAt,
-      organization: "Kartawarta — Media Berita Digital Bandung",
+      organization: "Lensaplus — Media Berita Digital Bandung",
     });
   } catch (error) {
     return errorResponse(error);

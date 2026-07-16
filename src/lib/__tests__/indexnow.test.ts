@@ -35,7 +35,7 @@ describe("pingIndexNow", () => {
     mockReadFile.mockReset();
     mockSystemSettingFindUnique.mockReset();
     delete process.env.INDEXNOW_KEY;
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://kartawarta.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://lensaplus.com");
     vi.stubGlobal("fetch", vi.fn());
   });
 
@@ -51,7 +51,7 @@ describe("pingIndexNow", () => {
       text: async () => "",
     });
     const { pingIndexNow } = await import("../seo/indexnow");
-    const result = await pingIndexNow(["https://kartawarta.com/berita/x"]);
+    const result = await pingIndexNow(["https://lensaplus.com/berita/x"]);
     expect(result.success).toBe(true);
     expect(result.statusCode).toBe(200);
   });
@@ -63,7 +63,7 @@ describe("pingIndexNow", () => {
       text: async () => "",
     });
     const { pingIndexNow } = await import("../seo/indexnow");
-    const result = await pingIndexNow(["https://kartawarta.com/berita/x"]);
+    const result = await pingIndexNow(["https://lensaplus.com/berita/x"]);
     expect(result.success).toBe(true);
     expect(result.statusCode).toBe(202);
   });
@@ -75,7 +75,7 @@ describe("pingIndexNow", () => {
       text: async () => "Bad URL",
     });
     const { pingIndexNow } = await import("../seo/indexnow");
-    const result = await pingIndexNow(["https://kartawarta.com/berita/x"]);
+    const result = await pingIndexNow(["https://lensaplus.com/berita/x"]);
     expect(result.success).toBe(false);
     expect(result.statusCode).toBe(422);
     expect(result.error).toMatch(/HTTP 422/);
@@ -85,7 +85,7 @@ describe("pingIndexNow", () => {
     mockReadFile.mockRejectedValue(new Error("ENOENT"));
     mockSystemSettingFindUnique.mockResolvedValue(null);
     const { pingIndexNow } = await import("../seo/indexnow");
-    const result = await pingIndexNow(["https://kartawarta.com/berita/x"]);
+    const result = await pingIndexNow(["https://lensaplus.com/berita/x"]);
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/IndexNow key not configured/);
     expect(global.fetch).not.toHaveBeenCalled();
@@ -108,7 +108,7 @@ describe("pingIndexNow", () => {
       text: async () => "",
     });
     const { pingIndexNow } = await import("../seo/indexnow");
-    const result = await pingIndexNow(["https://kartawarta.com/berita/y"]);
+    const result = await pingIndexNow(["https://lensaplus.com/berita/y"]);
     expect(result.success).toBe(true);
   });
 });

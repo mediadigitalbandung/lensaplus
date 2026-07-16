@@ -10,7 +10,7 @@ type CompanySector =
 export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: "Direktori Emiten Indonesia | Kartawarta",
+  title: "Direktori Emiten Indonesia | Lensaplus",
   description:
     "Profil lengkap perusahaan publik Indonesia: sektor, market cap, CEO, dan berita terkait.",
 };
@@ -109,7 +109,7 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
     "@type": "CollectionPage",
     name: "Direktori Emiten Indonesia",
     description: "Profil perusahaan publik yang terdaftar di Bursa Efek Indonesia",
-    url: "https://kartawarta.com/emiten",
+    url: "https://lensaplus.com/emiten",
   };
 
   return (

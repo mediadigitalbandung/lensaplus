@@ -19,7 +19,7 @@ async function main() {
     html = html.replace(/<span[^>]*>[^<]*pembaca aktif[^<]*<\/span>/gi, "");
     // Pattern 3: div containing "pembaca" as inline text
     html = html.replace(/<div[^>]*display:flex[^>]*>[\s]*<div[^>]*>[\s\S]*?10\.000[\s\S]*?<\/div>[\s]*<span[^>]*>[^<]*pembaca[^<]*<\/span>[\s]*<\/div>/gi, "");
-    // Pattern 4: "Bergabung dengan 10.000+ pembaca Kartawarta"
+    // Pattern 4: "Bergabung dengan 10.000+ pembaca Lensaplus"
     html = html.replace(/<div[^>]*>[^<]*Bergabung dengan[^<]*pembaca[^<]*<\/div>/gi, "");
     html = html.replace(/<div[^>]*>[^<]*10\.000\+[^<]*pembaca[^<]*<\/div>/gi, "");
 

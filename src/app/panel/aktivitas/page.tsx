@@ -142,7 +142,7 @@ export default function AktivitasPage() {
         log.detail || "",
       ]);
 
-      exportToCsv("audit-logs-kartawarta.csv", headers, rows);
+      exportToCsv("audit-logs-lensaplus.csv", headers, rows);
     } catch {
       console.error("Failed to export CSV");
     } finally {

@@ -36,14 +36,14 @@ export async function generateMetadata({ params: paramsPromise }: PageProps): Pr
     title: court.name,
     description: court.description,
     openGraph: {
-      title: `${court.name} - Kartawarta`,
+      title: `${court.name} - Lensaplus`,
       description: court.description,
       type: "website",
       images: [{ url: ogImage, width: 1200, height: 630, alt: court.name }],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${court.name} - Kartawarta`,
+      title: `${court.name} - Lensaplus`,
       description: court.description,
       images: [ogImage],
     },
@@ -82,7 +82,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
     take: 6,
   });
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "GovernmentOffice",

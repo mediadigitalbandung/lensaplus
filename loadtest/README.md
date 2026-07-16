@@ -1,4 +1,4 @@
-# Kartawarta — Load / Stress Test Tool (lokal)
+# Lensaplus — Load / Stress Test Tool (lokal)
 
 Alat **uji beban** untuk mengukur kapasitas & ketahanan situs **milik sendiri**.
 Ini bukan alat DDoS: berjalan di `127.0.0.1` saja, butuh centang otorisasi, dan

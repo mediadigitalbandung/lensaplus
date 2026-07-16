@@ -1,15 +1,15 @@
 # CLAUDE.md — Instruksi untuk Claude Code
 
 ## Project
-- **Nama:** Kartawarta v2.0 — Media Berita Digital Bandung (general news, prioritas bisnis-ekonomi, pemerintahan, hukum + topik general lain: olahraga, hiburan, teknologi, dsb.)
+- **Nama:** Lensaplus v2.0 — Media Berita Digital Bandung (general news, prioritas bisnis-ekonomi, pemerintahan, hukum + topik general lain: olahraga, hiburan, teknologi, dsb.)
 - **Stack:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Prisma, PostgreSQL, NextAuth
-- **Deploy:** VPS Hostinger (Ubuntu 24.04, `145.79.15.99`, PM2 process `kartawarta`)
-- **Repo:** github.com/mediadigitalbandung/kartawarta
-- **URL:** https://kartawarta.com
+- **Deploy:** VPS Hostinger (Ubuntu 24.04, `145.79.15.99`, PM2 process `lensaplus`)
+- **Repo:** github.com/mediadigitalbandung/lensaplus
+- **URL:** https://lensaplus.com
 
 ## Feature Migration Sedang Berlangsung
 
-Kartawarta sedang **disamakan fitur & metode-nya** dengan referensi di [docs/FEATURE_REFERENCE.md](docs/FEATURE_REFERENCE.md) (dokumen master diambil dari jurnalishukumbandung.com, disetujui user tgl 2026-04-24).
+Lensaplus sedang **disamakan fitur & metode-nya** dengan referensi di [docs/FEATURE_REFERENCE.md](docs/FEATURE_REFERENCE.md) (dokumen master diambil dari jurnalishukumbandung.com, disetujui user tgl 2026-04-24).
 
 - **Progress tracker:** [docs/MIGRATION_PROGRESS.md](docs/MIGRATION_PROGRESS.md) — sumber kebenaran tunggal, dibaca & ditulis ulang oleh `migration-lead` agent tiap sesi.
 - **Orchestrator:** `migration-lead` (di `.claude/agents/`). Saat user bilang "lanjut" / "lanjutkan migrasi" / "kerjakan migrasi" → invoke agent ini. Dia pick task `[ ]` berikutnya, delegasi ke specialist, update progress.
@@ -77,10 +77,10 @@ Jangan tunggu user minta commit/push — **langsung lakukan** setelah perubahan 
 
 - **Provider:** PostgreSQL 16 (self-hosted di VPS 145.79.15.99)
 - **Host:** `localhost:5432` (aplikasi jalan di VPS yang sama)
-- **Database:** `kartawarta` (user: `kartawarta`)
+- **Database:** `lensaplus` (user: `lensaplus`)
 - **Schema:** [prisma/schema.prisma](prisma/schema.prisma) — saat ini 18 model, target 27 (lihat `docs/FEATURE_REFERENCE.md` section 10 untuk model yang perlu ditambah)
 - **Migrate:** `npx prisma db push` (bukan `migrate dev`)
-- **Env:** `DATABASE_URL="postgresql://kartawarta:<password>@localhost:5432/kartawarta"` (pakai juga `DIRECT_URL` kalau pakai pooler)
+- **Env:** `DATABASE_URL="postgresql://lensaplus:<password>@localhost:5432/lensaplus"` (pakai juga `DIRECT_URL` kalau pakai pooler)
 
 ### Role Hierarchy (6 level)
 `SUPER_ADMIN > CHIEF_EDITOR > EDITOR > SENIOR_JOURNALIST > JOURNALIST > CONTRIBUTOR`
@@ -125,7 +125,7 @@ docs/MIGRATION_PROGRESS.md      — Progress tracker migrasi
 - Panel admin pakai client components + fetch API routes
 - Gunakan `export const dynamic = "force-dynamic"` untuk halaman yang query DB + butuh fresh data
 - Jangan commit file `.env` — sudah di `.gitignore`
-- Env vars produksi dikelola langsung di `/var/www/kartawarta/.env` di VPS (lihat `deploy-vps.sh`)
+- Env vars produksi dikelola langsung di `/var/www/lensaplus/.env` di VPS (lihat `deploy-vps.sh`)
 - Password di-hash dengan `bcryptjs` (12 rounds)
 - Sanitize HTML input artikel via `src/lib/sanitize.ts` saat POST/PUT
 - Rate limit endpoint publik (comment, poll vote, report, contact) via `src/lib/rate-limit.ts`

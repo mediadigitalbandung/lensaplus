@@ -68,16 +68,16 @@ export async function POST(req: NextRequest) {
     const fromEmail =
       (await getSetting("notification_email_from")) ||
       process.env.EMAIL_FROM ||
-      "Kartawarta <noreply@kartawarta.com>";
+      "Lensaplus <noreply@lensaplus.com>";
 
     const resend = new Resend(apiKey);
 
     const html = `
       <div style="font-family:Inter,system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px 20px;">
         <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
-          <h1 style="margin:0 0 16px;font-size:20px;color:#002045;">Tes Koneksi Resend dari Kartawarta</h1>
+          <h1 style="margin:0 0 16px;font-size:20px;color:#002045;">Tes Koneksi Resend dari Lensaplus</h1>
           <p style="color:#44474e;line-height:1.6;font-size:14px;">
-            Email ini terkirim sebagai konfirmasi bahwa kredensial Resend di Kartawarta berfungsi normal.
+            Email ini terkirim sebagai konfirmasi bahwa kredensial Resend di Lensaplus berfungsi normal.
           </p>
           <p style="color:#74777f;line-height:1.6;font-size:12px;margin-top:24px;">
             Diuji oleh: ${session.user?.email || session.user?.id || "(unknown)"}<br/>
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       const result = await resend.emails.send({
         from: fromEmail,
         to: recipient,
-        subject: "Tes Koneksi Resend dari Kartawarta",
+        subject: "Tes Koneksi Resend dari Lensaplus",
         html,
       });
 

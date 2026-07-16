@@ -88,7 +88,7 @@ async function getPerplexityConfig(): Promise<{
 // Concise web-research brief used as stage 1 of Combo mode. Output stays SHORT
 // (raw facts, not a full article) so the pricier research model costs little.
 const RESEARCH_SYSTEM =
-  "Anda periset berita untuk redaksi Kartawarta. Riset topik dari sumber berita Indonesia " +
+  "Anda periset berita untuk redaksi Lensaplus. Riset topik dari sumber berita Indonesia " +
   "yang kredibel dan TERBARU, lalu rangkum SECARA RINGKAS dalam poin-poin: fakta kunci, " +
   "kronologi (5W+1H), angka/data penting, dan kutipan penting beserta atribusinya. HANYA " +
   "tulis yang didukung sumber — jangan mengarang. Padat, tanpa basa-basi, dan JANGAN menulis " +

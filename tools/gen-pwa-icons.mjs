@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generate PWA icon variants from public/kartawarta-icon.png.
+ * Generate PWA icon variants from public/lensaplus-icon.png.
  *
  * Outputs (in public/icons/):
  *   icon-192.png             non-maskable, edge-to-edge logo (purpose: any)
@@ -21,7 +21,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const SRC = join(ROOT, "public", "kartawarta-icon.png");
+const SRC = join(ROOT, "public", "lensaplus-icon.png");
 const OUT = join(ROOT, "public", "icons");
 // Brand navy from tailwind.config.ts — Editorial Authority palette.
 const BRAND_BG = "#002045";

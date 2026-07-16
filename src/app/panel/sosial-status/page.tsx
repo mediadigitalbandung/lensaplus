@@ -227,7 +227,7 @@ export default function SosialStatusPage() {
 
   async function nativeShare(p: SocialStatusPost) {
     const url = shareUrlOf(p);
-    const title = p.article?.title || "Kartawarta";
+    const title = p.article?.title || "Lensaplus";
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title, text: title, url });

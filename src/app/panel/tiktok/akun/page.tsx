@@ -143,7 +143,7 @@ export default function TiktokAccountsPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="input flex-1 rounded-l-none text-sm"
-                  placeholder="kartawarta_id"
+                  placeholder="lensaplus_id"
                   maxLength={60}
                 />
               </div>
@@ -155,7 +155,7 @@ export default function TiktokAccountsPage() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 className="input w-full text-sm"
-                placeholder="Kartawarta News"
+                placeholder="Lensaplus News"
                 maxLength={120}
               />
             </div>

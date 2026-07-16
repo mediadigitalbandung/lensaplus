@@ -39,7 +39,7 @@ async function main() {
   const filename = `poll-${crypto.randomBytes(6).toString("hex")}.jpg`;
   fs.writeFileSync(path.join(uploadDir, filename), buf);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   await prisma.poll.update({ where: { id: poll.id }, data: { image: `${appUrl}/uploads/${filename}` } });
   console.log("✓ Fixed: Platform poll image");
 }

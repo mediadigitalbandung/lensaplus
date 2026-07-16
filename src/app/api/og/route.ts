@@ -9,10 +9,10 @@
  *  - If the article has a featured image we use it as the base; otherwise we
  *    render a solid navy background.
  *  - Compose an SVG overlay containing a dark gradient for legibility, the
- *    category badge, the title (wrapped), and the Kartawarta logotype.
+ *    category badge, the title (wrapped), and the Lensaplus logotype.
  *  - Return JPEG with long-lived cache headers.
  *
- * Falls back to a generic Kartawarta card when slug is missing or invalid.
+ * Falls back to a generic Lensaplus card when slug is missing or invalid.
  */
 
 import { NextRequest } from "next/server";
@@ -75,9 +75,9 @@ function wrapText(text: string, maxChars: number, maxLines: number): string[] {
 
 // SSRF guard — only fetch images from explicit allowlist of trusted hosts.
 const ALLOWED_IMG_HOSTS = new Set([
-  (() => { try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com").hostname; } catch { return "kartawarta.com"; } })(),
-  "kartawarta.com",
-  "www.kartawarta.com",
+  (() => { try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname; } catch { return "lensaplus.com"; } })(),
+  "lensaplus.com",
+  "www.lensaplus.com",
   "images.unsplash.com",
   "graph.facebook.com",
   "scontent.cdninstagram.com",
@@ -88,8 +88,8 @@ function isAllowedImageHost(rawUrl: string): boolean {
   try {
     const h = new URL(rawUrl).hostname.toLowerCase();
     if (ALLOWED_IMG_HOSTS.has(h)) return true;
-    // Allow subdomains of kartawarta.com
-    return h.endsWith(".kartawarta.com");
+    // Allow subdomains of lensaplus.com
+    return h.endsWith(".lensaplus.com");
   } catch { return false; }
 }
 
@@ -193,10 +193,10 @@ function buildSvgOverlay({
   <g>
     <rect x="${padX}" y="${HEIGHT - padY - 36}" width="6" height="36" fill="#b7102a" />
     <text x="${padX + 22}" y="${HEIGHT - padY - 10}" fill="#ffffff" font-family="'Newsreader','Georgia',serif" font-size="32" font-weight="800" letter-spacing="-0.5">
-      Kartawarta
+      Lensaplus
     </text>
     <text x="${padX + 220}" y="${HEIGHT - padY - 12}" fill="rgba(255,255,255,0.6)" font-family="'Work Sans',sans-serif" font-size="18" font-weight="500">
-      kartawarta.com
+      lensaplus.com
     </text>
   </g>
 </svg>`;
@@ -206,7 +206,7 @@ async function renderFallbackImage(): Promise<Buffer> {
   const bg = await loadBackground(null);
   const svg = buildSvgOverlay({
     title: "Media Berita Digital Bandung",
-    category: "Kartawarta",
+    category: "Lensaplus",
     hasImage: false,
   });
   return await sharp(bg)

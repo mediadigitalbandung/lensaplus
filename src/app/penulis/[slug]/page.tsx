@@ -39,7 +39,7 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
 
   return {
     title: `${author.name} - Penulis`,
-    description: author.bio || `Profil penulis ${author.name} di Kartawarta.`,
+    description: author.bio || `Profil penulis ${author.name} di Lensaplus.`,
     robots: indexable
       ? undefined
       : { index: false, follow: true, googleBot: { index: false } },
@@ -73,16 +73,16 @@ export default async function PenulisPage({ params: paramsPromise }: { params: P
     year: "numeric",
   });
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const authorJsonLd = {
     "@context": "https://schema.org",
     "@type": "ProfilePage",
     mainEntity: {
       "@type": "Person",
       name: author.name,
-      description: author.bio || `Penulis di Kartawarta`,
+      description: author.bio || `Penulis di Lensaplus`,
       url: `${siteUrl}/penulis/${params.slug}`,
-      worksFor: { "@type": "Organization", name: "Kartawarta", url: siteUrl },
+      worksFor: { "@type": "Organization", name: "Lensaplus", url: siteUrl },
     },
     breadcrumb: {
       "@type": "BreadcrumbList",

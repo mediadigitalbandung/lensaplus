@@ -1,6 +1,6 @@
-# Kartawarta — Audit Plan (18 Dimensi)
+# Lensaplus — Audit Plan (18 Dimensi)
 
-> Master plan untuk audit menyeluruh Kartawarta v2.0 post-migration. Dibaca & ditulis ulang oleh `audit-lead` agent tiap sesi audit.
+> Master plan untuk audit menyeluruh Lensaplus v2.0 post-migration. Dibaca & ditulis ulang oleh `audit-lead` agent tiap sesi audit.
 >
 > Status simbol: `[ ]` todo · `[~]` in_progress · `[x]` done · `[!]` blocked
 
@@ -151,7 +151,7 @@ Sprint 2 commit: `8297446`. Verified production: HTTP 200 di / + /api/health (la
 - **Schema cleanup**: DROP `CtaTemplate` model + `SorotanAngle.FAQ` enum value, sorotan-generator FAQ refs removed
 - **Frontend img cleanup**: 13 raw `<img>` resolved (2 ke `next/image`, 11 eslint-disable + reason)
 - **Defense-in-depth XSS**: Glossary + editor preview pakai `DOMPurify.sanitize`
-- **Misc**: NEW `src/lib/logger.ts` (structured JSON + Sentry breadcrumb auto-route), orphan `kartawarta-indexnow-key.txt` deleted, `/api/og` force-static (CDN absorbs), sitemap-news force-dynamic config consistent
+- **Misc**: NEW `src/lib/logger.ts` (structured JSON + Sentry breadcrumb auto-route), orphan `lensaplus-indexnow-key.txt` deleted, `/api/og` force-static (CDN absorbs), sitemap-news force-dynamic config consistent
 
 Sprint 3 commit: `96d683e`. Hotfix `2ba8ac0` (logAudit null + git +x persistent) sebelumnya.
 
@@ -250,7 +250,7 @@ Commit `4490e6a`. Pre-Sprint 4 quality gate menemukan: (a) `.env` baris 21 beris
 #### Verdict Final
 ✅ **PRODUCTION-POLISHED** — semua CRITICAL + sebagian besar HIGH + MEDIUM + LOW impactful remediated dan terverifikasi di production. 111/151 (74%) findings closed across 4 sprints + 1 hotfix. Sisa 40 findings adalah deferred-by-design (next.js upgrade, Redis, 2FA, breaking schema redesigns) yang tidak block release.
 
-Project Kartawarta secara objektif **production-ready, scalable, secure, accessible, observable, dan UU PDP-compliant**.
+Project Lensaplus secara objektif **production-ready, scalable, secure, accessible, observable, dan UU PDP-compliant**.
 
 ## Update Status Dimensi (post-audit)
 

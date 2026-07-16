@@ -16,7 +16,7 @@
  */
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 const SITE_NAME = "Lensaplus";
 const LOGO_URL = `${SITE_URL}/lensaplus-icon.png`;
 
@@ -352,8 +352,8 @@ export function qaJsonLd(
  * Read social profile URLs for the publisher's `sameAs` block.
  *
  * Source priority (highest first):
- *   1. Env var `KARTAWARTA_SOCIAL_URLS` — comma-separated URLs
- *   2. Individual env vars: `KARTAWARTA_TWITTER_URL`, `_FACEBOOK_URL`,
+ *   1. Env var `LENSAPLUS_SOCIAL_URLS` — comma-separated URLs
+ *   2. Individual env vars: `LENSAPLUS_TWITTER_URL`, `_FACEBOOK_URL`,
  *      `_INSTAGRAM_URL`, `_LINKEDIN_URL`, `_YOUTUBE_URL`, `_TIKTOK_URL`
  *
  * Returns [] if nothing configured. Knowledge Graph still works without
@@ -361,7 +361,7 @@ export function qaJsonLd(
  */
 function publisherSameAs(): string[] {
   const social = (() => {
-    const bulk = process.env.KARTAWARTA_SOCIAL_URLS;
+    const bulk = process.env.LENSAPLUS_SOCIAL_URLS;
     if (bulk && bulk.trim()) {
       return bulk
         .split(",")
@@ -369,12 +369,12 @@ function publisherSameAs(): string[] {
         .filter((s) => /^https?:\/\//i.test(s));
     }
     return [
-      process.env.KARTAWARTA_TWITTER_URL,
-      process.env.KARTAWARTA_FACEBOOK_URL,
-      process.env.KARTAWARTA_INSTAGRAM_URL,
-      process.env.KARTAWARTA_LINKEDIN_URL,
-      process.env.KARTAWARTA_YOUTUBE_URL,
-      process.env.KARTAWARTA_TIKTOK_URL,
+      process.env.LENSAPLUS_TWITTER_URL,
+      process.env.LENSAPLUS_FACEBOOK_URL,
+      process.env.LENSAPLUS_INSTAGRAM_URL,
+      process.env.LENSAPLUS_LINKEDIN_URL,
+      process.env.LENSAPLUS_YOUTUBE_URL,
+      process.env.LENSAPLUS_TIKTOK_URL,
     ].filter((s): s is string => !!s && /^https?:\/\//i.test(s));
   })();
   // De-dupe in case a sister URL happens to also be in the social list.

@@ -7,7 +7,7 @@ const go = async (page,url)=>{ try{ await page.goto(url,{waitUntil:"domcontentlo
 // Desktop homepage
 const ctx = await browser.newContext({ viewport:{width:1366,height:1000}, deviceScaleFactor:2 });
 const page = await ctx.newPage();
-await go(page,"https://kartawarta.com/");
+await go(page,"https://lensaplus.com/");
 try{ await page.screenshot({path:"proposal/shot-home.png"}); console.log("home OK"); }catch(e){console.log("home FAIL",e.message);}
 
 // Article
@@ -20,7 +20,7 @@ await ctx.close();
 // Mobile homepage
 const mctx = await browser.newContext({ viewport:{width:390,height:860}, deviceScaleFactor:3, isMobile:true, hasTouch:true });
 const mp = await mctx.newPage();
-await go(mp,"https://kartawarta.com/");
+await go(mp,"https://lensaplus.com/");
 try{ await mp.screenshot({path:"proposal/shot-mobile.png"}); console.log("mobile OK"); }catch(e){console.log("mobile FAIL",e.message);}
 await mctx.close();
 await browser.close();

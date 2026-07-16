@@ -2413,7 +2413,7 @@ function SettingsTab() {
               <h4 className="font-bold text-txt-primary text-xs uppercase tracking-wider text-primary">Langkah 1: Hubungkan &amp; Generate Short-Lived Token</h4>
               <ol className="list-decimal list-inside space-y-1.5 ml-1">
                 <li>Buka <a href="https://developers.facebook.com/tools/explorer" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold hover:text-primary-dark inline-flex items-center gap-0.5">Meta Graph API Explorer <ExternalLink size={10} /></a>.</li>
-                <li>Di sudut kanan atas, pada pilihan <strong>Meta App</strong>, pilih App yang terhubung (contoh: <code>Kartawarta</code>).</li>
+                <li>Di sudut kanan atas, pada pilihan <strong>Meta App</strong>, pilih App yang terhubung (contoh: <code>Lensaplus</code>).</li>
                 <li>Pada bagian <strong>User or Page</strong>, pilih <strong>User Access Token</strong>.</li>
                 <li>Di kolom <strong>Permissions</strong> (sisi kanan), tambahkan minimal 5 izin wajib berikut:
                   <div className="flex flex-wrap gap-1.5 mt-1.5 mb-1.5">
@@ -2549,7 +2549,7 @@ function SettingsTab() {
             <textarea
               rows={2}
               className="input w-full py-2 text-sm"
-              placeholder="#kartawarta #bandung #hukum"
+              placeholder="#lensaplus #bandung #hukum"
               value={global.defaultHashtags || ""}
               onChange={(e) =>
                 setGlobal({ ...global, defaultHashtags: e.target.value })
@@ -2563,7 +2563,7 @@ function SettingsTab() {
             <input
               type="text"
               className="input w-full py-2 text-sm"
-              placeholder="Baca selengkapnya di kartawarta.com"
+              placeholder="Baca selengkapnya di lensaplus.com"
               value={global.defaultCTA || ""}
               onChange={(e) =>
                 setGlobal({ ...global, defaultCTA: e.target.value })
@@ -3103,7 +3103,7 @@ function SettingsTab() {
                 Langkah 1: Klik tombol untuk otorisasi di browser Anda
               </label>
               <a
-                href={`https://threads.net/oauth/authorize?client_id=4402452543382960&redirect_uri=${encodeURIComponent("https://kartawarta.com/")}&scope=threads_basic,threads_content_publish&response_type=code`}
+                href={`https://threads.net/oauth/authorize?client_id=4402452543382960&redirect_uri=${encodeURIComponent("https://lensaplus.com/")}&scope=threads_basic,threads_content_publish&response_type=code`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-md bg-primary hover:bg-primary-dark text-white px-4 py-2 text-sm font-semibold transition-all w-full text-center"
@@ -3142,7 +3142,7 @@ function SettingsTab() {
             </div>
           </div>
           <p className="text-[10px] text-txt-muted leading-relaxed">
-            *Setelah Anda memberikan izin di Threads, Anda akan dialihkan kembali ke kartawarta.com. Salin parameter kode (semua karakter setelah <code>?code=</code> di bilah alamat browser Anda) dan tempel di atas.
+            *Setelah Anda memberikan izin di Threads, Anda akan dialihkan kembali ke lensaplus.com. Salin parameter kode (semua karakter setelah <code>?code=</code> di bilah alamat browser Anda) dan tempel di atas.
           </p>
         </div>
 

@@ -9,9 +9,9 @@ import { prisma } from "@/lib/prisma";
 export const metadata: Metadata = {
   title: "Rangkuman",
   description:
-    "Rangkuman berita Kartawarta — kumpulan ringkasan harian, mingguan, dan tematik (bisnis, ekonomi, pemerintahan, hukum, olahraga, dan topik lainnya) untuk pembaca yang ingin update cepat.",
+    "Rangkuman berita Lensaplus — kumpulan ringkasan harian, mingguan, dan tematik (bisnis, ekonomi, pemerintahan, hukum, olahraga, dan topik lainnya) untuk pembaca yang ingin update cepat.",
   openGraph: {
-    title: "Rangkuman - Kartawarta",
+    title: "Rangkuman - Lensaplus",
     description:
       "Kumpulan ringkasan harian, mingguan, dan tematik berita Bandung & Indonesia.",
     type: "website",
@@ -144,7 +144,7 @@ export default async function RangkumanIndexPage() {
             </h1>
           </div>
           <p className="mt-2 max-w-2xl text-sm text-txt-secondary">
-            Kumpulan ringkasan berita Kartawarta — pilih per periode atau per topik untuk
+            Kumpulan ringkasan berita Lensaplus — pilih per periode atau per topik untuk
             membaca cepat tanpa kehilangan konteks penting.
           </p>
         </div>

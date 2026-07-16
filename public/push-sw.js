@@ -1,5 +1,5 @@
 /**
- * Service Worker untuk web push notifications Kartawarta.
+ * Service Worker untuk web push notifications Lensaplus.
  * Listen 'push' event, render notification, handle 'notificationclick' to open URL.
  */
 
@@ -17,17 +17,17 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: "Kartawarta", body: event.data.text() };
+    payload = { title: "Lensaplus", body: event.data.text() };
   }
   const { title, body, url, icon, badge, image, tag } = payload;
   event.waitUntil(
-    self.registration.showNotification(title || "Kartawarta", {
+    self.registration.showNotification(title || "Lensaplus", {
       body: body || "",
-      icon: icon || "/kartawarta-icon-192.png",
-      badge: badge || "/kartawarta-icon-96.png",
+      icon: icon || "/lensaplus-icon-192.png",
+      badge: badge || "/lensaplus-icon-96.png",
       image: image || undefined,
       tag: tag || undefined,
-      data: { url: url || "https://kartawarta.com" },
+      data: { url: url || "https://lensaplus.com" },
       requireInteraction: false,
     }),
   );
@@ -35,7 +35,7 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "https://kartawarta.com";
+  const url = event.notification.data?.url || "https://lensaplus.com";
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })

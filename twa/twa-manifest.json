@@ -1,8 +1,8 @@
 {
-  "packageId": "com.kartawarta.app",
-  "host": "kartawarta.com",
-  "name": "Kartawarta",
-  "launcherName": "Kartawarta",
+  "packageId": "com.lensaplus.app",
+  "host": "lensaplus.com",
+  "name": "Lensaplus",
+  "launcherName": "Lensaplus",
   "display": "standalone",
   "themeColor": "#002045",
   "themeColorDark": "#001530",
@@ -13,37 +13,37 @@
   "backgroundColor": "#ffffff",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://kartawarta.com/icons/icon-512.png",
-  "maskableIconUrl": "https://kartawarta.com/icons/icon-512-maskable.png",
-  "monochromeIconUrl": "https://kartawarta.com/icons/icon-512.png",
+  "iconUrl": "https://lensaplus.com/icons/icon-512.png",
+  "maskableIconUrl": "https://lensaplus.com/icons/icon-512-maskable.png",
+  "monochromeIconUrl": "https://lensaplus.com/icons/icon-512.png",
   "shortcuts": [
     {
       "name": "Berita Terkini",
       "shortName": "Terkini",
       "url": "/berita",
-      "iconUrl": "https://kartawarta.com/icons/icon-192.png"
+      "iconUrl": "https://lensaplus.com/icons/icon-192.png"
     },
     {
       "name": "Hukum",
       "shortName": "Hukum",
       "url": "/kategori/hukum",
-      "iconUrl": "https://kartawarta.com/icons/icon-192.png"
+      "iconUrl": "https://lensaplus.com/icons/icon-192.png"
     },
     {
       "name": "Bisnis & Ekonomi",
       "shortName": "Bisnis",
       "url": "/kategori/bisnis-ekonomi",
-      "iconUrl": "https://kartawarta.com/icons/icon-192.png"
+      "iconUrl": "https://lensaplus.com/icons/icon-192.png"
     },
     {
       "name": "Cari Berita",
       "shortName": "Cari",
       "url": "/search",
-      "iconUrl": "https://kartawarta.com/icons/icon-192.png"
+      "iconUrl": "https://lensaplus.com/icons/icon-192.png"
     }
   ],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://kartawarta.com/manifest.json",
+  "webManifestUrl": "https://lensaplus.com/manifest.json",
   "fallbackType": "customtabs",
   "features": {
     "locationDelegation": { "enabled": false },
@@ -53,7 +53,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "orientation": "default",
-  "fullScopeUrl": "https://kartawarta.com/",
+  "fullScopeUrl": "https://lensaplus.com/",
   "minSdkVersion": 23,
   "appVersionName": "1.0.0",
   "appVersionCode": 1,

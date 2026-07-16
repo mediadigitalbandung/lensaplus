@@ -12,11 +12,11 @@
  *   3. Acts as a health-check: a 200 means the auth surface is live.
  *
  * Shell crontab (see docs/DEPLOY_VPS.md for full snippet):
- *   0 3    * * * /var/www/kartawarta/scripts/backup-db.sh
- *   30 3   * * * /var/www/kartawarta/scripts/backup-uploads.sh
- *   0 4    * * * /var/www/kartawarta/scripts/backup-offsite.sh
- *   30 4   * * * /var/www/kartawarta/scripts/backup-verify.sh
- *   0 4    1 * * /var/www/kartawarta/scripts/backup-restore-drill.sh
+ *   0 3    * * * /var/www/lensaplus/scripts/backup-db.sh
+ *   30 3   * * * /var/www/lensaplus/scripts/backup-uploads.sh
+ *   0 4    * * * /var/www/lensaplus/scripts/backup-offsite.sh
+ *   30 4   * * * /var/www/lensaplus/scripts/backup-verify.sh
+ *   0 4    1 * * /var/www/lensaplus/scripts/backup-restore-drill.sh
  *
  * CRIT-13 fix: backup-offsite.sh syncs to S3-compatible remote via rclone.
  * CRIT-14 fix: backup-uploads.sh tarballs public/uploads/ before offsite sync.
@@ -34,42 +34,42 @@ const SCRIPTS = [
   {
     name: "backup-db.sh",
     cron: "0 3 * * *",
-    log: "/var/log/kartawarta-backup.log",
-    description: "pg_dump to /var/backups/kartawarta/ (7-day local retention)",
+    log: "/var/log/lensaplus-backup.log",
+    description: "pg_dump to /var/backups/lensaplus/ (7-day local retention)",
   },
   {
     name: "backup-uploads.sh",
     cron: "30 3 * * *",
-    log: "/var/log/kartawarta-uploads-backup.log",
+    log: "/var/log/lensaplus-uploads-backup.log",
     description:
-      "tar+gzip public/uploads/ to /var/backups/kartawarta/ (7-day local retention). Fixes CRIT-14.",
+      "tar+gzip public/uploads/ to /var/backups/lensaplus/ (7-day local retention). Fixes CRIT-14.",
   },
   {
     name: "backup-offsite.sh",
     cron: "0 4 * * *",
-    log: "/var/log/kartawarta-offsite.log",
+    log: "/var/log/lensaplus-offsite.log",
     description:
       "rclone sync *.sql.gz + uploads-*.tgz to OFFSITE_RCLONE_REMOTE (90-day remote retention). Fixes CRIT-13.",
   },
   {
     name: "backup-verify.sh",
     cron: "30 4 * * *",
-    log: "/var/log/kartawarta-backup-verify.log",
+    log: "/var/log/lensaplus-backup-verify.log",
     description: "Sanity-check most recent backup age + gzip integrity.",
   },
   {
     name: "backup-restore-drill.sh",
     cron: "0 4 1 * *",
-    log: "/var/log/kartawarta-restore-drill.log",
+    log: "/var/log/lensaplus-restore-drill.log",
     description:
-      "Monthly: restore latest backup to kartawarta_drill DB, run count assertions, drop.",
+      "Monthly: restore latest backup to lensaplus_drill DB, run count assertions, drop.",
   },
 ] as const;
 
 function buildCrontabSnippet(): string {
   return SCRIPTS.map(
     (s) =>
-      `${s.cron} /var/www/kartawarta/scripts/${s.name} >> ${s.log} 2>&1`,
+      `${s.cron} /var/www/lensaplus/scripts/${s.name} >> ${s.log} 2>&1`,
   ).join("\n");
 }
 

@@ -240,7 +240,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
             <Link href="/privasi" className="text-primary underline hover:text-primary-dark">
               Kebijakan Privasi
             </Link>{" "}
-            Kartawarta sesuai UU PDP No. 27/2022.
+            Lensaplus sesuai UU PDP No. 27/2022.
           </p>
           <button
             type="submit"

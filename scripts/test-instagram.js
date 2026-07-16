@@ -40,7 +40,7 @@ async function graphRequest(url, init) {
 
 async function main() {
   console.log("==================================================");
-  console.log("  Kartawarta — Pengujian Koneksi Instagram");
+  console.log("  Lensaplus — Pengujian Koneksi Instagram");
   console.log("==================================================");
 
   // 1. Load settings from database
@@ -67,7 +67,7 @@ async function main() {
   console.log("gambar publik sampel dari Unsplash agar pengujian API tetap berhasil.");
 
   const testImageUrl = "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1080&q=80";
-  const testCaption = "Pengujian posting otomatis Kartawarta ke Instagram Berhasil! ⚖️📰 #kartawarta #testpublish";
+  const testCaption = "Pengujian posting otomatis Lensaplus ke Instagram Berhasil! ⚖️📰 #lensaplus #testpublish";
 
   console.log(`\n🚀 Memulai pengujian publikasi ke Instagram...`);
   console.log(`   - URL Gambar Pengujian: ${testImageUrl}`);

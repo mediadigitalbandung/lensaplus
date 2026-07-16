@@ -1,5 +1,5 @@
 /**
- * Kartawarta — YouTube auto-clip worker (PM2 process: kartawarta-youtube-worker).
+ * Lensaplus — YouTube auto-clip worker (PM2 process: lensaplus-youtube-worker).
  *
  * Polls YoutubeClipJob (status=QUEUED), then for each job:
  *   DOWNLOADING     yt-dlp  → source.mp4
@@ -225,7 +225,7 @@ function cutArgs(input, startSec, durationSec, output, reframe) {
 
 async function processJob(job) {
   log(`job ${job.id} start: ${job.sourceUrl} (clips=${job.requestedClips})`);
-  const workDir = path.join(os.tmpdir(), "kartawarta-yt", job.id);
+  const workDir = path.join(os.tmpdir(), "lensaplus-yt", job.id);
   await mkdir(workDir, { recursive: true });
   await mkdir(UPLOAD_DIR, { recursive: true });
   const sourcePath = path.join(workDir, "source.mp4");

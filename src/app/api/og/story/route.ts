@@ -9,7 +9,7 @@
  *  - If featured image exists, fetch it (SSRF-guarded, same allowlist as /api/og)
  *    and resize to 1080×1080, composited at y=0 (top half of canvas).
  *  - Compose an SVG overlay with gradient, category badge, headline, URL, and
- *    Kartawarta logotype in the bottom brand bar.
+ *    Lensaplus logotype in the bottom brand bar.
  *  - Return JPEG with 24 h cache headers.
  */
 
@@ -22,19 +22,19 @@ export const dynamic = "force-dynamic";
 
 const WIDTH = 1080;
 const HEIGHT = 1920;
-const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 // SSRF guard — mirror allowlist from /api/og
 const ALLOWED_IMG_HOSTS = new Set([
   (() => {
     try {
-      return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com").hostname;
+      return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname;
     } catch {
-      return "kartawarta.com";
+      return "lensaplus.com";
     }
   })(),
-  "kartawarta.com",
-  "www.kartawarta.com",
+  "lensaplus.com",
+  "www.lensaplus.com",
   "images.unsplash.com",
   "graph.facebook.com",
   "scontent.cdninstagram.com",
@@ -45,7 +45,7 @@ function isAllowedImageHost(rawUrl: string): boolean {
   try {
     const h = new URL(rawUrl).hostname.toLowerCase();
     if (ALLOWED_IMG_HOSTS.has(h)) return true;
-    return h.endsWith(".kartawarta.com");
+    return h.endsWith(".lensaplus.com");
   } catch {
     return false;
   }
@@ -177,7 +177,7 @@ function buildSvgOverlay({
 
   // Slug display: strip leading slash and get full link
   const slugClean = slug.replace(/^\/+/, "");
-  const linkText = `kartawarta.com/${slugClean}`;
+  const linkText = `lensaplus.com/${slugClean}`;
 
   // Dynamically calculate font size so it fits perfectly without truncation
   // Average character width is roughly 0.53 of font size. Max width is 960px.
@@ -239,12 +239,12 @@ function buildSvgOverlay({
     ${escapeXml(linkText)}
   </text>
 
-  <!-- Bottom brand bar (KARTAWARTA brand bar raised by 150px to prevent Snapgram overlap. "Bandung & Indonesia" label removed) -->
+  <!-- Bottom brand bar (LENSAPLUS brand bar raised by 150px to prevent Snapgram overlap. "Bandung & Indonesia" label removed) -->
   <rect x="0" y="${brandBarY}" width="${WIDTH}" height="260" fill="#000000" fill-opacity="0.35" />
   <!-- Crimson accent bar -->
   <rect x="60" y="${brandBarY + 45}" width="6" height="40" fill="#b7102a" />
   <text x="82" y="${brandBarY + 78}" font-family="'Newsreader','Georgia',serif" font-size="40" font-weight="800" fill="#ffffff" letter-spacing="1">
-    KARTAWARTA
+    LENSAPLUS
   </text>
 </svg>`;
 }

@@ -6,11 +6,11 @@ import { Radio, Clock, CheckCircle, Calendar } from "lucide-react";
 export const revalidate = 30;
 
 export const metadata: Metadata = {
-  title: "Siaran Langsung | Kartawarta",
+  title: "Siaran Langsung | Lensaplus",
   description:
-    "Ikuti liputan langsung peristiwa hukum, persidangan, dan konferensi pers terkini dari Kartawarta.",
+    "Ikuti liputan langsung peristiwa hukum, persidangan, dan konferensi pers terkini dari Lensaplus.",
   openGraph: {
-    title: "Siaran Langsung | Kartawarta",
+    title: "Siaran Langsung | Lensaplus",
     description: "Liputan langsung peristiwa terkini.",
   },
 };

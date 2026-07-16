@@ -4,7 +4,7 @@ import { decryptSecret } from "./crypto-secrets";
 import { recordAiUsage } from "./ai-usage";
 
 /**
- * Shared AI client for Kartawarta.
+ * Shared AI client for Lensaplus.
  * Primary provider: Anthropic Claude Haiku 4.5.
  * Fallback: DeepSeek (deepseek-chat).
  *
@@ -58,7 +58,7 @@ const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 const DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions";
 const DEFAULT_SYSTEM_PROMPT =
-  "Kamu adalah asisten AI untuk Kartawarta — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, pendidikan, kesehatan, lingkungan). Jawab dalam Bahasa Indonesia.";
+  "Kamu adalah asisten AI untuk Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, pendidikan, kesehatan, lingkungan). Jawab dalam Bahasa Indonesia.";
 
 type Provider = "anthropic" | "deepseek";
 

@@ -1,10 +1,10 @@
-# Kartawarta — Disaster Recovery Runbook
+# Lensaplus — Disaster Recovery Runbook
 
 **Version:** 1.0 (2026-05-07)
 **RTO target:** 4 hours (from incident declared to site live)
 **RPO target:** 24 hours (with nightly backups); ~1 hour when hourly offsite is enabled later
 
-This runbook covers recovery from the scenarios most likely to affect Kartawarta
+This runbook covers recovery from the scenarios most likely to affect Lensaplus
 running on Hostinger VPS `145.79.15.99`. Keep a printed copy or store in a
 separate location from the VPS.
 
@@ -14,11 +14,11 @@ separate location from the VPS.
 
 | Script | Schedule | What it produces | Storage |
 |---|---|---|---|
-| `backup-db.sh` | 03:00 daily | `kartawarta-YYYYMMDD-HHMMSS.sql.gz` | VPS `/var/backups/kartawarta/` |
-| `backup-uploads.sh` | 03:30 daily | `uploads-YYYY-MM-DD.tgz` | VPS `/var/backups/kartawarta/` |
+| `backup-db.sh` | 03:00 daily | `lensaplus-YYYYMMDD-HHMMSS.sql.gz` | VPS `/var/backups/lensaplus/` |
+| `backup-uploads.sh` | 03:30 daily | `uploads-YYYY-MM-DD.tgz` | VPS `/var/backups/lensaplus/` |
 | `backup-offsite.sh` | 04:00 daily | Both of the above | Off-site bucket (`OFFSITE_RCLONE_REMOTE`) |
-| `backup-verify.sh` | 04:30 daily | Log line (no artifact) | `/var/log/kartawarta-backup-verify.log` |
-| `backup-restore-drill.sh` | 04:00 on 1st of month | Log line (drops drill DB after test) | `/var/log/kartawarta-restore-drill.log` |
+| `backup-verify.sh` | 04:30 daily | Log line (no artifact) | `/var/log/lensaplus-backup-verify.log` |
+| `backup-restore-drill.sh` | 04:00 on 1st of month | Log line (drops drill DB after test) | `/var/log/lensaplus-restore-drill.log` |
 
 ---
 
@@ -29,27 +29,27 @@ separate location from the VPS.
 **Steps:**
 
 1. Open Hostinger hPanel. Check if a VPS snapshot exists (taken within last 24h).
-   - If yes: restore snapshot. SSH in. Verify `/var/backups/kartawarta/` integrity with `backup-verify.sh`. Done.
+   - If yes: restore snapshot. SSH in. Verify `/var/backups/lensaplus/` integrity with `backup-verify.sh`. Done.
    - If no: provision a fresh Ubuntu 24.04 VPS.
 
 2. On fresh VPS, run the bootstrap from `docs/DEPLOY_VPS.md` up to "First-time setup".
 
 3. Pull the latest DB backup from off-site:
    ```bash
-   rclone copy r2:kartawarta-backup /var/backups/kartawarta/ --include "*.sql.gz"
+   rclone copy r2:lensaplus-backup /var/backups/lensaplus/ --include "*.sql.gz"
    ```
 
 4. Restore DB (see Scenario 3 below).
 
 5. Pull the latest uploads tarball from off-site:
    ```bash
-   rclone copy r2:kartawarta-backup /var/backups/kartawarta/ --include "uploads-*.tgz"
+   rclone copy r2:lensaplus-backup /var/backups/lensaplus/ --include "uploads-*.tgz"
    ```
 
 6. Extract uploads:
    ```bash
-   tar -xzf /var/backups/kartawarta/uploads-YYYY-MM-DD.tgz \
-     -C /var/www/kartawarta/public/
+   tar -xzf /var/backups/lensaplus/uploads-YYYY-MM-DD.tgz \
+     -C /var/www/lensaplus/public/
    ```
 
 7. Restart PM2 and verify Nginx is serving `/uploads/*` directly.
@@ -68,9 +68,9 @@ separate location from the VPS.
 
 3. Follow Scenario 1 steps 2-7 above.
 
-4. Re-issue SSL via Let's Encrypt: `sudo certbot --nginx -d kartawarta.com -d www.kartawarta.com`.
+4. Re-issue SSL via Let's Encrypt: `sudo certbot --nginx -d lensaplus.com -d www.lensaplus.com`.
 
-5. Update `/var/www/kartawarta/.env` with new `DATABASE_URL` (PostgreSQL now on new host).
+5. Update `/var/www/lensaplus/.env` with new `DATABASE_URL` (PostgreSQL now on new host).
 
 6. Restart PM2. Purge Cloudflare cache: `curl -X POST` to `/api/cloudflare/purge` or via hPanel.
 
@@ -90,43 +90,43 @@ separate location from the VPS.
 
 2. Identify the latest healthy backup:
    ```bash
-   ls -lt /var/backups/kartawarta/*.sql.gz | head -5
+   ls -lt /var/backups/lensaplus/*.sql.gz | head -5
    ```
 
 3. Verify the candidate backup is not corrupt:
    ```bash
-   gzip -t /var/backups/kartawarta/kartawarta-YYYYMMDD-HHMMSS.sql.gz && echo OK
+   gzip -t /var/backups/lensaplus/lensaplus-YYYYMMDD-HHMMSS.sql.gz && echo OK
    ```
 
 4. Stop the application:
    ```bash
-   pm2 stop kartawarta
+   pm2 stop lensaplus
    ```
 
 5. Drop and recreate the database:
    ```bash
-   psql postgresql://kartawarta@localhost:5432/postgres \
-     -c "DROP DATABASE kartawarta;" \
-     -c "CREATE DATABASE kartawarta OWNER kartawarta;"
+   psql postgresql://lensaplus@localhost:5432/postgres \
+     -c "DROP DATABASE lensaplus;" \
+     -c "CREATE DATABASE lensaplus OWNER lensaplus;"
    ```
 
 6. Restore:
    ```bash
-   gunzip -c /var/backups/kartawarta/kartawarta-YYYYMMDD-HHMMSS.sql.gz \
+   gunzip -c /var/backups/lensaplus/lensaplus-YYYYMMDD-HHMMSS.sql.gz \
      | psql "$DATABASE_URL"
    ```
 
 7. Run any pending schema changes (if restore is to a version before the last migration):
    ```bash
-   cd /var/www/kartawarta && npx prisma db push
+   cd /var/www/lensaplus && npx prisma db push
    ```
 
 8. Restart PM2:
    ```bash
-   pm2 restart kartawarta
+   pm2 restart lensaplus
    ```
 
-9. Smoke test: `curl -I https://kartawarta.com/` should return 200.
+9. Smoke test: `curl -I https://lensaplus.com/` should return 200.
 
 ---
 
@@ -138,20 +138,20 @@ separate location from the VPS.
 
 1. Find the latest uploads tarball (local or off-site):
    ```bash
-   ls -lt /var/backups/kartawarta/uploads-*.tgz | head -3
+   ls -lt /var/backups/lensaplus/uploads-*.tgz | head -3
    # If not available locally:
-   rclone copy r2:kartawarta-backup /var/backups/kartawarta/ --include "uploads-*.tgz"
+   rclone copy r2:lensaplus-backup /var/backups/lensaplus/ --include "uploads-*.tgz"
    ```
 
 2. Extract (will overwrite existing uploads dir):
    ```bash
-   tar -xzf /var/backups/kartawarta/uploads-YYYY-MM-DD.tgz \
-     -C /var/www/kartawarta/public/
+   tar -xzf /var/backups/lensaplus/uploads-YYYY-MM-DD.tgz \
+     -C /var/www/lensaplus/public/
    ```
 
 3. Verify Nginx serves the directory directly (not via Next.js). Check:
    ```bash
-   curl -I https://kartawarta.com/uploads/
+   curl -I https://lensaplus.com/uploads/
    ```
    Should return 200 or 301, not 404.
 
@@ -167,16 +167,16 @@ separate location from the VPS.
 
 1. Check PM2 logs:
    ```bash
-   pm2 logs kartawarta --lines 50
+   pm2 logs lensaplus --lines 50
    ```
 
 2. Rollback to last good commit:
    ```bash
-   cd /var/www/kartawarta
+   cd /var/www/lensaplus
    git log --oneline -10
    git checkout <last-good-sha>
    npm run build
-   pm2 restart kartawarta
+   pm2 restart lensaplus
    ```
 
 3. If build fails: `rm -rf .next && npm run build` (sometimes needed — see VPS build quirk in memory).
@@ -188,19 +188,19 @@ separate location from the VPS.
 `scripts/backup-restore-drill.sh` is designed to be run once a month. It:
 
 1. Takes the latest `*.sql.gz` backup.
-2. Creates a temporary PostgreSQL database `kartawarta_drill`.
+2. Creates a temporary PostgreSQL database `lensaplus_drill`.
 3. Restores the dump.
 4. Asserts counts on `articles`, `users`, `categories` tables are > 0.
 5. Drops the drill database.
 
 **Cron entry (already in crontab template):**
 ```
-0 4 1 * * /var/www/kartawarta/scripts/backup-restore-drill.sh >> /var/log/kartawarta-restore-drill.log 2>&1
+0 4 1 * * /var/www/lensaplus/scripts/backup-restore-drill.sh >> /var/log/lensaplus-restore-drill.log 2>&1
 ```
 
 Run manually any time:
 ```bash
-/var/www/kartawarta/scripts/backup-restore-drill.sh
+/var/www/lensaplus/scripts/backup-restore-drill.sh
 ```
 
 ---

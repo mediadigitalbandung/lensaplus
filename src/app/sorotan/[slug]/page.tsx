@@ -116,7 +116,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
 
   const { article } = sorotan;
   const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+    process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const sorotanUrl = `${appUrl}/sorotan/${sorotan.slug}`;
   const angleLabel = ANGLE_LABEL[sorotan.angle] ?? sorotan.angle;
 

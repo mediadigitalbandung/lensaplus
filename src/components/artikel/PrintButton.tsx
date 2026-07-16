@@ -123,10 +123,10 @@ function PrintPreviewContent() {
     <div style={{ fontFamily: "Georgia, serif", color: "#1C1C1E" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, borderBottom: "2px solid #002045", paddingBottom: 12, marginBottom: 20 }}>
-        <Image src="/kartawarta-icon.png" alt="Kartawarta" width={40} height={40} />
+        <Image src="/lensaplus-icon.png" alt="Lensaplus" width={40} height={40} />
         <div>
-          <div style={{ fontSize: 16, fontWeight: 800 }}>Kartawarta</div>
-          <div style={{ fontSize: 9, color: "#6B7280" }}>Media Berita Digital Bandung &mdash; kartawarta.com</div>
+          <div style={{ fontSize: 16, fontWeight: 800 }}>Lensaplus</div>
+          <div style={{ fontSize: 9, color: "#6B7280" }}>Media Berita Digital Bandung &mdash; lensaplus.com</div>
         </div>
       </div>
 
@@ -170,7 +170,7 @@ function PrintPreviewContent() {
 
       {/* Footer */}
       <div style={{ marginTop: 24, paddingTop: 12, borderTop: "1px solid #E5E7EB", fontSize: 9, color: "#9CA3AF", textAlign: "center" }}>
-        &copy; {new Date().getFullYear()} Kartawarta &mdash; kartawarta.com
+        &copy; {new Date().getFullYear()} Lensaplus &mdash; lensaplus.com
         <br />Artikel ini dicetak pada {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
         <br />Sumber: {typeof window !== "undefined" ? window.location.href : ""}
       </div>

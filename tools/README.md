@@ -1,10 +1,10 @@
-# Kartawarta — Developer Tools
+# Lensaplus — Developer Tools
 
 CLI scripts untuk operasional + integrasi yang **bukan bagian dari runtime**.
 
 ## ⚠️ Catatan Penting Sebelum Pakai
 
-**Default workflow Kartawarta = tulis artikel langsung di TipTap CMS** (`/panel/artikel/baru`), bukan di Obsidian. Lihat `kartawarta-editorial/WORKFLOW-SEPARATION.md` untuk panduan separasi.
+**Default workflow Lensaplus = tulis artikel langsung di TipTap CMS** (`/panel/artikel/baru`), bukan di Obsidian. Lihat `lensaplus-editorial/WORKFLOW-SEPARATION.md` untuk panduan separasi.
 
 | Script | Wajib? | Untuk |
 |---|---|---|
@@ -15,13 +15,13 @@ CLI scripts untuk operasional + integrasi yang **bukan bagian dari runtime**.
 
 ### 1. Set token di server VPS
 
-Tambahkan ke `/var/www/kartawarta/.env`:
+Tambahkan ke `/var/www/lensaplus/.env`:
 
 ```bash
 OBSIDIAN_SYNC_TOKEN=$(openssl rand -hex 32)
 ```
 
-Restart PM2 setelahnya: `pm2 restart kartawarta`.
+Restart PM2 setelahnya: `pm2 restart lensaplus`.
 
 ### 2. Set token di local (untuk jalankan script dari mesin user)
 
@@ -58,17 +58,17 @@ Token harus **sama** dengan yang di server `.env`.
 |---|---|
 | Body draft di Obsidian markdown editor | Body draft langsung di TipTap CMS |
 | Tidak dapat AI toolbar TipTap saat menulis | Dapat AI toolbar (title/meta/caption) |
-| Autosave hanya ke disk lokal | Autosave 15s ke DB Kartawarta |
+| Autosave hanya ke disk lokal | Autosave 15s ke DB Lensaplus |
 | Manual `node tools/sync-obsidian.mjs --apply` setelah set status=ready | Tinggal save → submit review di TipTap |
 | Setelah sync, tetap perlu finalisasi di TipTap (gambar, SEO, sosmed flag) | Semua di TipTap |
 | Edit ulang artikel published → kembali ke TipTap (jangan kembali ke Obsidian) | Edit di TipTap |
 
 ### Flow
 
-1. Buka artikel di vault Obsidian path `kartawarta-editorial/03-Artikel-Plan/{slug}.md`
+1. Buka artikel di vault Obsidian path `lensaplus-editorial/03-Artikel-Plan/{slug}.md`
 2. Setelah artikel siap (outline → drafting → ready):
    - Set frontmatter `status: ready`
-   - Pastikan `kategori:` sesuai dengan slug Category yang ada di DB Kartawarta (mis. `pidana`, `perdata`, `politik`)
+   - Pastikan `kategori:` sesuai dengan slug Category yang ada di DB Lensaplus (mis. `pidana`, `perdata`, `politik`)
 3. Jalankan:
    ```bash
    # Dry-run dulu — lihat apa yang akan disync
@@ -80,11 +80,11 @@ Token harus **sama** dengan yang di server `.env`.
 
 ### Hasil
 
-- API create Article status=`DRAFT` di DB Kartawarta (selalu DRAFT, editor harus review/publish via panel)
+- API create Article status=`DRAFT` di DB Lensaplus (selalu DRAFT, editor harus review/publish via panel)
 - Frontmatter file local diupdate:
   - `status: published`
   - `published-id: <article-id>`
-  - `published-url: https://kartawarta.com/berita/<slug>`
+  - `published-url: https://lensaplus.com/berita/<slug>`
 - Setelah artikel di-publish via panel, frontmatter ini bisa jadi referensi balik.
 
 ### Idempotent
@@ -120,11 +120,11 @@ node tools/sync-obsidian.mjs --apply --vault "/path/to/vault"
 | Var | Default | Required |
 |---|---|---|
 | `OBSIDIAN_SYNC_TOKEN` | — | ✅ both server + client |
-| `KARTAWARTA_API_URL` | `https://kartawarta.com` | optional |
-| `VAULT_PATH` | `c:/Users/Owen/Documents/Aureon/kartawarta-editorial` | optional |
+| `LENSAPLUS_API_URL` | `https://lensaplus.com` | optional |
+| `VAULT_PATH` | `c:/Users/Owen/Documents/Aureon/lensaplus-editorial` | optional |
 
 ## Future Tools
 
 - `sync-glossary.mjs` — sync `99-Glossary-Hukum/` → DB sebagai content publik (Phase 2 dari roadmap)
-- `migrate-wordpress.mjs` — pindah artikel WordPress legacy ke Kartawarta
+- `migrate-wordpress.mjs` — pindah artikel WordPress legacy ke Lensaplus
 - `audit-broken-links.mjs` — scan artikel untuk link mati

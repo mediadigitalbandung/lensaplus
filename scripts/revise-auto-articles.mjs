@@ -14,7 +14,7 @@
  *      sourceArticleId (set if was missing).
  *
  * Usage on VPS:
- *   cd /var/www/kartawarta && node scripts/revise-auto-articles.mjs
+ *   cd /var/www/lensaplus && node scripts/revise-auto-articles.mjs
  *
  * Idempotent: re-running will paraphrase again from source. Skip-protected
  * by status=DRAFT so editor-touched articles (IN_REVIEW / APPROVED /

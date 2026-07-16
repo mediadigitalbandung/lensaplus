@@ -16,7 +16,7 @@ import { getIndexNowKey } from "@/lib/seo/indexnow";
 
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 
 interface TestResult {

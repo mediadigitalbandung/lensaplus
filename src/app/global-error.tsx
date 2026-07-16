@@ -19,7 +19,7 @@ export default function GlobalError({
             margin: "80px auto",
           }}
         >
-          <h1 style={{ fontSize: 22, marginBottom: 12 }}>Kartawarta — Error Sistem</h1>
+          <h1 style={{ fontSize: 22, marginBottom: 12 }}>Lensaplus — Error Sistem</h1>
           <p style={{ color: "#44474e", marginBottom: 8 }}>
             Terjadi kesalahan kritis. Tim kami sudah diberitahu.
           </p>

@@ -32,14 +32,14 @@ export async function generateMetadata({
   return {
     title,
     description:
-      "Sorotan — sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita pilihan Kartawarta (bisnis, ekonomi, pemerintahan, hukum, olahraga, dan topik lainnya).",
+      "Sorotan — sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita pilihan Lensaplus (bisnis, ekonomi, pemerintahan, hukum, olahraga, dan topik lainnya).",
     // AdSense compliance: keep the Sorotan index out of Google (its entries are
     // AI re-framings of existing articles). Crawlable but not indexed.
     robots: { index: false, follow: true, googleBot: { index: false } },
     openGraph: {
-      title: `${title} - Kartawarta`,
+      title: `${title} - Lensaplus`,
       description:
-        "Sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita pilihan Kartawarta.",
+        "Sudut pandang kronologi, analisis, dampak, dan latar belakang atas berita pilihan Lensaplus.",
       type: "website",
     },
     alternates: { canonical },

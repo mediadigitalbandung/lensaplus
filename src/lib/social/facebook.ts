@@ -10,7 +10,7 @@ import type { PreparedPost, PublishResult } from "./types";
 const GRAPH_BASE = "https://graph.facebook.com/v21.0";
 const TIMEOUT_MS = 60_000;
 const SITE_URL = (() => {
-  const url = process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  const url = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   try {
     const parsed = new URL(url);
     if (
@@ -19,7 +19,7 @@ const SITE_URL = (() => {
       parsed.hostname.includes("127.0.0.1") ||
       /^[0-9.]+$/.test(parsed.hostname)
     ) {
-      return "https://kartawarta.com";
+      return "https://lensaplus.com";
     }
   } catch {}
   return url;

@@ -63,10 +63,10 @@ export async function generateMetadata({
     where: { ticker },
     select: { name: true, sector: true, description: true },
   })) as Pick<CompanyDetail, "name" | "sector" | "description"> | null;
-  if (!company) return { title: "Emiten tidak ditemukan | Kartawarta" };
+  if (!company) return { title: "Emiten tidak ditemukan | Lensaplus" };
   return {
-    title: `${ticker} — ${company.name} | Kartawarta`,
-    description: company.description?.slice(0, 160) ?? `Profil ${ticker} (${SECTOR_LABELS[company.sector]}) di Kartawarta.`,
+    title: `${ticker} — ${company.name} | Lensaplus`,
+    description: company.description?.slice(0, 160) ?? `Profil ${ticker} (${SECTOR_LABELS[company.sector]}) di Lensaplus.`,
   };
 }
 

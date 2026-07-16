@@ -253,7 +253,7 @@ export default function ArtikelPage() {
   async function handlePublish(article: Article) {
     const ok = await confirm({
       title: "Publikasikan artikel?",
-      message: `"${article.title}" akan langsung tampil di kartawarta.com dan masuk news sitemap.`,
+      message: `"${article.title}" akan langsung tampil di lensaplus.com dan masuk news sitemap.`,
       variant: "default",
     });
     if (!ok) return;
@@ -280,7 +280,7 @@ export default function ArtikelPage() {
   async function handleTakedown(article: Article) {
     const ok = await confirm({
       title: "Takedown artikel?",
-      message: `"${article.title}" akan dikembalikan ke DRAFT — hilang dari kartawarta.com dan news sitemap. Body dan metadata tetap tersimpan, bisa di-republish setelah edit.`,
+      message: `"${article.title}" akan dikembalikan ke DRAFT — hilang dari lensaplus.com dan news sitemap. Body dan metadata tetap tersimpan, bisa di-republish setelah edit.`,
       variant: "danger",
     });
     if (!ok) return;
@@ -454,10 +454,10 @@ export default function ArtikelPage() {
       String(a.viewCount),
       formatDate(a.publishedAt || a.createdAt),
     ]);
-    exportToCsv("artikel-kartawarta.csv", headers, rows);
+    exportToCsv("artikel-lensaplus.csv", headers, rows);
   }
 
-  // Repair photo credits on scraper articles that still credit "Kartawarta"
+  // Repair photo credits on scraper articles that still credit "Lensaplus"
   // instead of the real source website. Previews first (dry-run), then applies.
   async function handleFixPhotoCredits() {
     try {
@@ -777,7 +777,7 @@ export default function ArtikelPage() {
                               article.sourceArticleId ? (
                                 <span
                                   className="mr-2 inline-flex items-center gap-0.5 rounded-sm bg-secondary px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white align-middle"
-                                  title="Paraphrase otomatis dari artikel internal Kartawarta yang sudah dipublish (cron auto-artikel)."
+                                  title="Paraphrase otomatis dari artikel internal Lensaplus yang sudah dipublish (cron auto-artikel)."
                                 >
                                   AUTO
                                 </span>

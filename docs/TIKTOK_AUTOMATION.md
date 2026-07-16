@@ -52,7 +52,7 @@ Editor mode (manual edit) tetap tersedia untuk overlay teks, BGM, transisi, dsb.
 (Fase 2, terpisah dari Next.js process)
 ┌────────────────────────────────────────────────────────────────────┐
 │ Render worker (Node 22 + Puppeteer + FFmpeg)                       │
-│   PM2 process: kartawarta-tiktok-render                            │
+│   PM2 process: lensaplus-tiktok-render                            │
 │   loop: poll TiktokRenderJob WHERE status='QUEUED'                 │
 │        → fetch content + slots                                     │
 │        → run Hyperframes against template HTML                     │
@@ -131,7 +131,7 @@ Ekspektasi resource: render 30s @1080×1920 ≈ 1-3 menit di VPS shared, ~600-90
 ### Library
 
 ```bash
-cd /var/www/kartawarta
+cd /var/www/lensaplus
 npm install @heygen/hyperframes puppeteer fluent-ffmpeg
 ```
 
@@ -230,8 +230,8 @@ PM2 ecosystem entry:
 // ecosystem.config.js
 module.exports = {
   apps: [
-    { name: 'kartawarta', script: 'node_modules/.bin/next', args: 'start' },
-    { name: 'kartawarta-tiktok-render', script: 'tools/tiktok-render-worker.mjs', max_memory_restart: '1G' },
+    { name: 'lensaplus', script: 'node_modules/.bin/next', args: 'start' },
+    { name: 'lensaplus-tiktok-render', script: 'tools/tiktok-render-worker.mjs', max_memory_restart: '1G' },
   ],
 };
 ```
@@ -259,9 +259,9 @@ UI editor sudah punya tombol "Render Otomatis" — saat 501 hilang dan job ID mu
 1. **Daftar app di TikTok for Developers**
    - <https://developers.tiktok.com/>
    - Pilih kategori: "Media & News" atau "Content Publishing"
-   - Domain: kartawarta.com
-   - Privacy policy: kartawarta.com/privasi
-   - Terms: kartawarta.com/syarat-ketentuan
+   - Domain: lensaplus.com
+   - Privacy policy: lensaplus.com/privasi
+   - Terms: lensaplus.com/syarat-ketentuan
 
 2. **Apply audit `video.publish` scope**
    - Tanpa audit, semua post otomatis = `PRIVATE_TO_SELF` (cuma kelihatan di akun yg post, ga publik).
@@ -271,7 +271,7 @@ UI editor sudah punya tombol "Render Otomatis" — saat 501 hilang dan job ID mu
 3. **Catat credentials** ke `SystemSetting` table (atau env file di VPS):
    - `TIKTOK_CLIENT_KEY`
    - `TIKTOK_CLIENT_SECRET`
-   - Redirect URL: `https://kartawarta.com/api/tiktok/oauth/callback`
+   - Redirect URL: `https://lensaplus.com/api/tiktok/oauth/callback`
 
 ### OAuth flow
 
@@ -314,7 +314,7 @@ Library: pakai `fetch` saja, atau `tiktok-business-api-sdk` kalau ada (cek dulu 
 
 Endpoint baru `POST /api/cron/tiktok-publish` (jaga dengan `verifyCronSecret`):
 - Query content WHERE `status='SCHEDULED'` AND `scheduledAt <= now()` → call publish flow.
-- Tambah ke `crontab` VPS: `*/5 * * * * curl -H "Authorization: Bearer $CRON_SECRET" https://kartawarta.com/api/cron/tiktok-publish`.
+- Tambah ke `crontab` VPS: `*/5 * * * * curl -H "Authorization: Bearer $CRON_SECRET" https://lensaplus.com/api/cron/tiktok-publish`.
 
 ### Update UI
 
@@ -339,7 +339,7 @@ Tambah ke `.env` di VPS (jangan commit):
 # TikTok (Fase 3)
 TIKTOK_CLIENT_KEY=
 TIKTOK_CLIENT_SECRET=
-TIKTOK_REDIRECT_URI=https://kartawarta.com/api/tiktok/oauth/callback
+TIKTOK_REDIRECT_URI=https://lensaplus.com/api/tiktok/oauth/callback
 TIKTOK_SANDBOX=true   # set false setelah audit lulus
 ```
 

@@ -70,13 +70,13 @@ const headerAd = `<div style="width:100%;min-height:220px;background:linear-grad
   <!-- Logo + text -->
   <div style="display:flex;align-items:center;gap:clamp(18px,3vw,28px);z-index:1">
     <div style="animation:headerFloat 4s ease-in-out infinite;flex-shrink:0">
-      <img src="/kartawarta-icon.png" alt="Kartawarta" style="width:64px;height:64px;object-fit:contain;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
+      <img src="/lensaplus-icon.png" alt="Lensaplus" style="width:64px;height:64px;object-fit:contain;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
     </div>
     <div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
         <span style="color:#60a5fa;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;letter-spacing:1.5px;text-transform:uppercase;animation:headerBadgePulse 3s ease-in-out infinite">⚡ Ruang Iklan Premium</span>
       </div>
-      <div style="color:#fff;font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-0.5px;line-height:1.15">Tampilkan Brand Anda<br>di Kartawarta</div>
+      <div style="color:#fff;font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-0.5px;line-height:1.15">Tampilkan Brand Anda<br>di Lensaplus</div>
       <div style="color:rgba(255,255,255,0.45);font-size:clamp(13px,1.5vw,16px);margin-top:8px;line-height:1.5">Jangkau <strong style="color:rgba(255,255,255,0.75)">ribuan pembaca aktif</strong> setiap hari<br>di media digital terpercaya Indonesia</div>
       <div style="display:flex;align-items:center;gap:16px;margin-top:14px;flex-wrap:wrap">
         <span style="display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,0.5);font-size:12px">
@@ -102,7 +102,7 @@ const headerAd = `<div style="width:100%;min-height:220px;background:linear-grad
 async function main() {
   console.log("=== Updating Header Ad (Animated) ===\n");
   const result = await prisma.ad.updateMany({
-    where: { name: "Kartawarta — Pasang Iklan Header" },
+    where: { name: "Lensaplus — Pasang Iklan Header" },
     data: { htmlCode: headerAd },
   });
   if (result.count > 0) console.log("  ✓ Header ad updated with animations");

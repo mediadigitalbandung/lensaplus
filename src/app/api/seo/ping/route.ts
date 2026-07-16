@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://kartawarta.com";
+  process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 const BATCH_ARTICLES = 50;
 const BATCH_SOROTAN = 50;
 

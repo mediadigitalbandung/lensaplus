@@ -35,7 +35,7 @@ describe("isPrivateHost (SSRF guard)", () => {
     expect(isPrivateHost("8.8.8.8")).toBe(false);
     expect(isPrivateHost("172.15.0.1")).toBe(false); // edge: just below 172.16
     expect(isPrivateHost("172.32.0.1")).toBe(false); // edge: just above 172.31
-    expect(isPrivateHost("kartawarta.com")).toBe(false);
+    expect(isPrivateHost("lensaplus.com")).toBe(false);
     expect(isPrivateHost("example.org")).toBe(false);
   });
 
@@ -48,9 +48,9 @@ describe("isPrivateHost (SSRF guard)", () => {
 });
 
 describe("userAgent", () => {
-  it("returns the documented Kartawarta-Scraper UA", () => {
-    expect(userAgent()).toContain("Kartawarta-Scraper");
-    expect(userAgent()).toContain("kartawarta.com");
+  it("returns the documented Lensaplus-Scraper UA", () => {
+    expect(userAgent()).toContain("Lensaplus-Scraper");
+    expect(userAgent()).toContain("lensaplus.com");
   });
 });
 
