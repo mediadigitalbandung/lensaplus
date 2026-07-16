@@ -21,6 +21,7 @@ const config: Config = {
         },
         tertiary: {
           DEFAULT: "#F43F5E", // Coral Rose
+          dark: "#E11D48",
           light: "#FFE4E6",
         },
         surface: {
