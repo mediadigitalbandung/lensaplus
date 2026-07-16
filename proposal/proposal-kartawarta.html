@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>Proposal Proyek &amp; Produk — Kartawarta · Celiol</title>
+<style>
+  @page { size: A4; margin: 15mm 16mm 12mm 16mm; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  :root{
+    --navy:#002045; --navy-d:#001530; --navy-l:#e8edf3;
+    --crimson:#b7102a; --crimson-d:#8f0c20; --crimson-l:#fce8eb;
+    --ink:#191c1d; --muted:#44474e; --faint:#74777f; --line:#d6d9e0; --bg:#f8f9fa;
+  }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color:var(--ink); font-size:11pt; line-height:1.7; }
+  h1,h2,h3,h4{ font-family:Georgia,"Times New Roman",serif; color:var(--navy); margin:0; }
+  p{ margin:0 0 8pt; }
+  strong{ color:var(--navy-d); }
+
+  /* COVER */
+  .cover{ margin:-16mm -16mm 0 -16mm; padding:30mm 22mm 26mm; background:linear-gradient(155deg,#002045 0%,#00152e 60%,#0a2b54 100%); color:#fff; min-height:297mm; page-break-after:always; position:relative; }
+  .cover .dev{ display:flex; align-items:center; gap:11px; }
+  .cover .celiol{ font-family:Georgia,serif; font-size:21pt; font-weight:700; letter-spacing:1px; color:#fff; }
+  .cover .celiol .dot{ color:var(--crimson); }
+  .cover .by{ font-size:9pt; color:#9bb6da; letter-spacing:.5px; }
+  .cover .kicker{ margin-top:40mm; font-size:11pt; letter-spacing:5px; text-transform:uppercase; color:#8fb3e0; font-weight:600; }
+  .cover h1{ color:#fff; font-size:31pt; line-height:1.12; margin:10pt 0 0; }
+  .cover .case{ margin-top:16pt; display:inline-flex; align-items:center; gap:10px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.18); border-radius:12px; padding:10px 16px; }
+  .cover .case img{ width:34px; height:34px; border-radius:7px; background:#fff; padding:4px; }
+  .cover .case .t{ font-size:9pt; color:#9bb6da; letter-spacing:.5px; text-transform:uppercase; }
+  .cover .case .n{ font-family:Georgia,serif; font-size:14pt; font-weight:700; }
+  .cover .rule{ width:64px; height:4px; background:var(--crimson); border-radius:3px; margin:20pt 0; }
+  .cover .sub{ font-size:12.5pt; color:#cfe0f5; max-width:150mm; line-height:1.55; }
+  .cover .meta{ position:absolute; left:22mm; right:22mm; bottom:22mm; display:flex; justify-content:space-between; align-items:flex-end; font-size:9.5pt; color:#bcd0ea; }
+  .cover .badge{ display:inline-block; border:1px solid rgba(255,255,255,.35); border-radius:30px; padding:5px 14px; font-size:9pt; color:#fff; }
+
+  /* SECTIONS */
+  .section{ margin:0 0 14pt; }
+  .sec-head{ display:flex; align-items:center; gap:12px; margin:18pt 0 10pt; padding-bottom:7pt; border-bottom:2px solid var(--navy); }
+  .sec-num{ flex:0 0 auto; width:26px; height:26px; border-radius:7px; background:var(--navy); color:#fff; font-family:Georgia,serif; font-weight:700; font-size:12pt; display:flex; align-items:center; justify-content:center; }
+  .sec-head h2{ font-size:16pt; }
+  h3{ font-size:12pt; color:var(--navy-d); margin:13pt 0 5pt; }
+  .lead{ font-size:11.5pt; color:var(--muted); }
+
+  ul{ margin:4pt 0 9pt; padding-left:0; list-style:none; }
+  ul li{ position:relative; padding-left:16px; margin-bottom:5pt; }
+  ul li::before{ content:""; position:absolute; left:2px; top:9px; width:6px; height:6px; border-radius:50%; background:var(--crimson); }
+
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:8pt 0; }
+  .card{ border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:#fff; page-break-inside:avoid; }
+  .card h4{ font-size:10.5pt; color:var(--navy); margin-bottom:3pt; }
+  .card p{ margin:0; font-size:9.6pt; color:var(--muted); line-height:1.55; }
+  .card .tag{ display:inline-block; font-size:7.5pt; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--crimson-d); background:var(--crimson-l); padding:2px 7px; border-radius:20px; margin-bottom:5pt; }
+
+  table{ width:100%; border-collapse:collapse; margin:8pt 0; font-size:10pt; }
+  th,td{ text-align:left; padding:7px 9px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:var(--navy-l); color:var(--navy-d); font-weight:700; }
+  td.k{ width:32%; font-weight:600; color:var(--navy-d); }
+
+  .callout{ border-left:4px solid var(--crimson); background:var(--crimson-l); border-radius:0 8px 8px 0; padding:11px 14px; margin:10pt 0; }
+  .callout p{ margin:0; font-size:10pt; color:#5b0a18; line-height:1.6; }
+  .note{ border:1px dashed var(--navy); background:var(--navy-l); border-radius:8px; padding:10px 13px; margin:9pt 0; font-size:9.4pt; color:var(--navy-d); }
+  .fill{ color:var(--crimson-d); font-weight:700; }
+
+  .pillars{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:8pt 0; }
+  .pillar{ text-align:center; border:1px solid var(--line); border-radius:9px; padding:12px 8px; }
+  .pillar .big{ font-family:Georgia,serif; font-size:17pt; font-weight:700; color:var(--crimson-d); }
+  .pillar .lbl{ font-size:9pt; color:var(--muted); margin-top:2pt; }
+
+  /* VISUALS */
+  .fig{ page-break-inside:avoid; margin:8pt 0 4pt; }
+  .browser{ border:1px solid var(--line); border-radius:10px; overflow:hidden; box-shadow:0 5px 16px rgba(0,32,69,.10); }
+  .browser .bar{ background:#e9edf3; padding:6px 11px; display:flex; align-items:center; gap:6px; border-bottom:1px solid var(--line); }
+  .browser .dot{ width:8px;height:8px;border-radius:50%; }
+  .browser .addr{ flex:1; margin-left:8px; background:#fff; border-radius:20px; font-size:7.5pt; color:var(--faint); padding:3px 11px; }
+  .browser img{ display:block; width:100%; }
+  .cap{ font-size:8.8pt; color:var(--faint); text-align:center; margin:5pt 0 8pt; font-style:italic; }
+  .twoimg{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .showcase{ display:grid; grid-template-columns:1.6fr 1fr; gap:14px; align-items:start; margin:8pt 0; }
+  .phone{ width:100%; max-width:180px; margin:0 auto; border:7px solid #161d29; border-radius:24px; overflow:hidden; box-shadow:0 7px 18px rgba(0,32,69,.18); background:#161d29; }
+  .phone img{ display:block; width:100%; }
+
+  /* ADMIN MOCKUP */
+  .app{ display:grid; grid-template-columns:118px 1fr; border:1px solid var(--line); border-radius:9px; overflow:hidden; box-shadow:0 5px 16px rgba(0,32,69,.10); font-size:6.6pt; }
+  .app .side{ background:#001a3c; color:#b9c8de; padding:8px 0; }
+  .app .side .lg{ display:flex; align-items:center; gap:5px; padding:0 9px 8px; border-bottom:1px solid rgba(255,255,255,.08); margin-bottom:6px; }
+  .app .side .lg b{ color:#fff; font-family:Georgia,serif; font-size:8pt; }
+  .app .side .it{ padding:3px 10px; color:#aebdd4; }
+  .app .side .it.on{ background:rgba(255,255,255,.10); border-left:3px solid var(--crimson); color:#fff; font-weight:700; padding-left:7px; }
+  .app .main{ background:#f4f6f8; padding:9px 11px; }
+  .app .top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .app .top .ttl{ font-family:Georgia,serif; font-size:9pt; color:var(--navy); font-weight:700; }
+  .app .top .usr{ display:flex; align-items:center; gap:4px; color:var(--muted); }
+  .app .top .av{ width:13px;height:13px;border-radius:50%;background:var(--crimson); }
+  .app .stat{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:7px; }
+  .app .sc{ background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 7px; }
+  .app .sc .n{ font-size:11pt; font-weight:800; color:var(--navy); font-family:Georgia,serif; }
+  .app .sc .l{ color:var(--faint); }
+  .app .panel{ background:#fff; border:1px solid var(--line); border-radius:6px; padding:7px 8px; }
+  .app .row{ display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eef0f3; }
+  .app .chip{ display:inline-block; background:var(--navy-l); color:var(--navy-d); border-radius:10px; padding:1px 6px; }
+  .app .chip.g{ background:#e3f4ea; color:#1a7a44; }
+  .app .chip.y{ background:#fdf3da; color:#9a7212; }
+  .app .tabs{ display:flex; gap:5px; margin-bottom:6px; }
+  .app .tab{ padding:2px 8px; border-radius:12px; background:#fff; border:1px solid var(--line); color:var(--muted); }
+  .app .tab.on{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .app .tbar{ display:flex; gap:4px; margin-bottom:6px; flex-wrap:wrap; }
+  .app .b{ background:#fff;border:1px solid var(--line);border-radius:4px;padding:2px 6px;color:var(--muted); }
+  .app .b.p{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .app .b.r{ background:var(--crimson); color:#fff; border-color:var(--crimson); }
+  .app .ck{ color:#1a7a44; }
+  .app .ph{ background:#dfe4ea; border-radius:3px; }
+
+  .phase{ border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:0 8px 8px 0; padding:9px 13px; margin-bottom:8px; page-break-inside:avoid; }
+  .phase .ph2{ font-weight:700; color:var(--navy); font-size:10.5pt; }
+  .phase.done{ border-left-color:#1a8a4a; }
+  .phase.done .ph2::after{ content:" ✓ Sudah selesai"; color:#1a8a4a; font-size:8.5pt; font-weight:700; }
+  .phase.now{ border-left-color:var(--crimson); }
+  .phase.now .ph2::after{ content:" • Sedang berjalan"; color:var(--crimson-d); font-size:8.5pt; font-weight:700; }
+
+  .foot{ margin-top:16pt; border-top:1px solid var(--line); padding-top:10pt; font-size:8.6pt; color:var(--faint); display:flex; justify-content:space-between; }
+  .avoid{ page-break-inside:avoid; }
+  .pb{ page-break-before:always; }
+
+  /* ---------- DECORATIVE ACCESSORIES ---------- */
+  .topbar{ position:absolute; top:0; left:0; right:0; height:7px; background:linear-gradient(90deg,var(--crimson) 0%,#e0436a 35%,rgba(224,67,106,0) 75%); }
+  .ring{ position:absolute; border-radius:50%; border:1.5px solid rgba(255,255,255,.09); pointer-events:none; }
+  .ring.fill{ background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.06), rgba(255,255,255,0) 70%); border:none; }
+  .dots{ position:absolute; width:130px; height:130px; background-image:radial-gradient(rgba(255,255,255,.16) 1.4px, transparent 1.5px); background-size:13px 13px; pointer-events:none; }
+
+  /* numbered-badge glow */
+  .sec-num{ box-shadow:0 3px 8px rgba(0,32,69,.25); }
+  .sec-head{ position:relative; }
+  .sec-head::after{ content:""; position:absolute; left:0; bottom:-2px; width:46px; height:2px; background:var(--crimson); }
+
+  /* key-numbers band (real data) */
+  .statband{ position:relative; overflow:hidden; background:linear-gradient(135deg,#002045 0%,#0a2b54 100%); border-radius:13px; padding:15px 12px; margin:11pt 0; display:grid; grid-template-columns:repeat(4,1fr); gap:6px; box-shadow:0 6px 16px rgba(0,32,69,.16); }
+  .statband .s{ text-align:center; position:relative; z-index:1; }
+  .statband .s + .s{ border-left:1px solid rgba(255,255,255,.13); }
+  .statband .s .n{ font-family:Georgia,serif; font-size:18pt; font-weight:800; color:#fff; line-height:1; }
+  .statband .s .l{ font-size:8.2pt; color:#bcd0ea; margin-top:4px; }
+
+  /* table of contents */
+  .toc{ page-break-after:always; }
+  .toc .r{ display:flex; align-items:center; gap:10px; padding:7.5px 0; border-bottom:1px solid var(--line); }
+  .toc .nu{ width:25px; height:25px; border-radius:7px; background:var(--navy-l); color:var(--navy); font-family:Georgia,serif; font-weight:700; font-size:10.5pt; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .toc .tt{ font-weight:600; color:var(--navy-d); font-size:11.5pt; }
+  .toc .dd{ flex:1; border-bottom:1.5px dotted #c4ccd8; margin:0 4px; transform:translateY(-4px); }
+
+  /* card accent */
+  .card{ border-top:2.5px solid #cdd8ea; }
+  .card:has(.tag){ border-top-color:var(--crimson); }
+
+  /* back cover */
+  .back{ margin:0 -16mm 0 -16mm; min-height:250mm; padding:26mm 22mm 20mm; color:#fff; position:relative; page-break-before:always;
+         background:linear-gradient(150deg,#002045 0%,#00152e 55%,#0a2b54 100%); }
+  .back .wm2{ font-family:Georgia,serif; font-size:26pt; font-weight:700; color:#fff; }
+  .back .wm2 .d{ color:var(--crimson); }
+
+  /* ---------- SQUARED DESIGN (non-rounded) ---------- */
+  .sec-num, .card, .callout, .note, .pillar, .browser, .browser .addr, .statband,
+  .toc .nu, .phase, .chip, .tab, .b, .phone, .case, .case img, .badge, .cover .rule,
+  .ring, .ring.fill, img { border-radius: 0 !important; }
+  /* keep only the tiny window-control dots circular */
+
+  /* ---------- NEATER PAGINATION ---------- */
+  h2, h3, .sec-head { break-after: avoid; page-break-after: avoid; }
+  .sec-head { margin-top: 20pt; }
+  .section > h3 + p { margin-bottom: 6pt; }
+  .fig, .card, .callout, .note, .statband, .phase, .pillar, .showcase,
+  .toc .r, .browser { break-inside: avoid; page-break-inside: avoid; }
+  p { orphans: 2; widows: 2; }
+  .cap { break-before: avoid; }
+
+  /* ---------- LARGER, READABLE TYPE (untuk pembaca lansia) ---------- */
+  body{ font-size:12.5pt; line-height:1.74; }
+  .sec-head h2{ font-size:19pt; }
+  h3{ font-size:14pt; }
+  .lead{ font-size:13.5pt; line-height:1.7; }
+  .card h4{ font-size:12.5pt; }
+  .card p{ font-size:11.4pt; line-height:1.52; }
+  .card .tag{ font-size:8.6pt; }
+  table{ font-size:12pt; }
+  th,td{ padding:9px 11px; }
+  .callout p{ font-size:12pt; }
+  .note{ font-size:11.2pt; }
+  .cap{ font-size:10.2pt; }
+  .toc .nu{ font-size:12.5pt; width:28px; height:28px; }
+  .toc .tt{ font-size:14pt; }
+  .toc .r{ padding:9.5px 0; }
+  .statband .s .n{ font-size:22pt; }
+  .statband .s .l{ font-size:9.8pt; }
+  .phase .ph2{ font-size:13pt; }
+  .phase div[style]{ font-size:11pt !important; }
+  ul li{ margin-bottom:6.5pt; }
+  ul li::before{ top:11px; }
+
+  /* ---------- DIAGRAMS ---------- */
+  .dgcap{ font-weight:700; color:var(--navy-d); font-size:11pt; margin:2pt 0 4pt; }
+  /* flow (workflow) */
+  .flow{ display:flex; align-items:stretch; margin:10pt 0 12pt; }
+  .flow .step{ flex:1; background:var(--navy-l); border:1px solid var(--line); border-top:3px solid var(--navy); padding:11px 6px; text-align:center; }
+  .flow .step .t{ font-weight:700; color:var(--navy-d); font-size:11.5pt; }
+  .flow .step .d{ font-size:9.4pt; color:var(--muted); margin-top:3px; line-height:1.35; }
+  .flow .arrow{ display:flex; align-items:center; color:var(--crimson); font-weight:800; padding:0 7px; font-size:17pt; }
+  /* roles pyramid */
+  .ladder{ margin:10pt 0 12pt; }
+  .ladder .lvl{ display:flex; align-items:center; gap:11px; border:1px solid var(--line); border-left:4px solid var(--navy); background:#fff; padding:9px 14px; margin:0 auto 6px; }
+  .ladder .lvl .rank{ width:25px; height:25px; background:var(--navy); color:#fff; font-weight:700; font-size:10.5pt; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .ladder .lvl .nm{ font-weight:700; color:var(--navy-d); font-size:12pt; }
+  .ladder .lvl .ds{ color:var(--muted); font-size:10.4pt; margin-left:auto; text-align:right; }
+  /* distribution */
+  .dist{ display:flex; align-items:center; gap:9px; margin:10pt 0 12pt; flex-wrap:wrap; }
+  .dist .node{ background:var(--navy); color:#fff; padding:11px 14px; font-weight:700; font-size:11.5pt; text-align:center; }
+  .dist .node.alt{ background:var(--crimson); }
+  .dist .arrow{ color:var(--crimson); font-weight:800; font-size:18pt; }
+  .dist .chs{ display:flex; gap:6px; flex-wrap:wrap; flex:1; justify-content:center; }
+  .dist .ch{ border:1px solid var(--line); border-top:3px solid var(--navy); background:#fff; padding:8px 12px; font-weight:600; color:var(--navy-d); font-size:10.4pt; }
+  .flow, .ladder, .dist { break-inside: avoid; page-break-inside: avoid; }
+
+  /* ---------- FULL-PAGE SCREENSHOT STRIPS (utuh, terbaca) ---------- */
+  .shotttl{ font-weight:700; color:var(--navy-d); font-size:12pt; margin:12pt 0 2pt; }
+  .shotsub{ color:var(--muted); font-size:10.5pt; margin:0 0 5pt; }
+  .shot{ break-inside:avoid; page-break-inside:avoid; }
+  .shot img{ display:block; width:100%; border:1px solid var(--line); margin-bottom:-1px; }
+  .shotnote{ font-size:9.6pt; color:var(--faint); font-style:italic; margin:4pt 0 10pt; }
+
+  /* thumbnail gallery */
+  .thumbs{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:8pt 0; }
+  .thumb{ border:1px solid var(--line); background:#fff; break-inside:avoid; }
+  .thumb img{ display:block; width:100%; height:122px; object-fit:cover; object-position:top; border-bottom:1px solid var(--line); }
+  .thumb .t{ font-size:10pt; padding:6px 8px; color:var(--navy-d); font-weight:600; }
+  .thumb .t small{ display:block; font-weight:400; color:var(--muted); font-size:8.8pt; }
+
+  /* provisioning options (template / custom) */
+  .opts{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:10pt 0; }
+  .opt{ border:1px solid var(--line); border-top:4px solid var(--navy); padding:13px 16px; break-inside:avoid; }
+  .opt.cust{ border-top-color:var(--crimson); }
+  .opt h4{ font-size:14.5pt; color:var(--navy); }
+  .opt .tagline{ color:var(--muted); font-size:10.5pt; margin:2pt 0 7pt; }
+  .opt ul{ margin:0; }
+
+  /* ---------- PAGINATION RAPI ---------- */
+  table, .opts, .opt, .statband, .flow, .ladder, .dist, .thumb,
+  .pillars, .pillar { break-inside: avoid; page-break-inside: avoid; }
+  .shotttl, .shotsub, .dgcap { break-after: avoid; page-break-after: avoid; }
+  /* keep a heading paragraph attached to what follows */
+  .section > p + ul, .section > p + table { break-before: avoid; page-break-before: avoid; }
+
+  /* ---------- GALERI 2 KOLOM + PENJELASAN ---------- */
+  .gal2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:9pt 0; }
+  .gal2 .it{ border:1px solid var(--line); background:#fff; break-inside:avoid; page-break-inside:avoid; }
+  .gal2 .it img{ display:block; width:100%; height:150px; object-fit:cover; object-position:top; border-bottom:1px solid var(--line); }
+  .gal2 .it .b{ padding:9px 12px; }
+  .gal2 .it .b h4{ font-size:12.5pt; color:var(--navy); margin-bottom:3pt; }
+  .gal2 .it .b p{ font-size:10.6pt; color:var(--muted); margin:0; line-height:1.5; }
+
+  /* ---------- DESAIN LEBIH MENARIK ---------- */
+  /* header bagian = pita ber-ikon */
+  .sec-head{ background:linear-gradient(90deg,#e7edf4 0%,#eef2f7 55%,rgba(238,242,247,0) 100%);
+             border-left:5px solid var(--crimson); border-bottom:none; padding:10px 14px; margin:22pt 0 12pt; }
+  .sec-head::after{ content:none !important; }
+  .sec-head .sec-ic{ font-size:17pt; line-height:1; }
+  .sec-num{ box-shadow:0 2px 6px rgba(0,32,69,.22); }
+
+  /* baris kartu ikon (ringkasan visual) */
+  .iconrow{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:9pt 0; }
+  .iconrow .ic{ display:flex; gap:11px; align-items:flex-start; border:1px solid var(--line);
+                border-left:4px solid var(--navy); background:#fff; padding:11px 13px; break-inside:avoid; page-break-inside:avoid; }
+  .iconrow .ic .e{ font-size:19pt; line-height:1; flex:0 0 auto; }
+  .iconrow .ic .tx h4{ font-size:12.3pt; color:var(--navy); margin:0 0 2pt; }
+  .iconrow .ic .tx p{ font-size:10.4pt; color:var(--muted); margin:0; line-height:1.45; }
+
+  /* callout dengan ikon */
+  .callout.tip{ display:flex; gap:11px; align-items:flex-start; }
+  .callout.tip::before{ content:"💡"; font-size:16pt; line-height:1.1; flex:0 0 auto; }
+
+  /* motif pemisah */
+  .divider{ text-align:center; color:#c4ccd8; letter-spacing:7px; font-size:10pt; margin:9pt 0 2pt; }
+  .divider b{ color:var(--crimson); }
+
+  /* chip kecil di sampul */
+  .cover .chips{ margin-top:14pt; display:flex; gap:8px; flex-wrap:wrap; }
+  .cover .chips span{ border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.06); color:#dbe7f5; font-size:9.5pt; padding:5px 12px; display:inline-flex; align-items:center; gap:6px; }
+
+  /* ---------- IKON SVG SATU TEMA (crimson) ---------- */
+  .svi{ width:18px; height:18px; fill:none; stroke:var(--crimson); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; vertical-align:-3px; }
+  .svi.sec-ic{ width:21px; height:21px; }
+  .iconrow .ic .svi{ width:27px; height:27px; flex:0 0 auto; }
+  .cover .chips .svi{ width:15px; height:15px; stroke:#cfe0f5; vertical-align:-2px; }
+
+  /* ---------- AKSEN MERAH KARTAWARTA (tambahan) ---------- */
+  .iconrow .ic{ border-left-color:var(--crimson); }
+  .gal2 .it{ border-top:3px solid var(--crimson); }
+  .dgcap{ border-left:4px solid var(--crimson); padding-left:9px; }
+  .flow .step{ border-top-color:var(--crimson); }
+  .opt{ border-top-color:var(--crimson); }
+  td.k{ border-left:3px solid var(--crimson); padding-left:9px; }
+  .phase{ border-left-color:var(--crimson); }
+
+  /* ---------- HOOK / USP (untuk jualan) ---------- */
+  .cover .hookline{ margin-top:13pt; font-family:Georgia,serif; font-size:13.5pt; font-weight:700; color:#fff; border-left:4px solid var(--crimson); padding-left:12px; line-height:1.35; max-width:152mm; }
+  .hook{ background:linear-gradient(135deg,#002045,#0a2b54); color:#fff; padding:15px 18px; margin:11pt 0; border-left:6px solid var(--crimson); break-inside:avoid; page-break-inside:avoid; }
+  .hook .big{ font-family:Georgia,serif; font-size:15.5pt; font-weight:700; color:#fff; line-height:1.32; }
+  .hook p{ margin:6pt 0 0; color:#cfe0f5; font-size:11.5pt; line-height:1.55; }
+  .hook.cta{ background:linear-gradient(135deg,#8f0c20,#b7102a); border-left-color:#fff; }
+  .hook.cta .big{ font-size:18pt; }
+  .hook.cta p{ color:#fde7ea; }
+
+  .vs{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:10pt 0; break-inside:avoid; page-break-inside:avoid; }
+  .vs .col{ border:1px solid var(--line); padding:12px 14px; }
+  .vs .col.bad{ background:#fbeef0; border-top:4px solid var(--crimson); }
+  .vs .col.good{ background:#edf6f0; border-top:4px solid #1a8a4a; }
+  .vs .col h4{ font-size:12.5pt; margin-bottom:6pt; }
+  .vs .col.bad h4{ color:var(--crimson-d); }
+  .vs .col.good h4{ color:#177a40; }
+  .vs ul{ margin:0; }
+  .vs .col.good ul li::before{ background:#1a8a4a; }
+  .vs .col li{ font-size:10.7pt; margin-bottom:5pt; }
+
+  .aud{ display:flex; flex-wrap:wrap; gap:8px; margin:8pt 0; }
+  .aud span{ border:1px solid var(--line); border-left:3px solid var(--crimson); padding:6px 12px; font-size:11pt; color:var(--navy-d); font-weight:600; background:#fff; }
+
+  /* ---------- KARTU HARGA / PAKET ---------- */
+  .price{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:11pt 0; }
+  .pk{ border:1px solid var(--line); border-top:5px solid var(--navy); background:#fff; break-inside:avoid; page-break-inside:avoid; }
+  .pk.feat{ border-top-color:var(--crimson); box-shadow:0 7px 18px rgba(0,32,69,.13); }
+  .pk .ph{ padding:13px 16px 12px; border-bottom:1px solid var(--line); position:relative; }
+  .pk .nm{ font-family:Georgia,serif; font-size:15.5pt; font-weight:700; color:var(--navy); }
+  .pk .tl{ font-size:10pt; color:var(--muted); margin-top:2pt; }
+  .pk .pr{ font-family:Georgia,serif; font-size:24pt; font-weight:800; color:var(--crimson-d); margin-top:8pt; line-height:1; }
+  .pk .pr small{ font-size:10pt; color:var(--faint); font-weight:400; }
+  .pk .srv{ display:inline-block; margin-top:9pt; font-size:9.5pt; font-weight:700; padding:4px 10px; }
+  .pk .srv.share{ background:var(--navy-l); color:var(--navy-d); }
+  .pk .srv.ded{ background:var(--crimson-l); color:var(--crimson-d); }
+  .pk .ribbon{ position:absolute; top:13px; right:14px; background:var(--crimson); color:#fff; font-size:8.2pt; font-weight:700; letter-spacing:.5px; padding:3px 9px; }
+  .pk .body{ padding:11px 16px 15px; }
+  .pk .body ul{ margin:0; }
+  .pk .body ul li{ position:relative; padding-left:21px; margin-bottom:6pt; font-size:10.9pt; }
+  .pk .body ul li::before{ content:"\2713"; position:absolute; left:0; top:0; width:auto; height:auto; background:none; color:var(--crimson); font-weight:800; }
+  .pk .ck{ display:block; margin-top:10pt; font-size:9.7pt; color:var(--faint); }
+  .pkmeta{ margin-top:10pt; border-top:1px dashed var(--line); padding-top:6pt; }
+  .pkmeta > div{ display:flex; justify-content:space-between; gap:8px; font-size:10pt; padding:3.5pt 0; border-bottom:1px solid #eef0f3; }
+  .pkmeta > div:last-child{ border-bottom:none; }
+  .pkmeta .ml{ color:var(--muted); }
+  .pkmeta .mv{ color:var(--navy-d); font-weight:700; text-align:right; }
+
+  /* ---------- GARANSI & LANGGANAN ---------- */
+  .warranty{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:9pt 0; }
+  .warranty .w{ border:1px solid var(--line); border-top:4px solid var(--navy); background:#fff; padding:12px 15px; break-inside:avoid; page-break-inside:avoid; }
+  .warranty .w.sub{ border-top-color:var(--crimson); background:#fbf5f6; }
+  .warranty .w h4{ font-size:13pt; color:var(--navy); display:flex; align-items:center; gap:8px; margin-bottom:3pt; }
+  .warranty .w .pr2{ font-family:Georgia,serif; font-size:17pt; font-weight:800; color:var(--crimson-d); margin:3pt 0; }
+  .warranty .w p{ font-size:10.6pt; color:var(--muted); margin:4pt 0 0; line-height:1.5; }
+  .warranty .w .inc{ margin-top:6pt; }
+  .warranty .w .inc span{ display:inline-block; font-size:9.3pt; background:var(--navy-l); color:var(--navy-d); border-left:2px solid var(--crimson); padding:3px 9px; margin:0 4px 4px 0; font-weight:600; }
+
+  /* ---------- INSTRUMEN STIKER (lebih friendly) ---------- */
+  /* stabilo / highlighter */
+  .mark{ background:linear-gradient(transparent 56%, #ffdf7e 56%); padding:0 1.5px; }
+  .mark.r{ background:linear-gradient(transparent 56%, var(--crimson-l) 56%); }
+  /* stiker miring */
+  .sticker{ display:inline-block; background:var(--crimson); color:#fff; font-weight:800; font-size:8.6pt; letter-spacing:.4px; padding:4px 11px; transform:rotate(-2.5deg); box-shadow:0 2px 5px rgba(0,0,0,.16); }
+  .sticker.navy{ background:var(--navy); }
+  .sticker.green{ background:#1a8a4a; }
+  /* stempel bulat */
+  .stamp{ float:right; width:104px; height:104px; border-radius:50%; border:2.5px solid var(--crimson); color:var(--crimson-d); display:flex; align-items:center; justify-content:center; transform:rotate(-11deg); margin:2px 0 8px 14px; }
+  .stamp .in{ border:1.5px solid var(--crimson); border-radius:50%; width:88px; height:88px; display:flex; align-items:center; justify-content:center; text-align:center; padding:6px; font-family:Georgia,serif; font-weight:800; font-size:9.3pt; line-height:1.18; }
+  /* catatan tips (sticky) */
+  .tip2{ display:flex; gap:11px; align-items:flex-start; background:#fff8e6; border:1px solid #f0e0a8; border-left:5px solid #f4a400; padding:12px 15px; margin:10pt 0; break-inside:avoid; page-break-inside:avoid; }
+  .tip2 .svi{ stroke:#c98a00; width:22px; height:22px; flex:0 0 auto; }
+  .tip2 .t2{ font-size:11pt; color:#5b4a1a; line-height:1.5; }
+  .tip2 .t2 strong{ color:#3a2e08; }
+
+  /* ---------- STIKER BESAR / SEGEL (pengisi ruang kosong) ---------- */
+  .filler{ display:flex; align-items:center; gap:22px; justify-content:center; margin:18pt 0 8pt; break-inside:avoid; page-break-inside:avoid; }
+  .filler.rev{ flex-direction:row-reverse; }
+  .filler .msg{ max-width:80mm; }
+  .filler .msg .bg{ font-family:Georgia,serif; font-size:15pt; font-weight:700; color:var(--navy); line-height:1.3; }
+  .filler .msg p{ font-size:11pt; color:var(--muted); margin:5pt 0 0; line-height:1.5; }
+  .seal{ flex:0 0 auto; width:140px; height:140px; border-radius:50%; border:3px solid var(--crimson); display:flex; align-items:center; justify-content:center; transform:rotate(-8deg); box-shadow:0 3px 9px rgba(0,32,69,.12); }
+  .seal.navy{ border-color:var(--navy); }
+  .seal .in{ width:120px; height:120px; border:1.5px dashed var(--crimson); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--crimson-d); padding:9px; }
+  .seal.navy .in{ border-color:var(--navy); color:var(--navy); }
+  .seal .in svg{ width:28px; height:28px; stroke:var(--crimson); fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; margin-bottom:4px; }
+  .seal.navy .in svg{ stroke:var(--navy); }
+  .seal .in .tx{ font-family:Georgia,serif; font-weight:800; font-size:9.7pt; line-height:1.16; letter-spacing:.3px; }
+  .bigsticker{ text-align:center; margin:15pt 0 6pt; }
+  .bigsticker span{ display:inline-block; background:var(--crimson); color:#fff; font-family:Georgia,serif; font-weight:800; font-size:16pt; padding:14px 30px; transform:rotate(-1.5deg); box-shadow:0 4px 10px rgba(0,0,0,.18); }
+  .bigsticker.navy span{ background:var(--navy); }
+
+  /* ---------- HITUNGAN SEDERHANA (peluang bisnis) ---------- */
+  .calc{ background:#edf6f0; border:1px solid #cfe6d8; border-left:5px solid #1a8a4a; padding:13px 17px; margin:10pt 0; break-inside:avoid; page-break-inside:avoid; }
+  .calc h4{ color:#177a40; font-size:13pt; margin-bottom:6pt; display:flex; align-items:center; gap:8px; }
+  .calc h4 .svi{ stroke:#1a8a4a; }
+  .calc .row{ display:flex; justify-content:space-between; gap:10px; font-size:11pt; padding:4pt 0; border-bottom:1px dashed #cfe6d8; }
+  .calc .row span:last-child{ font-weight:700; color:var(--navy-d); white-space:nowrap; }
+  .calc .row.tot{ border-bottom:none; border-top:2px solid #1a8a4a; margin-top:3pt; padding-top:6pt; font-weight:800; color:#147a3c; font-size:13pt; }
+  .calc .row.tot span:last-child{ color:#147a3c; }
+  .calc .note{ font-size:9pt; color:#6b8a76; margin-top:6pt; font-style:italic; }
+
+  /* ---------- FOTO PENDUKUNG (photo band sinematik) ---------- */
+  .photoband{ position:relative; width:100%; height:62mm; overflow:hidden; margin:12pt 0 13pt;
+    break-inside:avoid; page-break-inside:avoid; box-shadow:0 2px 10px rgba(0,16,40,.18); }
+  .photoband img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    filter:saturate(.78) contrast(1.04); }
+  /* lapisan navy supaya foto menyatu dengan tema & teks selalu terbaca */
+  .photoband .ov{ position:absolute; inset:0;
+    background:linear-gradient(90deg, rgba(0,18,42,.93) 0%, rgba(0,22,50,.80) 40%, rgba(0,26,58,.34) 72%, rgba(0,26,58,.12) 100%); }
+  .photoband .grain{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,16,40,.28), rgba(0,16,40,0) 35%, rgba(0,16,40,.42)); }
+  .photoband .tx{ position:absolute; left:0; top:0; bottom:0; display:flex; flex-direction:column; justify-content:center;
+    padding:0 20mm 0 14mm; max-width:118mm; }
+  .photoband .tx::before{ content:""; position:absolute; left:0; top:18%; bottom:18%; width:5px; background:var(--crimson); }
+  .photoband .kick{ font-size:8.5pt; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:#ffd2da; margin-bottom:6pt; }
+  .photoband h3{ font-family:Georgia,serif; font-size:18pt; font-weight:700; color:#fff; line-height:1.22; margin:0; text-shadow:0 1px 6px rgba(0,8,24,.5); }
+  .photoband p{ margin:7pt 0 0; color:#dbe7f5; font-size:10.5pt; line-height:1.5; max-width:96mm; }
+  .photoband .tag2{ position:absolute; right:10mm; bottom:7mm; font-size:7.5pt; letter-spacing:.6px; text-transform:uppercase;
+    color:rgba(219,231,245,.7); background:rgba(0,12,30,.4); padding:3px 9px; border:1px solid rgba(255,255,255,.18); }
+  /* strip foto tipis sebagai pemisah halus (tanpa teks dominan) */
+  .photoslim{ position:relative; width:100%; height:34mm; overflow:hidden; margin:11pt 0; break-inside:avoid; page-break-inside:avoid; }
+  .photoslim img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(.72); }
+  .photoslim .ov{ position:absolute; inset:0; background:linear-gradient(90deg, rgba(0,18,42,.86), rgba(0,22,50,.45) 55%, rgba(0,26,58,.16)); }
+  .photoslim .lb{ position:absolute; left:14mm; top:50%; transform:translateY(-50%); color:#fff; font-family:Georgia,serif;
+    font-size:13pt; font-weight:700; text-shadow:0 1px 5px rgba(0,8,24,.5); border-left:4px solid var(--crimson); padding-left:11px; }
+</style>
+</head>
+<body>
+
+<!-- ============ IKON (SVG, satu tema) ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.6" cy="6" r="1"/><circle cx="3.6" cy="12" r="1"/><circle cx="3.6" cy="18" r="1"/></symbol>
+  <symbol id="ic-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2.5" width="8" height="4" rx="1"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="14" y2="15"/></symbol>
+  <symbol id="ic-news" viewBox="0 0 24 24"><path d="M4 5h13v15H6a2 2 0 0 1-2-2Z"/><path d="M17 8h3v10a2 2 0 0 1-2 2"/><line x1="7" y1="9" x2="14" y2="9"/><line x1="7" y1="13" x2="14" y2="13"/><line x1="7" y1="17" x2="11" y2="17"/></symbol>
+  <symbol id="ic-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1.5"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></symbol>
+  <symbol id="ic-tool" viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/><circle cx="9" cy="8" r="2.4"/><circle cx="15" cy="16" r="2.4"/></symbol>
+  <symbol id="ic-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5"/><line x1="9" y1="2.5" x2="9" y2="5"/><line x1="15" y1="2.5" x2="15" y2="5"/><line x1="9" y1="19" x2="9" y2="21.5"/><line x1="15" y1="19" x2="15" y2="21.5"/><line x1="2.5" y1="9" x2="5" y2="9"/><line x1="2.5" y1="15" x2="5" y2="15"/><line x1="19" y1="9" x2="21.5" y2="9"/><line x1="19" y1="15" x2="21.5" y2="15"/></symbol>
+  <symbol id="ic-code" viewBox="0 0 24 24"><polyline points="16 6 22 12 16 18"/><polyline points="8 6 2 12 8 18"/></symbol>
+  <symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 2.5 4.5 5.5v6c0 4.7 3.2 8.1 7.5 9.5 4.3-1.4 7.5-4.8 7.5-9.5v-6Z"/><polyline points="9 12 11 14 15 10"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 24 24"><polygon points="12 3 14.6 8.6 21 9.3 16.3 13.8 17.5 20 12 17 6.5 20 7.7 13.8 3 9.3 9.4 8.6"/></symbol>
+  <symbol id="ic-refresh" viewBox="0 0 24 24"><polyline points="20 5 20 10 15 10"/><polyline points="4 19 4 14 9 14"/><path d="M18.5 10A7 7 0 0 0 6 6.5M5.5 14A7 7 0 0 0 18 17.5"/></symbol>
+  <symbol id="ic-map" viewBox="0 0 24 24"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"/><line x1="9" y1="4" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="20"/></symbol>
+  <symbol id="ic-layers" viewBox="0 0 24 24"><polygon points="12 3 21 8 12 13 3 8"/><polyline points="3 12.5 12 17.5 21 12.5"/></symbol>
+  <symbol id="ic-chat" viewBox="0 0 24 24"><path d="M20 4H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h3v4l5-4h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1Z"/></symbol>
+  <symbol id="ic-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5"/><rect x="13.5" y="3" width="7.5" height="7.5"/><rect x="3" y="13.5" width="7.5" height="7.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5"/></symbol>
+  <symbol id="ic-signal" viewBox="0 0 24 24"><line x1="5" y1="20" x2="5" y2="16"/><line x1="10" y1="20" x2="10" y2="12"/><line x1="15" y1="20" x2="15" y2="8"/><line x1="20" y1="20" x2="20" y2="4"/></symbol>
+  <symbol id="ic-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><line x1="11" y1="18.5" x2="13" y2="18.5"/></symbol>
+  <symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></symbol>
+  <symbol id="ic-bolt" viewBox="0 0 24 24"><polygon points="13 2 4 14 11 14 10 22 20 9 13 9"/></symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/></symbol>
+  <symbol id="ic-award" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><polyline points="9 14 8 22 12 19.5 16 22 15 14"/></symbol>
+  <symbol id="ic-tag" viewBox="0 0 24 24"><path d="M3 12V4.5a1 1 0 0 1 1-1h7.5L21 13l-8.5 8.5Z"/><circle cx="8" cy="8" r="1.4"/></symbol>
+  <symbol id="ic-bulb" viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-4 10.4c.7.7 1 1.6 1 2.6h6c0-1 .3-1.9 1-2.6A6 6 0 0 0 12 3Z"/></symbol>
+</svg>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="topbar"></div>
+  <div class="ring fill" style="width:380px;height:380px;top:-110px;right:-120px"></div>
+  <div class="ring" style="width:250px;height:250px;top:-40px;right:10px"></div>
+  <div class="ring" style="width:520px;height:520px;bottom:-200px;left:-180px"></div>
+  <div class="dots" style="bottom:62mm;right:18mm"></div>
+  <div class="dev">
+    <div>
+      <div class="celiol">Celiol<span class="dot">.</span></div>
+      <div class="by">oleh PT Digyata Graha Utama</div>
+    </div>
+  </div>
+
+  <div class="kicker">Proposal Proyek &amp; Produk</div>
+  <h1>Membangun Platform<br/>Media Berita Digital</h1>
+
+  <div class="case">
+    <img src="../public/kartawarta-icon.png" alt="Contoh" />
+    <div><div class="t">Contoh Nyata (Live)</div><div class="n">Kartawarta</div></div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="sub">
+    Website + sistem pengelola (CMS) media berita yang lengkap — siap dipakai untuk
+    media berita apa pun. Tersedia sebagai <strong style="color:#fff">template siap
+    pakai</strong> atau dikembangkan <strong style="color:#fff">custom</strong> sesuai
+    kebutuhan. Dibangun oleh tim Celiol.
+  </div>
+
+  <div class="chips">
+    <span><svg class="svi"><use href="#ic-news"/></svg> Situs + CMS</span><span><svg class="svi"><use href="#ic-cpu"/></svg> Dibantu AI</span><span><svg class="svi"><use href="#ic-signal"/></svg> Sebar otomatis</span><span><svg class="svi"><use href="#ic-layers"/></svg> Template / Custom</span>
+  </div>
+
+  <div class="hookline">Luncurkan media berita profesional Anda — lengkap, cepat tayang, dan siap menghasilkan.</div>
+  <div style="margin-top:11pt"><span class="sticker">MULAI Rp 35 JUTA</span></div>
+
+  <div class="meta">
+    <div>
+      <span class="badge">Pengembang: Celiol — PT Digyata Graha Utama</span><br/><br/>
+      <strong style="color:#fff">Studi kasus: Kartawarta — Media Berita Digital Bandung</strong><br/>
+      kartawarta.com
+    </div>
+    <div style="text-align:right">Dokumen Proposal<br/>Bandung, Juni 2026<br/>Versi 2.0</div>
+  </div>
+</div>
+
+<!-- ============ DAFTAR ISI ============ -->
+<div class="section toc">
+  <div class="sec-head"><div class="sec-num">≡</div><svg class="svi sec-ic"><use href="#ic-list"/></svg><h2>Daftar Isi</h2></div>
+  <div class="r"><span class="nu">1</span><span class="tt">Ringkasan Produk</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">2</span><span class="tt">Tentang Produk</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">3</span><span class="tt">Tampilan Sisi Pembaca</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">4</span><span class="tt">Panel Pengelola (Admin)</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">5</span><span class="tt">Fitur Otomatis di Balik Layar</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">6</span><span class="tt">Teknologi yang Digunakan</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">7</span><span class="tt">Pengelolaan, Keamanan &amp; Legalitas</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">8</span><span class="tt">Apa yang Membuatnya Unggul</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">9</span><span class="tt">Keberlanjutan</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">10</span><span class="tt">Rencana ke Depan</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">11</span><span class="tt">Peluang Bisnis: Kenapa Menjanjikan</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">12</span><span class="tt">Paket &amp; Harga (Template / Custom)</span><span class="dd"></span></div>
+  <div class="r"><span class="nu">13</span><span class="tt">Penutup</span><span class="dd"></span></div>
+  <div class="bigsticker"><span>Punya media berita sendiri — mulai Rp 35 juta</span></div>
+</div>
+
+<!-- ============ 1. RINGKASAN PRODUK ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">1</div><svg class="svi sec-ic"><use href="#ic-clipboard"/></svg><h2>Ringkasan Produk</h2></div>
+
+  <div class="hook">
+    <div class="big">Bangun media berita yang lengkap &amp; modern — tanpa ribet, tanpa tim besar.</div>
+    <p>Semua kebutuhan redaksi ada dalam satu sistem: menulis, memeriksa, menerbitkan, menyebarkan, sampai menghasilkan. Sudah terbukti jalan — bukan sekadar konsep.</p>
+  </div>
+
+  <div class="stamp"><div class="in">SUDAH<br/>BERJALAN<br/>NYATA</div></div>
+  <p class="lead">
+    Ini bukan sekadar situs berita biasa, melainkan <span class="mark">satu produk lengkap</span> untuk
+    menjalankan sebuah media berita — mulai dari menulis berita, memeriksanya,
+    menerbitkannya, sampai menyebarkannya ke mana-mana — semuanya dalam satu tempat.
+  </p>
+  <p>
+    Sistem ini <span class="mark">sudah benar-benar berjalan di internet</span> pada alamat
+    <strong>kartawarta.com</strong>. Tampilannya rapi dan modern, cepat dibuka, dan
+    bisa diakses dari komputer maupun ponsel.
+  </p>
+  <div class="pillars">
+    <div class="pillar"><div class="big">2 sisi</div><div class="lbl">Situs pembaca + panel pengelola</div></div>
+    <div class="pillar"><div class="big">AI</div><div class="lbl">Bantuan menulis otomatis</div></div>
+    <div class="pillar"><div class="big">6+</div><div class="lbl">Tempat penyebaran berita</div></div>
+  </div>
+  <p><strong>Yang membuatnya lengkap:</strong></p>
+  <div class="iconrow">
+    <div class="ic"><svg class="svi"><use href="#ic-grid"/></svg><div class="tx"><h4>Dua sisi, satu sistem</h4><p>Situs untuk pembaca + panel pengelola untuk redaksi.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-cpu"/></svg><div class="tx"><h4>Dibantu AI</h4><p>Mencari bahan dan menyusun draf berita otomatis.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-signal"/></svg><div class="tx"><h4>Tersebar otomatis</h4><p>Ke Google dan banyak media sosial sekaligus.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-shield"/></svg><div class="tx"><h4>Tertib &amp; aman</h4><p>Alur bertingkat, hak akses berlapis, dan jejak audit.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-layers"/></svg><div class="tx"><h4>Bisa dimiliki sendiri</h4><p>Template siap pakai atau dikembangkan custom.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-phone"/></svg><div class="tx"><h4>HP &amp; komputer</h4><p>Tampilan rapi dan cepat di layar apa pun.</p></div></div>
+  </div>
+  <div class="photoband">
+    <img src="img/img-news.jpg" alt="Ruang redaksi modern" />
+    <div class="ov"></div><div class="grain"></div>
+    <div class="tx">
+      <div class="kick">Satu sistem, dari redaksi sampai pembaca</div>
+      <h3>Mengelola media berita kini cukup dari satu layar.</h3>
+      <p>Menulis, memeriksa, menerbitkan, lalu menyebarkan ke mana-mana — semua mengalir rapi dalam satu tempat.</p>
+    </div>
+    <div class="tag2">Ilustrasi pendukung</div>
+  </div>
+
+  <div class="fig">
+    <div class="browser">
+      <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="addr">kartawarta.com</span></div>
+      <img src="shot-home.png" alt="Beranda Kartawarta" />
+    </div>
+    <div class="cap">Beranda Kartawarta — halaman utama yang dilihat pembaca.</div>
+  </div>
+</div>
+
+<!-- ============ 3. TENTANG KARTAWARTA ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">2</div><svg class="svi sec-ic"><use href="#ic-news"/></svg><h2>Tentang Produk</h2></div>
+  <p>
+    Produk ini adalah <strong>website sekaligus sistem pengelola (CMS) media berita</strong>
+    yang lengkap — <span class="mark">bisa dipakai untuk media berita apa pun</span>, di kota atau bidang mana pun.
+    Tujuannya: memudahkan kerja redaksi yang dulu manual dan lambat menjadi cepat dan
+    otomatis, tanpa mengurangi mutu berita.
+  </p>
+  <p>
+    Sepanjang dokumen ini, semua tampilan adalah <strong>contoh nyata dari Kartawarta</strong> —
+    sebuah media berita yang sudah berjalan dan dibangun memakai platform ini.
+  </p>
+  <p style="margin-bottom:5pt"><strong>Contoh cakupan rubrik (dapat disesuaikan):</strong></p>
+  <ul>
+    <li><strong>Bisnis &amp; Ekonomi</strong> — termasuk data bursa, direktori emiten, dan anggaran daerah (APBD).</li>
+    <li><strong>Pemerintahan &amp; Hukum</strong> — kebijakan publik, regulasi, dan direktori pejabat.</li>
+    <li><strong>Topik umum</strong> — olahraga, hiburan, teknologi, pendidikan, kesehatan, gaya hidup, dan lingkungan.</li>
+    <li><strong>Konten khusus</strong> — ulasan mendalam (Sorotan), liputan langsung (Live Blog), dan video pendek (Reels).</li>
+  </ul>
+  <table>
+    <tr><td class="k">Produk</td><td>Website + CMS media berita (siap pakai / custom)</td></tr>
+    <tr><td class="k">Pengembang</td><td>Celiol — PT Digyata Graha Utama</td></tr>
+    <tr><td class="k">Jenis</td><td>Situs &amp; sistem pengelola berita (bisa dibuka di HP &amp; komputer)</td></tr>
+    <tr><td class="k">Cocok untuk</td><td>Media berita umum maupun khusus (lokal, komunitas, instansi)</td></tr>
+    <tr><td class="k">Contoh nyata</td><td>Kartawarta — Media Berita Digital Bandung (kartawarta.com)</td></tr>
+    <tr><td class="k">Status contoh</td><td>Sudah berjalan &amp; terverifikasi Dewan Pers</td></tr>
+  </table>
+
+  <h3>Cocok untuk siapa?</h3>
+  <div class="aud">
+    <span>Media berita baru</span><span>Media daerah / lokal</span><span>Komunitas &amp; organisasi</span>
+    <span>Instansi / pemda</span><span>Perusahaan (media internal)</span><span>Pengembang yang me-rebrand</span>
+  </div>
+
+  <h3>Tanpa ini vs Dengan ini</h3>
+  <div class="vs">
+    <div class="col bad">
+      <h4>Cara lama (manual)</h4>
+      <ul>
+        <li>Sewa &amp; pasang banyak alat terpisah.</li>
+        <li>Berita ditulis &amp; disebar satu per satu.</li>
+        <li>Butuh tim besar, lambat, &amp; mahal.</li>
+        <li>Sulit memantau performa &amp; pendapatan.</li>
+      </ul>
+    </div>
+    <div class="col good">
+      <h4>Dengan produk ini</h4>
+      <ul>
+        <li>Semua jadi satu sistem — langsung pakai.</li>
+        <li>Dibantu AI + sebar otomatis ke mana-mana.</li>
+        <li>Cukup tim kecil, cepat, &amp; hemat.</li>
+        <li>Data pembaca &amp; performa terlihat jelas.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 4. TAMPILAN SISI PEMBACA ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">3</div><svg class="svi sec-ic"><use href="#ic-monitor"/></svg><h2>Tampilan Sisi Pembaca</h2></div>
+  <p class="lead">Inilah bagian yang dilihat orang banyak. Semua cuplikan diambil langsung dari contoh nyata (Kartawarta) dan ditampilkan <strong>utuh</strong> dari atas ke bawah.</p>
+
+  <div class="photoband">
+    <img src="img/img-mobile.jpg" alt="Membaca berita di ponsel" />
+    <div class="ov"></div><div class="grain"></div>
+    <div class="tx">
+      <div class="kick">Di genggaman pembaca</div>
+      <h3>Nyaman dibaca di HP maupun komputer.</h3>
+      <p>Tampilan otomatis menyesuaikan layar — pembaca betah, halaman cepat terbuka di mana saja.</p>
+    </div>
+    <div class="tag2">Ilustrasi pendukung</div>
+  </div>
+
+  <div class="shotttl">1. Halaman Depan (Beranda)</div>
+  <div class="shotsub">Berita utama, indeks bursa, dan kanal topik — dirancang menarik &amp; cepat dibuka.</div>
+  <div class="shot"><img src="shot-home.png" alt="Beranda"/></div>
+  <div class="shotnote">Bagian utama beranda (contoh: Kartawarta).</div>
+
+  <div class="shotttl">2. Halaman Berita</div>
+  <div class="shotsub">Judul, isi, nama penulis &amp; editor, jumlah pembaca, dan daftar berita terpopuler.</div>
+  <div class="shot"><img src="sl-article-1.png" alt="Halaman berita"/></div>
+  <div class="shotnote">Bagian utama halaman berita (contoh: Kartawarta).</div>
+
+  <div class="showcase">
+    <div>
+      <h3 style="margin-top:0">Nyaman dibuka di ponsel</h3>
+      <p>Lebih dari separuh pembaca memakai HP. Tampilannya tetap rapi dan ringan di layar kecil.</p>
+      <ul>
+        <li>Bisa dipasang seperti aplikasi di layar HP.</li>
+        <li>Ada pemberitahuan saat ada berita baru.</li>
+        <li>Cepat terbuka walau jaringan biasa.</li>
+      </ul>
+    </div>
+    <div class="fig" style="margin:0">
+      <div class="phone"><img src="shot-mobile.png" alt="Tampilan ponsel" /></div>
+      <div class="cap" style="margin-bottom:0">Tampilan di ponsel.</div>
+    </div>
+  </div>
+
+  <h3>Halaman pembaca lainnya</h3>
+  <p>Masih banyak halaman lain untuk pembaca — beberapa contohnya:</p>
+  <div class="gal2">
+    <div class="it"><img src="shot-category.png" alt="Rubrik"/><div class="b"><h4>Halaman Rubrik</h4><p>Mengelompokkan berita per kategori (Hukum, Bisnis, Olahraga, dst.) agar pembaca mudah mencari topik yang diminati.</p></div></div>
+    <div class="it"><img src="shot-pasar.png" alt="Pasar"/><div class="b"><h4>Pasar &amp; Bursa</h4><p>Menyajikan data indeks dan harga saham secara langsung — berguna untuk pembaca bisnis &amp; ekonomi.</p></div></div>
+    <div class="it"><img src="shot-video.png" alt="Video"/><div class="b"><h4>Video Story</h4><p>Kumpulan berita dalam bentuk video pendek tegak (Reels) yang bisa langsung diputar.</p></div></div>
+    <div class="it"><img src="shot-footer.png" alt="Footer"/><div class="b"><h4>Bagian Bawah (Footer)</h4><p>Menu lengkap (Tentang, Redaksi, Kontak) dan tanda Terverifikasi Dewan Pers sebagai bukti kredibilitas.</p></div></div>
+  </div>
+</div>
+
+<!-- ============ 5. PANEL PENGELOLA (ADMIN) ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">4</div><svg class="svi sec-ic"><use href="#ic-tool"/></svg><h2>Panel Pengelola (Admin)</h2></div>
+  <p class="lead">
+    Di balik situs yang dilihat pembaca, ada "ruang kendali" tempat seluruh pekerjaan
+    redaksi dan pengaturan diatur. Hanya bisa dibuka setelah masuk (login), dengan hak
+    akses berbeda sesuai jabatan.
+  </p>
+
+  <div class="photoslim">
+    <img src="img/img-team.jpg" alt="Tim redaksi bekerja" />
+    <div class="ov"></div>
+    <div class="lb">Satu tim, satu ruang kendali</div>
+  </div>
+
+  <div class="dgcap">Alur Kerja Berita — dari ditulis sampai terbit</div>
+  <div class="flow">
+    <div class="step"><div class="t">1. Draf</div><div class="d">Penulis menyusun berita</div></div>
+    <div class="arrow">›</div>
+    <div class="step"><div class="t">2. Review</div><div class="d">Diperiksa editor</div></div>
+    <div class="arrow">›</div>
+    <div class="step"><div class="t">3. Disetujui</div><div class="d">Lolos pemeriksaan</div></div>
+    <div class="arrow">›</div>
+    <div class="step"><div class="t">4. Terbit</div><div class="d">Tayang ke pembaca</div></div>
+    <div class="arrow">›</div>
+    <div class="step"><div class="t">5. Arsip</div><div class="d">Disimpan rapi</div></div>
+  </div>
+  <p>Setiap tahap <strong>tercatat</strong> — termasuk siapa yang menyetujui dan kapan — sehingga proses redaksi tertib dan dapat dipertanggungjawabkan.</p>
+
+  <div class="dgcap">Tingkatan Jabatan — hak akses berlapis (6 tingkat)</div>
+  <div class="ladder">
+    <div class="lvl" style="width:52%"><span class="rank">1</span><span class="nm">Super Admin</span><span class="ds">kendali penuh</span></div>
+    <div class="lvl" style="width:62%"><span class="rank">2</span><span class="nm">Chief Editor</span><span class="ds">pimpinan redaksi</span></div>
+    <div class="lvl" style="width:72%"><span class="rank">3</span><span class="nm">Editor</span><span class="ds">menyetujui &amp; menyunting</span></div>
+    <div class="lvl" style="width:82%"><span class="rank">4</span><span class="nm">Jurnalis Senior</span><span class="ds">menulis &amp; meliput</span></div>
+    <div class="lvl" style="width:91%"><span class="rank">5</span><span class="nm">Jurnalis</span><span class="ds">menulis berita</span></div>
+    <div class="lvl" style="width:100%"><span class="rank">6</span><span class="nm">Kontributor</span><span class="ds">mengirim tulisan</span></div>
+  </div>
+  <p>Makin tinggi jabatan, makin besar wewenangnya. Tiap orang hanya bisa membuka bagian yang menjadi haknya — data antar-akun tidak tercampur.</p>
+
+  <p>Berikut <strong>tangkapan layar asli</strong> panel-panel utama, ditampilkan utuh, beserta penjelasannya.</p>
+
+  <div class="shotttl">a. Dashboard — Pusat Ringkasan</div>
+  <div class="shotsub">Ringkasan menyeluruh dalam satu layar: jumlah artikel, total pembaca, artikel menunggu review, komentar, sorotan, polling, pemakaian AI, hingga sumber berita aktif.</div>
+  <div class="shot"><img src="sl-dashboard-1.png" alt="Dashboard"/></div>
+  <div class="shotnote">Panel Dashboard (bagian utama).</div>
+
+  <div class="shotttl">b. Tulis / Sunting Artikel — Ruang Menulis</div>
+  <div class="shotsub">Alat format lengkap, "Ide Berita dari Trending", bantuan "Riset &amp; Tulis dengan AI", serta pengaturan kategori, penulis, editor, tag, dan ringkasan di samping.</div>
+  <div class="shot"><img src="sl-editor-1.png" alt="Tulis Artikel"/></div>
+  <div class="shotnote">Panel Tulis Artikel.</div>
+
+  <div class="shotttl">c. Statistik — Data &amp; Performa</div>
+  <div class="shotsub">Pusat data terpadu: pembaca, artikel terbit, dan grafik tren — digabung dari ukuran internal, Google Analytics, Google Search Console, Cloudflare, serta biaya AI dalam Rupiah.</div>
+  <div class="shot"><img src="sl-statistik-1.png" alt="Statistik"/></div>
+  <div class="shotnote">Panel Statistik (bagian utama).</div>
+
+  <div class="shotttl">d. Pengaturan Sistem — Pusat Konfigurasi</div>
+  <div class="shotsub">Semua pengaturan tersusun rapi dalam tab &amp; sub-tab (Umum, AI &amp; Otomasi, Google, Media Sosial, Sistem, Kartu Pers).</div>
+  <div class="shot"><img src="sl-pengaturan-1.png" alt="Pengaturan"/></div>
+  <div class="shotnote">Panel Pengaturan.</div>
+
+  <div class="shotttl">e. Daftar Artikel — Mengelola Semua Berita</div>
+  <div class="shotsub">Daftar berita yang bisa disaring per status, dengan alat bantu "Cek Duplikat", "Export", dan "Perbaiki Sumber Foto".</div>
+  <div class="shot"><img src="panel-artikel.png" alt="Daftar Artikel"/></div>
+  <div class="shotnote">Panel Artikel.</div>
+
+  <h3>Panel-panel lainnya</h3>
+  <p>Selain itu tersedia banyak panel khusus untuk tiap kebutuhan operasional — ditampilkan dua per baris beserta penjelasannya:</p>
+  <div class="gal2">
+    <div class="it"><img src="panel-auto-artikel.png" alt="Auto Artikel"/><div class="b"><h4>Auto Artikel</h4><p>Membuat draf berita otomatis secara terjadwal — interval &amp; jumlah per sesi diatur sendiri, agar situs selalu terisi konten baru.</p></div></div>
+    <div class="it"><img src="panel-sumber-berita.png" alt="Sumber Berita"/><div class="b"><h4>Sumber Berita</h4><p>Daftar situs sumber yang dipantau untuk bahan berita, diatur per akun sehingga tiap penulis punya sumbernya sendiri.</p></div></div>
+    <div class="it"><img src="panel-sorotan.png" alt="Sorotan"/><div class="b"><h4>Sorotan</h4><p>Membuat ulasan mendalam dengan sudut pandang berbeda dari sebuah berita utama, agar pembaca memahami persoalan lebih lengkap.</p></div></div>
+    <div class="it"><img src="panel-social.png" alt="Sosial Media"/><div class="b"><h4>Sosial Media</h4><p>Mengatur dan menjadwalkan penyebaran berita ke Instagram, Facebook, X/Twitter, Threads, dan Telegram.</p></div></div>
+    <div class="it"><img src="panel-sosial-status.png" alt="Status Sosmed"/><div class="b"><h4>Status Sosmed</h4><p>Memantau status tiap unggahan ke media sosial — terkirim, gagal, atau menunggu — dalam satu layar.</p></div></div>
+    <div class="it"><img src="panel-tiktok.png" alt="TikTok"/><div class="b"><h4>TikTok</h4><p>Mengelola otomatisasi konten TikTok yang dibuat dari berita yang terbit.</p></div></div>
+    <div class="it"><img src="panel-live-blogs.png" alt="Live Blog"/><div class="b"><h4>Live Blog</h4><p>Meliput peristiwa secara langsung (real-time) — seperti sidang, konferensi pers, atau acara penting.</p></div></div>
+    <div class="it"><img src="panel-iklan.png" alt="Iklan"/><div class="b"><h4>Iklan</h4><p>Mengelola banner iklan di berbagai posisi, lengkap dengan catatan jumlah tayangan dan klik.</p></div></div>
+    <div class="it"><img src="panel-pengguna.png" alt="Pengguna"/><div class="b"><h4>Pengguna</h4><p>Mengatur akun, jabatan, dan hak akses tiap anggota redaksi.</p></div></div>
+    <div class="it"><img src="panel-seo.png" alt="SEO"/><div class="b"><h4>SEO</h4><p>Mengatur agar berita mudah ditemukan Google — sitemap, pengindeksan, dan data terstruktur.</p></div></div>
+    <div class="it"><img src="panel-analytics.png" alt="Analytics"/><div class="b"><h4>Analytics</h4><p>Melihat ringkasan analitik pengunjung langsung dari panel.</p></div></div>
+    <div class="it"><img src="panel-redaksi.png" alt="Redaksi"/><div class="b"><h4>Redaksi</h4><p>Mengatur susunan redaksi dan informasi legalitas yang tampil di situs.</p></div></div>
+  </div>
+</div>
+
+<!-- ============ 6. FITUR OTOMATIS ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">5</div><svg class="svi sec-ic"><use href="#ic-cpu"/></svg><h2>Fitur Otomatis di Balik Layar</h2></div>
+  <p class="lead">Banyak pekerjaan berjalan sendiri tanpa harus dikerjakan manual.</p>
+
+  <div class="dgcap">Alur Penyebaran Berita — sekali terbit, tersebar ke mana-mana</div>
+  <div class="dist">
+    <div class="node">Berita<br/>Terbit</div>
+    <div class="arrow">›</div>
+    <div class="chs">
+      <span class="ch">Google Berita</span><span class="ch">Instagram</span><span class="ch">Facebook</span>
+      <span class="ch">X / Twitter</span><span class="ch">Threads</span><span class="ch">Telegram</span><span class="ch">Reels / TikTok</span>
+    </div>
+    <div class="arrow">›</div>
+    <div class="node alt">Pembaca</div>
+  </div>
+  <p>Dengan penyebaran otomatis ke banyak kanal sekaligus, satu berita bisa menjangkau jauh lebih banyak orang — tanpa kerja manual, dalam hitungan menit.</p>
+
+  <div class="grid">
+    <div class="card"><span class="tag">AI</span><h4>Mencari Bahan &amp; Menulis</h4><p>Komputer membantu mencari informasi terbaru dari internet lalu menyusun draf berita lengkap dengan sumbernya.</p></div>
+    <div class="card"><span class="tag">AI</span><h4>Biaya Terkontrol</h4><p>Biaya pemakaian kecerdasan buatan langsung terlihat dalam Rupiah, dihitung per berita.</p></div>
+    <div class="card"><span class="tag">Google</span><h4>Mudah Ditemukan</h4><p>Berita disiapkan otomatis agar cepat muncul di pencarian Google dan Google Berita.</p></div>
+    <div class="card"><span class="tag">Sosial</span><h4>Tersebar Otomatis</h4><p>Berita dikirim otomatis ke Instagram, Facebook, X/Twitter, Threads, dan Telegram.</p></div>
+    <div class="card"><span class="tag">Video</span><h4>Video Pendek</h4><p>Membuat video tegak dari berita untuk Instagram Reels dan TikTok secara otomatis.</p></div>
+    <div class="card"><span class="tag">Pembaca</span><h4>Dekat dengan Pembaca</h4><p>Bisa dipasang seperti aplikasi di HP, ada pemberitahuan, buletin email, dan saran bacaan.</p></div>
+  </div>
+  <p style="margin-top:9pt"><strong>Hasilnya bagi redaksi:</strong></p>
+  <ul>
+    <li>Produksi berita lebih cepat dan lebih hemat biaya.</li>
+    <li>Jangkauan pembaca lebih luas lewat banyak kanal sekaligus.</li>
+    <li>Pekerjaan berulang (menyebar, memposting, membuat video) berjalan otomatis.</li>
+    <li>Mutu tetap terjaga karena ada pemeriksaan bertingkat sesuai kaidah jurnalistik.</li>
+  </ul>
+</div>
+
+<!-- ============ 7. TEKNOLOGI ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">6</div><svg class="svi sec-ic"><use href="#ic-code"/></svg><h2>Teknologi yang Digunakan</h2></div>
+  <p>Situs ini dibuat dengan teknologi terbaru agar cepat, aman, dan mudah dikembangkan. Berikut bahan-bahan utamanya:</p>
+
+  <div class="photoband">
+    <img src="img/img-tech.jpg" alt="Pusat data / server" />
+    <div class="ov"></div><div class="grain"></div>
+    <div class="tx">
+      <div class="kick">Fondasi yang kokoh</div>
+      <h3>Dibangun di atas teknologi kelas dunia.</h3>
+      <p>Teknologi yang sama dipakai banyak media besar — cepat, stabil, dan siap menampung pembaca yang terus bertambah.</p>
+    </div>
+    <div class="tag2">Ilustrasi pendukung</div>
+  </div>
+
+  <table>
+    <tr><th>Bagian</th><th>Teknologi</th></tr>
+    <tr><td class="k">Tampilan situs</td><td>Next.js 14, React, TypeScript, Tailwind CSS</td></tr>
+    <tr><td class="k">Mesin &amp; penyimpanan data</td><td>Node.js, Prisma, basis data PostgreSQL</td></tr>
+    <tr><td class="k">Keamanan masuk (login)</td><td>NextAuth + sandi terenkripsi</td></tr>
+    <tr><td class="k">Kecerdasan buatan</td><td>Claude, DeepSeek (cadangan), Perplexity</td></tr>
+    <tr><td class="k">Media &amp; otomatisasi</td><td>ffmpeg (video), Playwright, tugas terjadwal</td></tr>
+    <tr><td class="k">Tempat &amp; jaringan</td><td>Server sendiri (VPS), PM2, Cloudflare</td></tr>
+    <tr><td class="k">Pemeriksaan mutu</td><td>Pemeriksaan otomatis setiap ada perubahan</td></tr>
+  </table>
+  <div class="callout"><p><strong>Kualitas terjaga:</strong> setiap perubahan pada sistem diperiksa komputer otomatis lebih dulu. Kalau ada yang salah, perubahan ditolak — jadi situs tetap stabil.</p></div>
+</div>
+
+<!-- ============ 8. KEAMANAN & LEGALITAS ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">7</div><svg class="svi sec-ic"><use href="#ic-shield"/></svg><h2>Pengelolaan, Keamanan &amp; Legalitas</h2></div>
+  <div class="grid">
+    <div class="card"><h4>Sesuai Aturan Dewan Pers</h4><p>Terverifikasi Dewan Pers; mengikuti Kode Etik Jurnalistik &amp; Pedoman Media Siber, dengan halaman redaksi, pedoman, dan koreksi/hak jawab.</p></div>
+    <div class="card"><h4>Hak Akses Berlapis</h4><p>Setiap orang hanya bisa membuka bagian yang menjadi haknya. Penulis hanya melihat datanya sendiri.</p></div>
+    <div class="card"><h4>Aman dari Gangguan</h4><p>Penjagaan saat login, verifikasi email, pengaman CAPTCHA, dan data rahasia yang dikunci.</p></div>
+    <div class="card"><h4>Jejak &amp; Anti-Penyalinan</h4><p>Setiap perubahan data tercatat, dan ada perlindungan agar isi situs tidak mudah disalin paksa.</p></div>
+  </div>
+  <p>Perlindungan data pengguna mengikuti UU Pelindungan Data Pribadi (UU PDP No. 27/2022).</p>
+  <div class="filler">
+    <div class="seal navy"><div class="in"><svg><use href="#ic-shield"/></svg><div class="tx">TERVERIFIKASI<br/>DEWAN PERS</div></div></div>
+    <div class="msg"><div class="bg">Kredibel &amp; sesuai aturan jurnalistik</div><p>Media yang terverifikasi lebih dipercaya pembaca, pemasang iklan, dan mitra kerjasama.</p></div>
+  </div>
+</div>
+
+<!-- ============ 9. KEUNGGULAN ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">8</div><svg class="svi sec-ic"><use href="#ic-star"/></svg><h2>Apa yang Membuatnya Unggul</h2></div>
+  <div class="iconrow">
+    <div class="ic"><svg class="svi"><use href="#ic-target"/></svg><div class="tx"><h4>Serba lengkap</h4><p>Menulis sampai menyebarkan dalam satu tempat — tanpa menyewa banyak alat berbeda.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-bolt"/></svg><div class="tx"><h4>Lebih cepat dengan AI</h4><p>Pekerjaan jadi cepat, dan biayanya jelas terhitung dalam Rupiah.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-lock"/></svg><div class="tx"><h4>Milik sendiri</h4><p>Data, sistem, dan situs sepenuhnya di tangan Anda.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-check"/></svg><div class="tx"><h4>Rapi &amp; teruji</h4><p>Diperiksa otomatis sehingga jarang rusak dan mudah dikembangkan.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-award"/></svg><div class="tx"><h4>Terpercaya</h4><p>Terverifikasi Dewan Pers dan mengikuti kaidah jurnalistik.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-tag"/></svg><div class="tx"><h4>Hemat &amp; fleksibel</h4><p>Pilih template siap pakai atau custom sesuai anggaran.</p></div></div>
+  </div>
+</div>
+
+<!-- ============ 10. KEBERLANJUTAN ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">9</div><svg class="svi sec-ic"><use href="#ic-refresh"/></svg><h2>Keberlanjutan</h2></div>
+  <p>
+    Fokus utama Kartawarta adalah mutu produk dan jangkauan pembaca. Untuk menjaga agar
+    terus berjalan, platform ini juga menyediakan beberapa sumber pemasukan yang wajar
+    bagi sebuah media — seperti kerjasama publikasi, iklan, dan konten bersponsor —
+    yang ditopang data jumlah pembaca yang akurat.
+  </p>
+  <div class="filler rev">
+    <div class="seal"><div class="in"><svg><use href="#ic-lock"/></svg><div class="tx">100%<br/>MILIK<br/>SENDIRI</div></div></div>
+    <div class="msg"><div class="bg">Sepenuhnya milik Anda</div><p>Data, sistem, dan situs ada di tangan Anda sendiri — bukan menumpang platform pihak lain, jadi bisa terus dikembangkan sesuka hati.</p></div>
+  </div>
+  <div class="bigsticker navy"><span>Bangun. Terbitkan. Berkembang.</span></div>
+</div>
+
+<!-- ============ 11. RENCANA KE DEPAN ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">10</div><svg class="svi sec-ic"><use href="#ic-map"/></svg><h2>Rencana ke Depan</h2></div>
+  <div class="phase done"><div class="ph2">Membangun Sistem &amp; Ruang Redaksi</div><div style="font-size:9.5pt;color:var(--muted)">Sistem pengelola berita, jabatan, tahapan kerja, dan jenis konten utama.</div></div>
+  <div class="phase done"><div class="ph2">Bantuan AI &amp; Mudah Ditemukan di Google</div><div style="font-size:9.5pt;color:var(--muted)">Riset &amp; tulis dengan AI, penyiapan otomatis untuk Google.</div></div>
+  <div class="phase done"><div class="ph2">Penyebaran ke Media Sosial</div><div style="font-size:9.5pt;color:var(--muted)">Kirim otomatis ke media sosial dan pembuatan video Reels/TikTok.</div></div>
+  <div class="phase now"><div class="ph2">Mendaftar ke Platform Berita &amp; Menambah Pembaca</div><div style="font-size:9.5pt;color:var(--muted)">Daftar ke Google &amp; agregator berita, memperluas jangkauan.</div></div>
+  <div class="phase"><div class="ph2">Pengembangan Lanjutan</div><div style="font-size:9.5pt;color:var(--muted)">Penyempurnaan TikTok, keanggotaan/langganan, dan peningkatan analitik.</div></div>
+</div>
+
+<!-- ============ 11. PELUANG BISNIS ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">11</div><svg class="svi sec-ic"><use href="#ic-signal"/></svg><h2>Peluang Bisnis: Kenapa Menjanjikan</h2></div>
+  <div class="hook">
+    <div class="big">Punya media berita bukan cuma gengsi — ini bisa jadi sumber penghasilan nyata.</div>
+    <p>Dengan teknologi lengkap dan dibantu AI, Anda bisa menjalankan media selincah media besar — tetapi cukup dengan tim kecil dan biaya hemat.</p>
+  </div>
+  <div class="iconrow">
+    <div class="ic"><svg class="svi"><use href="#ic-signal"/></svg><div class="tx"><h4>Kebutuhan selalu ada</h4><p>Orang selalu mau membaca berita &amp; informasi. Pembaca tidak pernah habis.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-tag"/></svg><div class="tx"><h4>Banyak jalan penghasilan</h4><p>Iklan, advertorial (berita berbayar), kerjasama pemda/instansi, banner, konten bersponsor.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-bolt"/></svg><div class="tx"><h4>Biaya produksi rendah</h4><p>Dibantu AI &amp; otomatis — cukup tim kecil, sehingga untungnya lebih besar.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-layers"/></svg><div class="tx"><h4>Jadi aset bernilai</h4><p>Makin banyak pembaca &amp; berita, makin tinggi nilai medianya — bisa diwariskan atau dijual.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-check"/></svg><div class="tx"><h4>Sudah terbukti</h4><p>Bukan coba-coba — contohnya (Kartawarta) sudah berjalan &amp; terverifikasi Dewan Pers.</p></div></div>
+    <div class="ic"><svg class="svi"><use href="#ic-phone"/></svg><div class="tx"><h4>Zaman digital</h4><p>Orang membaca dari HP. Media digital terus tumbuh setiap tahun.</p></div></div>
+  </div>
+
+  <div class="photoband">
+    <img src="img/img-deal.jpg" alt="Kerja sama / kesepakatan bisnis" />
+    <div class="ov"></div><div class="grain"></div>
+    <div class="tx">
+      <div class="kick">Banyak pintu pemasukan</div>
+      <h3>Iklan, advertorial, sampai kerja sama instansi.</h3>
+      <p>Media yang kredibel mudah membangun kepercayaan — dan kepercayaan itulah yang menarik mitra dan pemasang iklan.</p>
+    </div>
+    <div class="tag2">Ilustrasi pendukung</div>
+  </div>
+
+  <div class="calc">
+    <h4><svg class="svi"><use href="#ic-tag"/></svg> Hitungan sederhana (contoh)</h4>
+    <div class="row"><span>5 advertorial / berita berbayar &times; Rp 1 juta</span><span>Rp 5 juta</span></div>
+    <div class="row"><span>3 banner iklan &times; Rp 1 juta / bulan</span><span>Rp 3 juta</span></div>
+    <div class="row"><span>1 kerjasama instansi / pemda</span><span>Rp 5 juta</span></div>
+    <div class="row tot"><span>Perkiraan masuk per bulan</span><span>&plusmn; Rp 13 juta</span></div>
+    <div class="note">*Hanya contoh sederhana untuk gambaran. Hasil nyata tergantung usaha, jaringan, dan jumlah pembaca Anda.</div>
+  </div>
+  <p>Artinya, biaya pembuatan bisa <span class="mark">kembali dalam hitungan bulan</span> — setelah itu seterusnya menjadi penghasilan. Biar sistemnya yang bekerja keras, Anda tinggal fokus mengembangkan media.</p>
+</div>
+
+<!-- ============ 12. PAKET & HARGA ============ -->
+<div class="section">
+  <div class="sec-head"><div class="sec-num">12</div><svg class="svi sec-ic"><use href="#ic-tag"/></svg><h2>Paket &amp; Harga</h2></div>
+  <p class="lead">Pilih paket sesuai kebutuhan &amp; anggaran. Harga sudah termasuk pembuatan, penyiapan, dan pelatihan singkat.</p>
+  <div style="margin:5pt 0 3pt"><span class="sticker green">✓ GARANSI 3 BULAN</span> &nbsp; <span class="sticker navy">SERVER TERMASUK</span></div>
+  <div class="price">
+    <div class="pk">
+      <div class="ph">
+        <div class="nm">Paket Hemat</div>
+        <div class="tl">Template siap pakai — cepat tayang</div>
+        <div class="pr">Rp 35<small> juta</small></div>
+        <span class="srv share">Server: Sharing (hemat)</span>
+      </div>
+      <div class="body">
+        <ul>
+          <li>Website + CMS lengkap, seperti contoh di dokumen ini.</li>
+          <li>Ganti nama, logo, warna, &amp; rubrik.</li>
+          <li>Semua fitur standar: AI, SEO, sebar media sosial, panel admin.</li>
+          <li>Penyiapan cepat + pelatihan singkat penggunaan.</li>
+        </ul>
+        <div class="pkmeta">
+          <div><span class="ml">Lama pengerjaan</span><span class="mv">± 1–2 minggu</span></div>
+          <div><span class="ml">Revisi</span><span class="mv">2× revisi minor</span></div>
+          <div><span class="ml">Garansi</span><span class="mv">3 bulan (gratis)</span></div>
+        </div>
+        <span class="ck">Cocok untuk: media baru / anggaran terjangkau.</span>
+      </div>
+    </div>
+    <div class="pk feat">
+      <div class="ph">
+        <span class="ribbon">DIREKOMENDASIKAN</span>
+        <div class="nm">Paket Pro</div>
+        <div class="tl">Custom — server sendiri, lebih bertenaga</div>
+        <div class="pr">Rp 50<small> juta</small></div>
+        <span class="srv ded">Server: VPS Sendiri (dedicated)</span>
+      </div>
+      <div class="body">
+        <ul>
+          <li>Semua isi Paket Hemat, ditambah:</li>
+          <li><strong>Server VPS sendiri</strong> — lebih cepat, stabil, &amp; kendali penuh.</li>
+          <li>Penyesuaian desain &amp; fitur sesuai permintaan.</li>
+          <li>Tambah / ubah modul khusus + pendampingan lebih lengkap.</li>
+        </ul>
+        <div class="pkmeta">
+          <div><span class="ml">Lama pengerjaan</span><span class="mv">± 3–4 minggu</span></div>
+          <div><span class="ml">Revisi</span><span class="mv">3× revisi (desain &amp; fitur)</span></div>
+          <div><span class="ml">Garansi</span><span class="mv">3 bulan (gratis)</span></div>
+        </div>
+        <span class="ck">Cocok untuk: media yang serius tumbuh / kebutuhan khusus.</span>
+      </div>
+    </div>
+  </div>
+  <div class="tip2"><svg class="svi"><use href="#ic-bulb"/></svg><div class="t2"><strong>Bingung pilih?</strong> Mulai dari <strong>Paket Hemat</strong> dulu — Anda bisa upgrade ke Pro (server sendiri &amp; custom) kapan saja seiring media Anda tumbuh.</div></div>
+
+  <h3>Garansi &amp; Langganan</h3>
+  <div class="warranty">
+    <div class="w">
+      <h4><svg class="svi"><use href="#ic-shield"/></svg> Garansi 3 Bulan — Gratis</h4>
+      <p>Selama <strong>3 bulan pertama</strong> setelah situs berjalan, perbaikan &amp; dukungan teknis sepenuhnya <strong>gratis</strong>. Kami pastikan semuanya berjalan lancar.</p>
+    </div>
+    <div class="w sub">
+      <h4><svg class="svi"><use href="#ic-refresh"/></svg> Setelah Garansi: Langganan</h4>
+      <div class="pr2">Rp 1,75 juta <small style="font-size:9.5pt;color:var(--faint);font-weight:400">/ bulan</small></div>
+      <p>Opsional, sudah <strong>termasuk</strong>:</p>
+      <div class="inc"><span>Pemeliharaan (maintenance)</span><span>Token AI</span></div>
+      <p>Situs tetap aman &amp; terbarui, dan fitur AI (riset &amp; tulis otomatis) terus berjalan.</p>
+    </div>
+  </div>
+  <p class="shotnote">Catatan: biaya domain &amp; perpanjangan server tahunan menyesuaikan paket. Harga &amp; ketentuan dapat disesuaikan dengan kebutuhan.</p>
+</div>
+
+<!-- ============ 13. PENUTUP ============ -->
+<div class="section avoid">
+  <div class="sec-head"><div class="sec-num">13</div><svg class="svi sec-ic"><use href="#ic-chat"/></svg><h2>Penutup</h2></div>
+  <p>
+    Platform media berita ini sudah <strong>matang dan terbukti</strong> — teknologinya modern,
+    tampilannya rapi, dan pengelolaannya tertib, seperti terlihat pada contoh nyata (Kartawarta).
+    Kini Anda bisa <strong>memiliki media berita sendiri</strong> dengan cepat lewat template
+    siap pakai, atau dikembangkan custom sesuai kebutuhan.
+  </p>
+  <p>Kami, <strong>Celiol (PT Digyata Graha Utama)</strong>, siap mendampingi dari perencanaan sampai situs berjalan.</p>
+
+  <div class="photoband">
+    <img src="img/img-write.jpg" alt="Menulis &amp; berkarya di meja kerja modern" />
+    <div class="ov"></div><div class="grain"></div>
+    <div class="tx">
+      <div class="kick">Saatnya mulai</div>
+      <h3>Wujudkan media berita Anda sendiri.</h3>
+      <p>Anda fokus pada visi dan isinya — urusan teknologi, kami yang siapkan dan dampingi.</p>
+    </div>
+    <div class="tag2">Ilustrasi pendukung</div>
+  </div>
+
+  <div class="hook cta">
+    <div class="big">Siap punya media berita sendiri?</div>
+    <p>Pilih template siap pakai yang cepat tayang, atau custom sesuai kebutuhan. Hubungi kami sekarang untuk diskusi &amp; penawaran — wujudkan medianya bersama kami.</p>
+  </div>
+
+  <div class="callout" style="border-left-color:var(--navy); background:var(--navy-l);">
+    <p style="color:var(--navy-d)"><strong>Pengembang:</strong> Celiol — PT Digyata Graha Utama &nbsp;|&nbsp;
+    <strong>Contoh nyata:</strong> Kartawarta — kartawarta.com</p>
+  </div>
+  <div class="foot"><span>Celiol — PT Digyata Graha Utama · Proposal Proyek &amp; Produk</span><span>Bandung, Juni 2026 · Versi 2.0</span></div>
+</div>
+
+<!-- ============ BACK COVER ============ -->
+<div class="back">
+  <div class="topbar"></div>
+  <div class="ring fill" style="width:420px;height:420px;top:-120px;left:-130px"></div>
+  <div class="ring" style="width:260px;height:260px;bottom:46mm;right:-70px"></div>
+  <div class="dots" style="top:58mm;right:22mm"></div>
+  <div style="position:relative">
+    <div class="wm2">Celiol<span class="d">.</span></div>
+    <div style="color:#9bb6da;font-size:10pt;margin-top:3pt;letter-spacing:.5px">oleh PT Digyata Graha Utama</div>
+
+    <h1 style="color:#fff;font-size:34pt;margin-top:52mm">Terima Kasih</h1>
+    <div style="width:64px;height:4px;background:var(--crimson);margin:18pt 0"></div>
+    <p style="color:#cfe0f5;font-size:13pt;max-width:140mm;line-height:1.55">
+      Punya media berita sendiri kini mudah — lewat template siap pakai atau custom.
+      Kami dampingi dari ide sampai berjalan nyata.
+    </p>
+  </div>
+
+  <div style="position:absolute;left:22mm;right:22mm;bottom:24mm;display:flex;justify-content:space-between;align-items:flex-end;font-size:9.5pt;color:#bcd0ea">
+    <div>
+      <span class="badge" style="display:inline-block;border:1px solid rgba(255,255,255,.35);border-radius:30px;padding:5px 14px;color:#fff">Mari berkolaborasi</span><br/><br/>
+      <strong style="color:#fff">Celiol — PT Digyata Graha Utama</strong><br/>
+      <span style="color:#9bb6da">Pengembang produk media digital</span>
+    </div>
+    <div style="text-align:right">Contoh: Kartawarta<br/>kartawarta.com</div>
+  </div>
+</div>
+
+</body>
+</html>
