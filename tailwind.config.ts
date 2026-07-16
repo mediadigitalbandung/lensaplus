@@ -5,67 +5,67 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        /* ── The Vibrant Corporate Palette (Lensaplus) ── */
+        /* ── The Vibrant & Premium Amethyst Palette (Lensaplus Redesign) ── */
         primary: {
-          DEFAULT: "#0F172A", // Deep Slate Navy
-          dark: "#020617",
-          light: "#F1F5F9",
-          container: "#1E293B",
-          50: "#F8FAFC", // Clean Light Gray
+          DEFAULT: "#2E1065", // Midnight Amethyst
+          dark: "#1E0A45",
+          light: "#F5F3FF", // Soft Lavender
+          container: "#4C1D95",
+          50: "#FAF5FF",
         },
         secondary: {
-          DEFAULT: "#0EA5E9", // Electric Teal
-          dark: "#0284C7",
-          light: "#E0F2FE", // Soft Teal / Ice Blue
-          container: "#0369A1",
+          DEFAULT: "#10B981", // Vibrant Emerald
+          dark: "#059669",
+          light: "#E6F4EA", // Soft Mint
+          container: "#065F46",
         },
         tertiary: {
-          DEFAULT: "#F97316", // Energetic Coral / Orange
-          light: "#FFEDD5",
+          DEFAULT: "#F43F5E", // Coral Rose
+          light: "#FFE4E6",
         },
         surface: {
-          DEFAULT: "#F8FAFC", // Clean Light Gray
+          DEFAULT: "#FAF9F6", // Warm Alabaster / Soft Ivory
           "container-lowest": "#ffffff",
-          "container-low": "#F1F5F9",
-          container: "#E2E8F0",
-          "container-high": "#CBD5E1",
-          "container-highest": "#94A3B8",
-          secondary: "#F1F5F9",
-          tertiary: "#E2E8F0",
-          dark: "#0F172A",
+          "container-low": "#F5F4F0",
+          container: "#EAE8E2",
+          "container-high": "#DCDAD4",
+          "container-highest": "#A8A6A0",
+          secondary: "#F5F4F0",
+          tertiary: "#EAE8E2",
+          dark: "#1C1917", // Deep Stone
         },
         "on-surface": {
-          DEFAULT: "#0F172A",
-          variant: "#475569",
+          DEFAULT: "#1C1917",
+          variant: "#57534E",
         },
         "on-primary": "#ffffff",
         outline: {
-          DEFAULT: "#64748B",
-          variant: "#E2E8F0",
+          DEFAULT: "#78716C",
+          variant: "#EAE8E2",
         },
-        "inverse-surface": "#1E293B",
-        "inverse-on-surface": "#F8FAFC",
+        "inverse-surface": "#292524",
+        "inverse-on-surface": "#FAF9F6",
         txt: {
-          primary: "#0F172A", // Deep Slate Navy text on Light Gray BG
-          secondary: "#334155",
-          muted: "#475569",
+          primary: "#1C1917", // Warm Slate / Stone text on Alabaster BG
+          secondary: "#44403C",
+          muted: "#78716C",
           inverse: "#ffffff",
         },
         border: {
-          DEFAULT: "#E2E8F030",
-          light: "#E2E8F015",
+          DEFAULT: "#EAE8E260",
+          light: "#EAE8E230",
         },
-        /* Legacy aliases mapped to Deep Slate Navy / Electric Teal */
+        /* Legacy aliases mapped to Midnight Amethyst */
         goto: {
-          green: "#0F172A",
-          dark: "#020617",
-          light: "#F1F5F9",
-          50: "#F8FAFC",
+          green: "#2E1065",
+          dark: "#1E0A45",
+          light: "#F5F3FF",
+          50: "#FAF5FF",
         },
       },
       fontFamily: {
-        serif: ["var(--font-plus-jakarta-sans)", "system-ui", "sans-serif"], // Map to Plus Jakarta Sans for headings
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],            // Map to Inter for body
+        serif: ["var(--font-plus-jakarta-sans)", "system-ui", "sans-serif"], // Geometric headings
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],            // Clean body
       },
       fontSize: {
         "display-lg": ["3.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "800" }],
@@ -85,10 +85,13 @@ const config: Config = {
         "label-sm": ["0.6875rem", { lineHeight: "1.5", fontWeight: "500", letterSpacing: "0.05em" }],
       },
       borderRadius: {
-        DEFAULT: "0.75rem",
-        sm: "0.375rem",
+        DEFAULT: "1rem",
+        sm: "0.5rem",
         xs: "0.25rem",
-        md: "0.375rem",
+        md: "0.75rem",
+        lg: "1.25rem",
+        xl: "1.5rem",
+        "2xl": "2rem",
         full: "9999px",
       },
       boxShadow: {

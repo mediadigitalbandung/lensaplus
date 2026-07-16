@@ -111,18 +111,12 @@ export default function Header() {
   }, []);
 
   return (
-    <>
-      {/* Row 1: Top bar — Split Blue/White header */}
-      <header className="sticky top-0 z-50 bg-gradient-primary border-b border-[#001530]" role="banner" aria-label="Header utama">
+    <>      {/* Row 1: Top bar — Sleek Light Glassmorphism header */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200/50" role="banner" aria-label="Header utama">
         <div className="container-main flex items-stretch justify-between">
           
-          {/* Left side: Logo Block with White Background */}
-          <div className="relative flex items-center bg-white py-3 pr-6 sm:pr-10 pl-5 sm:pl-8 lg:pl-8 -ml-5 sm:-ml-8 lg:-ml-8">
-            {/* Extend white background to the far left screen edge */}
-            <div className="absolute top-0 bottom-0 right-full w-[50vw] bg-white"></div>
-            {/* Slanted edge on the right */}
-            <div className="absolute top-0 bottom-0 left-full w-8 sm:w-12 bg-white" style={{ clipPath: "polygon(0 0, 100% 100%, 0 100%)" }}></div>
-            
+          {/* Left side: Logo Block */}
+          <div className="flex items-center py-3 pl-0">
             {/* Logo */}
             <Link href="/" className="group flex shrink-0 items-center gap-3 relative z-10">
               <Image
@@ -130,7 +124,7 @@ export default function Header() {
                 alt="Lensaplus"
                 width={96}
                 height={96}
-                className="h-9 w-9 sm:h-12 sm:w-12 object-contain"
+                className="h-9 w-9 sm:h-11 sm:w-11 object-contain"
                 quality={100}
                 priority
               />
@@ -144,18 +138,17 @@ export default function Header() {
 
           {/* Right side: Date, Search, Actions */}
           <div className="flex flex-1 items-center justify-end gap-3 py-3 pl-8 sm:pl-12 md:pl-16 relative z-10">
-            {/* Live date — deferred to client to avoid hydration mismatch
-                between VPS (UTC) and visitor (Asia/Jakarta) timezones */}
-            <span className="hidden text-label-sm text-white/50 md:block uppercase tracking-wider">
+            {/* Live date — deferred to client to avoid hydration mismatch */}
+            <span className="hidden text-label-sm text-stone-500 md:block uppercase tracking-wider">
               <ClientDate date={new Date()} format="weekday-long" live={false} />
             </span>
-            <div className="hidden h-4 w-px bg-white/20 md:block" />
+            <div className="hidden h-4 w-px bg-stone-200 md:block" />
             
             {/* Search */}
             <form action="/search" className="relative hidden md:block md:w-64 lg:w-80" role="search" aria-label="Pencarian artikel">
               <Search
                 size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
                 aria-hidden="true"
               />
               <input
@@ -163,93 +156,93 @@ export default function Header() {
                 name="q"
                 placeholder="Cari berita..."
                 aria-label="Cari artikel"
-                className="w-full rounded-md bg-white border border-transparent py-2 pl-10 pr-4 text-body-sm text-gray-900 placeholder:text-gray-400 transition-all shadow-inner focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full rounded-full bg-stone-100 border border-transparent py-2 pl-10 pr-4 text-body-sm text-stone-900 placeholder:text-stone-400 transition-all focus:bg-white focus:border-stone-200 focus:outline-none focus:ring-2 focus:ring-primary/10"
               />
             </form>
 
             {/* Untuk Anda link */}
             <Link
               href="/untuk-anda"
-              className="hidden md:flex items-center gap-1.5 rounded-md px-3 py-1.5 text-label-sm font-medium text-white/70 transition-colors hover:text-white hover:bg-white/10"
+              className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-2 text-label-sm font-bold text-stone-600 transition-all hover:text-primary hover:bg-primary/5"
               title="Untuk Anda — Feed Personal"
             >
-              <Sparkles size={14} />
+              <Sparkles size={14} className="text-secondary" />
               <span className="hidden lg:inline">Untuk Anda</span>
             </Link>
 
             {/* Bookmark link */}
             <Link
               href="/bookmark"
-              className="hidden md:flex items-center gap-1.5 rounded-md px-3 py-1.5 text-label-sm font-medium text-white/70 transition-colors hover:text-white hover:bg-white/10"
+              className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-2 text-label-sm font-bold text-stone-600 transition-all hover:text-primary hover:bg-primary/5"
               title="Bookmark Saya"
             >
-              <Bookmark size={14} />
+              <Bookmark size={14} className="text-primary" />
               <span className="hidden lg:inline">Bookmark</span>
             </Link>
 
             {/* User area */}
             {status === "loading" ? (
-              <div className="h-10 w-10 animate-pulse rounded-md bg-white/10" aria-hidden="true" />
+              <div className="h-10 w-10 animate-pulse rounded-full bg-stone-100" aria-hidden="true" />
             ) : session ? (
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex h-10 w-10 items-center justify-center rounded-md bg-white/10 text-label-lg font-bold text-white transition-all hover:bg-white/20"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-label-lg font-bold text-primary transition-all hover:bg-primary/20"
                   aria-label="Menu pengguna"
                   aria-expanded={userMenuOpen}
                 >
-                    {session.user?.name?.charAt(0)?.toUpperCase() || "U"}
-                  </button>
-                  {userMenuOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setUserMenuOpen(false)}
-                      />
-                      <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-md bg-surface-container-lowest py-1 shadow-ambient">
-                        <div className="px-4 py-2.5">
-                          <p className="text-title-sm text-on-surface">
-                            {session.user?.name || "User"}
-                          </p>
-                        </div>
-                        <div className="h-px bg-surface-container" />
-                        <Link
-                          href="/panel/dashboard"
-                          className="flex items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <LayoutDashboard size={14} />
-                          Panel
-                        </Link>
-                        <button
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            signOut();
-                          }}
-                          className="flex w-full items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary"
-                        >
-                          <LogOut size={14} />
-                          Keluar
-                        </button>
+                  {session.user?.name?.charAt(0)?.toUpperCase() || "U"}
+                </button>
+                {userMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setUserMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl bg-white border border-stone-200/60 py-1 shadow-ambient">
+                      <div className="px-4 py-2.5">
+                        <p className="text-title-sm text-on-surface">
+                          {session.user?.name || "User"}
+                        </p>
                       </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-2 text-label-md font-semibold text-primary shadow-sm transition-all hover:bg-white/90 sm:px-4"
-                  aria-label="Masuk ke akun"
-                >
-                  <LogIn size={14} />
-                  <span>Masuk</span>
-                </Link>
-              )}
+                      <div className="h-px bg-stone-100" />
+                      <Link
+                        href="/panel/dashboard"
+                        className="flex items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant transition-colors hover:bg-stone-50 hover:text-primary"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <LayoutDashboard size={14} />
+                        Panel
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          signOut();
+                        }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant transition-colors hover:bg-stone-50 hover:text-primary"
+                      >
+                        <LogOut size={14} />
+                        Keluar
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-label-sm font-bold text-white shadow-sm transition-all hover:bg-primary-dark active:scale-[0.98] sm:px-5"
+                aria-label="Masuk ke akun"
+              >
+                <LogIn size={14} />
+                <span>Masuk</span>
+              </Link>
+            )}
 
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-11 w-11 items-center justify-center rounded-md text-white/70 transition-colors hover:text-white hover:bg-white/10 lg:hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-stone-600 transition-colors hover:text-primary hover:bg-primary/5 lg:hidden"
               aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu navigasi"}
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-nav-drawer"
@@ -259,14 +252,12 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile search bar — add pt-3 so it doesn't visually fuse with
-            the brand row above (no breathing room between the white logo
-            block and the white search input on the dark navy backdrop). */}
+        {/* Mobile search bar */}
         <div className={`overflow-hidden md:hidden transition-all duration-500 ease-in-out container-main ${scrolled || mobileMenuOpen ? "max-h-0 pt-0 pb-0 opacity-0 -translate-y-2" : "max-h-24 pt-3 pb-3 opacity-100 translate-y-0"}`}>
           <form action="/search" className="relative" role="search" aria-label="Pencarian artikel (mobile)">
             <Search
               size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
               aria-hidden="true"
             />
             <input
@@ -274,18 +265,16 @@ export default function Header() {
               name="q"
               placeholder="Cari berita..."
               aria-label="Cari artikel"
-              className="w-full rounded-md bg-white border border-transparent py-2 pl-10 pr-4 text-body-sm text-gray-900 placeholder:text-gray-400 transition-all shadow-inner focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="w-full rounded-full bg-stone-100 border border-transparent py-2 pl-10 pr-4 text-body-sm text-stone-900 placeholder:text-stone-400 transition-all focus:bg-white focus:border-stone-200 focus:outline-none"
             />
           </form>
         </div>
       </header>
 
-      {/* Row 2: Category navigation — overflow collapses into a "Lainnya" menu
-          instead of clipping the rightmost links off the edge. */}
-      <nav className="bg-[#1C1C1E] relative border-b border-[#2C2C2E]" aria-label="Navigasi kategori">
+      {/* Row 2: Category navigation */}
+      <nav className="bg-white/85 backdrop-blur-md relative border-b border-stone-200/50" aria-label="Navigasi kategori">
         <div className="container-main relative">
-          {/* Hidden ruler — the FULL list, off-screen, used only to measure how
-              many links fit at the current width. */}
+          {/* Hidden ruler */}
           <ul ref={rulerRef} aria-hidden="true" className="pointer-events-none invisible absolute -left-[9999px] top-0 flex items-center gap-0">
             {categoryNav.map((item) => (
               <li key={item.href} className="shrink-0">
@@ -303,10 +292,10 @@ export default function Header() {
                 <li key={item.href} className="shrink-0">
                   <Link
                     href={item.href}
-                    className={`relative inline-block px-2 sm:px-3 py-2 sm:py-3 text-label-sm sm:text-label-lg transition-all duration-200 whitespace-nowrap ${
+                    className={`relative inline-block px-2 sm:px-3 py-3.5 sm:py-4 text-label-sm sm:text-label-lg transition-all duration-200 whitespace-nowrap ${
                       isActive
-                        ? "text-white font-bold after:absolute after:bottom-0 after:left-2 sm:after:left-2.5 after:right-2 sm:after:right-2.5 after:h-[2px] after:bg-primary"
-                        : "text-white/70 font-medium hover:text-white"
+                        ? "text-primary font-bold after:absolute after:bottom-0 after:left-2 sm:after:left-2.5 after:right-2 sm:after:right-2.5 after:h-[3px] after:bg-primary"
+                        : "text-stone-600 font-semibold hover:text-primary"
                     }`}
                   >
                     {item.name}
@@ -322,7 +311,7 @@ export default function Header() {
                   onClick={() => setMoreOpen((o) => !o)}
                   aria-haspopup="true"
                   aria-expanded={moreOpen}
-                  className="inline-flex items-center gap-1 px-2 sm:px-3 py-2 sm:py-3 text-label-sm sm:text-label-lg font-medium text-white/70 transition-colors hover:text-white whitespace-nowrap"
+                  className="inline-flex items-center gap-1 px-2 sm:px-3 py-3.5 sm:py-4 text-label-sm sm:text-label-lg font-semibold text-stone-600 transition-colors hover:text-primary whitespace-nowrap"
                 >
                   Lainnya
                   <ChevronDown size={14} className={`transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`} />
@@ -330,7 +319,7 @@ export default function Header() {
                 {moreOpen && (
                   <>
                     <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} aria-hidden="true" />
-                    <div className="absolute right-0 top-full z-40 max-h-[70vh] w-56 overflow-y-auto overscroll-contain rounded-b-md border border-[#2C2C2E] bg-[#1C1C1E] py-1 shadow-ambient-lg sm:w-64">
+                    <div className="absolute right-0 top-full z-40 max-h-[70vh] w-56 overflow-y-auto overscroll-contain rounded-b-xl border border-stone-200 bg-white py-1 shadow-ambient-lg sm:w-64">
                       {categoryNav.slice(visibleCount).map((item) => {
                         const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
                         return (
@@ -338,8 +327,8 @@ export default function Header() {
                             key={item.href}
                             href={item.href}
                             onClick={() => setMoreOpen(false)}
-                            className={`block px-4 py-2.5 text-label-md transition-colors hover:bg-white/5 ${
-                              isActive ? "font-bold text-white" : "font-medium text-white/80 hover:text-white"
+                            className={`block px-4 py-2.5 text-label-md transition-colors hover:bg-stone-50 ${
+                              isActive ? "font-bold text-primary bg-stone-50" : "font-medium text-stone-600 hover:text-primary"
                             }`}
                           >
                             {item.name}

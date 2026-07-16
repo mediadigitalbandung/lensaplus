@@ -281,7 +281,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           className="group flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-150 hover:bg-white/5"
           aria-label="Buka profil saya"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/20 text-sm font-bold text-blue-300">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary-light">
             {session.user.name?.charAt(0)}
           </div>
           <div className="min-w-0 flex-1 truncate">
@@ -397,7 +397,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
               >
                 <Bell size={20} />
                 {unreadCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-tertiary px-1 text-[10px] font-bold text-white">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -405,7 +405,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
               {/* Notification dropdown */}
               {notifOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
+                <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
                   {/* Header */}
                   <div className="border-b border-border px-4 py-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-txt-primary">Notifikasi</h3>

@@ -38,77 +38,77 @@
     @apply flex items-center justify-between mb-6 sm:mb-8 lg:mb-10;
   }
   .section-title {
-    @apply font-serif text-headline-md text-on-surface tracking-tight border-l-4 border-secondary pl-3;
+    @apply font-serif text-headline-md text-on-surface tracking-tight border-l-4 border-primary pl-3;
   }
   .section-subtitle {
     @apply text-body-md text-on-surface-variant mt-2 max-w-2xl;
   }
   .section-link {
-    @apply text-label-md font-semibold text-primary uppercase tracking-wider hover:text-primary-dark transition-colors;
+    @apply text-label-md font-bold text-primary uppercase tracking-wider hover:text-primary-dark transition-colors;
   }
 
-  /* ── Cards — The "No-Line" Rule ── */
+  /* ── Cards — Youthful Rounded Style ── */
   .card {
-    @apply rounded-sm bg-surface-container-lowest transition-all duration-300;
+    @apply rounded-xl bg-white border border-stone-200/50 shadow-[0_4px_20px_rgba(28,25,23,0.02)] transition-all duration-300;
   }
   .card:hover {
-    @apply shadow-ambient -translate-y-0.5;
+    @apply shadow-[0_8px_30px_rgba(46,16,101,0.06)] border-primary/20 -translate-y-1;
   }
 
   /* ── Breaking News Card ── */
   .card-breaking {
-    @apply rounded-sm bg-surface-container-lowest border-l-4 border-secondary;
+    @apply rounded-xl bg-white border border-stone-200/50 border-l-4 border-l-tertiary shadow-[0_4px_20px_rgba(28,25,23,0.02)];
   }
 
-  /* ── Badges ── */
+  /* ── Badges — Rounded Pills ── */
   .badge {
-    @apply inline-flex items-center gap-1 rounded-sm px-3 py-1 text-label-md font-semibold uppercase tracking-wider;
+    @apply inline-flex items-center gap-1 rounded-full px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider;
   }
   .badge-green {
-    @apply bg-primary-light text-primary;
-  }
-  .badge-gray {
-    @apply bg-surface-container text-on-surface-variant;
-  }
-  .badge-live {
-    @apply bg-secondary text-white;
-  }
-  .badge-verified {
-    @apply bg-primary-light text-primary;
-  }
-  .badge-unverified {
-    @apply bg-yellow-50 text-yellow-700;
-  }
-  .badge-opinion {
-    @apply bg-tertiary-light text-tertiary;
-  }
-  .badge-correction {
     @apply bg-secondary-light text-secondary;
   }
+  .badge-gray {
+    @apply bg-surface-container-low text-on-surface-variant;
+  }
+  .badge-live {
+    @apply bg-tertiary text-white animate-pulse;
+  }
+  .badge-verified {
+    @apply bg-secondary-light text-secondary;
+  }
+  .badge-unverified {
+    @apply bg-yellow-50 text-yellow-800;
+  }
+  .badge-opinion {
+    @apply bg-primary-light text-primary;
+  }
+  .badge-correction {
+    @apply bg-tertiary-light text-tertiary;
+  }
 
-  /* ── Buttons — Authority style ── */
+  /* ── Buttons — Redesigned Premium Style ── */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary px-6 py-3 text-label-lg font-semibold text-on-primary transition-all hover:bg-primary-dark active:scale-[0.98] disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-label-lg font-bold text-on-primary transition-all hover:bg-primary-dark hover:shadow-[0_4px_20px_rgba(46,16,101,0.2)] active:scale-[0.98] disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-surface-container-lowest px-6 py-3 text-label-lg font-semibold text-on-surface shadow-ghost transition-all hover:bg-surface-container-low;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-stone-200 px-6 py-3 text-label-lg font-bold text-on-surface transition-all hover:bg-surface-container-low hover:shadow-sm;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-label-lg font-medium text-on-surface-variant transition-all hover:bg-surface-container-low hover:text-on-surface;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-label-lg font-bold text-on-surface-variant transition-all hover:bg-surface-container-low hover:text-on-surface;
   }
   .btn-urgent {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-secondary px-6 py-3 text-label-lg font-semibold text-white transition-all hover:bg-secondary-dark active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-tertiary px-6 py-3 text-label-lg font-bold text-white transition-all hover:bg-tertiary-dark hover:shadow-[0_4px_20px_rgba(244,63,94,0.2)] active:scale-[0.98];
   }
   .btn-tertiary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-label-lg font-medium text-primary transition-all hover:underline;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-label-lg font-bold text-primary transition-all hover:underline;
   }
   .btn-outline-green {
-    @apply inline-flex items-center justify-center gap-2 rounded-md shadow-ghost px-6 py-2.5 text-label-lg font-semibold text-primary transition-all hover:bg-primary hover:text-on-primary;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-secondary px-6 py-2.5 text-label-lg font-bold text-secondary transition-all hover:bg-secondary hover:text-white;
   }
 
-  /* ── Input — No border, surface shift ── */
+  /* ── Input — Premium Border/Shadow Style ── */
   .input {
-    @apply w-full rounded-md bg-surface-container-highest px-4 py-3 text-body-md text-on-surface placeholder:text-on-surface-variant/60 transition-all focus:bg-surface-container-lowest focus:shadow-ghost focus:outline-none focus:ring-1 focus:ring-primary/30;
+    @apply w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-body-md text-on-surface placeholder:text-on-surface-variant/40 transition-all focus:border-primary focus:shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/10;
   }
 
   /* ── Skeleton ── */

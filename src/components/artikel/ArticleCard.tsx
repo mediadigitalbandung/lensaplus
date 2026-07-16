@@ -72,31 +72,29 @@ export default function ArticleCard({
     return (
       <article className="group">
         <Link href={`/berita/${slug}`} className="block">
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-sm">
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-[0_4px_24px_rgba(28,25,23,0.03)] border border-stone-200/40">
             {featuredImage ? (
               <Image
                 src={featuredImage}
                 alt={title}
                 fill
                 priority
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
               />
             ) : (
               <div className="h-full w-full bg-surface-container-low" />
             )}
-            {/* Lensaplus-red accent line that wipes in left→right on hover */}
-            <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-secondary transition-transform duration-500 ease-out group-hover:scale-x-100" />
           </div>
         </Link>
         <div className="mt-4">
           <Link
             href={`/kategori/${category.slug}`}
-            className="text-label-md font-bold uppercase tracking-wider text-primary"
+            className="inline-block text-label-md font-bold uppercase tracking-wider text-primary bg-primary/5 hover:bg-primary/15 px-3.5 py-1 rounded-full transition-colors"
           >
             {category.name}
           </Link>
           <Link href={`/berita/${slug}`}>
-            <h2 className="mt-2 font-serif text-headline-md leading-tight text-on-surface transition-colors duration-300 group-hover:text-primary">
+            <h2 className="mt-2.5 font-serif text-headline-md leading-tight text-on-surface transition-colors duration-300 group-hover:text-primary">
               {title}
             </h2>
           </Link>
@@ -120,7 +118,7 @@ export default function ArticleCard({
   if (variant === "compact") {
     return (
       <article className="group flex gap-4">
-        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-sm">
+        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-stone-200/40">
           {featuredImage ? (
             <Image
               src={featuredImage}
@@ -131,7 +129,6 @@ export default function ArticleCard({
           ) : (
             <div className="h-full w-full bg-surface-container-low" />
           )}
-          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 bg-secondary transition-transform duration-500 ease-out group-hover:scale-x-100" />
         </div>
         <div className="flex flex-1 flex-col justify-center min-w-0">
           <Link
@@ -152,10 +149,10 @@ export default function ArticleCard({
   /* ── Headline variant — no border, use spacing ── */
   if (variant === "headline") {
     return (
-      <article className="group border-l-2 border-transparent pb-4 mb-4 pl-0 transition-all duration-300 ease-out hover:border-secondary hover:pl-3">
+      <article className="group border-l-2 border-transparent pb-4 mb-4 pl-0 transition-all duration-300 ease-out hover:border-primary hover:pl-3">
         <Link
           href={`/kategori/${category.slug}`}
-          className="text-label-md font-bold uppercase tracking-wider text-primary"
+          className="text-label-md font-bold uppercase tracking-wider text-primary hover:text-primary-dark transition-colors"
         >
           {category.name}
         </Link>
@@ -172,41 +169,36 @@ export default function ArticleCard({
     );
   }
 
-  /* ── Standard / Default variant ──
-     Ukuran scale 2-tahap: di mobile sempit (<sm) card biasanya 2-per-baris
-     dengan lebar ~140-180px, jadi font dan padding kecil supaya konten
-     terbaca utuh tanpa overflow. Di sm+ (≥640px) card lebih lebar (~280px+)
-     jadi naik ke ukuran title-lg yang generous. */
+  /* ── Standard / Default variant ── */
   return (
     <article className="group">
       <Link href={`/berita/${slug}`} className="block">
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-sm">
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-stone-200/40 shadow-[0_2px_12px_rgba(28,25,23,0.015)]">
           {featuredImage ? (
             <Image
               src={featuredImage}
               alt={title}
               fill
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             />
           ) : (
             <div className="h-full w-full bg-surface-container-low" />
           )}
-          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 bg-secondary transition-transform duration-500 ease-out group-hover:scale-x-100" />
         </div>
       </Link>
-      <div className="mt-2 sm:mt-3">
+      <div className="mt-3">
         <Link
           href={`/kategori/${category.slug}`}
-          className="text-[10px] sm:text-label-md font-bold uppercase tracking-wider text-primary"
+          className="inline-block text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/5 hover:bg-primary/15 px-2.5 py-0.5 rounded-full transition-colors mb-1.5"
         >
           {category.name}
         </Link>
         <Link href={`/berita/${slug}`}>
-          <h3 className="mt-1 sm:mt-1.5 line-clamp-2 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface transition-colors duration-300 group-hover:text-primary">
+          <h3 className="mt-1 line-clamp-2 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface transition-colors duration-300 group-hover:text-primary">
             {title}
           </h3>
         </Link>
-        <p className="mt-1.5 sm:mt-2.5 text-[10px] sm:text-label-md uppercase tracking-wider text-on-surface-variant truncate">
+        <p className="mt-2 text-[10px] sm:text-label-md uppercase tracking-wider text-on-surface-variant truncate">
           {formatTime(publishedAt)}
           <span className="mx-1 sm:mx-1.5">&middot;</span>
           {author.name}
