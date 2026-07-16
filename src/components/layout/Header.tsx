@@ -111,43 +111,40 @@ export default function Header() {
   }, []);
 
   return (
-    <>      {/* Row 1: Top bar — Sleek Light Glassmorphism header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200/50" role="banner" aria-label="Header utama">
-        <div className="container-main flex items-stretch justify-between">
-          
-          {/* Left side: Logo Block */}
-          <div className="flex items-center py-3 pl-0">
-            {/* Logo */}
-            <Link href="/" className="group flex shrink-0 items-center gap-3 relative z-10">
+    <>
+      {/* ── 1. Classic Editorial Newspaper Masthead (Unscrolled Mode) ── */}
+      <header className={`bg-white border-b border-stone-200/50 transition-all duration-300 ${scrolled ? "opacity-0 -translate-y-full h-0 overflow-hidden pointer-events-none" : "opacity-100 translate-y-0"}`} role="banner" aria-label="Header utama">
+        {/* Top level masthead: Left (Date), Center (Centered Large Logo), Right (Actions) */}
+        <div className="container-main py-5 flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Left: Date */}
+          <div className="hidden md:flex items-center gap-2 text-stone-500 uppercase tracking-wider text-label-sm font-semibold">
+            <ClientDate date={new Date()} format="weekday-long" live={false} />
+          </div>
+
+          {/* Center: Large Serif Brand Name */}
+          <div className="text-center">
+            <Link href="/" className="group inline-flex items-center gap-3.5">
               <Image
                 src="/lensaplus-icon.png"
                 alt="Lensaplus"
-                width={96}
-                height={96}
-                className="h-9 w-9 sm:h-11 sm:w-11 object-contain"
+                width={128}
+                height={128}
+                className="h-10 w-10 sm:h-12 sm:w-12 object-contain transition-transform duration-355 group-hover:rotate-12"
                 quality={100}
                 priority
               />
-              <span className="flex items-baseline gap-1.5 sm:gap-2">
-                <span className="font-serif text-lg font-bold text-primary sm:text-2xl lg:text-3xl tracking-tight">
-                  Lensaplus
-                </span>
+              <span className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary tracking-tighter">
+                Lensaplus
               </span>
             </Link>
           </div>
 
-          {/* Right side: Date, Search, Actions */}
-          <div className="flex flex-1 items-center justify-end gap-3 py-3 pl-8 sm:pl-12 md:pl-16 relative z-10">
-            {/* Live date — deferred to client to avoid hydration mismatch */}
-            <span className="hidden text-label-sm text-stone-500 md:block uppercase tracking-wider">
-              <ClientDate date={new Date()} format="weekday-long" live={false} />
-            </span>
-            <div className="hidden h-4 w-px bg-stone-200 md:block" />
-            
-            {/* Search */}
-            <form action="/search" className="relative hidden md:block md:w-64 lg:w-80" role="search" aria-label="Pencarian artikel">
+          {/* Right: Actions */}
+          <div className="flex items-center gap-3.5">
+            {/* Search Form */}
+            <form action="/search" className="relative hidden md:block md:w-48 lg:w-64" role="search" aria-label="Pencarian artikel">
               <Search
-                size={16}
+                size={14}
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
                 aria-hidden="true"
               />
@@ -156,73 +153,43 @@ export default function Header() {
                 name="q"
                 placeholder="Cari berita..."
                 aria-label="Cari artikel"
-                className="w-full rounded-full bg-stone-100 border border-transparent py-2 pl-10 pr-4 text-body-sm text-stone-900 placeholder:text-stone-400 transition-all focus:bg-white focus:border-stone-200 focus:outline-none focus:ring-2 focus:ring-primary/10"
+                className="w-full rounded-full bg-stone-100 border border-transparent py-1.5 pl-9 pr-4 text-body-sm text-stone-900 placeholder:text-stone-400 transition-all focus:bg-white focus:border-stone-250 focus:outline-none focus:ring-2 focus:ring-primary/10"
               />
             </form>
 
-            {/* Untuk Anda link */}
-            <Link
-              href="/untuk-anda"
-              className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-2 text-label-sm font-bold text-stone-600 transition-all hover:text-primary hover:bg-primary/5"
-              title="Untuk Anda — Feed Personal"
-            >
-              <Sparkles size={14} className="text-secondary" />
-              <span className="hidden lg:inline">Untuk Anda</span>
-            </Link>
-
-            {/* Bookmark link */}
+            {/* Bookmarks */}
             <Link
               href="/bookmark"
-              className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-2 text-label-sm font-bold text-stone-600 transition-all hover:text-primary hover:bg-primary/5"
+              className="hidden md:flex items-center justify-center h-9 w-9 rounded-full bg-stone-100 text-stone-600 hover:text-primary hover:bg-primary/5 transition-all"
               title="Bookmark Saya"
             >
-              <Bookmark size={14} className="text-primary" />
-              <span className="hidden lg:inline">Bookmark</span>
+              <Bookmark size={15} />
             </Link>
 
-            {/* User area */}
+            {/* User Profile */}
             {status === "loading" ? (
-              <div className="h-10 w-10 animate-pulse rounded-full bg-stone-100" aria-hidden="true" />
+              <div className="h-9 w-9 animate-pulse rounded-full bg-stone-100" />
             ) : session ? (
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-label-lg font-bold text-primary transition-all hover:bg-primary/20"
-                  aria-label="Menu pengguna"
-                  aria-expanded={userMenuOpen}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-label-md font-bold text-primary hover:bg-primary/20 transition-all"
                 >
                   {session.user?.name?.charAt(0)?.toUpperCase() || "U"}
                 </button>
                 {userMenuOpen && (
                   <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setUserMenuOpen(false)}
-                    />
+                    <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
                     <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl bg-white border border-stone-200/60 py-1 shadow-ambient">
                       <div className="px-4 py-2.5">
-                        <p className="text-title-sm text-on-surface">
-                          {session.user?.name || "User"}
-                        </p>
+                        <p className="text-title-sm text-on-surface font-semibold">{session.user?.name}</p>
                       </div>
                       <div className="h-px bg-stone-100" />
-                      <Link
-                        href="/panel/dashboard"
-                        className="flex items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant transition-colors hover:bg-stone-50 hover:text-primary"
-                        onClick={() => setUserMenuOpen(false)}
-                      >
-                        <LayoutDashboard size={14} />
-                        Panel
+                      <Link href="/panel/dashboard" className="flex items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>
+                        <LayoutDashboard size={14} /> Panel
                       </Link>
-                      <button
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          signOut();
-                        }}
-                        className="flex w-full items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant transition-colors hover:bg-stone-50 hover:text-primary"
-                      >
-                        <LogOut size={14} />
-                        Keluar
+                      <button onClick={() => { setUserMenuOpen(false); signOut(); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary">
+                        <LogOut size={14} /> Keluar
                       </button>
                     </div>
                   </>
@@ -231,118 +198,195 @@ export default function Header() {
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-label-sm font-bold text-white shadow-sm transition-all hover:bg-primary-dark active:scale-[0.98] sm:px-5"
-                aria-label="Masuk ke akun"
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-label-sm font-bold text-white hover:bg-primary-dark transition-all"
               >
-                <LogIn size={14} />
-                <span>Masuk</span>
+                Masuk
               </Link>
             )}
 
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-11 w-11 items-center justify-center rounded-full text-stone-600 transition-colors hover:text-primary hover:bg-primary/5 lg:hidden"
-              aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu navigasi"}
-              aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-nav-drawer"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 md:hidden"
             >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              <Menu size={18} />
             </button>
           </div>
         </div>
 
-        {/* Mobile search bar */}
-        <div className={`overflow-hidden md:hidden transition-all duration-500 ease-in-out container-main ${scrolled || mobileMenuOpen ? "max-h-0 pt-0 pb-0 opacity-0 -translate-y-2" : "max-h-24 pt-3 pb-3 opacity-100 translate-y-0"}`}>
-          <form action="/search" className="relative" role="search" aria-label="Pencarian artikel (mobile)">
-            <Search
-              size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
-              aria-hidden="true"
-            />
-            <input
-              type="text"
-              name="q"
-              placeholder="Cari berita..."
-              aria-label="Cari artikel"
-              className="w-full rounded-full bg-stone-100 border border-transparent py-2 pl-10 pr-4 text-body-sm text-stone-900 placeholder:text-stone-400 transition-all focus:bg-white focus:border-stone-200 focus:outline-none"
-            />
-          </form>
-        </div>
+        {/* Double-Rule Nav Bar (Categories) */}
+        <nav className="border-y border-stone-200/50 bg-white" aria-label="Navigasi kategori">
+          <div className="container-main relative">
+            {/* Hidden ruler for width measurement */}
+            <ul ref={rulerRef} aria-hidden="true" className="pointer-events-none invisible absolute -left-[9999px] top-0 flex items-center gap-0">
+              {categoryNav.map((item) => (
+                <li key={item.href} className="shrink-0">
+                  <span className="inline-block px-3 py-3 text-label-md font-bold whitespace-nowrap">
+                    {item.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <ul ref={navUlRef} className="flex items-center justify-center gap-1 overflow-hidden">
+              {categoryNav.slice(0, visibleCount).map((item) => {
+                const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                return (
+                  <li key={item.href} className="shrink-0">
+                    <Link
+                      href={item.href}
+                      className={`relative inline-block px-3 py-3 text-label-md font-bold transition-all duration-200 whitespace-nowrap ${
+                        isActive
+                          ? "text-primary after:absolute after:bottom-0 after:left-3 after:right-3 after:h-[2px] after:bg-primary"
+                          : "text-stone-600 hover:text-primary"
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  </li>
+                );
+              })}
+
+              {visibleCount < categoryNav.length && (
+                <li className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMoreOpen((o) => !o)}
+                    className="inline-flex items-center gap-1 px-3 py-3 text-label-md font-bold text-stone-600 hover:text-primary whitespace-nowrap"
+                  >
+                    Lainnya
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {moreOpen && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
+                      <div className="absolute right-0 top-full z-40 max-h-[70vh] w-56 overflow-y-auto overscroll-contain rounded-b-xl border border-stone-200 bg-white py-1 shadow-ambient-lg">
+                        {categoryNav.slice(visibleCount).map((item) => {
+                          const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setMoreOpen(false)}
+                              className={`block px-4 py-2.5 text-label-md transition-colors hover:bg-stone-50 ${
+                                isActive ? "font-bold text-primary bg-stone-50" : "font-medium text-stone-600 hover:text-primary"
+                              }`}
+                            >
+                              {item.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </li>
+              )}
+            </ul>
+          </div>
+        </nav>
       </header>
 
-      {/* Row 2: Category navigation */}
-      <nav className="bg-white/85 backdrop-blur-md relative border-b border-stone-200/50" aria-label="Navigasi kategori">
-        <div className="container-main relative">
-          {/* Hidden ruler */}
-          <ul ref={rulerRef} aria-hidden="true" className="pointer-events-none invisible absolute -left-[9999px] top-0 flex items-center gap-0">
-            {categoryNav.map((item) => (
-              <li key={item.href} className="shrink-0">
-                <span className="inline-block px-2 sm:px-3 py-2 sm:py-3 text-label-sm sm:text-label-lg font-bold whitespace-nowrap">
-                  {item.name}
-                </span>
-              </li>
-            ))}
-          </ul>
+      {/* ── 2. Floating Island Capsule (Scrolled Mode) ── */}
+      <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-5xl rounded-full bg-white/90 backdrop-blur-md border border-stone-200/60 shadow-ambient px-6 py-2.5 flex items-center justify-between transition-all duration-300 ${scrolled ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}>
+        {/* Left: Compact Logo */}
+        <Link href="/" className="group flex shrink-0 items-center gap-2">
+          <Image
+            src="/lensaplus-icon.png"
+            alt="Lensaplus"
+            width={64}
+            height={64}
+            className="h-7 w-7 object-contain"
+            quality={100}
+            priority
+          />
+          <span className="font-serif text-lg font-bold text-primary tracking-tight">
+            Lensaplus
+          </span>
+        </Link>
 
-          <ul ref={navUlRef} className="flex items-center gap-0">
-            {categoryNav.slice(0, visibleCount).map((item) => {
-              const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-              return (
-                <li key={item.href} className="shrink-0">
-                  <Link
-                    href={item.href}
-                    className={`relative inline-block px-2 sm:px-3 py-3.5 sm:py-4 text-label-sm sm:text-label-lg transition-all duration-200 whitespace-nowrap ${
-                      isActive
-                        ? "text-primary font-bold after:absolute after:bottom-0 after:left-2 sm:after:left-2.5 after:right-2 sm:after:right-2.5 after:h-[3px] after:bg-primary"
-                        : "text-stone-600 font-semibold hover:text-primary"
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              );
-            })}
+        {/* Middle: Micro Category list (Top 4 Categories) */}
+        <nav className="hidden md:flex items-center gap-1.5" aria-label="Navigasi cepat kategori">
+          {categoryNav.slice(0, 4).map((item) => {
+            const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`rounded-full px-3.5 py-1 text-label-sm font-bold transition-all ${isActive ? "bg-primary text-white" : "text-stone-600 hover:bg-stone-100 hover:text-primary"}`}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
 
-            {visibleCount < categoryNav.length && (
-              <li className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setMoreOpen((o) => !o)}
-                  aria-haspopup="true"
-                  aria-expanded={moreOpen}
-                  className="inline-flex items-center gap-1 px-2 sm:px-3 py-3.5 sm:py-4 text-label-sm sm:text-label-lg font-semibold text-stone-600 transition-colors hover:text-primary whitespace-nowrap"
-                >
-                  Lainnya
-                  <ChevronDown size={14} className={`transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`} />
-                </button>
-                {moreOpen && (
-                  <>
-                    <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} aria-hidden="true" />
-                    <div className="absolute right-0 top-full z-40 max-h-[70vh] w-56 overflow-y-auto overscroll-contain rounded-b-xl border border-stone-200 bg-white py-1 shadow-ambient-lg sm:w-64">
-                      {categoryNav.slice(visibleCount).map((item) => {
-                        const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setMoreOpen(false)}
-                            className={`block px-4 py-2.5 text-label-md transition-colors hover:bg-stone-50 ${
-                              isActive ? "font-bold text-primary bg-stone-50" : "font-medium text-stone-600 hover:text-primary"
-                            }`}
-                          >
-                            {item.name}
-                          </Link>
-                        );
-                      })}
+        {/* Right: Actions */}
+        <div className="flex items-center gap-3">
+          {/* Simple Search Toggle/Link */}
+          <Link
+            href="/search"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 hover:text-primary transition-all"
+            title="Cari"
+          >
+            <Search size={14} />
+          </Link>
+
+          {/* Bookmarks */}
+          <Link
+            href="/bookmark"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 hover:text-primary transition-all"
+            title="Bookmark Saya"
+          >
+            <Bookmark size={14} />
+          </Link>
+
+          {/* User profile */}
+          {status === "loading" ? (
+            <div className="h-8 w-8 animate-pulse rounded-full bg-stone-100" />
+          ) : session ? (
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-label-sm font-bold text-primary hover:bg-primary/20 transition-all"
+              >
+                {session.user?.name?.charAt(0)?.toUpperCase() || "U"}
+              </button>
+              {userMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+                  <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl bg-white border border-stone-200/60 py-1 shadow-ambient">
+                    <div className="px-4 py-2.5">
+                      <p className="text-title-sm text-on-surface font-semibold">{session.user?.name}</p>
                     </div>
-                  </>
-                )}
-              </li>
-            )}
-          </ul>
+                    <div className="h-px bg-stone-100" />
+                    <Link href="/panel/dashboard" className="flex items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>
+                      <LayoutDashboard size={12} /> Panel
+                    </Link>
+                    <button onClick={() => { setUserMenuOpen(false); signOut(); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary">
+                      <LogOut size={12} /> Keluar
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-flex h-8 items-center justify-center rounded-full bg-primary px-4 py-1 text-[11px] font-bold text-white hover:bg-primary-dark transition-all"
+            >
+              Masuk
+            </Link>
+          )}
+
+          {/* Mobile menu toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 md:hidden"
+          >
+            <Menu size={16} />
+          </button>
         </div>
-      </nav>
+      </div>
 
       {/* Mobile slide-in panel */}
       <div
