@@ -25,7 +25,7 @@ APP_DIR=/var/www/lensaplus
 LOCK=/tmp/lensaplus-build.lock
 MAINT_PID_FILE=/tmp/lensaplus-maintenance.pid
 MAINT_LOG=/tmp/lensaplus-maintenance.log
-PORT=3000
+PORT=3006
 
 # Reset status — anything that consumed an old "OK" before this run started
 # is now stale and the poller should treat it as in-progress.

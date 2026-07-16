@@ -21,7 +21,7 @@ module.exports = {
     {
       name: "lensaplus",
       script: "node_modules/next/dist/bin/next",
-      args: "start --port 3000",
+      args: "start --port 3006",
       cwd: "/var/www/lensaplus",
       exec_mode: isCluster ? "cluster" : "fork",
       instances: isCluster ? "max" : 1,
@@ -30,7 +30,7 @@ module.exports = {
       max_memory_restart: "800M",
       env: {
         NODE_ENV: "production",
-        PORT: "3000",
+        PORT: "3006",
       },
       // Logs
       out_file: "/root/.pm2/logs/lensaplus-out.log",
@@ -57,7 +57,7 @@ module.exports = {
       max_memory_restart: "1500M",
       env: {
         NODE_ENV: "production",
-        APP_URL: "http://127.0.0.1:3000",
+        APP_URL: "http://127.0.0.1:3006",
         // Ensure yt-dlp + its deno JS runtime (for YouTube's nsig challenge)
         // and ffmpeg are resolvable when the worker spawns them.
         PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",

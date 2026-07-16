@@ -115,7 +115,7 @@ npm run build
 echo ""
 echo "[9/10] Starting app with PM2..."
 pm2 delete lensaplus 2>/dev/null || true
-PORT=3000 pm2 start npm --name "lensaplus" -- start
+PORT=3006 pm2 start npm --name "lensaplus" -- start
 pm2 save
 pm2 startup systemd -u root --hp /root 2>/dev/null || true
 
@@ -132,7 +132,7 @@ server {
     server_name lensaplus.com www.lensaplus.com;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3006;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -147,12 +147,12 @@ server {
     }
 
     location /_next/static {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3006;
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
     location /_next/image {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3006;
         add_header Cache-Control "public, max-age=86400";
     }
 }
@@ -184,7 +184,7 @@ ufw --force enable
 # Seed initial data
 echo ""
 echo "Seeding initial users..."
-curl -s "http://localhost:3000/api/setup?key=${SETUP_KEY}" > /dev/null 2>&1 || true
+curl -s "http://localhost:3006/api/setup?key=${SETUP_KEY}" > /dev/null 2>&1 || true
 
 # Save credentials
 cat > /root/lensaplus-credentials.txt << EOF
@@ -208,7 +208,7 @@ App:
 
 URLs:
   http://${DOMAIN}
-  http://145.79.15.99:3000 (direct)
+  http://145.79.15.99:3006 (direct)
 
 PM2 Commands:
   pm2 status              — check status
