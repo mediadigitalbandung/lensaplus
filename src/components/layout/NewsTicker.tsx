@@ -98,49 +98,29 @@ function useTrending() {
 
 /* ── Stock Card ── */
 function StockCard({ s }: { s: StockItem }) {
+  const isUp = s.direction === "up";
+  const isDown = s.direction === "down";
+
   return (
-    <div className={`shrink-0 rounded-lg sm:rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-[120px] sm:min-w-[170px] border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_14px_-4px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-0.5 relative overflow-hidden group cursor-default ${
-      s.direction === "up" ? "bg-emerald-50/60 border-emerald-100" : s.direction === "down" ? "bg-red-50/60 border-red-100" : "bg-gray-50/60 border-gray-100"
+    <div className={`shrink-0 flex items-center gap-2 rounded-full px-3.5 py-1 sm:py-1.5 border shadow-sm transition-all hover:-translate-y-0.5 cursor-default text-[11px] sm:text-body-sm font-bold select-none ${
+      isUp
+        ? "bg-emerald-50/80 border-emerald-100 text-emerald-800"
+        : isDown
+        ? "bg-rose-50/80 border-rose-100 text-rose-800"
+        : "bg-stone-50/80 border-stone-150 text-stone-800"
     }`}>
-      {/* Decorative top accent line */}
-      <div className={`absolute top-0 left-0 w-full h-0.5 sm:h-1 transition-colors ${
-        s.direction === "up" ? "bg-emerald-500" : s.direction === "down" ? "bg-red-500" : "bg-gray-300"
-      }`} />
+      {/* Symbol */}
+      <span className="font-bold tracking-tight text-stone-900">{s.symbol}</span>
+      
+      {/* Price */}
+      <span className="font-mono text-stone-700">{fmtPrice(s.price, s.symbol)}</span>
 
-      <div className="flex items-start justify-between mb-1.5 sm:mb-2 mt-0.5 gap-1">
-        <div className="min-w-0">
-          <span className="block text-label-sm sm:text-label-md font-bold text-gray-600 group-hover:text-gray-900 transition-colors leading-tight">{s.symbol}</span>
-          {s.unit && (
-            <span className="block text-[9px] sm:text-[10px] text-gray-400 leading-tight font-medium mt-0.5 truncate">
-              {s.unit}
-            </span>
-          )}
-        </div>
-        <div className={`shrink-0 p-0.5 sm:p-1 rounded-md transition-colors ${
-          s.direction === "up" ? "bg-emerald-50 text-emerald-600" : s.direction === "down" ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"
-        }`}>
-          {s.direction === "up" ? <ArrowUpRight size={12} strokeWidth={2.5} className="sm:hidden" /> :
-           s.direction === "down" ? <ArrowDownRight size={12} strokeWidth={2.5} className="sm:hidden" /> :
-           <Minus size={12} strokeWidth={2.5} className="sm:hidden" />}
-          {s.direction === "up" ? <ArrowUpRight size={14} strokeWidth={2.5} className="hidden sm:block" /> :
-           s.direction === "down" ? <ArrowDownRight size={14} strokeWidth={2.5} className="hidden sm:block" /> :
-           <Minus size={14} strokeWidth={2.5} className="hidden sm:block" />}
-        </div>
-      </div>
-
-      <div className="text-title-md sm:text-title-lg font-mono font-bold text-gray-900 leading-none tracking-tight">{fmtPrice(s.price, s.symbol)}</div>
-
-      <div className="mt-1.5 sm:mt-2.5 flex items-center gap-1 sm:gap-1.5">
-        <span className={`text-[10px] sm:text-label-sm font-mono font-bold ${
-          s.direction === "up" ? "text-emerald-600" : s.direction === "down" ? "text-red-600" : "text-gray-500"
-        }`}>
-          {fmtChange(s.change, s.symbol)}
-        </span>
-        <span className={`text-[9px] sm:text-[11px] font-mono font-bold px-1 sm:px-1.5 py-0.5 rounded-[4px] ${
-          s.direction === "up" ? "bg-emerald-50 text-emerald-600" : s.direction === "down" ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"
-        }`}>
-          {s.changePercent >= 0 ? "+" : ""}{s.changePercent.toFixed(2)}%
-        </span>
+      {/* Change percentage */}
+      <div className={`flex items-center gap-0.5 font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+        isUp ? "bg-emerald-500/10 text-emerald-700" : isDown ? "bg-rose-500/10 text-rose-700" : "bg-stone-500/10 text-stone-600"
+      }`}>
+        {isUp ? <ArrowUpRight size={10} strokeWidth={3} /> : isDown ? <ArrowDownRight size={10} strokeWidth={3} /> : <Minus size={10} strokeWidth={3} />}
+        <span>{s.changePercent >= 0 ? "+" : ""}{s.changePercent.toFixed(2)}%</span>
       </div>
     </div>
   );
@@ -150,30 +130,22 @@ function StockCard({ s }: { s: StockItem }) {
 function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate: string }) {
   const [paused, setPaused] = useState(false);
 
-  // Empty-state skeleton: render the Market chrome immediately so SSR + the
-  // first paint after hydration still show "Market • Live …" even before
-  // the /api/stocks call resolves. Without this, the entire ticker is
-  // invisible until the first fetch completes (and stays invisible if the
-  // API call fails for any reason).
+  // Empty-state skeleton:
   if (stocks.length === 0) {
     return (
-      <div className="bg-gray-50/30 border-b border-gray-100 overflow-hidden">
-        <div className="container-main py-2 sm:py-3 lg:py-4">
-          <div className="flex items-center justify-between mb-2 sm:mb-3">
-            <div className="flex items-center gap-2 sm:gap-2.5">
-              <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-label-sm sm:text-label-md font-bold uppercase tracking-widest text-gray-500">Market</span>
-              <span className="hidden sm:inline text-label-sm text-gray-400">Live</span>
-            </div>
-            <span className="text-[10px] sm:text-label-sm text-gray-400 font-mono">Memuat…</span>
-          </div>
+      <div className="bg-stone-50/50 border-b border-stone-200/40 py-2.5 overflow-hidden flex items-center gap-4">
+        <div className="pl-4 sm:pl-6 flex items-center gap-2 shrink-0 border-r border-stone-200/80 pr-4">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-stone-300"></span>
+          </span>
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-stone-400">Pasar Live</span>
         </div>
-        <div className="relative">
-          <div className="flex gap-2 sm:gap-2.5 pl-5 sm:pl-8 pr-5 sm:pr-8 pb-3">
+        <div className="relative flex-1 overflow-hidden">
+          <div className="flex gap-2.5 pl-2">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="shrink-0 rounded-lg sm:rounded-lg min-w-[120px] sm:min-w-[170px] h-[68px] sm:h-[88px] bg-gray-100/70 animate-pulse"
+                className="shrink-0 rounded-full min-w-[130px] h-[28px] sm:h-[32px] bg-stone-200/60 animate-pulse"
               />
             ))}
           </div>
@@ -182,47 +154,44 @@ function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate
     );
   }
 
-  const duration = stocks.length * 12; // ~12s per card
+  const duration = stocks.length * 10; // ~10s per card
 
   return (
     <div
-      className="bg-gray-50/30 border-b border-gray-100 overflow-hidden"
+      className="bg-stone-50/50 border-b border-stone-200/40 py-2.5 overflow-hidden flex items-center gap-4"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={() => setPaused(true)}
       onTouchEnd={() => setPaused(false)}
     >
-      <div className="container-main py-2 sm:py-3 lg:py-4">
-        <div className="flex items-center justify-between mb-2 sm:mb-3">
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-label-sm sm:text-label-md font-bold uppercase tracking-widest text-gray-500">Market</span>
-            <span className="hidden sm:inline text-label-sm text-gray-400">Live</span>
-          </div>
-          {lastUpdate && <span className="text-[10px] sm:text-label-sm text-gray-400 font-mono">Update {lastUpdate} WIB</span>}
-        </div>
+      {/* Live Badge Left */}
+      <div className="pl-4 sm:pl-6 flex items-center gap-2 shrink-0 border-r border-stone-200/80 pr-4 z-10">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span className="text-[10px] font-extrabold uppercase tracking-widest text-stone-500">Pasar Live</span>
       </div>
 
-      <div className="relative">
+      {/* Scrolling Marquee */}
+      <div className="relative flex-1 overflow-hidden">
         <div
-          className="flex gap-2 sm:gap-2.5 w-max"
+          className="flex gap-2.5 w-max"
           style={{
             animation: `stockScroll ${duration}s linear infinite`,
             animationPlayState: paused ? "paused" : "running",
           }}
         >
           {/* Set 1 */}
-          <div className="flex gap-2 sm:gap-2.5 pl-5 sm:pl-8">
+          <div className="flex gap-2.5">
             {stocks.map((s) => <StockCard key={`a-${s.symbol}`} s={s} />)}
           </div>
           {/* Set 2 (duplicate for seamless loop) */}
-          <div className="flex gap-2 sm:gap-2.5">
+          <div className="flex gap-2.5">
             {stocks.map((s) => <StockCard key={`b-${s.symbol}`} s={s} />)}
           </div>
         </div>
       </div>
-
-      <div className="h-3" />
 
       <style jsx>{`
         @keyframes stockScroll {
@@ -241,18 +210,14 @@ export default function NewsTicker() {
 
   // Trending: duplicate for CSS infinite scroll
   const looped = trendingItems.length > 0 ? [...trendingItems, ...trendingItems] : [];
-  const trendDuration = Math.max(trendingItems.length * 10, 60); // slow: ~10s per tag
+  const trendDuration = Math.max(trendingItems.length * 10, 60);
 
   return (
     <>
-      {/* ═══ TRENDING INDONESIA ═══
-          Selalu render shell-nya (Trending pill + bar gelap) supaya
-          chrome ticker langsung kelihatan di SSR + first paint, walau
-          /api/trending belum balas atau kosong. Konten geser baru
-          aktif setelah trendingItems terisi. */}
-      <div className="bg-primary border-b border-[#001530] overflow-hidden">
-        <div className="flex items-center py-2 sm:py-2.5 lg:py-3 relative">
-          <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 z-10 bg-primary shadow-[8px_0_12px_-2px_#002045]">
+      {/* ═══ TRENDING INDONESIA ═══ */}
+      <div className="bg-primary border-b border-primary-dark/35 overflow-hidden">
+        <div className="flex items-center py-2 sm:py-2.5 relative">
+          <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 z-10 bg-primary shadow-[6px_0_10px_-2px_rgba(0,0,0,0.15)]">
             <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-secondary animate-pulse shrink-0" />
             <span className="text-label-sm sm:text-label-md font-bold tracking-widest text-white uppercase whitespace-nowrap">
               Trending
@@ -273,12 +238,12 @@ export default function NewsTicker() {
                 <div className="flex items-center">
                   {trendingItems.map((item, i) => (
                     <Link key={`a-${i}`} href={item.href}
-                      className="mx-2.5 sm:mx-5 inline-flex items-center gap-1.5 sm:gap-2 text-body-sm sm:text-body-md font-medium text-white/80 hover:text-white whitespace-nowrap transition-colors">
+                      className="mx-2.5 sm:mx-5 inline-flex items-center gap-1.5 sm:gap-2 text-body-sm sm:text-body-md font-semibold text-white/90 hover:text-white whitespace-nowrap transition-colors">
                       {item.hot && (
                         <span className="inline-flex items-center rounded-sm bg-secondary px-1 sm:px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider">HOT</span>
                       )}
                       {item.category && (
-                        <span className="text-[10px] sm:text-label-sm font-bold text-blue-200/80 uppercase tracking-wider">{item.category}</span>
+                        <span className="text-[10px] sm:text-label-sm font-bold text-purple-300 uppercase tracking-wider">{item.category}</span>
                       )}
                       <span className="h-1 w-1 rounded-full bg-white/20 shrink-0" />
                       {item.title}
@@ -289,12 +254,12 @@ export default function NewsTicker() {
                 <div className="flex items-center">
                   {trendingItems.map((item, i) => (
                     <Link key={`b-${i}`} href={item.href}
-                      className="mx-2.5 sm:mx-5 inline-flex items-center gap-1.5 sm:gap-2 text-body-sm sm:text-body-md font-medium text-white/80 hover:text-white whitespace-nowrap transition-colors">
+                      className="mx-2.5 sm:mx-5 inline-flex items-center gap-1.5 sm:gap-2 text-body-sm sm:text-body-md font-semibold text-white/90 hover:text-white whitespace-nowrap transition-colors">
                       {item.hot && (
                         <span className="inline-flex items-center rounded-sm bg-secondary px-1 sm:px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider">HOT</span>
                       )}
                       {item.category && (
-                        <span className="text-[10px] sm:text-label-sm font-bold text-blue-200/80 uppercase tracking-wider">{item.category}</span>
+                        <span className="text-[10px] sm:text-label-sm font-bold text-purple-300 uppercase tracking-wider">{item.category}</span>
                       )}
                       <span className="h-1 w-1 rounded-full bg-white/20 shrink-0" />
                       {item.title}
