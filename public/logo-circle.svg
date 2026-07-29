@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Solid Black Circle Background -->
+  <circle cx="256" cy="256" r="256" fill="#09090B"/>
+  
+  <!-- Outer Camera Lens Ring -->
+  <circle cx="256" cy="256" r="180" stroke="#FFFFFF" stroke-width="28" stroke-opacity="0.95"/>
+  
+  <!-- Inner Lens Aperture Ring -->
+  <circle cx="256" cy="256" r="90" fill="#FFFFFF" fill-opacity="0.2" stroke="#FFFFFF" stroke-width="20"/>
+  
+  <!-- Center Plus / Lensa Crosshair Motif -->
+  <path d="M256 170V342M170 256H342" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

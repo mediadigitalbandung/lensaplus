@@ -1,23 +1,16 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { WifiOff, RefreshCw, Home } from "lucide-react";
+import Logo from "@/components/common/Logo";
 
 export default function OfflinePage() {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-5 py-20 text-center">
       {/* Logo */}
-      <Link href="/" aria-label="Kembali ke beranda Lensaplus">
-        <Image
-          src="/lensaplus-icon.png"
-          alt="Logo Lensaplus"
-          width={72}
-          height={72}
-          className="rounded-sm mb-6 opacity-80"
-          priority
-        />
-      </Link>
+      <div className="mb-6">
+        <Logo size="lg" />
+      </div>
 
       {/* Icon offline */}
       <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary-light">

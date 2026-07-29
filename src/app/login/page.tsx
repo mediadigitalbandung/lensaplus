@@ -5,6 +5,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
+import Logo from "@/components/common/Logo";
 
 function LoginContent() {
   const router = useRouter();
@@ -60,15 +61,10 @@ function LoginContent() {
     <div className="flex min-h-screen items-center justify-center bg-surface-secondary px-4">
       <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-card">
         {/* Logo */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-            <span className="text-lg font-bold text-white">JH</span>
-          </div>
-          <h1 className="text-xl font-bold text-txt-primary">
-            Masuk ke Panel
-          </h1>
-          <p className="mt-2 text-sm text-txt-secondary">
-            Lensaplus
+        <div className="mb-8 text-center flex flex-col items-center justify-center">
+          <Logo size="lg" />
+          <p className="mt-3 text-sm text-stone-500 font-medium">
+            Masuk ke Panel Redaksi Lensaplus
           </p>
         </div>
 

@@ -215,10 +215,10 @@ export default function NewsTicker() {
   return (
     <>
       {/* ═══ TRENDING INDONESIA ═══ */}
-      <div className="bg-primary border-b border-primary-dark/35 overflow-hidden">
+      <div className="bg-stone-950 border-b border-stone-800/80 overflow-hidden">
         <div className="flex items-center py-2 sm:py-2.5 relative">
-          <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 z-10 bg-primary shadow-[6px_0_10px_-2px_rgba(0,0,0,0.15)]">
-            <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-secondary animate-pulse shrink-0" />
+          <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 z-10 bg-stone-950 shadow-[6px_0_10px_-2px_rgba(0,0,0,0.4)]">
+            <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
             <span className="text-label-sm sm:text-label-md font-bold tracking-widest text-white uppercase whitespace-nowrap">
               Trending
             </span>

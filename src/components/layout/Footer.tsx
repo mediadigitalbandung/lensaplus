@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import PushSubscribeButton from "@/components/push/PushSubscribeButton";
+import Logo from "@/components/common/Logo";
 
 function ClientYear() {
   const [year, setYear] = useState<number | null>(null);
@@ -38,18 +39,14 @@ const footerLinks = {
 
 export default function Footer({ dewanPersNumber }: { dewanPersNumber?: string }) {
   return (
-    <footer className="bg-[#1E1B4B] text-white border-t border-stone-800" role="contentinfo" aria-label="Footer situs">
-      <div className="container-main py-10 sm:py-12 lg:py-14 2xl:py-20">
+    <footer className="bg-stone-950 text-white border-t border-stone-800/80" role="contentinfo" aria-label="Footer situs">
+      <div className="container-main py-10 sm:py-12 lg:py-14 2xl:py-16">
         <div className="grid grid-cols-1 gap-8 sm:gap-10 sm:grid-cols-2 md:grid-cols-12">
           {/* Brand + Badge — takes more space */}
           <div className="col-span-1 sm:col-span-2 md:col-span-5">
-            <div className="flex items-center gap-2">
-              <span className="font-serif text-2xl font-bold text-white tracking-tight">
-                Lensaplus
-              </span>
-            </div>
-            <p className="mt-4 max-w-sm text-body-md leading-relaxed text-stone-300">
-              Media digital terpercaya. Menyajikan berita terkini dengan standar jurnalistik tertinggi.
+            <Logo size="md" variant="dark" />
+            <p className="mt-4 max-w-sm text-body-md leading-relaxed text-stone-400">
+              Media digital terpercaya Bandung & Jawa Barat. Menyajikan berita terkini dengan standar jurnalistik tertinggi.
             </p>
 
             {/* Push Notification subscribe */}

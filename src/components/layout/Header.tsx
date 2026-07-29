@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import Logo from "@/components/common/Logo";
 import ClientDate from "@/components/ClientDate";
 import {
   Menu,
@@ -18,6 +18,7 @@ import {
   Bookmark,
   User,
   Sparkles,
+  Newspaper,
 } from "lucide-react";
 
 const categoryNav = [
@@ -46,18 +47,17 @@ export default function Header() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
 
-  // Category-bar overflow: instead of clipping the rightmost links, measure how
-  // many fit and collapse the rest into a "Lainnya" dropdown.
+  // Category-bar overflow: measure how many fit and collapse rest into "Lainnya"
   const navUlRef = useRef<HTMLUListElement>(null);
   const rulerRef = useRef<HTMLUListElement>(null);
-  const [visibleCount, setVisibleCount] = useState(3); // safe SSR default; refined on mount
+  const [visibleCount, setVisibleCount] = useState(3);
   const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     const container = navUlRef.current;
     const ruler = rulerRef.current;
     if (!container || !ruler) return;
-    const MORE_WIDTH = 92; // px reserved for the "Lainnya ▾" button when needed
+    const MORE_WIDTH = 92;
     const compute = () => {
       const avail = container.clientWidth;
       const items = Array.from(ruler.children) as HTMLElement[];
@@ -65,7 +65,7 @@ export default function Header() {
       let count = 0;
       for (let i = 0; i < items.length; i++) {
         const w = items[i].getBoundingClientRect().width;
-        const reserve = i < items.length - 1 ? MORE_WIDTH : 0; // leave room for the menu unless it's the last item
+        const reserve = i < items.length - 1 ? MORE_WIDTH : 0;
         if (used + w + reserve <= avail) {
           used += w;
           count++;
@@ -81,7 +81,6 @@ export default function Header() {
     return () => ro.disconnect();
   }, []);
 
-  // Close the overflow dropdown when navigating.
   useEffect(() => {
     setMoreOpen(false);
   }, [pathname]);
@@ -112,31 +111,23 @@ export default function Header() {
 
   return (
     <>
-      {/* ── 1. Classic Editorial Newspaper Masthead (Unscrolled Mode) ── */}
-      <header className={`bg-white border-b border-stone-200/50 transition-all duration-300 ${scrolled ? "opacity-0 -translate-y-full h-0 overflow-hidden pointer-events-none" : "opacity-100 translate-y-0"}`} role="banner" aria-label="Header utama">
-        {/* Top level masthead: Left (Date), Center (Centered Large Logo), Right (Actions) */}
-        <div className="container-main py-5 flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Left: Date */}
-          <div className="hidden md:flex items-center gap-2 text-stone-500 uppercase tracking-wider text-label-sm font-semibold">
+      {/* ── 1. Editorial Newspaper Masthead (Unscrolled Mode) ── */}
+      <header className={`bg-white border-b border-stone-200/70 transition-all duration-300 ${scrolled ? "opacity-0 -translate-y-full h-0 overflow-hidden pointer-events-none" : "opacity-100 translate-y-0"}`} role="banner" aria-label="Header utama">
+        {/* Top level masthead: Left (Date & Location), Center (Black Circle Logo), Right (Actions) */}
+        <div className="container-main py-4 sm:py-5 flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Left: Date & City Badge */}
+          <div className="hidden md:flex items-center gap-3 text-stone-500 text-label-sm font-semibold tracking-wide">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200/60 text-stone-700">
+              <Newspaper size={13} className="text-stone-900" />
+              <span>Edisi Bandung</span>
+            </div>
+            <span className="text-stone-300">|</span>
             <ClientDate date={new Date()} format="weekday-long" live={false} />
           </div>
 
-          {/* Center: Large Serif Brand Name */}
+          {/* Center: Black Circle Logo & Brand Name */}
           <div className="text-center">
-            <Link href="/" className="group inline-flex items-center gap-3.5">
-              <Image
-                src="/lensaplus-icon.png"
-                alt="Lensaplus"
-                width={128}
-                height={128}
-                className="h-10 w-10 sm:h-12 sm:w-12 object-contain transition-transform duration-355 group-hover:rotate-12"
-                quality={100}
-                priority
-              />
-              <span className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary tracking-tighter">
-                Lensaplus
-              </span>
-            </Link>
+            <Logo size="lg" />
           </div>
 
           {/* Right: Actions */}
@@ -289,20 +280,7 @@ export default function Header() {
       {/* ── 2. Floating Island Capsule (Scrolled Mode) ── */}
       <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-5xl rounded-full bg-white/90 backdrop-blur-md border border-stone-200/60 shadow-ambient px-6 py-2.5 flex items-center justify-between transition-all duration-300 ${scrolled ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}>
         {/* Left: Compact Logo */}
-        <Link href="/" className="group flex shrink-0 items-center gap-2">
-          <Image
-            src="/lensaplus-icon.png"
-            alt="Lensaplus"
-            width={64}
-            height={64}
-            className="h-7 w-7 object-contain"
-            quality={100}
-            priority
-          />
-          <span className="font-serif text-lg font-bold text-primary tracking-tight">
-            Lensaplus
-          </span>
-        </Link>
+        <Logo size="sm" />
 
         {/* Middle: Micro Category list (Top 4 Categories) */}
         <nav className="hidden md:flex items-center gap-1.5" aria-label="Navigasi cepat kategori">
