@@ -123,12 +123,13 @@ async function main() {
 
   const categoryMap = {};
   for (const cat of categoriesData) {
-    const created = await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: cat,
-      create: cat,
+    let existing = await prisma.category.findFirst({
+      where: { OR: [{ slug: cat.slug }, { name: cat.name }] },
     });
-    categoryMap[cat.slug] = created.id;
+    if (!existing) {
+      existing = await prisma.category.create({ data: cat });
+    }
+    categoryMap[cat.slug] = existing.id;
   }
 
   // 4. Unique Independent Articles for Lensaplus
