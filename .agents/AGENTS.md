@@ -55,6 +55,32 @@ Sistem ini membagi seluruh alur kerja media ke dalam 28 Sub-Agen dengan keahlian
 
 ---
 
+## 🗺️ Mapping Fitur Dashboard Lensaplus v2.0 vs Sub-Agent Penanggung Jawab
+
+Seluruh rute antarmuka dan API pada Dashboard Redaksi (`/panel/*`) dikelola secara independen oleh Sub-Agen terspesialisasi dengan proteksi isolasi 100% dari Kartawarta:
+
+| Menu & Fitur Dashboard | Endpoint Rute (`/panel/*`) | Sub-Agent Penanggung Jawab | Status Isolasi Data Lensaplus |
+|---|---|---|---|
+| 📊 **Dashboard Utama & Ringkasan Stat** | `/panel/dashboard` | 📊 **Data Analytics Strategist** | Isolated DB `lensaplus` |
+| 📰 **Manajemen Berita & Draft Artikel** | `/panel/artikel`, `/panel/artikel/baru` | 📰 **Editorial Journalist Agent** | Isolated DB `lensaplus` |
+| 🤖 **Otomatisasi Artikel AI** | `/panel/auto-artikel`, `/panel/material-artikel` | 🧠 **AI Workflow Orchestrator** | Dedicated Prompts Lensaplus |
+| 🔍 **Bedah Isu & Sorotan Publik** | `/panel/sorotan` | 🚀 **SEO Automation Specialist** | Isolated DB `lensaplus` |
+| 🔴 **Live Blogging Real-Time** | `/panel/live-blogs`, `/panel/live-blogs/baru` | 📰 **Editorial Journalist Agent** | Isolated DB `lensaplus` |
+| 🎬 **Otomatisasi TikTok & Reels** | `/panel/tiktok`, `/panel/social` | 📱 **Social Media Automation Agent** | Isolated Media Library |
+| 💰 **Tata Letak & Analitik Iklan** | `/panel/iklan`, `/panel/iklan/baru` | 💰 **Monetization & Ads Specialist** | Dedicated Lensaplus Slots |
+| 💬 **Moderasi Komentar Pembaca** | `/panel/komentar` | 👥 **Community Engagement Editor** | Isolated DB `lensaplus` |
+| 🗳️ **Polling Carousel Suara Pembaca** | `/panel/polling` | 👥 **Community Engagement Editor** | Isolated DB `lensaplus` |
+| ✉️ **Pelanggan Buletin (Newsletter)** | `/panel/newsletter-subscribers` | 👥 **Community Engagement Editor** | Isolated DB `lensaplus` |
+| 📚 **Glosarium, Topik & Tag** | `/panel/topik`, `/panel/tags`, `/panel/kategori` | 📚 **Archivist & Glossary Curator** | Isolated DB `lensaplus` |
+| 👥 **Manajemen Redaksi & Pengguna** | `/panel/pengguna`, `/panel/redaksi` | 🛡️ **QA & Security Auditor Agent** | Dedicated Lensaplus Roles |
+| 📜 **Regulasi & Pedoman Siber** | `/panel/regulasi`, `/panel/riwayat-review` | ⚖️ **Legal Compliance Officer** | Isolated DB `lensaplus` |
+| 📊 **Analitik GA4 & Cloudflare** | `/panel/analytics`, `/panel/statistik` | 📊 **Data Analytics Strategist** | Dedicated Lensaplus GA4 |
+| 🧠 **Log Penggunaan LLM AI** | `/panel/ai-log` | 🧠 **AI Workflow Orchestrator** | Isolated AI Request Logs |
+| 🖼️ **Pustaka Media & Gambar AI** | `/panel/media` | 🎬 **Multimedia & Video Producer** | Dedicated `/uploads/` Storage |
+| 🔒 **Audit Isolasi & Multi-Tenant** | `scripts/audit-data-isolation.js` | 🔒 **Data Isolation & Multi-Tenant Auditor** | 100% Zero Cross-Leak |
+
+---
+
 ## 📋 General Operating Guidelines
 
 1. **Zero Symptom Patching:** Selesaikan masalah dari *root cause* (akar masalah), bukan menutup error dengan *fallback* kosong tanpa alasan jelas.
