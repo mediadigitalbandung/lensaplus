@@ -95,7 +95,7 @@ export default function InstallPrompt() {
       <div className="card shadow-ambient border border-border-default flex items-start gap-3 p-4 rounded-md">
         {/* App icon */}
         <Image
-          src="/icons/icon-192.png"
+          src="/lensaplus-icon-192.png"
           alt="Logo Lensaplus"
           width={44}
           height={44}

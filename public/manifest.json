@@ -17,25 +17,25 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/lensaplus-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/lensaplus-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-192-maskable.png",
+      "src": "/lensaplus-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-512-maskable.png",
+      "src": "/lensaplus-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -70,28 +70,28 @@
       "short_name": "Terkini",
       "description": "Daftar artikel terbaru",
       "url": "/berita?utm_source=pwa-shortcut",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/lensaplus-icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Bisnis & Ekonomi",
       "short_name": "Bisnis",
       "description": "Berita bisnis dan ekonomi",
       "url": "/kategori/bisnis-ekonomi?utm_source=pwa-shortcut",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/lensaplus-icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Hukum",
       "short_name": "Hukum",
       "description": "Berita hukum",
       "url": "/kategori/hukum?utm_source=pwa-shortcut",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/lensaplus-icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Cari Berita",
       "short_name": "Cari",
       "description": "Pencarian artikel",
       "url": "/search?utm_source=pwa-shortcut",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/lensaplus-icon-192.png", "sizes": "192x192" }]
     }
   ],
   "share_target": {
