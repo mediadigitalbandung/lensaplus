@@ -139,14 +139,13 @@ async function main() {
     create: {
       id: "poll-bandung-digital-2026",
       question: "Apakah Anda setuju dengan alokasi anggaran APBD untuk penataan kabel internet bawah tanah di Bandung?",
-      description: "Suara Pembaca Lensaplus mengenai prioritas penataan kota digital.",
       isActive: true,
       categoryId: categoryMap["pemerintahan"],
       options: {
         create: [
-          { optionText: "Sangat Setuju (Kota Lebih Rapi & Aman)" },
-          { optionText: "Setuju dengan Syarat Berjalan Tepat Waktu" },
-          { optionText: "Kurang Setuju (Lebih Baik Prioritas Perbaikan Jalan)" },
+          { label: "Sangat Setuju (Kota Lebih Rapi & Aman)" },
+          { label: "Setuju dengan Syarat Berjalan Tepat Waktu" },
+          { label: "Kurang Setuju (Lebih Baik Prioritas Perbaikan Jalan)" },
         ],
       },
     },
