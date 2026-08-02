@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 
 async function generateMasterIcon() {
-  console.log("🎨 Generating Master Lensaplus Icon Assets...");
+  console.log("🎨 Generating Master Lensaplus Icon Assets (Root & PWA /icons)...");
 
   // SVG representation of the sleek black circle camera lens emblem
   const svgBuffer = Buffer.from(`
@@ -24,9 +24,14 @@ async function generateMasterIcon() {
   `);
 
   const publicDir = path.join(__dirname, "..", "public");
+  const iconsDir = path.join(publicDir, "icons");
 
-  // Output targets
-  const targets = [
+  if (!fs.existsSync(iconsDir)) {
+    fs.mkdirSync(iconsDir, { recursive: true });
+  }
+
+  // Root public targets
+  const rootTargets = [
     { name: "lensaplus-icon.png", size: 512 },
     { name: "lensaplus-icon-512.png", size: 512 },
     { name: "lensaplus-icon-192.png", size: 192 },
@@ -36,20 +41,37 @@ async function generateMasterIcon() {
     { name: "favicon-16x16.png", size: 16 },
   ];
 
-  for (const t of targets) {
+  for (const t of rootTargets) {
     const filePath = path.join(publicDir, t.name);
     await sharp(svgBuffer)
       .resize(t.size, t.size)
       .png()
       .toFile(filePath);
-    console.log(`  ✓ Created ${t.name} (${t.size}x${t.size})`);
+    console.log(`  ✓ Created public/${t.name} (${t.size}x${t.size})`);
   }
 
-  // Also copy to favicon.ico if needed
-  await sharp(svgBuffer).resize(48, 48).toFile(path.join(publicDir, "favicon.ico"));
-  console.log("  ✓ Created favicon.ico (48x48)");
+  // PWA /icons folder targets
+  const iconFolderTargets = [
+    { name: "icon-512.png", size: 512 },
+    { name: "icon-512-maskable.png", size: 512 },
+    { name: "icon-192.png", size: 192 },
+    { name: "icon-192-maskable.png", size: 192 },
+  ];
 
-  console.log("✨ All master logo icon PNG assets generated successfully!");
+  for (const t of iconFolderTargets) {
+    const filePath = path.join(iconsDir, t.name);
+    await sharp(svgBuffer)
+      .resize(t.size, t.size)
+      .png()
+      .toFile(filePath);
+    console.log(`  ✓ Created public/icons/${t.name} (${t.size}x${t.size})`);
+  }
+
+  // Favicon ico
+  await sharp(svgBuffer).resize(48, 48).toFile(path.join(publicDir, "favicon.ico"));
+  console.log("  ✓ Created public/favicon.ico (48x48)");
+
+  console.log("✨ All master logo icon PNG assets (including PWA /icons) generated successfully!");
 }
 
 generateMasterIcon().catch(console.error);
