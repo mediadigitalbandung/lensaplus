@@ -6,9 +6,10 @@ Selamat datang di **Lensaplus Agent System**. Dokumentasi ini mendefinisikan ars
 
 ## 🏛️ System Architecture & Design System
 
-Lensaplus adalah media digital Bandung berstandar jurnalistik tinggi dengan spesifikasi teknis:
+Lensaplus adalah **Media Berita Digital Nasional Indonesia** berstandar jurnalistik tinggi dengan spesifikasi teknis:
 - **Framework:** Next.js 16 App Router (TypeScript, React 19)
 - **Database:** PostgreSQL 16 (Self-hosted di VPS Hostinger, Prisma 5.22 ORM)
+- **Cakupan Redaksi:** Berita Nasional Indonesia, Politik, Hukum & Peradilan, Bisnis & Ekonomi Nasional, Olahraga, Teknologi Digital, & Peristiwa Nusantara.
 - **Design System:** "Editorial Authority"
   - **Navy Primary:** `#002045` (Kedalaman editorial & profesionalisme)
   - **Crimson Secondary:** `#b7102a` (Aksen breaking news & urgensi)

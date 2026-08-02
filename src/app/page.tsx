@@ -22,17 +22,17 @@ import { getCached } from "@/lib/cache";
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Lensaplus — Berita Terkini Bandung: Ekonomi, Pemerintahan, Hukum & Olahraga",
+    absolute: "Lensaplus — Media Berita Digital Nasional Indonesia",
   },
   description:
-    "Lensaplus — media berita digital Bandung. Berita terkini ekonomi-bisnis, pemerintahan, hukum, olahraga, teknologi, dan hiburan dari Bandung & Jawa Barat.",
+    "Lensaplus — portal media berita digital nasional Indonesia. Berita terkini politik nasional, hukum & peradilan, bisnis-ekonomi, pemerintahan, olahraga, teknologi, dan peristiwa Nusantara.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: "/",
-    title: "Lensaplus — Berita Terkini Bandung & Jawa Barat",
+    title: "Lensaplus — Media Berita Digital Nasional Indonesia",
     description:
-      "Berita terkini ekonomi-bisnis, pemerintahan, hukum, olahraga, dan teknologi dari Bandung & Jawa Barat.",
+      "Berita terkini politik nasional, hukum & peradilan, bisnis-ekonomi, pemerintahan, olahraga, teknologi, dan peristiwa Nusantara.",
   },
 };
 
@@ -324,12 +324,12 @@ export default async function HomePage() {
               "@type": "NewsMediaOrganization",
               "@id": "https://lensaplus.com/#organization",
               name: "Lensaplus",
-              alternateName: "Lensaplus Bandung",
+              alternateName: "Lensaplus Indonesia",
               url: "https://lensaplus.com",
               logo: { "@type": "ImageObject", url: "https://lensaplus.com/lensaplus-icon.png", width: 512, height: 512 },
               image: { "@type": "ImageObject", url: "https://lensaplus.com/lensaplus-icon.png" },
               description:
-                "Portal berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia.",
+                "Portal media berita digital nasional Indonesia — bisnis, ekonomi, politik nasional, hukum & peradilan, olahraga, hiburan, teknologi, dan peristiwa Nusantara.",
               foundingDate: "2024",
               sameAs,
               publishingPrinciples: "https://lensaplus.com/pedoman-media",
@@ -338,16 +338,17 @@ export default async function HomePage() {
               correctionsPolicy: "https://lensaplus.com/kode-etik",
               diversityPolicy: "https://lensaplus.com/kode-etik",
               areaServed: [
-                { "@type": "City", name: "Bandung" },
-                { "@type": "AdministrativeArea", name: "Jawa Barat" },
                 { "@type": "Country", name: "Indonesia" },
+                { "@type": "City", name: "Jakarta" },
+                { "@type": "City", name: "Bandung" },
+                { "@type": "AdministrativeArea", name: "Ibu Kota Nusantara" },
               ],
               knowsAbout: [
-                "Bisnis Indonesia", "Ekonomi", "Pemerintahan", "Kebijakan Publik",
+                "Berita Nasional", "Politik Indonesia", "Bisnis Indonesia", "Ekonomi Makro", "Pemerintahan", "Kebijakan Publik",
                 "APBD/APBN", "Hukum Indonesia", "Putusan Pengadilan", "UU/Regulasi",
-                "Politik", "Pemilu", "Olahraga", "Hiburan", "Teknologi",
+                "Pemilu", "Olahraga Indonesia", "Hiburan", "Teknologi Digital",
                 "Pendidikan", "Kesehatan", "Lingkungan",
-                "Berita Bandung", "Berita Jawa Barat", "Berita Indonesia",
+                "Berita Indonesia", "Peristiwa Nusantara",
               ],
               contactPoint: [
                 { "@type": "ContactPoint", contactType: "customer service", url: "https://lensaplus.com/kontak", areaServed: "ID", availableLanguage: ["Indonesian"] },
@@ -355,8 +356,8 @@ export default async function HomePage() {
               ],
               address: {
                 "@type": "PostalAddress",
-                addressLocality: "Bandung",
-                addressRegion: "Jawa Barat",
+                addressLocality: "Jakarta & Bandung",
+                addressRegion: "Indonesia",
                 addressCountry: "ID",
               },
             },
@@ -365,7 +366,7 @@ export default async function HomePage() {
               "@type": "WebSite",
               "@id": "https://lensaplus.com/#website",
               name: "Lensaplus",
-              alternateName: "Lensaplus — Media Berita Digital Bandung",
+              alternateName: "Lensaplus — Media Berita Digital Nasional Indonesia",
               url: "https://lensaplus.com",
               inLanguage: "id-ID",
               publisher: { "@id": "https://lensaplus.com/#organization" },
@@ -379,7 +380,7 @@ export default async function HomePage() {
         }}
       />
 
-      <h1 className="sr-only">Lensaplus — Media Berita Digital Bandung</h1>
+      <h1 className="sr-only">Lensaplus — Media Berita Digital Nasional Indonesia</h1>
       
       {/* ── TOP LEADERBOARD AD ── */}
       <BannerAd size="leaderboard" slot="HEADER" className="bg-surface" />
