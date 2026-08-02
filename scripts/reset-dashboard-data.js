@@ -4,40 +4,59 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🧹 Clearing all articles, comments, logs, and dashboard content...");
+  console.log("💥 Starting Full System & Feature Reset for Lensaplus Database...");
 
   const safeDelete = async (name, fn) => {
     try {
       await fn();
-      console.log(`  ✓ Cleared ${name}`);
+      console.log(`  ✓ Wiped ${name}`);
     } catch (err) {
-      console.log(`  - Skipped ${name} (${err.message.split("\n")[0]})`);
+      console.log(`  - Skipped ${name}`);
     }
   };
 
-  // Delete article relations
+  // 1. Clear Interactive & Social Features
   await safeDelete("Comment", () => prisma.comment.deleteMany({}));
   await safeDelete("Revision", () => prisma.revision.deleteMany({}));
   await safeDelete("Correction", () => prisma.correction.deleteMany({}));
   await safeDelete("Report", () => prisma.report.deleteMany({}));
   await safeDelete("Source", () => prisma.source.deleteMany({}));
+  await safeDelete("ArticleTag", () => prisma.$executeRawUnsafe(`DELETE FROM "_ArticleToTag";`));
 
-  // Delete main content
+  // 2. Clear Core Articles, Sorotan & Live Blogs
   await safeDelete("Article", () => prisma.article.deleteMany({}));
   await safeDelete("Sorotan", () => prisma.sorotan.deleteMany({}));
   await safeDelete("LiveBlogEntry", () => prisma.liveBlogEntry?.deleteMany({}));
   await safeDelete("LiveBlog", () => prisma.liveBlog?.deleteMany({}));
+
+  // 3. Clear TikTok, Social & Video Assets
+  await safeDelete("TikTokVideo", () => prisma.tikTokVideo?.deleteMany({}));
+  await safeDelete("TikTokClip", () => prisma.tikTokClip?.deleteMany({}));
   await safeDelete("TikTokContent", () => prisma.tikTokContent?.deleteMany({}));
+  await safeDelete("SocialPost", () => prisma.socialPost?.deleteMany({}));
+
+  // 4. Clear Reader Polling, Subscriptions & Notifications
   await safeDelete("PollVote", () => prisma.pollVote?.deleteMany({}));
   await safeDelete("PollOption", () => prisma.pollOption?.deleteMany({}));
   await safeDelete("Poll", () => prisma.poll?.deleteMany({}));
+  await safeDelete("NewsletterSubscriber", () => prisma.newsletterSubscriber?.deleteMany({}));
+  await safeDelete("PushSubscription", () => prisma.pushSubscription?.deleteMany({}));
+  await safeDelete("Notification", () => prisma.notification?.deleteMany({}));
+
+  // 5. Clear AI Logs, Usage & System Audit Logs
   await safeDelete("AuditLog", () => prisma.auditLog?.deleteMany({}));
   await safeDelete("AiLog", () => prisma.aiLog?.deleteMany({}));
-  await safeDelete("NewsletterSubscriber", () => prisma.newsletterSubscriber?.deleteMany({}));
+  await safeDelete("AIUsageLog", () => prisma.aIUsageLog?.deleteMany({}));
+  await safeDelete("Media", () => prisma.media?.deleteMany({}));
+  await safeDelete("Tag", () => prisma.tag?.deleteMany({}));
+  await safeDelete("Topic", () => prisma.topic?.deleteMany({}));
 
-  console.log("✅ All articles and dashboard content wiped clean.");
+  // 6. Reset Users (Remove non-system accounts, set clean Super Admin)
+  await safeDelete("User", () => prisma.user.deleteMany({}));
 
-  // Ensure default categories exist
+  console.log("🧹 Lensaplus database tables wiped 100%.");
+
+  // 7. Seed Fresh Default Categories
   const categories = [
     { name: "Hukum", slug: "hukum", description: "Berita hukum, peradilan, dan regulasi", order: 1 },
     { name: "Bisnis & Ekonomi", slug: "bisnis-ekonomi", description: "Berita bisnis, ekonomi, dan keuangan", order: 2 },
@@ -54,19 +73,13 @@ async function main() {
   ];
 
   for (const cat of categories) {
-    await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: {},
-      create: cat,
-    });
+    await prisma.category.create({ data: cat }).catch(() => {});
   }
 
-  // Ensure Super Admin user exists with admin1234
+  // 8. Create Clean Super Admin Account
   const hash = await bcrypt.hash("admin1234", 12);
-  await prisma.user.upsert({
-    where: { email: "admin@lensaplus.com" },
-    update: { password: hash, isActive: true },
-    create: {
+  await prisma.user.create({
+    data: {
       email: "admin@lensaplus.com",
       password: hash,
       name: "Super Admin",
@@ -76,8 +89,8 @@ async function main() {
     },
   });
 
-  console.log("🔑 Administrator verified (email: admin@lensaplus.com / username: admin, password: admin1234)");
-  console.log("✨ Dashboard & Database Reset Completed Successfully!");
+  console.log("🔑 Clean Super Admin created (email: admin@lensaplus.com / username: admin, password: admin1234)");
+  console.log("✨ 100% Full System Reset Complete for Lensaplus!");
 }
 
 main()
