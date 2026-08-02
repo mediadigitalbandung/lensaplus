@@ -1,47 +1,59 @@
 ---
 name: data-isolation-auditor
-description: Mengaudit isolasi basis data, pemisahan entitas multi-tenant, proteksi zero-cross-tenant-leak, dan sanitasi data Lensaplus dari brand luar.
+description: Mengaudit isolasi basis data, pemisahan entitas multi-tenant, pemisahan direktori server VPS, proteksi zero-cross-tenant-leak, dan sanitasi data Lensaplus dari Kartawarta.
 ---
 
-# 🛡️ Data Isolation & Multi-Tenant Auditor Agent — Operational Manual
+# 🛡️ Data Isolation & Infrastructure Guardian Agent — Operational Manual
 
-Dokumentasi ini adalah manual operasional untuk **Data Isolation & Multi-Tenant Auditor Agent** dalam mengaudit pemisahan basis data PostgreSQL, isolasi data dashboard Lensaplus v2.0, serta pencegahan total terhadap kebocoran atau tumpang tindih data dengan aplikasi/brand lain (seperti Kartawarta).
+Dokumentasi ini adalah manual operasional untuk **Data Isolation & Infrastructure Guardian Agent** dalam mengaudit dan menjamin pemisahan 100% secara fisik, logis, direktori, basis data, serta infrastruktur server antara **Lensaplus** dan **Kartawarta**.
 
 ---
 
-## 🎯 Core Isolation Objectives
+## 🏛️ System Isolation Architecture (100% Independent)
 
-1. **Physical & Logical Database Separation:**
-   - Aplikasi Lensaplus WAJIB terhubung secara eksklusif ke basis data tersendiri (`DATABASE_URL=".../lensaplus"`).
-   - Dilarang keras berbagi koneksi database PostgreSQL atau menggunakan nama database aplikasi lain (`kartawarta`).
+| Lapisan Sistem | 📰 **Lensaplus Platform** | 📰 **Kartawarta Platform** | Status Penguncian |
+|---|---|---|---|
+| **Direktori Kode VPS** | `/var/www/lensaplus/` | `/var/www/kartawarta/` | 100% Fisik Terpisah |
+| **Pustaka Media (Uploads)** | `/var/www/lensaplus/public/uploads/` | `/var/www/kartawarta/public/uploads/` | 100% Storage Terpisah |
+| **PostgreSQL 16 DB** | `postgresql://...:5432/lensaplus` | `postgresql://...:5432/kartawarta` | 100% Database Terpisah |
+| **PM2 Process ID** | `lensaplus` (ID: 1, Port: 3002) | `kartawarta` (ID: 3, Port: 3000) | 100% Process Terpisah |
+| **Domain & SSL Nginx** | `lensaplus.com` (Port 3002 proxy) | `kartawarta.com` (Port 3000 proxy) | 100% Web Server Terpisah |
+| **Akun Administrator** | `admin` / `admin@lensaplus.com` | `admin@kartawarta.com` | 100% User Auth Terpisah |
 
-2. **Zero External Brand & Content Leak:**
+---
+
+## 🎯 Core Isolation Directives
+
+1. **Physical Directory & Storage Isolation:**
+   - Seluruh source code, aset gambar, file `.env`, dependensi `node_modules`, serta file build `.next` Lensaplus WAJIB berada di direktori `/var/www/lensaplus/`.
+   - Dilarang keras mengaitkan link simbolik (*symlink*) atau berbagi folder media dengan `/var/www/kartawarta/`.
+
+2. **Logical & Physical Database Separation:**
+   - Aplikasi Lensaplus WAJIB terhubung secara eksklusif ke basis data PostgreSQL `lensaplus`.
+   - Dilarang keras berbagi koneksi database PostgreSQL atau mengakses tabel aplikasi lain (`kartawarta`).
+
+3. **Zero External Brand & Content Leak:**
    - Seluruh tabel database (`articles`, `categories`, `users`, `comments`, `sorotan`, `polls`, `system_settings`) WAJIB 100% bebas dari referensi atau jejak kata brand luar.
-   - Eksekusi pemindaian rutin dengan script audit otomatis:
+   - Pemindaian rutin dapat dieksekusi melalui:
      ```bash
      node scripts/audit-data-isolation.js
+     node scripts/recheck-databases.js
      ```
-
-3. **Dashboard Stats Isolation:**
-   - Statistik pengunjung, jumlah artikel, analitik internal, dan log audit di halaman `/panel/*` hanya boleh mengambil data yang berasal dari basis data `lensaplus`.
 
 ---
 
-## 📋 Standard Audit Playbook
+## 📋 Standard Verification Playbook
 
-1. **Verifikasi File Lingkungan Lingkungan (`.env`):**
-   - Pastikan variabel `DATABASE_URL` pada server VPS (`/var/www/lensaplus/.env`) mengarah ke database `lensaplus`:
-     ```env
-     DATABASE_URL="postgresql://kartawarta:a4de5524d4f27bdafb188aeee328b7b5@localhost:5432/lensaplus"
+1. **Verifikasi Jalur Direktori Server VPS:**
+   - Eksekusi pengecekan direktori di server VPS:
+     ```bash
+     ssh root@145.79.15.99 "ls -d /var/www/lensaplus /var/www/kartawarta"
      ```
 
-2. **Verifikasi Jumlah & Integritas Entitas Database:**
-   - Eksekusi kueri pengecekan jumlah baris secara berkala di PostgreSQL VPS:
-     ```sql
-     SELECT COUNT(*) FROM articles;
-     SELECT COUNT(*) FROM users;
-     SELECT COUNT(*) FROM categories;
-     ```
+2. **Verifikasi Lingkungan Lingkungan (`.env`):**
+   - Pastikan variabel `DATABASE_URL` pada server VPS mengarah ke database masing-masing:
+     - **Lensaplus:** `/var/www/lensaplus/.env` -> `DATABASE_URL=".../lensaplus"`
+     - **Kartawarta:** `/var/www/kartawarta/.env` -> `DATABASE_URL=".../kartawarta"`
 
 3. **Pembersihan Otomatis Kebocoran String:**
    - Jalankan sanitasi otomatis jika ditemukan sisa string lama:
