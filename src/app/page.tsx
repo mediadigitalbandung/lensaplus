@@ -70,14 +70,14 @@ function timeAgo(date: Date | string | null): string {
 function getAngleBadge(angle: string) {
   switch (angle) {
     case "KRONOLOGI":
-      return { label: "Kronologi Kejadian", color: "bg-amber-500/20 text-amber-300 border-amber-500/30" };
+      return { label: "Kronologi Kejadian", color: "bg-blue-600/90 text-white" };
     case "ANALISIS":
-      return { label: "Analisis Mendalam", color: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30" };
+      return { label: "Analisis Mendalam", color: "bg-secondary text-white" };
     case "DAMPAK":
     case "PROYEKSI":
-      return { label: "Dampak & Implikasi", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" };
+      return { label: "Dampak & Implikasi", color: "bg-emerald-600 text-white" };
     default:
-      return { label: "Sudut Pandang", color: "bg-purple-500/20 text-purple-300 border-purple-500/30" };
+      return { label: "Sudut Pandang", color: "bg-stone-700 text-white" };
   }
 }
 
@@ -535,22 +535,22 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── SOROTAN & ANALISIS SUDUT PANDANG (NEW EDITORIAL FEATURE) ── */}
-      <section className="bg-[#001530] text-white py-10 sm:py-14">
+      {/* ── SOROTAN & ANALISIS SUDUT PANDANG (EDITORIAL AUTHORITY DESIGN SYSTEM) ── */}
+      <section className="bg-primary text-white py-10 sm:py-14 border-y border-stone-800/40">
         <div className="container-main">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-white/10 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-white/15 pb-5">
             <div>
-              <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">
+              <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-secondary mb-1">
                 <Layers size={16} />
                 <span>Desk Sorotan & Bedah Isu</span>
               </div>
               <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">
-                Analisis Sudut Pandang & Perspektif Mendalam
+                Analisis Sudut Pandang & Bedah Isu Nasional
               </h2>
             </div>
             <Link
               href="/sorotan"
-              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-white/20 transition-all shrink-0 backdrop-blur-md"
+              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary hover:text-white transition-all shrink-0 backdrop-blur-md border border-white/10 shadow-sm"
             >
               Jelajahi Semua Sorotan <ChevronRight size={14} />
             </Link>
@@ -563,19 +563,19 @@ export default async function HomePage() {
                 return (
                   <article
                     key={item.id}
-                    className="group flex flex-col justify-between rounded-2xl bg-white/5 p-6 border border-white/10 hover:border-amber-400/40 hover:bg-white/10 transition-all duration-300 shadow-lg"
+                    className="group flex flex-col justify-between rounded-2xl bg-white/5 p-6 border border-white/10 hover:border-secondary/60 hover:bg-white/10 transition-all duration-300 shadow-lg"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${badge.color}`}>
+                        <span className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${badge.color}`}>
                           {badge.label}
                         </span>
-                        <span className="text-[10px] text-stone-400">
+                        <span className="text-[10px] text-stone-300">
                           {timeAgo(item.createdAt)}
                         </span>
                       </div>
                       <Link href={`/sorotan/${item.slug}`}>
-                        <h3 className="font-serif text-lg font-bold leading-snug text-white group-hover:text-amber-300 transition-colors line-clamp-2">
+                        <h3 className="font-serif text-lg font-bold leading-snug text-white group-hover:text-stone-200 transition-colors line-clamp-2">
                           {item.title}
                         </h3>
                       </Link>
@@ -590,7 +590,7 @@ export default async function HomePage() {
                       </span>
                       <Link
                         href={`/sorotan/${item.slug}`}
-                        className="text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1"
+                        className="text-xs font-bold text-white group-hover:text-secondary group-hover:translate-x-1 transition-all inline-flex items-center gap-1"
                       >
                         Baca <ChevronRight size={14} />
                       </Link>
@@ -601,24 +601,24 @@ export default async function HomePage() {
             ) : (
               // Fallback cards with AI visual demo
               [
-                { title: "Kronologi & Evaluasi Kebijakan APBD Kota Bandung", angle: "KRONOLOGI", desc: "Rekap urutan keputusan anggaran dan alokasi prioritas pembangunan insfrastruktur publik Bandung." },
-                { title: "Analisis Dampak Regulasi Ekonomi & Bisnis Lokal", angle: "ANALISIS", desc: "Kajian komprehensif pengaruh kebijakan tarif dan pajak terhadap iklim usaha UMKM di Bandung." },
-                { title: "Proyeksi Pertumbuhan Sektor Wisata & Transportasi", angle: "DAMPAK", desc: "Tinjauan estimasi kunjungan wisatawan dan kesiapan infrastruktur transportasi darat Jawa Barat." },
+                { title: "Kronologi & Evaluasi Kebijakan Ekonomi Nasional", angle: "KRONOLOGI", desc: "Rekap urutan keputusan anggaran dan alokasi prioritas pembangunan infrastruktur publik Indonesia." },
+                { title: "Analisis Dampak Regulasi Perdagangan & Investasi", angle: "ANALISIS", desc: "Kajian komprehensif pengaruh kebijakan tarif dan pajak terhadap iklim usaha dan investasi nasional." },
+                { title: "Proyeksi Pertumbuhan Sektor Industri & Transportasi", angle: "DAMPAK", desc: "Tinjauan estimasi perkembangan sektor transportasi darat, laut, dan udara Nusantara." },
               ].map((item, idx) => {
                 const badge = getAngleBadge(item.angle);
                 return (
                   <article
                     key={idx}
-                    className="group flex flex-col justify-between rounded-2xl bg-white/5 p-6 border border-white/10 hover:border-amber-400/40 hover:bg-white/10 transition-all duration-300 shadow-lg"
+                    className="group flex flex-col justify-between rounded-2xl bg-white/5 p-6 border border-white/10 hover:border-secondary/60 hover:bg-white/10 transition-all duration-300 shadow-lg"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${badge.color}`}>
+                        <span className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${badge.color}`}>
                           {badge.label}
                         </span>
                       </div>
                       <Link href="/sorotan">
-                        <h3 className="font-serif text-lg font-bold leading-snug text-white group-hover:text-amber-300 transition-colors line-clamp-2">
+                        <h3 className="font-serif text-lg font-bold leading-snug text-white group-hover:text-stone-200 transition-colors line-clamp-2">
                           {item.title}
                         </h3>
                       </Link>
@@ -627,7 +627,7 @@ export default async function HomePage() {
                       </p>
                     </div>
                     <div className="mt-5 border-t border-white/10 pt-3 flex items-center justify-end">
-                      <Link href="/sorotan" className="text-xs font-bold text-amber-400 inline-flex items-center gap-1">
+                      <Link href="/sorotan" className="text-xs font-bold text-white group-hover:text-secondary inline-flex items-center gap-1">
                         Jelajahi <ChevronRight size={14} />
                       </Link>
                     </div>
