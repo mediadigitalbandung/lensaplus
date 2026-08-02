@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Logo from "@/components/common/Logo";
 import {
   LayoutDashboard,
   FileText,
@@ -239,9 +240,13 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
   const sidebarContent = (
     <div className="flex h-full flex-col px-3 py-4 overflow-y-auto overscroll-contain pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div className="px-4 pt-1 pb-4 mb-3 border-b border-white/10 flex items-center justify-between">
+        <Logo size="md" variant="dark" href="/panel/dashboard" />
+      </div>
+
       <a
         href="/"
-        className="mb-6 flex items-center gap-2.5 rounded-lg px-4 py-2.5 text-[13px] font-medium text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-150"
+        className="mb-4 flex items-center gap-2.5 rounded-lg px-4 py-2 text-[13px] font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all duration-150"
       >
         <ChevronLeft size={16} />
         Kembali ke Situs
