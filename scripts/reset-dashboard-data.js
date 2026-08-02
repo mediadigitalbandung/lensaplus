@@ -4,33 +4,38 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🧹 Clearing all dashboard data, articles, comments, logs, and interactive items...");
+  console.log("🧹 Clearing all articles, comments, logs, and dashboard content...");
 
-  // Delete dependent records first
-  await prisma.comment.deleteMany({});
-  await prisma.articleRevision.deleteMany({});
-  await prisma.articleTag.deleteMany({});
-  await prisma.bookmark.deleteMany({});
-  await prisma.like.deleteMany({});
-  await prisma.readHistory.deleteMany({});
+  const safeDelete = async (name, fn) => {
+    try {
+      await fn();
+      console.log(`  ✓ Cleared ${name}`);
+    } catch (err) {
+      console.log(`  - Skipped ${name} (${err.message.split("\n")[0]})`);
+    }
+  };
 
-  // Delete main content entities
-  await prisma.article.deleteMany({});
-  await prisma.sorotanItem?.deleteMany({}).catch(() => {});
-  await prisma.sorotanTimeline?.deleteMany({}).catch(() => {});
-  await prisma.sorotan?.deleteMany({}).catch(() => {});
-  await prisma.liveBlogEntry?.deleteMany({}).catch(() => {});
-  await prisma.liveBlog?.deleteMany({}).catch(() => {});
-  await prisma.tikTokContent?.deleteMany({}).catch(() => {});
-  await prisma.pollingVote?.deleteMany({}).catch(() => {});
-  await prisma.pollingOption?.deleteMany({}).catch(() => {});
-  await prisma.polling?.deleteMany({}).catch(() => {});
-  await prisma.auditLog?.deleteMany({}).catch(() => {});
-  await prisma.aIRequestLog?.deleteMany({}).catch(() => {});
-  await prisma.newsletterSubscriber?.deleteMany({}).catch(() => {});
-  await prisma.pushSubscription?.deleteMany({}).catch(() => {});
+  // Delete article relations
+  await safeDelete("Comment", () => prisma.comment.deleteMany({}));
+  await safeDelete("Revision", () => prisma.revision.deleteMany({}));
+  await safeDelete("Correction", () => prisma.correction.deleteMany({}));
+  await safeDelete("Report", () => prisma.report.deleteMany({}));
+  await safeDelete("Source", () => prisma.source.deleteMany({}));
 
-  console.log("✅ All articles and dashboard data deleted successfully.");
+  // Delete main content
+  await safeDelete("Article", () => prisma.article.deleteMany({}));
+  await safeDelete("Sorotan", () => prisma.sorotan.deleteMany({}));
+  await safeDelete("LiveBlogEntry", () => prisma.liveBlogEntry?.deleteMany({}));
+  await safeDelete("LiveBlog", () => prisma.liveBlog?.deleteMany({}));
+  await safeDelete("TikTokContent", () => prisma.tikTokContent?.deleteMany({}));
+  await safeDelete("PollVote", () => prisma.pollVote?.deleteMany({}));
+  await safeDelete("PollOption", () => prisma.pollOption?.deleteMany({}));
+  await safeDelete("Poll", () => prisma.poll?.deleteMany({}));
+  await safeDelete("AuditLog", () => prisma.auditLog?.deleteMany({}));
+  await safeDelete("AiLog", () => prisma.aiLog?.deleteMany({}));
+  await safeDelete("NewsletterSubscriber", () => prisma.newsletterSubscriber?.deleteMany({}));
+
+  console.log("✅ All articles and dashboard content wiped clean.");
 
   // Ensure default categories exist
   const categories = [
@@ -56,7 +61,7 @@ async function main() {
     });
   }
 
-  // Ensure Super Admin exists with admin1234
+  // Ensure Super Admin user exists with admin1234
   const hash = await bcrypt.hash("admin1234", 12);
   await prisma.user.upsert({
     where: { email: "admin@lensaplus.com" },
@@ -71,8 +76,8 @@ async function main() {
     },
   });
 
-  console.log("🔑 Super Admin verified (email: admin@lensaplus.com / username: admin, password: admin1234)");
-  console.log("✨ Reset complete!");
+  console.log("🔑 Administrator verified (email: admin@lensaplus.com / username: admin, password: admin1234)");
+  console.log("✨ Dashboard & Database Reset Completed Successfully!");
 }
 
 main()
