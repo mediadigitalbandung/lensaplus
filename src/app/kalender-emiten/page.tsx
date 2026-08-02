@@ -67,24 +67,31 @@ export default async function KalenderEmitenPage() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const ninetyDaysFwd = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-  const [events, typeGroups] = await Promise.all([
-    prisma.marketEvent.findMany({
-      where: {
-        isPublished: true,
-        scheduledAt: { gte: sevenDaysAgo, lte: ninetyDaysFwd },
-      },
-      orderBy: { scheduledAt: "asc" },
-      take: 200,
-    }),
-    prisma.marketEvent.groupBy({
-      by: ["type"],
-      where: {
-        isPublished: true,
-        scheduledAt: { gte: sevenDaysAgo, lte: ninetyDaysFwd },
-      },
-      _count: { _all: true },
-    }),
-  ]);
+  let events: any[] = [];
+  let typeGroups: any[] = [];
+  try {
+    [events, typeGroups] = await Promise.all([
+      prisma.marketEvent.findMany({
+        where: {
+          isPublished: true,
+          scheduledAt: { gte: sevenDaysAgo, lte: ninetyDaysFwd },
+        },
+        orderBy: { scheduledAt: "asc" },
+        take: 200,
+      }),
+      prisma.marketEvent.groupBy({
+        by: ["type"],
+        where: {
+          isPublished: true,
+          scheduledAt: { gte: sevenDaysAgo, lte: ninetyDaysFwd },
+        },
+        _count: { _all: true },
+      }),
+    ]);
+  } catch {
+    events = [];
+    typeGroups = [];
+  }
 
   // Group events by date key (YYYY-MM-DD)
   const byDate = new Map<string, typeof events>();

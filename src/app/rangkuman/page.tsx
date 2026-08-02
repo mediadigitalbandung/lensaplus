@@ -56,25 +56,35 @@ export default async function RangkumanIndexPage() {
   const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const [weekArticles, monthArticles, topCategories] = await Promise.all([
-    prisma.article.findMany({
-      where: { status: "PUBLISHED", publishedAt: { gte: weekStart } },
-      include: { category: true },
-      orderBy: { publishedAt: "desc" },
-      take: 50,
-    }),
-    prisma.article.findMany({
-      where: { status: "PUBLISHED", publishedAt: { gte: monthStart } },
-      include: { category: true },
-      orderBy: { publishedAt: "desc" },
-      take: 100,
-    }),
-    prisma.category.findMany({
-      include: { _count: { select: { articles: true } } },
-      orderBy: { order: "asc" },
-      take: 6,
-    }),
-  ]);
+  let weekArticles: any[] = [];
+  let monthArticles: any[] = [];
+  let topCategories: any[] = [];
+
+  try {
+    [weekArticles, monthArticles, topCategories] = await Promise.all([
+      prisma.article.findMany({
+        where: { status: "PUBLISHED", publishedAt: { gte: weekStart } },
+        include: { category: true },
+        orderBy: { publishedAt: "desc" },
+        take: 50,
+      }),
+      prisma.article.findMany({
+        where: { status: "PUBLISHED", publishedAt: { gte: monthStart } },
+        include: { category: true },
+        orderBy: { publishedAt: "desc" },
+        take: 100,
+      }),
+      prisma.category.findMany({
+        include: { _count: { select: { articles: true } } },
+        orderBy: { order: "asc" },
+        take: 6,
+      }),
+    ]);
+  } catch {
+    weekArticles = [];
+    monthArticles = [];
+    topCategories = [];
+  }
 
   const cards: DigestCard[] = [];
 

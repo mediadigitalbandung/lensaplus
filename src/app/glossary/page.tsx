@@ -37,17 +37,22 @@ const RANAH_ICON: Record<string, LucideIcon> = {
 };
 
 export default async function GlossaryPage() {
-  const items = await prisma.glossary.findMany({
-    where: { isPublished: true },
-    orderBy: [{ ranah: "asc" }, { istilah: "asc" }],
-    select: {
-      slug: true,
-      istilah: true,
-      singkatan: true,
-      ranah: true,
-      tags: true,
-    },
-  });
+  let items: any[] = [];
+  try {
+    items = await prisma.glossary.findMany({
+      where: { isPublished: true },
+      orderBy: [{ ranah: "asc" }, { istilah: "asc" }],
+      select: {
+        slug: true,
+        istilah: true,
+        singkatan: true,
+        ranah: true,
+        tags: true,
+      },
+    });
+  } catch {
+    items = [];
+  }
 
   // Group by ranah
   const grouped = items.reduce<Record<string, typeof items>>((acc, item) => {
@@ -160,7 +165,7 @@ export default async function GlossaryPage() {
                       </div>
                       {item.tags && item.tags.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {item.tags.slice(0, 3).map((tag) => (
+                          {item.tags.slice(0, 3).map((tag: string) => (
                             <span
                               key={tag}
                               className="rounded-lg bg-primary/5 px-1.5 py-0.5 text-label-sm text-primary/70"

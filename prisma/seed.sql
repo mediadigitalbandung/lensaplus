@@ -14,9 +14,9 @@ INSERT INTO categories (id, name, slug, description, "order") VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO users (id, email, password, name, role, bio, "updatedAt") VALUES
-('usr01', 'admin@kartawarta.com', '$2a$12$zqYxNqp4mSi4a/ufwO2tb.UzKF6E2zObvtSwtBhO4EAzzGUHv.csm', 'Super Admin', 'SUPER_ADMIN', 'Administrator Kartawarta', NOW()),
-('usr02', 'editor@kartawarta.com', '$2a$12$iUuXGR1NSyb2ft9qoIV11.xq7OdwBWHtC2.Tv6zorYF6M7j/X.ZJa', 'Editor Kepala', 'CHIEF_EDITOR', 'Editor Kepala Kartawarta', NOW()),
-('usr03', 'jurnalis@kartawarta.com', '$2a$12$P7KahhEQWaQIk45n3YMMVehLakfohuqSAS7yKCfIlPBUGAFqSY5o.', 'Ahmad Fauzi', 'SENIOR_JOURNALIST', 'Jurnalis senior dengan pengalaman 10 tahun meliput berita.', NOW())
+('usr01', 'admin@lensaplus.com', '$2a$12$zqYxNqp4mSi4a/ufwO2tb.UzKF6E2zObvtSwtBhO4EAzzGUHv.csm', 'Super Admin', 'SUPER_ADMIN', 'Administrator Lensaplus', NOW()),
+('usr02', 'editor@lensaplus.com', '$2a$12$iUuXGR1NSyb2ft9qoIV11.xq7OdwBWHtC2.Tv6zorYF6M7j/X.ZJa', 'Editor Kepala', 'CHIEF_EDITOR', 'Editor Kepala Lensaplus', NOW()),
+('usr03', 'jurnalis@lensaplus.com', '$2a$12$P7KahhEQWaQIk45n3YMMVehLakfohuqSAS7yKCfIlPBUGAFqSY5o.', 'Ahmad Fauzi', 'SENIOR_JOURNALIST', 'Jurnalis senior dengan pengalaman 10 tahun meliput berita.', NOW())
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO articles (id, title, slug, content, excerpt, status, "verificationLabel", "readTime", "viewCount", "publishedAt", "authorId", "categoryId", "seoTitle", "seoDescription", "createdAt", "updatedAt") VALUES

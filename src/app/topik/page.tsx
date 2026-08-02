@@ -57,10 +57,15 @@ const categoryIconMap: Record<string, LucideIcon> = {
 };
 
 export default async function TopikIndexPage() {
-  const categories = await prisma.category.findMany({
-    include: { _count: { select: { articles: true } } },
-    orderBy: { order: "asc" },
-  });
+  let categories: any[] = [];
+  try {
+    categories = await prisma.category.findMany({
+      include: { _count: { select: { articles: true } } },
+      orderBy: { order: "asc" },
+    });
+  } catch {
+    categories = [];
+  }
 
   return (
     <div className="bg-surface min-h-screen">

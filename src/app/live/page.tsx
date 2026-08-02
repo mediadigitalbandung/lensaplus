@@ -115,78 +115,81 @@ async function getLiveBlogs() {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const [liveNow, upcoming, recent] = await Promise.all([
-    prisma.liveBlog.findMany({
-      where: { status: "LIVE", isPublished: true },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        description: true,
-        category: true,
-        status: true,
-        scheduledAt: true,
-        startedAt: true,
-        endedAt: true,
-        coverImage: true,
-        viewCount: true,
-        author: { select: { name: true } },
-        _count: { select: { entries: true } },
-      },
-      orderBy: { startedAt: "desc" },
-      take: 5,
-    }),
-    prisma.liveBlog.findMany({
-      where: {
-        status: "SCHEDULED",
-        isPublished: true,
-        scheduledAt: { gte: now },
-      },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        description: true,
-        category: true,
-        status: true,
-        scheduledAt: true,
-        startedAt: true,
-        endedAt: true,
-        coverImage: true,
-        viewCount: true,
-        author: { select: { name: true } },
-        _count: { select: { entries: true } },
-      },
-      orderBy: { scheduledAt: "asc" },
-      take: 10,
-    }),
-    prisma.liveBlog.findMany({
-      where: {
-        status: "ENDED",
-        isPublished: true,
-        endedAt: { gte: sevenDaysAgo },
-      },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        description: true,
-        category: true,
-        status: true,
-        scheduledAt: true,
-        startedAt: true,
-        endedAt: true,
-        coverImage: true,
-        viewCount: true,
-        author: { select: { name: true } },
-        _count: { select: { entries: true } },
-      },
-      orderBy: { endedAt: "desc" },
-      take: 12,
-    }),
-  ]);
-
-  return { liveNow, upcoming, recent };
+  try {
+    const [liveNow, upcoming, recent] = await Promise.all([
+      prisma.liveBlog.findMany({
+        where: { status: "LIVE", isPublished: true },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          description: true,
+          category: true,
+          status: true,
+          scheduledAt: true,
+          startedAt: true,
+          endedAt: true,
+          coverImage: true,
+          viewCount: true,
+          author: { select: { name: true } },
+          _count: { select: { entries: true } },
+        },
+        orderBy: { startedAt: "desc" },
+        take: 5,
+      }),
+      prisma.liveBlog.findMany({
+        where: {
+          status: "SCHEDULED",
+          isPublished: true,
+          scheduledAt: { gte: now },
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          description: true,
+          category: true,
+          status: true,
+          scheduledAt: true,
+          startedAt: true,
+          endedAt: true,
+          coverImage: true,
+          viewCount: true,
+          author: { select: { name: true } },
+          _count: { select: { entries: true } },
+        },
+        orderBy: { scheduledAt: "asc" },
+        take: 10,
+      }),
+      prisma.liveBlog.findMany({
+        where: {
+          status: "ENDED",
+          isPublished: true,
+          endedAt: { gte: sevenDaysAgo },
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          description: true,
+          category: true,
+          status: true,
+          scheduledAt: true,
+          startedAt: true,
+          endedAt: true,
+          coverImage: true,
+          viewCount: true,
+          author: { select: { name: true } },
+          _count: { select: { entries: true } },
+        },
+        orderBy: { endedAt: "desc" },
+        take: 12,
+      }),
+    ]);
+    return { liveNow, upcoming, recent };
+  } catch {
+    return { liveNow: [], upcoming: [], recent: [] };
+  }
 }
 
 export default async function LiveListPage() {

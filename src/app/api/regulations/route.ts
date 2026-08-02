@@ -16,7 +16,7 @@ import { prisma } from "@/lib/prisma";
 import { errorResponse, successResponse } from "@/lib/api-utils";
 import type { Prisma } from "@prisma/client";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 const VALID_TYPES = new Set([
   "UU",

@@ -126,7 +126,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email dan password diperlukan");
         }
 
-        const emailLower = credentials.email.toLowerCase();
+        let emailLower = credentials.email.trim().toLowerCase();
+        if (emailLower === "admin") {
+          emailLower = "admin@lensaplus.com";
+        }
         const user = await prisma.user.findUnique({
           where: { email: emailLower },
         });

@@ -667,7 +667,7 @@ model SocialMediaSettings {
 model TelegramSettings {
   id        String   @id @default("global")
   botToken  String?  @db.Text // bot token from @BotFather
-  chatId    String? // channel username (e.g. "@kartawarta") or numeric chat id ("-100...")
+  chatId    String? // channel username (e.g. "@lensaplus") or numeric chat id ("-100...")
   enabled   Boolean  @default(false)
   updatedAt DateTime @updatedAt
 
@@ -748,7 +748,7 @@ model TargetKeyword {
 }
 
 /// External news source the cron should periodically scrape, paraphrase
-/// and turn into Kartawarta drafts. One row per upstream listing URL
+/// and turn into Lensaplus drafts. One row per upstream listing URL
 /// (e.g. https://www.bankbjb.co.id/page/berita).
 model NewsSource {
   id                 String    @id @default(cuid())
@@ -820,7 +820,7 @@ model NewsSource {
 /// Global, cross-source claim/dedup ledger for scraped upstream URLs.
 ///
 /// `url @unique` is the lock that guarantees ONE upstream article →
-/// exactly ONE Kartawarta draft, even when several writers (any role)
+/// exactly ONE Lensaplus draft, even when several writers (any role)
 /// scrape the same source at the same time. First writer to insert the
 /// row wins ("siapa cepat dia dapat"); a concurrent insert hits the
 /// unique constraint (P2002) and is rejected, so no two writers ever
@@ -931,12 +931,12 @@ enum TiktokMediaKind {
 
 model TiktokAccount {
   id             String              @id @default(cuid())
-  // Owner is the Kartawarta staff user who connected the TikTok handle.
+  // Owner is the Lensaplus staff user who connected the TikTok handle.
   ownerId        String
   ownerName      String
   // TikTok-side identifiers (filled in Phase 3 after OAuth)
   platformUserId String?             @unique
-  username       String // e.g. "kartawarta_id"
+  username       String // e.g. "lensaplus_id"
   displayName    String
   avatarUrl      String?
   scopes         String              @default("") // comma-sep

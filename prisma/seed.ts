@@ -34,7 +34,7 @@ async function main() {
   }
 
   // Create super admin
-  const hashedPassword = await bcrypt.hash("Admin@2026!", 12);
+  const hashedPassword = await bcrypt.hash("admin1234", 12);
   await prisma.users.upsert({
     where: { email: "admin@lensaplus.com" },
     update: {},

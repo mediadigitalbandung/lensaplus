@@ -41,7 +41,7 @@ async function resolveDigest(slug: string): Promise<ResolvedDigest | null> {
   }
 
   // Otherwise treat as category slug
-  const category = await prisma.category.findUnique({ where: { slug } });
+  const category = await prisma.category.findUnique({ where: { slug } }).catch(() => null);
   if (!category) return null;
   const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   return {
@@ -92,19 +92,26 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
         publishedAt: { gte: digest.range.from, lte: digest.range.to },
       };
 
-  const [articles, otherDigests] = await Promise.all([
-    prisma.article.findMany({
-      where,
-      include: { author: true, category: true },
-      orderBy: { publishedAt: "desc" },
-      take: 30,
-    }),
-    prisma.category.findMany({
-      where: digest.category ? { NOT: { slug: digest.category.slug } } : undefined,
-      orderBy: { order: "asc" },
-      take: 6,
-    }),
-  ]);
+  let articles: any[] = [];
+  let otherDigests: any[] = [];
+  try {
+    [articles, otherDigests] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        include: { author: true, category: true },
+        orderBy: { publishedAt: "desc" },
+        take: 30,
+      }),
+      prisma.category.findMany({
+        where: digest.category ? { NOT: { slug: digest.category.slug } } : undefined,
+        orderBy: { order: "asc" },
+        take: 6,
+      }),
+    ]);
+  } catch {
+    articles = [];
+    otherDigests = [];
+  }
 
   const hero = articles[0];
   const rest = articles.slice(1);

@@ -68,19 +68,24 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
   if (!court) notFound();
 
   // Related articles whose title or content includes the court name
-  const relatedArticles = await prisma.article.findMany({
-    where: {
-      status: "PUBLISHED",
-      OR: [
-        { title: { contains: court.shortName, mode: "insensitive" } },
-        { title: { contains: court.name, mode: "insensitive" } },
-        { content: { contains: court.shortName, mode: "insensitive" } },
-      ],
-    },
-    include: { author: true, category: true },
-    orderBy: { publishedAt: "desc" },
-    take: 6,
-  });
+  let relatedArticles: any[] = [];
+  try {
+    relatedArticles = await prisma.article.findMany({
+      where: {
+        status: "PUBLISHED",
+        OR: [
+          { title: { contains: court.shortName, mode: "insensitive" } },
+          { title: { contains: court.name, mode: "insensitive" } },
+          { content: { contains: court.shortName, mode: "insensitive" } },
+        ],
+      },
+      include: { author: true, category: true },
+      orderBy: { publishedAt: "desc" },
+      take: 6,
+    });
+  } catch {
+    relatedArticles = [];
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const jsonLd = {

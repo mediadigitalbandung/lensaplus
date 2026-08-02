@@ -1,3 +1,4 @@
+require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
@@ -9,8 +10,8 @@ async function main() {
   });
   console.log("Existing users:", JSON.stringify(users, null, 2));
 
-  // Reset admin password
-  const hash = await bcrypt.hash("Admin@2026!", 12);
+  // Reset admin password to admin1234
+  const hash = await bcrypt.hash("admin1234", 12);
 
   if (users.some(u => u.email === "admin@lensaplus.com")) {
     await prisma.user.update({
