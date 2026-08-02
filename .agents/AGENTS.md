@@ -51,6 +51,7 @@ Sistem ini membagi seluruh alur kerja media ke dalam 28 Sub-Agen dengan keahlian
 | 🎨 **Component Design System Auditor**| `.agents/skills/component-design-system-auditor/`| Mengaudit konsistensi komponen, token Editorial Authority, & hiegine class Tailwind. |
 | 🔌 **Third-Party Integration Auditor**| `.agents/skills/third-party-integration-auditor/`| Mengaudit integrasi AdSense, Cloudflare, Perplexity, Sentry, & Telegram API. |
 | 🛡️ **Error Resilience Fallback Auditor**| `.agents/skills/error-resilience-fallback-auditor/`| Mengaudit halaman error.tsx, not-found.tsx, offline mode PWA, & pesan kesalahan pengguna. |
+| 🔒 **Data Isolation & Multi-Tenant Auditor**| `.agents/skills/data-isolation-auditor/`| Mengaudit isolasi basis data, pemisahan entitas multi-tenant, & proteksi zero-cross-tenant-leak. |
 
 ---
 
