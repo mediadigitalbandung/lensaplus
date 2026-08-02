@@ -119,7 +119,7 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-3 text-stone-500 text-label-sm font-semibold tracking-wide">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200/60 text-stone-700">
               <Newspaper size={13} className="text-stone-900" />
-              <span>Edisi Bandung</span>
+              <span>Edisi Nasional</span>
             </div>
             <span className="text-stone-300">|</span>
             <ClientDate date={new Date()} format="weekday-long" live={false} />

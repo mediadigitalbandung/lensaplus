@@ -46,7 +46,7 @@ export default function Footer({ dewanPersNumber }: { dewanPersNumber?: string }
           <div className="col-span-1 sm:col-span-2 md:col-span-5">
             <Logo size="md" variant="dark" />
             <p className="mt-4 max-w-sm text-body-md leading-relaxed text-stone-400">
-              Media digital terpercaya Bandung & Jawa Barat. Menyajikan berita terkini dengan standar jurnalistik tertinggi.
+              Media berita digital nasional Indonesia terpercaya. Menyajikan berita terkini seputar politik, hukum, bisnis, dan peristiwa Nusantara dengan standar jurnalistik tertinggi.
             </p>
 
             {/* Push Notification subscribe */}
