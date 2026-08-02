@@ -541,7 +541,6 @@ export default async function HomePage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-white/15 pb-5">
             <div>
               <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-secondary mb-1">
-                <Layers size={16} />
                 <span>Desk Sorotan & Bedah Isu</span>
               </div>
               <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">
