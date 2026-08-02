@@ -384,11 +384,6 @@ export default async function HomePage() {
       {/* ── TOP LEADERBOARD AD ── */}
       <BannerAd size="leaderboard" slot="HEADER" className="bg-surface" />
 
-      {/* ── LIVE NEWS & MARKETS TICKER ── */}
-      <div className="border-y border-stone-200/60 bg-stone-900">
-        <NewsTicker />
-      </div>
-
       {/* ── HERO EDITORIAL GRID ── */}
       <section className="bg-surface py-6 sm:py-10">
         <div className="container-main">
