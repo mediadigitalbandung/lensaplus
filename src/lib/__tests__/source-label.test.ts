@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 
 import {
   sourceLabelFromUrl,
+  sourceWebsiteFromUrl,
+  formatSourceWithWebsite,
   rewriteCreditsInContent,
   footerSourceHref,
   uploadUrlsInContent,
@@ -108,5 +110,29 @@ describe("uploadUrlsInContent", () => {
       "/uploads/a.jpg",
       "/uploads/b.png",
     ]);
+  });
+});
+
+describe("sourceWebsiteFromUrl & formatSourceWithWebsite", () => {
+  it("extracts clean website hostname without www/m/amp", () => {
+    expect(sourceWebsiteFromUrl("https://www.bola.com/indonesia/read/1")).toBe("bola.com");
+    expect(sourceWebsiteFromUrl("https://m.kompas.com/news")).toBe("kompas.com");
+    expect(sourceWebsiteFromUrl("https://www.bankbjb.co.id/page/berita")).toBe("bankbjb.co.id");
+    expect(sourceWebsiteFromUrl("not-a-url")).toBeNull();
+  });
+
+  it("formats source name with (websitenya) without duplicating if already present", () => {
+    expect(
+      formatSourceWithWebsite("Bola", "https://www.bola.com/indonesia/read/1")
+    ).toBe("Bola (bola.com)");
+    expect(
+      formatSourceWithWebsite("Bank BJB", "https://www.bankbjb.co.id/page/berita")
+    ).toBe("Bank BJB (bankbjb.co.id)");
+    expect(
+      formatSourceWithWebsite("Bola (bola.com)", "https://www.bola.com/indonesia/read/1")
+    ).toBe("Bola (bola.com)");
+    expect(
+      formatSourceWithWebsite("bola.com", "https://www.bola.com/indonesia/read/1")
+    ).toBe("bola.com");
   });
 });

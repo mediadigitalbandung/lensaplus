@@ -41,6 +41,8 @@ const PROMPTS: Record<string, (title: string, content: string) => string> = {
     `buat draft artikel lengkap siap tayang  menjadi artikel ramah google discover dengan optimasi SEO, kombinasikan penggunaan LSI informasional dengan LSI transaksional yang relevan. gunakan tone lensaplus.com. cek kompetitor untuk hasil SEO lebih optimal. bebas kanibalisasi dengan artikel di lensaplus.com. Pastikan dari sumber kredibel dan autoritatif. Topik artikel: ${title}. ${content ? `Catatan/arahan tambahan: ${content}` : ""}. Format output sebagai HTML rich-text menggunakan tag <p> untuk paragraf, <h2>/<h3> untuk sub-headings, <blockquote> untuk kutipan penting, dan list (<ul>/<li>) untuk poin penting. Jangan sertakan tag <html>, <body>, atau markdown code fence.`,
   high_ctr_meta: (title, content) =>
     `Buat 5 variasi judul artikel berita dengan CTR tinggi (high CTR) dan 3 variasi meta deskripsi dengan CTR tinggi untuk lensaplus.com. Gaya bahasa harus ramah Google Discover, menarik rasa penasaran pembaca tanpa clickbait berlebihan. Topik/judul dasar: ${title}. ${content ? `Konten pendukung: ${content.slice(0, 1000)}` : ""}. Format output sebagai HTML terstruktur yang rapi dengan headings (<h2>/<h3>) dan paragraf agar mudah dibaca di dalam editor.`,
+  expand_article: (title, content) =>
+    `Artikel berita Lensaplus berikut masih terlalu pendek (di bawah batas minimal 300 kata). Tugas Anda adalah menulis lanjutan/perluasan sebanyak 2 hingga 4 paragraf tambahan (sekitar 180–260 kata) yang memperdalam konteks, latar belakang topik, analisis dampak, serta relevansi bagi pembaca secara informatif, objektif, dan jurnalistik (PUEBI).\n\nATURAN KETAT:\n- JANGAN mengulang kalimat yang sudah ada di artikel.\n- JANGAN mengarang kutipan langsung atau angka statistik fiktif yang tidak ada di artikel.\n- Gunakan sub-judul <h2> yang relevan diikuti paragraf <p>...</p> yang mengalir alami menyambung artikel.\n- Keluarkan HANYA fragmen HTML tambahan (<h2> dan <p>) tanpa pembungkus <html>, <body>, markdown code fence, atau catatan pembuka.\n\nJudul Artikel: ${title}\nIsi Artikel Saat Ini:\n${content.slice(0, 4000)}`,
 };
 
 // Map request `feature` string to the canonical AIFeature used for logging.
@@ -52,6 +54,7 @@ const FEATURE_MAP: Record<string, AIFeature> = {
   content_ideas: "article_draft",
   write_article: "article_draft",
   high_ctr_meta: "article_draft",
+  expand_article: "article_draft",
 };
 
 export async function POST(req: NextRequest) {
@@ -76,7 +79,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!PROMPTS[feature]) {
-      throw new ApiError("Feature tidak valid. Gunakan: tags, summary, seo_title, meta_description, content_ideas, write_article, high_ctr_meta", 400);
+      throw new ApiError("Feature tidak valid. Gunakan: tags, summary, seo_title, meta_description, content_ideas, write_article, high_ctr_meta, expand_article", 400);
     }
 
     const prompt = PROMPTS[feature](title, content);

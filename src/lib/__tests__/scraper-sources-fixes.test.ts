@@ -73,7 +73,11 @@ import {
   pickBestFromSrcset,
   isSameSiteHost,
 } from "../scraper/html-utils";
-import { normalizeDefaultTags } from "../scraper/source-validation";
+import {
+  normalizeDefaultTags,
+  newsSourceCreateSchema,
+  newsSourceUpdateSchema,
+} from "../scraper/source-validation";
 import {
   parseSourceMetaOutput,
   generateNewsSourceMeta,
@@ -662,5 +666,119 @@ describe("multi-language detection, translation & concept paraphrasing", () => {
     const fail = await translatePreviewItems(inputItems, "en");
     expect(fail.applied).toBe(false);
     expect(fail.items[0].title).toBe("Asian markets rise after strong export figures");
+  });
+
+  it("supports autoScrape and autoPublish toggles in validation and paraphraseAndCreateDraft", async () => {
+    const parsedCreate = newsSourceCreateSchema.parse({
+      name: "Sumber Resmi",
+      listingUrl: "https://example.id/berita",
+      autoScrape: false,
+      autoPublish: true,
+    });
+    expect(parsedCreate.autoScrape).toBe(false);
+    expect(parsedCreate.autoPublish).toBe(true);
+
+    const parsedUpdate = newsSourceUpdateSchema.parse({
+      autoScrape: true,
+      autoPublish: false,
+    });
+    expect(parsedUpdate.autoScrape).toBe(true);
+    expect(parsedUpdate.autoPublish).toBe(false);
+
+    mockCallAI.mockResolvedValueOnce({
+      text: JSON.stringify({
+        title: "Pemerintah Luncurkan Program Digitalisasi UMKM Nasional",
+        excerpt: "Program digitalisasi UMKM resmi diluncurkan untuk memperluas akses pasar.",
+        content: "<p>Pemerintah meluncurkan program digitalisasi UMKM nasional pada pekan ini.</p>",
+        suggestedTags: ["umkm", "digitalisasi"],
+      }),
+      provider: "deepseek",
+      totalTokens: 310,
+    });
+    mockArticleFindUnique.mockResolvedValueOnce(null);
+    mockTagFindMany.mockResolvedValueOnce([]);
+    mockTagCreate.mockResolvedValue({ id: "t1" });
+    mockArticleCreate.mockResolvedValueOnce({
+      id: "art-pub-1",
+      slug: "pemerintah-luncurkan-program-digitalisasi-umkm-nasional",
+      title: "Pemerintah Luncurkan Program Digitalisasi UMKM Nasional",
+    });
+
+    const pubRes = await paraphraseAndCreateDraft({
+      source: {
+        url: "https://example.id/berita/umkm",
+        title: "Program Digitalisasi UMKM",
+        excerpt: "Ringkasan",
+        contentHtml: "<p>Isi berita UMKM.</p>",
+        wordCount: 90,
+        lang: "id",
+      },
+      sourceName: "Example",
+      authorId: "u1",
+      authorName: "Editor",
+      categoryId: "c1",
+      downloadImage: false,
+      autoPublish: true,
+    });
+
+    expect(pubRes.status).toBe("PUBLISHED");
+    const createData = mockArticleCreate.mock.calls[0][0].data;
+    expect(createData.status).toBe("PUBLISHED");
+    expect(createData.publishedAt).toBeInstanceOf(Date);
+    expect(createData.seoTitle).toBeTruthy();
+    expect(createData.seoDescription).toBeTruthy();
+    expect(createData.sources.create[0].name).toBe("Example (example.id)");
+    expect(createData.content).toContain("Example (example.id)");
+  });
+
+  it("automatically expands paraphrased drafts shorter than 320 words and includes (websitenya) in attribution", async () => {
+    mockCallAI
+      .mockResolvedValueOnce({
+        text: JSON.stringify({
+          title: "Bank BJB Catat Pertumbuhan Kredit Produktif di Jawa Barat",
+          excerpt: "Bank BJB terus mendorong penyaluran kredit produktif bagi pelaku usaha daerah.",
+          content: "<p>Bank BJB mencatat pertumbuhan penyaluran kredit produktif sepanjang kuartal pertama tahun ini di wilayah Jawa Barat.</p>",
+          suggestedTags: ["bank bjb", "kredit"],
+        }),
+        provider: "deepseek",
+        totalTokens: 200,
+      })
+      .mockResolvedValueOnce({
+        text: "<h2>Dampak bagi Perekonomian Daerah</h2><p>Penyaluran kredit produktif ini diharapkan memperkuat ekosistem usaha mikro, kecil, dan menengah di berbagai kabupaten dan kota Jawa Barat.</p>",
+        provider: "deepseek",
+        totalTokens: 150,
+      });
+
+    mockArticleFindUnique.mockResolvedValueOnce(null);
+    mockTagFindMany.mockResolvedValueOnce([]);
+    mockTagCreate.mockResolvedValue({ id: "t1" });
+    mockArticleCreate.mockResolvedValueOnce({
+      id: "art-expand-1",
+      slug: "bank-bjb-catat-pertumbuhan-kredit-produktif-di-jawa-barat",
+      title: "Bank BJB Catat Pertumbuhan Kredit Produktif di Jawa Barat",
+    });
+
+    const res = await paraphraseAndCreateDraft({
+      source: {
+        url: "https://www.bankbjb.co.id/berita/kredit-produktif",
+        title: "Pertumbuhan Kredit Produktif BJB",
+        excerpt: "Ringkasan",
+        contentHtml: "<p>Isi rilis Bank BJB.</p>",
+        wordCount: 80,
+        lang: "id",
+      },
+      sourceName: "Bank BJB",
+      authorId: "u1",
+      authorName: "Editor",
+      categoryId: "c1",
+      downloadImage: false,
+    });
+
+    expect(mockCallAI).toHaveBeenCalledTimes(2);
+    expect(res.tokensUsed).toBe(350);
+    const createData = mockArticleCreate.mock.calls[0][0].data;
+    expect(createData.content).toContain("Dampak bagi Perekonomian Daerah");
+    expect(createData.content).toContain("Bankbjb (bankbjb.co.id)");
+    expect(createData.sources.create[0].name).toBe("Bankbjb (bankbjb.co.id)");
   });
 });

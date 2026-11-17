@@ -35,6 +35,7 @@ import { SCRAPER_ROLES } from "@/lib/roles";
 const bodySchema = z.object({
   url: z.string().refine(isSafeHttpUrl, "URL artikel harus http/https"),
   thumbnail: z.string().refine(isSafeHttpUrl).optional().nullable(),
+  autoPublish: z.boolean().optional(),
 });
 
 export const dynamic = "force-dynamic";
@@ -113,6 +114,8 @@ export async function POST(
       throw new ApiError("Tidak ada kategori untuk artikel", 500);
     }
 
+    const shouldAutoPublish = data.autoPublish ?? source.autoPublish;
+
     // Fetch + paraphrase + create draft. Byline = the writer who clicked.
     let draft;
     try {
@@ -130,6 +133,7 @@ export async function POST(
         defaultTags: source.defaultTags,
         listingThumbnail: data.thumbnail ?? undefined,
         downloadImage: true,
+        autoPublish: shouldAutoPublish,
       });
     } catch (e) {
       // Release the claim so the URL can be retried by anyone.
@@ -179,7 +183,7 @@ export async function POST(
       articleId: draft.articleId,
       slug: draft.slug,
       title: draft.title,
-      articleStatus: "DRAFT",
+      articleStatus: draft.status ?? "DRAFT",
       featuredImage: draft.featuredImage ?? null,
       sourceUrl: data.url,
       tokens: draft.tokens,

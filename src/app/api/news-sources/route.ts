@@ -87,6 +87,8 @@ export async function POST(request: NextRequest) {
         categoryId: data.categoryId || null,
         description: data.description || null,
         isActive: data.isActive ?? true,
+        autoScrape: data.autoScrape ?? true,
+        autoPublish: data.autoPublish ?? false,
         priority: data.priority ?? 0,
         frequencyHours: data.frequencyHours ?? 4,
         articleSelector: data.articleSelector || null,

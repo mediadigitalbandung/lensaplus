@@ -39,10 +39,10 @@ async function handler(req: NextRequest) {
   try {
     try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
 
-    // Pick eligible sources: active + frequency window elapsed.
+    // Pick eligible sources: active + autoScrape enabled + frequency window elapsed.
     const now = new Date();
     const sources = await prisma.newsSource.findMany({
-      where: { isActive: true },
+      where: { isActive: true, autoScrape: true },
       orderBy: [{ priority: "desc" }, { lastCheckedAt: "asc" }],
       include: { owner: { select: { id: true, name: true } } },
     });
@@ -175,6 +175,7 @@ async function handler(req: NextRequest) {
               defaultTags: source.defaultTags,
               listingThumbnail: candidate.thumbnail,
               downloadImage: true,
+              autoPublish: source.autoPublish,
             });
             await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);
             sourceResult.drafts.push({

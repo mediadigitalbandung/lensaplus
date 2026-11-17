@@ -18,6 +18,7 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { Search, X, Sparkles, Loader2, AlertCircle, Clock, ImageIcon, BookOpen } from "lucide-react";
 import { PERPLEXITY_PERSONAS, PERPLEXITY_NOTE_HINTS } from "@/lib/perplexity-personas";
+import { sourceLabelFromUrl, formatSourceWithWebsite } from "@/lib/scraper/source-label";
 
 export interface ResearchSource {
   name: string;
@@ -155,7 +156,10 @@ export default function PerplexityResearchPanel({
             } catch {
               /* ignore */
             }
-            const credit = host ? `<em>Sumber: ${host}</em>` : "";
+            const creditLabel = im.origin
+              ? formatSourceWithWebsite(sourceLabelFromUrl(im.origin) || host, im.origin)
+              : host;
+            const credit = creditLabel ? `<em>Sumber: ${creditLabel}</em>` : "";
             const sep = cap && credit ? " — " : "";
             const figcap = cap || credit ? `<figcaption>${cap}${sep}${credit}</figcaption>` : "";
             return `<figure><img src="${im.url}" alt="${cap}" />${figcap}</figure>`;
@@ -178,7 +182,13 @@ export default function PerplexityResearchPanel({
           } catch {
             /* keep blank */
           }
-          return { name: s.title || host || "Sumber", title: "", institution: host, url: s.url };
+          const rawLabel = s.title || sourceLabelFromUrl(s.url) || host || "Sumber";
+          return {
+            name: formatSourceWithWebsite(rawLabel, s.url),
+            title: "",
+            institution: host,
+            url: s.url,
+          };
         });
         addedSources = newSources.length;
         setSources((prev) => {

@@ -763,6 +763,13 @@ model NewsSource {
   categoryId         String?
   description        String?
   isActive           Boolean   @default(true)
+  /// Whether `/api/cron/scrape-sources` should automatically scrape this source
+  /// on schedule (`frequencyHours`). Manual Preview / Scrape Now still work
+  /// whenever `isActive` is true.
+  autoScrape         Boolean   @default(true)
+  /// Whether articles scraped from this source should be published immediately
+  /// (`status = PUBLISHED`, triggering SEO/index/social hooks) instead of `DRAFT`.
+  autoPublish        Boolean   @default(false)
   priority           Int       @default(0)
   /// How often the cron should re-check this source. Range 1–24 hours.
   frequencyHours     Int       @default(4)

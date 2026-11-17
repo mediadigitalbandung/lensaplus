@@ -55,6 +55,8 @@ interface NewsSource {
   categoryId: string | null;
   category: Category | null;
   isActive: boolean;
+  autoScrape: boolean;
+  autoPublish: boolean;
   priority: number;
   frequencyHours: number;
   totalScraped: number;
@@ -173,7 +175,7 @@ export default function SumberBeritaPage() {
   } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<
-    "preview" | "scrape" | "toggle" | "delete" | "ai_meta" | null
+    "preview" | "scrape" | "toggle" | "toggle_auto_scrape" | "toggle_auto_publish" | "bulk_toggle" | "delete" | "ai_meta" | null
   >(null);
   const [actionFeedback, setActionFeedback] = useState<{
     type: "error" | "success";
@@ -242,9 +244,12 @@ export default function SumberBeritaPage() {
   }
 
   async function handleScrape(s: NewsSource, limit = 3) {
+    const modeLabel = s.autoPublish
+      ? "langsung diterbitkan (Auto-Publish ON)"
+      : "menjadi draft";
     const ok = await confirm({
       title: "Jalankan scrape?",
-      message: `Akan mengambil maksimal ${limit} artikel baru dari ${s.name}, diterjemahkan langsung ke Bahasa Indonesia bila berbahasa asing, lalu diparafrase konsepnya via AI menjadi draft. Lanjut?`,
+      message: `Akan mengambil maksimal ${limit} artikel baru dari ${s.name}, diterjemahkan langsung ke Bahasa Indonesia bila berbahasa asing, lalu diparafrase konsepnya via AI ${modeLabel}. Lanjut?`,
       variant: "default",
     });
     if (!ok) return;
@@ -298,7 +303,8 @@ export default function SumberBeritaPage() {
           typeof d.failed === "number" && d.failed > 0
             ? `, ${d.failed} gagal`
             : "";
-        const msg = `Selesai: ${d.ok ?? 0} draft baru dibuat${skippedNote}${failedNote}.`;
+        const noun = s.autoPublish ? "artikel baru diterbitkan" : "draft baru dibuat";
+        const msg = `Selesai: ${d.ok ?? 0} ${noun}${skippedNote}${failedNote}.`;
         success(msg);
         setActionFeedback({ type: "success", sourceName: s.name, message: msg });
       }
@@ -383,6 +389,81 @@ export default function SumberBeritaPage() {
     }
   }
 
+  async function handleToggleOption(
+    s: NewsSource,
+    field: "autoScrape" | "autoPublish",
+  ) {
+    const currentVal =
+      field === "autoScrape" ? (s.autoScrape ?? true) : (s.autoPublish ?? false);
+    const nextVal = !currentVal;
+    setBusyId(s.id);
+    setBusyAction(
+      field === "autoScrape" ? "toggle_auto_scrape" : "toggle_auto_publish",
+    );
+    try {
+      const res = await fetch(`/api/news-sources/${s.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: nextVal }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        showError(json?.error || "Gagal memperbarui opsi");
+        return;
+      }
+      const label = field === "autoScrape" ? "Auto-Scrape" : "Auto-Publish";
+      success(
+        `${label} ${nextVal ? "diaktifkan (ON)" : "dinonaktifkan (OFF)"} untuk ${s.name}`,
+      );
+      setSources((prev) =>
+        prev.map((item) =>
+          item.id === s.id ? { ...item, [field]: nextVal } : item,
+        ),
+      );
+    } catch {
+      showError("Gagal menghubungi server");
+    } finally {
+      setBusyId(null);
+      setBusyAction(null);
+    }
+  }
+
+  async function handleBulkToggleOption(
+    field: "autoScrape" | "autoPublish",
+    nextVal: boolean,
+  ) {
+    const manageable = sources.filter(canManageSource);
+    if (manageable.length === 0) return;
+    setBusyId("__bulk__");
+    setBusyAction("bulk_toggle");
+    try {
+      const responses = await Promise.all(
+        manageable.map((s) =>
+          fetch(`/api/news-sources/${s.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ [field]: nextVal }),
+          }),
+        ),
+      );
+      const failedCount = responses.filter((r) => !r.ok).length;
+      if (failedCount > 0) {
+        showError(`${failedCount} sumber gagal diperbarui`);
+      } else {
+        const label = field === "autoScrape" ? "Auto-Scrape" : "Auto-Publish";
+        success(
+          `${label} ${nextVal ? "diaktifkan (ON)" : "dinonaktifkan (OFF)"} untuk semua sumber`,
+        );
+      }
+      fetchSources();
+    } catch {
+      showError("Gagal menghubungi server");
+    } finally {
+      setBusyId(null);
+      setBusyAction(null);
+    }
+  }
+
   async function handleDelete(s: NewsSource) {
     const ok = await confirm({
       title: "Hapus sumber?",
@@ -451,6 +532,112 @@ export default function SumberBeritaPage() {
           </div>
         </div>
       </div>
+
+      {/* Master / Bulk ON-OFF controls for Auto-Scrape & Auto-Publish */}
+      {!loading && sources.filter(canManageSource).length > 0 && (() => {
+        const manageable = sources.filter(canManageSource);
+        const autoScrapeCount = manageable.filter((s) => s.autoScrape ?? true).length;
+        const autoPublishCount = manageable.filter((s) => s.autoPublish ?? false).length;
+        const allAutoScrapeOn = autoScrapeCount === manageable.length;
+        const allAutoPublishOn = autoPublishCount === manageable.length;
+        const isBulkBusy = busyId === "__bulk__" && busyAction === "bulk_toggle";
+
+        return (
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-surface p-4 shadow-card">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-txt-primary">
+                    Auto-Scrape Terjadwal
+                  </p>
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider ${
+                      autoScrapeCount > 0 ? "text-emerald-700" : "text-txt-muted"
+                    }`}
+                  >
+                    {autoScrapeCount}/{manageable.length} ON
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-txt-secondary">
+                  Cron otomatis mengambil artikel baru sesuai frekuensi jam tiap sumber.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={allAutoScrapeOn}
+                disabled={isBulkBusy}
+                onClick={() => handleBulkToggleOption("autoScrape", !allAutoScrapeOn)}
+                className="inline-flex shrink-0 items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-txt-primary hover:border-primary transition-colors disabled:opacity-50"
+                title={
+                  allAutoScrapeOn
+                    ? "Matikan Auto-Scrape untuk semua sumber"
+                    : "Aktifkan Auto-Scrape untuk semua sumber"
+                }
+              >
+                <span
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                    allAutoScrapeOn ? "bg-emerald-600" : "bg-stone-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                      allAutoScrapeOn ? "translate-x-4" : "translate-x-1"
+                    }`}
+                  />
+                </span>
+                <span>{allAutoScrapeOn ? "Semua ON" : "Semua OFF"}</span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-surface p-4 shadow-card">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-txt-primary">
+                    Auto-Publish Artikel
+                  </p>
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider ${
+                      autoPublishCount > 0 ? "text-primary" : "text-txt-muted"
+                    }`}
+                  >
+                    {autoPublishCount}/{manageable.length} ON
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-txt-secondary">
+                  Artikel hasil scrape langsung diterbitkan (PUBLISHED) tanpa masuk draf.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={allAutoPublishOn}
+                disabled={isBulkBusy}
+                onClick={() => handleBulkToggleOption("autoPublish", !allAutoPublishOn)}
+                className="inline-flex shrink-0 items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-txt-primary hover:border-primary transition-colors disabled:opacity-50"
+                title={
+                  allAutoPublishOn
+                    ? "Matikan Auto-Publish untuk semua sumber"
+                    : "Aktifkan Auto-Publish untuk semua sumber"
+                }
+              >
+                <span
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                    allAutoPublishOn ? "bg-primary" : "bg-stone-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                      allAutoPublishOn ? "translate-x-4" : "translate-x-1"
+                    }`}
+                  />
+                </span>
+                <span>{allAutoPublishOn ? "Semua ON" : "Semua OFF"}</span>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {actionFeedback && (
         <div
@@ -563,6 +750,22 @@ export default function SumberBeritaPage() {
                         </span>
                       </>
                     )}
+                    <span className="text-txt-muted">·</span>
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider ${
+                        (s.autoScrape ?? true) ? "text-emerald-700" : "text-txt-muted"
+                      }`}
+                    >
+                      Auto-Scrape: {(s.autoScrape ?? true) ? "ON" : "OFF"}
+                    </span>
+                    <span className="text-txt-muted">·</span>
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider ${
+                        s.autoPublish ? "text-primary" : "text-txt-muted"
+                      }`}
+                    >
+                      Auto-Publish: {s.autoPublish ? "ON" : "OFF"}
+                    </span>
                   </div>
                   <a
                     href={s.listingUrl}
@@ -588,13 +791,72 @@ export default function SumberBeritaPage() {
                     </div>
                   )}
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-txt-muted">
-                    <span><strong className="text-txt-primary">{s.totalScraped}</strong> draft dibuat</span>
+                    <span><strong className="text-txt-primary">{s.totalScraped}</strong> artikel di-scrape</span>
                     <span>Frekuensi tiap <strong className="text-txt-primary">{s.frequencyHours}j</strong></span>
                     <span>Last check: {fmtDate(s.lastCheckedAt)}</span>
                     {s.lastSuccessAt && (
                       <span>Last success: {fmtDate(s.lastSuccessAt)}</span>
                     )}
                   </div>
+                  {canManageSource(s) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-3 pt-2 border-t border-border">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={s.autoScrape ?? true}
+                        disabled={busyId === s.id}
+                        onClick={() => handleToggleOption(s, "autoScrape")}
+                        className="inline-flex items-center gap-2 text-xs font-medium text-txt-primary hover:text-primary disabled:opacity-50"
+                        title="Aktifkan/nonaktifkan pengambilan otomatis terjadwal (cron) untuk sumber ini"
+                      >
+                        <span
+                          className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
+                            (s.autoScrape ?? true) ? "bg-emerald-600" : "bg-stone-300"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                              (s.autoScrape ?? true) ? "translate-x-4" : "translate-x-0.5"
+                            }`}
+                          />
+                        </span>
+                        <span>
+                          Auto-Scrape:{" "}
+                          <strong className={(s.autoScrape ?? true) ? "text-emerald-700" : "text-txt-muted"}>
+                            {(s.autoScrape ?? true) ? "ON" : "OFF"}
+                          </strong>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={s.autoPublish ?? false}
+                        disabled={busyId === s.id}
+                        onClick={() => handleToggleOption(s, "autoPublish")}
+                        className="inline-flex items-center gap-2 text-xs font-medium text-txt-primary hover:text-primary disabled:opacity-50"
+                        title="Aktifkan/nonaktifkan publikasi otomatis (PUBLISHED) saat artikel sumber ini di-scrape"
+                      >
+                        <span
+                          className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
+                            s.autoPublish ? "bg-primary" : "bg-stone-300"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                              s.autoPublish ? "translate-x-4" : "translate-x-0.5"
+                            }`}
+                          />
+                        </span>
+                        <span>
+                          Auto-Publish:{" "}
+                          <strong className={s.autoPublish ? "text-primary" : "text-txt-muted"}>
+                            {s.autoPublish ? "ON" : "OFF"}
+                          </strong>
+                        </span>
+                      </button>
+                    </div>
+                  )}
                   {s.lastError && (
                     <div className="mt-2 rounded-md border border-border border-l-4 border-l-red-600 bg-surface px-3 py-2 text-xs text-red-700">
                       <span className="font-semibold">Error terakhir:</span> {s.lastError}
@@ -723,6 +985,9 @@ export default function SumberBeritaPage() {
         <PreviewModal
           sourceId={preview.sourceId}
           sourceName={preview.sourceName}
+          initialAutoPublish={
+            sources.find((s) => s.id === preview.sourceId)?.autoPublish ?? false
+          }
           data={preview.data}
           refreshing={busyId === preview.sourceId && busyAction === "preview"}
           onRefresh={() => {
@@ -758,6 +1023,8 @@ function SourceFormModal({
   const [frequencyHoursInput, setFrequencyHoursInput] = useState(
     String(source?.frequencyHours ?? 4),
   );
+  const [autoScrape, setAutoScrape] = useState(source?.autoScrape ?? true);
+  const [autoPublish, setAutoPublish] = useState(source?.autoPublish ?? false);
   const [priority] = useState(source?.priority ?? 0);
   const [defaultTagsRaw, setDefaultTagsRaw] = useState(
     (source?.defaultTags ?? []).join(", "),
@@ -847,6 +1114,8 @@ function SourceFormModal({
         listingUrl: listingUrl.trim(),
         description: description.trim() || null,
         categoryId: categoryId || null,
+        autoScrape,
+        autoPublish,
         frequencyHours: Math.max(1, Math.min(24, Number.isFinite(parsedFreq) ? parsedFreq : 4)),
         priority: Number(priority) || 0,
         defaultTags: defaultTagsRaw
@@ -966,6 +1235,79 @@ function SourceFormModal({
                 onChange={(e) => setFrequencyHoursInput(e.target.value)}
                 className="input"
               />
+            </div>
+          </div>
+
+          {/* Auto-Scrape & Auto-Publish ON/OFF toggles */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-md border border-border bg-surface-container-low p-3">
+              <label className="flex items-start justify-between gap-2 cursor-pointer">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-txt-primary">
+                    Auto-Scrape Terjadwal
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-txt-muted">
+                    Cron otomatis mengambil artikel baru sesuai frekuensi jam di atas.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={autoScrape}
+                  onClick={() => setAutoScrape((prev) => !prev)}
+                  className="inline-flex shrink-0 items-center gap-1.5"
+                >
+                  <span
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      autoScrape ? "bg-emerald-600" : "bg-stone-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        autoScrape ? "translate-x-4" : "translate-x-1"
+                      }`}
+                    />
+                  </span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-txt-primary">
+                    {autoScrape ? "ON" : "OFF"}
+                  </span>
+                </button>
+              </label>
+            </div>
+
+            <div className="rounded-md border border-border bg-surface-container-low p-3">
+              <label className="flex items-start justify-between gap-2 cursor-pointer">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-txt-primary">
+                    Auto-Publish Artikel
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-txt-muted">
+                    Artikel hasil scrape langsung diterbitkan (PUBLISHED) tanpa masuk draf.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={autoPublish}
+                  onClick={() => setAutoPublish((prev) => !prev)}
+                  className="inline-flex shrink-0 items-center gap-1.5"
+                >
+                  <span
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      autoPublish ? "bg-primary" : "bg-stone-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        autoPublish ? "translate-x-4" : "translate-x-1"
+                      }`}
+                    />
+                  </span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-txt-primary">
+                    {autoPublish ? "ON" : "OFF"}
+                  </span>
+                </button>
+              </label>
             </div>
           </div>
 
@@ -1254,6 +1596,7 @@ function SourceFormModal({
 function PreviewModal({
   sourceId,
   sourceName,
+  initialAutoPublish = false,
   data,
   refreshing,
   onRefresh,
@@ -1262,6 +1605,7 @@ function PreviewModal({
 }: {
   sourceId: string;
   sourceName: string;
+  initialAutoPublish?: boolean;
   data: PreviewResponse;
   refreshing?: boolean;
   onRefresh: () => void;
@@ -1281,6 +1625,7 @@ function PreviewModal({
     "ALL" | "NEW" | "DELETED" | "IN_PROGRESS" | "PUBLISHED"
   >("ALL");
   const [showOriginalText, setShowOriginalText] = useState(false);
+  const [autoPublishNow, setAutoPublishNow] = useState(initialAutoPublish);
   // Bulk-generate progress state.
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; failed: number } | null>(null);
@@ -1324,6 +1669,7 @@ function PreviewModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url,
+          autoPublish: autoPublishNow,
           ...(opts?.thumbnail ? { thumbnail: opts.thumbnail } : {}),
         }),
       });
@@ -1365,10 +1711,13 @@ function PreviewModal({
           articleStatus: d.articleStatus ?? "DRAFT",
         },
       }));
+      const publishedNow = d.articleStatus === "PUBLISHED";
       success(
-        opts?.isRegenerate
-          ? `Draft dibuat ulang: "${d.title}"`
-          : `Draft dibuat: "${d.title}"`,
+        publishedNow
+          ? `Artikel diterbitkan: "${d.title}"`
+          : opts?.isRegenerate
+            ? `Draft dibuat ulang: "${d.title}"`
+            : `Draft dibuat: "${d.title}"`,
       );
       if (!opts?.suppressRefresh) {
         onScraped();
@@ -1644,17 +1993,45 @@ function PreviewModal({
                 </button>
               ))}
             </div>
-            {hasTranslatedItems && (
-              <label className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-txt-secondary">
-                <input
-                  type="checkbox"
-                  checked={showOriginalText}
-                  onChange={(e) => setShowOriginalText(e.target.checked)}
-                  className="h-3.5 w-3.5 accent-primary"
-                />
-                Tampilkan judul asli
-              </label>
-            )}
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={autoPublishNow}
+                onClick={() => setAutoPublishNow((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-txt-secondary hover:text-txt-primary"
+                title="Jika ON, artikel hasil Generate langsung diterbitkan (PUBLISHED)"
+              >
+                <span
+                  className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${
+                    autoPublishNow ? "bg-primary" : "bg-stone-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                      autoPublishNow ? "translate-x-3.5" : "translate-x-0.5"
+                    }`}
+                  />
+                </span>
+                <span>
+                  Auto-Publish:{" "}
+                  <strong className={autoPublishNow ? "text-primary" : "text-txt-muted"}>
+                    {autoPublishNow ? "ON" : "OFF"}
+                  </strong>
+                </span>
+              </button>
+              {hasTranslatedItems && (
+                <label className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-txt-secondary">
+                  <input
+                    type="checkbox"
+                    checked={showOriginalText}
+                    onChange={(e) => setShowOriginalText(e.target.checked)}
+                    className="h-3.5 w-3.5 accent-primary"
+                  />
+                  Tampilkan judul asli
+                </label>
+              )}
+            </div>
           </div>
         </div>
 

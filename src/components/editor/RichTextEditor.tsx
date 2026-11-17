@@ -100,7 +100,8 @@ type AiFeature =
   | "social_caption"
   | "content_ideas"
   | "write_article"
-  | "high_ctr_meta";
+  | "high_ctr_meta"
+  | "expand_article";
 
 export default function RichTextEditor({
   content,
@@ -231,7 +232,7 @@ export default function RichTextEditor({
       if (!editor) return;
       
       const isAutomation = ["content_ideas", "write_article", "high_ctr_meta"].includes(feature);
-      const needsExistingContent = ["seo_title", "meta_description", "social_caption"].includes(feature);
+      const needsExistingContent = ["seo_title", "meta_description", "social_caption", "expand_article"].includes(feature);
       
       const html = editor.getHTML();
       const plain = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -303,6 +304,16 @@ export default function RichTextEditor({
           onAiMeta(suggestion);
         } else if (feature === "social_caption" && onAiCaption) {
           onAiCaption(suggestion);
+        } else if (feature === "expand_article") {
+          const footerMatch = html.match(/<p[^>]*>\s*Disarikan dari rilis[\s\S]*?<\/p>\s*$/i);
+          if (footerMatch && typeof footerMatch.index === "number") {
+            const before = html.slice(0, footerMatch.index).trimEnd();
+            const footer = footerMatch[0];
+            const nextHtml = `${before}\n${suggestion}\n${footer}`;
+            editor.commands.setContent(nextHtml, { emitUpdate: true });
+          } else {
+            editor.chain().focus("end").insertContent(suggestion).run();
+          }
         } else if (["content_ideas", "write_article", "high_ctr_meta"].includes(feature)) {
           // Insert the generated HTML directly into the TipTap editor at cursor
           editor.chain().focus().insertContent(suggestion).run();
@@ -660,6 +671,19 @@ export default function RichTextEditor({
                   <Sparkles size={12} className="text-primary" />
                 )}
                 Tulis Artikel Lengkap
+              </button>
+              <button
+                type="button"
+                onClick={() => callAi("expand_article")}
+                disabled={aiLoading !== null}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-primary hover:bg-surface-secondary disabled:opacity-50"
+              >
+                {aiLoading === "expand_article" ? (
+                  <Loader2 size={12} className="animate-spin text-primary" />
+                ) : (
+                  <Sparkles size={12} className="text-primary" />
+                )}
+                Perpanjang Isi Artikel (+ Paragraf)
               </button>
               <button
                 type="button"

@@ -75,6 +75,54 @@ export function sourceLabelFromUrl(
   return titleCase(brand);
 }
 
+/**
+ * Extract the clean website domain from a URL (without leading www/m/amp).
+ *   https://www.bola.com/foo        → "bola.com"
+ *   https://www3.nhk.or.jp/news     → "nhk.or.jp"
+ *   https://www.bankbjb.co.id/x     → "bankbjb.co.id"
+ */
+export function sourceWebsiteFromUrl(
+  rawUrl: string | null | undefined,
+): string | null {
+  if (!rawUrl) return null;
+  let host: string;
+  try {
+    host = new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+  host = host.replace(/^(www\d*|m|amp|mobile)\./, "");
+  const parts = host.split(".").filter(Boolean);
+  if (parts.length < 2) return null;
+  if (parts.every((p) => /^\d+$/.test(p))) return null;
+  return host;
+}
+
+/**
+ * Format a source/publisher name with its website in parentheses:
+ *   ("Bola", "https://www.bola.com/x") → "Bola (bola.com)"
+ *   ("Bank BJB", "https://www.bankbjb.co.id/x") → "Bank BJB (bankbjb.co.id)"
+ * Avoids duplicating the domain if `name` already contains it.
+ */
+export function formatSourceWithWebsite(
+  name: string | null | undefined,
+  rawUrl: string | null | undefined,
+): string {
+  const website = sourceWebsiteFromUrl(rawUrl);
+  const rawName = (name ?? "").trim();
+  const baseLabel =
+    (rawName && !rawName.toLowerCase().includes("lensaplus") ? rawName : "") ||
+    sourceLabelFromUrl(rawUrl) ||
+    rawName ||
+    website ||
+    "Sumber";
+  if (!website) return baseLabel;
+  if (baseLabel.toLowerCase().includes(website.toLowerCase())) {
+    return baseLabel;
+  }
+  return `${baseLabel} (${website})`;
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")

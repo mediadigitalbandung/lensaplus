@@ -23,12 +23,13 @@ import { prisma } from "@/lib/prisma";
 import { callAI } from "@/lib/ai-client";
 import { sanitizeHtml, cleanAIShortText, cleanAILongText } from "@/lib/sanitize";
 import { resolveTagIds } from "@/lib/resolve-tags";
-import { slugify } from "@/lib/utils";
+import { slugify, calculateReadTime } from "@/lib/utils";
 import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
+import { MIN_PUBLISH_WORDS, countContentWords } from "@/lib/article-quality";
 import { downloadImageToUploads } from "./download-image";
 import { pickImageSrc, looksLikeContentImageUrl } from "./html-utils";
 import { detectLanguage, isForeignLanguage, languageLabelId } from "./lang";
-import { sourceLabelFromUrl } from "./source-label";
+import { formatSourceWithWebsite, sourceLabelFromUrl } from "./source-label";
 import type { ScrapedArticle } from "./types";
 
 const MAX_BODY_IMAGES = 5;
@@ -244,12 +245,16 @@ export interface ParaphraseInput {
   listingThumbnail?: string;
   /** Whether to download the hero image. Default true. */
   downloadImage?: boolean;
+  /** Whether to publish the resulting article immediately instead of saving as DRAFT. Default false. */
+  autoPublish?: boolean;
 }
 
 export interface ParaphraseResult {
   articleId: string;
   slug: string;
   title: string;
+  /** Resulting article status ("DRAFT" or "PUBLISHED"). */
+  status: "DRAFT" | "PUBLISHED";
   /** Tokens reported by callAI(). */
   tokens: number;
   /** AI provider used. */
@@ -271,7 +276,8 @@ export async function paraphraseAndCreateDraft(
   // editors sometimes name a source "Lensaplus", which wrongly credited our
   // own site as the photo source. Falls back to sourceName if the URL can't
   // be parsed into a brand.
-  const creditLabel = sourceLabelFromUrl(source.url) ?? sourceName;
+  const rawCredit = sourceLabelFromUrl(source.url) ?? sourceName;
+  const creditLabel = formatSourceWithWebsite(rawCredit, source.url);
 
   const plainSourceText = source.contentHtml
     .replace(/<[^>]+>/g, " ")
@@ -296,11 +302,11 @@ ${langInstruction}
 METODE PARAFRASE KONSEP & ATURAN JURNALISTIK:
 1. Serap konsep inti berita (5W+1H, sebab-akibat, konteks kebijakan/bisnis/peristiwa, dan dampaknya), lalu bangun ulang alur cerita sepenuhnya memakai struktur piramida terbalik redaksi Lensaplus.
 2. DILARANG menjiplak struktur kalimat sumber atau menerjemahkan secara kaku kata per kata. Ubah struktur kalimat, urutan penyajian, serta transisi antarparagraf.
-3. JANGAN menambah fakta, opini, atau klaim yang tidak tercantum pada sumber.
+3. JANGAN menambah klaim spesifik, angka palsu, atau kutipan fiktif yang tidak ada pada sumber.
 4. Pertahankan SEMUA fakta penting: angka, tanggal, nama tokoh, jabatan, nama lembaga/perusahaan, lokasi, dan inti kutipan langsung secara akurat (untuk sumber berbahasa asing, terjemahkan isi kutipan ke Bahasa Indonesia dengan makna persis).
 5. Lead paragraf pertama wajib kuat dan langsung menjawab unsur utama 5W+1H.
-6. Panjang proporsional: 450–800 kata bila bahan sumber memadai; bila rilis singkat, tulis padat 250–450 kata tanpa mengarang detail tambahan.
-7. Format body HTML bersih dan nyaman dibaca: <p> untuk paragraf pendek, <h2> untuk sub-judul tematik (1–3 sub-judul bila panjang), <blockquote> untuk kutipan penting, <ul>/<li> dan <strong> seperlunya.
+6. PANJANG ARTIKEL WAJIB MINIMAL 380–650 KATA (wajib di atas ${MIN_PUBLISH_WORDS + 30} kata agar memenuhi syarat publikasi minimal ${MIN_PUBLISH_WORDS} kata). Jika naskah sumber pendek, perkaya secara faktual dan edukatif dengan menjabarkan latar belakang topik/instansi terkait, konteks industri/regulasi umum yang relevan, penjelasan istilah penting, serta implikasi/manfaat informasi tersebut bagi masyarakat/pembaca.
+7. Format body HTML bersih dan nyaman dibaca: <p> untuk paragraf pendek, <h2> untuk sub-judul tematik (1–3 sub-judul), <blockquote> untuk kutipan penting, <ul>/<li> dan <strong> seperlunya.
 
 JUDUL SUMBER: "${source.title}"
 
@@ -313,7 +319,7 @@ Format output WAJIB JSON valid dalam Bahasa Indonesia untuk SEMUA field (tanpa t
 {
   "title": "judul berita Bahasa Indonesia yang segar, informatif, dan lugas (50-85 karakter, hindari clickbait)",
   "excerpt": "ringkasan Bahasa Indonesia 130-160 karakter",
-  "content": "body artikel HTML Bahasa Indonesia lengkap hasil parafrase konsep",
+  "content": "body artikel HTML Bahasa Indonesia lengkap hasil parafrase konsep (minimal 380 kata)",
   "suggestedTags": ["tag1 indonesia", "tag2", "tag3", "tag4", "tag5"]
 }`;
 
@@ -333,6 +339,39 @@ Format output WAJIB JSON valid dalam Bahasa Indonesia untuk SEMUA field (tanpa t
     throw new Error(
       `AI did not return parseable JSON for ${source.url}. First 200 chars: ${ai.text.slice(0, 200)}`,
     );
+  }
+
+  let totalTokens = ai.totalTokens;
+  const currentWords = countContentWords(parsed.content);
+  if (currentWords > 0 && currentWords < MIN_PUBLISH_WORDS + 20) {
+    const neededWords = Math.max(150, MIN_PUBLISH_WORDS + 60 - currentWords);
+    try {
+      const expandRes = await callAI({
+        feature: "article_draft",
+        systemPrompt:
+          "Kamu adalah redaktur senior Lensaplus. Tugasmu memperdalam artikel berita yang masih terlalu pendek dengan menambahkan 2–3 paragraf konteks latar belakang, penjelasan istilah/regulasi umum terkait, dan implikasi bagi masyarakat/pembaca dalam Bahasa Indonesia jurnalistik (PUEBI/EYD). Jangan mengarang angka atau kutipan fiktif. Jawab HANYA dengan blok HTML (<h2> dan <p>) tanpa markdown code fence dan tanpa mengulang paragraf yang sudah ada.",
+        userPrompt:
+          `JUDUL ARTIKEL: "${parsed.title}"\n\n` +
+          `ISI ARTIKEL SAAT INI (${currentWords} kata, butuh tambahan ±${neededWords} kata agar minimal di atas ${MIN_PUBLISH_WORDS} kata):\n` +
+          `${parsed.content}\n\n` +
+          `Tambahkan sub-judul <h2> yang relevan beserta 2–3 paragraf pendalaman konteks dan implikasi (±${neededWords}–240 kata) yang menyambung secara alami di bagian akhir artikel.`,
+        maxTokens: 1_200,
+        temperature: 0.6,
+        userId: authorId,
+        articleTitle: parsed.title,
+      });
+      if (expandRes && typeof expandRes.text === "string" && expandRes.text.trim()) {
+        const cleanedExtra = cleanAILongText(
+          stripCodeFence(expandRes.text),
+        ).trim();
+        if (cleanedExtra.length >= 80) {
+          parsed.content = `${parsed.content}\n${cleanedExtra}`;
+          totalTokens += expandRes.totalTokens || 0;
+        }
+      }
+    } catch {
+      /* best-effort expansion: keep initial paraphrase if expansion fails */
+    }
   }
 
   // Image: download hero (trying candidates in priority order) + body images to /uploads.
@@ -452,13 +491,27 @@ Format output WAJIB JSON valid dalam Bahasa Indonesia untuk SEMUA field (tanpa t
     (!foreignSource ? source.excerpt.slice(0, 500) : "") ||
     null;
 
+  const shouldPublish = Boolean(input.autoPublish);
+  const targetStatus: "DRAFT" | "PUBLISHED" = shouldPublish ? "PUBLISHED" : "DRAFT";
+  const cleanTitle = parsed.title.slice(0, 250);
+  const seoTitle =
+    cleanTitle.length <= 50
+      ? `${cleanTitle} | Lensaplus`
+      : `${cleanTitle.slice(0, 57).replace(/\s+\S*$/, "")}...`;
+  const seoDescription = (resolvedExcerpt || contentExcerptFallback).slice(0, 155) || null;
+  const readTime = calculateReadTime(finalContent);
+
   const article = await prisma.article.create({
     data: {
-      title: parsed.title.slice(0, 250),
+      title: cleanTitle,
       slug,
       content: finalContent,
       excerpt: resolvedExcerpt,
-      status: "DRAFT",
+      status: targetStatus,
+      publishedAt: shouldPublish ? new Date() : null,
+      readTime,
+      seoTitle,
+      seoDescription,
       isAutoGenerated: true,
       sourceArticleId: null,
       featuredImage: featuredImage || null,
@@ -479,12 +532,23 @@ Format output WAJIB JSON valid dalam Bahasa Indonesia untuk SEMUA field (tanpa t
   });
 
   enqueueSorotanGeneration(article.id);
+  if (shouldPublish) {
+    void import("@/lib/seo-auto")
+      .then(({ onArticlePublished }) => onArticlePublished(article.slug, article.id))
+      .catch((err) => {
+        console.warn(
+          "[scraper] onArticlePublished failed:",
+          err instanceof Error ? err.message : String(err),
+        );
+      });
+  }
 
   return {
     articleId: article.id,
     slug: article.slug,
     title: article.title,
-    tokens: ai.totalTokens,
+    status: targetStatus,
+    tokens: totalTokens,
     provider: ai.provider,
     featuredImage,
     sourceLang: detectedLang,

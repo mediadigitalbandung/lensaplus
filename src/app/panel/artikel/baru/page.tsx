@@ -303,6 +303,42 @@ export default function NewArticlePage() {
     }
   };
 
+  const handleExpandArticle = async () => {
+    if (!title.trim() || !content.trim()) {
+      setError("Isi judul dan draf awal artikel terlebih dahulu sebelum memperpanjang isi.");
+      return;
+    }
+    setAiLoading((prev) => ({ ...prev, expand_article: true }));
+    try {
+      const res = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feature: "expand_article", title, content }),
+      });
+      const data = await res.json();
+      if (data.success && data.data?.result) {
+        const extra = String(data.data.result).trim();
+        setContent((prev) => {
+          const footerMatch = prev.match(/<p[^>]*>\s*Disarikan dari rilis[\s\S]*?<\/p>\s*$/i);
+          if (footerMatch && typeof footerMatch.index === "number") {
+            const before = prev.slice(0, footerMatch.index).trimEnd();
+            const footer = footerMatch[0];
+            return `${before}\n${extra}\n${footer}`;
+          }
+          return `${prev.trimEnd()}\n${extra}`;
+        });
+        setError("");
+        success("Isi artikel berhasil diperpanjang dengan paragraf tambahan AI!");
+      } else {
+        setError(data.error || "Gagal memperpanjang artikel dengan AI");
+      }
+    } catch {
+      setError("Gagal menghubungi AI service");
+    } finally {
+      setAiLoading((prev) => ({ ...prev, expand_article: false }));
+    }
+  };
+
 
   const AiButton = ({ feature, setter }: { feature: string; setter: (val: string) => void }) => (
     <button
@@ -642,9 +678,26 @@ export default function NewArticlePage() {
       )}
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border border-l-4 border-l-red-600 bg-surface px-4 py-3 text-sm text-red-700">
-          <AlertCircle size={16} />
-          {error}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border border-l-4 border-l-red-600 bg-surface px-4 py-3 text-sm text-red-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+          {(error.toLowerCase().includes("terlalu pendek") || wordCount < 300) && (
+            <button
+              type="button"
+              onClick={handleExpandArticle}
+              disabled={aiLoading.expand_article}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
+            >
+              {aiLoading.expand_article ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Sparkles size={13} />
+              )}
+              {aiLoading.expand_article ? "Menambahkan Paragraf..." : "+ Perpanjang Isi Otomatis (AI)"}
+            </button>
+          )}
         </div>
       )}
 
@@ -719,13 +772,32 @@ export default function NewArticlePage() {
 
           {/* Editor */}
           <div className="rounded-lg border border-border overflow-hidden">
-            <RichTextEditor content={content} onChange={setContent} />
-            <div className="flex items-center gap-4 px-4 py-2 border-t border-border text-sm text-txt-muted">
-              <span>{wordCount} kata</span>
-              <span className="text-border">|</span>
-              <span>{charCount} karakter</span>
-              <span className="text-border">|</span>
-              <span>{readTime} menit baca</span>
+            <RichTextEditor content={content} onChange={setContent} articleTitle={title} />
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-t border-border text-sm text-txt-muted">
+              <div className="flex items-center gap-4">
+                <span className={wordCount < 300 ? "font-semibold text-amber-600" : ""}>
+                  {wordCount} kata {wordCount < 300 ? "(minimal 300)" : ""}
+                </span>
+                <span className="text-border">|</span>
+                <span>{charCount} karakter</span>
+                <span className="text-border">|</span>
+                <span>{readTime} menit baca</span>
+              </div>
+              {wordCount > 0 && wordCount < 300 && (
+                <button
+                  type="button"
+                  onClick={handleExpandArticle}
+                  disabled={aiLoading.expand_article}
+                  className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50"
+                >
+                  {aiLoading.expand_article ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={12} />
+                  )}
+                  {aiLoading.expand_article ? "Menambahkan Paragraf..." : "+ Tambah / Perpanjang Isi (AI)"}
+                </button>
+              )}
             </div>
           </div>
 

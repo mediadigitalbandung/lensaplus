@@ -38,6 +38,7 @@ import { trackCron } from "@/lib/cron-tracker";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { extractFirstImageUrl } from "@/lib/image-extract";
 import { generateArticleViaPerplexity } from "@/lib/perplexity-article";
+import { sourceLabelFromUrl, formatSourceWithWebsite } from "@/lib/scraper/source-label";
 import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
 import * as Sentry from "@sentry/nextjs";
 
@@ -233,7 +234,10 @@ async function generateOne(): Promise<GenerateResult> {
                 create: dedupeSources(gen.sources)
                   .slice(0, 8)
                   .map((s) => ({
-                    name: hostnameOf(s.url),
+                    name: formatSourceWithWebsite(
+                      sourceLabelFromUrl(s.url) ?? hostnameOf(s.url),
+                      s.url
+                    ),
                     title: s.title ? s.title.slice(0, 250) : null,
                     url: s.url.slice(0, 500),
                   })),

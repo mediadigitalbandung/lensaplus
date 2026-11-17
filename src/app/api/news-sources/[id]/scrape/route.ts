@@ -38,6 +38,7 @@ import { SCRAPER_ROLES } from "@/lib/roles";
 
 const bodySchema = z.object({
   limit: z.number().int().min(1).max(10).optional(),
+  autoPublish: z.boolean().optional(),
 });
 
 export const dynamic = "force-dynamic";
@@ -65,6 +66,7 @@ export async function POST(
       .then((b) => bodySchema.parse(b))
       .catch(() => ({} as z.infer<typeof bodySchema>));
     const limit = parsedBody.limit ?? 3;
+    const shouldAutoPublish = parsedBody.autoPublish ?? source.autoPublish;
 
     // Resolve category — prefer source's, else first category.
     let categoryId = source.categoryId;
@@ -145,6 +147,7 @@ export async function POST(
       articleId?: string;
       slug?: string;
       title?: string;
+      articleStatus?: "DRAFT" | "PUBLISHED";
       error?: string;
       tokens?: number;
       provider?: string;
@@ -200,6 +203,7 @@ export async function POST(
           defaultTags: source.defaultTags,
           listingThumbnail: candidate.thumbnail,
           downloadImage: true,
+          autoPublish: shouldAutoPublish,
         });
         await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);
         results.push({
@@ -208,6 +212,7 @@ export async function POST(
           articleId: draft.articleId,
           slug: draft.slug,
           title: draft.title,
+          articleStatus: draft.status,
           tokens: draft.tokens,
           provider: draft.provider,
           featuredImage: draft.featuredImage ?? null,

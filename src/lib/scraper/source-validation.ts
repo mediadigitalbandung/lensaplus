@@ -43,6 +43,8 @@ export const newsSourceCreateSchema = z.object({
   categoryId: z.string().trim().min(1).optional().nullable(),
   description: z.string().trim().max(500).optional().nullable(),
   isActive: z.boolean().optional(),
+  autoScrape: z.boolean().optional(),
+  autoPublish: z.boolean().optional(),
   priority: z.number().int().min(0).max(100).optional(),
   frequencyHours: z.number().int().min(1).max(24).optional(),
   articleSelector: z.string().trim().max(500).optional().nullable(),
