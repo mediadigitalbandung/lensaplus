@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import {
   successResponse,
   errorResponse,
+  getSession,
   requireRole,
   logAudit,
   ApiError,
@@ -57,6 +58,17 @@ export async function GET(
 
     if (!topic) {
       throw new ApiError("Topic tidak ditemukan", 404);
+    }
+
+    if (!topic.isPublished) {
+      const session = await getSession();
+      const canPreview =
+        Boolean(session?.user) &&
+        !session?.sessionInvalid &&
+        Boolean(session?.user?.role && MANAGEMENT_ROLES.includes(session.user.role));
+      if (!canPreview) {
+        throw new ApiError("Topic tidak ditemukan", 404);
+      }
     }
 
     return successResponse(topic);
