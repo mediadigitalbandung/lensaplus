@@ -49,7 +49,7 @@ const ads = [
     htmlCode: `<div style="width:100%;max-width:300px;height:250px;background:#f0f4f8;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif;text-align:center;position:relative;overflow:hidden">
       <div style="position:absolute;right:-20px;top:-20px;width:80px;height:80px;border-radius:50%;background:rgba(0,32,69,0.04)"></div>
       <div style="width:48px;height:48px;border-radius:8px;background:#002045;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
-        <span style="color:#fff;font-size:22px;font-weight:900">K</span>
+        <span style="color:#fff;font-size:22px;font-weight:900">L</span>
       </div>
       <div style="color:#002045;font-size:15px;font-weight:800;line-height:1.3">Ruang Iklan<br>Premium</div>
       <div style="color:#44474e;font-size:11px;margin-top:6px;line-height:1.4">300 × 250 pixel<br>Tampil di sidebar homepage</div>
@@ -68,7 +68,7 @@ const ads = [
       <div style="position:absolute;left:10%;top:50%;transform:translateY(-50%);width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.02)"></div>
       <div style="display:flex;align-items:center;gap:12px;z-index:1">
         <div style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center">
-          <span style="color:#fff;font-size:18px;font-weight:900">K</span>
+          <span style="color:#fff;font-size:18px;font-weight:900">L</span>
         </div>
         <div>
           <div style="color:#fff;font-size:15px;font-weight:700">Lensaplus — Media Digital Terpercaya</div>

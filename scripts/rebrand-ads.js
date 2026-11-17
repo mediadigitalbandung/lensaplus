@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 // Tertiary: #371800 (warm dark)
 
 const LOGO = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:48px;height:48px;object-fit:contain;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.25)">`;
-const LOGO_SM = `<img src="/lensaplus-icon.png" alt="K" style="width:36px;height:36px;object-fit:contain;border-radius:10px;box-shadow:0 3px 12px rgba(0,0,0,0.2)">`;
+const LOGO_SM = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:36px;height:36px;object-fit:contain;border-radius:10px;box-shadow:0 3px 12px rgba(0,0,0,0.2)">`;
 const LOGO_LG = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:60px;height:60px;object-fit:contain;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.25)">`;
 
 const updates = {
@@ -233,7 +233,7 @@ const updates = {
   <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;border:1px solid rgba(0,32,69,0.04);animation:ps2Ring 4s ease-in-out infinite"></div>
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none"><div style="position:absolute;top:0;left:0;width:35%;height:100%;background:linear-gradient(90deg,transparent,rgba(0,32,69,0.015),transparent);animation:ps2Shimmer 7s ease-in-out infinite"></div></div>
   <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center">
-    <div style="animation:ps2Float 5s ease-in-out infinite;margin-bottom:16px"><div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(145deg,#fff,#f0f4f8);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,32,69,0.06),0 0 0 1px rgba(0,32,69,0.03)"><img src="/lensaplus-icon.png" alt="K" style="width:38px;height:38px;object-fit:contain;border-radius:10px"></div></div>
+    <div style="animation:ps2Float 5s ease-in-out infinite;margin-bottom:16px"><div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(145deg,#fff,#f0f4f8);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,32,69,0.06),0 0 0 1px rgba(0,32,69,0.03)"><img src="/lensaplus-icon.png" alt="Lensaplus" style="width:38px;height:38px;object-fit:contain;border-radius:10px"></div></div>
     <div style="font-size:clamp(18px,2.5vw,22px);font-weight:800;line-height:1.2;letter-spacing:-0.3px;background:linear-gradient(90deg,#002045 0%,#002045 30%,#1a3a5c 48%,#b7102a 52%,#002045 70%,#002045 100%);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:ps2Shine 5s linear infinite">Ruang Iklan<br>Premium</div>
     <div style="margin-top:8px;padding:5px 14px;border-radius:20px;background:rgba(0,32,69,0.03);border:1px solid rgba(0,32,69,0.04)"><span style="color:#44474e;font-size:11px;font-weight:500">300 × 250 · Sidebar homepage</span></div>
     <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;justify-content:center">
@@ -278,7 +278,7 @@ const updates = {
   <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#b7102a,#d4364d,#1a3a5c,#b7102a);background-size:200% 100%;animation:fbLine 4s linear infinite"></div>
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none"><div style="position:absolute;top:0;left:0;width:30%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.02),transparent);animation:fbShimmer 5s ease-in-out infinite"></div></div>
   <div style="display:flex;align-items:center;gap:10px;z-index:1">
-    <img src="/lensaplus-icon.png" alt="K" style="width:28px;height:28px;object-fit:contain;border-radius:7px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+    <img src="/lensaplus-icon.png" alt="Lensaplus" style="width:28px;height:28px;object-fit:contain;border-radius:7px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
     <span style="display:inline-flex;align-items:center;gap:6px;color:#fff;font-size:clamp(12px,1.3vw,14px);font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:#b7102a;animation:fbDot 2s ease-in-out infinite"></span> Baca berita terbaru dari <strong>Lensaplus</strong></span>
   </div>
   <div style="background:linear-gradient(135deg,#b7102a,#8f0c20);color:#fff;font-size:clamp(11px,1.2vw,13px);font-weight:700;padding:9px clamp(16px,2vw,22px);border-radius:8px;white-space:nowrap;animation:fbPulse 3s ease-in-out infinite;z-index:1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:-1px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Lihat Berita →</div>

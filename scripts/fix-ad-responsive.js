@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 // All ads with fixed responsive layout
 const LOGO = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:40px;height:40px;object-fit:contain;border-radius:10px">`;
-const LOGO_SM = `<img src="/lensaplus-icon.png" alt="K" style="width:32px;height:32px;object-fit:contain;border-radius:8px">`;
+const LOGO_SM = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:32px;height:32px;object-fit:contain;border-radius:8px">`;
 
 const updates = {
 
@@ -109,7 +109,7 @@ const updates = {
 "Lensaplus — Floating Bar": `<div style="width:100%;height:48px;background:linear-gradient(135deg,#001530,#002045);display:flex;align-items:center;justify-content:center;gap:clamp(10px,2vw,20px);padding:0 16px;font-family:'Segoe UI',system-ui,sans-serif;position:relative">
   <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#b7102a,#d4364d,#1a3a5c,#b7102a);background-size:200% 100%;animation:adLine 4s linear infinite"></div>
   <div style="display:flex;align-items:center;gap:8px;z-index:1">
-    <img src="/lensaplus-icon.png" alt="K" style="width:24px;height:24px;object-fit:contain;border-radius:6px">
+    <img src="/lensaplus-icon.png" alt="Lensaplus" style="width:24px;height:24px;object-fit:contain;border-radius:6px">
     <span style="color:#fff;font-size:clamp(11px,1.2vw,13px);font-weight:600">Baca berita terbaru dari <strong>Lensaplus</strong></span>
   </div>
   <div style="background:linear-gradient(135deg,#b7102a,#8f0c20);color:#fff;font-size:clamp(10px,1.1vw,12px);font-weight:700;padding:6px clamp(12px,1.5vw,18px);border-radius:6px;white-space:nowrap;z-index:1">Lihat Berita →</div>

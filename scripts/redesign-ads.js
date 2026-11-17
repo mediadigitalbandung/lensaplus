@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 // Logo as img tag (served from same domain)
 const LOGO = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:44px;height:44px;object-fit:contain;border-radius:10px">`;
-const LOGO_SM = `<img src="/lensaplus-icon.png" alt="K" style="width:32px;height:32px;object-fit:contain;border-radius:8px">`;
+const LOGO_SM = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:32px;height:32px;object-fit:contain;border-radius:8px">`;
 const LOGO_LG = `<img src="/lensaplus-icon.png" alt="Lensaplus" style="width:56px;height:56px;object-fit:contain;border-radius:12px">`;
 
 const updates = {
@@ -201,7 +201,7 @@ const updates = {
   "Lensaplus — Floating Bar": `<div style="width:100%;padding:12px clamp(16px,3vw,24px);background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;gap:clamp(12px,2vw,20px);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;position:relative">
   <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#3b82f6,#8b5cf6,#ec4899)"></div>
   <div style="display:flex;align-items:center;gap:10px">
-    <img src="/lensaplus-icon.png" alt="K" style="width:24px;height:24px;object-fit:contain;border-radius:6px">
+    <img src="/lensaplus-icon.png" alt="Lensaplus" style="width:24px;height:24px;object-fit:contain;border-radius:6px">
     <span style="color:#fff;font-size:clamp(12px,1.2vw,14px);font-weight:600">Baca berita terbaru dari <strong>Lensaplus</strong></span>
   </div>
   <div style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:clamp(11px,1.1vw,13px);font-weight:700;padding:8px clamp(14px,2vw,20px);border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(59,130,246,0.3)">Lihat Berita →</div>

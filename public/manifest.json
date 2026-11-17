@@ -41,29 +41,6 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/twa/playstore-assets/feature-graphic.png",
-      "sizes": "1024x500",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Lensaplus — Portal Berita Digital Modern"
-    },
-    {
-      "src": "/twa/playstore-assets/phone-screenshot-1.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Beranda Lensaplus"
-    },
-    {
-      "src": "/twa/playstore-assets/phone-screenshot-2.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Detail artikel"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Berita Terkini",

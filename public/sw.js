@@ -1,7 +1,7 @@
-// Lensaplus Service Worker — lite custom PWA
+// Lensaplus Service Worker — PWA offline caching + Web Push notifications
 // Strategy: cache-first static, cache-first images, network-first HTML
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE  = 'lensaplus-static-' + CACHE_VERSION;
 const IMAGE_CACHE   = 'lensaplus-images-' + CACHE_VERSION;
 const PAGE_CACHE    = 'lensaplus-pages-'  + CACHE_VERSION;
@@ -19,13 +19,16 @@ const PRECACHE_ASSETS = [
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/lensaplus-icon-96.png',
+  '/lensaplus-icon-192.png',
+  '/lensaplus-icon-512.png',
 ];
 
 // ── Install ──────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_ASSETS))
+      .then((cache) => Promise.allSettled(PRECACHE_ASSETS.map((url) => cache.add(url))))
       .then(() => self.skipWaiting())
   );
 });
@@ -103,8 +106,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Uploaded images — cache-first, 7 days
-  if (url.pathname.startsWith('/uploads/') || url.pathname.startsWith('/icons/')) {
+  // 2. Uploaded images & icons — cache-first, 7 days
+  if (
+    url.pathname.startsWith('/uploads/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/lensaplus-icon')
+  ) {
     event.respondWith(
       cacheFirst(request, IMAGE_CACHE).then(async (resp) => {
         await trimCacheEntries(IMAGE_CACHE, IMAGE_MAX_ENTRIES);
@@ -122,10 +129,10 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-/** Cache-first: serve from cache; on miss fetch, store, and return. */
+/** Cache-first: serve from cache (or precache); on miss fetch, store, and return. */
 async function cacheFirst(request, cacheName) {
   const cache  = await caches.open(cacheName);
-  const cached = await cache.match(request);
+  const cached = (await cache.match(request)) || (await caches.match(request));
   if (cached) return cached;
 
   const response = await fetch(request);
@@ -158,3 +165,56 @@ async function networkFirstWithFallback(request) {
     });
   }
 }
+
+// ── Web Push Notifications ───────────────────────────────────────────────────
+function resolveNotificationUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl || '/', self.location.origin);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.href;
+    }
+  } catch {
+    // ignore invalid URL
+  }
+  return self.location.origin;
+}
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { title: 'Lensaplus', body: event.data.text() };
+  }
+  const { title, body, url, icon, badge, image, tag } = payload;
+  const targetUrl = resolveNotificationUrl(url);
+  event.waitUntil(
+    self.registration.showNotification(title || 'Lensaplus', {
+      body: body || '',
+      icon: icon || '/lensaplus-icon-192.png',
+      badge: badge || '/lensaplus-icon-96.png',
+      image: image || undefined,
+      tag: tag || undefined,
+      data: { url: targetUrl },
+      requireInteraction: false,
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = resolveNotificationUrl(event.notification.data?.url);
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => {
+        for (const client of clients) {
+          if (client.url === targetUrl && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+      }),
+  );
+});

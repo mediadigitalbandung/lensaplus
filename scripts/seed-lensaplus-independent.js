@@ -24,14 +24,18 @@ async function main() {
   await safeDelete("ArticleTag", () => prisma.$executeRawUnsafe(`DELETE FROM "_ArticleToTag";`));
   await safeDelete("Article", () => prisma.article.deleteMany({}));
   await safeDelete("Sorotan", () => prisma.sorotan.deleteMany({}));
+  await safeDelete("LiveBlogSocialPost", () => prisma.liveBlogSocialPost?.deleteMany({}));
   await safeDelete("LiveBlogEntry", () => prisma.liveBlogEntry?.deleteMany({}));
   await safeDelete("LiveBlog", () => prisma.liveBlog?.deleteMany({}));
-  await safeDelete("TikTokContent", () => prisma.tikTokContent?.deleteMany({}));
+  await safeDelete("TiktokMediaSlot", () => prisma.tiktokMediaSlot?.deleteMany({}));
+  await safeDelete("TiktokRenderJob", () => prisma.tiktokRenderJob?.deleteMany({}));
+  await safeDelete("YoutubeClipJob", () => prisma.youtubeClipJob?.deleteMany({}));
+  await safeDelete("TiktokContent", () => prisma.tiktokContent?.deleteMany({}));
   await safeDelete("PollVote", () => prisma.pollVote?.deleteMany({}));
   await safeDelete("PollOption", () => prisma.pollOption?.deleteMany({}));
   await safeDelete("Poll", () => prisma.poll?.deleteMany({}));
   await safeDelete("AuditLog", () => prisma.auditLog?.deleteMany({}));
-  await safeDelete("AiLog", () => prisma.aiLog?.deleteMany({}));
+  await safeDelete("AIUsageLog", () => prisma.aIUsageLog?.deleteMany({}));
   await safeDelete("NewsletterSubscriber", () => prisma.newsletterSubscriber?.deleteMany({}));
 
   console.log("🧹 Lensaplus database wiped clean for independent content generation.");

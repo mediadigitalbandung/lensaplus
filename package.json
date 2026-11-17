@@ -2,7 +2,7 @@
   "name": "lensaplus",
   "version": "2.0.0",
   "private": true,
-  "description": "Platform Media Hukum Digital Modern untuk Kota Bandung",
+  "description": "Media Berita Digital Nasional Indonesia — Lensaplus",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",

@@ -2,55 +2,55 @@ require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+const fixMode = process.argv.includes("--fix");
+const LEGACY_PATTERNS = ["kartawarta", "krtwrt"];
+
+function buildOrContains(fields) {
+  return fields.flatMap((field) =>
+    LEGACY_PATTERNS.map((term) => ({
+      [field]: { contains: term, mode: "insensitive" },
+    }))
+  );
+}
+
 async function main() {
   console.log("🛡️ Starting Data Isolation & Brand Cleanliness Audit for Lensaplus...");
+  console.log(`   Mode: ${fixMode ? "AUDIT + FIX (--fix)" : "READ-ONLY AUDIT (pass --fix to sanitize)"}`);
 
   // 1. Audit Articles
-  const articlesWithLeak = await prisma.article.findMany({
-    where: {
-      OR: [
-        { title: { contains: "kartawarta", mode: "insensitive" } },
-        { content: { contains: "kartawarta", mode: "insensitive" } },
-        { excerpt: { contains: "kartawarta", mode: "insensitive" } },
-      ],
-    },
+  let articlesWithLeak = await prisma.article.findMany({
+    where: { OR: buildOrContains(["title", "content", "excerpt"]) },
     select: { id: true, title: true },
   });
 
   console.log(`📊 Article Audit: Found ${articlesWithLeak.length} lingering brand leaks.`);
-  if (articlesWithLeak.length > 0) {
+  if (fixMode && articlesWithLeak.length > 0) {
     console.log("🛠️ Cleaning lingering article brand leaks...");
     await prisma.$executeRawUnsafe(`
       UPDATE articles
       SET
-        title = REPLACE(title, 'kartawarta.com', 'lensaplus.com'),
-        title = REPLACE(title, 'Kartawarta', 'Lensaplus'),
-        title = REPLACE(title, 'kartawarta', 'lensaplus'),
-        content = REPLACE(content, 'kartawarta.com', 'lensaplus.com'),
-        content = REPLACE(content, 'Kartawarta', 'Lensaplus'),
-        content = REPLACE(content, 'kartawarta', 'lensaplus'),
-        excerpt = REPLACE(excerpt, 'kartawarta.com', 'lensaplus.com'),
-        excerpt = REPLACE(excerpt, 'Kartawarta', 'Lensaplus'),
-        excerpt = REPLACE(excerpt, 'kartawarta', 'lensaplus');
+        title = REPLACE(REPLACE(REPLACE(title, 'kartawarta.com', 'lensaplus.com'), 'Kartawarta', 'Lensaplus'), 'kartawarta', 'lensaplus'),
+        content = REPLACE(REPLACE(REPLACE(content, 'kartawarta.com', 'lensaplus.com'), 'Kartawarta', 'Lensaplus'), 'kartawarta', 'lensaplus'),
+        excerpt = REPLACE(REPLACE(REPLACE(excerpt, 'kartawarta.com', 'lensaplus.com'), 'Kartawarta', 'Lensaplus'), 'kartawarta', 'lensaplus')
+      WHERE title ~* 'kartawarta|krtwrt' OR content ~* 'kartawarta|krtwrt' OR excerpt ~* 'kartawarta|krtwrt';
     `);
-    console.log("  ✓ Articles cleaned.");
+    articlesWithLeak = await prisma.article.findMany({
+      where: { OR: buildOrContains(["title", "content", "excerpt"]) },
+      select: { id: true, title: true },
+    });
+    console.log(`  ✓ Articles remaining leaks: ${articlesWithLeak.length}`);
   }
 
   // 2. Audit Users
-  const usersWithLeak = await prisma.user.findMany({
-    where: {
-      OR: [
-        { email: { contains: "kartawarta", mode: "insensitive" } },
-        { bio: { contains: "kartawarta", mode: "insensitive" } },
-      ],
-    },
-    select: { id: true, email: true },
+  let usersWithLeak = await prisma.user.findMany({
+    where: { OR: buildOrContains(["email", "bio"]) },
+    select: { id: true, email: true, bio: true },
   });
 
   console.log(`📊 User Audit: Found ${usersWithLeak.length} user accounts with legacy email/bio.`);
-  if (usersWithLeak.length > 0) {
+  if (fixMode && usersWithLeak.length > 0) {
     for (const u of usersWithLeak) {
-      const newEmail = u.email.replace(/kartawarta\.com/gi, "lensaplus.com");
+      const newEmail = u.email.replace(/(kartawarta|krtwrt)\.com/gi, "lensaplus.com");
       await prisma.user.update({
         where: { id: u.id },
         data: {
@@ -59,14 +59,40 @@ async function main() {
         },
       }).catch(() => {});
     }
-    console.log("  ✓ User accounts cleaned.");
+    usersWithLeak = await prisma.user.findMany({
+      where: { OR: buildOrContains(["email", "bio"]) },
+      select: { id: true, email: true, bio: true },
+    });
+    console.log(`  ✓ User remaining leaks: ${usersWithLeak.length}`);
   }
 
-  // 3. Verify Isolation Summary
-  const totalArticles = await prisma.article.count();
-  const totalCategories = await prisma.category.count();
-  const totalUsers = await prisma.user.count();
-  const totalPolls = await prisma.poll.count();
+  // 3. Audit remaining core content & settings tables
+  const [categoryLeaks, commentLeaks, sorotanLeaks, pollLeaks, settingLeaks] = await Promise.all([
+    prisma.category.count({ where: { OR: buildOrContains(["name", "description"]) } }),
+    prisma.comment.count({ where: { OR: buildOrContains(["content", "authorName"]) } }),
+    prisma.sorotan.count({ where: { OR: buildOrContains(["title", "subtitle", "summary"]) } }),
+    prisma.poll.count({ where: { OR: buildOrContains(["question"]) } }),
+    prisma.systemSetting.count({ where: { OR: buildOrContains(["key", "value"]) } }),
+  ]);
+
+  console.log(`📊 Other Tables Audit: categories=${categoryLeaks}, comments=${commentLeaks}, sorotan=${sorotanLeaks}, polls=${pollLeaks}, settings=${settingLeaks}`);
+
+  // 4. Verify Isolation Summary
+  const [totalArticles, totalCategories, totalUsers, totalPolls] = await Promise.all([
+    prisma.article.count(),
+    prisma.category.count(),
+    prisma.user.count(),
+    prisma.poll.count(),
+  ]);
+
+  const totalLeaks =
+    articlesWithLeak.length +
+    usersWithLeak.length +
+    categoryLeaks +
+    commentLeaks +
+    sorotanLeaks +
+    pollLeaks +
+    settingLeaks;
 
   console.log("\n=======================================================");
   console.log("🎉 LENSAPLUS DATA ISOLATION AUDIT REPORT");
@@ -76,10 +102,22 @@ async function main() {
   console.log(`• Total Categories       : ${totalCategories} categories`);
   console.log(`• Total Users            : ${totalUsers} users`);
   console.log(`• Active Polls           : ${totalPolls} polls`);
-  console.log(`• Brand Isolation Status : 100% CLEAN (Zero Kartawarta Overlap)`);
+  console.log(`• Remaining Brand Leaks  : ${totalLeaks}`);
+  console.log(
+    `• Brand Isolation Status : ${
+      totalLeaks === 0 ? "100% CLEAN (Zero Legacy Brand Overlap)" : "LEAKS DETECTED — run with --fix or inspect"
+    }`
+  );
   console.log("=======================================================\n");
+
+  if (totalLeaks > 0) {
+    process.exitCode = 1;
+  }
 }
 
 main()
-  .catch(console.error)
+  .catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  })
   .finally(() => prisma.$disconnect());

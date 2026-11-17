@@ -12,7 +12,7 @@
 #
 # Downtime handling: the real app is stopped during the (RAM-heavy) build, so
 # while it rebuilds a tiny zero-dependency maintenance server takes over port
-# 3000 and serves a branded Lensaplus "sedang memperbarui" page (HTTP 503)
+# 3002 and serves a branded Lensaplus "sedang memperbarui" page (HTTP 503)
 # instead of Cloudflare's default "Bad gateway 502". The previous build is
 # kept as .next.old so a failed build rolls back and the site comes straight
 # back up.
@@ -25,7 +25,7 @@ APP_DIR=/var/www/lensaplus
 LOCK=/tmp/lensaplus-build.lock
 MAINT_PID_FILE=/tmp/lensaplus-maintenance.pid
 MAINT_LOG=/tmp/lensaplus-maintenance.log
-PORT=3006
+PORT=3002
 
 # Reset status — anything that consumed an old "OK" before this run started
 # is now stale and the poller should treat it as in-progress.
@@ -45,7 +45,7 @@ stop_maintenance() {
     kill "$(cat "$MAINT_PID_FILE" 2>/dev/null)" 2>/dev/null || true
     rm -f "$MAINT_PID_FILE"
   fi
-  # Belt-and-suspenders: kill any stray maintenance server still holding 3000,
+  # Belt-and-suspenders: kill any stray maintenance server still holding the port,
   # otherwise the real app can't rebind the port.
   pkill -f 'scripts/maintenance-server.js' 2>/dev/null || true
   sleep 1
@@ -129,7 +129,7 @@ NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 \
 
 [ -f .next/BUILD_ID ] || fail "BUILD_ID missing — build failed silently"
 
-# Hand port 3000 back to the real app: stop maintenance, then (re)start.
+# Hand port 3002 back to the real app: stop maintenance, then (re)start.
 stop_maintenance
 pm2 restart lensaplus --update-env \
   || pm2 start ecosystem.config.js \

@@ -17,7 +17,7 @@ const updates = {
   <div style="position:absolute;left:10%;top:50%;transform:translateY(-50%);width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,0.02)"></div>
   <div style="display:flex;align-items:center;gap:clamp(12px,2vw,20px);z-index:1;min-width:0">
     <div style="width:56px;height:56px;border-radius:12px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <span style="color:#fff;font-size:26px;font-weight:900">K</span>
+      <span style="color:#fff;font-size:26px;font-weight:900">L</span>
     </div>
     <div style="min-width:0">
       <div style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">Sponsored</div>

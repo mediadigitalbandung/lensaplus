@@ -19,7 +19,7 @@
  *   DATABASE_URL        prisma connection
  *   DEEPGRAM_API_KEY    speech-to-text (Indonesian)
  *   CRON_SECRET         to call the internal select-clips route
- *   APP_URL             base URL of the running app (default http://127.0.0.1:3000)
+ *   APP_URL             base URL of the running app (default http://127.0.0.1:3002)
  * Optional: YTDLP_PATH, FFMPEG_PATH (default: rely on PATH).
  */
 
@@ -45,7 +45,7 @@ const prisma = new PrismaClient();
 const POLL_INTERVAL_MS = 5000;
 const STALE_RUNNING_MS = 45 * 60 * 1000; // reclaim RUNNING jobs idle > 45 min
 const WORKER_ID = process.env.HOSTNAME || `yt-worker-${process.pid}`;
-const APP_URL = process.env.APP_URL || "http://127.0.0.1:3006";
+const APP_URL = process.env.APP_URL || "http://127.0.0.1:3002";
 const YTDLP = process.env.YTDLP_PATH || "yt-dlp";
 const FFMPEG = process.env.FFMPEG_PATH || "ffmpeg";
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "tiktok-media");
@@ -57,12 +57,15 @@ function log(...a) {
   console.log(new Date().toISOString(), "[yt-clip]", ...a);
 }
 
+let activeChild = null;
+
 /** Spawn a command, capture stderr tail, resolve on exit 0 else reject. */
 function run(cmd, args, { timeoutMs = 20 * 60_000 } = {}) {
   return new Promise((resolve, reject) => {
     let child;
     try {
       child = spawn(cmd, args, { stdio: ["ignore", "ignore", "pipe"] });
+      activeChild = child;
     } catch (e) {
       reject(e);
       return;
@@ -77,10 +80,12 @@ function run(cmd, args, { timeoutMs = 20 * 60_000 } = {}) {
       if (stderr.length > 8000) stderr = stderr.slice(-8000);
     });
     child.on("error", (e) => {
+      if (activeChild === child) activeChild = null;
       clearTimeout(killer);
       reject(e.code === "ENOENT" ? new Error(`${cmd} not found — install it on the VPS`) : e);
     });
     child.on("close", (code) => {
+      if (activeChild === child) activeChild = null;
       clearTimeout(killer);
       if (code === 0) resolve();
       else reject(new Error(`${cmd} exited ${code}: ${stderr.slice(-600)}`));
@@ -193,6 +198,7 @@ async function selectClips(deepgramJson, job) {
   const res = await fetch(`${APP_URL}/api/internal/youtube/select-clips`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+    signal: AbortSignal.timeout(120_000),
     body: JSON.stringify({
       deepgram: deepgramJson,
       count: job.requestedClips,
@@ -267,13 +273,21 @@ async function processJob(job) {
       const durationMs = Math.max(SLOT_MIN_MS, Math.min(SLOT_MAX_MS, c.durationMs));
       const filename = `${Date.now()}-${randomBytes(6).toString("hex")}.mp4`;
       const outPath = path.join(UPLOAD_DIR, filename);
-      await run(
-        FFMPEG,
-        cutArgs(sourcePath, c.startMs / 1000, durationMs / 1000, outPath, job.reframe),
-        { timeoutMs: 10 * 60_000 },
-      );
+      try {
+        await run(
+          FFMPEG,
+          cutArgs(sourcePath, c.startMs / 1000, durationMs / 1000, outPath, job.reframe),
+          { timeoutMs: 10 * 60_000 },
+        );
+      } catch (err) {
+        await rm(outPath, { force: true }).catch(() => {});
+        throw err;
+      }
       const st = await stat(outPath).catch(() => null);
-      if (!st || st.size === 0) continue; // skip a clip that failed to encode
+      if (!st || st.size === 0) {
+        await rm(outPath, { force: true }).catch(() => {});
+        continue; // skip a clip that failed to encode
+      }
       cut.push({ ...c, url: `/uploads/tiktok-media/${filename}`, filename, durationMs, size: st.size });
     }
     if (!cut.length) throw new Error("Semua potongan gagal di-encode oleh FFmpeg.");
@@ -374,6 +388,9 @@ setInterval(loop, POLL_INTERVAL_MS);
 
 async function shutdown() {
   log("shutting down");
+  if (activeChild) {
+    try { activeChild.kill("SIGTERM"); } catch { /* ignore */ }
+  }
   await prisma.$disconnect().catch(() => {});
   process.exit(0);
 }

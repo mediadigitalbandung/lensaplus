@@ -112,7 +112,7 @@ async function ensurePlaceholder() {
       <rect x="60" y="60" width="1080" height="555" fill="none" stroke="#e8edf3" stroke-opacity="0.18" stroke-width="2" rx="12"/>
       <g transform="translate(540, 230)">
         <rect width="120" height="120" rx="20" fill="#e8edf3" fill-opacity="0.10" stroke="#e8edf3" stroke-opacity="0.45" stroke-width="2"/>
-        <text x="60" y="86" font-family="Georgia, serif" font-size="72" font-weight="700" fill="#e8edf3" text-anchor="middle">K</text>
+        <text x="60" y="86" font-family="Georgia, serif" font-size="72" font-weight="700" fill="#e8edf3" text-anchor="middle">L</text>
       </g>
       <text x="600" y="430" font-family="Georgia, serif" font-size="40" font-weight="600" fill="#e8edf3" text-anchor="middle">Gambar belum tersedia</text>
       <text x="600" y="475" font-family="sans-serif" font-size="22" fill="#a7b6c8" text-anchor="middle">Akan segera diperbarui</text>

@@ -1,7 +1,7 @@
 /**
  * Tiny zero-dependency maintenance server.
  *
- * Stands in for the Next.js app on the same port (default 3000) while a deploy
+ * Stands in for the Next.js app on the same port (default 3002) while a deploy
  * rebuilds the app. Every request gets a branded Lensaplus "we're updating"
  * page with HTTP 503 + Retry-After, so visitors (and Cloudflare) see an
  * on-brand page instead of Cloudflare's default "Bad gateway 502".
@@ -10,14 +10,14 @@
  * Pure Node core modules — no npm install required, so it can run even if
  * node_modules is mid-reinstall.
  *
- * Usage:  PORT=3000 node scripts/maintenance-server.js
+ * Usage:  PORT=3002 node scripts/maintenance-server.js
  */
 
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const PORT = parseInt(process.env.PORT || "3006", 10);
+const PORT = parseInt(process.env.PORT || "3002", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 
 let pageHtml;
@@ -47,7 +47,7 @@ const server = http.createServer((req, res) => {
   res.end(pageHtml);
 });
 
-// The real app (pm2 `next start`) may not have released port 3000 the instant
+// The real app (pm2 `next start`) may not have released port 3002 the instant
 // the deploy script launches us — its graceful-shutdown kill_timeout is up to
 // 10s. So on EADDRINUSE, keep retrying the bind (up to ~30s) instead of giving
 // up; otherwise visitors would briefly see Cloudflare's 502 instead of the

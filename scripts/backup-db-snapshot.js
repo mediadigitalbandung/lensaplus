@@ -22,6 +22,7 @@ function createSnapshot() {
     return backupFile;
   } catch (err) {
     console.error("❌ Failed to create snapshot:", err.message);
+    process.exitCode = 1;
     return null;
   }
 }

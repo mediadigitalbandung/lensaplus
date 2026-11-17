@@ -22,7 +22,7 @@ const updates = {
 
   "Lensaplus — Pasang Iklan Sidebar": `<div style="width:100%;aspect-ratio:6/5;background:#f0f4f8;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(16px,3vw,24px);font-family:system-ui,sans-serif;text-align:center;position:relative;overflow:hidden">
   <div style="width:44px;height:44px;border-radius:8px;background:#002045;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
-    <span style="color:#fff;font-size:20px;font-weight:900">K</span>
+    <span style="color:#fff;font-size:20px;font-weight:900">L</span>
   </div>
   <div style="color:#002045;font-size:clamp(13px,1.5vw,15px);font-weight:800;line-height:1.3">Ruang Iklan Premium</div>
   <div style="color:#44474e;font-size:11px;margin-top:4px;line-height:1.4">Tampil di sidebar homepage</div>
@@ -33,7 +33,7 @@ const updates = {
   <div style="position:absolute;left:10%;top:50%;transform:translateY(-50%);width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.02)"></div>
   <div style="display:flex;align-items:center;gap:clamp(8px,1.5vw,12px);z-index:1;min-width:0">
     <div style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <span style="color:#fff;font-size:18px;font-weight:900">K</span>
+      <span style="color:#fff;font-size:18px;font-weight:900">L</span>
     </div>
     <div style="min-width:0">
       <div style="color:#fff;font-size:clamp(13px,1.5vw,15px);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Lensaplus — Media Digital Terpercaya</div>

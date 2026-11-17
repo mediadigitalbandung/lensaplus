@@ -26,13 +26,15 @@ async function main() {
   // 2. Clear Core Articles, Sorotan & Live Blogs
   await safeDelete("Article", () => prisma.article.deleteMany({}));
   await safeDelete("Sorotan", () => prisma.sorotan.deleteMany({}));
+  await safeDelete("LiveBlogSocialPost", () => prisma.liveBlogSocialPost?.deleteMany({}));
   await safeDelete("LiveBlogEntry", () => prisma.liveBlogEntry?.deleteMany({}));
   await safeDelete("LiveBlog", () => prisma.liveBlog?.deleteMany({}));
 
   // 3. Clear TikTok, Social & Video Assets
-  await safeDelete("TikTokVideo", () => prisma.tikTokVideo?.deleteMany({}));
-  await safeDelete("TikTokClip", () => prisma.tikTokClip?.deleteMany({}));
-  await safeDelete("TikTokContent", () => prisma.tikTokContent?.deleteMany({}));
+  await safeDelete("TiktokMediaSlot", () => prisma.tiktokMediaSlot?.deleteMany({}));
+  await safeDelete("TiktokRenderJob", () => prisma.tiktokRenderJob?.deleteMany({}));
+  await safeDelete("YoutubeClipJob", () => prisma.youtubeClipJob?.deleteMany({}));
+  await safeDelete("TiktokContent", () => prisma.tiktokContent?.deleteMany({}));
   await safeDelete("SocialPost", () => prisma.socialPost?.deleteMany({}));
 
   // 4. Clear Reader Polling, Subscriptions & Notifications
@@ -45,7 +47,6 @@ async function main() {
 
   // 5. Clear AI Logs, Usage & System Audit Logs
   await safeDelete("AuditLog", () => prisma.auditLog?.deleteMany({}));
-  await safeDelete("AiLog", () => prisma.aiLog?.deleteMany({}));
   await safeDelete("AIUsageLog", () => prisma.aIUsageLog?.deleteMany({}));
   await safeDelete("Media", () => prisma.media?.deleteMany({}));
   await safeDelete("Tag", () => prisma.tag?.deleteMany({}));

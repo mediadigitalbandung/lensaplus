@@ -126,7 +126,7 @@ const updates = {
     <!-- Logo in glass container -->
     <div style="animation:psFloat 5s ease-in-out infinite;margin-bottom:16px">
       <div style="position:relative;width:60px;height:60px;border-radius:18px;background:linear-gradient(145deg,#fff,#f1f5f9);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.03)">
-        <img src="/lensaplus-icon.png" alt="K" style="width:38px;height:38px;object-fit:contain;border-radius:10px">
+        <img src="/lensaplus-icon.png" alt="Lensaplus" style="width:38px;height:38px;object-fit:contain;border-radius:10px">
         <div style="position:absolute;inset:-2px;border-radius:20px;border:1px solid rgba(59,130,246,0.08);pointer-events:none"></div>
       </div>
     </div>
