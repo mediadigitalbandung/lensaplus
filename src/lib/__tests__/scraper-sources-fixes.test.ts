@@ -775,7 +775,7 @@ describe("multi-language detection, translation & concept paraphrasing", () => {
     });
 
     expect(mockCallAI).toHaveBeenCalledTimes(2);
-    expect(res.tokensUsed).toBe(350);
+    expect(res.tokens).toBe(350);
     const createData = mockArticleCreate.mock.calls[0][0].data;
     expect(createData.content).toContain("Dampak bagi Perekonomian Daerah");
     expect(createData.content).toContain("Bankbjb (bankbjb.co.id)");
