@@ -35,9 +35,29 @@ try {
   console.warn("Could not load .env file:", e);
 }
 
-const CLIENT_ID = process.env.THREADS_APP_ID || "4402452543382960";
-const CLIENT_SECRET = process.env.THREADS_APP_SECRET || "8c98020e4904e3feae5fb9f0427123dd";
-const REDIRECT_URI = "https://lensaplus.com/";
+const crypto = require("crypto");
+const CLIENT_ID = process.env.THREADS_APP_ID;
+const CLIENT_SECRET = process.env.THREADS_APP_SECRET;
+const REDIRECT_URI = process.env.THREADS_REDIRECT_URI || "https://lensaplus.com/";
+
+if (!CLIENT_ID || !CLIENT_SECRET) {
+  console.error("ERROR: THREADS_APP_ID dan THREADS_APP_SECRET wajib diset di environment/.env.");
+  process.exit(1);
+}
+
+function encryptSecret(plaintext) {
+  const raw = process.env.SETTINGS_ENCRYPTION_KEY;
+  if (!raw) return plaintext;
+  const key = Buffer.from(raw, "base64");
+  if (key.length !== 32) {
+    throw new Error(`SETTINGS_ENCRYPTION_KEY must decode to 32 bytes (got ${key.length})`);
+  }
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv, { authTagLength: 16 });
+  const ct = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return ["v1", iv.toString("base64"), ct.toString("base64"), tag.toString("base64")].join(":");
+}
 
 const prisma = new PrismaClient();
 
@@ -87,7 +107,7 @@ async function main() {
       throw new Error(longLivedJson.error?.message || JSON.stringify(longLivedJson));
     }
 
-    const longLivedToken = longLivedJson.access_token;
+    const longLivedToken = encryptSecret(longLivedJson.access_token);
     const expiresInSeconds = longLivedJson.expires_in || 5184000; // default 60 days
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 

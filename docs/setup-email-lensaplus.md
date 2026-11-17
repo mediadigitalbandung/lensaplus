@@ -67,8 +67,8 @@ Agar user bisa **mengirim email** dari Gmail sebagai `nama@lensaplus.com`:
 |---|---|
 | **SMTP Server** | `smtp-relay.brevo.com` |
 | **Port** | `587` |
-| **Username** | `a715cf001@smtp-brevo.com` |
-| **Password** | `4UhR5vsHMc3PIqrD` |
+| **Username** | `<BREVO_SMTP_USERNAME>` (cek Dashboard Brevo / `.env`) |
+| **Password** | `<BREVO_SMTP_PASSWORD>` (cek Dashboard Brevo / `.env`) |
 | **Connection** | Secured connection using TLS |
 
 5. Klik **Add Account**
@@ -90,9 +90,9 @@ Agar user bisa **mengirim email** dari Gmail sebagai `nama@lensaplus.com`:
 
 ### Cloudflare
 - **Dashboard:** https://dash.cloudflare.com
-- **Email:** Mediadigitalbandung@gmail.com
-- **Zone ID:** `7a9fce52f7bbb233211e8d22e24651ad`
-- **Account ID:** `494132b6296be7c2ac78bf21446b3bda`
+- **Email:** `<CLOUDFLARE_ACCOUNT_EMAIL>`
+- **Zone ID:** `<CLOUDFLARE_ZONE_ID>`
+- **Account ID:** `<CLOUDFLARE_ACCOUNT_ID>`
 - **Fitur:** Email Routing, DNS, CDN, SSL
 
 ### Brevo (SMTP)
@@ -100,8 +100,8 @@ Agar user bisa **mengirim email** dari Gmail sebagai `nama@lensaplus.com`:
 - **Email:** owen@lensaplus.com
 - **SMTP Server:** `smtp-relay.brevo.com`
 - **Port:** `587`
-- **Login:** `a715cf001@smtp-brevo.com`
-- **Password:** `4UhR5vsHMc3PIqrD`
+- **Login:** `<BREVO_SMTP_USERNAME>` (lihat `.env` / Brevo Dashboard)
+- **Password:** `<BREVO_SMTP_PASSWORD>` (lihat `.env` / Brevo Dashboard)
 - **Limit:** 300 email keluar/hari (gratis)
 - **Domain:** lensaplus.com (Authenticated ✅)
 

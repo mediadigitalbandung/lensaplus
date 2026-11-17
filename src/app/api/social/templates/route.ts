@@ -14,6 +14,11 @@ import {
   successResponse,
 } from "@/lib/api-utils";
 import type { Prisma } from "@prisma/client";
+import { isSafeImageRef, resolvePublicSubpath } from "@/lib/safe-path";
+
+function isValidTemplateBg(val: string): boolean {
+  return isSafeImageRef(val) || resolvePublicSubpath(val) !== null;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +43,10 @@ const createSchema = z.object({
   name: z.string().min(1).max(120),
   platform: z.enum(["INSTAGRAM", "FACEBOOK", "TWITTER", "THREADS"]),
   categoryId: z.string().nullable().optional(),
-  backgroundUrl: z.string().min(1),
+  backgroundUrl: z
+    .string()
+    .min(1)
+    .refine(isValidTemplateBg, "URL atau path background template tidak valid"),
   textLayers: z.array(textLayerSchema),
   isActive: z.boolean().optional(),
 });

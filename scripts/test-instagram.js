@@ -1,5 +1,17 @@
+const crypto = require("crypto");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+
+function decryptSecret(stored) {
+  if (!stored || !stored.startsWith("v1:")) return stored;
+  const raw = process.env.SETTINGS_ENCRYPTION_KEY;
+  if (!raw) throw new Error("SETTINGS_ENCRYPTION_KEY is not set for encrypted token.");
+  const key = Buffer.from(raw, "base64");
+  const [, ivB64, ctB64, tagB64] = stored.split(":");
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(ivB64, "base64"), { authTagLength: 16 });
+  decipher.setAuthTag(Buffer.from(tagB64, "base64"));
+  return Buffer.concat([decipher.update(Buffer.from(ctB64, "base64")), decipher.final()]).toString("utf8");
+}
 
 const GRAPH_BASE = "https://graph.facebook.com/v21.0";
 
@@ -54,7 +66,8 @@ async function main() {
     process.exit(1);
   }
 
-  const { accessToken, igUserId, enabled } = igSettings;
+  const { igUserId, enabled } = igSettings;
+  const accessToken = decryptSecret(igSettings.accessToken);
   console.log(`✅ Konfigurasi database ditemukan:`);
   console.log(`   - Status Integrasi: ${enabled ? "AKTIF (Enabled)" : "NON-AKTIF (Disabled)"}`);
   console.log(`   - IG User ID:       ${igUserId}`);
