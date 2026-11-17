@@ -28,6 +28,8 @@ import type {
   ThreadsSettings,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto-secrets";
+import { resolvePublicSubpath } from "@/lib/safe-path";
 import { generateReelQuotes } from "./ai-caption";
 import { generateSocialCaption } from "./caption-generator";
 import {
@@ -104,19 +106,29 @@ async function getOrCreateGlobalSettings(): Promise<SocialMediaSettings> {
   return row;
 }
 
+function decryptStoredToken(token: string | null | undefined): string | null {
+  if (!token) return null;
+  try {
+    return decryptSecret(token);
+  } catch (err) {
+    console.error("[social/orchestrator] Failed to decrypt stored social token:", err);
+    return null;
+  }
+}
+
 async function getOrCreateInstagramSettings(): Promise<InstagramSettings> {
   let row = await prisma.instagramSettings.findUnique({ where: { id: "global" } });
   if (!row) {
     row = await prisma.instagramSettings.create({ data: { id: "global" } });
   }
-  return row;
+  return { ...row, accessToken: decryptStoredToken(row.accessToken) };
 }
 async function getOrCreateFacebookSettings(): Promise<FacebookSettings> {
   let row = await prisma.facebookSettings.findUnique({ where: { id: "global" } });
   if (!row) {
     row = await prisma.facebookSettings.create({ data: { id: "global" } });
   }
-  return row;
+  return { ...row, accessToken: decryptStoredToken(row.accessToken) };
 }
 
 async function getOrCreateThreadsSettings(): Promise<ThreadsSettings> {
@@ -124,7 +136,7 @@ async function getOrCreateThreadsSettings(): Promise<ThreadsSettings> {
   if (!row) {
     row = await prisma.threadsSettings.create({ data: { id: "global" } });
   }
-  return row;
+  return { ...row, accessToken: decryptStoredToken(row.accessToken) };
 }
 
 export async function getAllSocialSettings(): Promise<{
@@ -495,7 +507,14 @@ export async function publishArticleToSocial(
 
   for (const target of targets) {
     const platform = target.platform;
-    const platformEnabled = platform === "INSTAGRAM" ? ig.enabled : fb.enabled;
+    const platformEnabled =
+      platform === "INSTAGRAM"
+        ? ig.enabled
+        : platform === "FACEBOOK"
+          ? fb.enabled
+          : platform === "THREADS"
+            ? threads.enabled
+            : false;
     const gate = shouldPublishToPlatform(platform, article, global, platformEnabled);
     if (!gate.publish) {
       results.push({ platform, status: "SKIPPED", note: gate.reason, isStory: target.isStory });
@@ -681,15 +700,9 @@ export async function rejectDraft(postId: string): Promise<void> {
 
   // Best-effort delete of the rendered image.
   if (post.imageUrl) {
-    try {
-      const url = new URL(post.imageUrl, SITE_URL);
-      const rel = decodeURIComponent(url.pathname.replace(/^\/+/, ""));
-      if (rel.startsWith("uploads/social/")) {
-        const abs = `${process.cwd().replace(/\\/g, "/")}/public/${rel}`;
-        await fs.unlink(abs).catch(() => {});
-      }
-    } catch {
-      // ignore — URL parsing issues should not block the delete.
+    const abs = resolvePublicSubpath(post.imageUrl, "uploads/social");
+    if (abs) {
+      await fs.unlink(abs).catch(() => {});
     }
   }
 
@@ -776,18 +789,9 @@ export async function takedownPost(
 
 /** Map an /uploads/... URL (or relative path) to a local file path, if it exists. */
 function resolveLocalUploadPath(url?: string | null): string | null {
-  if (!url) return null;
-  try {
-    const pathname = url.startsWith("http") ? new URL(url).pathname : url;
-    const rel = decodeURIComponent(pathname.replace(/^\/+/, ""));
-    if (rel.startsWith("uploads/")) {
-      const abs = path.join(process.cwd(), "public", rel);
-      return existsSync(abs) ? abs : null;
-    }
-  } catch {
-    /* ignore */
-  }
-  return null;
+  const abs = resolvePublicSubpath(url, "uploads");
+  if (!abs) return null;
+  return existsSync(abs) ? abs : null;
 }
 
 export interface RenderReelInput {

@@ -17,9 +17,10 @@
 
 import { NextRequest } from "next/server";
 import sharp from "sharp";
-import path from "path";
 import fs from "fs/promises";
 import { prisma } from "@/lib/prisma";
+import { resolvePublicSubpath } from "@/lib/safe-path";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 // Output is fully determined by the `slug` query string and Cloudflare/CDN
 // caches the response (Cache-Control: public, max-age=31536000, immutable).
@@ -110,10 +111,10 @@ async function loadBackground(featuredImage: string | null | undefined): Promise
             .toBuffer();
         }
       } else {
-        const rel = featuredImage.replace(/^\/+/, "");
-        const localPath = rel.startsWith("public/")
-          ? path.join(process.cwd(), rel)
-          : path.join(process.cwd(), "public", rel);
+        const localPath = resolvePublicSubpath(featuredImage);
+        if (!localPath) {
+          throw new Error("Invalid local image path");
+        }
         const buf = await fs.readFile(localPath);
         return await sharp(buf)
           .resize(WIDTH, HEIGHT, { fit: "cover", position: "centre" })
@@ -216,6 +217,8 @@ async function renderFallbackImage(): Promise<Buffer> {
 }
 
 export async function GET(req: NextRequest) {
+  const blocked = guardPublicRead(req);
+  if (blocked) return blocked;
   try {
     const slug = req.nextUrl.searchParams.get("slug");
 

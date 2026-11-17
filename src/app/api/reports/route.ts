@@ -29,13 +29,15 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const status = searchParams.get("status");
 
-    const where: Record<string, unknown> = {};
-    if (status && ["PENDING", "REVIEWED", "RESOLVED", "DISMISSED"].includes(status)) {
-      where.status = status;
-    }
+    const baseWhere: Record<string, unknown> = {};
     // Non-editors can only see reports on their own articles
     if (!isEditor) {
-      where.article = { authorId: session.user.id };
+      baseWhere.article = { authorId: session.user.id };
+    }
+
+    const where: Record<string, unknown> = { ...baseWhere };
+    if (status && ["PENDING", "REVIEWED", "RESOLVED", "DISMISSED"].includes(status)) {
+      where.status = status;
     }
 
     const [reports, total, pendingCount] = await Promise.all([
@@ -51,7 +53,7 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.report.count({ where }),
-      prisma.report.count({ where: { status: "PENDING" } }),
+      prisma.report.count({ where: { ...baseWhere, status: "PENDING" } }),
     ]);
 
     return successResponse({

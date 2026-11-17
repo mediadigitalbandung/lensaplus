@@ -15,6 +15,7 @@
  */
 
 import sharp from "sharp";
+import { resolvePublicSubpath } from "@/lib/safe-path";
 
 const WIDTH = 1080;
 const HEIGHT = 1920;
@@ -108,11 +109,8 @@ async function loadFeaturedImage(featuredImage: string | null | undefined): Prom
 
     // Local public/ path
     const { default: fs } = await import("fs/promises");
-    const { default: path } = await import("path");
-    const rel = featuredImage.replace(/^\/+/, "");
-    const localPath = rel.startsWith("public/")
-      ? path.join(process.cwd(), rel)
-      : path.join(process.cwd(), "public", rel);
+    const localPath = resolvePublicSubpath(featuredImage);
+    if (!localPath) return null;
     const buf = await fs.readFile(localPath);
     return await sharp(buf)
       .resize(WIDTH, IMG_H, { fit: "cover", position: "centre" })

@@ -16,6 +16,8 @@
 import { NextRequest } from "next/server";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
+import { resolvePublicSubpath } from "@/lib/safe-path";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -97,7 +99,7 @@ async function loadFeaturedImage(featuredImage: string | null | undefined): Prom
 
   try {
     let absoluteUrl = featuredImage;
-    if (featuredImage.startsWith("/")) {
+    if (featuredImage.startsWith("/") && !featuredImage.startsWith("//")) {
       absoluteUrl = SITE + featuredImage;
     }
 
@@ -111,13 +113,10 @@ async function loadFeaturedImage(featuredImage: string | null | undefined): Prom
         .toBuffer();
     }
 
-    // Local file (relative path)
+    // Local file (relative path) — strictly scoped inside public/
     const { default: fs } = await import("fs/promises");
-    const { default: path } = await import("path");
-    const rel = featuredImage.replace(/^\/+/, "");
-    const localPath = rel.startsWith("public/")
-      ? path.join(process.cwd(), rel)
-      : path.join(process.cwd(), "public", rel);
+    const localPath = resolvePublicSubpath(featuredImage);
+    if (!localPath) return null;
     const buf = await fs.readFile(localPath);
     return await sharp(buf)
       .resize(WIDTH, 1080, { fit: "cover", position: "centre" })
@@ -175,9 +174,9 @@ function buildSvgOverlay({
       </text>`
     : "";
 
-  // Slug display: strip leading slash and get full link
+  // Slug display: strip leading slash and point to canonical /berita/ path
   const slugClean = slug.replace(/^\/+/, "");
-  const linkText = `lensaplus.com/${slugClean}`;
+  const linkText = `lensaplus.com/berita/${slugClean}`;
 
   // Dynamically calculate font size so it fits perfectly without truncation
   // Average character width is roughly 0.53 of font size. Max width is 960px.
@@ -250,6 +249,9 @@ function buildSvgOverlay({
 }
 
 export async function GET(req: NextRequest) {
+  const blocked = guardPublicRead(req);
+  if (blocked) return blocked;
+
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get("slug");
 
@@ -263,13 +265,14 @@ export async function GET(req: NextRequest) {
       select: {
         title: true,
         slug: true,
+        status: true,
         excerpt: true,
         featuredImage: true,
         category: { select: { name: true } },
       },
     });
 
-    if (!article) {
+    if (!article || article.status !== "PUBLISHED") {
       return new Response("Article not found", { status: 404 });
     }
 

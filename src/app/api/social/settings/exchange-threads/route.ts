@@ -7,10 +7,11 @@ import {
   requireRole,
   successResponse,
 } from "@/lib/api-utils";
+import { encryptSecret } from "@/lib/crypto-secrets";
 
 export const dynamic = "force-dynamic";
 
-const REDIRECT_URI = "https://lensaplus.com/";
+const REDIRECT_URI = process.env.THREADS_REDIRECT_URI || "https://lensaplus.com/";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,8 +23,14 @@ export async function POST(req: NextRequest) {
       throw new ApiError("Kode otorisasi wajib disertakan.", 400);
     }
 
-    const clientId = process.env.THREADS_APP_ID || "4402452543382960";
-    const clientSecret = process.env.THREADS_APP_SECRET || "8c98020e4904e3feae5fb9f0427123dd";
+    const clientId = process.env.THREADS_APP_ID;
+    const clientSecret = process.env.THREADS_APP_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new ApiError(
+        "THREADS_APP_ID dan THREADS_APP_SECRET belum dikonfigurasi di environment server.",
+        500,
+      );
+    }
 
     console.log("[threads-exchange] Starting exchange for Threads code:", code.slice(0, 10) + "...");
 
@@ -52,8 +59,15 @@ export async function POST(req: NextRequest) {
     const threadsUserId = exchangeJson.user_id;
 
     // 2. Exchange short-lived token for 60-day long-lived token
-    const longLivedUrl = `https://graph.threads.net/access_token?grant_type=th_exchange_token&client_secret=${clientSecret}&access_token=${shortLivedToken}`;
-    const longLivedRes = await fetch(longLivedUrl, { method: "GET" });
+    const longLivedParams = new URLSearchParams({
+      grant_type: "th_exchange_token",
+      client_secret: clientSecret,
+      access_token: String(shortLivedToken),
+    });
+    const longLivedRes = await fetch(
+      `https://graph.threads.net/access_token?${longLivedParams.toString()}`,
+      { method: "GET" },
+    );
     const longLivedJson = await longLivedRes.json();
 
     if (!longLivedRes.ok) {
@@ -63,22 +77,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const longLivedToken = longLivedJson.access_token;
+    const longLivedToken = String(longLivedJson.access_token || "");
+    if (!longLivedToken) {
+      throw new ApiError("Threads tidak mengembalikan long-lived access token.", 502);
+    }
+    const encryptedToken = encryptSecret(longLivedToken);
     const expiresInSeconds = longLivedJson.expires_in || 5184000; // default 60 days
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
-    // 3. Save to database
+    // 3. Save to database (encrypted at rest)
     const updatedSettings = await prisma.threadsSettings.upsert({
       where: { id: "global" },
       update: {
-        accessToken: longLivedToken,
+        accessToken: encryptedToken,
         threadsUserId: String(threadsUserId),
         enabled: true,
         tokenExpiresAt: expiresAt,
       },
       create: {
         id: "global",
-        accessToken: longLivedToken,
+        accessToken: encryptedToken,
         threadsUserId: String(threadsUserId),
         enabled: true,
         tokenExpiresAt: expiresAt,

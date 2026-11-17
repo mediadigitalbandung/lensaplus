@@ -14,7 +14,7 @@ export async function getSession() {
 
 export async function requireAuth() {
   const session = await getSession();
-  if (!session?.user) {
+  if (!session?.user || session.sessionInvalid || !session.user.id || !session.user.role) {
     throw new ApiError("Unauthorized", 401);
   }
   return session;

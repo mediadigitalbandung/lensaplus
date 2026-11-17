@@ -26,12 +26,17 @@ import { revalidatePath } from "next/cache";
 import { invalidateCachePrefix } from "@/lib/cache";
 import { purgeCache } from "@/lib/cloudflare/purge";
 import { getStorageDriver } from "@/lib/storage";
+import { extractSafeUploadKey, isSafeImageRef } from "@/lib/safe-path";
 
 const updateArticleSchema = z.object({
   title: z.string().min(5).max(255).optional(),
   content: z.string().min(50).optional(),
   excerpt: z.string().max(500).optional(),
-  featuredImage: z.string().optional().nullable(),
+  featuredImage: z
+    .string()
+    .refine(isSafeImageRef, "URL atau path gambar utama tidak valid")
+    .optional()
+    .nullable(),
   categoryId: z.string().optional(),
   seoTitle: z.string().max(70).optional(),
   seoDescription: z.string().max(160).optional(),
@@ -793,12 +798,13 @@ export async function PUT(
       // Clean up old featured image if replaced
       if (
         data.featuredImage !== undefined &&
-        article.featuredImage !== data.featuredImage &&
-        article.featuredImage?.startsWith("/uploads/")
+        article.featuredImage !== data.featuredImage
       ) {
-        const key = article.featuredImage.substring("/uploads/".length);
-        const storage = getStorageDriver();
-        storage.delete(key).catch(() => {});
+        const key = extractSafeUploadKey(article.featuredImage);
+        if (key) {
+          const storage = getStorageDriver();
+          storage.delete(key).catch(() => {});
+        }
       }
 
       if (updated.status === "PUBLISHED") {
@@ -949,10 +955,10 @@ export async function DELETE(
     }
 
     // Clean up featured image from local storage
-    if (article.featuredImage?.startsWith("/uploads/")) {
-      const key = article.featuredImage.substring("/uploads/".length);
+    const featuredKey = extractSafeUploadKey(article.featuredImage);
+    if (featuredKey) {
       const storage = getStorageDriver();
-      await storage.delete(key).catch(() => {});
+      await storage.delete(featuredKey).catch(() => {});
     }
 
     await prisma.article.delete({ where: { id: params.id } });

@@ -17,6 +17,7 @@ import {
   logAudit,
 } from "@/lib/api-utils";
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
+import { assertSafePublicUrl } from "@/lib/scraper/fetch";
 import { SCRAPER_ROLES } from "@/lib/roles";
 
 const createSchema = z.object({
@@ -68,6 +69,13 @@ export async function POST(request: NextRequest) {
     const session = await requireRole([...SCRAPER_ROLES]);
     const body = await request.json();
     const data = createSchema.parse(body);
+
+    // SSRF guard before any network call (including robots.txt fetch)
+    try {
+      await assertSafePublicUrl(data.listingUrl);
+    } catch {
+      throw new ApiError("URL sumber tidak diizinkan (host privat atau tidak valid).", 400);
+    }
 
     // robots.txt check — block if upstream forbids us.
     const allowed = await isAllowedByRobots(data.listingUrl);

@@ -7,10 +7,10 @@
  */
 
 import fs from "fs/promises";
-import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
 import type { SocialTemplate } from "@prisma/client";
+import { resolvePublicSubpath, PUBLIC_DIR } from "@/lib/safe-path";
 import {
   ArticleForPublish,
   PLATFORM_DIMENSIONS,
@@ -27,8 +27,6 @@ interface RenderResult {
   buffer: Buffer;
   filename: string;
 }
-
-const PUBLIC_DIR = path.join(process.cwd(), "public");
 
 /** Escape text for safe embedding into SVG `<text>`. */
 function escapeXml(str: string): string {
@@ -316,11 +314,11 @@ async function loadBackground(urlOrPath: string): Promise<Buffer> {
     return Buffer.from(ab);
   }
 
-  // Local path — may be "/uploads/foo.png" or "public/uploads/foo.png"
-  const rel = urlOrPath.replace(/^\/+/, "");
-  const localPath = rel.startsWith("public/")
-    ? path.join(process.cwd(), rel)
-    : path.join(process.cwd(), "public", rel);
+  // Local path — must stay strictly inside public/
+  const localPath = resolvePublicSubpath(urlOrPath);
+  if (!localPath) {
+    throw new Error(`Invalid or disallowed local template background path: ${urlOrPath}`);
+  }
   return fs.readFile(localPath);
 }
 

@@ -34,12 +34,16 @@ export async function GET(
         resultContentIds: true,
         errorMessage: true,
         videoTitle: true,
+        requestedById: true,
         startedAt: true,
         finishedAt: true,
         createdAt: true,
       },
     });
     if (!job) throw new ApiError("Job tidak ditemukan", 404);
+    if (session.user.role !== "SUPER_ADMIN" && job.requestedById !== session.user.id) {
+      throw new ApiError("Job tidak ditemukan", 404);
+    }
 
     // Resolve produced contents (title + status + slot count) for the results view.
     let contents: Array<{ id: string; title: string; status: string; slots: number }> = [];

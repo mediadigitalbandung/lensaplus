@@ -26,14 +26,37 @@ const IDX_SYMBOLS = [
   "EMTK.JK", "MTEL.JK", "SMGR.JK", "EXCL.JK", "TBIG.JK",
 ];
 
+// Spark responses don't carry display names, so map the tickers to the
+// Indonesian company names we used to get from the v7 quote endpoint.
+const IDX_NAMES: Record<string, string> = {
+  BBCA: "Bank Central Asia",
+  BBRI: "Bank Rakyat Indonesia",
+  BMRI: "Bank Mandiri",
+  TLKM: "Telkom Indonesia",
+  ASII: "Astra International",
+  UNVR: "Unilever Indonesia",
+  GOTO: "GoTo Gojek Tokopedia",
+  BREN: "Barito Renewables",
+  AMMN: "Amman Mineral Internasional",
+  TOWR: "Sarana Menara Nusantara",
+  ADRO: "Adaro Energy",
+  PGAS: "Perusahaan Gas Negara",
+  ICBP: "Indofood CBP Sukses Makmur",
+  INDF: "Indofood Sukses Makmur",
+  KLBF: "Kalbe Farma",
+  EMTK: "Elang Mahkota Teknologi",
+  MTEL: "Dayamitra Telekomunikasi",
+  SMGR: "Semen Indonesia",
+  EXCL: "XL Axiata",
+  TBIG: "Tower Bersama",
+};
+
 interface QuoteResult {
-  regularMarketPrice?: number;
-  regularMarketPreviousClose?: number;
-  regularMarketChange?: number;
-  regularMarketChangePercent?: number;
+  price: number;
+  prevClose: number;
+  change: number;
+  changePercent: number;
   symbol?: string;
-  shortName?: string;
-  displayName?: string;
 }
 
 function direction(pct: number): "up" | "down" | "flat" {
@@ -43,43 +66,61 @@ function direction(pct: number): "up" | "down" | "flat" {
 }
 
 /**
- * Fetch dari Yahoo Finance. Return empty map saat gagal (Yahoo gradually
- * restrict v7 endpoint, kadang 401/429 untuk public access). UI graceful
- * degrade — show "data unavailable" hint, page tetap render struktur.
+ * Fetch quotes via the Yahoo Finance v8 `/spark` endpoint.
+ *
+ * The legacy v7 `/quote` endpoint now answers 401 for public (cookie-less)
+ * access from most IPs, so we switched to `/spark`, which still works.
+ * Caveats handled here:
+ *  - `/spark` caps each request at 20 symbols → batch the list.
+ *  - `/spark` returns `close[]` + `chartPreviousClose` (no
+ *    regularMarketChange/Percent) → derive change/percent ourselves.
+ *
+ * Returns an empty map when a request fails; the UI degrades gracefully.
  */
 async function fetchQuotes(symbols: string[]): Promise<Record<string, QuoteResult>> {
+  const out: Record<string, QuoteResult> = {};
   try {
-    const joined = symbols.join(",");
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${joined}&fields=regularMarketPrice,regularMarketPreviousClose,regularMarketChange,regularMarketChangePercent,shortName,displayName`;
-
-    const res = await fetch(url, {
-      headers: {
-        // Browser-like UA tends to bypass Yahoo's bot guard better than Mozilla compat string.
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-        "Accept": "application/json,text/plain,*/*",
-        "Accept-Language": "id-ID,id;q=0.9,en;q=0.8",
-        "Referer": "https://finance.yahoo.com/",
-      },
-      next: { revalidate: 60 },
-    });
-
-    if (!res.ok) {
-      console.warn(`[market] Yahoo Finance returned ${res.status}, falling back to empty data`);
-      return {};
+    // Batch to stay under the 20-symbol per-request cap.
+    const batches: string[][] = [];
+    for (let i = 0; i < symbols.length; i += 20) {
+      batches.push(symbols.slice(i, i + 20));
     }
 
-    const json = await res.json();
-    const results: QuoteResult[] = json?.quoteResponse?.result ?? [];
+    const responses = await Promise.all(
+      batches.map(async (batch) => {
+        const url = `https://query2.finance.yahoo.com/v8/finance/spark?symbols=${batch.join(",")}&range=1d&interval=1d`;
+        const res = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; Lensaplus/1.0)",
+            "Accept": "application/json,text/plain,*/*",
+          },
+          next: { revalidate: 60 },
+        });
+        if (!res.ok) throw new Error(`Yahoo returned ${res.status}`);
+        return res.json();
+      })
+    );
 
-    const map: Record<string, QuoteResult> = {};
-    for (const r of results) {
-      if (r.symbol) map[r.symbol] = r;
+    for (const data of responses) {
+      for (const sym of symbols) {
+        const q = data?.[sym];
+        if (!q || !Array.isArray(q.close)) continue;
+
+        const closes = q.close.filter((v: unknown) => typeof v === "number" && Number.isFinite(v));
+        if (closes.length === 0) continue;
+
+        const price = closes[closes.length - 1];
+        const prevClose = q.chartPreviousClose ?? q.previousClose ?? price;
+        const change = price - prevClose;
+        const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
+
+        out[sym] = { symbol: sym, price, prevClose, change, changePercent };
+      }
     }
-    return map;
   } catch (e) {
     console.warn(`[market] Yahoo fetch error:`, (e as Error).message);
-    return {};
   }
+  return out;
 }
 
 export async function GET() {
@@ -91,17 +132,17 @@ export async function GET() {
     ]);
 
     // USD/IDR rate for conversions
-    const usdIdr = macroMap["USDIDR=X"]?.regularMarketPrice ?? 0;
+    const usdIdr = macroMap["USDIDR=X"]?.price ?? 0;
 
     // ─── IHSG ───────────────────────────────────────────────────────
     const ihsgQ = macroMap["^JKSE"];
     const ihsg = ihsgQ
       ? {
-          price: ihsgQ.regularMarketPrice ?? 0,
-          prevClose: ihsgQ.regularMarketPreviousClose ?? 0,
-          change: Math.round((ihsgQ.regularMarketChange ?? 0) * 100) / 100,
-          changePercent: Math.round((ihsgQ.regularMarketChangePercent ?? 0) * 100) / 100,
-          direction: direction(ihsgQ.regularMarketChangePercent ?? 0),
+          price: ihsgQ.price,
+          prevClose: ihsgQ.prevClose,
+          change: Math.round(ihsgQ.change * 100) / 100,
+          changePercent: Math.round(ihsgQ.changePercent * 100) / 100,
+          direction: direction(ihsgQ.changePercent),
         }
       : null;
 
@@ -117,15 +158,14 @@ export async function GET() {
     const forex = forexPairs.map((p) => {
       const q = macroMap[p.symbol];
       if (!q) return null;
-      const pct = q.regularMarketChangePercent ?? 0;
       return {
         label: p.label,
         base: p.base,
-        price: Math.round((q.regularMarketPrice ?? 0) * 100) / 100,
-        prevClose: Math.round((q.regularMarketPreviousClose ?? 0) * 100) / 100,
-        change: Math.round((q.regularMarketChange ?? 0) * 100) / 100,
-        changePercent: Math.round(pct * 100) / 100,
-        direction: direction(pct),
+        price: Math.round(q.price * 100) / 100,
+        prevClose: Math.round(q.prevClose * 100) / 100,
+        change: Math.round(q.change * 100) / 100,
+        changePercent: Math.round(q.changePercent * 100) / 100,
+        direction: direction(q.changePercent),
         currency: "IDR",
       };
     }).filter(Boolean);
@@ -135,16 +175,16 @@ export async function GET() {
     const oilQ = macroMap["CL=F"];
 
     // Gold: Yahoo gives USD/troy-oz → convert to IDR/gram
-    const goldUsdOz = goldQ?.regularMarketPrice ?? 0;
-    const goldPrevUsdOz = goldQ?.regularMarketPreviousClose ?? 0;
+    const goldUsdOz = goldQ?.price ?? 0;
+    const goldPrevUsdOz = goldQ?.prevClose ?? 0;
     const goldIdrGram = usdIdr > 0 ? (goldUsdOz * usdIdr) / TROY_OZ_TO_GRAM : 0;
     const goldPrevIdrGram = usdIdr > 0 ? (goldPrevUsdOz * usdIdr) / TROY_OZ_TO_GRAM : 0;
     const goldChange = goldIdrGram - goldPrevIdrGram;
     const goldPct = goldPrevIdrGram > 0 ? (goldChange / goldPrevIdrGram) * 100 : 0;
 
     // Oil: USD/barrel — keep raw USD price, also show IDR
-    const oilUsd = oilQ?.regularMarketPrice ?? 0;
-    const oilPct = oilQ?.regularMarketChangePercent ?? 0;
+    const oilUsd = oilQ?.price ?? 0;
+    const oilPct = oilQ?.changePercent ?? 0;
 
     const commodity = {
       gold: {
@@ -159,7 +199,7 @@ export async function GET() {
       oil: {
         label: "Minyak Brent",
         usdPerBarrel: Math.round(oilUsd * 100) / 100,
-        change: Math.round((oilQ?.regularMarketChange ?? 0) * 100) / 100,
+        change: Math.round((oilQ?.change ?? 0) * 100) / 100,
         changePercent: Math.round(oilPct * 100) / 100,
         direction: direction(oilPct),
       },
@@ -173,20 +213,20 @@ export async function GET() {
       {
         symbol: "BTC",
         label: "Bitcoin",
-        priceUsd: Math.round((btcQ?.regularMarketPrice ?? 0) * 100) / 100,
-        priceIdr: usdIdr > 0 ? Math.round((btcQ?.regularMarketPrice ?? 0) * usdIdr) : 0,
-        change: Math.round((btcQ?.regularMarketChange ?? 0) * 100) / 100,
-        changePercent: Math.round((btcQ?.regularMarketChangePercent ?? 0) * 100) / 100,
-        direction: direction(btcQ?.regularMarketChangePercent ?? 0),
+        priceUsd: Math.round((btcQ?.price ?? 0) * 100) / 100,
+        priceIdr: usdIdr > 0 ? Math.round((btcQ?.price ?? 0) * usdIdr) : 0,
+        change: Math.round((btcQ?.change ?? 0) * 100) / 100,
+        changePercent: Math.round((btcQ?.changePercent ?? 0) * 100) / 100,
+        direction: direction(btcQ?.changePercent ?? 0),
       },
       {
         symbol: "ETH",
         label: "Ethereum",
-        priceUsd: Math.round((ethQ?.regularMarketPrice ?? 0) * 100) / 100,
-        priceIdr: usdIdr > 0 ? Math.round((ethQ?.regularMarketPrice ?? 0) * usdIdr) : 0,
-        change: Math.round((ethQ?.regularMarketChange ?? 0) * 100) / 100,
-        changePercent: Math.round((ethQ?.regularMarketChangePercent ?? 0) * 100) / 100,
-        direction: direction(ethQ?.regularMarketChangePercent ?? 0),
+        priceUsd: Math.round((ethQ?.price ?? 0) * 100) / 100,
+        priceIdr: usdIdr > 0 ? Math.round((ethQ?.price ?? 0) * usdIdr) : 0,
+        change: Math.round((ethQ?.change ?? 0) * 100) / 100,
+        changePercent: Math.round((ethQ?.changePercent ?? 0) * 100) / 100,
+        direction: direction(ethQ?.changePercent ?? 0),
       },
     ];
 
@@ -194,14 +234,14 @@ export async function GET() {
     const idxQuotes = IDX_SYMBOLS.map((sym) => {
       const q = idxMap[sym];
       if (!q) return null;
-      const pct = q.regularMarketChangePercent ?? 0;
+      const ticker = sym.replace(".JK", "");
       return {
-        symbol: sym.replace(".JK", ""),
-        name: q.displayName ?? q.shortName ?? sym.replace(".JK", ""),
-        price: q.regularMarketPrice ?? 0,
-        change: Math.round((q.regularMarketChange ?? 0) * 100) / 100,
-        changePercent: Math.round(pct * 100) / 100,
-        direction: direction(pct),
+        symbol: ticker,
+        name: IDX_NAMES[ticker] ?? ticker,
+        price: q.price,
+        change: Math.round(q.change * 100) / 100,
+        changePercent: Math.round(q.changePercent * 100) / 100,
+        direction: direction(q.changePercent),
       };
     }).filter(Boolean) as {
       symbol: string; name: string; price: number;

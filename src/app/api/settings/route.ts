@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireRole, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
+import { requireRole, successResponse, errorResponse, logAudit, ApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import {
   encryptSecret,
@@ -144,8 +144,19 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const data = settingSchema.parse(body);
 
+    const sensitive = isSensitiveKey(data.key);
+    const trimmedVal = data.value.trim();
+    if (sensitive && (trimmedVal.startsWith("••••••••") || trimmedVal === "(tidak berubah)")) {
+      const existing = await prisma.systemSetting.findUnique({ where: { key: data.key } });
+      if (!existing) {
+        throw new ApiError("Masukkan nilai kunci asli (bukan nilai termasking).", 400);
+      }
+      // Preserve existing secret in DB without overwriting it with a masked placeholder
+      return successResponse({ key: data.key, value: data.value });
+    }
+
     // Encrypt sensitive values before persisting.
-    const storedValue = isSensitiveKey(data.key)
+    const storedValue = sensitive
       ? encryptSecret(data.value)
       : data.value;
 
@@ -156,7 +167,7 @@ export async function PUT(req: NextRequest) {
     });
 
     // Never return the plaintext back to the client.
-    const responseValue = isSensitiveKey(data.key)
+    const responseValue = sensitive
       ? maskSecret(data.value)
       : data.value;
 

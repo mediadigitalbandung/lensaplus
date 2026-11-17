@@ -7,10 +7,10 @@
 
 import { NextRequest } from "next/server";
 import { unlink } from "fs/promises";
-import { join } from "path";
 import { z } from "zod";
 import { ApiError, errorResponse, requireRole, successResponse } from "@/lib/api-utils";
 import { getBgmLibrary, removeBgmTrack } from "@/lib/social/bgm-library";
+import { resolvePublicSubpath } from "@/lib/safe-path";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,15 +33,10 @@ export async function DELETE(req: NextRequest) {
 
     const tracks = await removeBgmTrack(url);
 
-    // Best-effort unlink of the file if it lives in our bucket.
-    try {
-      const pathname = url.startsWith("http") ? new URL(url).pathname : url;
-      const rel = decodeURIComponent(pathname.replace(/^\/+/, ""));
-      if (rel.startsWith("uploads/social-reels-bgm/")) {
-        await unlink(join(process.cwd(), "public", rel)).catch(() => {});
-      }
-    } catch {
-      /* ignore */
+    // Best-effort unlink of the file if it lives safely inside our BGM bucket.
+    const targetPath = resolvePublicSubpath(url, "uploads/social-reels-bgm");
+    if (targetPath) {
+      await unlink(targetPath).catch(() => {});
     }
 
     return successResponse({ tracks });

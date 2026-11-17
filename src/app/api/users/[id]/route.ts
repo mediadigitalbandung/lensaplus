@@ -10,6 +10,7 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { listEmailRules, deleteEmailRule } from "@/lib/cloudflare-email";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 const updateUserSchema = z.object({
   name: z.string().min(2).max(100).optional(),
@@ -17,7 +18,11 @@ const updateUserSchema = z.object({
   password: z.string().min(8).optional(),
   role: z.enum(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR", "SENIOR_JOURNALIST", "JOURNALIST", "CONTRIBUTOR"]).optional(),
   specialization: z.string().max(100).optional(),
-  avatar: z.string().url().nullable().optional(),
+  avatar: z
+    .string()
+    .refine(isSafeImageRef, "URL atau path avatar tidak valid")
+    .nullable()
+    .optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -45,19 +50,26 @@ export async function PUT(
     const body = await request.json();
     const data = updateUserSchema.parse(body);
 
+    const normalizedEmail = data.email ? data.email.trim().toLowerCase() : undefined;
+
     // If email is being changed, check for duplicates
-    if (data.email && data.email !== user.email) {
-      const existing = await prisma.user.findUnique({ where: { email: data.email } });
+    if (normalizedEmail && normalizedEmail !== user.email) {
+      const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
       if (existing) {
         throw new ApiError("Email sudah digunakan oleh pengguna lain", 400);
       }
     }
 
-    // Hash password if provided; also invalidate active sessions so the
-    // target user is forced to re-authenticate with the new password.
-    const updateData: Record<string, unknown> = { ...data };
+    // Hash password if provided; also invalidate active sessions when
+    // password changes, account is deactivated, or role changes.
+    const updateData: Record<string, unknown> = {
+      ...data,
+      ...(normalizedEmail !== undefined ? { email: normalizedEmail } : {}),
+    };
     if (data.password) {
       updateData.password = await bcrypt.hash(data.password, 12);
+      updateData.activeSessionId = null;
+    } else if (data.isActive === false || (data.role && data.role !== user.role)) {
       updateData.activeSessionId = null;
     }
 

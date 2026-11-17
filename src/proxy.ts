@@ -1,7 +1,7 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect /panel/* routes — require valid session
@@ -49,10 +49,14 @@ export async function middleware(request: NextRequest) {
     // Defense-in-depth role→path gating. The API routes remain the source of
     // truth (the JWT role can be up to ~10 min stale per the revalidate
     // interval), so this only stops low-privilege users from deep-linking into
-    // admin/editor page shells. Fail OPEN if role is somehow absent — never
-    // lock a valid user out of a page the API would have allowed.
+    // admin/editor page shells. Fail CLOSED if role is absent/malformed.
     const role = (tok.role as string) || "";
-    if (role) {
+    if (!role) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("reason", "session-expired");
+      return NextResponse.redirect(loginUrl);
+    }
+    {
       const isSuper = role === "SUPER_ADMIN";
       const isMgmt = isSuper || role === "CHIEF_EDITOR";
       const isEditor = isMgmt || role === "EDITOR";

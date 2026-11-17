@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireRole, successResponse, errorResponse } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto-secrets";
 
 export const dynamic = "force-dynamic";
 
@@ -8,14 +9,14 @@ export async function POST(req: NextRequest) {
   try {
     await requireRole(["SUPER_ADMIN"]);
     const body = await req.json().catch(() => ({}));
-    let token = body.accessToken;
+    let token = typeof body.accessToken === "string" ? body.accessToken.trim() : "";
 
     // If no token is provided, or if it is empty/placeholder, read the saved token from DB
-    if (!token || token === "(tidak berubah)" || token.includes("...")) {
+    if (!token || token === "(tidak berubah)" || token.includes("...") || token.startsWith("••••••••")) {
       const igSettings = await prisma.instagramSettings.findUnique({
         where: { id: "global" },
       });
-      token = igSettings?.accessToken;
+      token = igSettings?.accessToken ? decryptSecret(igSettings.accessToken) : "";
     }
 
     if (!token) {

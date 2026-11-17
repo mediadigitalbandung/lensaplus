@@ -18,7 +18,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { userAgent } from "./fetch";
+import { assertSafePublicUrl, safePublicFetch, userAgent } from "./fetch";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 20_000;
@@ -73,20 +73,6 @@ function sniffExt(bytes: Uint8Array): string | null {
   )
     return "webp";
   return null;
-}
-
-function isPrivateHost(host: string): boolean {
-  if (host === "localhost") return true;
-  // IPv4 RFC1918 + loopback + link-local
-  if (
-    /^(10\.|127\.|169\.254\.|192\.168\.)/.test(host) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(host)
-  ) {
-    return true;
-  }
-  // IPv6 loopback / link-local
-  if (host === "::1" || /^fe80:/i.test(host)) return true;
-  return false;
 }
 
 function buildFilename(ext: string): string {
@@ -149,18 +135,7 @@ export async function downloadImageToUploads(
   imageUrl: string,
   options: DownloadOptions,
 ): Promise<DownloadResult> {
-  let parsed: URL;
-  try {
-    parsed = new URL(imageUrl);
-  } catch {
-    throw new Error(`Invalid image URL: ${imageUrl}`);
-  }
-  if (!/^https?:$/.test(parsed.protocol)) {
-    throw new Error(`Refusing non-http image URL: ${imageUrl}`);
-  }
-  if (isPrivateHost(parsed.hostname)) {
-    throw new Error(`Refusing private-network image URL: ${imageUrl}`);
-  }
+  const parsed = await assertSafePublicUrl(imageUrl);
 
   // Try the URL as-is, then a few common SPA-host fallbacks if it 404s.
   // E.g. Bank BJB's og:image emits "2026/04/photo.jpg" relative to the
@@ -173,14 +148,14 @@ export async function downloadImageToUploads(
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     for (const candidateUrl of tryUrls) {
-      response = await fetch(candidateUrl, {
+      const { response: fetched } = await safePublicFetch(candidateUrl, {
         signal: controller.signal,
         headers: {
           "User-Agent": userAgent(),
           Accept: "image/jpeg,image/png,image/webp,image/gif,image/*;q=0.8",
         },
-        redirect: "follow",
       });
+      response = fetched;
       if (response.ok) break;
       lastStatus = response.status;
     }

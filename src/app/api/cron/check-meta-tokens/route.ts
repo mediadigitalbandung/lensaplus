@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { verifyCronSecret, errorResponse, logAudit } from "@/lib/api-utils";
+import { decryptSecret } from "@/lib/crypto-secrets";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -131,7 +132,8 @@ async function handler(req: NextRequest) {
     // Instagram uses its own access token as both input + app token for
     // debug_token (works for long-lived user tokens).
     if (igSettings?.accessToken) {
-      const checked = await debugToken(igSettings.accessToken, igSettings.accessToken);
+      const igToken = decryptSecret(igSettings.accessToken);
+      const checked = await debugToken(igToken, igToken);
       const result: TokenCheckResult = {
         platform: "instagram",
         expiresAt: checked.expiresAt,
@@ -157,7 +159,8 @@ async function handler(req: NextRequest) {
     }
 
     if (fbSettings?.accessToken) {
-      const checked = await debugToken(fbSettings.accessToken, fbSettings.accessToken);
+      const fbToken = decryptSecret(fbSettings.accessToken);
+      const checked = await debugToken(fbToken, fbToken);
       const result: TokenCheckResult = {
         platform: "facebook",
         expiresAt: checked.expiresAt,

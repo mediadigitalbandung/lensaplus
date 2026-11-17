@@ -34,6 +34,7 @@ export function isSingleDeviceEnabled(): boolean {
 
 declare module "next-auth" {
   interface Session {
+    sessionInvalid?: boolean;
     user: {
       id: string;
       email: string;
@@ -276,12 +277,13 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      // Propagate invalid flag — middleware will redirect to login.
-      if (token.sessionInvalid) {
-        (session as unknown as Record<string, unknown>).sessionInvalid = true;
+      // Propagate invalid flag — middleware & panel layout will redirect to login.
+      if (!token || token.sessionInvalid) {
+        session.sessionInvalid = true;
         return session;
       }
 
+      session.sessionInvalid = false;
       session.user.id = token.id;
       session.user.role = token.role;
       session.user.avatar = token.avatar;

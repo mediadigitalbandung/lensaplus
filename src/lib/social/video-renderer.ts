@@ -28,6 +28,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import sharp from "sharp";
 import ffmpegStatic from "ffmpeg-static";
+import { resolvePublicSubpath } from "@/lib/safe-path";
 
 const FPS = 30;
 const OUT_W = 1080;
@@ -272,15 +273,9 @@ function commonOutputArgs(durationSec: number): string[] {
 /** Best-effort cleanup of a rendered reel's mp4 + cover (used on reject). */
 export async function deleteReelFiles(videoUrl?: string | null, thumbnailUrl?: string | null): Promise<void> {
   for (const u of [videoUrl, thumbnailUrl]) {
-    if (!u) continue;
-    try {
-      const pathname = u.startsWith("http") ? new URL(u).pathname : u;
-      const rel = decodeURIComponent(pathname.replace(/^\/+/, ""));
-      if (rel.startsWith("uploads/social-reels/")) {
-        await fs.unlink(path.join(process.cwd(), "public", rel)).catch(() => {});
-      }
-    } catch {
-      /* ignore */
+    const safePath = resolvePublicSubpath(u, "uploads/social-reels");
+    if (safePath) {
+      await fs.unlink(safePath).catch(() => {});
     }
   }
 }

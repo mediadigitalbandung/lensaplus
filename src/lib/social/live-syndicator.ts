@@ -18,6 +18,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto-secrets";
 import { TelegramPublisher, escapeTelegramHtml, TELEGRAM_TEXT_MAX } from "./telegram";
 import { ThreadsPublisher } from "./threads";
 import { CAPTION_MAX_LENGTH } from "./types";
@@ -150,7 +151,8 @@ async function syndicateToTelegram(
   const cfg = await prisma.telegramSettings.findUnique({ where: { id: "global" } });
   if (!cfg?.enabled || !cfg.botToken || !cfg.chatId) return;
 
-  const tg = new TelegramPublisher({ botToken: cfg.botToken, chatId: cfg.chatId });
+  const botToken = decryptSecret(cfg.botToken);
+  const tg = new TelegramPublisher({ botToken, chatId: cfg.chatId });
   const url = `${siteUrl()}/live/${blog.slug}`;
 
   const rootCaption = `🔴 LIVE: ${blog.title}`;
@@ -193,8 +195,9 @@ async function syndicateToThreads(
   const cfg = await prisma.threadsSettings.findUnique({ where: { id: "global" } });
   if (!cfg?.enabled || !cfg.accessToken || !cfg.threadsUserId) return;
 
+  const accessToken = decryptSecret(cfg.accessToken);
   const threads = new ThreadsPublisher({
-    accessToken: cfg.accessToken,
+    accessToken,
     threadsUserId: cfg.threadsUserId,
   });
   const url = `${siteUrl()}/live/${blog.slug}`;

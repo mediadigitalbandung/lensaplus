@@ -1,11 +1,11 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, ApiError, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
 import { listEmailRules, createEmailForward, deleteEmailRule, toggleEmailRule, addDestinationAddress } from "@/lib/cloudflare-email";
 
 export const dynamic = "force-dynamic";
 
 /** GET: List all email routing rules */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth();
     if (session.user.role !== "SUPER_ADMIN") throw new ApiError("Forbidden", 403);
@@ -19,6 +19,27 @@ export async function GET() {
       from: r.matchers.find((m) => m.field === "to")?.value || "",
       to: r.actions.find((a) => a.type === "forward")?.value?.[0] || "",
     }));
+
+    if (request.nextUrl.searchParams.get("include") === "smtp") {
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            emails,
+            smtp: {
+              host: process.env.BREVO_SMTP_HOST || "smtp-relay.brevo.com",
+              port: process.env.BREVO_SMTP_PORT || "587",
+              user: process.env.BREVO_SMTP_USER || null,
+              password: process.env.BREVO_SMTP_PASS || null,
+            },
+          },
+        },
+        {
+          status: 200,
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
+    }
 
     return successResponse(emails);
   } catch (error) {

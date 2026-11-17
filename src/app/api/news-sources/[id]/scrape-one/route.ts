@@ -25,6 +25,7 @@ import {
   logAudit,
 } from "@/lib/api-utils";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
+import { assertSafePublicUrl } from "@/lib/scraper/fetch";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
 import { claimUrl, finalizeClaim, releaseClaim } from "@/lib/scraper/claim";
 import { SCRAPER_ROLES } from "@/lib/roles";
@@ -69,6 +70,11 @@ export async function POST(
         `URL harus dari domain yang sama dengan sumber (${listingUrl.host})`,
         400,
       );
+    }
+    try {
+      await assertSafePublicUrl(data.url);
+    } catch {
+      throw new ApiError("URL target tidak diizinkan (host privat atau tidak valid).", 400);
     }
 
     // Legacy per-source dedup (fast path for already-known URLs).

@@ -142,9 +142,9 @@ async function loadImage(src: string | null | undefined, w: number, h: number, f
       buf = Buffer.from(await res.arrayBuffer());
     } else {
       const { default: fs } = await import("fs/promises");
-      const { default: path } = await import("path");
-      const rel = src.replace(/^\/+/, "");
-      const local = rel.startsWith("public/") ? path.join(process.cwd(), rel) : path.join(process.cwd(), "public", rel);
+      const { resolvePublicSubpath } = await import("@/lib/safe-path");
+      const local = resolvePublicSubpath(src);
+      if (!local) return null;
       buf = await fs.readFile(local);
     }
     if (!buf) return null;

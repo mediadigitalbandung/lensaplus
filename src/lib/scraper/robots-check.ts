@@ -13,7 +13,7 @@
  * already self-identify with a contactable user agent.
  */
 
-import { userAgent } from "./fetch";
+import { safePublicFetch, userAgent } from "./fetch";
 
 interface RobotsRule {
   type: "allow" | "disallow";
@@ -31,20 +31,20 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 async function fetchRobots(origin: string): Promise<RobotsParsed | null> {
   const robotsUrl = `${origin}/robots.txt`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5_000);
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5_000);
-    const res = await fetch(robotsUrl, {
+    const { response: res } = await safePublicFetch(robotsUrl, {
       signal: controller.signal,
       headers: { "User-Agent": userAgent() },
-      redirect: "follow",
     });
-    clearTimeout(timeout);
     if (!res.ok) return null;
     const text = await res.text();
     return parseRobots(text);
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

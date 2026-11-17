@@ -1,16 +1,13 @@
 /**
- * GET  /api/social/settings  — return { global, instagram, facebook } singletons.
- * PUT  /api/social/settings  — body { scope: "global"|"instagram"|"facebook", data: {...} }
-/**
- * GET  /api/social/settings  — return { global, instagram, facebook } singletons.
- * PUT  /api/social/settings  — body { scope: "global"|"instagram"|"facebook", data: {...} }
+ * GET  /api/social/settings  — return { global, instagram, facebook, threads, telegram, threadsAppId }.
+ * PUT  /api/social/settings  — body { scope: "global"|"instagram"|"facebook"|"threads"|"telegram", data: {...} }
  * Auth: SUPER_ADMIN
  *
- * Access tokens are returned masked on GET.
+ * Access tokens / bot tokens are encrypted at rest via `encryptSecret` and
+ * returned masked on both GET and PUT.
  */
 
 import { NextRequest } from "next/server";
-import { execSync } from "child_process";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
@@ -20,7 +17,7 @@ import {
   requireRole,
   successResponse,
 } from "@/lib/api-utils";
-import { getAllSocialSettings } from "@/lib/social/orchestrator";
+import { decryptSecret, encryptSecret } from "@/lib/crypto-secrets";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +25,39 @@ function maskToken(t: string | null | undefined): string | null {
   if (!t) return null;
   if (t.length <= 8) return "***";
   return `${t.slice(0, 4)}...${t.slice(-4)}`;
+}
+
+function safeMaskStoredToken(stored: string | null | undefined): string | null {
+  if (!stored) return null;
+  try {
+    const plaintext = decryptSecret(stored);
+    return maskToken(plaintext);
+  } catch {
+    return "••••••••????";
+  }
+}
+
+function isPlaceholderToken(val: string): boolean {
+  if (!val) return true;
+  if (val === "(tidak berubah)" || val === "***") return true;
+  if (val.includes("...")) return true;
+  if (val.startsWith("••••••••")) return true;
+  return false;
+}
+
+function sanitizeRowForResponse<
+  T extends { accessToken?: string | null; botToken?: string | null },
+>(row: T): Record<string, unknown> {
+  const clone = { ...row } as Record<string, unknown>;
+  if ("accessToken" in clone) {
+    clone.accessToken = safeMaskStoredToken(row.accessToken);
+    clone.hasAccessToken = Boolean(row.accessToken);
+  }
+  if ("botToken" in clone) {
+    clone.botToken = safeMaskStoredToken(row.botToken);
+    clone.hasBotToken = Boolean(row.botToken);
+  }
+  return clone;
 }
 
 const GRAPH_BASE = "https://graph.facebook.com/v21.0";
@@ -50,22 +80,28 @@ async function getMetaTokenExpiry(token: string): Promise<Date | null> {
   }
 }
 
+async function getOrCreateSingletons() {
+  const [globalRow, igRow, fbRow, threadsRow] = await Promise.all([
+    prisma.socialMediaSettings.findUnique({ where: { id: "global" } }).then(
+      (r) => r ?? prisma.socialMediaSettings.create({ data: { id: "global" } }),
+    ),
+    prisma.instagramSettings.findUnique({ where: { id: "global" } }).then(
+      (r) => r ?? prisma.instagramSettings.create({ data: { id: "global" } }),
+    ),
+    prisma.facebookSettings.findUnique({ where: { id: "global" } }).then(
+      (r) => r ?? prisma.facebookSettings.create({ data: { id: "global" } }),
+    ),
+    prisma.threadsSettings.findUnique({ where: { id: "global" } }).then(
+      (r) => r ?? prisma.threadsSettings.create({ data: { id: "global" } }),
+    ),
+  ]);
+  return { global: globalRow, instagram: igRow, facebook: fbRow, threads: threadsRow };
+}
+
 export async function GET() {
   try {
     await requireRole(["SUPER_ADMIN"]);
-    let settings;
-    try {
-      settings = await getAllSocialSettings();
-    } catch (dbErr) {
-      console.warn("[settings API] DB query failed, attempting auto-migration (db push)...", dbErr);
-      try {
-        execSync("npx prisma db push --accept-data-loss", { stdio: "inherit" });
-        settings = await getAllSocialSettings();
-      } catch (migrationErr) {
-        console.error("[settings API] Auto-migration failed:", migrationErr);
-        throw dbErr;
-      }
-    }
+    const settings = await getOrCreateSingletons();
 
     // Telegram lives in its own table; fetch separately and tolerate the table
     // not existing yet (pre-migration) by falling back to defaults.
@@ -78,25 +114,26 @@ export async function GET() {
 
     return successResponse({
       global: settings.global,
+      threadsAppId: process.env.THREADS_APP_ID || process.env.NEXT_PUBLIC_THREADS_APP_ID || null,
       instagram: {
         ...settings.instagram,
-        accessToken: maskToken(settings.instagram.accessToken),
+        accessToken: safeMaskStoredToken(settings.instagram.accessToken),
         hasAccessToken: Boolean(settings.instagram.accessToken),
       },
       facebook: {
         ...settings.facebook,
-        accessToken: maskToken(settings.facebook.accessToken),
+        accessToken: safeMaskStoredToken(settings.facebook.accessToken),
         hasAccessToken: Boolean(settings.facebook.accessToken),
       },
       threads: {
         ...settings.threads,
-        accessToken: maskToken(settings.threads.accessToken),
+        accessToken: safeMaskStoredToken(settings.threads.accessToken),
         hasAccessToken: Boolean(settings.threads.accessToken),
       },
       telegram: {
         enabled: telegram?.enabled ?? false,
         chatId: telegram?.chatId ?? null,
-        botToken: maskToken(telegram?.botToken),
+        botToken: safeMaskStoredToken(telegram?.botToken),
         hasBotToken: Boolean(telegram?.botToken),
       },
     });
@@ -160,88 +197,99 @@ const putSchema = z.object({
   data: z.record(z.unknown()),
 });
 
+async function prepareAccessTokenFields(
+  rawToken: string | null | undefined,
+  rawExpiresAt: string | null | undefined,
+  checkMetaExpiry: boolean,
+): Promise<Record<string, unknown>> {
+  const fields: Record<string, unknown> = {};
+  if (rawToken === null) {
+    fields.accessToken = null;
+    fields.tokenExpiresAt = null;
+    return fields;
+  }
+  if (rawToken !== undefined) {
+    const trimmed = rawToken.trim();
+    if (!isPlaceholderToken(trimmed)) {
+      fields.accessToken = encryptSecret(trimmed);
+      if (rawExpiresAt !== undefined) {
+        fields.tokenExpiresAt = rawExpiresAt ? new Date(rawExpiresAt) : null;
+      } else if (checkMetaExpiry) {
+        fields.tokenExpiresAt = await getMetaTokenExpiry(trimmed);
+      }
+      return fields;
+    }
+  }
+  if (rawExpiresAt !== undefined) {
+    fields.tokenExpiresAt = rawExpiresAt ? new Date(rawExpiresAt) : null;
+  }
+  return fields;
+}
+
 export async function PUT(req: NextRequest) {
   try {
     const session = await requireRole(["SUPER_ADMIN"]);
     const body = await req.json();
     const parsed = putSchema.parse(body);
 
-    let updatedRow: unknown;
+    let updatedRow: Record<string, unknown>;
 
     if (parsed.scope === "global") {
       const data = globalSchema.parse(parsed.data);
-      updatedRow = await prisma.socialMediaSettings.upsert({
+      updatedRow = (await prisma.socialMediaSettings.upsert({
         where: { id: "global" },
         update: data,
         create: { id: "global", ...data },
-      });
+      })) as unknown as Record<string, unknown>;
     } else if (parsed.scope === "instagram") {
-      const data = instagramSchema.parse(parsed.data);
-      let tokenExpiresAt = data.tokenExpiresAt ? new Date(data.tokenExpiresAt) : data.tokenExpiresAt;
-      if (data.accessToken && data.accessToken !== "(tidak berubah)" && !data.accessToken.includes("...")) {
-        tokenExpiresAt = await getMetaTokenExpiry(data.accessToken);
-      }
-      const prepared = {
-        ...data,
-        tokenExpiresAt,
-      };
-      updatedRow = await prisma.instagramSettings.upsert({
+      const { accessToken, tokenExpiresAt, ...rest } = instagramSchema.parse(parsed.data);
+      const tokenFields = await prepareAccessTokenFields(accessToken, tokenExpiresAt, true);
+      const prepared = { ...rest, ...tokenFields };
+      const row = await prisma.instagramSettings.upsert({
         where: { id: "global" },
         update: prepared,
         create: { id: "global", ...prepared },
       });
+      updatedRow = sanitizeRowForResponse(row);
     } else if (parsed.scope === "facebook") {
-      const data = facebookSchema.parse(parsed.data);
-      let tokenExpiresAt = data.tokenExpiresAt ? new Date(data.tokenExpiresAt) : data.tokenExpiresAt;
-      if (data.accessToken && data.accessToken !== "(tidak berubah)" && !data.accessToken.includes("...")) {
-        tokenExpiresAt = await getMetaTokenExpiry(data.accessToken);
-      }
-      const prepared = {
-        ...data,
-        tokenExpiresAt,
-      };
-      updatedRow = await prisma.facebookSettings.upsert({
+      const { accessToken, tokenExpiresAt, ...rest } = facebookSchema.parse(parsed.data);
+      const tokenFields = await prepareAccessTokenFields(accessToken, tokenExpiresAt, true);
+      const prepared = { ...rest, ...tokenFields };
+      const row = await prisma.facebookSettings.upsert({
         where: { id: "global" },
         update: prepared,
         create: { id: "global", ...prepared },
       });
+      updatedRow = sanitizeRowForResponse(row);
     } else if (parsed.scope === "threads") {
-      const data = threadsSchema.parse(parsed.data);
-      let tokenExpiresAt = data.tokenExpiresAt ? new Date(data.tokenExpiresAt) : data.tokenExpiresAt;
-      if (data.accessToken && data.accessToken !== "(tidak berubah)" && !data.accessToken.includes("...")) {
-        tokenExpiresAt = await getMetaTokenExpiry(data.accessToken);
-      }
-      const prepared = {
-        ...data,
-        tokenExpiresAt,
-      };
-      updatedRow = await prisma.threadsSettings.upsert({
+      const { accessToken, tokenExpiresAt, ...rest } = threadsSchema.parse(parsed.data);
+      const tokenFields = await prepareAccessTokenFields(accessToken, tokenExpiresAt, false);
+      const prepared = { ...rest, ...tokenFields };
+      const row = await prisma.threadsSettings.upsert({
         where: { id: "global" },
         update: prepared,
         create: { id: "global", ...prepared },
       });
+      updatedRow = sanitizeRowForResponse(row);
     } else if (parsed.scope === "telegram") {
       const data = telegramSchema.parse(parsed.data);
       const prepared: Record<string, unknown> = {};
       if (data.chatId !== undefined) prepared.chatId = data.chatId;
       if (data.enabled !== undefined) prepared.enabled = data.enabled;
-      // Only overwrite the bot token when a genuine new value is supplied —
-      // a masked echo ("1234...cdef") or the "(tidak berubah)" sentinel keeps
-      // the stored token; an explicit null clears it.
       if (data.botToken === null) {
         prepared.botToken = null;
-      } else if (
-        data.botToken &&
-        !data.botToken.includes("...") &&
-        data.botToken !== "(tidak berubah)"
-      ) {
-        prepared.botToken = data.botToken;
+      } else if (data.botToken !== undefined) {
+        const trimmed = data.botToken.trim();
+        if (!isPlaceholderToken(trimmed)) {
+          prepared.botToken = encryptSecret(trimmed);
+        }
       }
-      updatedRow = await prisma.telegramSettings.upsert({
+      const row = await prisma.telegramSettings.upsert({
         where: { id: "global" },
         update: prepared,
         create: { id: "global", ...prepared },
       });
+      updatedRow = sanitizeRowForResponse(row);
     } else {
       throw new ApiError("Unknown scope", 400);
     }

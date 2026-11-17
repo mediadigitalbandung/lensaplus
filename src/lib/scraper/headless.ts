@@ -5,26 +5,46 @@
  *
  * Designed to be expensive but reliable: ~5–15 seconds per page,
  * ~500 MB RAM peak. The single browser instance is reused across
- * requests and idles cheaply between calls; pages are isolated in
- * fresh BrowserContexts for safety.
+ * requests and closed after 5 minutes of idle time; pages are isolated
+ * in fresh BrowserContexts for safety.
  *
  * Lazy-loaded so the rest of the codebase never imports `playwright`
  * unless headless mode is actually triggered.
  */
 
 import type { Browser, BrowserContext } from "playwright";
-import { userAgent as defaultUserAgent } from "./fetch";
+import { assertSafePublicUrl, userAgent as defaultUserAgent } from "./fetch";
 
 const NAV_TIMEOUT_MS = 30_000;
 const SETTLE_MS = 800;
+const IDLE_CLOSE_MS = 5 * 60 * 1000;
 
 let _browser: Browser | null = null;
 let _starting: Promise<Browser> | null = null;
+let _activePages = 0;
+let _idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearIdleTimer(): void {
+  if (_idleTimer) {
+    clearTimeout(_idleTimer);
+    _idleTimer = null;
+  }
+}
+
+function scheduleIdleClose(): void {
+  clearIdleTimer();
+  if (_activePages > 0 || !_browser) return;
+  _idleTimer = setTimeout(() => {
+    if (_activePages === 0) {
+      void shutdownHeadlessBrowser();
+    }
+  }, IDLE_CLOSE_MS);
+  if (typeof _idleTimer.unref === "function") {
+    _idleTimer.unref();
+  }
+}
 
 async function startBrowser(): Promise<Browser> {
-  // Defer the import so the module only resolves Playwright when we
-  // actually need a browser. Prevents Next.js from bundling chromium
-  // into routes that never use it.
   const { chromium } = await import("playwright");
   return chromium.launch({
     headless: true,
@@ -40,24 +60,30 @@ async function startBrowser(): Promise<Browser> {
 }
 
 async function getBrowser(): Promise<Browser> {
+  clearIdleTimer();
   if (_browser && _browser.isConnected()) return _browser;
   if (_starting) return _starting;
-  _starting = startBrowser().then((b) => {
-    _browser = b;
-    _starting = null;
-    // Auto-close idle browser after 5 minutes to free RAM.
-    b.on("disconnected", () => {
-      _browser = null;
-    });
-    return b;
-  });
+  _starting = startBrowser().then(
+    (b) => {
+      _browser = b;
+      _starting = null;
+      b.on("disconnected", () => {
+        _browser = null;
+        clearIdleTimer();
+      });
+      return b;
+    },
+    (err) => {
+      _starting = null;
+      throw err;
+    },
+  );
   return _starting;
 }
 
 /**
  * Render `url` in headless Chromium and return the fully-hydrated
- * outer HTML. Resource-blocking is enabled to skip ads, video,
- * fonts, and tracking pixels — we only need the DOM.
+ * outer HTML. SSRF-guarded before launching and on every network request.
  */
 export async function fetchHtmlHeadless(
   url: string,
@@ -67,7 +93,11 @@ export async function fetchHtmlHeadless(
     userAgent?: string;
   } = {},
 ): Promise<{ html: string; finalUrl: string }> {
+  // SSRF guard before starting Chromium or creating any context
+  await assertSafePublicUrl(url);
+
   const browser = await getBrowser();
+  _activePages++;
   const ctx: BrowserContext = await browser.newContext({
     userAgent: options.userAgent ?? defaultUserAgent(),
     locale: "id-ID",
@@ -76,18 +106,30 @@ export async function fetchHtmlHeadless(
     bypassCSP: true,
   });
 
-  // Block heavy / privacy-irrelevant requests
-  await ctx.route("**/*", (route) => {
-    const t = route.request().resourceType();
+  // Block heavy / tracking / private-network / non-http requests
+  await ctx.route("**/*", async (route) => {
+    const req = route.request();
+    const t = req.resourceType();
     if (t === "font" || t === "media" || t === "websocket") {
       return route.abort();
     }
-    const reqUrl = route.request().url();
+    const reqUrl = req.url();
+    if (/^(data|blob):/i.test(reqUrl)) {
+      return req.isNavigationRequest() ? route.abort() : route.continue();
+    }
+    if (!/^https?:\/\//i.test(reqUrl)) {
+      return route.abort();
+    }
     if (
       /google-analytics|googletagmanager|facebook\.net|doubleclick|hotjar|segment|matomo/i.test(
         reqUrl,
       )
     ) {
+      return route.abort();
+    }
+    try {
+      await assertSafePublicUrl(reqUrl);
+    } catch {
       return route.abort();
     }
     return route.continue();
@@ -106,7 +148,6 @@ export async function fetchHtmlHeadless(
           /* keep going even if the selector never appears */
         });
     }
-    // Final settle for late hydration
     await page.waitForTimeout(SETTLE_MS);
     const html = await page.content();
     const finalUrl = page.url();
@@ -114,15 +155,16 @@ export async function fetchHtmlHeadless(
   } finally {
     await page.close().catch(() => {});
     await ctx.close().catch(() => {});
+    _activePages = Math.max(0, _activePages - 1);
+    scheduleIdleClose();
   }
 }
 
 /**
- * Force-shutdown the shared browser. Call from process shutdown
- * hooks if needed; Next.js dev/prod managed lifetimes don't expose
- * a clean hook so we just rely on idle GC.
+ * Force-shutdown the shared browser.
  */
 export async function shutdownHeadlessBrowser(): Promise<void> {
+  clearIdleTimer();
   if (_browser) {
     try {
       await _browser.close();

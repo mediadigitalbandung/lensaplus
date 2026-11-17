@@ -15,6 +15,7 @@ import {
   logAudit,
 } from "@/lib/api-utils";
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
+import { assertSafePublicUrl } from "@/lib/scraper/fetch";
 import { SCRAPER_ROLES } from "@/lib/roles";
 
 /** A source is manageable by its owner, or by any SUPER_ADMIN. */
@@ -85,6 +86,11 @@ export async function PUT(
     const data = updateSchema.parse(await request.json());
 
     if (data.listingUrl && data.listingUrl !== existing.listingUrl) {
+      try {
+        await assertSafePublicUrl(data.listingUrl);
+      } catch {
+        throw new ApiError("URL baru tidak diizinkan (host privat atau tidak valid).", 400);
+      }
       const allowed = await isAllowedByRobots(data.listingUrl);
       if (!allowed) {
         throw new ApiError(

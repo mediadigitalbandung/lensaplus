@@ -15,12 +15,17 @@ import {
 import { slugify, calculateReadTime } from "@/lib/utils";
 import { canWriteArticles, canApproveArticles, canViewAllArticles } from "@/lib/auth";
 import { guardPublicRead } from "@/lib/rate-limit";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 const createArticleSchema = z.object({
   title: z.string().min(5, "Judul minimal 5 karakter").max(255),
   content: z.string().min(50, "Konten minimal 50 karakter"),
   excerpt: z.string().max(500).optional(),
-  featuredImage: z.string().optional().nullable(),
+  featuredImage: z
+    .string()
+    .refine(isSafeImageRef, "URL atau path gambar utama tidak valid")
+    .optional()
+    .nullable(),
   categoryId: z.string().min(1, "Kategori wajib dipilih"),
   tags: z.array(z.string()).optional(),
   seoTitle: z.string().max(70).optional(),
