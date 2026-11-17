@@ -36,7 +36,35 @@ export async function POST(
       throw new ApiError("Sumber tidak ditemukan", 404);
     }
 
-    const { items, selectorUsed, pagesVisited } = await fetchSourceListing(source);
+    let listing;
+    try {
+      listing = await fetchSourceListing(source);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      await prisma.newsSource
+        .update({
+          where: { id: source.id },
+          data: { lastCheckedAt: new Date(), lastError: msg.slice(0, 500) },
+        })
+        .catch(() => {});
+      throw new ApiError(`Gagal preview listing: ${msg}`, 502);
+    }
+
+    const { items, selectorUsed, pagesVisited } = listing;
+    await prisma.newsSource
+      .update({
+        where: { id: source.id },
+        data: {
+          lastCheckedAt: new Date(),
+          ...(items.length > 0
+            ? { lastError: null }
+            : {
+                lastError:
+                  "0 artikel terdeteksi saat preview. Coba aktifkan Render JS (headless) atau isi CSS Selector manual.",
+              }),
+        },
+      })
+      .catch(() => {});
 
     // Mark which items are already scraped — both the legacy per-source
     // list AND the global claim ledger (so a URL another writer already

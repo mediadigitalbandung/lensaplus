@@ -138,7 +138,9 @@ export async function POST(
     } catch (e) {
       // Release the claim so the URL can be retried by anyone.
       await releaseClaim(claim.claimId, claim.claimToken);
-      throw e;
+      if (e instanceof ApiError) throw e;
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new ApiError(`Gagal generate artikel: ${msg}`, 502);
     }
     await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);
 

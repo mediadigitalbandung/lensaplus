@@ -133,7 +133,7 @@ export default function Header() {
               Edisi Nasional
             </span>
             <span className="text-stone-300">|</span>
-            <ClientDate date={new Date()} format="weekday-long" live={false} />
+            <ClientDate format="weekday-long" live={false} />
           </div>
 
           {/* Center: Black Circle Logo & Brand Name */}

@@ -36,6 +36,7 @@ export default function PollingCarousel({ categorySlug }: Props) {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [votedPolls, setVotedPolls] = useState<Record<string, string>>({});
   const [voting, setVoting] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -93,6 +94,7 @@ export default function PollingCarousel({ categorySlug }: Props) {
 
   async function handleVote(pollId: string, optionId: string) {
     if (votedPolls[pollId] || voting) return;
+    setVoteError(null);
     try {
       setVoting(pollId);
       const res = await fetch(`/api/polls/${pollId}/vote`, {
@@ -110,9 +112,12 @@ export default function PollingCarousel({ categorySlug }: Props) {
           )
         );
         setVotedPolls((prev) => ({ ...prev, [pollId]: optionId }));
+      } else {
+        setVoteError(json?.error || "Gagal menyimpan pilihan polling.");
       }
-    } catch {}
-    finally {
+    } catch {
+      setVoteError("Koneksi gagal. Silakan coba lagi.");
+    } finally {
       setVoting(null);
     }
   }
@@ -136,10 +141,10 @@ export default function PollingCarousel({ categorySlug }: Props) {
   if (loading) {
     return (
       <div className="flex gap-3 sm:gap-4 overflow-hidden">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2].map((i) => (
           <div
             key={i}
-            className="shrink-0 w-[calc(50%-6px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] rounded-lg border border-border bg-surface-secondary p-3 sm:p-4 animate-pulse"
+            className="shrink-0 w-full sm:w-[calc(50%-8px)] md:w-full rounded-lg border border-border bg-surface-secondary p-4 animate-pulse"
           >
             <div className="h-3 w-3/4 rounded-lg bg-surface-tertiary mb-3" />
             <div className="space-y-2">
@@ -156,39 +161,47 @@ export default function PollingCarousel({ categorySlug }: Props) {
     );
   }
 
-  if (polls.length === 0) return null;
+  if (polls.length === 0) {
+    return (
+      <p className="py-4 text-center text-xs text-stone-500">
+        Belum ada polling aktif saat ini.
+      </p>
+    );
+  }
 
   return (
     <div className="relative group">
+      {voteError && (
+        <p role="alert" className="mb-2 text-xs font-medium text-red-700">
+          {voteError}
+        </p>
+      )}
       {(canScrollLeft || canScrollRight) && (
         <div className="flex items-center justify-end gap-3 mb-2">
           <button
+            type="button"
             onClick={() => scrollByPage("left")}
             disabled={!canScrollLeft}
             aria-label="Polling sebelumnya"
             className="inline-flex items-center gap-0.5 text-xs font-semibold text-txt-secondary hover:text-primary disabled:opacity-30 transition-colors"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={16} aria-hidden="true" />
           </button>
           <button
+            type="button"
             onClick={() => scrollByPage("right")}
             disabled={!canScrollRight}
             aria-label="Polling berikutnya"
             className="inline-flex items-center gap-0.5 text-xs font-semibold text-txt-secondary hover:text-primary disabled:opacity-30 transition-colors"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={16} aria-hidden="true" />
           </button>
         </div>
       )}
 
       {/*
-        Strict 1-row carousel with snap. Card widths:
-          - Mobile (<md):  2 cards visible — w = (100% - 1×gap) / 2 ≈ 50% − 6px
-          - Tablet (md):   3 cards visible — w = (100% - 2×gap) / 3 ≈ 33.33% − 11px
-          - Desktop (lg):  4 cards visible — w = (100% - 3×gap) / 4 ≈ 25% − 12px
-
-        snap-x snap-mandatory + snap-start ensures swipe lands on card edge.
-        scrollbar-hide untuk no native scrollbar (still scrollable touch + arrows).
+        Single readable card width inside sidebar columns (md:w-full), with
+        2-up layout on wider mobile/tablet viewports where space permits.
       */}
       <div
         ref={scrollRef}
@@ -206,7 +219,7 @@ export default function PollingCarousel({ categorySlug }: Props) {
           return (
             <div
               key={poll.id}
-              className="snap-start shrink-0 w-[calc(50%-6px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] flex flex-col rounded-lg border border-border bg-surface-secondary overflow-hidden hover:shadow-card-hover transition-shadow"
+              className="snap-start shrink-0 w-full sm:w-[calc(50%-8px)] md:w-full flex flex-col rounded-lg border border-border bg-surface-secondary overflow-hidden hover:shadow-card-hover transition-shadow"
             >
               {poll.image && (
                 <div className="relative w-full aspect-[16/9]">
@@ -215,7 +228,7 @@ export default function PollingCarousel({ categorySlug }: Props) {
                     alt={poll.question}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 420px"
                   />
                 </div>
               )}

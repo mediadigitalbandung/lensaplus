@@ -13,6 +13,7 @@ interface StockItem {
 }
 
 function fmtPrice(p: number, sym: string): string {
+  if (!Number.isFinite(p)) return "-";
   // BTC: 1 coin in IDR is in the billions → compact "M" (miliar) / "jt" (juta).
   if (sym === "BTC") {
     if (p >= 1_000_000_000) return "Rp " + (p / 1_000_000_000).toFixed(2) + " M";
@@ -31,22 +32,9 @@ function fmtPrice(p: number, sym: string): string {
   return p.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function fmtChange(c: number, sym: string): string {
-  // Big absolute changes (Rp puluhan ribu+ for converted commodities & USD/IDR)
-  // → integer with locale separators. Small (saham, %) → 2 decimals.
-  const sign = c >= 0 ? "+" : "";
-  const isLargeIdr = ["BTC", "EMAS", "MINYAK", "USD/IDR"].includes(sym);
-  if (isLargeIdr) {
-    if (Math.abs(c) >= 1_000_000) return sign + (c / 1_000_000).toFixed(2) + " jt";
-    return sign + Math.round(c).toLocaleString("id-ID");
-  }
-  return sign + c.toFixed(2);
-}
-
 /* ── Hooks ── */
 function useStocks() {
   const [stocks, setStocks] = useState<StockItem[]>([]);
-  const [lastUpdate, setLastUpdate] = useState("");
 
   const fetchStocks = useCallback(async () => {
     try {
@@ -54,39 +42,52 @@ function useStocks() {
       if (!res.ok) throw new Error("err");
       const json = await res.json();
       // /api/stocks returns { success, data: { stocks, updatedAt, usdIdrRate } }.
-      // Older shape was { data: [...] } directly, so tolerate both: prefer
-      // the nested .stocks, fall back to a bare array if the API ever
-      // reverts to the legacy shape.
+      // Older shape was { data: [...] } directly, so tolerate both.
       const data: StockItem[] = Array.isArray(json.data?.stocks)
         ? json.data.stocks
         : Array.isArray(json.data)
         ? json.data
         : [];
       if (data.length > 0) {
-        setStocks(data.map((s: StockItem) => ({
-          ...s,
-          direction: s.change > 0.001 ? "up" as const : s.change < -0.001 ? "down" as const : "flat" as const,
-        })));
-        setLastUpdate(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+        setStocks(
+          data
+            .filter((s) => s && typeof s.symbol === "string" && Number.isFinite(s.price))
+            .map((s: StockItem) => ({
+              ...s,
+              changePercent: Number.isFinite(s.changePercent) ? s.changePercent : 0,
+              direction: s.change > 0.001 ? "up" as const : s.change < -0.001 ? "down" as const : "flat" as const,
+            }))
+        );
       }
     } catch { /* keep existing */ }
   }, []);
 
   useEffect(() => { fetchStocks(); const i = setInterval(fetchStocks, 15000); return () => clearInterval(i); }, [fetchStocks]);
-  return { stocks, lastUpdate };
+  return stocks;
 }
 
 function useTrending() {
   const [items, setItems] = useState<TickerItem[]>([]);
   const fetchTrending = useCallback(() => {
-    fetch("/api/trending").then((r) => r.json()).then((json) => {
-      const data = json.data || json || [];
-      if (Array.isArray(data) && data.length > 0) {
-        setItems(data.map((t: { label?: string; href?: string; hot?: boolean; category?: string }) => ({
-          title: t.label || "", href: t.href || "/search", hot: t.hot || false, category: t.category || null,
-        })));
-      }
-    }).catch(() => {});
+    fetch("/api/trending")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!json) return;
+        const data = json.data || json || [];
+        if (Array.isArray(data) && data.length > 0) {
+          setItems(
+            data
+              .filter((t: { label?: string }) => typeof t?.label === "string" && t.label.trim().length > 0)
+              .map((t: { label?: string; href?: string; hot?: boolean; category?: string }) => ({
+                title: t.label || "",
+                href: t.href || "/search",
+                hot: Boolean(t.hot),
+                category: t.category || null,
+              }))
+          );
+        }
+      })
+      .catch(() => {});
   }, []);
   useEffect(() => {
     fetchTrending();
@@ -100,6 +101,7 @@ function useTrending() {
 function StockCard({ s }: { s: StockItem }) {
   const isUp = s.direction === "up";
   const isDown = s.direction === "down";
+  const pct = Number.isFinite(s.changePercent) ? s.changePercent : 0;
 
   return (
     <div className="shrink-0 flex items-center gap-2 rounded-md px-3 py-1 sm:py-1.5 border border-stone-200 bg-white transition-colors hover:border-stone-300 cursor-default text-[11px] sm:text-body-sm font-bold select-none">
@@ -111,17 +113,17 @@ function StockCard({ s }: { s: StockItem }) {
 
       {/* Change percentage — plain colored text + arrow, no highlight background */}
       <span className={`inline-flex items-center gap-0.5 font-mono text-[10px] ${
-        isUp ? "text-emerald-700" : isDown ? "text-rose-700" : "text-stone-500"
+        isUp ? "text-emerald-700" : isDown ? "text-rose-700" : "text-stone-600"
       }`}>
-        {isUp ? <ArrowUpRight size={10} strokeWidth={2.5} /> : isDown ? <ArrowDownRight size={10} strokeWidth={2.5} /> : <Minus size={10} strokeWidth={2.5} />}
-        <span>{s.changePercent >= 0 ? "+" : ""}{s.changePercent.toFixed(2)}%</span>
+        {isUp ? <ArrowUpRight size={10} strokeWidth={2.5} aria-hidden="true" /> : isDown ? <ArrowDownRight size={10} strokeWidth={2.5} aria-hidden="true" /> : <Minus size={10} strokeWidth={2.5} aria-hidden="true" />}
+        <span>{pct >= 0 ? "+" : ""}{pct.toFixed(2)}%</span>
       </span>
     </div>
   );
 }
 
 /* ── Stock Carousel — CSS animation + touch pause ── */
-function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate: string }) {
+function StockCarousel({ stocks }: { stocks: StockItem[] }) {
   const [paused, setPaused] = useState(false);
 
   // Empty-state skeleton:
@@ -129,10 +131,10 @@ function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate
     return (
       <div className="bg-stone-50/50 border-b border-stone-200/40 py-2.5 overflow-hidden flex items-center gap-4">
         <div className="pl-4 sm:pl-6 flex items-center gap-2 shrink-0 border-r border-stone-200/80 pr-4">
-          <span className="relative flex h-2 w-2">
+          <span className="relative flex h-2 w-2" aria-hidden="true">
             <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-stone-300"></span>
           </span>
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-stone-400">Pasar Live</span>
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-stone-500">Pasar Live</span>
         </div>
         <div className="relative flex-1 overflow-hidden">
           <div className="flex gap-2.5 pl-2">
@@ -181,7 +183,7 @@ function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate
             {stocks.map((s) => <StockCard key={`a-${s.symbol}`} s={s} />)}
           </div>
           {/* Set 2 (duplicate for seamless loop) */}
-          <div className="flex gap-2.5">
+          <div className="flex gap-2.5" aria-hidden="true">
             {stocks.map((s) => <StockCard key={`b-${s.symbol}`} s={s} />)}
           </div>
         </div>
@@ -200,7 +202,7 @@ function StockCarousel({ stocks, lastUpdate }: { stocks: StockItem[]; lastUpdate
 /* ── Main Component ── */
 export default function NewsTicker() {
   const trendingItems = useTrending();
-  const { stocks, lastUpdate } = useStocks();
+  const stocks = useStocks();
 
   // Trending: duplicate for CSS infinite scroll
   const looped = trendingItems.length > 0 ? [...trendingItems, ...trendingItems] : [];
@@ -212,14 +214,14 @@ export default function NewsTicker() {
       <div className="bg-stone-950 border-b border-stone-800/80 overflow-hidden">
         <div className="flex items-center py-2 sm:py-2.5 relative">
           <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 z-10 bg-stone-950 shadow-[6px_0_10px_-2px_rgba(0,0,0,0.4)]">
-            <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+            <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shrink-0" aria-hidden="true" />
             <span className="text-label-sm sm:text-label-md font-bold tracking-widest text-white uppercase whitespace-nowrap">
               Trending
             </span>
           </div>
           {looped.length === 0 ? (
             <div className="flex-1 overflow-hidden pl-2 pr-3 sm:pr-6">
-              <span className="text-body-sm sm:text-body-md font-medium text-white/40 whitespace-nowrap">Memuat trending…</span>
+              <span className="text-body-sm sm:text-body-md font-medium text-white/60 whitespace-nowrap">Memuat trending…</span>
             </div>
           ) : (
             // CSS infinite scroll
@@ -239,15 +241,15 @@ export default function NewsTicker() {
                       {item.category && (
                         <span className="text-[10px] sm:text-label-sm font-bold text-purple-300 uppercase tracking-wider">{item.category}</span>
                       )}
-                      <span className="h-1 w-1 rounded-full bg-white/20 shrink-0" />
+                      <span className="h-1 w-1 rounded-full bg-white/20 shrink-0" aria-hidden="true" />
                       {item.title}
                     </Link>
                   ))}
                 </div>
                 {/* Set 2 */}
-                <div className="flex items-center">
+                <div className="flex items-center" aria-hidden="true">
                   {trendingItems.map((item, i) => (
-                    <Link key={`b-${i}`} href={item.href}
+                    <Link key={`b-${i}`} href={item.href} tabIndex={-1}
                       className="mx-2.5 sm:mx-5 inline-flex items-center gap-1.5 sm:gap-2 text-body-sm sm:text-body-md font-semibold text-white/90 hover:text-white whitespace-nowrap transition-colors">
                       {item.hot && (
                         <span className="text-[10px] font-extrabold text-secondary tracking-widest uppercase">HOT</span>
@@ -274,7 +276,7 @@ export default function NewsTicker() {
       </div>
 
       {/* ═══ MARKET CAROUSEL ═══ */}
-      <StockCarousel stocks={stocks} lastUpdate={lastUpdate} />
+      <StockCarousel stocks={stocks} />
     </>
   );
 }

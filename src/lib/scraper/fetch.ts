@@ -234,7 +234,7 @@ export async function fetchHtml(
       throw new Error(`HTTP ${response.status} ${response.statusText}`);
     }
     const contentType = response.headers.get("content-type") || "";
-    if (!/html|xml/i.test(contentType)) {
+    if (contentType && !/html|xml|xhtml|text\/plain/i.test(contentType)) {
       throw new Error(`Unexpected content-type: ${contentType}`);
     }
     const html = await response.text();

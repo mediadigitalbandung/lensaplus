@@ -107,6 +107,27 @@ function fmtDate(iso: string | null): string {
   });
 }
 
+async function parseApiJson(
+  res: Response,
+): Promise<{ success?: boolean; data?: unknown; error?: string } | null> {
+  const text = await res.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as { success?: boolean; data?: unknown; error?: string };
+  } catch {
+    if (res.status === 504 || res.status === 524) {
+      return {
+        success: false,
+        error: `Request timeout (HTTP ${res.status}). Coba kurangi jumlah halaman atau scrape satu per satu dari Preview.`,
+      };
+    }
+    return {
+      success: false,
+      error: `Respons server tidak valid (HTTP ${res.status}).`,
+    };
+  }
+}
+
 export default function SumberBeritaPage() {
   const { data: session } = useSession();
   const role = session?.user?.role ?? "";
@@ -130,6 +151,11 @@ export default function SumberBeritaPage() {
   const [busyAction, setBusyAction] = useState<
     "preview" | "scrape" | "toggle" | "delete" | "ai_meta" | null
   >(null);
+  const [actionFeedback, setActionFeedback] = useState<{
+    type: "error" | "success";
+    sourceName: string;
+    message: string;
+  } | null>(null);
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
 
@@ -165,16 +191,26 @@ export default function SumberBeritaPage() {
   async function handlePreview(s: NewsSource) {
     setBusyId(s.id);
     setBusyAction("preview");
+    setActionFeedback(null);
     try {
       const res = await fetch(`/api/news-sources/${s.id}/preview`, { method: "POST" });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        showError(json.error || "Preview gagal");
+      const json = await parseApiJson(res);
+      if (!res.ok || !json?.success) {
+        const msg = json?.error || `Preview gagal (HTTP ${res.status})`;
+        showError(msg);
+        setActionFeedback({ type: "error", sourceName: s.name, message: msg });
+        fetchSources();
         return;
       }
-      setPreview({ sourceId: s.id, sourceName: s.name, data: json.data });
+      setPreview({
+        sourceId: s.id,
+        sourceName: s.name,
+        data: json.data as PreviewResponse,
+      });
     } catch {
-      showError("Gagal preview");
+      const msg = "Gagal menghubungi server saat preview";
+      showError(msg);
+      setActionFeedback({ type: "error", sourceName: s.name, message: msg });
     } finally {
       setBusyId(null);
       setBusyAction(null);
@@ -190,25 +226,45 @@ export default function SumberBeritaPage() {
     if (!ok) return;
     setBusyId(s.id);
     setBusyAction("scrape");
+    setActionFeedback(null);
     try {
       const res = await fetch(`/api/news-sources/${s.id}/scrape`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ limit }),
       });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        showError(json.error || "Scrape gagal");
+      const json = await parseApiJson(res);
+      if (!res.ok || !json?.success) {
+        const msg = json?.error || `Scrape gagal (HTTP ${res.status})`;
+        showError(msg);
+        setActionFeedback({ type: "error", sourceName: s.name, message: msg });
+        fetchSources();
         return;
       }
-      const d = json.data;
-      if (d.skipped === "no-new-articles") {
-        success("Tidak ada artikel baru — semua sudah pernah di-scrape");
-      } else if (d.ok === 0 && d.failed > 0) {
+      const d = json.data as {
+        skipped?: string | number;
+        ok?: number;
+        failed?: number;
+        error?: string;
+        results?: Array<{ ok?: boolean; skipped?: boolean; error?: string }>;
+      };
+      if (d.skipped === "no-articles-detected") {
+        const msg =
+          d.error ||
+          "0 artikel terdeteksi di halaman sumber. Aktifkan Render JS (headless) atau isi CSS Selector manual.";
+        showError(msg);
+        setActionFeedback({ type: "error", sourceName: s.name, message: msg });
+      } else if (d.skipped === "no-new-articles") {
+        const msg = "Tidak ada artikel baru — semua artikel yang terdeteksi sudah pernah di-scrape.";
+        success(msg);
+        setActionFeedback({ type: "success", sourceName: s.name, message: msg });
+      } else if ((d.ok ?? 0) === 0 && (d.failed ?? 0) > 0) {
         const firstErr =
-          d.results?.find((r: { ok?: boolean; skipped?: boolean; error?: string }) => !r.ok && !r.skipped && r.error)
-            ?.error || "Scrape gagal untuk semua artikel";
-        showError(`Gagal membuat draft: ${firstErr}`);
+          d.results?.find((r) => !r.ok && !r.skipped && r.error)?.error ||
+          "Scrape gagal untuk semua artikel";
+        const msg = `Gagal membuat draft: ${firstErr}`;
+        showError(msg);
+        setActionFeedback({ type: "error", sourceName: s.name, message: msg });
       } else {
         const skippedNote =
           typeof d.skipped === "number" && d.skipped > 0
@@ -218,11 +274,15 @@ export default function SumberBeritaPage() {
           typeof d.failed === "number" && d.failed > 0
             ? `, ${d.failed} gagal`
             : "";
-        success(`Selesai: ${d.ok} draft baru dibuat${skippedNote}${failedNote}`);
+        const msg = `Selesai: ${d.ok ?? 0} draft baru dibuat${skippedNote}${failedNote}.`;
+        success(msg);
+        setActionFeedback({ type: "success", sourceName: s.name, message: msg });
       }
       fetchSources();
     } catch {
-      showError("Gagal scrape");
+      const msg = "Gagal menghubungi server saat scrape";
+      showError(msg);
+      setActionFeedback({ type: "error", sourceName: s.name, message: msg });
     } finally {
       setBusyId(null);
       setBusyAction(null);
@@ -368,6 +428,29 @@ export default function SumberBeritaPage() {
           </div>
         </div>
       </div>
+
+      {actionFeedback && (
+        <div
+          className={`mb-5 flex items-start justify-between gap-3 rounded-lg border border-border border-l-4 bg-surface px-4 py-3 text-sm ${
+            actionFeedback.type === "error"
+              ? "border-l-red-600 text-red-700"
+              : "border-l-emerald-600 text-emerald-700"
+          }`}
+        >
+          <p className="min-w-0 flex-1">
+            <strong className="font-semibold">{actionFeedback.sourceName}:</strong>{" "}
+            {actionFeedback.message}
+          </p>
+          <button
+            type="button"
+            onClick={() => setActionFeedback(null)}
+            aria-label="Tutup pesan"
+            className="text-txt-muted hover:text-txt-primary"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-12">
@@ -1191,7 +1274,7 @@ function PreviewModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      const json = await res.json().catch(() => null);
+      const json = await parseApiJson(res);
       if (!res.ok || !json?.success) {
         const errMsg = json?.error || `HTTP ${res.status}`;
         setItemState((s) => ({
@@ -1201,7 +1284,11 @@ function PreviewModal({
         showError(`Gagal generate: ${errMsg}`);
         return "error";
       }
-      const d = json.data;
+      const d = json.data as {
+        skipped?: string;
+        articleId?: string;
+        title?: string;
+      };
       if (d.skipped) {
         // Either already a draft ("already-scraped") or another writer is
         // mid-scrape ("in-progress"). Either way it's locked — mark done so

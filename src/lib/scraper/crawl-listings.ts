@@ -230,6 +230,8 @@ export async function crawlListings(
   const allItems: ListingItem[] = [];
   const pagesVisited: string[] = [];
   let firstSelectorUsed = "";
+  let succeededRoots = 0;
+  let firstRootError: Error | null = null;
 
   // 1. Build the paginated listing URL set (e.g. ?page=1, ?page=2, …).
   //    If paginationMax = 1 this is just [rootUrl].
@@ -249,9 +251,13 @@ export async function crawlListings(
       const r = await fetchListing(pageUrl, options);
       pagesVisited.push(pageUrl);
       allItems.push(...r.items);
+      succeededRoots++;
       if (!firstSelectorUsed) firstSelectorUsed = r.selectorUsed;
-    } catch {
+    } catch (err) {
       pagesVisited.push(pageUrl);
+      if (!firstRootError) {
+        firstRootError = err instanceof Error ? err : new Error(String(err));
+      }
     }
   }
 
@@ -266,23 +272,34 @@ export async function crawlListings(
           queue.push(sub);
         }
       }
-    } catch {
-      /* root might fail headless render — fine, we already have paginated items */
+    } catch (err) {
+      if (!firstRootError) {
+        firstRootError = err instanceof Error ? err : new Error(String(err));
+      }
     }
   }
 
   // 4. BFS through sub-listings — extract candidates from each.
+  let succeededSubs = 0;
   while (followSubcategories && queue.length > 0 && pagesVisited.length < maxPages) {
     const url = queue.shift()!;
     try {
       const r = await fetchListing(url, options);
       pagesVisited.push(url);
       allItems.push(...r.items);
+      succeededSubs++;
+      if (!firstSelectorUsed) firstSelectorUsed = r.selectorUsed;
     } catch {
       // Sub-listing page may not have detectable cards (e.g. it's a
       // landing/marketing page rather than a listing). Skip silently.
       pagesVisited.push(url);
     }
+  }
+
+  // Surface the root failure if EVERY fetch failed and nothing was found,
+  // instead of silently returning 0 items with no diagnostics.
+  if (allItems.length === 0 && succeededRoots === 0 && succeededSubs === 0 && firstRootError) {
+    throw firstRootError;
   }
 
   // 5. Dedup by article URL.

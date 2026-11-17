@@ -75,7 +75,8 @@ fi
 
 # Secondary truncation guard — if pg_dump produced an empty/near-empty dump
 # the gzip stream is still valid, so we keep this line-count assertion.
-LINES=$(zcat "$LATEST" 2>/dev/null | head -2000 | wc -l)
+# Avoid piping through `head` under `set -euo pipefail`, which triggers SIGPIPE (141).
+LINES=$(zcat "$LATEST" 2>/dev/null | wc -l)
 if [ "$LINES" -lt 100 ]; then
   echo "[$(date -Is)] FAIL: Backup '$LATEST' decompresses to only $LINES lines — likely truncated." | tee -a "$LOG_FILE"
   alert "Backup TRUNCATED" "$LATEST has only $LINES lines"

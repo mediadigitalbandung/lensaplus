@@ -138,7 +138,7 @@ export default function Footer({ dewanPersNumber }: { dewanPersNumber?: string }
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-14 pt-6 border-t border-stone-850">
+        <div className="mt-14 pt-6 border-t border-stone-800">
           <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
             <p className="text-label-sm text-stone-400 uppercase tracking-wider">
               &copy; <ClientYear /> Lensaplus. Seluruh hak cipta dilindungi.

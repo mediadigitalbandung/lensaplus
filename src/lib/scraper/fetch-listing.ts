@@ -20,12 +20,6 @@ import { fetchHtmlHeadless } from "./headless";
 import { pickImageSrc } from "./html-utils";
 import type { ListingItem, ScraperOptions } from "./types";
 
-interface CandidateContainer {
-  selector: string;
-  children: cheerio.Cheerio<DomElement>;
-  score: number;
-}
-
 const COMMON_LISTING_SELECTORS = [
   // Most modern news themes
   "article",
@@ -33,6 +27,10 @@ const COMMON_LISTING_SELECTORS = [
   ".articles article",
   ".news-list .news-item",
   ".berita-list .berita-item",
+  ".news-item",
+  ".berita-item",
+  ".card__post",
+  ".media__item",
   ".post",
   ".post-item",
   ".card-news",
@@ -45,6 +43,9 @@ const COMMON_LISTING_SELECTORS = [
   ".elementor-post",
 ];
 
+const HEADING_SELECTOR =
+  "h1, h2, h3, h4, h5, h6, [class*='title'], [class*='judul'], [class*='headline']";
+
 /**
  * Score a set of candidate cards: more cards with link+image+heading-text
  * scores higher.
@@ -56,62 +57,165 @@ function scoreCards(
   let score = 0;
   cards.each((_, el) => {
     const $el = $(el);
-    const linkCount = $el.find("a[href]").length;
+    const linkCount = $el.is("a[href]") ? 1 : $el.find("a[href]").length;
     const imgCount = $el.find("img").length;
-    const headingText = $el.find("h1,h2,h3,h4").first().text().trim();
-    const anyText = $el.text().trim();
-    if (linkCount > 0 && headingText.length > 8) score += 3;
+    const headingText = $el.find(HEADING_SELECTOR).first().text().trim();
+    const anyText = $el.text().replace(/\s+/g, " ").trim();
+    if (linkCount > 0 && (headingText.length > 8 || anyText.length >= 25)) score += 3;
     if (imgCount > 0) score += 2;
     if (anyText.length > 40) score += 1;
   });
   return score;
 }
 
-function detectCards(
+function extractCardsFromSet(
   $: cheerio.CheerioAPI,
-): CandidateContainer | null {
+  cards: cheerio.Cheerio<DomElement>,
+  baseUrl: string,
+  options: ScraperOptions,
+): ListingItem[] {
+  const items: ListingItem[] = [];
+  const seen = new Set<string>();
+  cards.each((_, el) => {
+    const item = extractFromCard($, el, baseUrl, options);
+    if (item && !seen.has(item.url)) {
+      seen.add(item.url);
+      items.push(item);
+    }
+  });
+  return items;
+}
+
+/**
+ * Last-resort fallback for JS/SPA grids (e.g. React/Next.js cards) where
+ * cards are `<a href="..."><div><p>Headline...</p></div></a>` with no
+ * `<h1>–<h4>` headings or standard class names.
+ */
+function extractFromArticleAnchors(
+  $: cheerio.CheerioAPI,
+  baseUrl: string,
+  options: ScraperOptions,
+): ListingItem[] {
+  const items: ListingItem[] = [];
+  const seen = new Set<string>();
+
+  $("a[href]").each((_, el) => {
+    const $a = $(el);
+    if ($a.closest("header, nav, footer, aside").length > 0) return;
+    const href = $a.attr("href");
+    if (!href) return;
+    const url = absolutise(href, baseUrl);
+    if (!url || !/^https?:\/\//i.test(url)) return;
+    if (url === baseUrl || url === baseUrl + "#") return;
+    if (!looksLikeArticleUrl(url)) return;
+    if (seen.has(url)) return;
+
+    // Prefer an inner heading/paragraph title over concatenated card text
+    let title = "";
+    $a.find(HEADING_SELECTOR + ", p, strong").each((__, node) => {
+      if (title) return;
+      const t = $(node).text().replace(/\s+/g, " ").trim();
+      if (t.length >= 20 && t.length <= 220) title = t;
+    });
+    if (!title) {
+      title = $a.text().replace(/\s+/g, " ").trim();
+    }
+    if (!looksLikeHeadline(title)) return;
+
+    let thumbnail: string | undefined;
+    const imgEl = options.imageSelector
+      ? $a.find(options.imageSelector).first()
+      : $a.find("img").first();
+    const fallbackImg = imgEl.length > 0 ? imgEl : $a.parent().find("img").first();
+    if (fallbackImg.length > 0) {
+      const src = pickImageSrc(fallbackImg as cheerio.Cheerio<DomElement>);
+      if (src) {
+        const abs = absolutise(src, baseUrl);
+        if (abs && /^https?:\/\//i.test(abs)) thumbnail = abs;
+      }
+    }
+
+    seen.add(url);
+    items.push({
+      url,
+      title: title.slice(0, 250),
+      thumbnail,
+    });
+  });
+
+  return items;
+}
+
+function detectCardsAndExtract(
+  $: cheerio.CheerioAPI,
+  baseUrl: string,
+  options: ScraperOptions,
+): { items: ListingItem[]; selector: string } | null {
   for (const selector of COMMON_LISTING_SELECTORS) {
     const cards = $(selector) as cheerio.Cheerio<DomElement>;
     if (cards.length >= 3) {
       const score = scoreCards($, cards);
-      // 3+ cards with reasonable score is enough
       if (score >= 9) {
-        return { selector, children: cards, score };
+        const items = extractCardsFromSet($, cards, baseUrl, options);
+        if (items.length > 0) {
+          return { items, selector };
+        }
       }
     }
   }
 
-  // Fallback heuristic: find any element whose direct children form a
-  // repeated link+heading group of length >= 3.
-  let best: CandidateContainer | null = null;
-  $("body *").each((_, el) => {
+  // Fallback heuristic: find any non-chrome element whose direct children
+  // form a repeated link+headline group of length >= 3.
+  let best: { items: ListingItem[]; selector: string; rank: number } | null = null;
+  for (const el of $("body *").toArray()) {
     const $el = $(el);
+    if ($el.is("header, nav, footer, aside")) continue;
+    if ($el.closest("header, nav, footer, aside").length > 0) continue;
+
     const directChildren = $el.children() as cheerio.Cheerio<DomElement>;
-    if (directChildren.length < 3) return;
-    // Check that most direct children contain at least one anchor + heading
+    if (directChildren.length < 3) continue;
     let goodChildren = 0;
     directChildren.each((__, c) => {
       const $c = $(c);
-      if ($c.find("a[href]").length > 0 && $c.find("h1,h2,h3,h4").length > 0) {
+      const hasLink = $c.is("a[href]") || $c.find("a[href]").length > 0;
+      const hasHeadingOrText =
+        $c.find(HEADING_SELECTOR).length > 0 ||
+        $c.text().replace(/\s+/g, " ").trim().length >= 25;
+      if (hasLink && hasHeadingOrText) {
         goodChildren++;
       }
     });
-    if (goodChildren < 3) return;
+    if (goodChildren < 3) continue;
+
+    const items = extractCardsFromSet($, directChildren, baseUrl, options);
+    if (items.length === 0) continue;
     const score = scoreCards($, directChildren);
-    if (!best || score > best.score) {
+    const rank = items.length * 10 + score;
+    if (!best || rank > best.rank) {
       const tagName = (el as DomElement).tagName || "div";
       const id = $el.attr("id");
       const cls = ($el.attr("class") || "")
         .split(/\s+/)
-        .filter((c) => c.length > 0 && c.length < 30)
+        .filter((c) => c.length > 0 && c.length < 30 && !c.includes(":"))
         .slice(0, 2)
         .map((c) => `.${c}`)
         .join("");
       const sel = id ? `#${id} > *` : `${tagName}${cls} > *`;
-      best = { selector: sel, children: directChildren, score };
+      best = { items, selector: sel, rank };
     }
-  });
-  return best;
+  }
+
+  if (best) {
+    return { items: best.items, selector: best.selector };
+  }
+
+  // Final fallback for modern SPA / anchor-wrapped card layouts
+  const anchorItems = extractFromArticleAnchors($, baseUrl, options);
+  if (anchorItems.length >= 2) {
+    return { items: anchorItems, selector: "auto-anchors" };
+  }
+
+  return null;
 }
 
 function absolutise(href: string, base: string): string | null {
@@ -215,32 +319,53 @@ function extractFromCard(
 ): ListingItem | null {
   const $card = $(card);
 
-  // Title: explicit selector wins, else first heading, else first long anchor
+  // Title: explicit selector wins, else best heading (skipping tiny eyebrow
+  // labels), else inner paragraph/anchor text.
   let title = "";
   if (options.titleSelector) {
-    title = $card.find(options.titleSelector).first().text().trim();
+    title = $card.find(options.titleSelector).first().text().replace(/\s+/g, " ").trim();
   }
-  if (!title) title = $card.find("h1,h2,h3,h4").first().text().trim();
   if (!title) {
-    const anchorText = $card.find("a[href]").first().text().trim();
-    if (anchorText.length > 8) title = anchorText;
+    let fallbackShort = "";
+    $card.find(HEADING_SELECTOR).each((_, h) => {
+      if (title) return;
+      const t = $(h).text().replace(/\s+/g, " ").trim();
+      if (!fallbackShort && t) fallbackShort = t;
+      if (t.length >= 15) title = t;
+    });
+    if (!title && fallbackShort) title = fallbackShort;
+  }
+  if (!title && $card.is("a")) {
+    $card.find("p, strong").each((_, node) => {
+      if (title) return;
+      const t = $(node).text().replace(/\s+/g, " ").trim();
+      if (t.length >= 18 && t.length <= 220) title = t;
+    });
+    if (!title) title = $card.text().replace(/\s+/g, " ").trim();
+  }
+  if (!title) {
+    $card.find("a[href]").each((_, a) => {
+      if (title) return;
+      const t = $(a).text().replace(/\s+/g, " ").trim();
+      if (t.length > 8) title = t;
+    });
   }
   if (!title || title.length < 8) return null;
   // Reject service/menu tiles that share the news-card DOM shape.
-  // Skipped only when no manual selector was supplied — the operator can
+  // Skipped only when a manual selector was supplied — the operator can
   // still force-include short headlines via articleSelector + titleSelector.
   if (!options.articleSelector && !looksLikeHeadline(title)) return null;
 
   // Link: explicit href on the card itself (Persib-style <a class="card">),
   // else anchor inside a heading, else first anchor child.
   let href = $card.is("a") ? $card.attr("href") : undefined;
-  if (!href) href = $card.find("h1 a, h2 a, h3 a, h4 a").first().attr("href");
+  if (!href) href = $card.find("h1 a, h2 a, h3 a, h4 a, h5 a, h6 a").first().attr("href");
   if (!href) href = $card.find("a[href]").first().attr("href");
   if (!href) return null;
   const url = absolutise(href, baseUrl);
-  if (!url) return null;
-  // Skip in-page anchors and javascript: pseudo links
-  if (url.startsWith("javascript:") || url === baseUrl + "#") return null;
+  if (!url || !/^https?:\/\//i.test(url)) return null;
+  // Skip in-page anchors
+  if (url === baseUrl + "#") return null;
   // Skip URLs that point at service/contact/legal pages.
   if (!options.articleSelector && !looksLikeArticleUrl(url)) return null;
 
@@ -328,37 +453,25 @@ export async function fetchListing(
     }
   }
 
-  let cards: cheerio.Cheerio<DomElement>;
-  let selectorUsed: string;
   if (options.articleSelector) {
-    cards = $(options.articleSelector) as cheerio.Cheerio<DomElement>;
-    selectorUsed = options.articleSelector;
+    const cards = $(options.articleSelector) as cheerio.Cheerio<DomElement>;
+    const selectorUsed = options.articleSelector;
     if (cards.length === 0) {
       throw new Error(
         `Manual selector "${options.articleSelector}" matched zero elements`,
       );
     }
-  } else {
-    const detected = detectCards($);
-    if (!detected) {
-      throw new Error(
-        "Could not auto-detect article cards on this listing. " +
-          "Provide a manual articleSelector.",
-      );
-    }
-    cards = detected.children;
-    selectorUsed = detected.selector;
+    const items = extractCardsFromSet($, cards, finalUrl, options);
+    return { items, selectorUsed };
   }
 
-  const items: ListingItem[] = [];
-  const seen = new Set<string>();
-  cards.each((_, el) => {
-    const item = extractFromCard($, el, finalUrl, options);
-    if (item && !seen.has(item.url)) {
-      seen.add(item.url);
-      items.push(item);
-    }
-  });
+  const detected = detectCardsAndExtract($, finalUrl, options);
+  if (!detected) {
+    throw new Error(
+      "Could not auto-detect article cards on this listing. " +
+        "Provide a manual articleSelector or enable headless JS rendering.",
+    );
+  }
 
-  return { items, selectorUsed };
+  return { items: detected.items, selectorUsed: detected.selector };
 }

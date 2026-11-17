@@ -9,11 +9,49 @@ import Link from "next/link";
 import Image from "next/image";
 import PollingCarousel from "@/components/slider/PollingCarousel";
 import BannerAd, { SidebarAd, InlineAd, NativeAd } from "@/components/ads/BannerAd";
-import NewsTicker from "@/components/layout/NewsTicker";
 import NewsletterBox from "@/components/common/NewsletterBox";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCached } from "@/lib/cache";
+
+interface HomeArticle {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  featuredImage: string | null;
+  publishedAt: Date | string | null;
+  viewCount: number;
+  sourceArticleId?: string | null;
+  verificationLabel: string | null;
+  status?: string;
+  author: { id: string; name: string; avatar: string | null } | null;
+  category: { id: string; name: string; slug: string } | null;
+}
+
+interface HomeCategory {
+  id: string;
+  name: string;
+  slug: string;
+  _count: { articles: number };
+}
+
+interface HomeSorotan {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
+  angle: string;
+  createdAt: Date | string;
+  article: {
+    id: string;
+    title: string;
+    slug: string;
+    featuredImage: string | null;
+    publishedAt: Date | string | null;
+    category: { id: string; name: string; slug: string } | null;
+  } | null;
+}
 
 export const metadata: Metadata = {
   title: {
@@ -45,15 +83,25 @@ function getAIImage(categorySlug?: string, index: number = 0): string {
   return AI_DEMO_IMAGES[index % AI_DEMO_IMAGES.length];
 }
 
+function resolveArticleImage(featuredImage: string | null | undefined, categorySlug?: string, index: number = 0): string {
+  const trimmed = featuredImage?.trim();
+  return trimmed ? trimmed : getAIImage(categorySlug, index);
+}
+
 function timeAgo(date: Date | string | null): string {
   if (!date) return "";
   const d = new Date(date);
-  const now = new Date();
-  const mins = Math.floor((now.getTime() - d.getTime()) / 60000);
+  if (Number.isNaN(d.getTime())) return "";
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (mins < 1) return "Baru saja";
   if (mins < 60) return `${mins}m lalu`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}j lalu`;
-  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    timeZone: "Asia/Jakarta",
+  });
 }
 
 function getAngleBadge(angle: string) {
@@ -86,10 +134,10 @@ export default async function HomePage() {
     category: { select: { id: true, name: true, slug: true } },
   } as const;
 
-  let articles: any[] = [];
-  let categories: any[] = [];
-  let trendingArticles: any[] = [];
-  let sorotanList: any[] = [];
+  let articles: HomeArticle[] = [];
+  let categories: HomeCategory[] = [];
+  let trendingArticles: HomeArticle[] = [];
+  let sorotanList: HomeSorotan[] = [];
 
   try {
     [articles, categories, trendingArticles, sorotanList] = await Promise.all([
@@ -145,6 +193,7 @@ export default async function HomePage() {
       }),
       getCached("home:sorotan:6", 60_000, () =>
         prisma.sorotan.findMany({
+          where: { article: { status: "PUBLISHED" } },
           take: 6,
           orderBy: { createdAt: "desc" },
           include: {
@@ -170,7 +219,7 @@ export default async function HomePage() {
   }
 
   // Fallback demo articles with AI generated images if DB is empty
-  const demoArticles = [
+  const demoArticles: HomeArticle[] = [
     {
       id: "demo-1",
       title: "Transformasi Ekonomi Digital & Pembangunan Infrastruktur Bandung 2026",
@@ -272,16 +321,30 @@ export default async function HomePage() {
   const heroSpotlight = dedupedArticles[0];
   const heroMiddle = dedupedArticles.slice(1, 4);
   const heroRight = dedupedArticles.slice(4, 7);
-  const editorsPickArticles = dedupedArticles.slice(0, 4);
 
-  // Berita Terkini — articles after Hero
-  const terkiniArticles = dedupedArticles.slice(1);
+  // Pilihan Editor — prioritaskan artikel populer yang tidak duplikat dengan 4 artikel Hero teratas
+  const heroLeadSlugs = new Set([heroSpotlight, ...heroMiddle].map((a) => a.slug));
+  const distinctTrending = activeTrending.filter((a) => !heroLeadSlugs.has(a.slug));
+  const editorsPickArticles = (
+    distinctTrending.length >= 4
+      ? distinctTrending.slice(0, 4)
+      : dedupedArticles.slice(4, 8).length >= 4
+      ? dedupedArticles.slice(4, 8)
+      : dedupedArticles.slice(0, 4)
+  );
+
+  // Berita Terkini — lanjut setelah 7 artikel Hero (maks 11 artikel agar seimbang dengan sidebar)
+  const terkiniArticles =
+    dedupedArticles.length > 7
+      ? dedupedArticles.slice(7, 18)
+      : dedupedArticles.slice(1, 12);
 
   // Category sections
-  const articlesByCategory: Record<string, { slug: string; articles: typeof articles }> = {};
+  const articlesByCategory: Record<string, { slug: string; articles: HomeArticle[] }> = {};
   for (const a of dedupedArticles) {
-    const name = a.category.name;
-    if (!articlesByCategory[name]) articlesByCategory[name] = { slug: a.category.slug, articles: [] };
+    const name = a.category?.name || "Berita";
+    const slug = a.category?.slug || "umum";
+    if (!articlesByCategory[name]) articlesByCategory[name] = { slug, articles: [] };
     if (articlesByCategory[name].articles.length < 5) articlesByCategory[name].articles.push(a);
   }
   const catEntries = Object.entries(articlesByCategory);
@@ -384,7 +447,7 @@ export default async function HomePage() {
                 <article className="group flex-1 flex flex-col">
                   <Link href={`/berita/${heroSpotlight.slug}`} className="block overflow-hidden rounded-2xl relative aspect-[16/10] bg-stone-200/70 shadow-sm group-hover:shadow-md transition-all duration-300">
                     <Image
-                      src={heroSpotlight.featuredImage || getAIImage(heroSpotlight.category?.slug, 0)}
+                      src={resolveArticleImage(heroSpotlight.featuredImage, heroSpotlight.category?.slug, 0)}
                       alt={heroSpotlight.title}
                       fill
                       priority
@@ -396,10 +459,10 @@ export default async function HomePage() {
                     <div>
                       <div className="flex items-center gap-2 mb-1.5">
                         <Link
-                          href={`/kategori/${heroSpotlight.category.slug}`}
+                          href={`/kategori/${heroSpotlight.category?.slug || "umum"}`}
                           className="text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors"
                         >
-                          {heroSpotlight.category.name}
+                          {heroSpotlight.category?.name || "Berita"}
                         </Link>
                         {heroSpotlight.verificationLabel === "VERIFIED" && (
                           <>
@@ -432,26 +495,35 @@ export default async function HomePage() {
             )}
 
             {/* Column 2: Top Stories / Pilihan Redaksi (3/12) */}
-            <div className="lg:col-span-3 flex flex-col gap-6 border-t lg:border-t-0 lg:border-x border-stone-200/60 pt-6 lg:pt-0 lg:px-6">
+            <div className="lg:col-span-3 flex flex-col gap-5 border-t lg:border-t-0 lg:border-x border-stone-200/60 pt-6 lg:pt-0 lg:px-6">
               <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
                 <span className="text-xs font-bold uppercase tracking-widest text-primary">
                   Pilihan Redaksi
                 </span>
               </div>
-              <div className="flex flex-col gap-6 justify-between flex-1">
+              <div className="flex flex-col gap-5">
                 {heroMiddle.map((a, i) => (
-                  <article key={a.slug} className={`group flex flex-col justify-between flex-1 ${i > 0 ? "pt-5 border-t border-stone-100" : ""}`}>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
-                        {a.category.name}
-                      </span>
-                      <Link href={`/berita/${a.slug}`}>
-                        <h3 className="mt-1.5 text-title-md font-serif leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-3">
-                          {a.title}
-                        </h3>
-                      </Link>
-                    </div>
-                    <p className="mt-3 text-[10px] text-stone-500 uppercase tracking-wider">
+                  <article key={a.slug} className={`group flex flex-col ${i > 0 ? "pt-4 border-t border-stone-100" : ""}`}>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
+                      {a.category?.name || "Berita"}
+                    </span>
+                    <Link href={`/berita/${a.slug}`}>
+                      <h3 className="mt-1 text-title-md font-serif leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-2">
+                        {a.title}
+                      </h3>
+                    </Link>
+                    <Link href={`/berita/${a.slug}`} className="mt-2.5 block">
+                      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
+                        <Image
+                          src={resolveArticleImage(a.featuredImage, a.category?.slug, i + 1)}
+                          alt={a.title}
+                          fill
+                          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                          sizes="(max-width: 1024px) 100vw, 25vw"
+                        />
+                      </div>
+                    </Link>
+                    <p className="mt-2.5 text-[10px] text-stone-500 uppercase tracking-wider">
                       {timeAgo(a.publishedAt)}
                     </p>
                   </article>
@@ -460,18 +532,18 @@ export default async function HomePage() {
             </div>
 
             {/* Column 3: Fresh News / Terhangat (3/12) */}
-            <div className="lg:col-span-3 flex flex-col gap-6 border-t lg:border-t-0 border-stone-200/60 pt-6 lg:pt-0">
+            <div className="lg:col-span-3 flex flex-col gap-5 border-t lg:border-t-0 border-stone-200/60 pt-6 lg:pt-0">
               <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
                 <span className="text-xs font-bold uppercase tracking-widest text-secondary">
                   Terhangat
                 </span>
               </div>
-              <div className="flex flex-col gap-6 justify-between flex-1">
+              <div className="flex flex-col gap-5">
                 {heroRight.map((a, i) => (
-                  <article key={a.slug} className={`group flex flex-col justify-between flex-1 ${i > 0 ? "pt-5 border-t border-stone-100" : ""}`}>
+                  <article key={a.slug} className={`group flex flex-col ${i > 0 ? "pt-4 border-t border-stone-100" : ""}`}>
                     <div>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-tertiary">
-                        {a.category.name}
+                        {a.category?.name || "Berita"}
                       </span>
                       <Link href={`/berita/${a.slug}`}>
                         <h3 className="mt-1.5 text-title-md font-serif leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-3">
@@ -491,37 +563,52 @@ export default async function HomePage() {
       </section>
 
       {/* ── TRENDING STRIP (Big Numbers) ── */}
-      <section className="bg-white border-y border-stone-200/60 py-6 sm:py-8 overflow-x-auto scrollbar-hide">
+      <section className="bg-white border-y border-stone-200/60 py-6 sm:py-8">
         <div className="container-main">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="flex h-2 w-2 rounded-full bg-secondary animate-pulse" />
-            <span className="text-xs font-bold uppercase tracking-widest text-stone-500">Trending Topik Hari Ini</span>
+          <div className="flex items-center gap-2 mb-5">
+            <span className="flex h-2 w-2 rounded-full bg-secondary animate-pulse" aria-hidden="true" />
+            <span className="text-xs font-bold uppercase tracking-widest text-stone-600">Trending Topik Hari Ini</span>
           </div>
-          <div className="flex gap-8 md:gap-12 min-w-max">
+          <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide lg:grid lg:grid-cols-5 lg:gap-6 lg:overflow-visible lg:pb-0">
             {activeTrending.slice(0, 5).map((a, i) => (
-              <div key={a.slug} className="flex gap-4 w-72 shrink-0 group">
-                <span className="shrink-0 font-serif text-3xl sm:text-4xl font-extrabold text-primary/20 group-hover:text-secondary transition-colors select-none mt-0.5">
-                  0{i + 1}
-                </span>
-                <div className="flex flex-col justify-center min-w-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
-                    {a.category.name}
+              <article key={a.slug} className="flex flex-col justify-between w-64 sm:w-72 shrink-0 lg:w-auto lg:shrink group">
+                <div className="flex gap-3 items-start min-w-0">
+                  <span className="shrink-0 font-serif text-3xl sm:text-4xl font-extrabold text-primary/20 group-hover:text-secondary transition-colors select-none leading-none" aria-hidden="true">
+                    0{i + 1}
                   </span>
-                  <Link href={`/berita/${a.slug}`}>
-                    <h3 className="mt-1 text-title-sm font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
-                      {a.title}
-                    </h3>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-secondary truncate">
+                      {a.category?.name || "Berita"}
+                    </span>
+                    <Link href={`/berita/${a.slug}`}>
+                      <h3 className="mt-1 text-title-sm font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
+                        {a.title}
+                      </h3>
+                    </Link>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <Link href={`/berita/${a.slug}`} className="block">
+                    <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
+                      <Image
+                        src={resolveArticleImage(a.featuredImage, a.category?.slug, i)}
+                        alt={a.title}
+                        fill
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                        sizes="(max-width: 640px) 256px, (max-width: 1024px) 288px, 20vw"
+                      />
+                    </div>
                   </Link>
-                  <p className="mt-1.5 text-[10px] text-stone-400 uppercase tracking-wider flex items-center gap-2">
+                  <p className="mt-2 text-[10px] text-stone-600 uppercase tracking-wider flex items-center gap-2">
                     <span>{timeAgo(a.publishedAt)}</span>
                     {a.viewCount > 0 && (
-                      <span className="text-stone-500">
+                      <span>
                         · {a.viewCount.toLocaleString("id-ID")} dilihat
                       </span>
                     )}
                   </p>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>
@@ -543,7 +630,7 @@ export default async function HomePage() {
               href="/sorotan"
               className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white/85 hover:text-secondary transition-colors shrink-0"
             >
-              Jelajahi Semua Sorotan <ChevronRight size={14} />
+              Jelajahi Semua Sorotan <ChevronRight size={14} aria-hidden="true" />
             </Link>
           </div>
 
@@ -575,15 +662,15 @@ export default async function HomePage() {
                       </p>
                     </div>
 
-                    <div className="mt-5 border-t border-white/10 pt-3 flex items-center justify-between">
-                      <span className="text-[11px] text-stone-400 truncate max-w-[200px]">
-                        Berita Terkait: {item.article.title}
+                    <div className="mt-5 border-t border-white/10 pt-3 flex items-center justify-between gap-3">
+                      <span className="text-[11px] text-stone-300 truncate max-w-[200px]">
+                        {item.article?.title ? `Berita Terkait: ${item.article.title}` : "Bedah Isu Lensaplus"}
                       </span>
                       <Link
                         href={`/sorotan/${item.slug}`}
-                        className="text-xs font-bold text-white group-hover:text-secondary group-hover:translate-x-1 transition-all inline-flex items-center gap-1"
+                        className="text-xs font-bold text-white group-hover:text-secondary group-hover:translate-x-1 transition-all inline-flex items-center gap-1 shrink-0"
                       >
-                        Baca <ChevronRight size={14} />
+                        Baca <ChevronRight size={14} aria-hidden="true" />
                       </Link>
                     </div>
                   </article>
@@ -653,17 +740,17 @@ export default async function HomePage() {
                   <Link href={`/berita/${terkiniArticles[0].slug}`} className="block">
                     <div className="relative aspect-[2/1] overflow-hidden rounded-2xl bg-stone-200/70 shadow-sm">
                       <Image
-                        src={terkiniArticles[0].featuredImage || getAIImage(terkiniArticles[0].category?.slug, 1)}
+                        src={resolveArticleImage(terkiniArticles[0].featuredImage, terkiniArticles[0].category?.slug, 1)}
                         alt={terkiniArticles[0].title}
                         fill
-                        priority
+                        sizes="(max-width: 768px) 100vw, 58vw"
                         className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       />
                     </div>
                   </Link>
                   <div className="mt-4">
                     <span className="inline-block text-[11px] font-bold uppercase tracking-widest text-secondary">
-                      {terkiniArticles[0].category.name}
+                      {terkiniArticles[0].category?.name || "Berita"}
                     </span>
                     <Link href={`/berita/${terkiniArticles[0].slug}`}>
                       <h3 className="mt-2.5 font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
@@ -686,18 +773,19 @@ export default async function HomePage() {
                     <Link href={`/berita/${a.slug}`} className="shrink-0">
                       <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
                         <Image
-                          src={a.featuredImage || getAIImage(a.category?.slug, idx + 2)}
+                          src={resolveArticleImage(a.featuredImage, a.category?.slug, idx + 2)}
                           alt={a.title}
                           fill
+                          sizes="(max-width: 640px) 96px, 112px"
                           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                         />
                       </div>
                     </Link>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <Link href={`/berita/${a.slug}`}>
-                        <h4 className="text-title-sm font-serif leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
+                        <h3 className="text-title-sm font-serif leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
                           {a.title}
-                        </h4>
+                        </h3>
                       </Link>
                       <p className="mt-1.5 text-[10px] text-stone-500 uppercase tracking-wider">
                         {timeAgo(a.publishedAt)}
@@ -714,7 +802,7 @@ export default async function HomePage() {
                   className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-label-md font-bold uppercase tracking-wider text-white transition-all hover:bg-primary-dark hover:gap-3 shadow-md shadow-primary/20"
                 >
                   Lihat Berita Lainnya
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -807,15 +895,16 @@ export default async function HomePage() {
                     <Link href={`/berita/${a.slug}`} className="block">
                       <div className="relative aspect-[3/2] overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
                         <Image
-                          src={a.featuredImage || getAIImage(a.category?.slug, idx)}
+                          src={resolveArticleImage(a.featuredImage, a.category?.slug, idx)}
                           alt={a.title}
                           fill
+                          sizes="(max-width: 768px) 50vw, 25vw"
                           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                         />
                       </div>
                     </Link>
                     <div className="mt-3">
-                      <span className="text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-primary">{a.category.name}</span>
+                      <span className="text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-primary">{a.category?.name || "Berita"}</span>
                       <Link href={`/berita/${a.slug}`}>
                         <h3 className="mt-1 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-primary transition-colors">
                           {a.title}
@@ -867,11 +956,11 @@ export default async function HomePage() {
                 Rangkuman Harian
               </h3>
               <p className="mt-2 text-xs text-stone-600 leading-relaxed">
-                Ringkasan peristiwa dan berita paling krusial hari ini di Bandung dan Jawa Barat.
+                Ringkasan peristiwa dan berita paling krusial hari ini di Indonesia dan daerah.
               </p>
               <div className="mt-4 flex items-center gap-1 text-xs font-bold text-primary">
                 <span>Buka Arsip Harian</span>
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
               </div>
             </Link>
 
@@ -890,7 +979,7 @@ export default async function HomePage() {
               </p>
               <div className="mt-4 flex items-center gap-1 text-xs font-bold text-secondary">
                 <span>Baca Kilas Mingguan</span>
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
               </div>
             </Link>
 
@@ -909,7 +998,7 @@ export default async function HomePage() {
               </p>
               <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-700">
                 <span>Lihat Kaleidoskop</span>
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
               </div>
             </Link>
           </div>
@@ -940,7 +1029,7 @@ export default async function HomePage() {
                   <Link href={`/kategori/${catSlug}`} className="flex items-center gap-1 text-label-sm sm:text-label-md uppercase tracking-wider font-bold text-primary hover:text-primary-dark transition-colors shrink-0">
                     <span className="hidden sm:inline">Lihat Semua</span>
                     <span className="sm:hidden">Semua</span>
-                    <ChevronRight size={14} />
+                    <ChevronRight size={14} aria-hidden="true" />
                   </Link>
                 </div>
 
@@ -960,7 +1049,7 @@ export default async function HomePage() {
                                     <Link href={`/berita/${a.slug}`} className="block">
                                       <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-stone-200/70">
                                         <Image
-                                          src={a.featuredImage || getAIImage(a.category?.slug, subIdx)}
+                                          src={resolveArticleImage(a.featuredImage, a.category?.slug, subIdx)}
                                           alt={a.title}
                                           fill
                                           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
@@ -989,7 +1078,7 @@ export default async function HomePage() {
                                     <Link href={`/berita/${a.slug}`} className="shrink-0">
                                       <div className="relative h-16 w-24 overflow-hidden rounded-lg bg-stone-200/70">
                                         <Image
-                                          src={a.featuredImage || getAIImage(a.category?.slug, subIdx + 2)}
+                                          src={resolveArticleImage(a.featuredImage, a.category?.slug, subIdx + 2)}
                                           alt={a.title}
                                           fill
                                           className="object-cover"
@@ -999,7 +1088,7 @@ export default async function HomePage() {
                                     </Link>
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                       <Link href={`/berita/${a.slug}`}>
-                                        <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h4>
+                                        <h3 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
                                       </Link>
                                       <p className="mt-1 text-[10px] uppercase tracking-wider text-stone-500">{timeAgo(a.publishedAt)}</p>
                                     </div>
@@ -1019,7 +1108,7 @@ export default async function HomePage() {
                           <Link href={`/berita/${main.slug}`} className="group block">
                             <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-stone-200/70 shadow-sm">
                               <Image
-                                src={main.featuredImage || getAIImage(main.category?.slug, 0)}
+                                src={resolveArticleImage(main.featuredImage, main.category?.slug, 0)}
                                 alt={main.title}
                                 fill
                                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
@@ -1047,7 +1136,7 @@ export default async function HomePage() {
                               <Link href={`/berita/${a.slug}`} className="shrink-0">
                                 <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
                                   <Image
-                                    src={a.featuredImage || getAIImage(a.category?.slug, subIdx + 1)}
+                                    src={resolveArticleImage(a.featuredImage, a.category?.slug, subIdx + 1)}
                                     alt={a.title}
                                     fill
                                     className="object-cover"
@@ -1057,7 +1146,7 @@ export default async function HomePage() {
                               </Link>
                               <div className="flex-1 min-w-0 flex flex-col justify-center">
                                 <Link href={`/berita/${a.slug}`}>
-                                  <h4 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h4>
+                                  <h3 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
                                 </Link>
                                 <p className="mt-1 text-label-sm uppercase tracking-wider text-stone-500">{timeAgo(a.publishedAt)}</p>
                               </div>
@@ -1074,9 +1163,10 @@ export default async function HomePage() {
                         <Link href={`/berita/${a.slug}`} className="block">
                           <div className="relative aspect-[3/2] overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
                             <Image
-                              src={a.featuredImage || getAIImage(a.category?.slug, subIdx)}
+                              src={resolveArticleImage(a.featuredImage, a.category?.slug, subIdx)}
                               alt={a.title}
                               fill
+                              sizes="(max-width: 768px) 50vw, 33vw"
                               className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                             />
                           </div>
@@ -1134,20 +1224,20 @@ export default async function HomePage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
                 {sortedCategories.map((cat) => {
                   const isEmpty = cat._count.articles === 0;
                   return (
                     <Link
                       key={cat.slug}
                       href={`/kategori/${cat.slug}`}
-                      className={`group flex flex-col justify-between gap-4 sm:gap-5 bg-primary p-4 sm:p-5 transition-all duration-300 hover:bg-secondary ${isEmpty ? "opacity-40" : ""}`}
+                      className="group flex flex-col justify-between gap-4 sm:gap-5 border border-white/10 bg-primary p-4 sm:p-5 transition-all duration-300 hover:bg-secondary"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-serif text-title-sm sm:text-title-md leading-tight text-white">{cat.name}</h3>
-                        <ChevronRight size={16} className="shrink-0 text-white/30 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-white mt-0.5" />
+                        <h3 className={`font-serif text-title-sm sm:text-title-md leading-tight ${isEmpty ? "text-white/75 group-hover:text-white" : "text-white"}`}>{cat.name}</h3>
+                        <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-white/45 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-white mt-0.5" />
                       </div>
-                      <p className="text-label-sm uppercase tracking-wider text-white/60">
+                      <p className={`text-label-sm uppercase tracking-wider ${isEmpty ? "text-white/55 group-hover:text-white/85" : "text-white/75 group-hover:text-white"}`}>
                         {cat._count.articles} artikel
                       </p>
                     </Link>

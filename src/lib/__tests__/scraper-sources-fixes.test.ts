@@ -289,6 +289,83 @@ describe("fetchListing & crawlListings fixes", () => {
     expect(mockFetchHtml).toHaveBeenCalledTimes(2);
     expect(res.items).toHaveLength(6);
   });
+
+  it("detects SPA anchor-wrapped cards with <p> titles and no <h1>-<h4> headings", async () => {
+    const spaHtml = `
+      <html><body>
+        <header><a href="/tentang">Tentang Klub Resmi</a></header>
+        <main>
+          <div class="grid">
+            <div><a href="/article-details/persib-latihan-jelang-laga">
+              <img src="/img/1.jpg" />
+              <p>PERSIB Terus Matangkan Persiapan Hadapi Laga Pekan Ini</p>
+              <span>16 November 2026</span>
+            </a></div>
+            <div><a href="/article-details/bobotoh-padati-stadion-gbla">
+              <img src="/img/2.jpg" />
+              <p>Ribuan Bobotoh Siap Padati Stadion GBLA Akhir Pekan</p>
+              <span>15 November 2026</span>
+            </a></div>
+          </div>
+        </main>
+      </body></html>`;
+    mockFetchHtml.mockResolvedValueOnce({
+      html: spaHtml,
+      finalUrl: "https://persib.example.id/media",
+      contentType: "text/html",
+    });
+
+    const res = await fetchListing("https://persib.example.id/media");
+    expect(res.items).toHaveLength(2);
+    expect(res.items[0].title).toBe("PERSIB Terus Matangkan Persiapan Hadapi Laga Pekan Ini");
+    expect(res.items[0].url).toBe("https://persib.example.id/article-details/persib-latihan-jelang-laga");
+    expect(res.items[0].thumbnail).toBe("https://persib.example.id/img/1.jpg");
+  });
+
+  it("skips a COMMON_LISTING_SELECTORS container whose items fail headline filter and falls back to real cards", async () => {
+    const html = `
+      <html><body>
+        <section>
+          <article><h3>Pinjaman</h3><a href="/produk/pinjaman">Info lengkap</a></article>
+          <article><h3>Tabungan</h3><a href="/produk/tabungan">Info lengkap</a></article>
+          <article><h3>Deposito</h3><a href="/produk/deposito">Info lengkap</a></article>
+        </section>
+        <div class="real-news">
+          <div class="item">
+            <h2><a href="/news/kinerja-bank-tumbuh-positif">Kinerja Perbankan Jawa Barat Tumbuh Positif Kuartal Ini</a></h2>
+          </div>
+          <div class="item">
+            <h2><a href="/news/ekspansi-layanan-digital-baru">Ekspansi Layanan Digital Permudah Transaksi Pelaku UMKM</a></h2>
+          </div>
+          <div class="item">
+            <h2><a href="/news/program-beasiswa-pendidikan-daerah">Program Beasiswa Pendidikan Daerah Resmi Dibuka Tahun Ini</a></h2>
+          </div>
+        </div>
+      </body></html>`;
+    mockFetchHtml.mockResolvedValueOnce({
+      html,
+      finalUrl: "https://bank.example.co.id/berita",
+      contentType: "text/html",
+    });
+
+    const res = await fetchListing("https://bank.example.co.id/berita");
+    expect(res.items).toHaveLength(3);
+    expect(res.items[0].url).toContain("/news/kinerja-bank-tumbuh-positif");
+  });
+
+  it("fetchSourceListing throws root error when all paginated pages fail instead of returning empty", async () => {
+    mockFetchHtml.mockRejectedValue(new Error("HTTP 403 Forbidden"));
+
+    await expect(
+      fetchSourceListing({
+        listingUrl: "https://blocked.example.go.id/berita",
+        useHeadless: false,
+        crawlSubcategories: false,
+        crawlMaxPages: 8,
+        paginationMaxPages: 2,
+      }),
+    ).rejects.toThrow(/HTTP 403 Forbidden/);
+  });
 });
 
 describe("paraphraseAndCreateDraft fixes", () => {

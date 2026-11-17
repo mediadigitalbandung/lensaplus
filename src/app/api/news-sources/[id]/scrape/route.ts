@@ -103,6 +103,24 @@ export async function POST(
       (i) => !scrapedSet.has(i.url) && !globalClaims.has(i.url),
     );
 
+    if (listing.items.length === 0) {
+      const emptyMsg =
+        "0 artikel terdeteksi di halaman sumber. Aktifkan Render JS (headless) untuk situs SPA atau isi CSS Selector manual.";
+      await prisma.newsSource.update({
+        where: { id: source.id },
+        data: {
+          lastCheckedAt: new Date(),
+          lastError: emptyMsg,
+        },
+      });
+      return successResponse({
+        skipped: "no-articles-detected",
+        listingTotal: 0,
+        error: emptyMsg,
+        durationMs: Date.now() - started,
+      });
+    }
+
     if (newCandidates.length === 0) {
       await prisma.newsSource.update({
         where: { id: source.id },

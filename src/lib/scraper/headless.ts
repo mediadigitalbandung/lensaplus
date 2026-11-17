@@ -45,18 +45,25 @@ function scheduleIdleClose(): void {
 }
 
 async function startBrowser(): Promise<Browser> {
-  const { chromium } = await import("playwright");
-  return chromium.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-accelerated-2d-canvas",
-      "--no-first-run",
-      "--disable-gpu",
-    ],
-  });
+  try {
+    const { chromium } = await import("playwright");
+    return await chromium.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
+        "--disable-gpu",
+      ],
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Headless browser (Playwright Chromium) gagal dijalankan: ${msg.slice(0, 200)}`,
+    );
+  }
 }
 
 async function getBrowser(): Promise<Browser> {
@@ -106,6 +113,8 @@ export async function fetchHtmlHeadless(
     bypassCSP: true,
   });
 
+  const verifiedHosts = new Set<string>();
+
   // Block heavy / tracking / private-network / non-http requests
   await ctx.route("**/*", async (route) => {
     const req = route.request();
@@ -128,7 +137,11 @@ export async function fetchHtmlHeadless(
       return route.abort();
     }
     try {
-      await assertSafePublicUrl(reqUrl);
+      const host = new URL(reqUrl).host;
+      if (!verifiedHosts.has(host)) {
+        await assertSafePublicUrl(reqUrl);
+        verifiedHosts.add(host);
+      }
     } catch {
       return route.abort();
     }
@@ -137,8 +150,10 @@ export async function fetchHtmlHeadless(
 
   const page = await ctx.newPage();
   try {
+    // Use domcontentloaded first so sites with persistent analytics/beacons
+    // never hang for 30s waiting for networkidle.
     await page.goto(url, {
-      waitUntil: "networkidle",
+      waitUntil: "domcontentloaded",
       timeout: options.timeoutMs ?? NAV_TIMEOUT_MS,
     });
     if (options.waitForSelector) {
@@ -146,6 +161,12 @@ export async function fetchHtmlHeadless(
         .waitForSelector(options.waitForSelector, { timeout: 8_000 })
         .catch(() => {
           /* keep going even if the selector never appears */
+        });
+    } else {
+      await page
+        .waitForLoadState("networkidle", { timeout: 5_000 })
+        .catch(() => {
+          /* proceed with rendered DOM even if background beacons stay open */
         });
     }
     await page.waitForTimeout(SETTLE_MS);

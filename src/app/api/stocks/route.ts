@@ -28,6 +28,7 @@ export async function GET() {
       {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; Lensaplus/1.0)" },
         next: { revalidate: 15 },
+        signal: AbortSignal.timeout(8000),
       }
     );
 
@@ -41,7 +42,7 @@ export async function GET() {
     let usdIdrRate = 0;
     if (usdIdrQuote) {
       const validUsdClose = Array.isArray(usdIdrQuote.close)
-        ? usdIdrQuote.close.filter((v: any) => v !== null && v !== undefined)
+        ? usdIdrQuote.close.filter((v: unknown): v is number => typeof v === "number" && Number.isFinite(v))
         : [];
       const closeRate = validUsdClose.length > 0 ? validUsdClose[validUsdClose.length - 1] : 0;
       const prevRate = usdIdrQuote.chartPreviousClose || usdIdrQuote.previousClose || closeRate;
@@ -54,7 +55,7 @@ export async function GET() {
       if (!q) return null;
 
       const validCloseArray = Array.isArray(q.close)
-        ? q.close.filter((v: any) => v !== null && v !== undefined)
+        ? q.close.filter((v: unknown): v is number => typeof v === "number" && Number.isFinite(v))
         : [];
 
       let close = validCloseArray.length > 0 ? validCloseArray[validCloseArray.length - 1] : 0;

@@ -69,8 +69,8 @@ async function main() {
   // 3. Audit remaining core content & settings tables
   const [categoryLeaks, commentLeaks, sorotanLeaks, pollLeaks, settingLeaks] = await Promise.all([
     prisma.category.count({ where: { OR: buildOrContains(["name", "description"]) } }),
-    prisma.comment.count({ where: { OR: buildOrContains(["content", "authorName"]) } }),
-    prisma.sorotan.count({ where: { OR: buildOrContains(["title", "subtitle", "summary"]) } }),
+    prisma.comment.count({ where: { OR: buildOrContains(["content", "authorName", "authorEmail"]) } }),
+    prisma.sorotan.count({ where: { OR: buildOrContains(["title", "content"]) } }),
     prisma.poll.count({ where: { OR: buildOrContains(["question"]) } }),
     prisma.systemSetting.count({ where: { OR: buildOrContains(["key", "value"]) } }),
   ]);

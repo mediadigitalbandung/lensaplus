@@ -17,11 +17,16 @@ const DISMISS_DAYS  = 30;
 /** Returns true if the user dismissed the prompt within the cooldown window. */
 function isDismissed(): boolean {
   if (typeof window === "undefined") return false;
-  const raw = localStorage.getItem(DISMISS_KEY);
-  if (!raw) return false;
-  const dismissedAt = parseInt(raw, 10);
-  const elapsed     = Date.now() - dismissedAt;
-  return elapsed < DISMISS_DAYS * 24 * 60 * 60 * 1000;
+  try {
+    const raw = localStorage.getItem(DISMISS_KEY);
+    if (!raw) return false;
+    const dismissedAt = parseInt(raw, 10);
+    if (!Number.isFinite(dismissedAt)) return false;
+    const elapsed = Date.now() - dismissedAt;
+    return elapsed < DISMISS_DAYS * 24 * 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
 }
 
 /** Returns true if the app is already running in standalone (installed) mode. */
@@ -79,7 +84,11 @@ export default function InstallPrompt() {
   };
 
   const handleDismiss = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    } catch {
+      /* ignore private-mode storage restrictions */
+    }
     setVisible(false);
     setDeferredPrompt(null);
   };
@@ -114,6 +123,7 @@ export default function InstallPrompt() {
           {/* CTA buttons */}
           <div className="flex items-center gap-2 mt-3">
             <button
+              type="button"
               onClick={handleInstall}
               className="btn-primary flex items-center gap-1.5 py-1.5 px-3 text-label-md"
             >
@@ -121,6 +131,7 @@ export default function InstallPrompt() {
               Pasang aplikasi
             </button>
             <button
+              type="button"
               onClick={handleDismiss}
               className="btn-ghost text-label-md py-1.5 px-3 text-on-surface-variant hover:text-on-surface"
             >
@@ -131,6 +142,7 @@ export default function InstallPrompt() {
 
         {/* Close */}
         <button
+          type="button"
           onClick={handleDismiss}
           aria-label="Tutup prompt instalasi"
           className="flex-shrink-0 p-0.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors"

@@ -106,4 +106,27 @@ describe("fetchHtml SSRF rejection", () => {
     );
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
+
+  it("allows responses with omitted content-type header and rejects non-HTML content-type", async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      url: "https://93.184.216.34/page",
+      headers: new Headers(),
+      text: async () => "<html><body>OK</body></html>",
+    });
+    const okRes = await fetchHtml("https://93.184.216.34/page");
+    expect(okRes.html).toContain("OK");
+
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      url: "https://93.184.216.34/file.pdf",
+      headers: new Headers({ "content-type": "application/pdf" }),
+      text: async () => "%PDF-1.4",
+    });
+    await expect(fetchHtml("https://93.184.216.34/file.pdf")).rejects.toThrow(
+      /Unexpected content-type/,
+    );
+  });
 });

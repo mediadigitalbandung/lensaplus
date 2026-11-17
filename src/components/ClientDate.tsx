@@ -5,18 +5,19 @@ import { useEffect, useState } from "react";
 type Format = "relative" | "short" | "long" | "weekday-long";
 
 interface Props {
-  date: Date | string | null | undefined;
+  date?: Date | string | null;
   format?: Format;
   /** Auto-refresh relative format every 60s. Ignored for static formats. */
   live?: boolean;
 }
 
 function render(d: Date, format: Format): string {
+  if (Number.isNaN(d.getTime())) return "";
   if (format === "short") {
-    return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+    return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
   }
   if (format === "long") {
-    return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
   }
   if (format === "weekday-long") {
     return d.toLocaleDateString("id-ID", {
@@ -24,6 +25,7 @@ function render(d: Date, format: Format): string {
       day: "numeric",
       month: "long",
       year: "numeric",
+      timeZone: "Asia/Jakarta",
     });
   }
   // relative
@@ -32,7 +34,7 @@ function render(d: Date, format: Format): string {
   if (mins < 60) return `${mins}m lalu`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}j lalu`;
-  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
 }
 
 /**
@@ -47,19 +49,24 @@ function render(d: Date, format: Format): string {
  */
 export default function ClientDate({ date, format = "relative", live = true }: Props) {
   const [text, setText] = useState("");
+  const resolvedValue = date instanceof Date ? date.getTime() : date;
 
   useEffect(() => {
-    if (!date) {
+    if (resolvedValue === null) {
       setText("");
       return;
     }
-    const d = new Date(date);
+    const d = resolvedValue === undefined ? new Date() : new Date(resolvedValue);
+    if (Number.isNaN(d.getTime())) {
+      setText("");
+      return;
+    }
     setText(render(d, format));
     if (format === "relative" && live) {
       const i = setInterval(() => setText(render(d, format)), 60_000);
       return () => clearInterval(i);
     }
-  }, [date, format, live]);
+  }, [resolvedValue, format, live]);
 
   return <>{text}</>;
 }

@@ -37,24 +37,49 @@ interface BannerAdProps {
  *
  * When `index` is undefined, falls back to random pick (legacy behavior).
  */
+function isSafeAdTargetUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
+  return null;
+}
+
 function useAd(adSlot: string, index?: number) {
   const [ad, setAd] = useState<Ad | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [availableCount, setAvailableCount] = useState(0);
   const tracked = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
     tracked.current = false;
-    fetch(`/api/ads?slot=${adSlot}`)
-      .then((r) => r.json())
+    setAd(null);
+    setLoaded(false);
+
+    fetch(`/api/ads?slot=${encodeURIComponent(adSlot)}`)
+      .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        const ads: Ad[] = json.data || [];
+        if (cancelled) return;
+        const ads: Ad[] = Array.isArray(json?.data) ? json.data : [];
+        setAvailableCount(ads.length);
+        setLoaded(true);
         if (ads.length === 0) return;
-        const pick =
-          typeof index === "number"
-            ? ads[index % ads.length]
-            : ads[Math.floor(Math.random() * ads.length)];
-        setAd(pick);
+        if (typeof index === "number") {
+          // Do not duplicate ad[0] across secondary indexed slots when DB has fewer ads
+          if (index >= ads.length) return;
+          setAd(ads[index]);
+        } else {
+          setAd(ads[Math.floor(Math.random() * ads.length)]);
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [adSlot, index]);
 
   useEffect(() => {
@@ -64,7 +89,7 @@ function useAd(adSlot: string, index?: number) {
     }
   }, [ad]);
 
-  return ad;
+  return { ad, loaded, availableCount };
 }
 
 function handleClick(ad: Ad) {
@@ -104,9 +129,10 @@ function AdContent({ ad }: { ad: Ad }) {
   if (!content) return null;
 
 
-  if (ad.targetUrl) {
+  const safeTargetUrl = isSafeAdTargetUrl(ad.targetUrl);
+  if (safeTargetUrl) {
     return (
-      <a href={ad.targetUrl} target="_blank" rel="noopener noreferrer sponsored" onClick={() => handleClick(ad)} className="block">
+      <a href={safeTargetUrl} target="_blank" rel="noopener noreferrer sponsored" onClick={() => handleClick(ad)} className="block">
         {content}
       </a>
     );
@@ -117,7 +143,7 @@ function AdContent({ ad }: { ad: Ad }) {
 function AdPlaceholder({ label = "Iklan" }: { label?: string }) {
   return (
     <div className="flex items-center justify-center bg-surface-container-low py-5">
-      <span className="text-label-sm uppercase tracking-wider text-on-surface-variant/30">{label}</span>
+      <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">{label}</span>
     </div>
   );
 }
@@ -126,7 +152,7 @@ function AdPlaceholder({ label = "Iklan" }: { label?: string }) {
    Full-width within container-main, consistent with section spacing */
 export default function BannerAd({ size = "banner", slot, className = "", noWrapper, showPlaceholder = true }: BannerAdProps) {
   const resolvedSlot = slot || sizeToSlot[size] || "BETWEEN_SECTIONS";
-  const ad = useAd(resolvedSlot);
+  const { ad } = useAd(resolvedSlot);
 
   const inner = ad ? <AdContent ad={ad} /> : showPlaceholder ? <AdPlaceholder /> : null;
   if (!inner) return null;
@@ -159,7 +185,7 @@ export default function BannerAd({ size = "banner", slot, className = "", noWrap
    `min-w-0` di wrapper image diperlukan supaya flex/grid parent tidak
    memaksa lebar minimum dari intrinsic image dimension. */
 export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: number }) {
-  const ad = useAd(slot, index);
+  const { ad, loaded, availableCount } = useAd(slot, index);
 
   useEffect(() => {
     if (typeof window !== "undefined" && ad && ad.type === "HTML") {
@@ -177,14 +203,6 @@ export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: 
   if (ad) {
     const content =
       ad.type === "HTML" && ad.htmlCode ? (
-        // The HTML creatives in the DB lock the outer card to
-        // `aspect-ratio:6/5; overflow:hidden;` (= 300×250 box). On narrow
-        // sidebars the inner content (badge + headline + description +
-        // checks + CTA) overflows that 6:5 box and the bottom CTA gets
-        // clipped. We override BOTH props on the immediate child via
-        // `[&>div]:!…` so the card grows to fit content with a tasteful
-        // min-height floor — overriding inline `style=""` requires the
-        // !important that Tailwind's `!` prefix adds.
         <div
           dangerouslySetInnerHTML={{ __html: ad.htmlCode }}
           className="w-full [&>div]:!aspect-auto [&>div]:!overflow-visible [&>div]:!min-h-[16rem]"
@@ -203,10 +221,11 @@ export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: 
 
     if (!content) return null;
 
-    if (ad.targetUrl) {
+    const safeTargetUrl = isSafeAdTargetUrl(ad.targetUrl);
+    if (safeTargetUrl) {
       return (
         <a
-          href={ad.targetUrl}
+          href={safeTargetUrl}
           target="_blank"
           rel="noopener noreferrer sponsored"
           onClick={() => handleClick(ad)}
@@ -219,13 +238,21 @@ export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: 
     return content;
   }
 
+  // Avoid stacking duplicate empty placeholders when secondary indexed sidebar slots have no ad
+  if (typeof index === "number" && index > 0 && loaded && index >= availableCount) {
+    return null;
+  }
+  if (typeof index === "number" && index > 0 && !loaded) {
+    return null;
+  }
+
   return <AdPlaceholder label="Iklan Sidebar" />;
 }
 
 /* ── Inline Ad ──
    Full container width, blends with content rhythm */
 export function InlineAd({ className = "" }: { className?: string }) {
-  const ad = useAd("IN_ARTICLE");
+  const { ad } = useAd("IN_ARTICLE");
 
   return (
     <div className={className}>
@@ -239,11 +266,11 @@ export function InlineAd({ className = "" }: { className?: string }) {
 /* ── Native Ad ──
    Card-style within content, matches article card proportions */
 export function NativeAd({ className = "" }: { className?: string }) {
-  const ad = useAd("IN_ARTICLE");
+  const { ad } = useAd("IN_ARTICLE");
 
   return (
     <div className={`bg-surface-container-low p-5 ${className}`}>
-      <span className="text-label-sm uppercase tracking-wider text-on-surface-variant/40 mb-3 block">Sponsored</span>
+      <span className="text-label-sm uppercase tracking-wider text-on-surface-variant mb-3 block">Sponsored</span>
       {ad ? (
         <AdContent ad={ad} />
       ) : (
