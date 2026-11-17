@@ -5,7 +5,7 @@
  *
  * Sections:
  *  1. Umum
- *  2. AI Providers (Anthropic + DeepSeek)
+ *  2. AI Providers (overview + links to dedicated /panel/pengaturan/ai/[provider] pages)
  *  3. Google Services (Indexing + GA4 + GSC)
  *  4. Meta (Instagram + Facebook) — uses /api/social/settings
  *  5. Twitter / X
@@ -13,20 +13,12 @@
  *  7. Resend (Email)
  *  8. Auto-Artikel
  *  9. Toggle Global
- *
- * Save per section. Sensitive fields hidden by default with eye toggle.
- * Test Connection buttons per integrasi.
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
 import {
   Settings,
   Save,
-  Eye,
-  EyeOff,
-  Sparkles,
   Globe,
   Instagram,
   Facebook,
@@ -39,19 +31,18 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
-  ChevronDown,
-  ChevronRight,
   PlugZap,
   AlertTriangle,
-  Trash2,
 } from "lucide-react";
-import { useToast } from "@/components/ui/Toast";
-
-// =====================================================================
-// Types
-// =====================================================================
-
-type SettingsMap = Record<string, string>;
+import {
+  Section,
+  Field,
+  SecretInput,
+  ToggleSwitch,
+  SaveBar,
+  useSystemSettings,
+} from "@/components/panel/settings/SettingsControls";
+import { AiProvidersOverview } from "@/components/panel/ai-settings/AiProvidersOverview";
 
 interface SocialSettings {
   global: {
@@ -83,12 +74,6 @@ interface SocialSettings {
     threadsUserId: string | null;
     enabled: boolean;
   };
-}
-
-interface TestResult {
-  loading: boolean;
-  success?: boolean;
-  message?: string;
 }
 
 // =====================================================================
@@ -190,222 +175,6 @@ function KtaImageField({
   );
 }
 
-function Section({
-  icon: _icon,
-  title,
-  description,
-  defaultOpen = false,
-  active,
-  children,
-}: {
-  icon?: React.ReactNode;
-  title: string;
-  description?: string;
-  defaultOpen?: boolean;
-  /**
-   * Tabbed mode: when provided, the parent tab nav controls visibility.
-   * `false` → render nothing; `true` → render always-expanded with a static
-   * header (no accordion toggle). When omitted, falls back to the legacy
-   * collapsible accordion behaviour.
-   */
-  active?: boolean;
-  children: React.ReactNode;
-}) {
-  void _icon;
-  const tabbed = active !== undefined;
-  const [open, setOpen] = useState(defaultOpen);
-
-  if (tabbed && !active) return null;
-  const isOpen = tabbed ? true : open;
-
-  return (
-    <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
-      {tabbed ? (
-        <div className="px-5 py-4">
-          <div className="min-w-0 border-l-4 border-primary pl-3">
-            <h2 className="text-base font-bold text-txt-primary">{title}</h2>
-            {description && (
-              <p className="text-xs text-txt-secondary">{description}</p>
-            )}
-          </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-surface-secondary/40 transition-colors text-left"
-        >
-          <div className="min-w-0 border-l-4 border-primary pl-3">
-            <h2 className="text-base font-bold text-txt-primary">{title}</h2>
-            {description && (
-              <p className="text-xs text-txt-secondary truncate">{description}</p>
-            )}
-          </div>
-          {open ? (
-            <ChevronDown size={18} className="text-txt-muted shrink-0" />
-          ) : (
-            <ChevronRight size={18} className="text-txt-muted shrink-0" />
-          )}
-        </button>
-      )}
-      {isOpen && (
-        <div className="border-t border-border px-5 py-5 space-y-4">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  error,
-  children,
-}: {
-  label: string;
-  hint?: React.ReactNode;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-sm font-medium text-txt-primary">
-        {label}
-      </label>
-      {children}
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-      {!error && hint && <p className="mt-1 text-xs text-txt-muted">{hint}</p>}
-    </div>
-  );
-}
-
-function SecretInput({
-  value,
-  onChange,
-  placeholder,
-  monospace = true,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  monospace?: boolean;
-}) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="flex gap-2">
-      <input
-        type={show ? "text" : "password"}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={`input flex-1 ${monospace ? "font-mono text-sm" : ""}`}
-        autoComplete="off"
-      />
-      <button
-        type="button"
-        onClick={() => setShow(!show)}
-        className="btn-ghost px-3"
-        aria-label={show ? "Sembunyikan" : "Tampilkan"}
-        title={show ? "Sembunyikan" : "Tampilkan"}
-      >
-        {show ? <EyeOff size={16} /> : <Eye size={16} />}
-      </button>
-      {value && (
-        <button
-          type="button"
-          onClick={() => onChange("")}
-          className="btn-ghost px-3 text-red-500"
-          aria-label="Hapus"
-          title="Hapus nilai"
-        >
-          <Trash2 size={16} />
-        </button>
-      )}
-    </div>
-  );
-}
-
-function ToggleSwitch({
-  checked,
-  onChange,
-  disabled,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:opacity-50 ${
-        checked ? "bg-primary" : "bg-surface-tertiary"
-      }`}
-    >
-      <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-          checked ? "translate-x-5" : "translate-x-0.5"
-        }`}
-      />
-    </button>
-  );
-}
-
-function SaveBar({
-  onSave,
-  saving,
-  dirty,
-  testResult,
-  testButton,
-}: {
-  onSave: () => void;
-  saving: boolean;
-  dirty: boolean;
-  testResult?: TestResult;
-  testButton?: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border">
-      <div className="flex items-center gap-3 text-xs">
-        {testResult?.loading && (
-          <span className="flex items-center gap-1.5 text-txt-secondary">
-            <Loader2 size={12} className="animate-spin" /> Menguji…
-          </span>
-        )}
-        {testResult && !testResult.loading && testResult.success === true && (
-          <span className="flex items-center gap-1.5 text-green-600">
-            <CheckCircle2 size={12} /> {testResult.message || "OK"}
-          </span>
-        )}
-        {testResult && !testResult.loading && testResult.success === false && (
-          <span className="flex items-center gap-1.5 text-red-600">
-            <XCircle size={12} /> {testResult.message || "Gagal"}
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        {testButton}
-        <button
-          onClick={onSave}
-          disabled={saving || !dirty}
-          className="btn-primary flex items-center gap-2 disabled:opacity-50"
-        >
-          {saving ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Save size={14} />
-          )}
-          {saving ? "Menyimpan..." : "Simpan"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // =====================================================================
 // Tab / sub-tab layout — groups the settings sections so the page is a
 // compact tabbed UI instead of one long accordion scroll. Each `id` matches
@@ -426,8 +195,8 @@ const SETTINGS_TABS: {
   },
   {
     key: "ai",
-    label: "AI & Otomasi",
-    subs: [{ id: "ai", label: "Penyedia AI" }],
+    label: "AI Providers",
+    subs: [{ id: "ai", label: "AI Providers" }],
   },
   {
     key: "google",
@@ -462,19 +231,25 @@ const SETTINGS_TABS: {
 // =====================================================================
 
 export default function PengaturanPage() {
-  const { data: session, status: sessionStatus } = useSession();
-  const userRole = session?.user?.role || "";
-  const { success: showSuccess, error: showError } = useToast();
+  const {
+    sessionStatus,
+    loaded: settingsLoaded,
+    allSettings,
+    dirty,
+    setDirty,
+    markDirty,
+    saving,
+    setSaving,
+    saveSection,
+    testResults,
+    setTest,
+    runAllAiTest,
+    showSuccess,
+    showError,
+  } = useSystemSettings();
 
-  const [loaded, setLoaded] = useState(false);
-  const [allSettings, setAllSettings] = useState<SettingsMap>({});
-
-  // Per-section dirty flags
-  const [dirty, setDirty] = useState<Record<string, boolean>>({});
-  const [saving, setSaving] = useState<Record<string, boolean>>({});
-
-  // Test results per integration
-  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
+  const [socialLoaded, setSocialLoaded] = useState(false);
+  const loaded = settingsLoaded && socialLoaded;
 
   // Tabbed navigation — which top tab + sub-tab (section) is visible.
   const [activeTab, setActiveTab] = useState<string>(SETTINGS_TABS[0].key);
@@ -482,8 +257,16 @@ export default function PengaturanPage() {
   const subTabs =
     SETTINGS_TABS.find((t) => t.key === activeTab)?.subs ?? SETTINGS_TABS[0].subs;
 
-  // Social settings (separate API)
-  const [socialSettings, setSocialSettings] = useState<SocialSettings | null>(null);
+  useEffect(() => {
+    const tabParam = new URLSearchParams(window.location.search).get("tab");
+    if (tabParam) {
+      const matched = SETTINGS_TABS.find((t) => t.key === tabParam);
+      if (matched) {
+        setActiveTab(matched.key);
+        setActiveSub(matched.subs[0].id);
+      }
+    }
+  }, []);
 
   // ---------------- Section state ----------------
   // Umum
@@ -492,30 +275,6 @@ export default function PengaturanPage() {
   const [contactEmail, setContactEmail] = useState("");
   const [alamatRedaksi, setAlamatRedaksi] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
-
-  // AI
-  const [anthropicKey, setAnthropicKey] = useState("");
-  const [deepseekKey, setDeepseekKey] = useState("");
-  const [geminiKey, setGeminiKey] = useState("");
-  const [perplexityKey, setPerplexityKey] = useState("");
-  const [perplexityInstructions, setPerplexityInstructions] = useState("");
-  // Perplexity cost controls (token-saving)
-  const [perplexityModel, setPerplexityModel] = useState("");
-  const [perplexityMaxTokens, setPerplexityMaxTokens] = useState("");
-  const [perplexitySearchContext, setPerplexitySearchContext] = useState("");
-  const [perplexityComboEnabled, setPerplexityComboEnabled] = useState(false);
-  const [perplexityResearchModel, setPerplexityResearchModel] = useState("");
-  const [perplexitySmallFieldsDeepseek, setPerplexitySmallFieldsDeepseek] = useState(false);
-  // Local / self-hosted AI (OpenAI-compatible, e.g. Ollama/LM Studio via Tailscale)
-  const [localaiEnabled, setLocalaiEnabled] = useState(false);
-  const [localaiBaseUrl, setLocalaiBaseUrl] = useState("");
-  const [localaiModel, setLocalaiModel] = useState("");
-  const [localaiKey, setLocalaiKey] = useState("");
-  const [localaiPrefer, setLocalaiPrefer] = useState(false);
-  const [elevenlabsKey, setElevenlabsKey] = useState("");
-  const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState("");
-  const [ttsProvider, setTtsProvider] = useState("auto");
-  const [enableAi, setEnableAi] = useState(true);
 
   // Google
   const [googleCredentials, setGoogleCredentials] = useState("");
@@ -573,84 +332,52 @@ export default function PengaturanPage() {
   const [enableComments, setEnableComments] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
 
-  // ---------------- Role guard ----------------
-  if (sessionStatus !== "loading" && session && userRole !== "SUPER_ADMIN") {
-    redirect("/panel/dashboard");
-  }
+  // ---------------- Hydrate settings state ----------------
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    const map = allSettings;
+    setSiteName(map.site_name || "");
+    setSiteDescription(map.site_description || "");
+    setContactEmail(map.contact_email || "");
+    setAlamatRedaksi(map.alamat_redaksi || "");
+    setWebsiteUrl(map.website_url || "");
 
-  // ---------------- Load settings ----------------
-  const loadAll = useCallback(async () => {
+    setGoogleCredentials(map.google_credentials_json || "");
+    setGoogleIndexingEnabled(map.google_indexing_enabled === "true");
+    setGa4PropertyId(map.ga4_property_id || "");
+    setGa4MeasurementId(map.ga4_measurement_id || "");
+    setGscSiteUrl(map.gsc_site_url || "");
+
+    setTwBearer(map.twitter_bearer_token || "");
+    setTwAccessToken(map.twitter_access_token || "");
+    setTwAccessSecret(map.twitter_access_secret || "");
+    setTwConsumerKey(map.twitter_consumer_key || "");
+    setTwConsumerSecret(map.twitter_consumer_secret || "");
+
+    setCfApiToken(map.cloudflare_api_token || "");
+    setCfZoneId(map.cloudflare_zone_id || "");
+    setKtaDirectorName(map.kta_director_name || "");
+    setKtaDirectorSig(map.kta_director_signature || "");
+    setKtaPwiName(map.kta_pwi_chairman_name || "");
+    setKtaPwiSig(map.kta_pwi_chairman_signature || "");
+    setKtaCardLogo(map.kta_card_logo || "");
+    setKtaDewanPersLogo(map.kta_dewan_pers_logo || "");
+    setKtaDewanPersNumber(map.kta_dewan_pers_number || "");
+    setKtaIssuePlace(map.kta_issue_place || "");
+
+    setResendKey(map.resend_api_key || "");
+    setEmailFrom(map.notification_email_from || "");
+
+    setEnableComments(map.enable_comments !== "false");
+    setMaintenanceMode(map.maintenance_mode === "true");
+  }, [settingsLoaded, allSettings]);
+
+  const loadSocial = useCallback(async () => {
     try {
-      const [settingsRes, socialRes] = await Promise.all([
-        fetch("/api/settings"),
-        fetch("/api/social/settings"),
-      ]);
-
-      if (settingsRes.ok) {
-        const json = await settingsRes.json();
-        const map: SettingsMap = json.data || {};
-        setAllSettings(map);
-        setSiteName(map.site_name || "");
-        setSiteDescription(map.site_description || "");
-        setContactEmail(map.contact_email || "");
-        setAlamatRedaksi(map.alamat_redaksi || "");
-        setWebsiteUrl(map.website_url || "");
-
-        setAnthropicKey(map.anthropic_api_key || "");
-        setDeepseekKey(map.deepseek_api_key || "");
-        setGeminiKey(map.gemini_api_key || "");
-        setPerplexityKey(map.perplexity_api_key || "");
-        setPerplexityInstructions(map.perplexity_instructions || "");
-        setPerplexityModel(map.perplexity_model || "");
-        setPerplexityMaxTokens(map.perplexity_max_tokens || "");
-        setPerplexitySearchContext(map.perplexity_search_context || "");
-        setPerplexityComboEnabled(map.perplexity_combo_enabled === "true");
-        setPerplexityResearchModel(map.perplexity_research_model || "");
-        setPerplexitySmallFieldsDeepseek(map.perplexity_small_fields_deepseek === "true");
-        setLocalaiEnabled(map.localai_enabled === "true");
-        setLocalaiBaseUrl(map.localai_base_url || "");
-        setLocalaiModel(map.localai_model || "");
-        setLocalaiKey(map.localai_api_key || "");
-        setLocalaiPrefer(map.localai_prefer === "true");
-        setElevenlabsKey(map.elevenlabs_api_key || "");
-        setElevenlabsVoiceId(map.elevenlabs_voice_id || "");
-        setTtsProvider(map.tts_provider || "auto");
-        setEnableAi(map.enable_ai !== "false");
-
-        setGoogleCredentials(map.google_credentials_json || "");
-        setGoogleIndexingEnabled(map.google_indexing_enabled === "true");
-        setGa4PropertyId(map.ga4_property_id || "");
-        setGa4MeasurementId(map.ga4_measurement_id || "");
-        setGscSiteUrl(map.gsc_site_url || "");
-
-        setTwBearer(map.twitter_bearer_token || "");
-        setTwAccessToken(map.twitter_access_token || "");
-        setTwAccessSecret(map.twitter_access_secret || "");
-        setTwConsumerKey(map.twitter_consumer_key || "");
-        setTwConsumerSecret(map.twitter_consumer_secret || "");
-
-        setCfApiToken(map.cloudflare_api_token || "");
-        setCfZoneId(map.cloudflare_zone_id || "");
-        setKtaDirectorName(map.kta_director_name || "");
-        setKtaDirectorSig(map.kta_director_signature || "");
-        setKtaPwiName(map.kta_pwi_chairman_name || "");
-        setKtaPwiSig(map.kta_pwi_chairman_signature || "");
-        setKtaCardLogo(map.kta_card_logo || "");
-        setKtaDewanPersLogo(map.kta_dewan_pers_logo || "");
-        setKtaDewanPersNumber(map.kta_dewan_pers_number || "");
-        setKtaIssuePlace(map.kta_issue_place || "");
-
-        setResendKey(map.resend_api_key || "");
-        setEmailFrom(map.notification_email_from || "");
-
-        setEnableComments(map.enable_comments !== "false");
-        setMaintenanceMode(map.maintenance_mode === "true");
-      }
-
+      const socialRes = await fetch("/api/social/settings");
       if (socialRes.ok) {
         const json = await socialRes.json();
         const s = json.data as SocialSettings;
-        setSocialSettings(s);
         setIgUserId(s.instagram?.igUserId || "");
         setIgEnabled(Boolean(s.instagram?.enabled));
         setIgHasToken(Boolean(s.instagram?.hasAccessToken));
@@ -669,59 +396,13 @@ export default function PengaturanPage() {
     } catch {
       /* ignore */
     } finally {
-      setLoaded(true);
+      setSocialLoaded(true);
     }
   }, []);
 
   useEffect(() => {
-    loadAll();
-  }, [loadAll]);
-
-  // ---------------- Save helpers ----------------
-  function markDirty(section: string) {
-    setDirty((prev) => ({ ...prev, [section]: true }));
-  }
-
-  async function putSetting(key: string, value: string): Promise<boolean> {
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, value }),
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Gagal menyimpan");
-      return true;
-    } catch (err) {
-      showError(
-        `Gagal menyimpan ${key}: ${err instanceof Error ? err.message : "error"}`,
-      );
-      return false;
-    }
-  }
-
-  async function saveSection(section: string, fields: Array<[string, string]>) {
-    setSaving((p) => ({ ...p, [section]: true }));
-    try {
-      let allOk = true;
-      for (const [key, value] of fields) {
-        const prev = allSettings[key] ?? "";
-        if (prev === value) continue;
-        const ok = await putSetting(key, value);
-        if (!ok) allOk = false;
-      }
-      if (allOk) {
-        // Refresh local cache
-        const next: SettingsMap = { ...allSettings };
-        for (const [k, v] of fields) next[k] = v;
-        setAllSettings(next);
-        setDirty((p) => ({ ...p, [section]: false }));
-        showSuccess("Pengaturan tersimpan.");
-      }
-    } finally {
-      setSaving((p) => ({ ...p, [section]: false }));
-    }
-  }
+    loadSocial();
+  }, [loadSocial]);
 
   // Upload an image (signature/logo) for the KTA section → returns its URL.
   async function uploadKtaImage(slot: string, file: File, setter: (url: string) => void) {
@@ -760,7 +441,7 @@ export default function PengaturanPage() {
       showSuccess("Pengaturan sosial tersimpan.");
       setDirty((p) => ({ ...p, [sectionKey]: false }));
       // Refresh
-      loadAll();
+      loadSocial();
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal menyimpan");
     } finally {
@@ -769,109 +450,6 @@ export default function PengaturanPage() {
   }
 
   // ---------------- Test buttons ----------------
-  function setTest(key: string, value: TestResult) {
-    setTestResults((p) => ({ ...p, [key]: value }));
-  }
-
-  async function handleTestAi() {
-    setTest("ai", { loading: true });
-    try {
-      const res = await fetch("/api/ai/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        setTest("ai", {
-          loading: false,
-          success: false,
-          message: json.error || "Test gagal",
-        });
-        return;
-      }
-      const r = json.data?.results;
-      if (r) {
-        const ant = r.anthropic;
-        const ds = r.deepseek;
-        const parts: string[] = [];
-        parts.push(
-          ant?.success
-            ? `Anthropic OK (${ant.durationMs}ms)`
-            : `Anthropic FAIL: ${ant?.error?.slice(0, 60) || "?"}`,
-        );
-        parts.push(
-          ds?.success
-            ? `DeepSeek OK (${ds.durationMs}ms)`
-            : `DeepSeek FAIL: ${ds?.error?.slice(0, 60) || "?"}`,
-        );
-        setTest("ai", {
-          loading: false,
-          success: ant?.success || ds?.success,
-          message: parts.join(" · "),
-        });
-      } else {
-        setTest("ai", {
-          loading: false,
-          success: json.data?.success,
-          message: json.data?.success
-            ? `${json.data.provider} OK`
-            : json.data?.error,
-        });
-      }
-    } catch (err) {
-      setTest("ai", {
-        loading: false,
-        success: false,
-        message: err instanceof Error ? err.message : "Network error",
-      });
-    }
-  }
-
-  async function handleTestPerplexity() {
-    setTest("perplexity", { loading: true });
-    try {
-      const res = await fetch("/api/ai/test-perplexity", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      const json = await res.json();
-      const d = json.data;
-      setTest("perplexity", {
-        loading: false,
-        success: !!(json.success && d?.success),
-        message: d?.message || json.error || "Test gagal",
-      });
-    } catch (err) {
-      setTest("perplexity", {
-        loading: false,
-        success: false,
-        message: err instanceof Error ? err.message : "Network error",
-      });
-    }
-  }
-
-  async function handleTestLocalAI() {
-    setTest("localai", { loading: true });
-    try {
-      const res = await fetch("/api/ai/test-localai", { method: "POST" });
-      const json = await res.json();
-      const d = json.data;
-      setTest("localai", {
-        loading: false,
-        success: !!(json.success && d?.success),
-        message: d?.message || json.error || "Test gagal",
-      });
-    } catch (err) {
-      setTest("localai", {
-        loading: false,
-        success: false,
-        message: err instanceof Error ? err.message : "Network error",
-      });
-    }
-  }
-
   async function handleTestGoogle() {
     setTest("google", { loading: true });
     try {
@@ -1204,453 +782,17 @@ export default function PengaturanPage() {
         </Section>
 
         {/* ============== 2. AI ============== */}
-        <Section
-          icon={<Sparkles size={18} />}
-          title="2. AI Providers"
-          description="Anthropic Claude (primary) + DeepSeek (fallback)"
-          active={activeSub === "ai"}
-        >
-          <Field
-            label="Anthropic API Key"
-            hint={
-              <>
-                Dapatkan di{" "}
-                <a
-                  href="https://console.anthropic.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  console.anthropic.com
-                </a>
-              </>
-            }
-          >
-            <SecretInput
-              value={anthropicKey}
-              onChange={(v) => {
-                setAnthropicKey(v);
-                markDirty("ai");
-              }}
-              placeholder="sk-ant-..."
-            />
-          </Field>
-          <Field
-            label="DeepSeek API Key"
-            hint={
-              <>
-                Dapatkan di{" "}
-                <a
-                  href="https://platform.deepseek.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  platform.deepseek.com
-                </a>
-              </>
-            }
-          >
-            <SecretInput
-              value={deepseekKey}
-              onChange={(v) => {
-                setDeepseekKey(v);
-                markDirty("ai");
-              }}
-              placeholder="sk-..."
-            />
-          </Field>
-          <Field
-            label="Gemini API Key (suara Reel / TTS)"
-            hint={
-              <>
-                Untuk voiceover Bahasa Indonesia pada Reel. Dapatkan di{" "}
-                <a
-                  href="https://aistudio.google.com/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  aistudio.google.com
-                </a>
-                . Kosongkan = Reel tanpa suara.
-              </>
-            }
-          >
-            <SecretInput
-              value={geminiKey}
-              onChange={(v) => {
-                setGeminiKey(v);
-                markDirty("ai");
-              }}
-              placeholder="AIza..."
-            />
-          </Field>
-          <Field
-            label="Perplexity API Key (riset & tulis artikel)"
-            hint={
-              <>
-                Untuk riset web real-time + draf artikel bersumber di editor. Dapatkan di{" "}
-                <a
-                  href="https://www.perplexity.ai/settings/api"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  perplexity.ai/settings/api
-                </a>{" "}
-                (perlu kredit). Kosongkan = fitur Perplexity nonaktif.
-              </>
-            }
-          >
-            <SecretInput
-              value={perplexityKey}
-              onChange={(v) => {
-                setPerplexityKey(v);
-                markDirty("ai");
-              }}
-              placeholder="pplx-..."
-            />
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={handleTestPerplexity}
-                disabled={testResults.perplexity?.loading}
-                className="btn-secondary flex items-center gap-2 text-xs"
-              >
-                {testResults.perplexity?.loading ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <PlugZap size={14} />
-                )}
-                Tes Koneksi Perplexity
-              </button>
-              {testResults.perplexity && !testResults.perplexity.loading && (
-                <span
-                  className={`inline-flex items-center gap-1 text-xs ${
-                    testResults.perplexity.success ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {testResults.perplexity.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                  {testResults.perplexity.message}
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-[10px] text-txt-muted">
-              Simpan key dulu sebelum tes (tes memakai key yang tersimpan).
-            </p>
-          </Field>
-          <Field
-            label="Arahan Penulis Perplexity (gaya & karakter)"
-            hint="Arahan untuk agent Perplexity saat meriset & menulis: gaya bahasa, sudut pandang, panjang, hal yang harus/dihindari. Dipakai di setiap 'Riset & Tulis'. Kosongkan untuk gaya default Lensaplus."
-          >
-            <textarea
-              rows={5}
-              value={perplexityInstructions}
-              onChange={(e) => {
-                setPerplexityInstructions(e.target.value);
-                markDirty("ai");
-              }}
-              className="input resize-none"
-              placeholder={"Contoh: Tulis dengan gaya jurnalistik ringkas dan tegas. Gunakan kalimat aktif, hindari jargon. Sertakan konteks lokal Bandung bila relevan. Buka dengan lead yang kuat (5W1H) di paragraf pertama. Hindari bahasa promosi/clickbait."}
-            />
-          </Field>
-          <Field
-            label="Model Perplexity (hemat token)"
-            hint="Default sekarang sonar = paling hemat: token output ~15× lebih murah dari sonar-pro, dan cukup untuk draf berita. Naikkan ke sonar-pro hanya bila butuh riset lebih dalam (jauh lebih boros)."
-          >
-            <select
-              value={perplexityModel}
-              onChange={(e) => {
-                setPerplexityModel(e.target.value);
-                markDirty("ai");
-              }}
-              className="input"
-            >
-              <option value="">Default (sonar — Hemat)</option>
-              <option value="sonar">sonar — Hemat (disarankan)</option>
-              <option value="sonar-pro">sonar-pro — Kualitas tinggi (boros)</option>
-              <option value="sonar-reasoning">sonar-reasoning — Penalaran (lebih boros)</option>
-              <option value="sonar-reasoning-pro">sonar-reasoning-pro — Paling boros</option>
-            </select>
-          </Field>
-          <Field
-            label="Mode Kombinasi (riset bagus → tulis hemat)"
-            hint="Saat AKTIF: tahap-1 RISET pakai 'Model Riset' (sumber lebih berkualitas, output pendek = murah), tahap-2 MENULIS pakai model di atas yang hemat. Hasil: kualitas riset mendekati sonar-pro dengan biaya jauh di bawahnya — di antara sonar & sonar-pro. Hanya berlaku untuk PEMBUATAN ARTIKEL PENUH (Riset & Tulis mode draf + auto-artikel); tombol Generate AI kecil tetap 1 panggilan. MATI = satu model saja (paling hemat)."
-          >
-            <label className="flex items-center gap-2 text-sm text-txt-secondary">
-              <input
-                type="checkbox"
-                checked={perplexityComboEnabled}
-                onChange={(e) => {
-                  setPerplexityComboEnabled(e.target.checked);
-                  markDirty("ai");
-                }}
-                className="h-4 w-4 accent-primary"
-              />
-              Aktifkan kombinasi 2-tahap (riset + tulis pakai 2 model)
-            </label>
-            {perplexityComboEnabled && (
-              <select
-                value={perplexityResearchModel}
-                onChange={(e) => {
-                  setPerplexityResearchModel(e.target.value);
-                  markDirty("ai");
-                }}
-                className="input mt-3"
-              >
-                <option value="">Model Riset: Default (sonar-pro)</option>
-                <option value="sonar-pro">Model Riset: sonar-pro (disarankan)</option>
-                <option value="sonar-reasoning">Model Riset: sonar-reasoning</option>
-                <option value="sonar-reasoning-pro">Model Riset: sonar-reasoning-pro</option>
-              </select>
-            )}
-          </Field>
-          <Field
-            label="Batas Token Output Perplexity"
-            hint="Batas maksimum panjang jawaban — token output adalah biaya terbesar. Mis. isi 1500 untuk draf ringkas & hemat. Kosong/0 = tanpa batas tambahan (pakai bawaan tiap fitur)."
-          >
-            <input
-              type="number"
-              min={0}
-              step={100}
-              value={perplexityMaxTokens}
-              onChange={(e) => {
-                setPerplexityMaxTokens(e.target.value);
-                markDirty("ai");
-              }}
-              className="input"
-              placeholder="mis. 1500"
-            />
-          </Field>
-          <Field
-            label="Kedalaman Pencarian Web Perplexity"
-            hint="low = paling hemat (biaya pencarian kecil), high = sumber lebih kaya tapi lebih mahal. Kosongkan = high (default)."
-          >
-            <select
-              value={perplexitySearchContext}
-              onChange={(e) => {
-                setPerplexitySearchContext(e.target.value);
-                markDirty("ai");
-              }}
-              className="input"
-            >
-              <option value="">Default (high)</option>
-              <option value="low">low — Hemat</option>
-              <option value="medium">medium — Seimbang</option>
-              <option value="high">high — Kaya sumber (boros)</option>
-            </select>
-          </Field>
-          <Field
-            label="Field kecil (meta/SEO/tag) via DeepSeek"
-            hint="Saat AKTIF: ringkasan, tag, judul SEO, dan meta description tidak lagi dibuat Perplexity, melainkan diturunkan dari isi artikel oleh DeepSeek yang JAUH lebih murah (field kecil tak butuh riset web). Konten utama tetap dari Perplexity. Butuh DeepSeek API Key terisi; kalau gagal, otomatis pakai field bawaan Perplexity."
-          >
-            <label className="flex items-center gap-2 text-sm text-txt-secondary">
-              <input
-                type="checkbox"
-                checked={perplexitySmallFieldsDeepseek}
-                onChange={(e) => {
-                  setPerplexitySmallFieldsDeepseek(e.target.checked);
-                  markDirty("ai");
-                }}
-                className="h-4 w-4 accent-primary"
-              />
-              Pakai DeepSeek untuk ringkasan, tag, SEO title & meta description
-            </label>
-          </Field>
-          <Field
-            label="ElevenLabs API Key (alternatif suara Reel)"
-            hint={
-              <>
-                Suara TTS alternatif (sangat natural). Dapatkan di{" "}
-                <a
-                  href="https://elevenlabs.io/app/settings/api-keys"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  elevenlabs.io
-                </a>
-                .
-              </>
-            }
-          >
-            <SecretInput
-              value={elevenlabsKey}
-              onChange={(v) => {
-                setElevenlabsKey(v);
-                markDirty("ai");
-              }}
-              placeholder="sk_..."
-            />
-          </Field>
-          <Field
-            label="ElevenLabs Voice ID (opsional)"
-            hint="Kosongkan = suara default. Salin Voice ID dari halaman Voices di ElevenLabs."
-          >
-            <input
-              type="text"
-              value={elevenlabsVoiceId}
-              onChange={(e) => {
-                setElevenlabsVoiceId(e.target.value);
-                markDirty("ai");
-              }}
-              className="input"
-              placeholder="21m00Tcm4TlvDq8ikWAM"
-            />
-          </Field>
-          <Field
-            label="Penyedia Suara Reel (TTS)"
-            hint="Otomatis = pakai ElevenLabs bila key terisi, jika tidak pakai Gemini."
-          >
-            <select
-              value={ttsProvider}
-              onChange={(e) => {
-                setTtsProvider(e.target.value);
-                markDirty("ai");
-              }}
-              className="input"
-            >
-              <option value="auto">Otomatis (ElevenLabs → Gemini)</option>
-              <option value="elevenlabs">ElevenLabs</option>
-              <option value="gemini">Gemini</option>
-              <option value="off">Nonaktif (tanpa suara)</option>
-            </select>
-          </Field>
-          {/* Local / self-hosted AI (OpenAI-compatible) — extra drafting engine */}
-          <div className="space-y-3 rounded-lg border border-border bg-surface-secondary p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-txt-primary">Local AI (self-hosted / Tailscale)</p>
-                <p className="text-xs text-txt-muted">
-                  Server AI pribadi (Ollama / LM Studio / vLLM) sebagai opsi tulis artikel selain Perplexity —
-                  gratis (self-hosted), tapi tanpa akses web (riset bersumber tetap Perplexity).
-                </p>
-              </div>
-              <ToggleSwitch
-                checked={localaiEnabled}
-                onChange={(v) => { setLocalaiEnabled(v); markDirty("ai"); }}
-              />
-            </div>
-
-            {localaiEnabled && (
-              <div className="space-y-3">
-                <Field
-                  label="Base URL"
-                  hint="URL server OpenAI-compatible. Pakai IP Tailscale Mac mini — mis. http://100.81.47.91:11434 (Ollama) atau :1234 (LM Studio). PENTING: VPS produksi harus berada di tailnet yang sama agar bisa menjangkaunya."
-                >
-                  <input
-                    className="input"
-                    value={localaiBaseUrl}
-                    onChange={(e) => { setLocalaiBaseUrl(e.target.value); markDirty("ai"); }}
-                    placeholder="http://100.81.47.91:11434"
-                  />
-                </Field>
-                <Field label="Model" hint="Nama model di server tersebut, mis. hermes3, llama3.1:8b, qwen2.5.">
-                  <input
-                    className="input"
-                    value={localaiModel}
-                    onChange={(e) => { setLocalaiModel(e.target.value); markDirty("ai"); }}
-                    placeholder="hermes3"
-                  />
-                </Field>
-                <Field label="API Key (opsional)" hint="Kosongkan bila server tak butuh auth (Ollama default). Isi bila server Anda memakai token bearer.">
-                  <SecretInput
-                    value={localaiKey}
-                    onChange={(v) => { setLocalaiKey(v); markDirty("ai"); }}
-                    placeholder="(opsional)"
-                  />
-                </Field>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-txt-primary">Utamakan Local AI</p>
-                    <p className="text-xs text-txt-muted">Pakai Local AI lebih dulu daripada Perplexity saat menulis field artikel.</p>
-                  </div>
-                  <ToggleSwitch
-                    checked={localaiPrefer}
-                    onChange={(v) => { setLocalaiPrefer(v); markDirty("ai"); }}
-                  />
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleTestLocalAI}
-                    disabled={testResults.localai?.loading}
-                    className="btn-secondary flex items-center gap-2 text-xs"
-                  >
-                    {testResults.localai?.loading ? <Loader2 size={14} className="animate-spin" /> : <PlugZap size={14} />}
-                    Tes Koneksi Local AI
-                  </button>
-                  {testResults.localai && !testResults.localai.loading && (
-                    <span className={`inline-flex items-center gap-1 text-xs ${testResults.localai.success ? "text-green-600" : "text-red-600"}`}>
-                      {testResults.localai.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                      {testResults.localai.message}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] text-txt-muted">Simpan dulu sebelum tes (tes memakai konfigurasi tersimpan).</p>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-txt-primary">
-                Aktifkan AI
-              </p>
-              <p className="text-xs text-txt-muted">
-                Master switch untuk semua fitur AI (generate, sorotan, dst).
-              </p>
-            </div>
-            <ToggleSwitch
-              checked={enableAi}
-              onChange={(v) => {
-                setEnableAi(v);
-                markDirty("ai");
-              }}
-            />
-          </div>
-          <SaveBar
-            onSave={() =>
-              saveSection("ai", [
-                ["anthropic_api_key", anthropicKey],
-                ["deepseek_api_key", deepseekKey],
-                ["gemini_api_key", geminiKey],
-                ["perplexity_api_key", perplexityKey],
-                ["perplexity_instructions", perplexityInstructions],
-                ["perplexity_model", perplexityModel],
-                ["perplexity_max_tokens", perplexityMaxTokens],
-                ["perplexity_search_context", perplexitySearchContext],
-                ["perplexity_combo_enabled", perplexityComboEnabled ? "true" : "false"],
-                ["perplexity_research_model", perplexityResearchModel],
-                ["perplexity_small_fields_deepseek", perplexitySmallFieldsDeepseek ? "true" : "false"],
-                ["localai_enabled", localaiEnabled ? "true" : "false"],
-                ["localai_base_url", localaiBaseUrl],
-                ["localai_model", localaiModel],
-                ["localai_api_key", localaiKey],
-                ["localai_prefer", localaiPrefer ? "true" : "false"],
-                ["elevenlabs_api_key", elevenlabsKey],
-                ["elevenlabs_voice_id", elevenlabsVoiceId],
-                ["tts_provider", ttsProvider],
-                ["enable_ai", enableAi ? "true" : "false"],
-              ])
-            }
-            saving={!!saving.ai}
-            dirty={!!dirty.ai}
+        {activeSub === "ai" && (
+          <AiProvidersOverview
+            settings={allSettings}
+            dirty={Boolean(dirty.ai)}
+            saving={Boolean(saving.ai)}
             testResult={testResults.ai}
-            testButton={
-              <button
-                type="button"
-                onClick={handleTestAi}
-                disabled={testResults.ai?.loading}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <PlugZap size={14} />
-                Test AI
-              </button>
-            }
+            markDirty={() => markDirty("ai")}
+            saveSection={(fields) => saveSection("ai", fields)}
+            onTestAllAi={runAllAiTest}
           />
-        </Section>
+        )}
 
         {/* ============== 3. Google ============== */}
         <Section

@@ -304,6 +304,7 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
     userPrompt,
     maxTokens: 2_500,
     temperature: 0.65,
+    allowCombo: true,
     userId: authorId,
     articleTitle: source.title,
   });

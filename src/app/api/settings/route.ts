@@ -25,9 +25,25 @@ const ALLOWED_KEYS = [
   "enable_comments",
   "enable_ai",
   "maintenance_mode",
-  // AI providers
-  "deepseek_api_key",
+  // AI routing
+  "ai_primary_provider",
+  "ai_editor_provider",
+  // AI providers — Anthropic (Claude)
   "anthropic_api_key",
+  "anthropic_instructions",
+  "anthropic_model",
+  "anthropic_max_tokens",
+  "anthropic_temperature",
+  // AI providers — DeepSeek
+  "deepseek_api_key",
+  "deepseek_instructions",
+  "deepseek_model",
+  "deepseek_max_tokens",
+  "deepseek_temperature",
+  "deepseek_top_p",
+  "deepseek_frequency_penalty",
+  "deepseek_combo_enabled",
+  "deepseek_research_model",
   // Local / self-hosted AI (OpenAI-compatible, e.g. Ollama/LM Studio on a Mac
   // mini over Tailscale) — extra drafting engine alongside Perplexity.
   "localai_enabled",
@@ -35,6 +51,9 @@ const ALLOWED_KEYS = [
   "localai_model",
   "localai_api_key",
   "localai_prefer",
+  "localai_instructions",
+  "localai_max_tokens",
+  "localai_temperature",
   // Perplexity (Sonar) — web-grounded research + sourced article drafting
   "perplexity_api_key",
   "perplexity_instructions",
@@ -51,8 +70,11 @@ const ALLOWED_KEYS = [
   "usd_idr_rate",
   // Reel voiceover (TTS): Gemini (AI Studio) + ElevenLabs, with a provider switch
   "gemini_api_key",
+  "gemini_tts_model",
+  "gemini_tts_voice",
   "elevenlabs_api_key",
   "elevenlabs_voice_id",
+  "elevenlabs_model",
   "tts_provider",
   // Google Indexing / GSC / GA
   "google_credentials_json",

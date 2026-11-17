@@ -10,6 +10,7 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { onArticlePublished } from "@/lib/seo-auto";
+import { markScrapedUrlsDeleted } from "@/lib/scraper/claim";
 
 const bulkActionSchema = z.object({
   action: z.enum(["archive", "delete", "publish"]),
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
       // A non-superadmin (EDITOR/CHIEF_EDITOR reach this route) may bulk-delete
       // ONLY their own articles; other authors' ids are silently skipped.
       const isSuper = session.user.role === "SUPER_ADMIN";
-      const count = await prisma.$transaction(async (tx) => {
+      const { count, deletedIds } = await prisma.$transaction(async (tx) => {
         const deletable = isSuper
           ? ids
           : (
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
               })
             ).map((a) => a.id);
 
-        if (deletable.length === 0) return 0;
+        if (deletable.length === 0) return { count: 0, deletedIds: [] as string[] };
 
         // Delete related records first, then the articles themselves.
         await tx.source.deleteMany({ where: { articleId: { in: deletable } } });
@@ -163,8 +164,10 @@ export async function POST(request: NextRequest) {
         await tx.comment.deleteMany({ where: { articleId: { in: deletable } } });
         await tx.report.deleteMany({ where: { articleId: { in: deletable } } });
         const res = await tx.article.deleteMany({ where: { id: { in: deletable } } });
-        return res.count;
+        return { count: res.count, deletedIds: deletable };
       });
+
+      await markScrapedUrlsDeleted(deletedIds);
 
       await logAudit(
         session.user.id,

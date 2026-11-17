@@ -26,6 +26,7 @@ const bodySchema = z.object({
 interface ProviderResult {
   success: boolean;
   provider: "anthropic" | "deepseek";
+  model?: string;
   response?: string;
   durationMs?: number;
   error?: string;
@@ -44,6 +45,7 @@ async function runOne(
     return {
       success: true,
       provider,
+      model: result.model,
       response: result.text,
       durationMs: result.durationMs,
     };

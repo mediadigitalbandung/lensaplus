@@ -66,28 +66,75 @@ export async function POST(
       })
       .catch(() => {});
 
-    // Mark which items are already scraped — both the legacy per-source
-    // list AND the global claim ledger (so a URL another writer already
-    // grabbed from any source shows as taken, with who took it).
+    // Enrich each item with live Article state (DRAFT, IN_REVIEW, APPROVED,
+    // PUBLISHED, REJECTED, ARCHIVED, CLAIMED, or DELETED when its previously
+    // generated article no longer exists so writers can see what happened and
+    // regenerate deleted items).
     const scrapedSet = new Set(source.scrapedUrls);
     const claims = await getClaimsForUrls(items.map((i) => i.url));
     const enriched = items.map((item) => {
       const claim = claims.get(item.url);
+      let articleStatus:
+        | "NEW"
+        | "CLAIMED"
+        | "DRAFT"
+        | "IN_REVIEW"
+        | "APPROVED"
+        | "PUBLISHED"
+        | "REJECTED"
+        | "ARCHIVED"
+        | "DELETED" = "NEW";
+      let claimStatus: string | null = claim?.status ?? null;
+
+      if (claim?.articleStatus) {
+        articleStatus = claim.articleStatus;
+      } else if (scrapedSet.has(item.url)) {
+        // Legacy scrapedUrl entry without any live Article in DB
+        articleStatus = "DELETED";
+        claimStatus = "DELETED";
+      }
+
+      const alreadyScraped =
+        articleStatus !== "NEW" && articleStatus !== "DELETED";
+      const canGenerate =
+        articleStatus === "NEW" || articleStatus === "DELETED";
+
       return {
         ...item,
-        alreadyScraped: scrapedSet.has(item.url) || !!claim,
-        // Who already claimed/scraped this URL (null = free to grab).
+        alreadyScraped,
+        canGenerate,
+        wasDeleted: articleStatus === "DELETED",
+        articleStatus,
+        // Who claimed/scraped this URL (null = free to grab).
         claimedBy: claim?.scrapedByName ?? null,
-        claimStatus: claim?.status ?? null, // "CLAIMED" | "DONE" | null
+        claimStatus, // "CLAIMED" | "DONE" | "DELETED" | null
         articleId: claim?.articleId ?? null,
+        articleSlug: claim?.articleSlug ?? null,
+        publishedAt: claim?.publishedAt ?? null,
       };
     });
+
+    const visibleItems = enriched.slice(0, 60); // cap so preview is snappy
+    const countBy = (status: string) =>
+      visibleItems.filter((i) => i.articleStatus === status).length;
 
     return successResponse({
       selectorUsed,
       total: items.length,
-      newCount: enriched.filter((i) => !i.alreadyScraped).length,
-      items: enriched.slice(0, 60), // cap so preview is snappy
+      newCount: countBy("NEW"),
+      totalNewCount: enriched.filter((i) => i.articleStatus === "NEW").length,
+      statusCounts: {
+        new: countBy("NEW"),
+        deleted: countBy("DELETED"),
+        draft: countBy("DRAFT"),
+        inReview: countBy("IN_REVIEW"),
+        approved: countBy("APPROVED"),
+        published: countBy("PUBLISHED"),
+        rejected: countBy("REJECTED"),
+        archived: countBy("ARCHIVED"),
+        claimed: countBy("CLAIMED"),
+      },
+      items: visibleItems,
       pagesVisited,
     });
   } catch (error) {

@@ -75,24 +75,41 @@ interface NewsSource {
   lastError: string | null;
 }
 
+type PreviewArticleStatus =
+  | "NEW"
+  | "CLAIMED"
+  | "DRAFT"
+  | "IN_REVIEW"
+  | "APPROVED"
+  | "PUBLISHED"
+  | "REJECTED"
+  | "ARCHIVED"
+  | "DELETED";
+
 interface PreviewItem {
   url: string;
   title: string;
   thumbnail?: string;
   snippet?: string;
   alreadyScraped: boolean;
+  canGenerate?: boolean;
+  wasDeleted?: boolean;
+  articleStatus?: PreviewArticleStatus;
   /** Name of the writer who already claimed this URL (null = free). */
   claimedBy?: string | null;
-  /** "CLAIMED" (in progress) | "DONE" (already a draft) | null. */
+  /** "CLAIMED" (in progress) | "DONE" (active article) | "DELETED" | null. */
   claimStatus?: string | null;
-  /** Linked draft article ID when claimStatus === "DONE". */
+  /** Linked article ID when an active article exists. */
   articleId?: string | null;
+  articleSlug?: string | null;
+  publishedAt?: string | null;
 }
 
 interface PreviewResponse {
   selectorUsed: string;
   total: number;
   newCount: number;
+  totalNewCount?: number;
   items: PreviewItem[];
 }
 
@@ -701,6 +718,11 @@ export default function SumberBeritaPage() {
           sourceId={preview.sourceId}
           sourceName={preview.sourceName}
           data={preview.data}
+          refreshing={busyId === preview.sourceId && busyAction === "preview"}
+          onRefresh={() => {
+            const src = sources.find((s) => s.id === preview.sourceId);
+            if (src) void handlePreview(src);
+          }}
           onClose={() => setPreview(null)}
           onScraped={fetchSources}
         />
@@ -1227,35 +1249,40 @@ function PreviewModal({
   sourceId,
   sourceName,
   data,
+  refreshing,
+  onRefresh,
   onClose,
   onScraped,
 }: {
   sourceId: string;
   sourceName: string;
   data: PreviewResponse;
+  refreshing?: boolean;
+  onRefresh: () => void;
   onClose: () => void;
   onScraped: () => void;
 }) {
   const { success, error: showError } = useToast();
-  // Track per-item state: idle | running | done | error.
-  // Keyed by URL so the source listing order stays stable.
-  // `articleId` is set when scrape-one succeeds so the card can link
-  // straight to the editor.
   interface ItemState {
     status: "idle" | "running" | "done" | "error";
     message?: string;
     articleId?: string;
+    articleSlug?: string | null;
+    articleStatus?: PreviewArticleStatus;
   }
   const [itemState, setItemState] = useState<Record<string, ItemState>>({});
-  // Mutable copy of "alreadyScraped" so the UI flips immediately after a
-  // successful generate without requiring a full preview refetch.
-  const [scrapedSet, setScrapedSet] = useState<Set<string>>(
-    () => new Set(data.items.filter((i) => i.alreadyScraped).map((i) => i.url)),
-  );
+  const [filterTab, setFilterTab] = useState<
+    "ALL" | "NEW" | "DELETED" | "IN_PROGRESS" | "PUBLISHED"
+  >("ALL");
   // Bulk-generate progress state.
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; failed: number } | null>(null);
   const bulkAbortRef = useRef(false);
+
+  // Reset local overrides whenever a fresh preview payload arrives (e.g. Refresh).
+  useEffect(() => {
+    setItemState({});
+  }, [data]);
 
   useEffect(() => {
     return () => {
@@ -1263,9 +1290,25 @@ function PreviewModal({
     };
   }, []);
 
+  function getEffectiveStatus(item: PreviewItem): PreviewArticleStatus {
+    const state = itemState[item.url];
+    if (state?.status === "done") {
+      return state.articleStatus ?? "DRAFT";
+    }
+    if (item.articleStatus) return item.articleStatus;
+    if (item.claimStatus === "CLAIMED") return "CLAIMED";
+    if (item.alreadyScraped) return "DRAFT";
+    return "NEW";
+  }
+
+  function canGenerateItem(item: PreviewItem): boolean {
+    const effective = getEffectiveStatus(item);
+    return effective === "NEW" || effective === "DELETED";
+  }
+
   async function handleGenerate(
     url: string,
-    opts?: { suppressRefresh?: boolean; thumbnail?: string },
+    opts?: { suppressRefresh?: boolean; thumbnail?: string; isRegenerate?: boolean },
   ): Promise<"ok" | "skipped" | "error"> {
     setItemState((s) => ({ ...s, [url]: { status: "running" } }));
     try {
@@ -1290,25 +1333,36 @@ function PreviewModal({
       const d = json.data as {
         skipped?: string;
         articleId?: string;
+        slug?: string;
         title?: string;
+        articleStatus?: PreviewArticleStatus;
       };
       if (d.skipped) {
-        // Either already a draft ("already-scraped") or another writer is
-        // mid-scrape ("in-progress"). Either way it's locked — mark done so
-        // the card flips and the Generate button disappears.
-        setScrapedSet((prev) => new Set(prev).add(url));
-        setItemState((s) => ({ ...s, [url]: { status: "done" } }));
+        const fallbackStatus: PreviewArticleStatus =
+          d.skipped === "in-progress" ? "CLAIMED" : "DRAFT";
+        setItemState((s) => ({
+          ...s,
+          [url]: { status: "done", articleStatus: fallbackStatus },
+        }));
         if (d.skipped === "in-progress") {
           showError("Artikel ini sedang diambil penulis lain.");
         }
         return "skipped";
       }
-      setScrapedSet((prev) => new Set(prev).add(url));
       setItemState((s) => ({
         ...s,
-        [url]: { status: "done", articleId: d.articleId },
+        [url]: {
+          status: "done",
+          articleId: d.articleId,
+          articleSlug: d.slug ?? null,
+          articleStatus: d.articleStatus ?? "DRAFT",
+        },
       }));
-      success(`Draft dibuat: "${d.title}"`);
+      success(
+        opts?.isRegenerate
+          ? `Draft dibuat ulang: "${d.title}"`
+          : `Draft dibuat: "${d.title}"`,
+      );
       if (!opts?.suppressRefresh) {
         onScraped();
       }
@@ -1324,14 +1378,12 @@ function PreviewModal({
     }
   }
 
-  /** Sequentially generate every "BARU" item left in the preview.
-   * Sequential not parallel because each generate triggers an AI paraphrase
-   * call — parallel would hammer the AI provider's rate limit and the source
-   * site's connections. Small breather between calls for the same reason.
-   * Stops when the user clicks "Stop" (sets bulkAbortRef.current = true). */
+  /** Sequentially generate every remaining "BARU" item left in the preview. */
   async function handleGenerateAll() {
     const targets = data.items.filter(
-      (item) => !scrapedSet.has(item.url) && itemState[item.url]?.status !== "running",
+      (item) =>
+        getEffectiveStatus(item) === "NEW" &&
+        itemState[item.url]?.status !== "running",
     );
     if (targets.length === 0) {
       showError("Tidak ada artikel baru untuk di-generate.");
@@ -1356,7 +1408,6 @@ function PreviewModal({
       done++;
       setBulkProgress({ done, total: targets.length, failed });
       if (!bulkAbortRef.current && done < targets.length) {
-        // Give the upstream site + AI a short rest between requests.
         await new Promise((r) => setTimeout(r, 350));
       }
     }
@@ -1378,9 +1429,100 @@ function PreviewModal({
     }
   }
 
-  const remainingNew = data.items.filter(
-    (i) => !scrapedSet.has(i.url) && itemState[i.url]?.status !== "running",
+  const effectiveStatuses = data.items.map((item) => ({
+    item,
+    effective: getEffectiveStatus(item),
+  }));
+  const countNew = effectiveStatuses.filter((x) => x.effective === "NEW").length;
+  const countDeleted = effectiveStatuses.filter((x) => x.effective === "DELETED").length;
+  const countPublished = effectiveStatuses.filter((x) => x.effective === "PUBLISHED").length;
+  const countInProgress = effectiveStatuses.filter((x) =>
+    ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED", "ARCHIVED", "CLAIMED"].includes(x.effective),
   ).length;
+  const remainingNew = effectiveStatuses.filter(
+    (x) => x.effective === "NEW" && itemState[x.item.url]?.status !== "running",
+  ).length;
+
+  const filteredItems = effectiveStatuses.filter(({ effective }) => {
+    if (filterTab === "ALL") return true;
+    if (filterTab === "NEW") return effective === "NEW";
+    if (filterTab === "DELETED") return effective === "DELETED";
+    if (filterTab === "PUBLISHED") return effective === "PUBLISHED";
+    if (filterTab === "IN_PROGRESS") {
+      return ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED", "ARCHIVED", "CLAIMED"].includes(
+        effective,
+      );
+    }
+    return true;
+  });
+
+  function renderStatusLabel(item: PreviewItem, effective: PreviewArticleStatus) {
+    const prevBy = item.claimedBy;
+    switch (effective) {
+      case "NEW":
+        return (
+          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+            ◉ Baru
+          </span>
+        );
+      case "DELETED":
+        return (
+          <span
+            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700"
+            title={
+              prevBy
+                ? `Pernah diambil oleh ${prevBy}, lalu artikelnya dihapus`
+                : "Pernah digenerate sebelumnya, lalu artikelnya dihapus"
+            }
+          >
+            <RefreshCw size={10} /> Dihapus{prevBy ? ` · ex ${prevBy}` : ""}
+          </span>
+        );
+      case "DRAFT":
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+            <CheckCircle size={10} /> Sudah jadi draf{prevBy ? ` · ${prevBy}` : ""}
+          </span>
+        );
+      case "IN_REVIEW":
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+            <CheckCircle size={10} /> Menunggu review{prevBy ? ` · ${prevBy}` : ""}
+          </span>
+        );
+      case "APPROVED":
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-700">
+            <CheckCircle size={10} /> Disetujui / Terjadwal
+          </span>
+        );
+      case "PUBLISHED":
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+            <CheckCircle size={10} /> Sudah dipublikasi
+            {item.publishedAt ? ` · ${fmtDate(item.publishedAt)}` : ""}
+          </span>
+        );
+      case "REJECTED":
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-700">
+            Ditolak redaksi{prevBy ? ` · ${prevBy}` : ""}
+          </span>
+        );
+      case "ARCHIVED":
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-txt-muted">
+            Diarsipkan
+          </span>
+        );
+      case "CLAIMED":
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+            <Lock size={10} /> Sedang diambil {prevBy || "penulis lain"}
+          </span>
+        );
+    }
+  }
 
   return (
     <div
@@ -1391,82 +1533,141 @@ function PreviewModal({
         className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-base font-bold text-txt-primary">
-              Preview — {sourceName}
-            </h2>
-            <p className="text-xs text-txt-secondary">
-              {data.total} artikel terdeteksi · {data.newCount} baru ·
-              selector: <code className="font-mono">{data.selectorUsed}</code>
-            </p>
-            <p className="mt-0.5 text-[11px] text-txt-muted">
-              Klik <strong>Generate</strong> per artikel atau{" "}
-              <strong>Generate Semua</strong> untuk semua sekaligus.
-            </p>
-            {bulkProgress && (
-              <p className="mt-1 text-[11px] font-semibold text-primary">
-                Progress: {bulkProgress.done}/{bulkProgress.total}
-                {bulkProgress.failed ? ` · ${bulkProgress.failed} gagal` : ""}
-                {bulkRunning ? " · sedang berjalan…" : " · selesai"}
+        <div className="flex flex-col gap-2.5 border-b border-border px-5 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-bold text-txt-primary">
+                Preview — {sourceName}
+              </h2>
+              <p className="text-xs text-txt-secondary">
+                Menampilkan {data.items.length} dari {data.total} artikel terdeteksi ·{" "}
+                {countNew} baru · {countDeleted} dihapus · {countInProgress} draf/proses ·{" "}
+                {countPublished} terbit · selector:{" "}
+                <code className="font-mono">{data.selectorUsed}</code>
               </p>
-            )}
+              <p className="mt-0.5 text-[11px] text-txt-muted">
+                Klik <strong>Generate</strong> untuk artikel baru, atau{" "}
+                <strong>Generate Lagi</strong> untuk artikel yang drafnya sudah dihapus.
+              </p>
+              {bulkProgress && (
+                <p className="mt-1 text-[11px] font-semibold text-primary">
+                  Progress: {bulkProgress.done}/{bulkProgress.total}
+                  {bulkProgress.failed ? ` · ${bulkProgress.failed} gagal` : ""}
+                  {bulkRunning ? " · sedang berjalan…" : " · selesai"}
+                </p>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={refreshing || bulkRunning}
+                className="btn-ghost p-2 text-xs disabled:opacity-50"
+                title="Muat ulang status artikel terbaru"
+                aria-label="Muat ulang preview"
+              >
+                <RefreshCw
+                  size={15}
+                  className={refreshing ? "animate-spin" : ""}
+                  aria-hidden="true"
+                />
+              </button>
+              {bulkRunning ? (
+                <button
+                  onClick={() => {
+                    bulkAbortRef.current = true;
+                  }}
+                  className="flex items-center gap-1 rounded-md border border-red-600 bg-surface px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-surface-secondary"
+                  title="Stop setelah artikel yang sedang berjalan selesai"
+                >
+                  Stop
+                </button>
+              ) : (
+                <button
+                  onClick={handleGenerateAll}
+                  disabled={remainingNew === 0}
+                  className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-40"
+                  title={
+                    remainingNew === 0
+                      ? "Tidak ada artikel baru tersisa"
+                      : `Generate ${remainingNew} artikel baru sekaligus`
+                  }
+                >
+                  Generate Semua ({remainingNew})
+                </button>
+              )}
+              <button type="button" onClick={onClose} aria-label="Tutup" className="btn-ghost p-2">
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {bulkRunning ? (
+
+          {/* Filter status */}
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                { key: "ALL", label: `Semua (${data.items.length})` },
+                { key: "NEW", label: `Baru (${countNew})` },
+                { key: "DELETED", label: `Dihapus (${countDeleted})` },
+                { key: "IN_PROGRESS", label: `Draf / Review (${countInProgress})` },
+                { key: "PUBLISHED", label: `Dipublikasi (${countPublished})` },
+              ] as const
+            ).map((tab) => (
               <button
-                onClick={() => {
-                  bulkAbortRef.current = true;
-                }}
-                className="flex items-center gap-1 rounded-md border border-red-600 bg-surface px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-surface-secondary"
-                title="Stop setelah artikel yang sedang berjalan selesai"
+                key={tab.key}
+                type="button"
+                onClick={() => setFilterTab(tab.key)}
+                className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  filterTab === tab.key
+                    ? "border-primary text-primary bg-surface"
+                    : "border-border text-txt-secondary hover:border-primary/50 hover:text-txt-primary"
+                }`}
               >
-                Stop
+                {tab.label}
               </button>
-            ) : (
-              <button
-                onClick={handleGenerateAll}
-                disabled={remainingNew === 0}
-                className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-40"
-                title={
-                  remainingNew === 0
-                    ? "Tidak ada artikel baru tersisa"
-                    : `Generate ${remainingNew} artikel baru sekaligus`
-                }
-              >
-                Generate Semua ({remainingNew})
-              </button>
-            )}
-            <button type="button" onClick={onClose} aria-label="Tutup" className="btn-ghost p-2">
-              <X size={18} aria-hidden="true" />
-            </button>
+            ))}
           </div>
         </div>
+
         <div className="flex-1 overflow-y-auto p-5">
-          {data.items.length === 0 ? (
-            <div className="py-12 text-center text-txt-muted">
-              Tidak ada artikel terdeteksi. Coba isi CSS selector manual.
+          {filteredItems.length === 0 ? (
+            <div className="py-12 text-center text-sm text-txt-muted">
+              {data.items.length === 0
+                ? "Tidak ada artikel terdeteksi. Coba isi CSS selector manual."
+                : "Tidak ada artikel pada filter status ini."}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {data.items.map((item) => {
-                const isScraped = scrapedSet.has(item.url);
+              {filteredItems.map(({ item, effective }) => {
                 const state = itemState[item.url];
                 const isRunning = state?.status === "running";
-                const isClaimedInProgress =
-                  item.claimStatus === "CLAIMED" && state?.status !== "done";
-                const isDone =
-                  !isClaimedInProgress && (state?.status === "done" || isScraped);
-                const resolvedArticleId = state?.articleId || item.articleId || null;
+                const resolvedArticleId =
+                  state?.status === "done"
+                    ? state.articleId || null
+                    : effective !== "DELETED" && effective !== "NEW"
+                      ? item.articleId || null
+                      : null;
+                const resolvedSlug =
+                  state?.status === "done"
+                    ? state.articleSlug ?? null
+                    : item.articleSlug ?? null;
+                const isRegeneratable = canGenerateItem(item);
+
+                const borderClass =
+                  effective === "PUBLISHED"
+                    ? "border-primary/40 bg-surface"
+                    : effective === "DELETED"
+                      ? "border-amber-600/40 bg-surface"
+                      : effective === "REJECTED"
+                        ? "border-red-500/40 bg-surface"
+                        : effective !== "NEW" && effective !== "CLAIMED"
+                          ? "border-emerald-600/40 bg-surface"
+                          : "border-border bg-surface";
 
                 return (
                   <div
                     key={item.url}
-                    className={`group flex flex-col gap-2 rounded-md border p-3 transition-colors ${
-                      isDone
-                        ? "border-emerald-600/40 bg-surface"
-                        : "border-border bg-surface"
-                    }`}
+                    className={`group flex flex-col gap-2 rounded-md border p-3 transition-colors ${borderClass}`}
                   >
                     <div className="flex gap-3">
                       {item.thumbnail && (
@@ -1490,23 +1691,7 @@ function PreviewModal({
                           </p>
                         )}
                         <div className="mt-1 flex items-center gap-1.5">
-                          {item.claimedBy ? (
-                            <span
-                              className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500"
-                              title={`Terkunci — diambil oleh ${item.claimedBy}`}
-                            >
-                              <Lock size={10} />
-                              {item.claimStatus === "CLAIMED" ? "Sedang diambil" : "Diambil"} {item.claimedBy}
-                            </span>
-                          ) : isDone ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                              <CheckCircle size={10} /> Sudah jadi draft
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
-                              ◉ Baru
-                            </span>
-                          )}
+                          {renderStatusLabel(item, effective)}
                         </div>
                       </div>
                     </div>
@@ -1521,45 +1706,33 @@ function PreviewModal({
                       >
                         Lihat sumber <ExternalLink size={10} />
                       </a>
-                      {isClaimedInProgress ? (
+                      {effective === "CLAIMED" ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-txt-muted">
                           <Lock size={11} /> Sedang diproses
                         </span>
-                      ) : isDone && resolvedArticleId ? (
-                        <Link
-                          href={`/panel/artikel/${resolvedArticleId}/edit`}
-                          target="_blank"
-                          className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-emerald-700"
-                          title="Buka draft di editor (tab baru)"
-                        >
-                          <CheckCircle size={11} /> Buka Draft
-                          <ExternalLink size={10} className="opacity-70" />
-                        </Link>
-                      ) : isDone ? (
-                        // Legacy scraped item without ScrapedUrl.articleId:
-                        // Send user to the article list filtered to scraper output.
-                        <Link
-                          href="/panel/artikel?status=DRAFT&origin=scraper"
-                          target="_blank"
-                          className="inline-flex items-center gap-1 rounded-md border border-emerald-600/40 bg-surface px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-surface-secondary"
-                          title="Buka daftar draft hasil scraper"
-                        >
-                          <CheckCircle size={11} /> Lihat di list
-                        </Link>
-                      ) : (
+                      ) : isRunning || isRegeneratable ? (
                         <button
                           type="button"
-                          onClick={() => handleGenerate(item.url, { thumbnail: item.thumbnail })}
+                          onClick={() =>
+                            handleGenerate(item.url, {
+                              thumbnail: item.thumbnail,
+                              isRegenerate: effective === "DELETED",
+                            })
+                          }
                           disabled={isRunning || bulkRunning}
                           className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                             isRunning
                               ? "border border-primary bg-surface text-primary"
-                              : "bg-primary text-white hover:bg-primary-dark"
+                              : effective === "DELETED"
+                                ? "border border-amber-700 bg-surface text-amber-800 hover:bg-surface-secondary"
+                                : "bg-primary text-white hover:bg-primary-dark"
                           }`}
                           title={
                             isRunning
                               ? "Sedang generate..."
-                              : "Generate paraphrase jadi draft"
+                              : effective === "DELETED"
+                                ? "Artikel sebelumnya sudah dihapus — klik untuk generate ulang menjadi draft baru"
+                                : "Generate paraphrase jadi draft"
                           }
                         >
                           {isRunning ? (
@@ -1567,12 +1740,66 @@ function PreviewModal({
                               <Loader2 size={11} className="animate-spin" />
                               Generate...
                             </>
+                          ) : effective === "DELETED" ? (
+                            <>
+                              <RefreshCw size={11} /> Generate Lagi
+                            </>
                           ) : (
                             <>
                               <Sparkles size={11} /> Generate
                             </>
                           )}
                         </button>
+                      ) : effective === "PUBLISHED" ? (
+                        <div className="flex items-center gap-1.5">
+                          {resolvedSlug && (
+                            <Link
+                              href={`/berita/${resolvedSlug}`}
+                              target="_blank"
+                              className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-primary-dark"
+                              title="Buka artikel yang sudah terbit"
+                            >
+                              Lihat Berita
+                              <ExternalLink size={10} className="opacity-80" />
+                            </Link>
+                          )}
+                          {resolvedArticleId && (
+                            <Link
+                              href={`/panel/artikel/${resolvedArticleId}/edit`}
+                              target="_blank"
+                              className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 text-[11px] font-semibold text-txt-primary hover:border-primary hover:text-primary"
+                              title="Edit artikel di panel"
+                            >
+                              Edit
+                            </Link>
+                          )}
+                        </div>
+                      ) : resolvedArticleId ? (
+                        <Link
+                          href={`/panel/artikel/${resolvedArticleId}/edit`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-emerald-700"
+                          title="Buka artikel di editor (tab baru)"
+                        >
+                          <CheckCircle size={11} />{" "}
+                          {effective === "DRAFT"
+                            ? "Buka Draf"
+                            : effective === "REJECTED"
+                              ? "Edit Draf"
+                              : effective === "ARCHIVED"
+                                ? "Lihat Arsip"
+                                : "Buka Artikel"}
+                          <ExternalLink size={10} className="opacity-70" />
+                        </Link>
+                      ) : (
+                        <Link
+                          href="/panel/artikel?origin=scraper"
+                          target="_blank"
+                          className="inline-flex items-center gap-1 rounded-md border border-emerald-600/40 bg-surface px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-surface-secondary"
+                          title="Buka daftar artikel hasil scraper"
+                        >
+                          <CheckCircle size={11} /> Lihat di list
+                        </Link>
                       )}
                     </div>
                     {state?.status === "error" && state.message && (

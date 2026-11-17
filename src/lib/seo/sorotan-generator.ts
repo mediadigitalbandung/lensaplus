@@ -141,6 +141,7 @@ ${context}`;
       userPrompt,
       maxTokens: 1200,
       temperature: 0.65,
+      allowCombo: true,
       articleTitle: article.title,
     });
 

@@ -12,9 +12,12 @@
  * served claiming with zero application-level locking.
  *
  * Lifecycle per URL:
- *   claimUrl()    → reserve (status CLAIMED) or refuse (taken / in-flight)
- *   finalizeClaim → mark DONE + attach the draft articleId
- *   releaseClaim  → scrape failed; delete the row so anyone may retry
+ *   claimUrl()              → reserve (status CLAIMED) or refuse (taken / in-flight)
+ *   finalizeClaim()         → mark DONE + attach the draft articleId
+ *   releaseClaim()          → scrape failed; delete the row so anyone may retry
+ *   markScrapedUrlsDeleted()→ mark DELETED on article deletion so preview shows
+ *                             "Dihapus" and manual retry is permitted without
+ *                             cron auto-resurrecting deleted drafts
  */
 
 import { Prisma } from "@prisma/client";
@@ -53,20 +56,64 @@ function isUniqueViolation(e: unknown): boolean {
 /**
  * Atomically claim `url` for `userId`. Returns `{ ok: true, claimId }` if
  * this caller now owns the scrape, or `{ ok: false, reason }` if the URL
- * was already taken (done) or is being scraped by someone else.
+ * was already taken (active article) or is being scraped by someone else.
+ *
+ * When `allowRegenerateDeleted` is true (explicit manual click on a deleted
+ * item in the preview UI), a `DELETED` claim — or a legacy `DONE` claim whose
+ * articleId no longer exists in DB — may be reclaimed and re-generated.
  */
 export async function claimUrl(opts: {
   url: string;
   sourceId: string;
   userId: string;
+  allowRegenerateDeleted?: boolean;
 }): Promise<ClaimResult> {
-  const { url, sourceId, userId } = opts;
+  const { url, sourceId, userId, allowRegenerateDeleted = false } = opts;
 
   const existing = await prisma.scrapedUrl.findUnique({ where: { url } });
   if (existing) {
-    if (existing.status === "DONE") {
-      return { ok: false, reason: "already-scraped" };
+    if (existing.status === "DONE" || existing.status === "DELETED") {
+      // Check whether the generated Article still exists in DB. If it's gone
+      // (or explicitly marked DELETED), treat as deleted.
+      let liveArticleExists = false;
+      if (existing.status === "DONE") {
+        if (existing.articleId) {
+          const art = await prisma.article.findUnique({
+            where: { id: existing.articleId },
+            select: { id: true },
+          });
+          liveArticleExists = Boolean(art);
+        } else {
+          const priorSource = await prisma.source.findFirst({
+            where: { url },
+            select: { articleId: true },
+          });
+          liveArticleExists = Boolean(priorSource);
+        }
+      }
+
+      if (liveArticleExists || !allowRegenerateDeleted) {
+        return { ok: false, reason: "already-scraped" };
+      }
+
+      // Deleted article + explicit manual regenerate: reclaim atomically.
+      const token = new Date();
+      const takeover = await prisma.scrapedUrl.updateMany({
+        where: { id: existing.id, claimedAt: existing.claimedAt },
+        data: {
+          status: "CLAIMED",
+          scrapedById: userId,
+          sourceId,
+          articleId: null,
+          claimedAt: token,
+        },
+      });
+      if (takeover.count === 0) {
+        return { ok: false, reason: "in-progress" };
+      }
+      return { ok: true, claimId: existing.id, claimToken: token };
     }
+
     // CLAIMED. Only allow a takeover if the claim is stale (crashed run).
     const age = Date.now() - existing.claimedAt.getTime();
     if (age < STALE_CLAIM_MS) {
@@ -106,6 +153,17 @@ export async function claimUrl(opts: {
       return { ok: false, reason: "in-progress" };
     }
     return { ok: true, claimId: existing.id, claimToken: token };
+  }
+
+  // Legacy safeguard: even if no ScrapedUrl row exists yet, check if a live
+  // Source row already references this upstream URL so legacy drafts don't
+  // duplicate.
+  const priorSource = await prisma.source.findFirst({
+    where: { url },
+    select: { articleId: true },
+  });
+  if (priorSource) {
+    return { ok: false, reason: "already-scraped" };
   }
 
   // No row yet — try to insert. The unique constraint is the lock.
@@ -171,31 +229,170 @@ export async function releaseClaim(
 }
 
 /**
- * Return the subset of `urls` that are already claimed (CLAIMED or DONE),
- * mapped to who took them + status. Used to pre-filter candidates and to
- * annotate the preview so writers can see what's already been grabbed.
+ * Mark claim ledger rows as DELETED when an article is deleted so preview
+ * reflects the deletion clearly and allows manual regeneration, while still
+ * preventing cron auto-scrape from recreating intentionally deleted drafts.
  */
-export async function getClaimsForUrls(urls: string[]): Promise<
-  Map<string, { status: string; scrapedByName: string | null; articleId: string | null }>
-> {
+export async function markScrapedUrlsDeleted(
+  articleIds: string | string[],
+): Promise<void> {
+  const ids = Array.isArray(articleIds) ? articleIds : [articleIds];
+  if (ids.length === 0) return;
+  if (typeof prisma?.scrapedUrl?.updateMany !== "function") return;
+  await prisma.scrapedUrl
+    .updateMany({
+      where: { articleId: { in: ids } },
+      data: { status: "DELETED", articleId: null },
+    })
+    .catch(() => {
+      // Non-fatal: preview & claimUrl also cross-check prisma.article directly.
+    });
+}
+
+export type ScrapedArticleStatus =
+  | "CLAIMED"
+  | "DRAFT"
+  | "IN_REVIEW"
+  | "APPROVED"
+  | "PUBLISHED"
+  | "REJECTED"
+  | "ARCHIVED"
+  | "DELETED";
+
+export interface ClaimLookupInfo {
+  status: string;
+  scrapedByName: string | null;
+  articleId: string | null;
+  articleStatus: ScrapedArticleStatus | null;
+  articleSlug: string | null;
+  articleTitle: string | null;
+  publishedAt: string | null;
+}
+
+/**
+ * Return claimed / previously scraped URLs enriched with live `Article` state
+ * (`DRAFT`, `IN_REVIEW`, `APPROVED`, `PUBLISHED`, `REJECTED`, `ARCHIVED`, or
+ * `DELETED` when the linked article was deleted).
+ */
+export async function getClaimsForUrls(
+  urls: string[],
+): Promise<Map<string, ClaimLookupInfo>> {
   if (urls.length === 0) return new Map();
+
   const rows = await prisma.scrapedUrl.findMany({
     where: { url: { in: urls } },
     select: {
       url: true,
       status: true,
       articleId: true,
+      claimedAt: true,
       scrapedBy: { select: { name: true } },
     },
   });
-  return new Map(
-    rows.map((r) => [
-      r.url,
-      {
-        status: r.status,
-        scrapedByName: r.scrapedBy?.name ?? null,
-        articleId: r.articleId ?? null,
-      },
-    ]),
+
+  const claimByUrl = new Map(rows.map((r) => [r.url, r]));
+  const articleIds = Array.from(
+    new Set(rows.map((r) => r.articleId).filter((id): id is string => Boolean(id))),
   );
+
+  const liveArticles =
+    articleIds.length > 0
+      ? await prisma.article.findMany({
+          where: { id: { in: articleIds } },
+          select: {
+            id: true,
+            status: true,
+            slug: true,
+            title: true,
+            publishedAt: true,
+          },
+        })
+      : [];
+  const articleById = new Map(liveArticles.map((a) => [a.id, a]));
+
+  // Fallback lookup via `Source.url` for legacy scrapes that lack a ScrapedUrl row
+  // or whose claim row missed articleId.
+  const fallbackUrls = urls.filter((u) => {
+    const c = claimByUrl.get(u);
+    return !c?.articleId || !articleById.has(c.articleId);
+  });
+  const sourceFallbackRows =
+    fallbackUrls.length > 0
+      ? await prisma.source.findMany({
+          where: { url: { in: fallbackUrls } },
+          select: {
+            url: true,
+            article: {
+              select: {
+                id: true,
+                status: true,
+                slug: true,
+                title: true,
+                publishedAt: true,
+              },
+            },
+          },
+        })
+      : [];
+  const articleBySourceUrl = new Map<string, (typeof liveArticles)[number]>();
+  for (const s of sourceFallbackRows) {
+    if (s.url && s.article && !articleBySourceUrl.has(s.url)) {
+      articleBySourceUrl.set(s.url, s.article);
+    }
+  }
+
+  const out = new Map<string, ClaimLookupInfo>();
+
+  for (const url of urls) {
+    const claim = claimByUrl.get(url);
+    const liveArticle =
+      (claim?.articleId ? articleById.get(claim.articleId) : undefined) ??
+      articleBySourceUrl.get(url);
+
+    if (liveArticle) {
+      out.set(url, {
+        status: claim?.status ?? "DONE",
+        scrapedByName: claim?.scrapedBy?.name ?? null,
+        articleId: liveArticle.id,
+        articleStatus: liveArticle.status as ScrapedArticleStatus,
+        articleSlug: liveArticle.slug,
+        articleTitle: liveArticle.title,
+        publishedAt: liveArticle.publishedAt ? liveArticle.publishedAt.toISOString() : null,
+      });
+      continue;
+    }
+
+    if (!claim) continue;
+
+    if (claim.status === "CLAIMED") {
+      const age = Date.now() - claim.claimedAt.getTime();
+      if (age < STALE_CLAIM_MS) {
+        out.set(url, {
+          status: "CLAIMED",
+          scrapedByName: claim.scrapedBy?.name ?? null,
+          articleId: null,
+          articleStatus: "CLAIMED",
+          articleSlug: null,
+          articleTitle: null,
+          publishedAt: null,
+        });
+      }
+      // Stale abandoned CLAIMED row with no article: omit so preview treats
+      // it as available and claimUrl can safely take over.
+      continue;
+    }
+
+    // DONE without a live Article (previously deleted), or explicitly DELETED.
+    out.set(url, {
+      status: "DELETED",
+      scrapedByName: claim.scrapedBy?.name ?? null,
+      articleId: null,
+      articleStatus: "DELETED",
+      articleSlug: null,
+      articleTitle: null,
+      publishedAt: null,
+    });
+  }
+
+  return out;
 }

@@ -831,7 +831,9 @@ model NewsSource {
 ///             Acts as a short-lived lock; a stale CLAIMED row (older
 ///             than the takeover window with no articleId) can be taken
 ///             over if the original run crashed.
-///   DONE    — paraphrase finished, `articleId` points at the draft.
+///   DONE    — paraphrase finished, `articleId` points at the article.
+///   DELETED — resulting article was deleted; cron stays skipped while UI lets
+///             editors see it was deleted and manually regenerate if desired.
 model ScrapedUrl {
   id          String      @id @default(cuid())
   url         String      @unique
@@ -841,9 +843,9 @@ model ScrapedUrl {
   /// Writer who claimed/scraped this URL (the byline of the draft).
   scrapedBy   User?       @relation(fields: [scrapedById], references: [id], onDelete: SetNull)
   scrapedById String?
-  /// Resulting draft Article id (set when status flips to DONE). Plain
-  /// reference — no FK so deleting the article never cascades here and
-  /// the URL stays claimed (won't be re-scraped into a fresh duplicate).
+  /// Resulting Article id (set when status flips to DONE; cleared to null
+  /// when status transitions to DELETED). Plain reference — no FK so deleting
+  /// the article never removes the history ledger row.
   articleId   String?
   claimedAt   DateTime    @default(now())
   createdAt   DateTime    @default(now())

@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole, ApiError, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { cleanAIShortText } from "@/lib/sanitize";
-import { decryptSecret } from "@/lib/crypto-secrets";
-import { recordAiUsage } from "@/lib/ai-usage";
+import { callAI } from "@/lib/ai-client";
 
 export const dynamic = "force-dynamic";
+
+const SEO_SYSTEM_PROMPT =
+  "Kamu adalah asisten SEO untuk media berita Indonesia. Jawab singkat dan langsung tanpa tanda kutip.";
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,12 +41,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, data: { processed: 0, message: "Semua artikel sudah memiliki SEO Title dan Meta Description" } });
     }
 
-    // Get DeepSeek API key
+    // Pre-check DeepSeek API key so missing config fails upfront clearly
     const setting = await prisma.systemSetting.findUnique({ where: { key: "deepseek_api_key" } });
-    if (!setting?.value) {
+    if (!setting?.value && !process.env.DEEPSEEK_API_KEY) {
       return NextResponse.json({ success: false, error: "API Key AI (DeepSeek) belum dikonfigurasi di Pengaturan." }, { status: 400 });
     }
-    const deepseekApiKey = decryptSecret(setting.value);
 
     const actorName = session.user.name || session.user.email || "admin";
     let processed = 0;
@@ -55,35 +56,35 @@ export async function POST(req: NextRequest) {
         const updates: Record<string, string> = {};
 
         if (!article.seoTitle) {
-          const aiRes = await callAI(deepseekApiKey, "seo_title", article.title, article.content);
-          recordAiUsage({
+          const aiRes = await callAI({
+            feature: "seo_title",
+            forceProvider: "deepseek",
+            systemPrompt: SEO_SYSTEM_PROMPT,
+            userPrompt: `Buatkan SEO title (maks 60 karakter) untuk artikel berita berikut. Hanya output title saja, tanpa tanda kutip. Judul: ${article.title}`,
+            maxTokens: 100,
+            temperature: 0.5,
+            timeoutMs: 15_000,
             userId: session.user.id,
             userName: actorName,
-            feature: "bulk_seo_title",
-            provider: "deepseek",
-            model: "deepseek-chat",
-            inputTokens: aiRes.inputTokens,
-            outputTokens: aiRes.outputTokens,
-            totalTokens: aiRes.totalTokens,
             articleTitle: article.title,
           });
-          const cleaned = cleanAIShortText(aiRes.text);
+          const cleaned = cleanAIShortText(aiRes.text.replace(/^["']|["']$/g, ""));
           if (cleaned) updates.seoTitle = cleaned.slice(0, 70);
         }
         if (!article.seoDescription) {
-          const aiRes = await callAI(deepseekApiKey, "meta_description", article.title, article.content);
-          recordAiUsage({
+          const aiRes = await callAI({
+            feature: "seo_description",
+            forceProvider: "deepseek",
+            systemPrompt: SEO_SYSTEM_PROMPT,
+            userPrompt: `Buatkan meta description (maks 155 karakter) untuk artikel berita berikut. Hanya output deskripsi saja, tanpa tanda kutip. Judul: ${article.title}. Konten: ${article.content.replace(/<[^>]+>/g, " ").slice(0, 800)}`,
+            maxTokens: 120,
+            temperature: 0.5,
+            timeoutMs: 15_000,
             userId: session.user.id,
             userName: actorName,
-            feature: "bulk_meta_description",
-            provider: "deepseek",
-            model: "deepseek-chat",
-            inputTokens: aiRes.inputTokens,
-            outputTokens: aiRes.outputTokens,
-            totalTokens: aiRes.totalTokens,
             articleTitle: article.title,
           });
-          const cleaned = cleanAIShortText(aiRes.text);
+          const cleaned = cleanAIShortText(aiRes.text.replace(/^["']|["']$/g, ""));
           if (cleaned) updates.seoDescription = cleaned.slice(0, 160);
         }
 
@@ -109,51 +110,5 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: error.message }, { status: error.statusCode });
     }
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
-  }
-}
-
-async function callAI(
-  apiKey: string,
-  feature: string,
-  title: string,
-  content: string,
-): Promise<{ text: string; inputTokens: number; outputTokens: number; totalTokens: number }> {
-  const prompts: Record<string, string> = {
-    seo_title: `Buatkan SEO title (maks 60 karakter) untuk artikel berita berikut. Hanya output title saja, tanpa tanda kutip. Judul: ${title}`,
-    meta_description: `Buatkan meta description (maks 155 karakter) untuk artikel berita berikut. Hanya output deskripsi saja, tanpa tanda kutip. Judul: ${title}. Konten: ${content.replace(/<[^>]+>/g, " ").slice(0, 800)}`,
-  };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-  try {
-    const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      signal: controller.signal,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          { role: "system", content: "Kamu adalah asisten SEO untuk media berita Indonesia. Jawab singkat dan langsung." },
-          { role: "user", content: prompts[feature] },
-        ],
-        max_tokens: 100,
-        temperature: 0.5,
-      }),
-    });
-    if (!res.ok) {
-      throw new Error(`DeepSeek HTTP ${res.status}`);
-    }
-    const data = await res.json();
-    const inputTokens = data.usage?.prompt_tokens ?? 0;
-    const outputTokens = data.usage?.completion_tokens ?? 0;
-    const totalTokens = data.usage?.total_tokens ?? inputTokens + outputTokens;
-    return {
-      text: data.choices?.[0]?.message?.content?.trim().replace(/^["']|["']$/g, "") || "",
-      inputTokens,
-      outputTokens,
-      totalTokens,
-    };
-  } finally {
-    clearTimeout(timeout);
   }
 }

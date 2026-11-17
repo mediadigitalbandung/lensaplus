@@ -5,8 +5,9 @@ import { recordAiUsage } from "./ai-usage";
 
 /**
  * Shared AI client for Lensaplus.
- * Primary provider: Anthropic Claude Haiku 4.5.
- * Fallback: DeepSeek (deepseek-chat).
+ * Supports Anthropic Claude and DeepSeek with configurable primary provider,
+ * per-provider models, writing instructions, token/sampling controls, and
+ * optional 2-stage DeepSeek Combo mode.
  *
  * Usage:
  *   const { text } = await callAI({
@@ -29,6 +30,14 @@ export type AIFeature =
   | "clip_selection"
   | "test";
 
+export const DEEPSEEK_MODELS = ["deepseek-chat", "deepseek-reasoner"] as const;
+export const ANTHROPIC_MODELS = [
+  "claude-haiku-4-5",
+  "claude-sonnet-4-6",
+  "claude-sonnet-4-5",
+  "claude-opus-4-6",
+] as const;
+
 export interface CallAIOptions {
   feature: AIFeature;
   systemPrompt?: string;
@@ -36,8 +45,13 @@ export interface CallAIOptions {
   maxTokens?: number;
   temperature?: number;
   userId?: string;
+  userName?: string;
   articleTitle?: string;
   forceProvider?: "anthropic" | "deepseek";
+  /** Allow 2-stage Combo mode when configured (only for long/full drafts). */
+  allowCombo?: boolean;
+  /** Skip custom global author persona instructions (e.g. smoke tests). */
+  skipInstructions?: boolean;
   /** Override the 60s default per-call timeout (ms). */
   timeoutMs?: number;
 }
@@ -45,6 +59,7 @@ export interface CallAIOptions {
 export interface CallAIResult {
   text: string;
   provider: "anthropic" | "deepseek";
+  model?: string;
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
@@ -60,7 +75,128 @@ const DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions";
 const DEFAULT_SYSTEM_PROMPT =
   "Kamu adalah asisten AI untuk Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, pendidikan, kesehatan, lingkungan). Jawab dalam Bahasa Indonesia.";
 
+const DEEPSEEK_STAGE1_SYSTEM =
+  "Anda analis editorial redaksi Lensaplus. Dari instruksi/bahan berikut, susun kerangka analisis singkat dalam poin-poin padat: sudut pandang berita utama, fakta/angka/kutipan kunci yang harus dipertahankan, dan struktur alur penulisan. Jangan menulis draf lengkap, cukup kerangka padat dan akurat.";
+
 type Provider = "anthropic" | "deepseek";
+type SettingsDict = Record<string, string>;
+
+const CONFIG_SETTING_KEYS = [
+  "enable_ai",
+  "ai_primary_provider",
+  "anthropic_instructions",
+  "anthropic_model",
+  "anthropic_max_tokens",
+  "anthropic_temperature",
+  "deepseek_instructions",
+  "deepseek_model",
+  "deepseek_max_tokens",
+  "deepseek_temperature",
+  "deepseek_top_p",
+  "deepseek_frequency_penalty",
+  "deepseek_combo_enabled",
+  "deepseek_research_model",
+] as const;
+
+interface DeepSeekConfig {
+  model: string;
+  researchModel: string;
+  comboEnabled: boolean;
+  instructions: string;
+  maxTokensCap: number | null;
+  temperature: number | null;
+  topP: number | null;
+  frequencyPenalty: number | null;
+}
+
+interface AnthropicConfig {
+  model: string;
+  instructions: string;
+  maxTokensCap: number | null;
+  temperature: number | null;
+}
+
+async function readSettingsMap(keys: readonly string[]): Promise<SettingsDict> {
+  try {
+    const ss = prisma.systemSetting as unknown as {
+      findMany?: (args: { where: { key: { in: string[] } }; select?: { key: boolean; value: boolean } }) => Promise<Array<{ key: string; value: string }>>;
+      findUnique?: (args: { where: { key: string } }) => Promise<{ key: string; value: string } | null>;
+    };
+    if (typeof ss.findMany === "function") {
+      const rows = await ss.findMany({
+        where: { key: { in: [...keys] } },
+        select: { key: true, value: true },
+      });
+      return Object.fromEntries(rows.map((r) => [r.key, (r.value ?? "").trim()]));
+    }
+    if (typeof ss.findUnique === "function") {
+      const settled = await Promise.all(
+        keys.map((key) => ss.findUnique!({ where: { key } }).catch(() => null)),
+      );
+      const out: SettingsDict = {};
+      for (const row of settled) {
+        if (row?.key) out[row.key] = (row.value ?? "").trim();
+      }
+      return out;
+    }
+  } catch {
+    // DB unavailable — fall back to defaults.
+  }
+  return {};
+}
+
+function parseOptionalIntCap(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function parseOptionalFloat(raw: string | undefined, min: number, max: number): number | null {
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= min && n <= max ? n : null;
+}
+
+function getDeepSeekConfig(map: SettingsDict): DeepSeekConfig {
+  const model = (DEEPSEEK_MODELS as readonly string[]).includes(map.deepseek_model)
+    ? map.deepseek_model
+    : DEEPSEEK_MODEL;
+  const researchModel = (DEEPSEEK_MODELS as readonly string[]).includes(map.deepseek_research_model)
+    ? map.deepseek_research_model
+    : "deepseek-reasoner";
+  return {
+    model,
+    researchModel,
+    comboEnabled: map.deepseek_combo_enabled === "true",
+    instructions: (map.deepseek_instructions ?? "").trim(),
+    maxTokensCap: parseOptionalIntCap(map.deepseek_max_tokens),
+    temperature: parseOptionalFloat(map.deepseek_temperature, 0, 2),
+    topP: parseOptionalFloat(map.deepseek_top_p, 0.01, 1),
+    frequencyPenalty: parseOptionalFloat(map.deepseek_frequency_penalty, -2, 2),
+  };
+}
+
+function getAnthropicConfig(map: SettingsDict): AnthropicConfig {
+  const model = (ANTHROPIC_MODELS as readonly string[]).includes(map.anthropic_model)
+    ? map.anthropic_model
+    : ANTHROPIC_MODEL;
+  return {
+    model,
+    instructions: (map.anthropic_instructions ?? "").trim(),
+    maxTokensCap: parseOptionalIntCap(map.anthropic_max_tokens),
+    temperature: parseOptionalFloat(map.anthropic_temperature, 0, 1),
+  };
+}
+
+function buildSystemPrompt(
+  base: string | undefined,
+  instructions: string,
+  skip?: boolean,
+): string {
+  const prompt = base ?? DEFAULT_SYSTEM_PROMPT;
+  if (skip || !instructions) return prompt;
+  return `${prompt}\n\nARAHAN PENULIS (WAJIB DIIKUTI): ${instructions}\n(Tetap patuhi format output yang diminta di atas.)`;
+}
 
 /**
  * Decide whether an Anthropic error should trigger DeepSeek fallback.
@@ -141,9 +277,20 @@ async function getApiKey(provider: Provider): Promise<string | null> {
 async function callAnthropic(
   opts: CallAIOptions,
   apiKey: string,
+  cfg: AnthropicConfig,
 ): Promise<CallAIResult> {
   const client = new Anthropic({ apiKey });
   const start = Date.now();
+  const skipMeta = opts.skipInstructions || opts.feature === "test";
+  const requestedMax = opts.maxTokens ?? DEFAULT_MAX_TOKENS;
+  const maxTokens =
+    !skipMeta && cfg.maxTokensCap
+      ? Math.min(requestedMax, cfg.maxTokensCap)
+      : requestedMax;
+  const temperature =
+    !skipMeta && cfg.temperature !== null
+      ? cfg.temperature
+      : opts.temperature ?? DEFAULT_TEMPERATURE;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
@@ -151,10 +298,10 @@ async function callAnthropic(
   try {
     const response = await client.messages.create(
       {
-        model: ANTHROPIC_MODEL,
-        max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-        temperature: opts.temperature ?? DEFAULT_TEMPERATURE,
-        system: opts.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
+        model: cfg.model,
+        max_tokens: maxTokens,
+        temperature,
+        system: buildSystemPrompt(opts.systemPrompt, cfg.instructions, skipMeta),
         messages: [{ role: "user", content: opts.userPrompt }],
       },
       { signal: controller.signal },
@@ -173,6 +320,7 @@ async function callAnthropic(
     return {
       text: text.trim(),
       provider: "anthropic",
+      model: cfg.model,
       inputTokens,
       outputTokens,
       totalTokens: inputTokens + outputTokens,
@@ -184,15 +332,37 @@ async function callAnthropic(
 }
 
 /**
- * Call DeepSeek via raw fetch (OpenAI-compatible endpoint).
+ * Single HTTP request to DeepSeek chat completions.
  */
-async function callDeepSeek(
-  opts: CallAIOptions,
-  apiKey: string,
-): Promise<CallAIResult> {
+async function runDeepSeekOnce(p: {
+  apiKey: string;
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+  maxTokens: number;
+  temperature: number;
+  topP: number | null;
+  frequencyPenalty: number | null;
+  timeoutMs: number;
+}): Promise<CallAIResult> {
   const start = Date.now();
+  const isReasoner = p.model === "deepseek-reasoner";
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), p.timeoutMs);
+
+  const payload: Record<string, unknown> = {
+    model: p.model,
+    messages: [
+      { role: "system", content: p.systemPrompt },
+      { role: "user", content: p.userPrompt },
+    ],
+    max_tokens: p.maxTokens,
+  };
+  if (!isReasoner) {
+    payload.temperature = p.temperature;
+    if (p.topP !== null) payload.top_p = p.topP;
+    if (p.frequencyPenalty !== null) payload.frequency_penalty = p.frequencyPenalty;
+  }
 
   try {
     const response = await fetch(DEEPSEEK_ENDPOINT, {
@@ -200,20 +370,9 @@ async function callDeepSeek(
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${p.apiKey}`,
       },
-      body: JSON.stringify({
-        model: DEEPSEEK_MODEL,
-        messages: [
-          {
-            role: "system",
-            content: opts.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
-          },
-          { role: "user", content: opts.userPrompt },
-        ],
-        max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-        temperature: opts.temperature ?? DEFAULT_TEMPERATURE,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -235,6 +394,7 @@ async function callDeepSeek(
     return {
       text,
       provider: "deepseek",
+      model: p.model,
       inputTokens,
       outputTokens,
       totalTokens: inputTokens + outputTokens,
@@ -246,17 +406,119 @@ async function callDeepSeek(
 }
 
 /**
+ * Call DeepSeek (supporting custom model, author instructions, token cap,
+ * sampling controls, and optional 2-stage Combo mode).
+ */
+async function callDeepSeek(
+  opts: CallAIOptions,
+  apiKey: string,
+  cfg: DeepSeekConfig,
+): Promise<{ result: CallAIResult; loggedAlready: boolean }> {
+  const skipMeta = opts.skipInstructions || opts.feature === "test";
+  const requestedMax = opts.maxTokens ?? DEFAULT_MAX_TOKENS;
+  const cappedMax =
+    !skipMeta && cfg.maxTokensCap
+      ? Math.min(requestedMax, cfg.maxTokensCap)
+      : requestedMax;
+  const baseTemperature =
+    !skipMeta && cfg.temperature !== null
+      ? cfg.temperature
+      : opts.temperature ?? DEFAULT_TEMPERATURE;
+
+  const shouldCombo =
+    Boolean(opts.allowCombo) && cfg.comboEnabled && !skipMeta;
+
+  if (shouldCombo) {
+    const stage1Max = cfg.researchModel === "deepseek-reasoner" ? 1600 : 700;
+    const stage1 = await runDeepSeekOnce({
+      apiKey,
+      model: cfg.researchModel,
+      systemPrompt: DEEPSEEK_STAGE1_SYSTEM,
+      userPrompt: opts.userPrompt,
+      maxTokens: stage1Max,
+      temperature: 0.3,
+      topP: cfg.topP,
+      frequencyPenalty: cfg.frequencyPenalty,
+      timeoutMs: Math.max(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, 90_000),
+    });
+    logUsage(opts, {
+      ...stage1,
+      model: cfg.researchModel,
+    });
+
+    const stage2Max =
+      cfg.model === "deepseek-reasoner"
+        ? Math.max(cappedMax, 1500)
+        : cappedMax;
+    const stage2 = await runDeepSeekOnce({
+      apiKey,
+      model: cfg.model,
+      systemPrompt: buildSystemPrompt(opts.systemPrompt, cfg.instructions, false),
+      userPrompt:
+        `KERANGKA ANALISIS (TAHAP 1 — WAJIB DIPERTAHANKAN AKURASINYA):\n${stage1.text}\n\n` +
+        `TUGAS PENULISAN (TAHAP 2):\n${opts.userPrompt}`,
+      maxTokens: stage2Max,
+      temperature: baseTemperature,
+      topP: cfg.topP,
+      frequencyPenalty: cfg.frequencyPenalty,
+      timeoutMs: Math.max(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, 90_000),
+    });
+    logUsage(opts, {
+      ...stage2,
+      model: cfg.model,
+    });
+
+    return {
+      result: {
+        text: stage2.text,
+        provider: "deepseek",
+        model: `${cfg.researchModel}+${cfg.model}`,
+        inputTokens: stage1.inputTokens + stage2.inputTokens,
+        outputTokens: stage1.outputTokens + stage2.outputTokens,
+        totalTokens: stage1.totalTokens + stage2.totalTokens,
+        durationMs: stage1.durationMs + stage2.durationMs,
+      },
+      loggedAlready: true,
+    };
+  }
+
+  const effectiveMax =
+    cfg.model === "deepseek-reasoner"
+      ? Math.max(cappedMax, opts.feature === "test" ? 512 : 1500)
+      : cappedMax;
+
+  const single = await runDeepSeekOnce({
+    apiKey,
+    model: cfg.model,
+    systemPrompt: buildSystemPrompt(opts.systemPrompt, cfg.instructions, skipMeta),
+    userPrompt: opts.userPrompt,
+    maxTokens: effectiveMax,
+    temperature: baseTemperature,
+    topP: skipMeta ? null : cfg.topP,
+    frequencyPenalty: skipMeta ? null : cfg.frequencyPenalty,
+    timeoutMs:
+      cfg.model === "deepseek-reasoner"
+        ? Math.max(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, 90_000)
+        : opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+  });
+
+  return { result: single, loggedAlready: false };
+}
+
+/**
  * Fire-and-forget log to AIUsageLog. Errors are swallowed — logging must
  * never block or fail the caller.
  */
 function logUsage(opts: CallAIOptions, result: CallAIResult): void {
-  const model = result.provider === "anthropic" ? ANTHROPIC_MODEL : DEEPSEEK_MODEL;
+  const model =
+    result.model ??
+    (result.provider === "anthropic" ? ANTHROPIC_MODEL : DEEPSEEK_MODEL);
   // Route through the shared chokepoint so these rows ALSO get a frozen costIdr +
   // usdIdrRate (previously only Perplexity rows did), keeping the AI stats'
   // historical Rupiah consistent across providers. Fire-and-forget inside.
   recordAiUsage({
     userId: opts.userId ?? "system",
-    userName: opts.userId ? "user" : "system",
+    userName: opts.userName ?? (opts.userId ? "user" : "system"),
     feature: opts.feature,
     provider: result.provider,
     model,
@@ -267,73 +529,81 @@ function logUsage(opts: CallAIOptions, result: CallAIResult): void {
   });
 }
 
+async function executeProvider(
+  provider: Provider,
+  opts: CallAIOptions,
+  apiKey: string,
+  settings: SettingsDict,
+): Promise<CallAIResult> {
+  if (provider === "anthropic") {
+    const result = await callAnthropic(opts, apiKey, getAnthropicConfig(settings));
+    logUsage(opts, result);
+    return result;
+  }
+  const { result, loggedAlready } = await callDeepSeek(
+    opts,
+    apiKey,
+    getDeepSeekConfig(settings),
+  );
+  if (!loggedAlready) logUsage(opts, result);
+  return result;
+}
+
 /**
- * Main entry point. Try Anthropic first, fall back to DeepSeek on any failure.
- * If `forceProvider` is set, skip the fallback path and call only that provider.
+ * Main entry point. Respects `ai_primary_provider` ("anthropic" | "deepseek",
+ * default "anthropic") with automatic fallback to the secondary provider.
+ * If `forceProvider` is set, skip fallback and call only that provider.
  */
 export async function callAI(opts: CallAIOptions): Promise<CallAIResult> {
-  // Forced provider path — no fallback.
-  if (opts.forceProvider === "anthropic") {
-    const key = await getApiKey("anthropic");
-    if (!key) {
-      throw new Error(
-        "AI provider 'anthropic' forced but no API key configured",
-      );
-    }
-    const result = await callAnthropic(opts, key);
-    logUsage(opts, result);
-    return result;
-  }
-  if (opts.forceProvider === "deepseek") {
-    const key = await getApiKey("deepseek");
-    if (!key) {
-      throw new Error(
-        "AI provider 'deepseek' forced but no API key configured",
-      );
-    }
-    const result = await callDeepSeek(opts, key);
-    logUsage(opts, result);
-    return result;
+  const settings = await readSettingsMap(CONFIG_SETTING_KEYS);
+  if (settings.enable_ai === "false" && opts.feature !== "test") {
+    throw new Error("Fitur AI sedang dinonaktifkan di Pengaturan Sistem.");
   }
 
-  // Default path: Anthropic primary, DeepSeek fallback.
-  const [anthropicKey, deepseekKey] = await Promise.all([
-    getApiKey("anthropic"),
-    getApiKey("deepseek"),
+  // Forced provider path — no fallback.
+  if (opts.forceProvider === "anthropic" || opts.forceProvider === "deepseek") {
+    const key = await getApiKey(opts.forceProvider);
+    if (!key) {
+      throw new Error(
+        `AI provider '${opts.forceProvider}' forced but no API key configured`,
+      );
+    }
+    return executeProvider(opts.forceProvider, opts, key, settings);
+  }
+
+  const order: [Provider, Provider] =
+    settings.ai_primary_provider === "deepseek"
+      ? ["deepseek", "anthropic"]
+      : ["anthropic", "deepseek"];
+
+  const [firstKey, secondKey] = await Promise.all([
+    getApiKey(order[0]),
+    getApiKey(order[1]),
   ]);
+  const keyMap: Record<Provider, string | null> = {
+    [order[0]]: firstKey,
+    [order[1]]: secondKey,
+  } as Record<Provider, string | null>;
 
   const errors: string[] = [];
 
-  if (anthropicKey) {
+  for (let i = 0; i < order.length; i++) {
+    const provider = order[i];
+    const key = keyMap[provider];
+    if (!key) {
+      errors.push(`${provider}: no API key configured`);
+      continue;
+    }
     try {
-      const result = await callAnthropic(opts, anthropicKey);
-      logUsage(opts, result);
-      return result;
+      return await executeProvider(provider, opts, key, settings);
     } catch (err) {
-      // If the error is non-retryable (e.g. 400 Bad Request from a malformed
-      // prompt), don't waste a DeepSeek call — the prompt would fail there
-      // too and the response would be misleading. Re-throw immediately.
-      if (!isRetryable(err)) {
+      // Prompt-level 400 errors will fail the fallback too — fail fast.
+      if (i === 0 && !isRetryable(err)) {
         throw err;
       }
       const msg = err instanceof Error ? err.message : String(err);
-      errors.push(`anthropic: ${msg}`);
+      errors.push(`${provider}: ${msg}`);
     }
-  } else {
-    errors.push("anthropic: no API key configured");
-  }
-
-  if (deepseekKey) {
-    try {
-      const result = await callDeepSeek(opts, deepseekKey);
-      logUsage(opts, result);
-      return result;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      errors.push(`deepseek: ${msg}`);
-    }
-  } else {
-    errors.push("deepseek: no API key configured");
   }
 
   throw new Error(`AI providers exhausted: ${errors.join("; ")}`);

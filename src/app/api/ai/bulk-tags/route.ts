@@ -1,9 +1,8 @@
 import { NextRequest } from "next/server";
 import { requireRole, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-import { decryptSecret } from "@/lib/crypto-secrets";
 import { slugify } from "@/lib/utils";
-import { recordAiUsage } from "@/lib/ai-usage";
+import { callAI } from "@/lib/ai-client";
 
 function slugifyTag(name: string): string {
   return slugify(name).slice(0, 60);
@@ -28,14 +27,13 @@ export async function POST(_req: NextRequest) {
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
 
-    // Get DeepSeek API key
+    // Pre-check DeepSeek API key
     const setting = await prisma.systemSetting.findUnique({
       where: { key: "deepseek_api_key" },
     });
-    if (!setting?.value) {
+    if (!setting?.value && !process.env.DEEPSEEK_API_KEY) {
       throw new ApiError("API Key AI belum dikonfigurasi", 400);
     }
-    const deepseekApiKey = decryptSecret(setting.value);
 
     // Bound scan + select minimal fields; cap AI calls per invocation to 20.
     const articles = await prisma.article.findMany({
@@ -74,52 +72,20 @@ Konten: ${plainContent}
 
 Format jawaban HANYA tag dipisah koma, tanpa penjelasan.`;
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
-        let response: Response;
-        try {
-          response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-            method: "POST",
-            signal: controller.signal,
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${deepseekApiKey}`,
-            },
-            body: JSON.stringify({
-              model: "deepseek-chat",
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "Kamu adalah SEO specialist untuk Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain. Jawab HANYA dengan daftar tag dipisah koma.",
-                },
-                { role: "user", content: prompt },
-              ],
-              max_tokens: 200,
-              temperature: 0.8,
-            }),
-          });
-        } finally {
-          clearTimeout(timeout);
-        }
-
-        if (!response.ok) continue;
-
-        const data = await response.json();
-        const inputTokens = data.usage?.prompt_tokens ?? 0;
-        const outputTokens = data.usage?.completion_tokens ?? 0;
-        recordAiUsage({
+        const aiRes = await callAI({
+          feature: "bulk_tags",
+          forceProvider: "deepseek",
+          systemPrompt:
+            "Kamu adalah SEO specialist untuk Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain. Jawab HANYA dengan daftar tag dipisah koma.",
+          userPrompt: prompt,
+          maxTokens: 200,
+          temperature: 0.8,
+          timeoutMs: 30_000,
           userId: session.user.id,
           userName: actorName,
-          feature: "bulk_tags",
-          provider: "deepseek",
-          model: "deepseek-chat",
-          inputTokens,
-          outputTokens,
-          totalTokens: data.usage?.total_tokens ?? inputTokens + outputTokens,
           articleTitle: article.title,
         });
-        const result = data.choices?.[0]?.message?.content?.trim() || "";
+        const result = aiRes.text;
 
         const existingTagNames = new Set(article.tags.map((t) => t.name));
         const newTags = result

@@ -23,6 +23,7 @@ import {
 } from "@/lib/email";
 import { onArticlePublished, onArticleUnpublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
 import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
+import { markScrapedUrlsDeleted } from "@/lib/scraper/claim";
 import { extractFirstImageUrl } from "@/lib/image-extract";
 import { checkArticleQuality } from "@/lib/article-quality";
 import { revalidatePath } from "next/cache";
@@ -1003,6 +1004,7 @@ export async function DELETE(
     }
 
     await prisma.article.delete({ where: { id: params.id } });
+    await markScrapedUrlsDeleted(params.id);
 
     await logAudit(
       session.user.id,

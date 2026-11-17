@@ -33,8 +33,11 @@ type Provider = "gemini" | "elevenlabs" | null;
 interface TtsPlan {
   provider: Provider;
   geminiKey?: string;
+  geminiModel?: string;
+  geminiVoice?: string;
   elKey?: string;
   elVoice?: string;
+  elModel?: string;
 }
 
 async function getSettingRaw(key: string): Promise<string | null> {
@@ -64,15 +67,22 @@ async function getTtsPlan(): Promise<TtsPlan> {
     process.env.GEMINI_API_KEY ||
     process.env.GOOGLE_AISTUDIO_KEY ||
     "";
+  const geminiModel = (await getSettingRaw("gemini_tts_model")) || GEMINI_MODEL;
+  const geminiVoice = (await getSettingRaw("gemini_tts_voice")) || GEMINI_VOICE;
   const elKey = (await getSettingSecret("elevenlabs_api_key")) || process.env.ELEVENLABS_API_KEY || "";
   const elVoice = (await getSettingRaw("elevenlabs_voice_id")) || EL_DEFAULT_VOICE;
+  const elModel = (await getSettingRaw("elevenlabs_model")) || EL_MODEL;
 
   if (provider === "off") return { provider: null };
-  if (provider === "gemini") return geminiKey ? { provider: "gemini", geminiKey } : { provider: null };
-  if (provider === "elevenlabs") return elKey ? { provider: "elevenlabs", elKey, elVoice } : { provider: null };
+  if (provider === "gemini") {
+    return geminiKey ? { provider: "gemini", geminiKey, geminiModel, geminiVoice } : { provider: null };
+  }
+  if (provider === "elevenlabs") {
+    return elKey ? { provider: "elevenlabs", elKey, elVoice, elModel } : { provider: null };
+  }
   // auto — prefer ElevenLabs when configured, else Gemini.
-  if (elKey) return { provider: "elevenlabs", elKey, elVoice };
-  if (geminiKey) return { provider: "gemini", geminiKey };
+  if (elKey) return { provider: "elevenlabs", elKey, elVoice, elModel };
+  if (geminiKey) return { provider: "gemini", geminiKey, geminiModel, geminiVoice };
   return { provider: null };
 }
 
@@ -139,13 +149,18 @@ function decodeToPcm(input: Buffer): Promise<Buffer> {
   });
 }
 
-async function synthGemini(text: string, key: string): Promise<TtsResult | null> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
+async function synthGemini(
+  text: string,
+  key: string,
+  model = GEMINI_MODEL,
+  voice = GEMINI_VOICE,
+): Promise<TtsResult | null> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const body = {
     contents: [{ parts: [{ text: `Bacakan dengan jelas dan natural dalam Bahasa Indonesia: ${text}` }] }],
     generationConfig: {
       responseModalities: ["AUDIO"],
-      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: GEMINI_VOICE } } },
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
     },
   };
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -186,13 +201,18 @@ async function synthGemini(text: string, key: string): Promise<TtsResult | null>
   return null;
 }
 
-async function synthElevenLabs(text: string, key: string, voiceId: string): Promise<TtsResult | null> {
+async function synthElevenLabs(
+  text: string,
+  key: string,
+  voiceId: string,
+  modelId = EL_MODEL,
+): Promise<TtsResult | null> {
   // Request MP3 (available on every tier), then decode to PCM. The model
   // auto-handles Indonesian; voice is language-agnostic.
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`;
   const body = {
     text,
-    model_id: EL_MODEL,
+    model_id: modelId,
     voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0, use_speaker_boost: true },
   };
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -241,10 +261,20 @@ export async function synthesizeIndonesianSpeech(text: string): Promise<TtsResul
   if (!clean) return null;
   const plan = await getTtsPlan();
   if (plan.provider === "elevenlabs" && plan.elKey) {
-    return synthElevenLabs(clean, plan.elKey, plan.elVoice || EL_DEFAULT_VOICE);
+    return synthElevenLabs(
+      clean,
+      plan.elKey,
+      plan.elVoice || EL_DEFAULT_VOICE,
+      plan.elModel || EL_MODEL,
+    );
   }
   if (plan.provider === "gemini" && plan.geminiKey) {
-    return synthGemini(clean, plan.geminiKey);
+    return synthGemini(
+      clean,
+      plan.geminiKey,
+      plan.geminiModel || GEMINI_MODEL,
+      plan.geminiVoice || GEMINI_VOICE,
+    );
   }
   return null;
 }

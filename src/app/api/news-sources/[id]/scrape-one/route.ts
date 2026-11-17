@@ -80,20 +80,14 @@ export async function POST(
       throw new ApiError("URL target tidak diizinkan (host privat atau tidak valid).", 400);
     }
 
-    // Legacy per-source dedup (fast path for already-known URLs).
-    if (source.scrapedUrls.includes(data.url)) {
-      return successResponse({
-        skipped: "already-scraped",
-        url: data.url,
-      });
-    }
-
-    // Global atomic claim — first writer to grab this URL wins; everyone
-    // else gets a clean "already taken" instead of a duplicate draft.
+    // Global atomic claim — allows regenerating a URL whose prior generated
+    // article was deleted (`allowRegenerateDeleted: true`), while blocking
+    // live articles and concurrent active scrapes.
     const claim = await claimUrl({
       url: data.url,
       sourceId: source.id,
       userId: session.user.id,
+      allowRegenerateDeleted: true,
     });
     if (!claim.ok) {
       return successResponse({
@@ -146,11 +140,13 @@ export async function POST(
     }
     await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);
 
-    // Persist progress
+    // Persist progress (avoid pushing duplicate URLs when regenerating)
     await prisma.newsSource.update({
       where: { id: source.id },
       data: {
-        scrapedUrls: { push: data.url },
+        ...(source.scrapedUrls.includes(data.url)
+          ? {}
+          : { scrapedUrls: { push: data.url } }),
         totalScraped: { increment: 1 },
         lastCheckedAt: new Date(),
         lastSuccessAt: new Date(),
@@ -183,6 +179,7 @@ export async function POST(
       articleId: draft.articleId,
       slug: draft.slug,
       title: draft.title,
+      articleStatus: "DRAFT",
       featuredImage: draft.featuredImage ?? null,
       sourceUrl: data.url,
       tokens: draft.tokens,

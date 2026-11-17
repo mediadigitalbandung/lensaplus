@@ -5,6 +5,7 @@ import { callAI, type AIFeature } from "@/lib/ai-client";
 import { callPerplexity, isPerplexityConfigured, getPerplexityInstructions } from "@/lib/perplexity";
 import { callLocalAI, getLocalAiConfig, isLocalAiReady } from "@/lib/local-ai";
 import { cleanAIShortText } from "@/lib/sanitize";
+import { prisma } from "@/lib/prisma";
 
 // System prompt for Perplexity when generating short article fields. Perplexity
 // is web-grounded so it can check competitors/SEO, but it must return ONLY the
@@ -89,12 +90,47 @@ export async function POST(req: NextRequest) {
     let provider = "";
     let tokensUsed = 0;
 
+    const actorName = session.user.name || session.user.email || "user";
+    const editorPrefRow = await prisma.systemSetting
+      .findUnique({ where: { key: "ai_editor_provider" } })
+      .catch(() => null);
+    const editorPref = (editorPrefRow?.value ?? "").trim();
+
+    async function tryForcedCallAI(forced: "deepseek" | "anthropic"): Promise<boolean> {
+      try {
+        const r = await callAI({
+          feature: aiFeature,
+          forceProvider: forced,
+          userPrompt: prompt,
+          maxTokens: isShort ? 500 : 2000,
+          temperature: isShort ? 0.5 : 0.7,
+          userId: session.user.id,
+          userName: actorName,
+          articleTitle: title,
+          allowCombo: !isShort,
+        });
+        resultText = r.text;
+        provider = r.provider;
+        tokensUsed = r.totalTokens;
+        return true;
+      } catch (err) {
+        console.error(`Forced ${forced} generate failed, falling back:`, err);
+        return false;
+      }
+    }
+
+    if (editorPref === "deepseek" || editorPref === "anthropic") {
+      await tryForcedCallAI(editorPref);
+    }
+
     // Local / self-hosted AI (OpenAI-compatible) as an EXTRA drafting engine.
     const localai = await getLocalAiConfig();
     async function tryLocalAI(): Promise<void> {
       if (resultText || !isLocalAiReady(localai)) return;
       try {
-        const persona = await getPerplexityInstructions(); // shared editor persona
+        const persona = localai.instructions
+          ? ""
+          : await getPerplexityInstructions(); // fallback shared editor persona
         const sys = persona ? `${LOCAL_SYSTEM}\n\nARAHAN PENULIS: ${persona}` : LOCAL_SYSTEM;
         const r = await callLocalAI({
           systemPrompt: sys,
@@ -103,7 +139,7 @@ export async function POST(req: NextRequest) {
           temperature: 0.4,
           usageMeta: {
             userId: session.user.id,
-            userName: session.user.name || "user",
+            userName: actorName,
             feature: `local_${aiFeature}`,
             articleTitle: title,
           },
@@ -117,7 +153,7 @@ export async function POST(req: NextRequest) {
     }
 
     // If preferred, Local AI goes first (before Perplexity).
-    if (localai.prefer) await tryLocalAI();
+    if (!resultText && localai.prefer) await tryLocalAI();
 
     // Perplexity (web-grounded) when configured; fall back to Local AI, then
     // Claude/DeepSeek so nothing breaks if an engine is unset/fails.
@@ -137,7 +173,7 @@ export async function POST(req: NextRequest) {
           // mode prices each model correctly instead of one fused row).
           usageMeta: {
             userId: session.user.id,
-            userName: session.user.name || "user",
+            userName: actorName,
             feature: `perplexity_${aiFeature}`,
             articleTitle: title,
           },
@@ -151,17 +187,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Local AI as fallback (enabled but not preferred) before Claude/DeepSeek.
-    if (!localai.prefer) await tryLocalAI();
+    if (!resultText && !localai.prefer) await tryLocalAI();
 
     if (!resultText) {
       try {
         const result = await callAI({
           feature: aiFeature,
           userPrompt: prompt,
-          maxTokens: 500,
-          temperature: 0.7,
+          maxTokens: isShort ? 500 : 2000,
+          temperature: isShort ? 0.5 : 0.7,
           userId: session.user.id,
+          userName: actorName,
           articleTitle: title,
+          allowCombo: !isShort,
         });
         resultText = result.text;
         provider = result.provider;
@@ -171,6 +209,9 @@ export async function POST(req: NextRequest) {
         console.error("callAI failed:", err);
         if (msg.includes("no API key configured") || msg.includes("providers exhausted")) {
           throw new ApiError("API Key AI belum dikonfigurasi atau tidak dapat dihubungi. Hubungi administrator.", 400);
+        }
+        if (msg.includes("dinonaktifkan")) {
+          throw new ApiError(msg, 400);
         }
         throw new ApiError("Gagal menghubungi AI service. Coba lagi nanti.", 502);
       }

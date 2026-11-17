@@ -30,12 +30,28 @@ export interface LocalAiConfig {
   model: string;
   apiKey: string | null;
   prefer: boolean;
+  instructions?: string;
+  maxTokensCap?: number | null;
+  temperature?: number | null;
 }
 
 export async function getLocalAiConfig(): Promise<LocalAiConfig> {
   try {
     const rows = await prisma.systemSetting.findMany({
-      where: { key: { in: ["localai_enabled", "localai_base_url", "localai_model", "localai_api_key", "localai_prefer"] } },
+      where: {
+        key: {
+          in: [
+            "localai_enabled",
+            "localai_base_url",
+            "localai_model",
+            "localai_api_key",
+            "localai_prefer",
+            "localai_instructions",
+            "localai_max_tokens",
+            "localai_temperature",
+          ],
+        },
+      },
       select: { key: true, value: true },
     });
     const m = Object.fromEntries(rows.map((r) => [r.key, (r.value ?? "").trim()]));
@@ -43,12 +59,19 @@ export async function getLocalAiConfig(): Promise<LocalAiConfig> {
     if (m.localai_api_key) {
       try { apiKey = decryptSecret(m.localai_api_key); } catch { apiKey = m.localai_api_key; }
     }
+    const maxCapRaw = parseInt(m.localai_max_tokens || "0", 10);
+    const maxTokensCap = Number.isFinite(maxCapRaw) && maxCapRaw > 0 ? maxCapRaw : null;
+    const tempRaw = m.localai_temperature ? Number(m.localai_temperature) : NaN;
+    const temperature = Number.isFinite(tempRaw) && tempRaw >= 0 && tempRaw <= 2 ? tempRaw : null;
     return {
       enabled: m.localai_enabled === "true",
       baseUrl: m.localai_base_url || "",
       model: m.localai_model || "",
       apiKey: apiKey || null,
       prefer: m.localai_prefer === "true",
+      instructions: m.localai_instructions || "",
+      maxTokensCap,
+      temperature,
     };
   } catch {
     return { enabled: false, baseUrl: "", model: "", apiKey: null, prefer: false };
@@ -92,6 +115,13 @@ export async function callLocalAI(opts: LocalAiOptions): Promise<LocalAiResult> 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
+    const requestedMax = opts.maxTokens ?? 1600;
+    const maxTokens = cfg.maxTokensCap ? Math.min(requestedMax, cfg.maxTokensCap) : requestedMax;
+    const temperature = cfg.temperature ?? opts.temperature ?? 0.4;
+    const systemPrompt = cfg.instructions
+      ? `${opts.systemPrompt}\n\nARAHAN PENULIS (WAJIB DIIKUTI): ${cfg.instructions}`
+      : opts.systemPrompt;
+
     const res = await fetch(chatEndpoint(cfg.baseUrl), {
       method: "POST",
       signal: controller.signal,
@@ -102,11 +132,11 @@ export async function callLocalAI(opts: LocalAiOptions): Promise<LocalAiResult> 
       body: JSON.stringify({
         model: cfg.model,
         messages: [
-          { role: "system", content: opts.systemPrompt },
+          { role: "system", content: systemPrompt },
           { role: "user", content: opts.userPrompt },
         ],
-        max_tokens: opts.maxTokens ?? 1600,
-        temperature: opts.temperature ?? 0.4,
+        max_tokens: maxTokens,
+        temperature,
         stream: false,
       }),
     });
