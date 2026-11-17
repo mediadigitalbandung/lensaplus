@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-import { isPrivateHost, fetchHtml, userAgent } from "../scraper/fetch";
+import { isPrivateHost, fetchHtml, safePublicFetch, userAgent } from "../scraper/fetch";
 
 describe("isPrivateHost (SSRF guard)", () => {
   it("blocks IPv4 loopback", () => {
@@ -21,14 +21,24 @@ describe("isPrivateHost (SSRF guard)", () => {
     expect(isPrivateHost("169.254.0.1")).toBe(true);
   });
 
-  it("blocks IPv6 loopback ::1 and link-local fe80::", () => {
+  it("blocks IPv6 loopback ::1, bracketed [::1], ULA, IPv4-mapped, CGNAT, and 0.0.0.0", () => {
     expect(isPrivateHost("::1")).toBe(true);
+    expect(isPrivateHost("[::1]")).toBe(true);
+    expect(isPrivateHost("[::ffff:127.0.0.1]")).toBe(true);
+    expect(isPrivateHost("[::ffff:7f00:1]")).toBe(true);
     expect(isPrivateHost("fe80::1")).toBe(true);
     expect(isPrivateHost("FE80::abcd")).toBe(true);
+    expect(isPrivateHost("fc00::1")).toBe(true);
+    expect(isPrivateHost("fd12:3456::1")).toBe(true);
+    expect(isPrivateHost("0.0.0.0")).toBe(true);
+    expect(isPrivateHost("100.64.0.1")).toBe(true);
   });
 
-  it("blocks the literal hostname 'localhost'", () => {
+  it("blocks the literal hostname 'localhost' and internal suffixes", () => {
     expect(isPrivateHost("localhost")).toBe(true);
+    expect(isPrivateHost("sub.localhost")).toBe(true);
+    expect(isPrivateHost("redis.local")).toBe(true);
+    expect(isPrivateHost("metadata.internal")).toBe(true);
   });
 
   it("allows public IPv4 and public domains", () => {
@@ -77,5 +87,23 @@ describe("fetchHtml SSRF rejection", () => {
   it("rejects malformed URLs early with a clear message", async () => {
     await expect(fetchHtml("not a url")).rejects.toThrow(/Invalid URL/);
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("blocks bracketed IPv6 loopback [::1] before network call", async () => {
+    await expect(fetchHtml("http://[::1]:3002/api/health")).rejects.toThrow(
+      /SSRF_BLOCKED/,
+    );
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("blocks HTTP 302 redirect pointing to private metadata IP", async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      status: 302,
+      headers: new Headers({ location: "http://169.254.169.254/latest/meta-data/" }),
+    });
+    await expect(safePublicFetch("https://93.184.216.34/news")).rejects.toThrow(
+      /SSRF_BLOCKED/,
+    );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });
