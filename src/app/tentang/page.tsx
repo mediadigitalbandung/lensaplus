@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { Shield, Eye, Users, Award } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Tentang Kami",
@@ -40,20 +39,16 @@ export default function TentangPage() {
           {/* Values */}
           <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             {[
-              { icon: Shield, title: "Akurat & Terverifikasi", desc: "Setiap berita melalui proses fact-checking dan verifikasi sumber sebelum dipublikasikan." },
-              { icon: Eye, title: "Transparan", desc: "Kami terbuka terhadap koreksi dan selalu mencantumkan sumber informasi dalam setiap artikel." },
-              { icon: Users, title: "Berimbang", desc: "Kami menyajikan berita dari berbagai perspektif tanpa memihak salah satu pihak." },
-              { icon: Award, title: "Profesional", desc: "Tim redaksi mematuhi Kode Etik Jurnalistik dan Pedoman Pemberitaan Media Siber." },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.title} className="rounded-lg border border-border bg-surface p-6">
-                  <Icon size={24} className="text-primary" />
-                  <h3 className="mt-3 font-bold text-txt-primary">{item.title}</h3>
-                  <p className="mt-1 text-sm text-txt-secondary">{item.desc}</p>
-                </div>
-              );
-            })}
+              { title: "Akurat & Terverifikasi", desc: "Setiap berita melalui proses fact-checking dan verifikasi sumber sebelum dipublikasikan." },
+              { title: "Transparan", desc: "Kami terbuka terhadap koreksi dan selalu mencantumkan sumber informasi dalam setiap artikel." },
+              { title: "Berimbang", desc: "Kami menyajikan berita dari berbagai perspektif tanpa memihak salah satu pihak." },
+              { title: "Profesional", desc: "Tim redaksi mematuhi Kode Etik Jurnalistik dan Pedoman Pemberitaan Media Siber." },
+            ].map((item) => (
+              <div key={item.title} className="rounded-lg border border-border border-t-2 border-t-primary/40 bg-surface p-6">
+                <h3 className="font-bold text-txt-primary">{item.title}</h3>
+                <p className="mt-1.5 text-sm text-txt-secondary">{item.desc}</p>
+              </div>
+            ))}
           </div>
 
           {/* Contact / publisher identity. Legal entity, full address, phone and

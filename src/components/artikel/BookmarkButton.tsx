@@ -32,7 +32,7 @@ export default function BookmarkButton({ slug }: { slug: string }) {
       onClick={toggleBookmark}
       className={`btn-ghost min-h-[44px] rounded-md px-4 py-2.5 text-xs flex items-center gap-1.5 transition-colors active:scale-95 ${
         bookmarked
-          ? "text-primary bg-primary-light"
+          ? "border border-primary/40 text-primary font-bold"
           : "text-txt-secondary hover:text-primary"
       }`}
       title={bookmarked ? "Hapus bookmark" : "Simpan bookmark"}

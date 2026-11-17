@@ -148,14 +148,14 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
           </button>
         </form>
 
-        {/* Sector pills */}
+        {/* Sector filter tabs */}
         <div className="mb-8 flex flex-wrap gap-2">
           <Link
             href="/emiten"
-            className={`rounded-full px-4 py-1.5 text-label-sm font-medium transition-colors ${
+            className={`rounded-md px-3.5 py-1.5 text-label-sm font-medium border transition-colors ${
               !sectorFilter
-                ? "bg-primary text-on-primary"
-                : "bg-surface-container text-txt-secondary hover:bg-primary-light hover:text-primary"
+                ? "border-primary text-primary font-bold bg-surface"
+                : "border-border bg-surface text-txt-secondary hover:border-primary/40 hover:text-primary"
             }`}
           >
             Semua
@@ -164,10 +164,10 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
             <Link
               key={key}
               href={`/emiten?sector=${key}`}
-              className={`rounded-full px-4 py-1.5 text-label-sm font-medium transition-colors ${
+              className={`rounded-md px-3.5 py-1.5 text-label-sm font-medium border transition-colors ${
                 sectorFilter === key
-                  ? "bg-primary text-on-primary"
-                  : "bg-surface-container text-txt-secondary hover:bg-primary-light hover:text-primary"
+                  ? "border-primary text-primary font-bold bg-surface"
+                  : "border-border bg-surface text-txt-secondary hover:border-primary/40 hover:text-primary"
               }`}
             >
               {label}
@@ -200,7 +200,7 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
                         className="h-10 w-10 rounded-md object-contain"
                       />
                     ) : (
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-primary-light text-label-md font-bold text-primary">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md border border-border bg-surface-container-low text-label-md font-bold text-primary">
                         {c.ticker.slice(0, 2)}
                       </div>
                     )}

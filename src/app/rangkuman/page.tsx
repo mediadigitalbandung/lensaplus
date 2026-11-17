@@ -3,7 +3,7 @@ export const revalidate = 300;
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
-import { Newspaper, ChevronRight, CalendarDays, Layers } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
@@ -148,8 +148,7 @@ export default async function RangkumanIndexPage() {
         <div className="mb-8">
           <div className="flex items-center gap-3">
             <span className="block h-7 w-[3px] rounded-full bg-secondary" />
-            <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
-              <Newspaper size={22} className="text-primary" />
+            <h1 className="text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
               Rangkuman
             </h1>
           </div>
@@ -175,14 +174,13 @@ export default async function RangkumanIndexPage() {
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-primary/5">
-                    <Layers size={36} className="text-primary/30" />
+                  <div className="flex h-full w-full items-center justify-center bg-surface-container-low">
+                    <span className="font-serif text-lg font-bold tracking-widest text-txt-muted/40 uppercase">Lensaplus</span>
                   </div>
                 )}
               </div>
               <div className="flex flex-1 flex-col p-5">
-                <div className="mb-2 flex items-center gap-2 text-label-sm uppercase tracking-wider text-primary">
-                  <CalendarDays size={12} />
+                <div className="mb-2 text-label-sm uppercase tracking-wider text-primary">
                   <span className="font-semibold">{card.dateRange}</span>
                 </div>
                 <h2 className="font-serif text-title-lg leading-snug text-on-surface group-hover:text-primary transition-colors">

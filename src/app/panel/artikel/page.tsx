@@ -54,12 +54,12 @@ interface Article {
 import { CREATOR_ROLES, EDITOR_ROLES } from "@/lib/roles";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  PUBLISHED: { label: "Dipublikasi", icon: CheckCircle, color: "bg-primary-light text-primary" },
-  IN_REVIEW: { label: "Menunggu Review", icon: Clock, color: "bg-yellow-50 text-yellow-600" },
-  DRAFT: { label: "Draf", icon: FileText, color: "bg-surface-tertiary text-txt-secondary" },
-  APPROVED: { label: "Disetujui", icon: CheckCircle, color: "bg-blue-50 text-blue-600" },
-  REJECTED: { label: "Ditolak", icon: XCircle, color: "bg-red-50 text-red-600" },
-  ARCHIVED: { label: "Diarsipkan", icon: FileText, color: "bg-surface-tertiary text-txt-muted" },
+  PUBLISHED: { label: "Dipublikasi", icon: CheckCircle, color: "text-primary font-semibold" },
+  IN_REVIEW: { label: "Menunggu Review", icon: Clock, color: "text-amber-700 font-semibold" },
+  DRAFT: { label: "Draf", icon: FileText, color: "text-txt-secondary font-medium" },
+  APPROVED: { label: "Disetujui", icon: CheckCircle, color: "text-blue-700 font-semibold" },
+  REJECTED: { label: "Ditolak", icon: XCircle, color: "text-red-700 font-semibold" },
+  ARCHIVED: { label: "Diarsipkan", icon: FileText, color: "text-txt-muted font-medium" },
 };
 
 // Progress steps for the timeline indicator
@@ -752,18 +752,13 @@ export default function ArtikelPage() {
                                 t.style.display = "none";
                                 t.parentElement?.classList.add("flex", "items-center", "justify-center");
                                 const icon = document.createElement("div");
-                                icon.className = "h-12 w-12 rounded-md bg-surface-container flex items-center justify-center text-txt-muted/50";
+                                icon.className = "text-txt-muted/50";
                                 icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H3M3 8l4-4h10l4 4M3 8v13M21 8v13M5 21h14"/></svg>';
                                 t.parentElement?.appendChild(icon);
                               }}
                             />
                           ) : (
-                            <div
-                              className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-surface-container text-txt-muted/40"
-                              title="Tidak ada gambar utama"
-                            >
-                              <ImageOff size={16} />
-                            </div>
+                            <ImageOff size={16} className="mx-auto text-txt-muted/40" aria-label="Tidak ada gambar utama" />
                           )}
                         </td>
                         <td className="max-w-[200px] sm:max-w-[300px] px-3 sm:px-5 py-4">

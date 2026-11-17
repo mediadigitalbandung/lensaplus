@@ -10,9 +10,6 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Link from "next/link";
 import {
   Plus,
-  Eye,
-  MousePointer,
-  BarChart3,
   Edit,
   Trash2,
   Power,
@@ -77,10 +74,10 @@ function servingStatus(ad: Ad, now: number): ServeStatus {
 }
 
 const STATUS_STYLE: Record<ServeStatus, string> = {
-  Tayang: "bg-primary-light text-primary",
-  Terjadwal: "bg-amber-50 text-amber-700",
-  Berakhir: "bg-surface-tertiary text-txt-muted",
-  Nonaktif: "bg-red-50 text-red-600",
+  Tayang: "text-primary font-semibold",
+  Terjadwal: "text-amber-700 font-semibold",
+  Berakhir: "text-txt-muted font-medium",
+  Nonaktif: "text-red-700 font-semibold",
 };
 
 function formatDate(dateStr: string): string {
@@ -215,11 +212,11 @@ export default function IklanPage() {
                   >
                     <p className="truncate text-xs font-medium text-txt-primary">{slotLabels[slot] || slot}</p>
                     <span
-                      className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        free ? "bg-green-50 text-green-700" : "bg-primary-light text-primary"
+                      className={`mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold ${
+                        free ? "text-emerald-700" : "text-primary"
                       }`}
                     >
-                      <span className={`h-1.5 w-1.5 rounded-full ${free ? "bg-green-500" : "bg-primary"}`} />
+                      <span className={`h-1.5 w-1.5 rounded-full ${free ? "bg-emerald-600" : "bg-primary"}`} />
                       {free ? "Kosong" : `${count} tayang`}
                     </span>
                   </Link>
@@ -230,16 +227,16 @@ export default function IklanPage() {
 
           {/* Stats */}
           <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-              <div className="flex items-center gap-2 text-sm text-txt-secondary"><Eye size={16} className="text-blue-500" /> Total Tayangan</div>
+            <div className="rounded-lg border border-border border-t-2 border-t-blue-600 bg-surface p-4 shadow-card">
+              <p className="text-sm text-txt-secondary">Total Tayangan</p>
               <p className="mt-1 text-lg sm:text-2xl font-bold text-txt-primary">{totalImpressions.toLocaleString("id-ID")}</p>
             </div>
-            <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-              <div className="flex items-center gap-2 text-sm text-txt-secondary"><MousePointer size={16} className="text-primary" /> Total Klik</div>
+            <div className="rounded-lg border border-border border-t-2 border-t-primary bg-surface p-4 shadow-card">
+              <p className="text-sm text-txt-secondary">Total Klik</p>
               <p className="mt-1 text-lg sm:text-2xl font-bold text-txt-primary">{totalClicks.toLocaleString("id-ID")}</p>
             </div>
-            <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-              <div className="flex items-center gap-2 text-sm text-txt-secondary"><BarChart3 size={16} className="text-purple-500" /> Rata-rata CTR</div>
+            <div className="rounded-lg border border-border border-t-2 border-t-purple-600 bg-surface p-4 shadow-card">
+              <p className="text-sm text-txt-secondary">Rata-rata CTR</p>
               <p className="mt-1 text-lg sm:text-2xl font-bold text-txt-primary">{avgCtr}%</p>
             </div>
           </div>

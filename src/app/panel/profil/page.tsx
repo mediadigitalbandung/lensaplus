@@ -307,9 +307,9 @@ export default function ProfilPage() {
             </div>
             <h2 className="text-lg font-semibold text-txt-primary">{profile?.name}</h2>
             <p className="text-sm text-txt-secondary">{profile?.email}</p>
-            <span className="mt-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+            <p className="mt-1.5 text-xs font-bold uppercase tracking-wider text-primary">
               {roleLabelsMap[profile?.role || ""] || profile?.role}
-            </span>
+            </p>
           </div>
 
           <div className="mt-6 space-y-3 border-t border-border pt-4">
@@ -369,12 +369,12 @@ export default function ProfilPage() {
               </p>
               {/* Email ownership verification status */}
               {profile?.emailVerified ? (
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
+                <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
                   <MailCheck size={14} /> Email terverifikasi
-                </div>
+                </p>
               ) : (
-                <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-yellow-300 bg-yellow-50/70 px-3 py-2 text-xs text-yellow-800">
-                  <MailWarning size={14} className="shrink-0 text-yellow-600" />
+                <div className="mt-2 flex flex-wrap items-center gap-2 border-l-4 border-amber-500 pl-3 py-1 text-xs text-txt-primary">
+                  <MailWarning size={14} className="shrink-0 text-amber-600" />
                   <span>Email belum terverifikasi.</span>
                   <button
                     type="button"

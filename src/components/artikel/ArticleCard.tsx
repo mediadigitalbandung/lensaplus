@@ -1,18 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Eye } from "lucide-react";
 import { truncate } from "@/lib/utils";
 
-// Small inline "X dilihat" badge shown next to the date in every card variant.
+// Small inline "X dilihat" count shown next to the date in every card variant.
 // Hidden when the count is missing or zero so brand-new articles stay clean.
 function Views({ count }: { count?: number }) {
   if (!count || count <= 0) return null;
   return (
     <>
       <span className="mx-1 sm:mx-1.5">&middot;</span>
-      <span className="inline-flex items-center gap-0.5 align-middle normal-case">
-        <Eye size={11} aria-hidden />
-        {count.toLocaleString("id-ID")}
+      <span className="align-middle normal-case">
+        {count.toLocaleString("id-ID")} dilihat
       </span>
     </>
   );
@@ -62,9 +60,7 @@ export default function ArticleCard({
   category,
   author,
   publishedAt,
-  readTime,
   viewCount,
-  verificationLabel = "UNVERIFIED",
   variant = "standard",
 }: ArticleCardProps) {
   /* ── Hero variant ── */
@@ -89,7 +85,7 @@ export default function ArticleCard({
         <div className="mt-4">
           <Link
             href={`/kategori/${category.slug}`}
-            className="inline-block text-label-md font-bold uppercase tracking-wider text-primary bg-primary/5 hover:bg-primary/15 px-3.5 py-1 rounded-full transition-colors"
+            className="inline-block text-label-md font-bold uppercase tracking-wider text-primary hover:text-primary-dark transition-colors"
           >
             {category.name}
           </Link>
@@ -189,7 +185,7 @@ export default function ArticleCard({
       <div className="mt-3">
         <Link
           href={`/kategori/${category.slug}`}
-          className="inline-block text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/5 hover:bg-primary/15 px-2.5 py-0.5 rounded-full transition-colors mb-1.5"
+          className="inline-block text-[10px] sm:text-label-sm font-bold uppercase tracking-wider text-primary hover:text-primary-dark transition-colors mb-1"
         >
           {category.name}
         </Link>

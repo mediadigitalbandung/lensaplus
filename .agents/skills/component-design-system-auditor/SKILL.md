@@ -31,8 +31,13 @@ Dokumentasi ini adalah panduan kerja tingkat lanjut untuk **Component & Design S
 
 ---
 
-## 🔍 Checklist Audit Hygiene Tailwind CSS
+## 🔍 Checklist Audit Hygiene Tailwind CSS & SOP Desain
 
-- [ ] **Tidak ada warna ad-hoc acak:** Memastikan tidak ada pengkodean warna keras seperti `bg-[#ff0000]` jika sudah ada token `bg-secondary`.
+> **Sumber Kebenaran:** [docs/DESIGN_SOP.md](../../../docs/DESIGN_SOP.md) & `tailwind.config.ts`.
+
+- [ ] **Zero Icon Boxes:** Tidak ada icon `lucide-react` atau `<svg>` simbol yang dibungkus kontainer lingkaran (`rounded-full`) atau persegi (`rounded-md`/`lg`/`xl`) ber-background warna.
+- [ ] **Minimal Icon Usage:** Tidak ada icon dekoratif di judul halaman/section, timestamp (`Clock`), view counter (`Eye`), atau daftar kategori.
+- [ ] **Zero Text Highlight Backgrounds:** Tidak ada kategori, tag, sudut pandang, badge status, tautan `"Lihat Semua"`, atau `<mark>` dengan latar warna highlight (`bg-primary/5`, `bg-primary-light`, `bg-blue-50`, `bg-emerald-50`, dll.).
+- [ ] **Tidak ada warna ad-hoc acak:** Memastikan tidak ada pengkodean warna keras atau kelas warna acak jika sudah ada token semantik di `tailwind.config.ts`.
 - [ ] **Batas Container Main:** Menggunakan kontainer standar `container-main` untuk konsistensi margin kiri/kanan di seluruh halaman.
-- [ ] **States Hover & Transition:** Memastikan tombol interaktif dilengkapi dengan efek transisi halus `transition-all duration-300 hover:bg-primary-dark`.
+- [ ] **States Hover & Transition:** Memastikan tombol interaktif dilengkapi dengan efek transisi halus yang konsisten.

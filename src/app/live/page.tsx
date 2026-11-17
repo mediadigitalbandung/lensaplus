@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Metadata } from "next";
-import { Radio, Clock, CheckCircle, Calendar } from "lucide-react";
 
 export const revalidate = 30;
 
@@ -36,10 +35,10 @@ interface LiveBlogCard {
 function StatusBadge({ status }: { status: LiveBlogStatus }) {
   if (status === "LIVE") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-label-sm font-bold text-white">
+      <span className="inline-flex items-center gap-1.5 text-label-sm font-bold uppercase tracking-wider text-secondary">
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-secondary" />
         </span>
         LIVE
       </span>
@@ -47,16 +46,14 @@ function StatusBadge({ status }: { status: LiveBlogStatus }) {
   }
   if (status === "SCHEDULED") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2.5 py-1 text-label-sm font-semibold text-primary">
-        <Calendar size={10} />
+      <span className="text-label-sm font-bold uppercase tracking-wider text-primary">
         Akan Datang
       </span>
     );
   }
   if (status === "ENDED") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-2.5 py-1 text-label-sm text-txt-muted">
-        <CheckCircle size={10} />
+      <span className="text-label-sm font-semibold uppercase tracking-wider text-txt-muted">
         Selesai
       </span>
     );
@@ -101,10 +98,8 @@ function LiveCard({ blog }: { blog: LiveBlogCard }) {
         </p>
       )}
       <div className="flex items-center gap-3 text-label-sm text-txt-muted">
-        <span className="flex items-center gap-1">
-          <Clock size={12} />
-          {dateStr}
-        </span>
+        <span>{dateStr}</span>
+        <span>·</span>
         <span>{blog._count.entries} update</span>
       </div>
     </Link>
@@ -198,16 +193,13 @@ export default async function LiveListPage() {
   return (
     <main className="container-main py-8 sm:py-12">
       {/* Page header */}
-      <div className="mb-8 flex items-center gap-3">
-        <Radio size={28} className="text-secondary" />
-        <div>
-          <h1 className="font-serif text-headline-sm font-bold text-on-surface">
-            Siaran Langsung
-          </h1>
-          <p className="text-body-md text-txt-muted">
-            Liputan real-time peristiwa hukum, persidangan, dan konferensi pers
-          </p>
-        </div>
+      <div className="mb-8 border-l-4 border-secondary pl-3">
+        <h1 className="font-serif text-headline-sm font-bold text-on-surface">
+          Siaran Langsung
+        </h1>
+        <p className="text-body-md text-txt-muted">
+          Liputan real-time peristiwa hukum, persidangan, dan konferensi pers
+        </p>
       </div>
 
       {/* Hero: Currently LIVE */}
@@ -260,7 +252,6 @@ export default async function LiveListPage() {
 
       {liveNow.length === 0 && upcoming.length === 0 && recent.length === 0 && (
         <div className="py-24 text-center text-txt-muted">
-          <Radio size={48} className="mx-auto mb-4 opacity-20" />
           <p className="text-body-lg">Belum ada siaran langsung saat ini.</p>
           <p className="text-body-md mt-1">Pantau halaman ini untuk update terbaru.</p>
         </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Search, CheckCircle, AlertTriangle, XCircle, ExternalLink, Globe, FileText, Image, Type, Tag, RefreshCw, TrendingUp, Sparkles, Loader2, Wand2, Zap, Activity, KeyRound } from "lucide-react";
+import { Search, CheckCircle, AlertTriangle, XCircle, ExternalLink, Globe, FileText, Image, Type, RefreshCw, TrendingUp, Sparkles, Loader2, Wand2, Zap, Activity, KeyRound } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
@@ -424,14 +424,14 @@ export default function SeoDashboardPage() {
               </a>
               <div className="flex items-center gap-2 text-xs">
                 <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide ${
+                  className={`font-bold uppercase tracking-wide ${
                     indexing.lastSubmitted.status === "indexed"
-                      ? "bg-primary-light text-primary"
+                      ? "text-primary"
                       : indexing.lastSubmitted.status === "submitted"
-                      ? "bg-blue-50 text-blue-700"
+                      ? "text-blue-700"
                       : indexing.lastSubmitted.status === "failed"
-                      ? "bg-red-50 text-red-700"
-                      : "bg-yellow-50 text-yellow-700"
+                      ? "text-red-700"
+                      : "text-amber-700"
                   }`}
                 >
                   {indexing.lastSubmitted.status ?? "pending"}
@@ -616,26 +616,26 @@ export default function SeoDashboardPage() {
               {indexStatus?.total ?? 0}
             </p>
           </div>
-          <div className="rounded-lg bg-yellow-50 p-3">
-            <p className="text-xs text-yellow-700 mb-1">Pending</p>
-            <p className="text-xl font-extrabold text-yellow-700">
+          <div className="rounded-lg border border-border border-t-2 border-t-amber-500 bg-surface p-3">
+            <p className="text-xs text-txt-muted mb-1">Pending</p>
+            <p className="text-xl font-extrabold text-amber-700">
               {indexStatus?.counts.pending ?? 0}
             </p>
           </div>
-          <div className="rounded-lg bg-blue-50 p-3">
-            <p className="text-xs text-blue-700 mb-1">Submitted</p>
+          <div className="rounded-lg border border-border border-t-2 border-t-blue-600 bg-surface p-3">
+            <p className="text-xs text-txt-muted mb-1">Submitted</p>
             <p className="text-xl font-extrabold text-blue-700">
               {indexStatus?.counts.submitted ?? 0}
             </p>
           </div>
-          <div className="rounded-lg bg-primary-light p-3">
-            <p className="text-xs text-primary mb-1">Indexed</p>
+          <div className="rounded-lg border border-border border-t-2 border-t-primary bg-surface p-3">
+            <p className="text-xs text-txt-muted mb-1">Indexed</p>
             <p className="text-xl font-extrabold text-primary">
               {indexStatus?.counts.indexed ?? 0}
             </p>
           </div>
-          <div className="rounded-lg bg-red-50 p-3">
-            <p className="text-xs text-red-700 mb-1">Failed</p>
+          <div className="rounded-lg border border-border border-t-2 border-t-red-600 bg-surface p-3">
+            <p className="text-xs text-txt-muted mb-1">Failed</p>
             <p className="text-xl font-extrabold text-red-700">
               {indexStatus?.counts.failed ?? 0}
             </p>
@@ -652,13 +652,13 @@ export default function SeoDashboardPage() {
           <div className="mt-4 pt-4 border-t border-border">
             <p className="text-xs font-semibold text-txt-secondary mb-2">Sorotan index</p>
             {sorotanStatus.counts.failed > 0 && sorotanStatus.topErrors && sorotanStatus.topErrors.length > 0 && (
-              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px]">
+              <div className="mb-3 rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface px-3 py-2 text-[11px]">
                 <p className="font-bold text-amber-800 mb-1 flex items-center gap-1">
                   <AlertTriangle size={10} /> Sorotan gagal: {sorotanStatus.counts.failed}
                 </p>
                 {sorotanStatus.topErrors.slice(0, 2).map((e, i) => (
-                  <p key={i} className="font-mono text-amber-900 truncate">
-                    <span className="bg-amber-100 px-1 rounded-lg mr-1">{e.count}×</span>{e.message}
+                  <p key={i} className="font-mono text-txt-primary truncate">
+                    <span className="font-bold text-amber-800 mr-1.5">{e.count}×</span>{e.message}
                   </p>
                 ))}
               </div>
@@ -670,26 +670,26 @@ export default function SeoDashboardPage() {
                   {sorotanStatus.total}
                 </p>
               </div>
-              <div className="rounded-lg bg-yellow-50 p-3">
-                <p className="text-xs text-yellow-700 mb-1">Pending</p>
-                <p className="text-lg font-extrabold text-yellow-700">
+              <div className="rounded-lg border border-border border-t-2 border-t-amber-500 bg-surface p-3">
+                <p className="text-xs text-txt-muted mb-1">Pending</p>
+                <p className="text-lg font-extrabold text-amber-700">
                   {sorotanStatus.counts.pending}
                 </p>
               </div>
-              <div className="rounded-lg bg-blue-50 p-3">
-                <p className="text-xs text-blue-700 mb-1">Submitted</p>
+              <div className="rounded-lg border border-border border-t-2 border-t-blue-600 bg-surface p-3">
+                <p className="text-xs text-txt-muted mb-1">Submitted</p>
                 <p className="text-lg font-extrabold text-blue-700">
                   {sorotanStatus.counts.submitted}
                 </p>
               </div>
-              <div className="rounded-lg bg-primary-light p-3">
-                <p className="text-xs text-primary mb-1">Indexed</p>
+              <div className="rounded-lg border border-border border-t-2 border-t-primary bg-surface p-3">
+                <p className="text-xs text-txt-muted mb-1">Indexed</p>
                 <p className="text-lg font-extrabold text-primary">
                   {sorotanStatus.counts.indexed}
                 </p>
               </div>
-              <div className="rounded-lg bg-red-50 p-3">
-                <p className="text-xs text-red-700 mb-1">Failed</p>
+              <div className="rounded-lg border border-border border-t-2 border-t-red-600 bg-surface p-3">
+                <p className="text-xs text-txt-muted mb-1">Failed</p>
                 <p className="text-lg font-extrabold text-red-700">
                   {sorotanStatus.counts.failed}
                 </p>
@@ -718,21 +718,21 @@ export default function SeoDashboardPage() {
         return (
           <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
             <div className="px-5 py-4 border-b border-border">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><Search size={14} className="text-primary" /> Audit SEO Artikel</h3>
+              <div className="flex flex-wrap items-center gap-3 mb-3">
+                <h3 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">Audit SEO Artikel</h3>
                 <span className="text-xs text-txt-muted">{articleAudit.length} artikel total</span>
               </div>
 
               {/* Filter tabs */}
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <button onClick={() => { setAuditFilter("all"); setAuditPage(1); }} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${auditFilter === "all" ? "bg-primary text-white" : "bg-surface-secondary text-txt-secondary hover:bg-surface-tertiary"}`}>
+              <div className="flex flex-wrap items-center gap-4 border-b border-border pb-2 mb-3">
+                <button onClick={() => { setAuditFilter("all"); setAuditPage(1); }} className={`border-b-2 pb-1 text-xs font-semibold transition-colors ${auditFilter === "all" ? "border-primary text-primary" : "border-transparent text-txt-secondary hover:text-primary"}`}>
                   Semua ({articleAudit.length})
                 </button>
-                <button onClick={() => { setAuditFilter("perfect"); setAuditPage(1); }} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${auditFilter === "perfect" ? "bg-green-500 text-white" : "bg-green-50 text-green-600 hover:bg-green-100"}`}>
-                  <span className="inline-flex items-center gap-1"><CheckCircle size={10} /> Sempurna ({perfectCount})</span>
+                <button onClick={() => { setAuditFilter("perfect"); setAuditPage(1); }} className={`border-b-2 pb-1 text-xs font-semibold transition-colors ${auditFilter === "perfect" ? "border-emerald-600 text-emerald-700" : "border-transparent text-txt-secondary hover:text-emerald-700"}`}>
+                  Sempurna ({perfectCount})
                 </button>
-                <button onClick={() => { setAuditFilter("issues"); setAuditPage(1); }} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${auditFilter === "issues" ? "bg-red-500 text-white" : "bg-red-50 text-red-600 hover:bg-red-100"}`}>
-                  <span className="inline-flex items-center gap-1"><AlertTriangle size={10} /> Ada Masalah ({issuesCount})</span>
+                <button onClick={() => { setAuditFilter("issues"); setAuditPage(1); }} className={`border-b-2 pb-1 text-xs font-semibold transition-colors ${auditFilter === "issues" ? "border-red-600 text-red-700" : "border-transparent text-txt-secondary hover:text-red-700"}`}>
+                  Ada Masalah ({issuesCount})
                 </button>
               </div>
 
@@ -774,8 +774,8 @@ export default function SeoDashboardPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold ${
-                          a.score >= 80 ? "bg-green-50 text-green-600" : a.score >= 50 ? "bg-yellow-50 text-yellow-600" : "bg-red-50 text-red-600"
+                        <span className={`font-mono text-xs font-bold ${
+                          a.score >= 80 ? "text-emerald-700" : a.score >= 50 ? "text-amber-700" : "text-red-700"
                         }`}>{a.score}</span>
                       </td>
                       <td className="px-4 py-3 text-center">

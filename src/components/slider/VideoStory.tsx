@@ -75,10 +75,8 @@ export default function VideoStory({ items }: VideoStoryProps) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
         <div className="absolute bottom-3 left-3 flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-            <Play size={12} className="text-white ml-0.5" fill="white" />
-          </div>
-          <span className="rounded-lg bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+          <Play size={14} className="text-white drop-shadow" fill="white" />
+          <span className="text-[11px] font-medium text-white drop-shadow">
             {item.duration}
           </span>
         </div>
@@ -103,23 +101,15 @@ export default function VideoStory({ items }: VideoStoryProps) {
           {thumbInner}
         </Link>
       )}
-      <div className="mt-2 flex items-start gap-2">
-        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary mt-0.5">
-          <Play size={8} className="text-white ml-px" fill="white" />
-        </div>
-        <div className="min-w-0">
-          <Link href={`/berita/${item.slug}`}>
-            <h3 className="text-xs font-bold leading-snug text-txt-primary line-clamp-2 group-hover:underline">
-              {item.title}
-            </h3>
-          </Link>
-          <p className="mt-0.5 text-[10px] text-txt-muted flex items-center gap-1">
-            {item.source}
-            <svg viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3 text-primary">
-              <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.28 5.78l-4 4a.75.75 0 01-1.06 0l-2-2a.75.75 0 111.06-1.06L6.75 8.19l3.47-3.47a.75.75 0 111.06 1.06z" />
-            </svg>
-          </p>
-        </div>
+      <div className="mt-2">
+        <Link href={`/berita/${item.slug}`}>
+          <h3 className="text-xs font-bold leading-snug text-txt-primary line-clamp-2 group-hover:underline">
+            {item.title}
+          </h3>
+        </Link>
+        <p className="mt-0.5 text-[10px] text-txt-muted">
+          {item.source}
+        </p>
       </div>
     </article>
     );
@@ -143,19 +133,19 @@ export default function VideoStory({ items }: VideoStoryProps) {
       {/* Left arrow */}
       <button
         onClick={() => manualScroll("left")}
-        className="absolute left-1 sm:-left-4 top-[30%] -translate-y-1/2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-txt-secondary shadow-card transition-all duration-200 hover:border-txt-muted hover:text-txt-primary hover:shadow-card-hover hover:scale-110 opacity-0 group-hover:opacity-100"
+        className="absolute left-1 sm:-left-6 top-[30%] -translate-y-1/2 z-10 flex h-9 w-9 items-center justify-center text-txt-primary hover:text-primary transition-all duration-200 hover:scale-110 opacity-0 group-hover:opacity-100"
         aria-label="Geser kiri"
       >
-        <ChevronLeft size={18} strokeWidth={1.5} />
+        <ChevronLeft size={20} strokeWidth={1.75} />
       </button>
 
       {/* Right arrow */}
       <button
         onClick={() => manualScroll("right")}
-        className="absolute right-1 sm:-right-4 top-[30%] -translate-y-1/2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-txt-secondary shadow-card transition-all duration-200 hover:border-txt-muted hover:text-txt-primary hover:shadow-card-hover hover:scale-110 opacity-0 group-hover:opacity-100"
+        className="absolute right-1 sm:-right-6 top-[30%] -translate-y-1/2 z-10 flex h-9 w-9 items-center justify-center text-txt-primary hover:text-primary transition-all duration-200 hover:scale-110 opacity-0 group-hover:opacity-100"
         aria-label="Geser kanan"
       >
-        <ChevronRight size={18} strokeWidth={1.5} />
+        <ChevronRight size={20} strokeWidth={1.75} />
       </button>
 
       {/* Reel player modal */}
@@ -167,10 +157,10 @@ export default function VideoStory({ items }: VideoStoryProps) {
           <button
             type="button"
             onClick={() => setPlaying(null)}
-            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center text-white/80 hover:text-white transition-colors"
             aria-label="Tutup"
           >
-            <X size={20} />
+            <X size={24} />
           </button>
           <div
             className="aspect-[9/16] h-full max-h-[88vh] w-auto max-w-full"

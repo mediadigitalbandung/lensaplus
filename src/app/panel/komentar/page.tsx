@@ -275,24 +275,15 @@ export default function KomentarPage() {
                       {/* Status + meta */}
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <span
-                          className={`badge text-sm ${
+                          className={`text-xs font-bold uppercase tracking-wider ${
                             comment.isApproved
-                              ? "bg-primary-light text-primary"
-                              : "bg-yellow-50 text-yellow-600"
+                              ? "text-primary"
+                              : "text-amber-700"
                           }`}
                         >
-                          {comment.isApproved ? (
-                            <>
-                              <CheckCircle size={10} className="mr-1" />
-                              Disetujui
-                            </>
-                          ) : (
-                            <>
-                              <Clock size={10} className="mr-1" />
-                              Menunggu
-                            </>
-                          )}
+                          {comment.isApproved ? "Disetujui" : "Menunggu"}
                         </span>
+                        <span className="text-txt-muted">·</span>
                         <span className="text-sm text-txt-muted">
                           {formatDate(comment.createdAt)}
                         </span>
@@ -333,7 +324,7 @@ export default function KomentarPage() {
                         <button
                           onClick={() => handleApprove(comment.id)}
                           disabled={updating === comment.id}
-                          className="rounded-lg bg-primary-light p-2 text-primary hover:bg-primary/20 disabled:opacity-50"
+                          className="rounded-lg border border-border p-2 text-primary hover:border-primary disabled:opacity-50"
                           title="Setujui"
                         >
                           <CheckCircle size={16} />
@@ -343,7 +334,7 @@ export default function KomentarPage() {
                         <button
                           onClick={() => handleReject(comment.id)}
                           disabled={updating === comment.id}
-                          className="rounded-lg bg-yellow-50 p-2 text-yellow-600 hover:bg-yellow-100 disabled:opacity-50"
+                          className="rounded-lg border border-border p-2 text-amber-700 hover:border-amber-500 disabled:opacity-50"
                           title="Batalkan persetujuan"
                         >
                           <XCircle size={16} />
@@ -352,7 +343,7 @@ export default function KomentarPage() {
                       <button
                         onClick={() => handleDelete(comment.id)}
                         disabled={updating === comment.id}
-                        className="rounded-lg bg-red-50 p-2 text-red-500 hover:bg-red-100 disabled:opacity-50"
+                        className="rounded-lg border border-border p-2 text-red-600 hover:border-red-500 disabled:opacity-50"
                         title="Hapus"
                       >
                         <Trash2 size={16} />

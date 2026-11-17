@@ -172,7 +172,7 @@ export default async function RootLayout({
             Renders nothing until configured, so safe to mount unconditionally. */}
         <GoogleAnalytics />
       </head>
-      <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased">
+      <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased overflow-x-hidden">
         <Providers>
           <a
             href="#main-content"
@@ -185,7 +185,7 @@ export default async function RootLayout({
           </Suspense>
           <PublicNav />
           <PublicTicker />
-          <main id="main-content" className="flex-1">{children}</main>
+          <main id="main-content" className="flex-1 w-full overflow-x-hidden">{children}</main>
           <PublicFooter dewanPersNumber={dewanPersNumber} />
           <SideRailAds />
           <ServiceWorkerRegistration />

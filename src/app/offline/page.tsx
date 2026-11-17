@@ -13,9 +13,7 @@ export default function OfflinePage() {
       </div>
 
       {/* Icon offline */}
-      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary-light">
-        <WifiOff className="h-8 w-8 text-primary" aria-hidden="true" />
-      </div>
+      <WifiOff className="mb-5 h-10 w-10 text-primary" aria-hidden="true" />
 
       {/* Heading */}
       <h1 className="font-serif text-headline-md text-on-surface tracking-tight mb-3">

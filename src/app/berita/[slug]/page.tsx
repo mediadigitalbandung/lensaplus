@@ -3,11 +3,7 @@ export const revalidate = 60;
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
-import {
-  Flag,
-  CheckCircle,
-  Eye,
-} from "lucide-react";
+import { Flag } from "lucide-react";
 import CopyProtection from "@/components/artikel/CopyProtection";
 import ReadingProgress from "@/components/artikel/ReadingProgress";
 import PrintButton from "@/components/artikel/PrintButton";
@@ -41,6 +37,20 @@ export async function generateMetadata({ params: paramsPromise }: { params: Prom
   const params = await paramsPromise;
   const article = await getArticle(params.slug);
   if (!article) return { title: "Artikel Tidak Ditemukan" };
+
+  if (article.status !== "PUBLISHED") {
+    const { getServerSession } = await import("next-auth");
+    const { authOptions } = await import("@/lib/auth");
+    const session = await getServerSession(authOptions);
+    const userRole = session?.user?.role || "";
+    const isAuthor = session?.user?.id === article.authorId;
+    const hasAccess =
+      !session?.sessionInvalid &&
+      (isAuthor || ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"].includes(userRole));
+    if (!hasAccess) {
+      return { title: "Artikel Tidak Ditemukan" };
+    }
+  }
 
   const title = article.seoTitle || article.title;
   const description = article.seoDescription || article.excerpt || "";
@@ -517,18 +527,21 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                 </div>
               </div>
 
-              {/* Category badge & verification */}
-              <div className="mb-4 flex items-center gap-3">
+              {/* Category & verification */}
+              <div className="mb-4 flex items-center gap-2">
                 <Link
                   href={`/kategori/${article.category.slug}`}
-                  className="text-xs font-bold uppercase tracking-wide text-primary hover:underline"
+                  className="text-xs font-bold uppercase tracking-wider text-primary hover:underline"
                 >
                   {article.category.name}
                 </Link>
                 {article.verificationLabel === "VERIFIED" && (
-                  <span className="flex items-center gap-1 text-xs font-medium text-primary">
-                    <CheckCircle size={12} /> Terverifikasi
-                  </span>
+                  <>
+                    <span className="text-txt-muted/40">·</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                      Terverifikasi
+                    </span>
+                  </>
                 )}
               </div>
 
@@ -562,8 +575,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                 <span className="text-txt-muted/50">&middot;</span>
                 <span>{article.readTime ?? 0} menit baca</span>
                 <span className="text-txt-muted/50">&middot;</span>
-                <span className="flex items-center gap-1">
-                  <Eye size={13} aria-hidden />
+                <span>
                   {(article.viewCount ?? 0).toLocaleString("id-ID")} dilihat
                 </span>
               </div>
@@ -765,17 +777,12 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
               {articleSorotan.length > 0 && (
                 <section className="mt-10 overflow-hidden rounded-xl border border-border bg-surface shadow-card">
                   {/* Header */}
-                  <div className="flex items-center gap-3 border-b border-border px-5 py-4 sm:px-6">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="m9 11-6 6v3h9l3-3" /><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" />
-                      </svg>
-                    </span>
-                    <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
+                    <div className="min-w-0 border-l-4 border-primary pl-3">
                       <h2 className="font-serif text-lg font-bold leading-tight tracking-tight text-txt-primary">Sorotan</h2>
                       <p className="text-xs text-txt-muted">Beragam sudut pandang mendalam dari peristiwa ini</p>
                     </div>
-                    <span className="ml-auto hidden shrink-0 items-center rounded-full border border-border px-2.5 py-1 text-[11px] font-semibold text-txt-secondary sm:inline-flex">
+                    <span className="hidden shrink-0 text-[11px] font-semibold uppercase tracking-wider text-txt-muted sm:inline">
                       {articleSorotan.length} sudut
                     </span>
                   </div>
@@ -792,9 +799,9 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                         <Link
                           key={s.slug}
                           href={`/sorotan/${s.slug}`}
-                          className="group flex min-h-[112px] flex-col bg-surface p-4 transition-colors duration-200 hover:bg-primary-light/50 sm:p-5"
+                          className="group flex min-h-[112px] flex-col bg-surface p-4 transition-colors duration-200 hover:bg-surface-container-low sm:p-5"
                         >
-                          <span className="inline-flex w-fit items-center rounded-md bg-primary-light px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-primary ring-1 ring-inset ring-primary/10">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-secondary">
                             {angleLabel[s.angle] || s.angle.replace(/_/g, " ")}
                           </span>
                           <p className="mt-2.5 font-serif text-[15px] font-semibold leading-snug text-txt-primary line-clamp-3 transition-colors group-hover:text-primary">

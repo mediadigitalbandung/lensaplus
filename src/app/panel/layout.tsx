@@ -31,7 +31,6 @@ import {
   XCircle,
   CheckCircle,
   AlertCircle,
-  Clock,
   Bot,
   Globe,
   Share2,
@@ -98,12 +97,12 @@ interface NotificationItem {
 
 type NotifIconType = "article_rejected" | "article_in_review" | "article_approved" | "article_published" | "default";
 
-const NOTIF_ICON_MAP: Record<NotifIconType, { icon: React.ElementType; bg: string; color: string }> = {
-  article_rejected: { icon: XCircle, bg: "bg-red-50", color: "text-red-500" },
-  article_in_review: { icon: ClipboardCheck, bg: "bg-yellow-50", color: "text-yellow-500" },
-  article_approved: { icon: CheckCircle, bg: "bg-green-50", color: "text-primary" },
-  article_published: { icon: CheckCircle, bg: "bg-blue-50", color: "text-blue-500" },
-  default: { icon: Bell, bg: "bg-zinc-800", color: "text-zinc-400" },
+const NOTIF_ICON_MAP: Record<NotifIconType, { icon: React.ElementType; color: string }> = {
+  article_rejected: { icon: XCircle, color: "text-red-500" },
+  article_in_review: { icon: ClipboardCheck, color: "text-amber-600" },
+  article_approved: { icon: CheckCircle, color: "text-primary" },
+  article_published: { icon: CheckCircle, color: "text-blue-600" },
+  default: { icon: Bell, color: "text-txt-muted" },
 };
 
 function getNotifIcon(type: string) {
@@ -133,24 +132,30 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const signOutTriggeredRef = useRef(false);
 
-  const userRole = session?.user?.role || "";
+  const isSessionInvalid =
+    !session ||
+    Boolean(session.sessionInvalid) ||
+    Boolean((session.user as Record<string, unknown>)?.invalid) ||
+    !session.user?.id ||
+    !session.user?.role;
+
+  const userRole = (!isSessionInvalid && session?.user?.role) || "";
   const isAdmin = userRole === "SUPER_ADMIN";
   const isMgmt = userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR";
   const isEditor = EDITOR_ROLES.includes(userRole);
 
-  // Current section (icon + title) shown in the sticky top bar — makes the
-  // header reflect the page you're on instead of a static label.
+  // Current section title shown in the sticky top bar.
   const currentNav = pathname
     ? menuItems.find(
         (i) => pathname === i.href || pathname.startsWith(i.href + "/")
       )
     : undefined;
-  const CurrentIcon = currentNav?.icon ?? LayoutDashboard;
   const currentTitle = currentNav?.name ?? "Panel Admin";
 
   const fetchNotifications = useCallback(async () => {
-    if (!session?.user) return;
+    if (isSessionInvalid) return;
     try {
       const res = await fetch("/api/notifications?limit=20");
       if (res.ok) {
@@ -161,7 +166,14 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     } catch {
       // Silently fail — notifications are non-critical
     }
-  }, [session?.user]);
+  }, [isSessionInvalid]);
+
+  useEffect(() => {
+    if (status !== "loading" && isSessionInvalid && !signOutTriggeredRef.current) {
+      signOutTriggeredRef.current = true;
+      signOut({ callbackUrl: "/login?reason=session_expired" });
+    }
+  }, [status, isSessionInvalid]);
 
   useEffect(() => {
     fetchNotifications();
@@ -190,19 +202,12 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  if (status === "loading") {
+  if (status === "loading" || isSessionInvalid) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
-  }
-
-  if (!session || (session.user as Record<string, unknown>)?.invalid) {
-    if (typeof window !== "undefined") {
-      signOut({ callbackUrl: "/login?reason=session_expired" });
-    }
-    return null;
   }
 
   const markAllRead = async () => {
@@ -286,7 +291,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           className="group flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-150 hover:bg-white/5"
           aria-label="Buka profil saya"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary-light">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-bold text-white">
             {session.user.name?.charAt(0)}
           </div>
           <div className="min-w-0 flex-1 truncate">
@@ -294,7 +299,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
               {session.user.name}
             </p>
             <p className="text-[11px] text-white/40">
-              {roleLabelsMap[session.user.role] || session.user.role.replace(/_/g, " ")}
+              {roleLabelsMap[userRole] || userRole.replace(/_/g, " ")}
             </p>
           </div>
           <ChevronRight size={16} className="text-white/30 transition-colors group-hover:text-white/70" />
@@ -367,10 +372,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
               >
                 <Menu size={24} />
               </button>
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white shadow-sm ring-1 ring-black/5">
-                <CurrentIcon size={18} />
-              </div>
-              <div className="min-w-0 leading-tight">
+              <div className="min-w-0 leading-tight border-l-[3px] border-primary pl-2.5">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-txt-muted">
                   Panel Admin
                 </div>
@@ -445,12 +447,10 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                             }}
                             className={cn(
                               "flex items-start gap-3 px-4 py-3 hover:bg-surface-secondary transition-colors border-b border-border last:border-b-0",
-                              !notif.isRead && "bg-primary-50/50"
+                              !notif.isRead && "border-l-2 border-l-primary"
                             )}
                           >
-                            <div className={cn("flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full", config.bg)}>
-                              <Icon size={16} className={config.color} />
-                            </div>
+                            <Icon size={16} className={cn("mt-0.5 flex-shrink-0", config.color)} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className="text-sm font-semibold text-txt-primary truncate">{notif.title}</p>
@@ -459,8 +459,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                                 )}
                               </div>
                               <p className="text-xs text-txt-secondary mt-0.5 line-clamp-2">{notif.message}</p>
-                              <div className="flex items-center gap-1 mt-1">
-                                <Clock size={10} className="text-txt-muted" />
+                              <div className="mt-1">
                                 <span className="text-[10px] text-txt-muted">{timeAgo(notif.createdAt)}</span>
                               </div>
                             </div>
@@ -487,7 +486,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                     {session.user.name}
                   </span>
                   <span className="block truncate text-[10px] text-txt-muted">
-                    {roleLabelsMap[session.user.role] || session.user.role.replace(/_/g, " ")}
+                    {roleLabelsMap[userRole] || userRole.replace(/_/g, " ")}
                   </span>
                 </span>
               </Link>
@@ -496,11 +495,11 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
           {/* Warning: login attempt from another device */}
           {!!((session as unknown as Record<string, boolean>)?.loginAttempt) && (
-            <div className="mx-4 mt-4 sm:mx-6 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3 flex items-start gap-3">
-              <AlertCircle size={18} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+            <div className="mx-4 mt-4 sm:mx-6 rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface px-4 py-3 flex items-start gap-3">
+              <AlertCircle size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-yellow-800">Percobaan login dari perangkat lain</p>
-                <p className="text-xs text-yellow-600 mt-0.5">Seseorang mencoba masuk ke akun Anda dari perangkat lain. Jika bukan Anda, segera ubah password.</p>
+                <p className="text-sm font-semibold text-txt-primary">Percobaan login dari perangkat lain</p>
+                <p className="text-xs text-txt-secondary mt-0.5">Seseorang mencoba masuk ke akun Anda dari perangkat lain. Jika bukan Anda, segera ubah password.</p>
               </div>
             </div>
           )}

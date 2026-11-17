@@ -13,7 +13,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   Bot,
-  Sparkles,
   FileText,
   Edit,
   Trash2,
@@ -63,12 +62,12 @@ interface TargetKeyword {
 }
 
 const statusColors: Record<string, string> = {
-  PUBLISHED: "bg-primary-light text-primary",
-  IN_REVIEW: "bg-yellow-50 text-yellow-600",
-  DRAFT: "bg-surface-tertiary text-txt-secondary",
-  REJECTED: "bg-red-50 text-red-600",
-  APPROVED: "bg-blue-50 text-blue-600",
-  ARCHIVED: "bg-surface-tertiary text-txt-muted",
+  PUBLISHED: "text-primary font-semibold",
+  IN_REVIEW: "text-amber-700 font-semibold",
+  DRAFT: "text-txt-secondary font-medium",
+  REJECTED: "text-red-700 font-semibold",
+  APPROVED: "text-blue-700 font-semibold",
+  ARCHIVED: "text-txt-muted font-medium",
 };
 
 const statusLabels: Record<string, string> = {
@@ -593,22 +592,17 @@ export default function AutoArtikelPage() {
       {/* Master Toggle */}
       <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light">
-              <Sparkles size={18} className="text-primary" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-txt-primary">
-                Auto Generation
-              </h2>
-              <p className="text-xs text-txt-secondary">
-                {enabled
-                  ? batchSize === 0
-                    ? `Aktif tapi batch = 0 (pause). Cron tetap dipanggil tiap ${intervalMinutes} menit.`
-                    : `Cron akan men-generate ${batchSize} artikel setiap ${intervalMinutes} menit.`
-                  : "Nonaktif — cron di-skip meskipun dipicu."}
-              </p>
-            </div>
+          <div className="border-l-4 border-primary pl-3">
+            <h2 className="text-base font-bold text-txt-primary">
+              Auto Generation
+            </h2>
+            <p className="text-xs text-txt-secondary">
+              {enabled
+                ? batchSize === 0
+                  ? `Aktif tapi batch = 0 (pause). Cron tetap dipanggil tiap ${intervalMinutes} menit.`
+                  : `Cron akan men-generate ${batchSize} artikel setiap ${intervalMinutes} menit.`
+                : "Nonaktif — cron di-skip meskipun dipicu."}
+            </p>
           </div>
           <button
             onClick={handleToggle}
@@ -847,10 +841,10 @@ export default function AutoArtikelPage() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
+                        className={`text-[11px] font-bold uppercase tracking-wider ${
                           kw.isActive
-                            ? "bg-primary-light text-primary"
-                            : "bg-surface-tertiary text-txt-secondary"
+                            ? "text-primary"
+                            : "text-txt-muted"
                         }`}
                       >
                         {kw.isActive ? "Aktif" : "Nonaktif"}
@@ -991,8 +985,8 @@ export default function AutoArtikelPage() {
                 }`}
               >
                 Belum Terpublikasi
-                <span className="ml-2 rounded-full bg-yellow-50 px-2 py-0.5 text-[10px] font-bold text-yellow-700">
-                  {pendingCount}
+                <span className="ml-2 text-xs font-bold text-amber-700">
+                  ({pendingCount})
                 </span>
               </button>
               <button
@@ -1005,8 +999,8 @@ export default function AutoArtikelPage() {
                 }`}
               >
                 Terpublikasi
-                <span className="ml-2 rounded-full bg-primary-light px-2 py-0.5 text-[10px] font-bold text-primary">
-                  {publishedCount}
+                <span className="ml-2 text-xs font-bold text-primary">
+                  ({publishedCount})
                 </span>
               </button>
             </div>
@@ -1053,7 +1047,7 @@ export default function AutoArtikelPage() {
                   type="button"
                   onClick={() => handleDeleteAll(visible)}
                   disabled={isBusy}
-                  className="flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-md border border-red-300 bg-surface px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:border-red-500 disabled:opacity-50"
                 >
                   <Trash2 size={12} />
                   Hapus Semuanya

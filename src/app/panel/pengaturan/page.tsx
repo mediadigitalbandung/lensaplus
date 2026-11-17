@@ -191,14 +191,14 @@ function KtaImageField({
 }
 
 function Section({
-  icon,
+  icon: _icon,
   title,
   description,
   defaultOpen = false,
   active,
   children,
 }: {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   title: string;
   description?: string;
   defaultOpen?: boolean;
@@ -211,6 +211,7 @@ function Section({
   active?: boolean;
   children: React.ReactNode;
 }) {
+  void _icon;
   const tabbed = active !== undefined;
   const [open, setOpen] = useState(defaultOpen);
 
@@ -220,11 +221,8 @@ function Section({
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       {tabbed ? (
-        <div className="flex items-center gap-3 px-5 py-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
-            {icon}
-          </div>
-          <div className="min-w-0">
+        <div className="px-5 py-4">
+          <div className="min-w-0 border-l-4 border-primary pl-3">
             <h2 className="text-base font-bold text-txt-primary">{title}</h2>
             {description && (
               <p className="text-xs text-txt-secondary">{description}</p>
@@ -237,16 +235,11 @@ function Section({
           onClick={() => setOpen(!open)}
           className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-surface-secondary/40 transition-colors text-left"
         >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
-              {icon}
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-base font-bold text-txt-primary">{title}</h2>
-              {description && (
-                <p className="text-xs text-txt-secondary truncate">{description}</p>
-              )}
-            </div>
+          <div className="min-w-0 border-l-4 border-primary pl-3">
+            <h2 className="text-base font-bold text-txt-primary">{title}</h2>
+            {description && (
+              <p className="text-xs text-txt-secondary truncate">{description}</p>
+            )}
           </div>
           {open ? (
             <ChevronDown size={18} className="text-txt-muted shrink-0" />

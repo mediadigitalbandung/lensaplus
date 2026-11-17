@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Share2, Link2, Check, Image } from "lucide-react";
+import { Link2, Check, Image } from "lucide-react";
 
 interface ShareBarProps {
   articleUrl: string;
@@ -82,10 +82,7 @@ export default function ShareBar({ articleUrl, articleTitle, slug }: ShareBarPro
   return (
     <div className="relative">
       <div className="flex flex-wrap items-center gap-3 rounded-sm bg-surface-secondary p-3 sm:p-4">
-        <div className="flex items-center gap-2 text-txt-secondary">
-          <Share2 size={14} />
-          <span className="text-xs font-semibold uppercase tracking-wider">Bagikan</span>
-        </div>
+        <span className="text-xs font-semibold uppercase tracking-wider text-txt-secondary">Bagikan</span>
         <div className="flex flex-wrap gap-2">
           {platforms.map((platform) => (
             <a
@@ -93,13 +90,11 @@ export default function ShareBar({ articleUrl, articleTitle, slug }: ShareBarPro
               href={platform.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-white transition-all active:scale-95 ${platform.bg} ${platform.hoverBg}`}
+              className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-semibold text-white transition-all active:scale-95 ${platform.bg} ${platform.hoverBg}`}
               title={`Bagikan ke ${platform.name}`}
               aria-label={`Bagikan ke ${platform.name}`}
             >
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
-                {platform.letter}
-              </span>
+              <span className="text-[11px] font-bold">{platform.letter}</span>
               <span className="hidden sm:inline">{platform.name}</span>
             </a>
           ))}
@@ -107,15 +102,13 @@ export default function ShareBar({ articleUrl, articleTitle, slug }: ShareBarPro
           {/* Copy Link Button */}
           <button
             onClick={handleCopyLink}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-white transition-all active:scale-95 ${
-              copied ? "bg-primary" : "bg-gray-500 hover:bg-gray-600"
+            className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-semibold text-white transition-all active:scale-95 ${
+              copied ? "bg-primary" : "bg-stone-600 hover:bg-stone-700"
             }`}
             title="Salin Link"
             aria-label="Salin tautan artikel"
           >
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
-              {copied ? <Check size={10} /> : <Link2 size={10} />}
-            </span>
+            {copied ? <Check size={13} /> : <Link2 size={13} />}
             <span className="hidden sm:inline">
               {copied ? "Tersalin!" : "Salin Link"}
             </span>
@@ -127,13 +120,11 @@ export default function ShareBar({ articleUrl, articleTitle, slug }: ShareBarPro
               href={`/api/og/story?slug=${encodeURIComponent(slug)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-xs font-medium text-white transition-all hover:bg-primary-dark active:scale-95"
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-semibold text-white transition-all hover:bg-primary-dark active:scale-95"
               title="Unduh Story Card untuk WA Status / IG Story"
               aria-label="Unduh Story Card untuk WA Status / IG Story"
             >
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
-                <Image size={10} />
-              </span>
+              <Image size={13} />
               <span className="hidden sm:inline">Story Card</span>
             </a>
           )}

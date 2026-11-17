@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Sparkles, RefreshCw, BookOpen } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { getReadHistory, topCategories } from "@/lib/personalization/tracker";
 
 interface Article {
@@ -51,11 +51,8 @@ export default function UntukAndaClient() {
   return (
     <main className="container-main py-8 sm:py-12">
       <header className="mb-8 sm:mb-12">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-secondary text-white">
-            <Sparkles size={20} strokeWidth={2.5} />
-          </div>
-          <h1 className="font-serif text-headline-md sm:text-display-sm font-bold text-on-surface">
+        <div className="mb-3">
+          <h1 className="border-l-4 border-primary pl-3 font-serif text-headline-md sm:text-display-sm font-bold text-on-surface">
             Untuk Anda
           </h1>
         </div>
@@ -101,7 +98,6 @@ export default function UntukAndaClient() {
         </div>
       ) : articles.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface-secondary p-8 text-center">
-          <BookOpen size={48} className="mx-auto mb-4 text-txt-muted" />
           <p className="text-body-md text-txt-muted">
             Belum ada rekomendasi. Mulai baca artikel untuk personalisasi.
           </p>

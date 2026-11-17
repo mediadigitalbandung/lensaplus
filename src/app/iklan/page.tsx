@@ -4,15 +4,12 @@ import Link from "next/link";
 import { Metadata } from "next";
 import {
   ChevronRight,
-  Megaphone,
-  CheckCircle2,
   FileText,
   MessageCircle,
   Mail,
   Smartphone,
   LayoutGrid,
   Newspaper,
-  ImageIcon,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -122,10 +119,7 @@ export default function IklanPage() {
 
         {/* Hero */}
         <header className="mb-10 rounded-lg border border-border bg-gradient-to-br from-primary/5 to-surface-container-lowest p-8 shadow-card">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-white shadow-md shadow-primary/20">
-              <Megaphone size={20} />
-            </span>
+          <div>
             <span className="text-label-md uppercase tracking-widest text-primary font-bold">
               Untuk Brand & Lembaga
             </span>
@@ -165,27 +159,20 @@ export default function IklanPage() {
             Paket &amp; Tarif
           </h2>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {packages.map((pkg) => {
-              const Icon = pkg.icon;
-              return (
-                <article
-                  key={pkg.slug}
-                  className={`flex h-full flex-col rounded-lg border p-6 shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5 ${
-                    pkg.highlight
-                      ? "border-primary/40 bg-primary/[0.03] ring-1 ring-primary/10"
-                      : "border-border bg-surface-container-lowest"
-                  }`}
-                >
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Icon size={18} />
-                    </span>
-                    {pkg.highlight && (
-                      <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-                        Populer
-                      </span>
-                    )}
-                  </div>
+            {packages.map((pkg) => (
+              <article
+                key={pkg.slug}
+                className={`flex h-full flex-col rounded-lg border p-6 shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5 bg-surface-container-lowest ${
+                  pkg.highlight
+                    ? "border-primary/50 border-t-2 border-t-primary"
+                    : "border-border"
+                }`}
+              >
+                  {pkg.highlight && (
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-primary">
+                      Populer
+                    </p>
+                  )}
                   <h3 className="font-serif text-title-lg text-on-surface">{pkg.name}</h3>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="font-serif text-2xl font-extrabold text-primary">
@@ -197,14 +184,13 @@ export default function IklanPage() {
                   <ul className="mt-4 flex-1 space-y-2 text-sm text-on-surface-variant">
                     {pkg.bullets.map((b) => (
                       <li key={b} className="flex items-start gap-2">
-                        <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-primary" />
+                        <span className="text-primary font-bold" aria-hidden="true">—</span>
                         <span>{b}</span>
                       </li>
                     ))}
                   </ul>
                 </article>
-              );
-            })}
+            ))}
           </div>
           <p className="mt-4 text-xs text-on-surface-variant">
             *Harga belum termasuk PPN. Diskon berlaku untuk kontrak 3 / 6 / 12 bulan. Tarif khusus
@@ -214,8 +200,7 @@ export default function IklanPage() {
 
         {/* Specs */}
         <section className="mb-12">
-          <h2 className="mb-6 flex items-center gap-2 border-l-[3px] border-primary pl-3 text-lg font-bold text-on-surface">
-            <ImageIcon size={18} className="text-primary" />
+          <h2 className="mb-6 border-l-[3px] border-primary pl-3 text-lg font-bold text-on-surface">
             Spesifikasi Teknis
           </h2>
           <div className="overflow-hidden rounded-lg border border-border bg-surface-container-lowest shadow-card">

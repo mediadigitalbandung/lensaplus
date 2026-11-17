@@ -11,12 +11,7 @@ import PollingCarousel from "@/components/slider/PollingCarousel";
 import BannerAd, { SidebarAd, InlineAd, NativeAd } from "@/components/ads/BannerAd";
 import NewsTicker from "@/components/layout/NewsTicker";
 import NewsletterBox from "@/components/common/NewsletterBox";
-import {
-  Scale, Briefcase, Trophy, Film, Heart, Wheat, Cpu, Vote as VoteIcon,
-  GraduationCap, Leaf, Compass, BookOpen, LucideIcon, ArrowRight,
-  Clock, Eye, Flame, Sparkles, ChevronRight, Shield, Layers, Calendar,
-  MapPin, CheckCircle2, FileText
-} from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCached } from "@/lib/cache";
 
@@ -34,12 +29,6 @@ export const metadata: Metadata = {
     description:
       "Berita terkini politik nasional, hukum & peradilan, bisnis-ekonomi, pemerintahan, olahraga, teknologi, dan peristiwa Nusantara.",
   },
-};
-
-const categoryIconMap: Record<string, LucideIcon> = {
-  "hukum": Scale, "bisnis-ekonomi": Briefcase, "olahraga": Trophy, "hiburan": Film,
-  "kesehatan": Heart, "pertanian-peternakan": Wheat, "teknologi": Cpu, "politik": VoteIcon,
-  "pendidikan": GraduationCap, "lingkungan": Leaf, "gaya-hidup": Compass, "opini": BookOpen,
 };
 
 const AI_DEMO_IMAGES = [
@@ -70,14 +59,14 @@ function timeAgo(date: Date | string | null): string {
 function getAngleBadge(angle: string) {
   switch (angle) {
     case "KRONOLOGI":
-      return { label: "Kronologi Kejadian", color: "bg-blue-600/90 text-white" };
+      return { label: "Kronologi Kejadian", color: "badge-angle-kronologi" };
     case "ANALISIS":
-      return { label: "Analisis Mendalam", color: "bg-secondary text-white" };
+      return { label: "Analisis Mendalam", color: "badge-angle-analisis" };
     case "DAMPAK":
     case "PROYEKSI":
-      return { label: "Dampak & Implikasi", color: "bg-emerald-600 text-white" };
+      return { label: "Dampak & Implikasi", color: "badge-angle-dampak" };
     default:
-      return { label: "Sudut Pandang", color: "bg-stone-700 text-white" };
+      return { label: "Sudut Pandang", color: "text-stone-300" };
   }
 }
 
@@ -402,19 +391,25 @@ export default async function HomePage() {
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       sizes="(max-width: 1024px) 100vw, 50vw"
                     />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <span className="rounded-full bg-primary/90 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur-md shadow-sm">
-                        {heroSpotlight.category.name}
-                      </span>
-                      {heroSpotlight.verificationLabel === "VERIFIED" && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md shadow-sm">
-                          <CheckCircle2 size={12} /> Verified
-                        </span>
-                      )}
-                    </div>
                   </Link>
                   <div className="mt-4 flex-1 flex flex-col justify-between">
                     <div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Link
+                          href={`/kategori/${heroSpotlight.category.slug}`}
+                          className="text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors"
+                        >
+                          {heroSpotlight.category.name}
+                        </Link>
+                        {heroSpotlight.verificationLabel === "VERIFIED" && (
+                          <>
+                            <span className="text-stone-300">·</span>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700">
+                              Terverifikasi
+                            </span>
+                          </>
+                        )}
+                      </div>
                       <Link href={`/berita/${heroSpotlight.slug}`}>
                         <h2 className="mt-1 font-serif text-headline-sm sm:text-headline-md lg:text-headline-lg leading-tight text-on-surface group-hover:text-primary transition-colors">
                           {heroSpotlight.title}
@@ -427,9 +422,8 @@ export default async function HomePage() {
                       )}
                     </div>
                     <p className="mt-4 flex items-center gap-2 text-label-sm uppercase tracking-wider text-stone-500 border-t border-stone-200/50 pt-3">
-                      <span className="font-bold text-stone-700">{heroSpotlight.author.name}</span>
+                      <span className="font-bold text-stone-700">{heroSpotlight.author?.name || "Redaksi Lensaplus"}</span>
                       <span className="text-stone-300">/</span>
-                      <Clock size={12} className="text-stone-400" />
                       <span>{timeAgo(heroSpotlight.publishedAt)}</span>
                     </p>
                   </div>
@@ -440,8 +434,8 @@ export default async function HomePage() {
             {/* Column 2: Top Stories / Pilihan Redaksi (3/12) */}
             <div className="lg:col-span-3 flex flex-col gap-6 border-t lg:border-t-0 lg:border-x border-stone-200/60 pt-6 lg:pt-0 lg:px-6">
               <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                  <Sparkles size={14} className="text-secondary" /> Pilihan Redaksi
+                <span className="text-xs font-bold uppercase tracking-widest text-primary">
+                  Pilihan Redaksi
                 </span>
               </div>
               <div className="flex flex-col gap-6 justify-between flex-1">
@@ -457,8 +451,7 @@ export default async function HomePage() {
                         </h3>
                       </Link>
                     </div>
-                    <p className="mt-3 text-[10px] text-stone-500 uppercase tracking-wider flex items-center gap-1">
-                      <Clock size={10} className="text-stone-400" />
+                    <p className="mt-3 text-[10px] text-stone-500 uppercase tracking-wider">
                       {timeAgo(a.publishedAt)}
                     </p>
                   </article>
@@ -469,8 +462,8 @@ export default async function HomePage() {
             {/* Column 3: Fresh News / Terhangat (3/12) */}
             <div className="lg:col-span-3 flex flex-col gap-6 border-t lg:border-t-0 border-stone-200/60 pt-6 lg:pt-0">
               <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-secondary flex items-center gap-1.5">
-                  <Flame size={14} className="text-secondary" /> Terhangat
+                <span className="text-xs font-bold uppercase tracking-widest text-secondary">
+                  Terhangat
                 </span>
               </div>
               <div className="flex flex-col gap-6 justify-between flex-1">
@@ -486,8 +479,7 @@ export default async function HomePage() {
                         </h3>
                       </Link>
                     </div>
-                    <p className="mt-3 text-[10px] text-stone-500 uppercase tracking-wider flex items-center gap-1">
-                      <Clock size={10} className="text-stone-400" />
+                    <p className="mt-3 text-[10px] text-stone-500 uppercase tracking-wider">
                       {timeAgo(a.publishedAt)}
                     </p>
                   </article>
@@ -523,8 +515,8 @@ export default async function HomePage() {
                   <p className="mt-1.5 text-[10px] text-stone-400 uppercase tracking-wider flex items-center gap-2">
                     <span>{timeAgo(a.publishedAt)}</span>
                     {a.viewCount > 0 && (
-                      <span className="flex items-center gap-1 text-stone-500">
-                        <Eye size={10} /> {a.viewCount.toLocaleString("id-ID")}
+                      <span className="text-stone-500">
+                        · {a.viewCount.toLocaleString("id-ID")} dilihat
                       </span>
                     )}
                   </p>
@@ -549,7 +541,7 @@ export default async function HomePage() {
             </div>
             <Link
               href="/sorotan"
-              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary hover:text-white transition-all shrink-0 backdrop-blur-md border border-white/10 shadow-sm"
+              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white/85 hover:text-secondary transition-colors shrink-0"
             >
               Jelajahi Semua Sorotan <ChevronRight size={14} />
             </Link>
@@ -566,7 +558,7 @@ export default async function HomePage() {
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${badge.color}`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest ${badge.color}`}>
                           {badge.label}
                         </span>
                         <span className="text-[10px] text-stone-300">
@@ -612,7 +604,7 @@ export default async function HomePage() {
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${badge.color}`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest ${badge.color}`}>
                           {badge.label}
                         </span>
                       </div>
@@ -645,13 +637,10 @@ export default async function HomePage() {
             {/* Left: Berita Terkini (7 cols) */}
             <div className="md:col-span-7">
               <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
-                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                  <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20 shrink-0">
-                    <Flame size={18} strokeWidth={2.5} />
-                  </div>
-                  <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface truncate">Berita Terkini</h2>
-                </div>
-                <Link href="/berita" className="flex items-center gap-1.5 rounded-full bg-primary/5 px-3 sm:px-4 py-1.5 sm:py-2 text-label-sm sm:text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors shrink-0">
+                <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface border-l-4 border-primary pl-3 truncate">
+                  Berita Terkini
+                </h2>
+                <Link href="/berita" className="flex items-center gap-1 text-label-sm sm:text-label-md uppercase tracking-wider font-bold text-primary hover:text-primary-dark transition-colors shrink-0">
                   <span className="hidden sm:inline">Lihat Semua</span>
                   <span className="sm:hidden">Semua</span>
                   <ChevronRight size={14} />
@@ -673,7 +662,7 @@ export default async function HomePage() {
                     </div>
                   </Link>
                   <div className="mt-4">
-                    <span className="inline-block rounded-full bg-primary/5 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+                    <span className="inline-block text-[11px] font-bold uppercase tracking-widest text-secondary">
                       {terkiniArticles[0].category.name}
                     </span>
                     <Link href={`/berita/${terkiniArticles[0].slug}`}>
@@ -734,73 +723,52 @@ export default async function HomePage() {
             <aside className="md:col-span-5 flex flex-col gap-8">
               {/* Interactive Polling Card */}
               <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm">
-                <div className="flex items-center gap-2.5 mb-5 border-b border-stone-100 pb-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary/10 text-secondary shrink-0">
-                    <Shield size={18} strokeWidth={2.5} />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-secondary block">Suara Pembaca</span>
-                    <h3 className="font-serif text-title-md text-on-surface font-semibold -mt-0.5">Polling</h3>
-                  </div>
+                <div className="mb-5 border-b border-stone-100 pb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-secondary block">Suara Pembaca</span>
+                  <h3 className="font-serif text-title-md text-on-surface font-semibold mt-0.5">Polling</h3>
                 </div>
                 <PollingCarousel />
               </div>
 
               {/* Legal Agenda & Public Services Widget */}
               <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm">
-                <div className="flex items-center justify-between mb-4 border-b border-stone-100 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-                      <Scale size={18} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary block">Layanan & Informasi</span>
-                      <h3 className="font-serif text-title-md text-on-surface font-semibold -mt-0.5">Agenda & Layanan Hukum</h3>
-                    </div>
-                  </div>
+                <div className="mb-4 border-b border-stone-100 pb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary block">Layanan &amp; Informasi</span>
+                  <h3 className="font-serif text-title-md text-on-surface font-semibold mt-0.5">Agenda &amp; Layanan Hukum</h3>
                 </div>
 
-                <div className="flex flex-col gap-3">
+                <div className="divide-y divide-stone-100">
                   <Link
                     href="/jadwal-sidang"
-                    className="group flex items-center justify-between rounded-xl bg-stone-50 p-3.5 border border-stone-100 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                    className="group flex items-center justify-between py-3 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <Calendar size={18} className="text-primary" />
-                      <div>
-                        <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Jadwal Sidang Pengadilan</h4>
-                        <p className="text-[10px] text-stone-500">Agenda sidang PN, PTUN, & PA Bandung</p>
-                      </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Jadwal Sidang Pengadilan</h4>
+                      <p className="text-[10px] text-stone-500 mt-0.5">Agenda sidang PN, PTUN, &amp; PA Bandung</p>
                     </div>
-                    <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                   </Link>
 
                   <Link
                     href="/lokasi"
-                    className="group flex items-center justify-between rounded-xl bg-stone-50 p-3.5 border border-stone-100 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                    className="group flex items-center justify-between py-3 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <MapPin size={18} className="text-primary" />
-                      <div>
-                        <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Direktori Pengadilan Bandung</h4>
-                        <p className="text-[10px] text-stone-500">Lokasi & info 8 lembaga peradilan</p>
-                      </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Direktori Pengadilan Bandung</h4>
+                      <p className="text-[10px] text-stone-500 mt-0.5">Lokasi &amp; info 8 lembaga peradilan</p>
                     </div>
-                    <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                   </Link>
 
                   <Link
                     href="/regulasi"
-                    className="group flex items-center justify-between rounded-xl bg-stone-50 p-3.5 border border-stone-100 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                    className="group flex items-center justify-between pt-3 pb-1 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <FileText size={18} className="text-primary" />
-                      <div>
-                        <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Database Regulasi & Perda</h4>
-                        <p className="text-[10px] text-stone-500">Peraturan daerah & UU terbaru</p>
-                      </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Database Regulasi &amp; Perda</h4>
+                      <p className="text-[10px] text-stone-500 mt-0.5">Peraturan daerah &amp; UU terbaru</p>
                     </div>
-                    <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                   </Link>
                 </div>
               </div>
@@ -821,19 +789,14 @@ export default async function HomePage() {
       {editorsPickArticles.length > 0 && (
         <section className="bg-surface py-8 sm:py-12 border-t border-stone-200/60">
           <div className="container-main">
-            <div className="flex items-start sm:items-center justify-between gap-3 mb-6 sm:mb-8">
-              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md shadow-secondary/20 shrink-0">
-                  <Sparkles size={18} strokeWidth={2.5} />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-label-sm sm:text-label-md uppercase tracking-widest text-secondary font-bold">Pilihan Editor</span>
-                  <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface mt-0.5">
-                    Wajib Dibaca Hari Ini
-                  </h2>
-                </div>
+            <div className="flex items-end justify-between gap-3 mb-6 sm:mb-8">
+              <div className="min-w-0 border-l-4 border-secondary pl-3">
+                <span className="text-label-sm sm:text-label-md uppercase tracking-widest text-secondary font-bold block">Pilihan Editor</span>
+                <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface mt-0.5">
+                  Wajib Dibaca Hari Ini
+                </h2>
               </div>
-              <Link href="/berita" className="hidden sm:flex items-center gap-1.5 rounded-full bg-primary/5 px-4 py-2 text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors shrink-0">
+              <Link href="/berita" className="hidden sm:inline-flex items-center gap-1.5 text-label-md uppercase tracking-wider font-bold text-primary hover:text-primary-dark transition-colors shrink-0">
                 Semua Berita <ArrowRight size={14} />
               </Link>
             </div>
@@ -861,9 +824,8 @@ export default async function HomePage() {
                     </div>
                   </div>
                   <p className="mt-3 flex items-center gap-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-stone-500 border-t border-stone-100 pt-2 truncate">
-                    <span className="truncate">{a.author.name}</span>
+                    <span className="truncate">{a.author?.name || "Redaksi Lensaplus"}</span>
                     <span className="text-stone-300">/</span>
-                    <Clock size={10} className="text-stone-400 shrink-0" />
                     <span>{timeAgo(a.publishedAt)}</span>
                   </p>
                 </article>
@@ -876,18 +838,18 @@ export default async function HomePage() {
       {/* ── RANGKUMAN BERITA PINTAR ── */}
       <section className="bg-gradient-to-b from-stone-100 to-stone-50 py-10 sm:py-14 border-t border-stone-200/60">
         <div className="container-main">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1.5">
-                <BookOpen size={16} className="text-secondary" /> Rangkuman Pintar
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+            <div className="border-l-4 border-primary pl-3">
+              <span className="text-xs font-bold uppercase tracking-widest text-primary block">
+                Rangkuman Pintar
               </span>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-on-surface mt-1">
-                Kilas Berita & Rekap Penting
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-on-surface mt-0.5">
+                Kilas Berita &amp; Rekap Penting
               </h2>
             </div>
             <Link
               href="/rangkuman"
-              className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-all shrink-0"
+              className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-primary hover:text-primary-dark transition-colors shrink-0"
             >
               Lihat Semua Rangkuman <ChevronRight size={14} />
             </Link>
@@ -898,9 +860,9 @@ export default async function HomePage() {
               href="/rangkuman/harian"
               className="group rounded-2xl bg-white p-6 border border-stone-200/70 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
-                <Calendar size={20} />
-              </div>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-primary block mb-2">
+                Harian
+              </span>
               <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-primary transition-colors">
                 Rangkuman Harian
               </h3>
@@ -917,9 +879,9 @@ export default async function HomePage() {
               href="/rangkuman/pekan-ini"
               className="group rounded-2xl bg-white p-6 border border-stone-200/70 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/10 text-secondary mb-4">
-                <Flame size={20} />
-              </div>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-secondary block mb-2">
+                Mingguan
+              </span>
               <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-primary transition-colors">
                 Kilas Pekan Ini
               </h3>
@@ -936,16 +898,16 @@ export default async function HomePage() {
               href="/rangkuman/bulan-ini"
               className="group rounded-2xl bg-white p-6 border border-stone-200/70 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 mb-4">
-                <Layers size={20} />
-              </div>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 block mb-2">
+                Bulanan
+              </span>
               <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-primary transition-colors">
                 Kaleidoskop Bulanan
               </h3>
               <p className="mt-2 text-xs text-stone-600 leading-relaxed">
                 Rangkuman komprehensif perkembangan ekonomi, proyek daerah, dan regulasi bulan ini.
               </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600">
+              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-700">
                 <span>Lihat Kaleidoskop</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
@@ -970,17 +932,12 @@ export default async function HomePage() {
               <div className="container-main">
                 {/* Header */}
                 <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
-                  <Link href={`/kategori/${catSlug}`} className="group flex items-center gap-2.5 sm:gap-3 min-w-0">
-                    {(() => { const CatIcon = categoryIconMap[catSlug] || Scale; return (
-                      <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/10 group-hover:from-primary/25 group-hover:to-primary/10 transition-all shrink-0">
-                        <CatIcon size={18} strokeWidth={2.5} />
-                      </div>
-                    ); })()}
-                    <h2 className="font-serif text-title-lg sm:text-headline-sm text-on-surface group-hover:text-primary transition-colors truncate">
+                  <Link href={`/kategori/${catSlug}`} className="group min-w-0">
+                    <h2 className="font-serif text-title-lg sm:text-headline-sm text-on-surface border-l-4 border-primary pl-3 group-hover:text-primary transition-colors truncate">
                       {catName}
                     </h2>
                   </Link>
-                  <Link href={`/kategori/${catSlug}`} className="flex items-center gap-1.5 rounded-full bg-primary/5 px-3 sm:px-4 py-1.5 sm:py-2 text-label-sm sm:text-label-md uppercase tracking-wider font-semibold text-primary hover:bg-primary/10 transition-colors shrink-0">
+                  <Link href={`/kategori/${catSlug}`} className="flex items-center gap-1 text-label-sm sm:text-label-md uppercase tracking-wider font-bold text-primary hover:text-primary-dark transition-colors shrink-0">
                     <span className="hidden sm:inline">Lihat Semua</span>
                     <span className="sm:hidden">Semua</span>
                     <ChevronRight size={14} />
@@ -1078,7 +1035,7 @@ export default async function HomePage() {
                             </Link>
                             {main.excerpt && <p className="mt-2 sm:mt-3 text-body-sm sm:text-body-md text-stone-600 line-clamp-2 leading-relaxed">{main.excerpt}</p>}
                             <p className="mt-2 sm:mt-3 flex items-center gap-1.5 text-label-sm uppercase tracking-wider text-stone-500">
-                              {main.author.name} <span className="mx-0.5 text-stone-300">/</span> <Clock size={10} className="text-stone-400" /> {timeAgo(main.publishedAt)}
+                              {main.author?.name || "Redaksi Lensaplus"} <span className="mx-0.5 text-stone-300">/</span> {timeAgo(main.publishedAt)}
                             </p>
                           </div>
                         </div>
@@ -1129,7 +1086,7 @@ export default async function HomePage() {
                             <h3 className="font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
                           </Link>
                           <p className="mt-1.5 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-stone-500 truncate">
-                            <span className="truncate">{a.author.name}</span> <span className="mx-0.5 text-stone-300 shrink-0">/</span> <Clock size={10} className="text-stone-400 shrink-0" /> {timeAgo(a.publishedAt)}
+                            <span className="truncate">{a.author?.name || "Redaksi Lensaplus"}</span> <span className="mx-0.5 text-stone-300 shrink-0">/</span> {timeAgo(a.publishedAt)}
                           </p>
                         </div>
                       </article>
@@ -1179,25 +1136,20 @@ export default async function HomePage() {
 
               <div className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 rounded-2xl overflow-hidden shadow-2xl">
                 {sortedCategories.map((cat) => {
-                  const Icon = categoryIconMap[cat.slug] || Scale;
                   const isEmpty = cat._count.articles === 0;
                   return (
                     <Link
                       key={cat.slug}
                       href={`/kategori/${cat.slug}`}
-                      className={`group flex flex-col justify-between gap-4 sm:gap-6 bg-primary p-4 sm:p-5 transition-all duration-300 hover:bg-secondary ${isEmpty ? "opacity-40" : ""}`}
+                      className={`group flex flex-col justify-between gap-4 sm:gap-5 bg-primary p-4 sm:p-5 transition-all duration-300 hover:bg-secondary ${isEmpty ? "opacity-40" : ""}`}
                     >
-                      <div className="flex items-center justify-between">
-                        <Icon size={20} strokeWidth={2} className="text-white sm:hidden" />
-                        <Icon size={22} strokeWidth={2} className="text-white hidden sm:block" />
-                        <ChevronRight size={16} className="text-white/30 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-white" />
-                      </div>
-                      <div>
+                      <div className="flex items-start justify-between gap-2">
                         <h3 className="font-serif text-title-sm sm:text-title-md leading-tight text-white">{cat.name}</h3>
-                        <p className="mt-1 text-label-sm uppercase tracking-wider text-white/55">
-                          {cat._count.articles} artikel
-                        </p>
+                        <ChevronRight size={16} className="shrink-0 text-white/30 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-white mt-0.5" />
                       </div>
+                      <p className="text-label-sm uppercase tracking-wider text-white/60">
+                        {cat._count.articles} artikel
+                      </p>
                     </Link>
                   );
                 })}

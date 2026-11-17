@@ -2,7 +2,7 @@ export const revalidate = 120;
 
 import Link from "next/link";
 import { Metadata } from "next";
-import { ChevronLeft, ChevronRight, Sparkles, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
@@ -65,16 +65,16 @@ const ANGLE_LABEL: Record<string, string> = {
 };
 
 const ANGLE_COLOR: Record<string, string> = {
-  KRONOLOGI: "bg-blue-50 text-blue-700 border-blue-200",
-  ANALISIS: "bg-amber-50 text-amber-700 border-amber-200",
-  DAMPAK: "bg-rose-50 text-rose-700 border-rose-200",
-  LATAR_BELAKANG: "bg-purple-50 text-purple-700 border-purple-200",
-  PROFIL: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  REAKSI: "bg-pink-50 text-pink-700 border-pink-200",
-  HUKUM: "bg-primary-light text-primary border-primary/20",
-  EKONOMI: "bg-orange-50 text-orange-700 border-orange-200",
-  PROYEKSI: "bg-cyan-50 text-cyan-700 border-cyan-200",
-  FAQ: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  KRONOLOGI: "text-primary",
+  ANALISIS: "text-secondary-dark",
+  DAMPAK: "text-tertiary",
+  LATAR_BELAKANG: "text-primary",
+  PROFIL: "text-secondary-dark",
+  REAKSI: "text-tertiary",
+  HUKUM: "text-primary",
+  EKONOMI: "text-secondary-dark",
+  PROYEKSI: "text-primary",
+  FAQ: "text-primary",
 };
 
 const VALID_ANGLES = Object.keys(ANGLE_LABEL) as (keyof typeof ANGLE_LABEL)[];
@@ -149,8 +149,7 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
         <div className="mb-6">
           <div className="flex items-center gap-3">
             <span className="block h-7 w-[3px] rounded-full bg-secondary" />
-            <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
-              <Sparkles size={22} className="text-primary" />
+            <h1 className="font-serif text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
               Sorotan
             </h1>
           </div>
@@ -167,10 +166,10 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
         <div className="mb-6 flex flex-wrap gap-2">
           <Link
             href={buildUrl({ page: 1, angle: null })}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-md px-4 py-2 text-sm transition-colors ${
               !validAngle
-                ? "bg-primary text-white"
-                : "bg-surface text-txt-secondary hover:bg-surface-tertiary border border-border"
+                ? "border border-primary font-bold text-primary bg-white"
+                : "border border-border bg-white font-medium text-txt-secondary hover:border-primary/50 hover:text-primary"
             }`}
           >
             Semua
@@ -179,10 +178,10 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
             <Link
               key={a}
               href={buildUrl({ page: 1, angle: a })}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-md px-4 py-2 text-sm transition-colors ${
                 validAngle === a
-                  ? "bg-primary text-white"
-                  : "bg-surface text-txt-secondary hover:bg-surface-tertiary border border-border"
+                  ? "border border-primary font-bold text-primary bg-white"
+                  : "border border-border bg-white font-medium text-txt-secondary hover:border-primary/50 hover:text-primary"
               }`}
             >
               {ANGLE_LABEL[a]}
@@ -201,14 +200,14 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
               >
                 <div className="mb-3 flex items-center gap-2">
                   <span
-                    className={`inline-block rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${
-                      ANGLE_COLOR[s.angle] ??
-                      "bg-surface-secondary text-txt-secondary border-border"
+                    className={`text-[11px] font-bold uppercase tracking-wider ${
+                      ANGLE_COLOR[s.angle] ?? "text-txt-secondary"
                     }`}
                   >
                     {ANGLE_LABEL[s.angle] ?? s.angle}
                   </span>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  <span className="text-txt-muted/50">·</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-txt-muted">
                     {s.article.category.name}
                   </span>
                 </div>
@@ -231,9 +230,8 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
                   {(s.article.viewCount ?? 0) > 0 && (
                     <>
                       <span className="mx-1">·</span>
-                      <span className="inline-flex items-center gap-0.5 align-middle">
-                        <Eye size={11} aria-hidden />
-                        {(s.article.viewCount ?? 0).toLocaleString("id-ID")}
+                      <span>
+                        {(s.article.viewCount ?? 0).toLocaleString("id-ID")} dilihat
                       </span>
                     </>
                   )}
@@ -243,7 +241,6 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
           </div>
         ) : (
           <div className="py-16 text-center">
-            <Sparkles size={48} className="mx-auto text-border" />
             <p className="mt-4 text-txt-secondary">Belum ada sorotan</p>
             <p className="text-sm text-txt-muted">
               Sorotan akan muncul setelah redaksi mempublikasikan artikel baru.

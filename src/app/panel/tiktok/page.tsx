@@ -64,15 +64,15 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  DRAFT: "bg-surface-tertiary text-txt-secondary",
-  READY: "bg-blue-50 text-blue-600",
-  RENDERING: "bg-purple-50 text-purple-600",
-  RENDER_FAILED: "bg-red-50 text-red-600",
-  SCHEDULED: "bg-yellow-50 text-yellow-700",
-  PUBLISHING: "bg-purple-50 text-purple-600",
-  PUBLISHED: "bg-primary-light text-primary",
-  PUBLISH_FAILED: "bg-red-50 text-red-600",
-  ARCHIVED: "bg-surface-tertiary text-txt-muted",
+  DRAFT: "text-txt-secondary font-medium",
+  READY: "text-blue-700 font-semibold",
+  RENDERING: "text-purple-700 font-semibold",
+  RENDER_FAILED: "text-red-700 font-semibold",
+  SCHEDULED: "text-amber-700 font-semibold",
+  PUBLISHING: "text-purple-700 font-semibold",
+  PUBLISHED: "text-primary font-semibold",
+  PUBLISH_FAILED: "text-red-700 font-semibold",
+  ARCHIVED: "text-txt-muted",
 };
 
 function formatRelative(iso: string): string {

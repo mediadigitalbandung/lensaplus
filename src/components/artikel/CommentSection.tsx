@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { MessageCircle, Send, CheckCircle, User } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import Turnstile from "@/components/ui/Turnstile";
 
 interface Comment {
@@ -106,7 +106,6 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     <section className="mt-10">
       <div className="flex items-center justify-between mb-5">
         <h2 className="border-l-[3px] border-primary pl-3 text-lg font-bold text-txt-primary flex items-center gap-2">
-          <MessageCircle size={20} />
           Komentar
           {comments.length > 0 && (
             <span className="text-sm font-normal text-txt-muted">
@@ -136,9 +135,9 @@ export default function CommentSection({ articleId }: { articleId: string }) {
               key={comment.id}
               className="rounded-sm border border-border bg-surface p-4"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <User size={14} />
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-xs font-bold text-primary">
+                  {comment.authorName.charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-txt-primary">
@@ -168,14 +167,14 @@ export default function CommentSection({ articleId }: { articleId: string }) {
         </h3>
 
         {success && (
-          <div className="mb-4 flex items-center gap-2 rounded-sm bg-primary-light px-4 py-3 text-sm text-primary">
+          <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-4 py-2 text-sm text-primary">
             <CheckCircle size={16} />
             Komentar Anda akan ditampilkan setelah disetujui moderator.
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-sm bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="mb-4 border-l-4 border-red-600 pl-4 py-2 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -247,10 +246,8 @@ export default function CommentSection({ articleId }: { articleId: string }) {
             disabled={submitting || !captchaToken}
             className="btn-primary flex min-h-[44px] items-center gap-1.5 px-5 py-3 text-sm font-semibold disabled:opacity-50"
           >
-            {submitting ? (
+            {submitting && (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            ) : (
-              <Send size={14} />
             )}
             Kirim Komentar
           </button>

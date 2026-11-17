@@ -3,14 +3,12 @@ export const revalidate = 3600; // stats refresh hourly — no need for live dat
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  Megaphone,
   ShieldCheck,
   Newspaper,
   LayoutTemplate,
   Handshake,
   FileText,
   TrendingUp,
-  CheckCircle2,
   MapPin,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
@@ -112,9 +110,9 @@ export default async function PasangIklanPage() {
       <section className="bg-gradient-to-br from-primary to-primary-dark text-white">
         <div className="container-main py-12 sm:py-16 lg:py-20">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider ring-1 ring-inset ring-white/20">
-              <Megaphone size={13} /> Pasang Iklan
-            </span>
+            <p className="text-xs font-bold uppercase tracking-widest text-white/80">
+              Pasang Iklan
+            </p>
             <h1 className="mt-4 font-serif text-headline-md font-bold leading-tight sm:text-headline-lg lg:text-display-sm">
               Promosikan Bisnis Anda di Media Berita Tepercaya Bandung
             </h1>
@@ -158,11 +156,8 @@ export default async function PasangIklanPage() {
         <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {WHY.map((w) => (
             <div key={w.title} className="rounded-xl border border-border bg-surface p-5 shadow-card">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary-light text-primary">
-                <w.icon size={20} />
-              </div>
-              <h3 className="mt-4 font-bold text-txt-primary">{w.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-txt-secondary">{w.desc}</p>
+              <h3 className="font-bold text-txt-primary border-l-2 border-primary pl-3">{w.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-txt-secondary">{w.desc}</p>
             </div>
           ))}
         </div>
@@ -185,15 +180,12 @@ export default async function PasangIklanPage() {
                 key={p.title}
                 className="flex flex-col rounded-xl border border-border bg-surface p-6 shadow-card"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary-light text-secondary">
-                  <p.icon size={22} />
-                </div>
-                <h3 className="mt-4 text-lg font-bold text-txt-primary">{p.title}</h3>
+                <h3 className="text-lg font-bold text-txt-primary border-l-[3px] border-primary pl-3">{p.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-txt-secondary">{p.desc}</p>
                 <ul className="mt-4 space-y-2">
                   {p.points.map((pt) => (
                     <li key={pt} className="flex items-start gap-2 text-sm text-txt-secondary">
-                      <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
+                      <span className="text-primary font-bold" aria-hidden="true">—</span>
                       <span>{pt}</span>
                     </li>
                   ))}
@@ -266,7 +258,7 @@ export default async function PasangIklanPage() {
                   "Tarif fleksibel sesuai anggaran",
                 ].map((t) => (
                   <li key={t} className="flex items-start gap-2.5 text-sm text-txt-secondary">
-                    <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-primary" />
+                    <span className="text-primary font-bold" aria-hidden="true">—</span>
                     <span>{t}</span>
                   </li>
                 ))}

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import LiveBlogTimeline, {
   LiveBlogEntry,
 } from "@/components/live/LiveBlogTimeline";
-import { Radio, Clock, ArrowLeft, ExternalLink, Play } from "lucide-react";
+import { ArrowLeft, ExternalLink, Play } from "lucide-react";
 import { resolveLiveEmbed } from "@/lib/live-embed";
 
 export const revalidate = 30;
@@ -46,10 +46,10 @@ export async function generateMetadata({ params: paramsPromise }: Props): Promis
 function StatusBadge({ status }: { status: string }) {
   if (status === "LIVE") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-label-md font-bold text-white">
+      <span className="inline-flex items-center gap-1.5 text-label-md font-bold uppercase tracking-wider text-secondary">
         <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-secondary" />
         </span>
         LIVE
       </span>
@@ -57,12 +57,12 @@ function StatusBadge({ status }: { status: string }) {
   }
   if (status === "SCHEDULED") {
     return (
-      <span className="badge badge-green">Akan Datang</span>
+      <span className="text-label-md font-bold uppercase tracking-wider text-primary">Akan Datang</span>
     );
   }
   if (status === "ENDED") {
     return (
-      <span className="badge">Selesai</span>
+      <span className="text-label-md font-semibold uppercase tracking-wider text-txt-muted">Selesai</span>
     );
   }
   if (status === "CANCELLED") {
@@ -236,14 +236,10 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
           )}
 
           <div className="flex flex-wrap items-center gap-4 text-label-sm text-txt-muted">
-            <span className="flex items-center gap-1.5">
-              <Radio size={13} className="text-primary" />
-              Diliput oleh {blog.author.name}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock size={13} />
-              {scheduledDateStr} WIB
-            </span>
+            <span>Diliput oleh {blog.author.name}</span>
+            <span>·</span>
+            <span>{scheduledDateStr} WIB</span>
+            <span>·</span>
             <span>{blog.entries.length} update</span>
             {blog.articleId && (
               <Link

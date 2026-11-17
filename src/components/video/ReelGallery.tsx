@@ -39,9 +39,7 @@ export default function ReelGallery({ items }: { items: VideoStoryItem[] }) {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-transform group-hover:scale-110">
-                    <Play size={20} className="ml-0.5 text-white" fill="white" />
-                  </div>
+                  <Play size={28} className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition-transform group-hover:scale-110" fill="white" />
                 </div>
               </div>
             </button>
@@ -62,10 +60,10 @@ export default function ReelGallery({ items }: { items: VideoStoryItem[] }) {
           <button
             type="button"
             onClick={() => setPlaying(null)}
-            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center text-white/80 hover:text-white transition-colors"
             aria-label="Tutup"
           >
-            <X size={20} />
+            <X size={24} />
           </button>
           <div
             className="aspect-[9/16] h-full max-h-[88vh] w-auto max-w-full"

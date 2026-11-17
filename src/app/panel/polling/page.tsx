@@ -401,17 +401,20 @@ export default function PollingPanelPage() {
                   </div>
                 )}
                 {!poll.image && (
-                  <div className="shrink-0 w-20 h-14 rounded-lg bg-surface-tertiary flex items-center justify-center">
+                  <div className="shrink-0 w-20 h-14 rounded-lg border border-border bg-surface-secondary flex items-center justify-center">
                     <ImageIcon size={18} className="text-txt-muted/40" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${poll.isActive ? "bg-primary-light text-primary" : "bg-red-50 text-red-600"}`}>
-                      <Power size={10} /> {poll.isActive ? "Aktif" : "Nonaktif"}
+                  <div className="flex items-center gap-2 mb-1 text-xs">
+                    <span className={`font-bold uppercase tracking-wider ${poll.isActive ? "text-primary" : "text-red-600"}`}>
+                      {poll.isActive ? "Aktif" : "Nonaktif"}
                     </span>
                     {poll.category && (
-                      <span className="rounded-lg bg-surface-tertiary px-2 py-0.5 text-xs text-txt-secondary">{poll.category.name}</span>
+                      <>
+                        <span className="text-txt-muted">·</span>
+                        <span className="text-txt-secondary font-medium">{poll.category.name}</span>
+                      </>
                     )}
                   </div>
                   <p className="font-bold text-txt-primary text-base">{poll.question}</p>

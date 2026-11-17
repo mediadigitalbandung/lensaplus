@@ -1,15 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import {
-  Calendar,
-  TrendingUp,
-  Building2,
-  Users,
-  Coins,
-  ScrollText,
-  FileText,
-  ArrowRight,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export const revalidate = 600; // 10-min ISR
@@ -25,25 +16,14 @@ export const metadata: Metadata = {
   },
 };
 
-const TYPE_META: Record<
-  string,
-  { label: string; icon: React.ElementType; color: string }
-> = {
-  EARNINGS: {
-    label: "Laporan Keuangan",
-    icon: FileText,
-    color: "bg-blue-500",
-  },
-  IPO: { label: "IPO", icon: TrendingUp, color: "bg-emerald-500" },
-  RUPS: { label: "RUPS", icon: Users, color: "bg-purple-500" },
-  DIVIDEND: { label: "Dividen", icon: Coins, color: "bg-yellow-500" },
-  STOCK_SPLIT: { label: "Stock Split", icon: ScrollText, color: "bg-pink-500" },
-  RIGHTS_ISSUE: {
-    label: "Rights Issue",
-    icon: Building2,
-    color: "bg-orange-500",
-  },
-  OTHER: { label: "Lainnya", icon: Calendar, color: "bg-gray-500" },
+const TYPE_META: Record<string, { label: string }> = {
+  EARNINGS: { label: "Laporan Keuangan" },
+  IPO: { label: "IPO" },
+  RUPS: { label: "RUPS" },
+  DIVIDEND: { label: "Dividen" },
+  STOCK_SPLIT: { label: "Stock Split" },
+  RIGHTS_ISSUE: { label: "Rights Issue" },
+  OTHER: { label: "Lainnya" },
 };
 
 function formatDate(d: Date): string {
@@ -110,11 +90,8 @@ export default async function KalenderEmitenPage() {
   return (
     <main className="container-main py-8 sm:py-12">
       <header className="mb-8 sm:mb-12">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-primary text-white shrink-0">
-            <Calendar size={20} strokeWidth={2.5} />
-          </div>
-          <h1 className="font-serif text-headline-md sm:text-display-sm font-bold text-on-surface">
+        <div className="mb-3">
+          <h1 className="font-serif text-headline-md sm:text-display-sm font-bold text-on-surface border-l-4 border-primary pl-3">
             Kalender Emiten
           </h1>
         </div>
@@ -125,9 +102,9 @@ export default async function KalenderEmitenPage() {
         </p>
       </header>
 
-      {/* Type summary pills */}
-      <div className="mb-8 flex flex-wrap gap-2">
-        <span className="rounded-full bg-primary text-white px-3 py-1.5 text-xs font-bold">
+      {/* Type summary strip */}
+      <div className="mb-8 flex flex-wrap gap-x-5 gap-y-2 border-b border-border pb-3 text-xs">
+        <span className="font-bold text-primary border-b-2 border-primary pb-1">
           Semua ({total})
         </span>
         {Object.entries(TYPE_META).map(([type, meta]) => {
@@ -136,7 +113,7 @@ export default async function KalenderEmitenPage() {
           return (
             <span
               key={type}
-              className="rounded-full bg-surface-secondary border border-border px-3 py-1.5 text-xs font-medium text-txt-primary"
+              className="font-medium text-txt-secondary pb-1"
             >
               {meta.label} ({count})
             </span>
@@ -145,8 +122,7 @@ export default async function KalenderEmitenPage() {
       </div>
 
       {events.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface-secondary p-12 text-center">
-          <Calendar size={40} className="mx-auto text-border mb-3" />
+        <div className="rounded-xl border border-border bg-surface p-12 text-center">
           <p className="text-body-md text-txt-muted">
             Belum ada event terjadwal dalam 90 hari ke depan.
           </p>
@@ -167,8 +143,8 @@ export default async function KalenderEmitenPage() {
                     }`}
                   >
                     {isToday && (
-                      <span className="mr-2 inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-bold text-white">
-                        Hari Ini
+                      <span className="mr-2 text-xs font-bold uppercase tracking-wider text-secondary">
+                        Hari Ini —
                       </span>
                     )}
                     {formatDate(date)}
@@ -183,23 +159,17 @@ export default async function KalenderEmitenPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {dateEvents.map((event) => {
                     const meta = TYPE_META[event.type] ?? TYPE_META.OTHER;
-                    const Icon = meta.icon;
                     return (
                       <article
                         key={event.id}
                         className="card p-4 sm:p-5 flex flex-col"
                       >
-                        <div className="flex items-start gap-3 mb-3">
-                          <div
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${meta.color} text-white`}
-                          >
-                            <Icon size={16} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] uppercase tracking-wider text-txt-muted font-bold">
+                        <div className="mb-3">
+                          <div className="min-w-0">
+                            <p className="text-[10px] uppercase tracking-wider text-primary font-bold">
                               {meta.label}
                             </p>
-                            <p className="text-xs text-txt-secondary">
+                            <p className="text-xs text-txt-secondary mt-0.5">
                               {formatTime(event.scheduledAt)} WIB
                               {event.ticker && (
                                 <span className="ml-2 font-mono font-bold text-primary">

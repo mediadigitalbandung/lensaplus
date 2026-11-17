@@ -285,12 +285,12 @@ export default function SumberBeritaPage() {
       </div>
 
       {/* Legal banner */}
-      <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900">
-        <div className="flex items-start gap-2">
-          <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
+      <div className="mb-6 rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface p-4 text-sm text-txt-primary">
+        <div className="flex items-start gap-2.5">
+          <AlertTriangle size={18} className="mt-0.5 flex-shrink-0 text-amber-600" />
           <div className="space-y-1">
             <p className="font-semibold">Catatan etis & legal</p>
-            <ul className="list-disc pl-5 space-y-1 text-yellow-800">
+            <ul className="list-disc pl-5 space-y-1 text-txt-secondary">
               <li>Pakai HANYA situs yang merilis berita untuk publik (situs resmi BUMN, Pemda, klub olahraga, dll). Hindari situs media komersial yang konten-nya berhak cipta penuh.</li>
               <li>Setiap draft otomatis dapat footer atribusi link ke sumber asli.</li>
               <li>Sebelum publish, editor wajib review draft — paraphrase AI harus diverifikasi tetap sesuai fakta sumber.</li>
@@ -328,42 +328,54 @@ export default function SumberBeritaPage() {
                       {s.name}
                     </h3>
                     {s.isActive ? (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
                         Aktif
                       </span>
                     ) : (
-                      <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-600">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-txt-muted">
                         Nonaktif
                       </span>
                     )}
                     {s.category && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                        {s.category.name}
-                      </span>
+                      <>
+                        <span className="text-txt-muted">·</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                          {s.category.name}
+                        </span>
+                      </>
                     )}
                     {isSuperAdmin && (
-                      <span
-                        className="rounded-full bg-surface-tertiary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-txt-secondary"
-                        title="Akun yang menambahkan / men-scrape sumber ini"
-                      >
-                        {s.owner?.name ?? "Bersama (lama)"}
-                      </span>
+                      <>
+                        <span className="text-txt-muted">·</span>
+                        <span
+                          className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary"
+                          title="Akun yang menambahkan / men-scrape sumber ini"
+                        >
+                          {s.owner?.name ?? "Bersama (lama)"}
+                        </span>
+                      </>
                     )}
                     {s.useHeadless && (
-                      <span
-                        className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800"
-                        title="Render JavaScript via headless Chromium (lambat, untuk SPA)"
-                      >
-                        JS Render
-                      </span>
+                      <>
+                        <span className="text-txt-muted">·</span>
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider text-amber-700"
+                          title="Render JavaScript via headless Chromium (lambat, untuk SPA)"
+                        >
+                          JS Render
+                        </span>
+                      </>
                     )}
                     {s.crawlSubcategories && (
-                      <span
-                        className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-800"
-                        title={`Deep crawl ke max ${s.crawlMaxPages} halaman sub-kategori`}
-                      >
-                        Deep Crawl
-                      </span>
+                      <>
+                        <span className="text-txt-muted">·</span>
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider text-violet-700"
+                          title={`Deep crawl ke max ${s.crawlMaxPages} halaman sub-kategori`}
+                        >
+                          Deep Crawl
+                        </span>
+                      </>
                     )}
                   </div>
                   <a

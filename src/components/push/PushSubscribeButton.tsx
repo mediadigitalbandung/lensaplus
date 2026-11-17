@@ -133,7 +133,7 @@ export default function PushSubscribeButton({
         onClick={unsubscribe}
         disabled={busy}
         aria-label="Nonaktifkan notifikasi push"
-        className={`inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary-light px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-all ${className}`}
+        className={`inline-flex items-center gap-1.5 rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-all ${className}`}
       >
         {busy ? (
           <Loader2 size={12} className="animate-spin" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Upload, ImageIcon, Loader2, Search, ChevronLeft, ChevronRight, Check, ArrowLeft } from "lucide-react";
+import { X, Upload, ImageIcon, Loader2, Search, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 
 interface MediaItem {
   id: string;
@@ -453,9 +453,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                       : "border-border hover:border-primary/50"
                   }`}
                 >
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-light">
-                    <Upload size={28} className="text-primary" />
-                  </div>
+                  <Upload size={32} className="mb-4 text-primary" />
                   <p className="text-base font-semibold text-txt-primary">
                     Klik atau drag gambar ke sini
                   </p>
@@ -566,9 +564,9 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                             loading="lazy"
                           />
                           {isSelected && (
-                            <div className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-md">
-                              <Check size={14} />
-                            </div>
+                            <span className="absolute right-1.5 top-1.5 text-xs font-bold uppercase tracking-wider text-white bg-primary px-1.5 py-0.5 rounded">
+                              Dipilih
+                            </span>
                           )}
                           {m.credit && (
                             <span className="pointer-events-none absolute left-1 top-1 rounded-lg bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">

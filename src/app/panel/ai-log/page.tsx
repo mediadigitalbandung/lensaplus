@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { Sparkles, Cpu, Hash, Users, ChevronLeft, ChevronRight, Loader2, CheckCircle, Tag } from "lucide-react";
+import { Sparkles, Cpu, ChevronLeft, ChevronRight, Loader2, Tag } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 
 interface AILog {
@@ -185,13 +185,10 @@ export default function AIPage() {
       {activeTab === "generate" && (
         <>
           <div className="rounded-xl border border-border bg-surface shadow-card p-6 mb-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-light shrink-0">
-                <Sparkles size={24} className="text-primary" />
-              </div>
+            <div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-txt-primary">Bulk Generate Tags</h3>
-                <p className="text-sm text-txt-secondary mt-1 mb-4">
+                <h3 className="text-lg font-bold text-txt-primary border-l-4 border-primary pl-3">Bulk Generate Tags</h3>
+                <p className="text-sm text-txt-secondary mt-2 mb-4">
                   AI akan menganalisis setiap artikel yang memiliki kurang dari 5 tag,
                   lalu generate 8-10 tag SEO-friendly secara otomatis. Tag baru akan langsung
                   membuat halaman /tag/[slug] yang terindex Google.
@@ -211,8 +208,7 @@ export default function AIPage() {
           {bulkResult && (
             <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
               <div className="border-b border-border px-5 py-3.5">
-                <h3 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-                  <CheckCircle size={16} className="text-primary" />
+                <h3 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
                   Hasil Generate
                 </h3>
               </div>
@@ -241,11 +237,10 @@ export default function AIPage() {
                     {bulkResult.results.map((r, i) => (
                       <div key={i} className="rounded-lg border border-border p-3">
                         <p className="text-sm font-semibold text-txt-primary mb-2">{r.title}</p>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-x-2.5 gap-y-1">
                           {r.tags.map((tag) => (
-                            <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary">
-                              <Tag size={10} />
-                              {tag}
+                            <span key={tag} className="text-xs font-medium text-primary">
+                              #{tag}
                             </span>
                           ))}
                         </div>
@@ -265,38 +260,17 @@ export default function AIPage() {
           {/* Stats Cards */}
           {stats && (
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light">
-                    <Cpu size={20} className="text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-txt-muted">Total Token</p>
-                    <p className="text-xl font-bold text-txt-primary">{formatNumber(stats.totalTokens)}</p>
-                  </div>
-                </div>
+              <div className="rounded-xl border border-border border-t-2 border-t-primary bg-surface p-5 shadow-card">
+                <p className="text-xs text-txt-muted">Total Token</p>
+                <p className="mt-1 text-xl font-bold text-txt-primary">{formatNumber(stats.totalTokens)}</p>
               </div>
-              <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-50">
-                    <Hash size={20} className="text-yellow-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-txt-muted">Total Request</p>
-                    <p className="text-xl font-bold text-txt-primary">{formatNumber(stats.totalRequests)}</p>
-                  </div>
-                </div>
+              <div className="rounded-xl border border-border border-t-2 border-t-amber-500 bg-surface p-5 shadow-card">
+                <p className="text-xs text-txt-muted">Total Request</p>
+                <p className="mt-1 text-xl font-bold text-txt-primary">{formatNumber(stats.totalRequests)}</p>
               </div>
-              <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
-                    <Users size={20} className="text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-txt-muted">Pengguna Aktif</p>
-                    <p className="text-xl font-bold text-txt-primary">{stats.byUser.length}</p>
-                  </div>
-                </div>
+              <div className="rounded-xl border border-border border-t-2 border-t-blue-600 bg-surface p-5 shadow-card">
+                <p className="text-xs text-txt-muted">Pengguna Aktif</p>
+                <p className="mt-1 text-xl font-bold text-txt-primary">{stats.byUser.length}</p>
               </div>
             </div>
           )}
@@ -359,7 +333,7 @@ export default function AIPage() {
                         <td className="px-3 sm:px-5 py-4 text-xs sm:text-sm text-txt-secondary whitespace-nowrap">{formatDate(log.createdAt)}</td>
                         <td className="px-5 py-4 text-sm text-txt-primary">{log.userName}</td>
                         <td className="px-3 sm:px-5 py-4">
-                          <span className="inline-block rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-primary">
                             {FEATURE_LABELS[log.feature] || log.feature}
                           </span>
                         </td>

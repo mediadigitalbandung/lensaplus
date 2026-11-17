@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Smartphone, X } from "lucide-react";
+import { X } from "lucide-react";
 
 /**
  * InstallTeaser — subtle sticky bottom CTA di mobile homepage saja.
@@ -72,10 +72,7 @@ export default function InstallTeaser() {
       aria-label="Pasang aplikasi Lensaplus"
       className="fixed bottom-3 left-3 right-3 z-[140] sm:hidden animate-in fade-in slide-in-from-bottom-2 duration-300"
     >
-      <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-white px-3 py-2.5 shadow-ambient">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
-          <Smartphone size={18} />
-        </div>
+      <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-white px-4 py-2.5 shadow-ambient">
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-bold text-txt-primary leading-tight">
             Pasang Lensaplus

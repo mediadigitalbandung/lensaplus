@@ -181,21 +181,20 @@ function formatBytes(n: number) {
 function StatCard({
   label,
   value,
-  icon: Icon,
-  color = "text-primary bg-primary-light",
+  icon: _icon,
+  color: _color = "text-primary",
 }: {
   label: string;
   value: string;
-  icon: React.ElementType;
+  icon?: React.ElementType;
   color?: string;
 }) {
+  void _icon;
+  void _color;
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <div className={`inline-flex rounded-lg p-2 ${color}`}>
-        <Icon size={16} />
-      </div>
-      <p className="mt-2 text-2xl font-extrabold text-txt-primary">{value}</p>
-      <p className="text-xs text-txt-secondary">{label}</p>
+    <div className="rounded-xl border border-border border-t-2 border-t-primary bg-surface p-4 shadow-card">
+      <p className="text-xs font-medium text-txt-secondary">{label}</p>
+      <p className="mt-1.5 text-2xl font-extrabold text-txt-primary tabular-nums">{value}</p>
     </div>
   );
 }
@@ -208,24 +207,24 @@ function NotConfiguredBanner({
   settingKey?: string;
 }) {
   return (
-    <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-5">
+    <div className="rounded-xl border border-border border-l-4 border-l-amber-500 bg-surface p-5">
       <div className="flex items-start gap-3">
-        <AlertCircle size={18} className="mt-0.5 text-yellow-600 shrink-0" />
+        <AlertCircle size={18} className="mt-0.5 text-amber-600 shrink-0" />
         <div className="flex-1">
-          <h3 className="text-sm font-bold text-yellow-800">
+          <h3 className="text-sm font-bold text-txt-primary">
             Belum terkonfigurasi
           </h3>
-          <p className="mt-1 text-xs text-yellow-700">{message}</p>
+          <p className="mt-1 text-xs text-txt-secondary">{message}</p>
           {settingKey && (
-            <p className="mt-2 text-xs text-yellow-700">
+            <p className="mt-2 text-xs text-txt-secondary">
               Set SystemSetting{" "}
-              <code className="font-mono bg-yellow-100 px-1 py-0.5 rounded-lg">
+              <code className="font-mono text-primary font-semibold">
                 {settingKey}
               </code>{" "}
               di{" "}
               <Link
                 href="/panel/pengaturan"
-                className="underline font-semibold"
+                className="underline font-semibold text-primary"
               >
                 Pengaturan
               </Link>
@@ -250,13 +249,12 @@ function ScopedInternalView({
 }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-xl bg-primary-light/40 border border-primary/20 px-4 py-3 text-xs text-primary/90 flex flex-wrap items-center gap-2">
-        <Activity size={12} />
-        <span className="font-semibold">Statistik Anda</span>
+      <div className="border-l-4 border-primary pl-3 py-1 text-xs text-txt-primary flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-primary">Statistik Anda</span>
         <span className="font-mono">{from}</span>
         <span>→</span>
         <span className="font-mono">{to}</span>
-        <span className="ml-auto text-primary/60">
+        <span className="ml-auto text-txt-muted">
           Hanya menampilkan performa artikel milik Anda.
         </span>
       </div>
@@ -409,13 +407,12 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
   return (
     <div className="space-y-6">
       {/* ── Range header — semua kartu di bawah dipisah jelas: BARU ada di rentang yang dipilih, vs lifetime totals ── */}
-      <div className="rounded-xl bg-primary-light/40 border border-primary/20 px-4 py-3 text-xs text-primary/90 flex flex-wrap items-center gap-2">
-        <Activity size={12} />
-        <span className="font-semibold">Periode:</span>
+      <div className="border-l-4 border-primary pl-3 py-1 text-xs text-txt-primary flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-primary">Periode:</span>
         <span className="font-mono">{from}</span>
         <span>→</span>
         <span className="font-mono">{to}</span>
-        <span className="ml-auto text-primary/60">Angka &quot;Periode&quot; mengikuti rentang. Angka &quot;Total&quot; bersifat lifetime.</span>
+        <span className="ml-auto text-txt-muted">Angka &quot;Periode&quot; mengikuti rentang. Angka &quot;Total&quot; bersifat lifetime.</span>
       </div>
 
       {/* Summary cards — IN-RANGE first (paling relevan untuk filter), lifetime ditarik ke kartu Total Artikel/Pengguna */}

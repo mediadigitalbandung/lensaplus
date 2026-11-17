@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { Metadata } from "next";
-import { ChevronRight, CalendarDays, Newspaper } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
@@ -124,8 +124,7 @@ export default async function RangkumanHarianDetailPage({ params: paramsPromise 
         <div className="mb-8 max-w-2xl">
           <div className="flex items-center gap-3">
             <span className="block h-7 w-[3px] rounded-full bg-secondary" />
-            <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
-              <CalendarDays size={22} className="text-primary" />
+            <h1 className="text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
               Rangkuman {dateStr}
             </h1>
           </div>
@@ -136,8 +135,7 @@ export default async function RangkumanHarianDetailPage({ params: paramsPromise 
             </span>
             .
           </p>
-          <p className="mt-2 flex items-center gap-2 text-xs uppercase tracking-wider text-primary">
-            <Newspaper size={12} />
+          <p className="mt-2 text-xs uppercase tracking-wider text-primary">
             {articles.length} artikel
           </p>
         </div>

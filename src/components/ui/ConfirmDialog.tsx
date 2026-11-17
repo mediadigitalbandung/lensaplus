@@ -106,10 +106,10 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
 
   const iconConfig =
     options.variant === "danger"
-      ? { bg: "bg-red-100", color: "text-red-600", Icon: AlertTriangle }
+      ? { color: "text-red-600", Icon: AlertTriangle }
       : options.variant === "warning"
-        ? { bg: "bg-yellow-100", color: "text-yellow-600", Icon: AlertTriangle }
-        : { bg: "bg-primary-light", color: "text-primary", Icon: HelpCircle };
+        ? { color: "text-yellow-600", Icon: AlertTriangle }
+        : { color: "text-primary", Icon: HelpCircle };
 
   return (
     <ConfirmContext.Provider value={{ confirm }}>
@@ -126,10 +126,8 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
           {/* Backdrop click to cancel */}
           <div className="absolute inset-0" onClick={handleCancel} aria-hidden="true" />
           <div className="bg-surface rounded-xl shadow-2xl border border-border max-w-lg w-full mx-4 p-8 relative z-10">
-            <div className="flex items-start gap-5">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${iconConfig.bg}`}>
-                <iconConfig.Icon className={`h-6 w-6 ${iconConfig.color}`} aria-hidden="true" />
-              </div>
+            <div className="flex items-start gap-4">
+              <iconConfig.Icon className={`h-6 w-6 shrink-0 mt-1 ${iconConfig.color}`} aria-hidden="true" />
               <div className="flex-1">
                 {options.title && (
                   <h3 id={titleId.current} className="text-xl font-bold text-txt-primary mb-2">

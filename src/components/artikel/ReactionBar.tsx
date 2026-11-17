@@ -83,7 +83,7 @@ export default function ReactionBar({ articleId }: { articleId: string }) {
               className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-semibold transition-all sm:px-4 ${
                 isMine
                   ? "border-primary bg-primary text-white"
-                  : "border-border bg-surface text-txt-primary hover:border-primary hover:bg-primary-light"
+                  : "border-border bg-surface text-txt-primary hover:border-primary hover:text-primary"
               } ${voting === r.type ? "cursor-wait opacity-60" : ""}`}
             >
               <span className="text-lg">{r.emoji}</span>

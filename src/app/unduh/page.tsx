@@ -1,18 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import QRCode from "qrcode";
-import {
-  Smartphone,
-  Apple,
-  Download,
-  Chrome,
-  ShieldCheck,
-  Wifi,
-  Bell,
-  Bookmark,
-  Zap,
-  CheckCircle2,
-} from "lucide-react";
+import { Download } from "lucide-react";
 import ShareInstallButton from "./ShareInstallButton";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
@@ -94,10 +83,10 @@ export default async function UnduhPage() {
       <div className="container-main py-10 sm:py-16">
         {/* Hero */}
         <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
-          <span className="inline-block rounded-full bg-primary-light px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
-            Aplikasi
-          </span>
-          <h1 className="mt-4 font-serif text-3xl sm:text-5xl font-extrabold text-txt-primary tracking-tight leading-tight">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            Aplikasi Web Progresif
+          </p>
+          <h1 className="mt-3 font-serif text-3xl sm:text-5xl font-extrabold text-txt-primary tracking-tight leading-tight">
             Pasang Lensaplus di HP Anda
           </h1>
           <p className="mt-4 text-lg text-txt-secondary leading-relaxed">
@@ -110,40 +99,31 @@ export default async function UnduhPage() {
         {/* Benefits */}
         <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12 sm:mb-16">
           {[
-            { icon: Zap, label: "Lebih cepat", hint: "Loading instan dari home screen" },
-            { icon: Wifi, label: "Bisa offline", hint: "Artikel dibaca tetap tersimpan" },
-            { icon: Bell, label: "Notifikasi", hint: "Berita penting langsung ke layar" },
-            { icon: Bookmark, label: "Tanpa iklan ekstra", hint: "Iklan sama dengan situs" },
-          ].map((b) => {
-            const Icon = b.icon;
-            return (
-              <div
-                key={b.label}
-                className="rounded-xl border border-border bg-surface p-4 text-center shadow-card"
-              >
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light text-primary">
-                  <Icon size={18} />
-                </div>
-                <p className="mt-2.5 text-sm font-bold text-txt-primary">{b.label}</p>
-                <p className="mt-1 text-[11px] text-txt-muted">{b.hint}</p>
-              </div>
-            );
-          })}
+            { label: "Lebih cepat", hint: "Loading instan dari home screen" },
+            { label: "Bisa offline", hint: "Artikel dibaca tetap tersimpan" },
+            { label: "Notifikasi", hint: "Berita penting langsung ke layar" },
+            { label: "Tanpa iklan ekstra", hint: "Iklan sama dengan situs" },
+          ].map((b) => (
+            <div
+              key={b.label}
+              className="rounded-xl border border-border bg-surface p-4 text-center shadow-card"
+            >
+              <p className="text-sm font-bold text-txt-primary">{b.label}</p>
+              <p className="mt-1 text-[11px] text-txt-muted">{b.hint}</p>
+            </div>
+          ))}
         </div>
 
         {/* Install per platform */}
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Android Chrome */}
-          <div className="rounded-xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50/40 to-surface p-6 shadow-card">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-                <Smartphone size={20} />
-              </div>
+          <div className="rounded-xl border border-border border-t-2 border-t-primary bg-surface p-6 shadow-card">
+            <div className="flex items-start justify-between gap-2 mb-4 pb-3 border-b border-border">
               <div>
                 <h2 className="text-base font-bold text-txt-primary">Android</h2>
                 <p className="text-[11px] text-txt-muted">Chrome / Edge / Brave</p>
               </div>
-              <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
                 Termudah
               </span>
             </div>
@@ -156,22 +136,16 @@ export default async function UnduhPage() {
               <Step n={3}>Konfirmasi → ikon Lensaplus muncul di home screen</Step>
               <Step n={4}>Tap ikon → langsung fullscreen tanpa browser</Step>
             </ol>
-            <div className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-              <CheckCircle2 size={12} className="inline mr-1 -mt-0.5" />
+            <p className="mt-4 border-l-2 border-secondary pl-3 text-xs text-txt-secondary">
               Tidak perlu download — semua otomatis lewat Chrome.
-            </div>
+            </p>
           </div>
 
           {/* iPhone Safari */}
-          <div className="rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50/40 to-surface p-6 shadow-card">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
-                <Apple size={20} />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-txt-primary">iPhone &amp; iPad</h2>
-                <p className="text-[11px] text-txt-muted">Safari (wajib)</p>
-              </div>
+          <div className="rounded-xl border border-border border-t-2 border-t-primary bg-surface p-6 shadow-card">
+            <div className="mb-4 pb-3 border-b border-border">
+              <h2 className="text-base font-bold text-txt-primary">iPhone &amp; iPad</h2>
+              <p className="text-[11px] text-txt-muted">Safari (wajib)</p>
             </div>
             <ol className="space-y-2.5 text-sm text-txt-secondary">
               <Step n={1}>Buka lensaplus.com di <b className="text-txt-primary">Safari</b> (bukan Chrome — iOS hanya support PWA dari Safari)</Step>
@@ -179,22 +153,16 @@ export default async function UnduhPage() {
               <Step n={3}>Scroll &amp; tap <b className="text-txt-primary">&quot;Add to Home Screen&quot;</b></Step>
               <Step n={4}>Tap &quot;Add&quot; → ikon muncul di home screen</Step>
             </ol>
-            <div className="mt-4 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800">
-              <CheckCircle2 size={12} className="inline mr-1 -mt-0.5" />
+            <p className="mt-4 border-l-2 border-primary pl-3 text-xs text-txt-secondary">
               Push notifikasi tersedia mulai iOS 16.4 (Maret 2023+).
-            </div>
+            </p>
           </div>
 
           {/* Desktop */}
-          <div className="rounded-xl border border-border bg-surface p-6 shadow-card">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
-                <Chrome size={20} />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-txt-primary">Desktop</h2>
-                <p className="text-[11px] text-txt-muted">Windows / Mac / Linux</p>
-              </div>
+          <div className="rounded-xl border border-border border-t-2 border-t-primary bg-surface p-6 shadow-card">
+            <div className="mb-4 pb-3 border-b border-border">
+              <h2 className="text-base font-bold text-txt-primary">Desktop</h2>
+              <p className="text-[11px] text-txt-muted">Windows / Mac / Linux</p>
             </div>
             <ol className="space-y-2.5 text-sm text-txt-secondary">
               <Step n={1}>Buka lensaplus.com di Chrome / Edge</Step>
@@ -204,19 +172,15 @@ export default async function UnduhPage() {
               <Step n={3}>Atau menu ⋮ → &quot;Install Lensaplus...&quot;</Step>
               <Step n={4}>App muncul di Start Menu / Launchpad / Apps</Step>
             </ol>
-            <div className="mt-4 rounded-lg bg-purple-50 px-3 py-2 text-xs text-purple-800">
-              <CheckCircle2 size={12} className="inline mr-1 -mt-0.5" />
+            <p className="mt-4 border-l-2 border-primary pl-3 text-xs text-txt-secondary">
               Buka dari taskbar, multi-window, fullscreen.
-            </div>
+            </p>
           </div>
         </div>
 
         {/* APK fallback (opsional, kalau user pengen file APK) */}
-        <div className="max-w-4xl mx-auto mt-10 rounded-xl border border-border bg-surface-secondary/40 p-6 sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-              <Download size={22} />
-            </div>
+        <div className="max-w-4xl mx-auto mt-10 rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card">
+          <div>
             <div className="flex-1">
               <h3 className="text-lg font-bold text-txt-primary">
                 Pengguna mahir: Unduh file APK
@@ -303,25 +267,25 @@ export default async function UnduhPage() {
                   href={`https://wa.me/?text=${encodeURIComponent(`Pasang aplikasi Lensaplus: ${INSTALL_URL}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-txt-primary hover:border-primary/40 hover:text-primary transition-colors"
                 >
-                  💬 WhatsApp
+                  WhatsApp
                 </a>
                 <a
                   href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Pasang aplikasi Lensaplus")}&url=${encodeURIComponent(INSTALL_URL)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-txt-primary hover:border-primary/40 hover:text-primary transition-colors"
                 >
-                  𝕏 Twitter / X
+                  Twitter / X
                 </a>
                 <a
                   href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(INSTALL_URL)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-txt-primary hover:border-primary/40 hover:text-primary transition-colors"
                 >
-                  ƒ Facebook
+                  Facebook
                 </a>
               </div>
             </div>
@@ -330,9 +294,9 @@ export default async function UnduhPage() {
 
         {/* Trust signals */}
         <div className="max-w-4xl mx-auto mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <TrustCard icon={ShieldCheck} title="Terverifikasi Dewan Pers" body="Media resmi dengan kode etik jurnalistik" />
-          <TrustCard icon={CheckCircle2} title="Tanpa data berlebih" body="Hanya yang perlu untuk fitur — privasi terjaga" />
-          <TrustCard icon={Wifi} title="Hemat data" body="Cache cerdas, hanya download yang baru" />
+          <TrustCard title="Terverifikasi Dewan Pers" body="Media resmi dengan kode etik jurnalistik" />
+          <TrustCard title="Tanpa data berlebih" body="Hanya yang perlu untuk fitur — privasi terjaga" />
+          <TrustCard title="Hemat data" body="Cache cerdas, hanya download yang baru" />
         </div>
 
         {/* FAQ */}
@@ -356,9 +320,9 @@ export default async function UnduhPage() {
 
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
-    <li className="flex gap-3">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary">
-        {n}
+    <li className="flex gap-2.5">
+      <span className="shrink-0 font-mono text-xs font-bold text-primary pt-0.5">
+        {String(n).padStart(2, "0")}.
       </span>
       <span className="leading-relaxed">{children}</span>
     </li>
@@ -366,17 +330,14 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
 }
 
 function TrustCard({
-  icon: Icon,
   title,
   body,
 }: {
-  icon: React.ElementType;
   title: string;
   body: string;
 }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-5">
-      <Icon size={20} className="mx-auto text-primary mb-2" />
       <p className="text-sm font-bold text-txt-primary">{title}</p>
       <p className="mt-1 text-xs text-txt-muted">{body}</p>
     </div>

@@ -192,7 +192,7 @@ export default function EkonomiBandungPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {EKO_BANDUNG_COMPANIES.map((c) => (
               <div key={c.name} className="card flex items-center gap-4 p-4">
-                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md bg-primary-light text-label-md font-bold text-primary">
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md border border-border bg-surface-container-low text-label-md font-bold text-primary">
                   {c.ticker ?? c.name.slice(0, 2)}
                 </div>
                 <div className="min-w-0">

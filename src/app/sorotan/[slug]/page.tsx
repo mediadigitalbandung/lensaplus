@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowRight, Sparkles, BookOpen, Eye } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import {
   articleJsonLd,
@@ -25,9 +25,8 @@ const ANGLE_LABEL: Record<string, string> = {
   FAQ: "Tanya Jawab",
 };
 
-// All angles share one elegant on-brand (navy) badge — the angle LABEL already
-// distinguishes them, so a uniform colour reads more editorial than a rainbow.
-const ANGLE_BADGE = "bg-primary-light text-primary border-primary/15";
+// All angles share one clean editorial text treatment without colored highlight fill.
+const ANGLE_BADGE = "text-secondary-dark";
 const ANGLE_COLOR: Record<string, string> = {
   KRONOLOGI: ANGLE_BADGE,
   ANALISIS: ANGLE_BADGE,
@@ -204,17 +203,15 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
 
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
             <article className="lg:col-span-2">
-              {/* Angle badge + category */}
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-secondary to-secondary-dark px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm shadow-secondary/30 ring-1 ring-inset ring-white/15">
-                  <Sparkles size={12} className="opacity-90" />
-                  <span className="opacity-80">Sorotan</span>
-                  <span className="opacity-50">·</span>
-                  <span>{angleLabel}</span>
+              {/* Angle label + category */}
+              <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                <span className="text-secondary-dark">
+                  Sorotan · {angleLabel}
                 </span>
+                <span className="text-txt-muted/40">·</span>
                 <Link
                   href={`/kategori/${article.category.slug}`}
-                  className="text-xs font-bold uppercase tracking-wide text-primary hover:underline"
+                  className="text-primary hover:underline"
                 >
                   {article.category.name}
                 </Link>
@@ -244,8 +241,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
                 {(article.viewCount ?? 0) > 0 && (
                   <>
                     <span className="mx-2">·</span>
-                    <span className="inline-flex items-center gap-1 align-middle">
-                      <Eye size={13} aria-hidden />
+                    <span>
                       {(article.viewCount ?? 0).toLocaleString("id-ID")} dilihat
                     </span>
                   </>
@@ -275,33 +271,28 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
                 )}
               </div>
 
-              {/* Continue-reading CTA — prominent navy banner that funnels every
+              {/* Continue-reading CTA — clean editorial banner that funnels every
                   sorotan reader to the main article page. */}
-              <div className="mt-10 overflow-hidden rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary-light to-primary-light/40 shadow-card">
-                <div className="px-6 pt-6 pb-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
-                    <BookOpen size={12} />
-                    Selesai Baca Sorotan?
-                  </span>
-                </div>
-                <div className="px-6 pb-6">
-                  <h3 className="mt-3 font-serif text-headline-sm text-on-surface leading-tight">
-                    Lanjutkan ke artikel utama
-                  </h3>
-                  <p className="mt-2 line-clamp-2 text-sm font-semibold text-txt-primary">
-                    {article.title}
-                  </p>
-                  <p className="mt-2 text-xs text-txt-secondary">
-                    Versi lengkap dengan semua fakta, narasumber, kutipan, dan konteks latar belakang.
-                  </p>
-                  <Link
-                    href={`/berita/${article.slug}`}
-                    className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-primary-dark active:scale-[0.98]"
-                  >
-                    Lanjut Baca Artikel Lengkap
-                    <ArrowRight size={16} />
-                  </Link>
-                </div>
+              <div className="mt-10 overflow-hidden rounded-lg border border-border border-l-4 border-l-primary bg-surface-container-lowest p-6 shadow-card">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-primary block">
+                  Selesai Baca Sorotan?
+                </span>
+                <h3 className="mt-2 font-serif text-headline-sm text-on-surface leading-tight">
+                  Lanjutkan ke artikel utama
+                </h3>
+                <p className="mt-2 line-clamp-2 text-sm font-semibold text-txt-primary">
+                  {article.title}
+                </p>
+                <p className="mt-2 text-xs text-txt-secondary">
+                  Versi lengkap dengan semua fakta, narasumber, kutipan, dan konteks latar belakang.
+                </p>
+                <Link
+                  href={`/berita/${article.slug}`}
+                  className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-primary-dark active:scale-[0.98]"
+                >
+                  Lanjut Baca Artikel Lengkap
+                  <ArrowRight size={16} />
+                </Link>
               </div>
             </article>
 
@@ -345,9 +336,8 @@ async function OtherAngles({
               className="group block rounded-md p-2 -mx-2 transition-colors hover:bg-surface-secondary"
             >
               <span
-                className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                  ANGLE_COLOR[o.angle] ??
-                  "bg-surface-secondary text-txt-secondary border-border"
+                className={`block text-[10px] font-bold uppercase tracking-wider ${
+                  ANGLE_COLOR[o.angle] ?? "text-txt-secondary"
                 }`}
               >
                 {ANGLE_LABEL[o.angle] ?? o.angle}

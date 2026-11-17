@@ -2,7 +2,7 @@ export const revalidate = 60; // ISR: revalidate tag page every 60 seconds
 
 import Link from "next/link";
 import { Metadata } from "next";
-import { ChevronLeft, ChevronRight, Hash } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import BannerAd from "@/components/ads/BannerAd";
 import { prisma } from "@/lib/prisma";
@@ -144,9 +144,8 @@ export default async function TagPage({ params: paramsPromise, searchParams: sea
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="flex items-center gap-3 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
-            <Hash size={24} className="text-primary" />
-            Tag: #{tag.name}
+          <h1 className="border-l-4 border-primary pl-3 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
+            #{tag.name}
           </h1>
           <p className="mt-2 text-sm text-txt-secondary">
             {total.toLocaleString("id-ID")} artikel dengan tag ini
@@ -166,8 +165,7 @@ export default async function TagPage({ params: paramsPromise, searchParams: sea
           </div>
         ) : (
           <div className="py-16 text-center">
-            <Hash size={48} className="mx-auto text-border" />
-            <p className="mt-4 text-txt-secondary">Belum ada berita dengan tag ini</p>
+            <p className="text-txt-secondary">Belum ada berita dengan tag ini</p>
             <Link href="/" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
               Kembali ke Beranda
             </Link>

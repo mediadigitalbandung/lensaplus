@@ -160,27 +160,25 @@ export default function PollingCarousel({ categorySlug }: Props) {
 
   return (
     <div className="relative group">
-      {/* Prev arrow — only visible when there's content to scroll back to.
-          Group hover used so arrow muncul saat hover container (desktop UX).
-          Mobile: arrow tetap visible kalau bisa di-scroll (karena no hover). */}
-      {canScrollLeft && (
-        <button
-          onClick={() => scrollByPage("left")}
-          aria-label="Polling sebelumnya"
-          className="absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-surface shadow-lg border border-border text-txt-primary hover:bg-surface-secondary transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-        >
-          <ChevronLeft size={18} />
-        </button>
-      )}
-
-      {canScrollRight && (
-        <button
-          onClick={() => scrollByPage("right")}
-          aria-label="Polling berikutnya"
-          className="absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-surface shadow-lg border border-border text-txt-primary hover:bg-surface-secondary transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-        >
-          <ChevronRight size={18} />
-        </button>
+      {(canScrollLeft || canScrollRight) && (
+        <div className="flex items-center justify-end gap-3 mb-2">
+          <button
+            onClick={() => scrollByPage("left")}
+            disabled={!canScrollLeft}
+            aria-label="Polling sebelumnya"
+            className="inline-flex items-center gap-0.5 text-xs font-semibold text-txt-secondary hover:text-primary disabled:opacity-30 transition-colors"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            onClick={() => scrollByPage("right")}
+            disabled={!canScrollRight}
+            aria-label="Polling berikutnya"
+            className="inline-flex items-center gap-0.5 text-xs font-semibold text-txt-secondary hover:text-primary disabled:opacity-30 transition-colors"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
       )}
 
       {/*

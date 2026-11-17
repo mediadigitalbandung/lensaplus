@@ -10,8 +10,6 @@ import {
   Mail,
   Clock,
   Globe,
-  Building2,
-  Newspaper,
   ExternalLink,
 } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
@@ -132,11 +130,10 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
         <header className="mb-8 rounded-lg border border-border bg-surface-container-lowest p-6 shadow-card">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <span className="inline-block rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
                 {TYPE_LABEL[court.type] ?? court.type}
               </span>
-              <h1 className="mt-3 flex items-start gap-3 font-serif text-2xl font-bold leading-tight text-on-surface sm:text-3xl">
-                <Building2 size={28} className="mt-1 shrink-0 text-primary" />
+              <h1 className="mt-2 font-serif text-2xl font-bold leading-tight text-on-surface sm:text-3xl">
                 {court.name}
               </h1>
               <p className="mt-3 max-w-2xl text-base text-on-surface-variant">
@@ -163,8 +160,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
           <div className="lg:col-span-2 space-y-8">
             {/* Related articles */}
             <section>
-              <h2 className="mb-4 flex items-center gap-2 border-l-[3px] border-primary pl-3 text-lg font-bold text-on-surface">
-                <Newspaper size={18} className="text-primary" />
+              <h2 className="mb-4 border-l-[3px] border-primary pl-3 text-lg font-bold text-on-surface">
                 Berita Terkait
               </h2>
               {relatedArticles.length > 0 ? (

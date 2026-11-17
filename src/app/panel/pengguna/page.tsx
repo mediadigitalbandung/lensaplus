@@ -18,7 +18,6 @@ import {
   Eye,
   EyeOff,
   AtSign,
-  AlertCircle,
   CreditCard,
 } from "lucide-react";
 import UserCardManager from "@/components/panel/UserCardManager";
@@ -41,12 +40,12 @@ interface User {
 }
 
 const roleLabels: Record<string, { label: string; color: string }> = {
-  SUPER_ADMIN: { label: "Super Admin", color: "bg-red-50 text-red-600" },
-  CHIEF_EDITOR: { label: "Editor Kepala", color: "bg-purple-50 text-purple-600" },
-  EDITOR: { label: "Editor", color: "bg-blue-50 text-blue-600" },
-  SENIOR_JOURNALIST: { label: "Jurnalis Senior", color: "bg-primary-light text-primary" },
-  JOURNALIST: { label: "Jurnalis", color: "bg-blue-50 text-blue-600" },
-  CONTRIBUTOR: { label: "Kontributor", color: "bg-surface-tertiary text-txt-secondary" },
+  SUPER_ADMIN: { label: "Super Admin", color: "text-red-700 font-semibold" },
+  CHIEF_EDITOR: { label: "Editor Kepala", color: "text-purple-700 font-semibold" },
+  EDITOR: { label: "Editor", color: "text-blue-700 font-semibold" },
+  SENIOR_JOURNALIST: { label: "Jurnalis Senior", color: "text-primary font-semibold" },
+  JOURNALIST: { label: "Jurnalis", color: "text-blue-700 font-semibold" },
+  CONTRIBUTOR: { label: "Kontributor", color: "text-txt-secondary font-medium" },
 };
 
 function formatDate(dateStr: string): string {
@@ -386,8 +385,8 @@ export default function PenggunaPage() {
                                     <p className="flex items-center gap-1 text-xs text-txt-secondary truncate">
                                       <Mail size={10} /> {user.email}
                                     </p>
-                                    <Link href="/panel/email" className="inline-flex items-center gap-0.5 text-[9px] text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded-full shrink-0 hover:bg-yellow-100">
-                                      <AlertCircle size={8} /> Buat @lensaplus
+                                    <Link href="/panel/email" className="text-[10px] font-semibold text-amber-700 hover:underline shrink-0">
+                                      Buat @lensaplus
                                     </Link>
                                   </div>
                                 )}
@@ -397,7 +396,7 @@ export default function PenggunaPage() {
                         })()}
                       </td>
                       <td className="px-3 sm:px-5 py-4">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-sm font-medium ${role.color}`}>
+                        <span className={`inline-flex items-center gap-1 text-sm font-semibold ${role.color}`}>
                           <Shield size={10} /> {role.label}
                         </span>
                       </td>

@@ -73,13 +73,13 @@ export default function PedomanMediaPage() {
               yang menjadi pelaku kejahatan, dan informasi pribadi yang tidak relevan dengan kepentingan publik.
             </p>
 
-            <div className="mt-10 rounded-lg border border-primary/20 bg-primary-light p-4">
-              <p className="text-sm text-primary-dark">
+            <div className="mt-10 border-l-4 border-primary pl-4 py-1">
+              <p className="text-sm text-txt-secondary">
                 Pedoman ini mengacu pada Peraturan Dewan Pers Nomor 1/Peraturan-DP/III/2012 tentang
                 Pedoman Pemberitaan Media Siber. Lihat juga{" "}
-                <a href="/kode-etik" className="font-medium underline">Kode Etik Jurnalistik</a> yang kami patuhi.
+                <a href="/kode-etik" className="font-medium text-primary underline">Kode Etik Jurnalistik</a> yang kami patuhi.
               </p>
-              <p className="mt-2 text-xs text-primary-dark/80">Terakhir diperbarui: Juni 2026.</p>
+              <p className="mt-2 text-xs text-txt-muted">Terakhir diperbarui: Juni 2026.</p>
             </div>
           </div>
         </div>

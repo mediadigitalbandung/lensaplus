@@ -36,7 +36,6 @@ import {
   Archive,
   ArrowDownToLine,
   TrendingUp,
-  Lightbulb,
 } from "lucide-react";
 import { stripHtml, downloadTextFile, exportArticlePdf } from "@/lib/export-utils";
 import DOMPurify from "isomorphic-dompurify";
@@ -2187,10 +2186,7 @@ export default function EditArticlePage() {
       {canJurnalisEdit && ["DRAFT", "REJECTED"].includes(currentStatus) && trendingSuggestions.length > 0 && showSuggestions && (
         <div className="mb-4 rounded-lg border border-border bg-surface p-4 shadow-card">
           <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-light">
-                <Lightbulb size={14} className="text-primary" />
-              </div>
+            <div className="flex items-center gap-2 border-l-[3px] border-primary pl-2.5">
               <h3 className="text-sm font-bold text-txt-primary">Ide Berita dari Trending</h3>
               <span className="text-xs text-txt-muted">— klik untuk pakai sebagai judul</span>
             </div>
@@ -2208,10 +2204,10 @@ export default function EditArticlePage() {
                 key={i}
                 type="button"
                 onClick={() => setTitle(item.label)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary hover:text-primary ${
+                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary hover:text-primary bg-surface ${
                   item.hot
-                    ? "border-red-200 bg-red-50 text-red-600 hover:bg-red-50"
-                    : "border-border bg-surface-secondary text-txt-secondary"
+                    ? "border-red-300 text-red-700"
+                    : "border-border text-txt-secondary"
                 }`}
               >
                 {item.hot && <TrendingUp size={11} />}

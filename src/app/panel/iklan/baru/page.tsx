@@ -7,7 +7,6 @@ import { useToast } from "@/components/ui/Toast";
 import {
   ArrowLeft,
   Info,
-  ImageIcon,
   Eye,
   Upload,
   X,
@@ -137,11 +136,11 @@ export default function TambahIklanPage() {
 
               {/* Spec badge */}
               {currentSpec && (
-                <div className="flex items-center gap-2.5 rounded-lg bg-blue-50 border border-blue-200 px-4 py-3">
-                  <Info size={16} className="text-blue-500 shrink-0" />
+                <div className="flex items-center gap-2.5 rounded-lg border border-border border-l-4 border-l-primary bg-surface px-4 py-3">
+                  <Info size={16} className="text-primary shrink-0" />
                   <div className="text-sm">
-                    <span className="font-bold text-blue-800">Ukuran: {currentSpec.ratio}</span>
-                    <span className="text-blue-600 ml-2 text-xs">{currentSpec.desc}</span>
+                    <span className="font-bold text-txt-primary">Ukuran: {currentSpec.ratio}</span>
+                    <span className="text-txt-secondary ml-2 text-xs">{currentSpec.desc}</span>
                   </div>
                 </div>
               )}
@@ -158,10 +157,8 @@ export default function TambahIklanPage() {
                   {/* Upload area */}
                   {!formImageUrl ? (
                     <label className="block cursor-pointer">
-                      <div className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-10 hover:border-primary hover:bg-primary-light/20 transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-secondary">
-                          <Upload size={22} className="text-txt-muted" />
-                        </div>
+                      <div className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-10 hover:border-primary transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+                        <Upload size={24} className="text-txt-muted" />
                         <div className="text-center">
                           <p className="text-sm font-semibold text-txt-primary">{uploading ? "Mengupload..." : "Klik untuk upload gambar"}</p>
                           <p className="text-xs text-txt-muted mt-0.5">JPEG, PNG, WebP, GIF — Maks 5MB</p>

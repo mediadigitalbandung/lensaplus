@@ -17,11 +17,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  TrendingUp,
-  Sparkles,
   ChevronDown,
   ExternalLink,
   Loader2,
@@ -69,10 +64,10 @@ const ANGLE_LABELS: Record<string, string> = {
 };
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  indexed: { label: "Terindeks", cls: "bg-primary-light text-primary" },
-  submitted: { label: "Diajukan", cls: "bg-blue-50 text-blue-600" },
-  pending: { label: "Menunggu", cls: "bg-surface-tertiary text-txt-secondary" },
-  failed: { label: "Gagal", cls: "bg-red-50 text-red-600" },
+  indexed: { label: "Terindeks", cls: "text-primary font-semibold" },
+  submitted: { label: "Diajukan", cls: "text-blue-700 font-semibold" },
+  pending: { label: "Menunggu", cls: "text-txt-secondary font-medium" },
+  failed: { label: "Gagal", cls: "text-red-700 font-semibold" },
 };
 
 function formatDate(dateStr: string): string {
@@ -195,41 +190,29 @@ export default function EditorTab() {
         Performa Review {userRole === "SUPER_ADMIN" ? "(Semua)" : "(Anda)"}
       </h2>
       <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-        <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-          <div className="inline-flex rounded-lg bg-blue-50 p-2 text-blue-500">
-            <Clock size={18} />
-          </div>
-          <p className="mt-2 text-xl sm:text-3xl font-extrabold text-txt-primary">
+        <div className="rounded-lg border border-border border-t-2 border-t-blue-600 bg-surface p-4 shadow-card">
+          <p className="text-xs text-txt-secondary">Total Review</p>
+          <p className="mt-1.5 text-xl sm:text-3xl font-extrabold text-txt-primary">
             {totalReview}
           </p>
-          <p className="text-xs text-txt-secondary">Total Review</p>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-          <div className="inline-flex rounded-lg bg-primary-light p-2 text-primary">
-            <CheckCircle size={18} />
-          </div>
-          <p className="mt-2 text-xl sm:text-3xl font-extrabold text-primary">
+        <div className="rounded-lg border border-border border-t-2 border-t-primary bg-surface p-4 shadow-card">
+          <p className="text-xs text-txt-secondary">Disetujui</p>
+          <p className="mt-1.5 text-xl sm:text-3xl font-extrabold text-primary">
             {approved}
           </p>
-          <p className="text-xs text-txt-secondary">Disetujui</p>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-          <div className="inline-flex rounded-lg bg-red-50 p-2 text-red-500">
-            <XCircle size={18} />
-          </div>
-          <p className="mt-2 text-xl sm:text-3xl font-extrabold text-red-500">
+        <div className="rounded-lg border border-border border-t-2 border-t-red-600 bg-surface p-4 shadow-card">
+          <p className="text-xs text-txt-secondary">Ditolak</p>
+          <p className="mt-1.5 text-xl sm:text-3xl font-extrabold text-red-600">
             {rejected}
           </p>
-          <p className="text-xs text-txt-secondary">Ditolak</p>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-          <div className="inline-flex rounded-lg bg-purple-50 p-2 text-purple-500">
-            <TrendingUp size={18} />
-          </div>
-          <p className="mt-2 text-xl sm:text-3xl font-extrabold text-txt-primary">
+        <div className="rounded-lg border border-border border-t-2 border-t-purple-600 bg-surface p-4 shadow-card">
+          <p className="text-xs text-txt-secondary">Rata-rata Review/Hari</p>
+          <p className="mt-1.5 text-xl sm:text-3xl font-extrabold text-txt-primary">
             {avgPerDay}
           </p>
-          <p className="text-xs text-txt-secondary">Rata-rata Review/Hari</p>
         </div>
       </div>
 
@@ -316,19 +299,14 @@ export default function EditorTab() {
                     </td>
                     <td className="px-5 py-3">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                        className={`inline-flex items-center gap-1 text-xs font-semibold ${
                           isApproved
-                            ? "bg-primary-light text-primary"
+                            ? "text-primary"
                             : isRejected
-                              ? "bg-red-50 text-red-600"
-                              : "bg-surface-tertiary text-txt-secondary"
+                              ? "text-red-700"
+                              : "text-txt-secondary"
                         }`}
                       >
-                        {isApproved ? (
-                          <CheckCircle size={12} />
-                        ) : isRejected ? (
-                          <XCircle size={12} />
-                        ) : null}
                         {isApproved
                           ? "Disetujui"
                           : isRejected
@@ -360,13 +338,12 @@ export default function EditorTab() {
       </div>
 
       {/* Sorotan SEO per Penulis */}
-      <div className="mb-3 flex items-center gap-2">
-        <Sparkles size={20} className="text-primary" />
+      <div className="mb-3 flex items-center gap-3 border-l-[3px] border-primary pl-2.5">
         <h2 className="text-base font-semibold text-txt-primary">
           Sorotan SEO per Penulis
         </h2>
-        <span className="rounded-full bg-primary-light px-2 py-0.5 text-xs font-semibold text-primary">
-          {totalSorotan} total
+        <span className="text-xs font-semibold text-primary">
+          ({totalSorotan} total)
         </span>
       </div>
       <p className="mb-4 text-sm text-txt-secondary">

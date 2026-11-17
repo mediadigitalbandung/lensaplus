@@ -19,7 +19,6 @@ import {
   Loader2,
   Sparkles,
   TrendingUp,
-  Lightbulb,
 } from "lucide-react";
 const RichTextEditor = dynamic(
   () => import("@/components/editor/RichTextEditor"),
@@ -623,18 +622,18 @@ export default function NewArticlePage() {
 
       {/* Auto-save recovery banner */}
       {showAutosaveBanner && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-          <AlertCircle size={16} className="flex-shrink-0" />
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface px-4 py-3 text-sm text-txt-primary">
+          <AlertCircle size={16} className="flex-shrink-0 text-amber-600" />
           <span className="flex-1">Ada draf tersimpan otomatis. Muat draf?</span>
           <button
             onClick={loadAutosaveDraft}
-            className="rounded-full bg-yellow-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yellow-600"
+            className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-white hover:bg-primary-dark"
           >
             Muat
           </button>
           <button
             onClick={discardAutosaveDraft}
-            className="rounded-full border border-yellow-400 px-3 py-1 text-xs font-medium text-yellow-700 hover:bg-yellow-100"
+            className="rounded-md border border-border px-3 py-1 text-xs font-medium text-txt-secondary hover:border-primary/40"
           >
             Abaikan
           </button>
@@ -642,7 +641,7 @@ export default function NewArticlePage() {
       )}
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border border-l-4 border-l-red-600 bg-surface px-4 py-3 text-sm text-red-700">
           <AlertCircle size={16} />
           {error}
         </div>
@@ -652,10 +651,7 @@ export default function NewArticlePage() {
       {trendingSuggestions.length > 0 && showSuggestions && (
         <div className="mb-4 rounded-lg border border-border bg-surface p-4 shadow-card">
           <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-light">
-                <Lightbulb size={14} className="text-primary" />
-              </div>
+            <div className="flex items-center gap-2 border-l-[3px] border-primary pl-2.5">
               <h3 className="text-sm font-bold text-txt-primary">Ide Berita dari Trending</h3>
               <span className="text-xs text-txt-muted">— klik untuk pakai sebagai judul</span>
             </div>
@@ -673,10 +669,10 @@ export default function NewArticlePage() {
                 key={i}
                 type="button"
                 onClick={() => setTitle(item.label)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary hover:text-primary ${
+                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary hover:text-primary bg-surface ${
                   item.hot
-                    ? "border-red-200 bg-red-50 text-red-600 hover:bg-red-50"
-                    : "border-border bg-surface-secondary text-txt-secondary"
+                    ? "border-red-300 text-red-700"
+                    : "border-border text-txt-secondary"
                 }`}
               >
                 {item.hot && <TrendingUp size={11} />}

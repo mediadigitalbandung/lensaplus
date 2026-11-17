@@ -140,8 +140,8 @@ export default function UserCardManager({
             </div>
 
             {!card.completeness.complete && (
-              <div className="flex items-start gap-2 rounded-lg border border-yellow-300 bg-yellow-50/70 p-3 text-xs text-yellow-800">
-                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <div className="flex items-start gap-2 rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface p-3 text-xs text-txt-secondary">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-600" />
                 <span>
                   Data belum lengkap: {card.completeness.missing.map((m) => m.label).join(", ")}. Kartu tidak bisa
                   diterbitkan sampai anggota melengkapinya.

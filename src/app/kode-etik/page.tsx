@@ -38,8 +38,8 @@ export default function KodeEtikPage() {
             <div className="space-y-5">
               {articles.map((item) => (
                 <div key={item.num} className="flex gap-4">
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-                    {item.num}
+                  <span className="mt-0.5 w-7 shrink-0 font-serif text-lg font-bold text-primary">
+                    {String(item.num).padStart(2, "0")}.
                   </span>
                   <div>
                     <h2 className="font-bold text-txt-primary">Pasal {item.num}</h2>
@@ -49,8 +49,8 @@ export default function KodeEtikPage() {
               ))}
             </div>
 
-            <div className="mt-10 rounded-lg border border-primary/20 bg-primary-light p-4">
-              <p className="text-sm text-primary-dark">
+            <div className="mt-10 border-l-4 border-primary pl-4 py-1">
+              <p className="text-sm text-txt-secondary">
                 <strong>Sumber:</strong> Kode Etik Jurnalistik yang ditetapkan Dewan Pers melalui
                 Peraturan Dewan Pers Nomor: 6/Peraturan-DP/V/2008 tentang Pengesahan Surat Keputusan
                 Dewan Pers Nomor 03/SK-DP/III/2006 tentang Kode Etik Jurnalistik sebagai Peraturan Dewan Pers.

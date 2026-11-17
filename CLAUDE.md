@@ -34,44 +34,26 @@ Jangan tunggu user minta commit/push — **langsung lakukan** setelah perubahan 
 
 ## Design System — "Editorial Authority"
 
-**CATATAN:** Palet dulu "GoTo Green" (`#00AA13`). Sudah di-rebrand ke navy dalam ("Editorial Authority") — cek [tailwind.config.ts](tailwind.config.ts) untuk nilai autoritatif.
+> **SOP Desain Wajib:** Baca dan patuhi **[docs/DESIGN_SOP.md](docs/DESIGN_SOP.md)** sebelum membuat atau mengubah antarmuka apa pun:
+> 1. **Zero Icon Boxes** — Dilarang membungkus icon dengan background lingkaran atau persegi.
+> 2. **Minimal Icons** — Gunakan icon hanya bila fungsional (jangan di heading, timestamp, atau setiap kategori/kartu).
+> 3. **Zero Text Highlight Background** — Dilarang memberi background warna highlight/pastel di belakang teks label, kategori, tag, status, atau link; gunakan tipografi bersih, `border-l-4`, atau border netral tipis.
 
-### Warna (Light Mode)
-- **Primary (Navy):** `#002045` — tombol, badge, link, aksen utama, header
-- **Primary Dark:** `#001530` — hover state
-- **Primary Light:** `#e8edf3` — badge background, highlight
-- **Secondary (Crimson):** `#b7102a` — tombol urgent, badge LIVE, ikon aksen
-- **Secondary Dark:** `#8f0c20` — hover
-- **Secondary Light:** `#fce8eb` — badge correction
-- **Tertiary (Coklat):** `#371800` — badge opini
-- **Surface:** `#f8f9fa` (default), `#ffffff` (lowest), `#f1f3f4` (low), `#e8eaeb` (container), `#dcdfe0` (high), `#002045` (dark)
-- **On-surface:** `#191c1d` (text primary), `#44474e` (variant/secondary), `#74777f` (muted)
-- **Border:** `#c4c6d0` base dengan alpha variant
-- **Alias legacy:** `goto.green` sekarang → `#002045` (migration helper, jangan diandalkan)
+**CATATAN:** Palet & type scale autoritatif didefinisikan di [tailwind.config.ts](tailwind.config.ts) dan [src/app/globals.css](src/app/globals.css).
 
-### Typography
-- **Serif (body & headline):** Newsreader — `font-serif`, CSS var `--font-newsreader`
-- **Sans (UI):** Work Sans — `font-sans`, CSS var `--font-work-sans`
-- **Type scale eksplisit:** `display-lg/md/sm`, `headline-lg/md/sm`, `title-lg/md/sm`, `body-lg/md/sm`, `label-lg/md/sm` — ada leading/tracking/weight di tailwind.config.ts
-
-### Layout Style
-- Horizontal scroll carousels untuk konten di homepage
-- Hero carousel + headline slider (auto-rotate 5 artikel)
-- Section headers: judul kiri + "Lihat Semua" kanan (primary)
-- Clean cards `rounded-sm`, subtle `shadow-card` → `shadow-card-hover` on hover
-- Tombol `rounded-md` (bukan full — berubah dari GoTo style)
-- Content-centric, minimal chrome
+### Warna & Tipografi
+- Sumber token warna (`primary`, `secondary`, `tertiary`, `surface`, `on-surface`, `border`) & type scale: **[tailwind.config.ts](tailwind.config.ts)**.
+- Font heading/editorial: `font-serif` (`Plus Jakarta Sans`) · Font body/UI: `font-sans` (`Inter`).
+- Detail aturan visual (Zero Icon Boxes, Minimal Icons, Zero Text Highlight Background): **[docs/DESIGN_SOP.md](docs/DESIGN_SOP.md)**.
 
 ### Komponen CSS Utility (`src/app/globals.css`)
 - `.container-main` — `max-w-6xl` centered (`px-5 sm:px-8`)
 - `.section-header` / `.section-title` / `.section-subtitle` / `.section-link`
-- `.card` — `rounded-sm`, `bg-surface-container-lowest`, hover `shadow-ambient` + `-translate-y-0.5`
-- `.card-breaking` — border-left crimson
-- `.btn-primary` — `rounded-md`, `bg-primary`, `text-on-primary`
-- `.btn-secondary` / `.btn-ghost` / `.btn-urgent` (crimson) / `.btn-outline-green` (primary outline) / `.btn-tertiary`
-- `.badge` / `.badge-green` (primary tint) / `.badge-live` (crimson) / `.badge-verified` / `.badge-unverified` (yellow) / `.badge-opinion` (tertiary) / `.badge-correction` (secondary)
-- `.input` — no-border, surface shift on focus
-- `.article-content` — typography artikel (h2/h3/p/blockquote/table)
+- `.card` / `.card-breaking`
+- `.btn-primary` / `.btn-secondary` / `.btn-ghost` / `.btn-urgent` / `.btn-outline-green` / `.btn-tertiary`
+- `.badge` / `.badge-green` / `.badge-live` / `.badge-verified` / `.badge-unverified` / `.badge-opinion` / `.badge-correction` — label tipografi bersih tanpa background highlight warna
+- `.input` — form input bersih
+- `.article-content` — typography artikel (h2/h3/p/blockquote/table) & `.baca-juga-list` (border-left aksen tanpa highlight warna)
 
 ## Database
 

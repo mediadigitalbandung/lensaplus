@@ -16,9 +16,6 @@ import {
   ChevronRight,
   ChevronDown,
   Bookmark,
-  User,
-  Sparkles,
-  Newspaper,
 } from "lucide-react";
 
 const categoryNav = [
@@ -115,12 +112,11 @@ export default function Header() {
       <header className={`bg-white border-b border-stone-200/70 transition-all duration-300 ${scrolled ? "opacity-0 -translate-y-full h-0 overflow-hidden pointer-events-none" : "opacity-100 translate-y-0"}`} role="banner" aria-label="Header utama">
         {/* Top level masthead: Left (Date & Location), Center (Black Circle Logo), Right (Actions) */}
         <div className="container-main py-4 sm:py-5 flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Left: Date & City Badge */}
+          {/* Left: Date & Edition */}
           <div className="hidden md:flex items-center gap-3 text-stone-500 text-label-sm font-semibold tracking-wide">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200/60 text-stone-700">
-              <Newspaper size={13} className="text-stone-900" />
-              <span>Edisi Nasional</span>
-            </div>
+            <span className="font-bold uppercase tracking-widest text-stone-800">
+              Edisi Nasional
+            </span>
             <span className="text-stone-300">|</span>
             <ClientDate date={new Date()} format="weekday-long" live={false} />
           </div>
@@ -151,10 +147,11 @@ export default function Header() {
             {/* Bookmarks */}
             <Link
               href="/bookmark"
-              className="hidden md:flex items-center justify-center h-9 w-9 rounded-full bg-stone-100 text-stone-600 hover:text-primary hover:bg-primary/5 transition-all"
+              className="hidden md:inline-flex items-center justify-center p-1.5 text-stone-600 hover:text-primary transition-colors"
               title="Bookmark Saya"
+              aria-label="Bookmark Saya"
             >
-              <Bookmark size={15} />
+              <Bookmark size={17} />
             </Link>
 
             {/* User Profile */}
@@ -198,9 +195,10 @@ export default function Header() {
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 md:hidden"
+              className="inline-flex items-center justify-center p-1.5 text-stone-700 hover:text-primary md:hidden transition-colors"
+              aria-label="Buka menu navigasi"
             >
-              <Menu size={18} />
+              <Menu size={20} />
             </button>
           </div>
         </div>
@@ -283,14 +281,14 @@ export default function Header() {
         <Logo size="sm" />
 
         {/* Middle: Micro Category list (Top 4 Categories) */}
-        <nav className="hidden md:flex items-center gap-1.5" aria-label="Navigasi cepat kategori">
+        <nav className="hidden md:flex items-center gap-4" aria-label="Navigasi cepat kategori">
           {categoryNav.slice(0, 4).map((item) => {
             const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-full px-3.5 py-1 text-label-sm font-bold transition-all ${isActive ? "bg-primary text-white" : "text-stone-600 hover:bg-stone-100 hover:text-primary"}`}
+                className={`py-1 text-label-sm font-bold transition-colors ${isActive ? "text-primary border-b-2 border-primary" : "text-stone-600 hover:text-primary"}`}
               >
                 {item.name}
               </Link>
@@ -303,19 +301,21 @@ export default function Header() {
           {/* Simple Search Toggle/Link */}
           <Link
             href="/search"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 hover:text-primary transition-all"
+            className="inline-flex items-center justify-center p-1.5 text-stone-600 hover:text-primary transition-colors"
             title="Cari"
+            aria-label="Cari berita"
           >
-            <Search size={14} />
+            <Search size={16} />
           </Link>
 
           {/* Bookmarks */}
           <Link
             href="/bookmark"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 hover:text-primary transition-all"
+            className="inline-flex items-center justify-center p-1.5 text-stone-600 hover:text-primary transition-colors"
             title="Bookmark Saya"
+            aria-label="Bookmark Saya"
           >
-            <Bookmark size={14} />
+            <Bookmark size={16} />
           </Link>
 
           {/* User profile */}
@@ -359,9 +359,10 @@ export default function Header() {
           {/* Mobile menu toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 md:hidden"
+            className="inline-flex items-center justify-center p-1.5 text-stone-700 hover:text-primary md:hidden transition-colors"
+            aria-label="Buka menu navigasi"
           >
-            <Menu size={16} />
+            <Menu size={18} />
           </button>
         </div>
       </div>
@@ -429,32 +430,32 @@ export default function Header() {
               <li>
                 <Link
                   href="/untuk-anda"
-                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
+                  className="flex min-h-[44px] items-center justify-between rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <Sparkles size={16} className="text-secondary" />
                   Untuk Anda
+                  <ChevronRight size={16} className="text-on-surface-variant" />
                 </Link>
               </li>
               <li>
                 <Link
                   href="/bookmark"
-                  className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
+                  className="flex min-h-[44px] items-center justify-between rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <Bookmark size={16} className="text-primary" />
                   Bookmark Saya
+                  <ChevronRight size={16} className="text-on-surface-variant" />
                 </Link>
               </li>
               {session && (
                 <li>
                   <Link
                     href="/panel/dashboard"
-                    className="flex min-h-[44px] items-center gap-2 rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
+                    className="flex min-h-[44px] items-center justify-between rounded-md px-3 py-3 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary active:bg-surface-container"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <LayoutDashboard size={16} className="text-primary" />
                     Panel
+                    <ChevronRight size={16} className="text-on-surface-variant" />
                   </Link>
                 </li>
               )}

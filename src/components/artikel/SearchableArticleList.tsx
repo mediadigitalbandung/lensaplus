@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, SlidersHorizontal, Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import ClientDate from "@/components/ClientDate";
 
 interface Article {
@@ -73,16 +73,15 @@ export default function SearchableArticleList({ articles, categoryName }: Search
             className="input pl-10"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal size={14} className="text-txt-muted shrink-0" />
+        <div className="flex items-center gap-3">
           {(["terbaru", "terlama", "terpopuler"] as SortBy[]).map((s) => (
             <button
               key={s}
               onClick={() => setSortBy(s)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 text-xs transition-colors ${
                 sortBy === s
-                  ? "bg-primary text-white"
-                  : "bg-surface-secondary text-txt-secondary hover:bg-surface-tertiary"
+                  ? "border-b-2 border-primary font-bold text-primary"
+                  : "border-b-2 border-transparent font-medium text-txt-secondary hover:text-primary"
               }`}
             >
               {s === "terbaru" ? "Terbaru" : s === "terlama" ? "Terlama" : "Terpopuler"}
@@ -132,16 +131,14 @@ export default function SearchableArticleList({ articles, categoryName }: Search
                 <span className="h-2.5 w-px bg-border" />
                 <span>{article.author.name}</span>
                 <span className="h-2.5 w-px bg-border" />
-                <span className="flex items-center gap-1">
-                  <Clock size={10} />
+                <span>
                   <ClientDate date={article.publishedAt} format="long" />
                 </span>
                 {article.viewCount !== undefined && article.viewCount > 0 && (
                   <>
                     <span className="h-2.5 w-px bg-border" />
-                    <span className="flex items-center gap-1">
-                      <Eye size={10} />
-                      {article.viewCount.toLocaleString("id-ID")}
+                    <span>
+                      {article.viewCount.toLocaleString("id-ID")} dilihat
                     </span>
                   </>
                 )}

@@ -20,10 +20,23 @@ interface UserOption {
   email: string;
 }
 
+interface SmtpConfig {
+  host: string;
+  port: string;
+  user: string | null;
+  password: string | null;
+}
+
 export default function EmailRoutingPage() {
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
   const [emails, setEmails] = useState<EmailRoute[]>([]);
+  const [smtpConfig, setSmtpConfig] = useState<SmtpConfig>({
+    host: "smtp-relay.brevo.com",
+    port: "587",
+    user: null,
+    password: null,
+  });
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -45,12 +58,25 @@ export default function EmailRoutingPage() {
     try {
       setLoading(true);
       const [resEmails, resUsers] = await Promise.all([
-        fetch("/api/email-routing"),
+        fetch("/api/email-routing?include=smtp"),
         fetch("/api/users?limit=100"),
       ]);
       if (resEmails.ok) {
         const json = await resEmails.json();
-        setEmails(json.data || []);
+        const payload = json.data;
+        if (Array.isArray(payload)) {
+          setEmails(payload);
+        } else {
+          setEmails(payload?.emails || []);
+          if (payload?.smtp) {
+            setSmtpConfig({
+              host: payload.smtp.host || "smtp-relay.brevo.com",
+              port: payload.smtp.port || "587",
+              user: payload.smtp.user || null,
+              password: payload.smtp.password || null,
+            });
+          }
+        }
       }
       if (resUsers.ok) {
         // /api/users sejak Sprint 0 CRIT-03 return paginated shape:
@@ -258,14 +284,11 @@ export default function EmailRoutingPage() {
             <div key={email.id} className={`rounded-lg border bg-surface shadow-card transition-all ${email.enabled ? "border-border" : "border-border opacity-60"}`}>
               <div className="flex items-center justify-between gap-4 p-5">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${email.enabled ? "bg-primary/10 text-primary" : "bg-surface-tertiary text-txt-muted"}`}>
-                    <Mail size={18} />
-                  </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-txt-primary text-sm truncate">{email.from}</p>
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${email.enabled ? "bg-primary-light text-primary" : "bg-red-50 text-red-600"}`}>
-                        <Power size={8} /> {email.enabled ? "Aktif" : "Nonaktif"}
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${email.enabled ? "text-primary" : "text-red-600"}`}>
+                        {email.enabled ? "Aktif" : "Nonaktif"}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5 text-xs text-txt-muted">
@@ -320,23 +343,33 @@ export default function EmailRoutingPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
-                      { label: "SMTP Server", value: "smtp-relay.brevo.com" },
-                      { label: "Port", value: "587" },
-                      { label: "Username", value: "a715cf001@smtp-brevo.com" },
-                      { label: "Password", value: "4UhR5vsHMc3PIqrD" },
+                      { label: "SMTP Server", value: smtpConfig.host, copyable: true },
+                      { label: "Port", value: smtpConfig.port, copyable: true },
+                      {
+                        label: "Username",
+                        value: smtpConfig.user || "Diatur di .env (BREVO_SMTP_USER)",
+                        copyable: Boolean(smtpConfig.user),
+                      },
+                      {
+                        label: "Password",
+                        value: smtpConfig.password || "Diatur di .env (BREVO_SMTP_PASS)",
+                        copyable: Boolean(smtpConfig.password),
+                      },
                     ].map((item) => (
                       <div key={item.label} className="flex items-center justify-between rounded-lg bg-surface px-3 py-2 border border-border">
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-[10px] text-txt-muted block">{item.label}</span>
-                          <span className="text-xs font-mono font-medium text-txt-primary">{item.value}</span>
+                          <span className="text-xs font-mono font-medium text-txt-primary break-all">{item.value}</span>
                         </div>
-                        <button
-                          onClick={() => copyText(item.value, item.label)}
-                          className="btn-ghost p-1.5 rounded-lg"
-                          title="Copy"
-                        >
-                          {copied === item.label ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-                        </button>
+                        {item.copyable && (
+                          <button
+                            onClick={() => copyText(item.value, item.label)}
+                            className="btn-ghost p-1.5 rounded-lg shrink-0"
+                            title="Copy"
+                          >
+                            {copied === item.label ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>

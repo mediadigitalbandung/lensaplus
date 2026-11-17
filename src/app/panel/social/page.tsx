@@ -73,6 +73,7 @@ interface Category {
 }
 
 interface SocialSettings {
+  threadsAppId?: string | null;
   global: {
     draftMode: boolean;
     autoPublishIG: boolean;
@@ -120,19 +121,19 @@ const PLATFORM_ICONS: Record<Platform, React.ElementType> = {
 };
 
 const PLATFORM_COLORS: Record<Platform, string> = {
-  INSTAGRAM: "text-pink-500 bg-pink-50",
-  FACEBOOK: "text-blue-600 bg-blue-50",
-  TWITTER: "text-sky-500 bg-sky-50",
-  THREADS: "text-emerald-600 bg-emerald-50",
+  INSTAGRAM: "text-pink-600 font-semibold",
+  FACEBOOK: "text-blue-600 font-semibold",
+  TWITTER: "text-sky-600 font-semibold",
+  THREADS: "text-emerald-700 font-semibold",
 };
 
 const STATUS_COLORS: Record<PostStatus, string> = {
-  DRAFT: "bg-surface-tertiary text-txt-secondary",
-  PENDING: "bg-yellow-50 text-yellow-600",
-  PROCESSING: "bg-blue-50 text-blue-600",
-  PUBLISHED: "bg-primary-light text-primary",
-  REJECTED: "bg-red-50 text-red-600",
-  DELETED: "bg-surface-tertiary text-txt-muted",
+  DRAFT: "text-txt-secondary font-medium",
+  PENDING: "text-amber-700 font-semibold",
+  PROCESSING: "text-blue-700 font-semibold",
+  PUBLISHED: "text-primary font-semibold",
+  REJECTED: "text-red-700 font-semibold",
+  DELETED: "text-txt-muted",
 };
 
 function formatDate(dateStr: string) {
@@ -579,34 +580,33 @@ function PostsTab() {
                       <button
                         type="button"
                         onClick={() => setVideoPreview(p.videoUrl!)}
-                        className="absolute inset-0 flex items-center justify-center bg-black/35 transition-colors hover:bg-black/45"
+                        className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors hover:bg-black/45"
                         title="Putar video Reel"
                       >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-primary">
-                          <Play size={16} className="ml-0.5" fill="currentColor" />
-                        </span>
+                        <Play size={22} className="text-white drop-shadow" fill="currentColor" />
                       </button>
                     )}
                   </div>
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-2 text-xs">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${PLATFORM_COLORS[p.platform]}`}
+                        className={`inline-flex items-center gap-1 ${PLATFORM_COLORS[p.platform]}`}
                       >
                         <PlatformIcon size={12} />
                         {p.platform}
                       </span>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[p.status]}`}
-                      >
+                      <span className="text-txt-muted">·</span>
+                      <span className={STATUS_COLORS[p.status]}>
                         {p.status}
                       </span>
                       {p.mediaKind === "REELS" && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2 py-0.5 text-xs font-medium text-primary">
-                          <Film size={12} />
-                          Reel
-                        </span>
+                        <>
+                          <span className="text-txt-muted">·</span>
+                          <span className="font-semibold text-primary">
+                            Reel
+                          </span>
+                        </>
                       )}
                       {p.externalId && (
                         <span className="text-xs text-txt-muted">
@@ -2662,24 +2662,24 @@ function SettingsTab() {
           </h3>
           {settings.instagram.hasAccessToken ? (
             isIgExpired ? (
-              <span className="inline-flex items-center rounded-md bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/10">
-                ❌ Expired ({igExpiresAt?.toLocaleDateString("id-ID")})
+              <span className="text-xs font-semibold text-red-700">
+                Expired ({igExpiresAt?.toLocaleDateString("id-ID")})
               </span>
             ) : isIgExpiringSoon ? (
-              <span className="inline-flex items-center rounded-md bg-yellow-50 px-2.5 py-0.5 text-xs font-semibold text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
-                ⚠️ Expiring Soon ({igDaysLeft} hari lagi)
+              <span className="text-xs font-semibold text-amber-700">
+                Segera Kedaluwarsa ({igDaysLeft} hari lagi)
               </span>
             ) : igExpiresAt ? (
-              <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
-                ✅ Aktif (Sampai: {igExpiresAt?.toLocaleDateString("id-ID")})
+              <span className="text-xs font-semibold text-emerald-700">
+                Aktif (Sampai: {igExpiresAt?.toLocaleDateString("id-ID")})
               </span>
             ) : (
-              <span className="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                ✨ Never Expires / Long-lived
+              <span className="text-xs font-semibold text-blue-700">
+                Long-lived / Aktif
               </span>
             )
           ) : (
-            <span className="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+            <span className="text-xs font-medium text-txt-muted">
               Belum Terkoneksi
             </span>
           )}
@@ -2881,24 +2881,24 @@ function SettingsTab() {
           </h3>
           {settings.facebook.hasAccessToken ? (
             isFbExpired ? (
-              <span className="inline-flex items-center rounded-md bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/10">
-                ❌ Expired ({fbExpiresAt?.toLocaleDateString("id-ID")})
+              <span className="text-xs font-semibold text-red-700">
+                Expired ({fbExpiresAt?.toLocaleDateString("id-ID")})
               </span>
             ) : isFbExpiringSoon ? (
-              <span className="inline-flex items-center rounded-md bg-yellow-50 px-2.5 py-0.5 text-xs font-semibold text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
-                ⚠️ Expiring Soon ({fbDaysLeft} hari lagi)
+              <span className="text-xs font-semibold text-amber-700">
+                Segera Kedaluwarsa ({fbDaysLeft} hari lagi)
               </span>
             ) : fbExpiresAt ? (
-              <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
-                ✅ Aktif (Sampai: {fbExpiresAt?.toLocaleDateString("id-ID")})
+              <span className="text-xs font-semibold text-emerald-700">
+                Aktif (Sampai: {fbExpiresAt?.toLocaleDateString("id-ID")})
               </span>
             ) : (
-              <span className="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                ✨ Never Expires / Long-lived
+              <span className="text-xs font-semibold text-blue-700">
+                Long-lived / Aktif
               </span>
             )
           ) : (
-            <span className="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+            <span className="text-xs font-medium text-txt-muted">
               Belum Terkoneksi
             </span>
           )}
@@ -3102,15 +3102,27 @@ function SettingsTab() {
               <label className="block text-[11px] font-semibold text-txt-secondary mb-1">
                 Langkah 1: Klik tombol untuk otorisasi di browser Anda
               </label>
-              <a
-                href={`https://threads.net/oauth/authorize?client_id=4402452543382960&redirect_uri=${encodeURIComponent("https://lensaplus.com/")}&scope=threads_basic,threads_content_publish&response_type=code`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary hover:bg-primary-dark text-white px-4 py-2 text-sm font-semibold transition-all w-full text-center"
-              >
-                <ExternalLink size={14} />
-                Buka Link Otorisasi Threads
-              </a>
+              {settings.threadsAppId ? (
+                <a
+                  href={`https://threads.net/oauth/authorize?client_id=${encodeURIComponent(settings.threadsAppId)}&redirect_uri=${encodeURIComponent("https://lensaplus.com/")}&scope=threads_basic,threads_content_publish&response_type=code`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-primary hover:bg-primary-dark text-white px-4 py-2 text-sm font-semibold transition-all w-full text-center"
+                >
+                  <ExternalLink size={14} />
+                  Buka Link Otorisasi Threads
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  title="THREADS_APP_ID belum diset di .env server"
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-primary/40 text-white px-4 py-2 text-sm font-semibold w-full text-center cursor-not-allowed"
+                >
+                  <ExternalLink size={14} />
+                  THREADS_APP_ID Belum Dikonfigurasi
+                </button>
+              )}
             </div>
             
             <div className="flex-1 w-full">

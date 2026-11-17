@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "rea
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Search as SearchIcon, SlidersHorizontal, Clock, Calendar, TrendingUp, ChevronLeft, ChevronRight, X, History, Eye } from "lucide-react";
+import { Search as SearchIcon, ChevronLeft, ChevronRight, X, History } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 
 interface SearchResult {
@@ -69,7 +69,7 @@ function highlightText(text: string, keyword: string): React.ReactNode {
   const parts = text.split(regex);
   return parts.map((part, i) =>
     regex.test(part) ? (
-      <mark key={i} className="bg-primary-light text-primary font-semibold rounded-lg px-0.5">
+      <mark key={i} className="bg-transparent font-bold text-primary underline decoration-primary/50 underline-offset-2">
         {part}
       </mark>
     ) : (
@@ -240,10 +240,10 @@ function SearchContent() {
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice(page * perPage, (page + 1) * perPage);
 
-  const sortOptions: { value: SortBy; label: string; icon: typeof Clock }[] = [
-    { value: "terbaru", label: "Terbaru", icon: Clock },
-    { value: "terlama", label: "Terlama", icon: Calendar },
-    { value: "terpopuler", label: "Terpopuler", icon: TrendingUp },
+  const sortOptions: { value: SortBy; label: string }[] = [
+    { value: "terbaru", label: "Terbaru" },
+    { value: "terlama", label: "Terlama" },
+    { value: "terpopuler", label: "Terpopuler" },
   ];
 
   const timeOptions: { value: TimeRange; label: string }[] = [
@@ -348,39 +348,36 @@ function SearchContent() {
 
       {/* Filters — only show after search */}
       {searched && results.length > 0 && (
-        <div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 border-b border-border pb-3">
           {/* Sort by */}
-          <div className="flex flex-wrap items-center gap-2">
-            <SlidersHorizontal size={14} className="text-txt-muted shrink-0" />
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs text-txt-muted shrink-0">Urutan:</span>
             {sortOptions.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => { setSortBy(opt.value); setPage(0); }}
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                className={`border-b-2 pb-1 text-xs font-medium transition-colors ${
                   sortBy === opt.value
-                    ? "bg-primary text-white"
-                    : "bg-surface-secondary text-txt-secondary hover:bg-surface-tertiary"
+                    ? "border-primary text-primary font-bold"
+                    : "border-transparent text-txt-secondary hover:text-primary"
                 }`}
               >
-                <opt.icon size={12} />
                 {opt.label}
               </button>
             ))}
           </div>
 
           {/* Time range */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Calendar size={14} className="text-txt-muted shrink-0" />
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs text-txt-muted shrink-0">Periode:</span>
             {timeOptions.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => { setTimeRange(opt.value); setPage(0); }}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                className={`border-b-2 pb-1 text-xs font-medium transition-colors ${
                   timeRange === opt.value
-                    ? "bg-primary text-white"
-                    : "bg-surface-secondary text-txt-secondary hover:bg-surface-tertiary"
+                    ? "border-primary text-primary font-bold"
+                    : "border-transparent text-txt-secondary hover:text-primary"
                 }`}
               >
                 {opt.label}
@@ -443,9 +440,8 @@ function SearchContent() {
                   {(article.viewCount ?? 0) > 0 && (
                     <>
                       <span className="mx-1">&middot;</span>
-                      <span className="inline-flex items-center gap-0.5 align-middle">
-                        <Eye size={11} aria-hidden />
-                        {(article.viewCount ?? 0).toLocaleString("id-ID")}
+                      <span>
+                        {(article.viewCount ?? 0).toLocaleString("id-ID")} dibaca
                       </span>
                     </>
                   )}

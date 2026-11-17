@@ -118,7 +118,7 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 px-5 py-6 pb-12 sm:px-10 sm:py-10 lg:px-14 lg:py-12">
-                  <span className="mb-2 sm:mb-3 inline-flex items-center rounded-md bg-white/15 px-2.5 py-1 text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-white backdrop-blur-sm transition-colors duration-300 group-hover:bg-secondary">
+                  <span className="mb-2 sm:mb-3 inline-block text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-white/80 transition-colors duration-300 group-hover:text-secondary">
                     {a.category.name}
                   </span>
                   <h2 className="font-serif text-headline-sm sm:text-display-sm lg:text-display-md xl:text-display-lg text-white leading-[1.15] sm:leading-[1.1] max-w-2xl pr-4 line-clamp-3">
@@ -159,9 +159,9 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
               <button
                 onClick={() => setIsPaused((p) => !p)}
                 aria-label={isPaused ? "Putar otomatis hero" : "Jeda otomatis hero"}
-                className="ml-1 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-white/20 hover:bg-white/40 transition-colors text-white"
+                className="ml-1 flex h-6 w-6 items-center justify-center text-white/80 hover:text-white transition-colors drop-shadow"
               >
-                {isPaused ? <Play size={10} aria-hidden /> : <Pause size={10} aria-hidden />}
+                {isPaused ? <Play size={12} aria-hidden /> : <Pause size={12} aria-hidden />}
               </button>
             </div>
           </div>

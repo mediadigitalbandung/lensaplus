@@ -154,9 +154,9 @@ export default function TwoFactorSection() {
 
       {/* Backup codes shown once after enabling */}
       {step === "backup" && backupCodes.length > 0 && (
-        <div className="rounded-lg border border-yellow-300 bg-yellow-50/70 p-4">
-          <p className="text-sm font-semibold text-yellow-800">2FA aktif! Simpan kode cadangan ini sekarang.</p>
-          <p className="mb-3 text-xs text-yellow-700">
+        <div className="rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface p-4">
+          <p className="text-sm font-semibold text-txt-primary">2FA aktif! Simpan kode cadangan ini sekarang.</p>
+          <p className="mb-3 text-xs text-txt-secondary">
             Setiap kode hanya bisa dipakai sekali untuk login jika Anda kehilangan akses ke autentikator. Kode ini tidak akan ditampilkan lagi.
           </p>
           <div className="grid grid-cols-2 gap-2 font-mono text-sm text-txt-primary sm:grid-cols-2">

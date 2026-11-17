@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Pin, Zap, Image as ImageIcon, Play, Clock } from "lucide-react";
+import { Pin, Play } from "lucide-react";
 
 type LiveBlogStatus = "SCHEDULED" | "LIVE" | "ENDED" | "CANCELLED";
 
@@ -38,7 +38,7 @@ function formatDate(iso: string): string {
 function EntryCard({ entry }: { entry: LiveBlogEntry }) {
   return (
     <article
-      className={`relative flex gap-4 pb-6 ${entry.isPinned ? "bg-primary-light/30 -mx-4 px-4 rounded-md" : ""}`}
+      className={`relative flex gap-4 pb-6 ${entry.isPinned ? "border-l-2 border-primary pl-4" : ""}`}
     >
       {/* Timeline spine */}
       <div className="flex flex-col items-center shrink-0 pt-1">
@@ -64,15 +64,13 @@ function EntryCard({ entry }: { entry: LiveBlogEntry }) {
             {formatTime(entry.postedAt)}
           </time>
           {entry.isPinned && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-label-sm text-primary font-medium">
-              <Pin size={10} />
-              Disematkan
+            <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
+              · Disematkan
             </span>
           )}
           {entry.isHighlight && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2 py-0.5 text-label-sm text-secondary font-medium">
-              <Zap size={10} />
-              Highlight
+            <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+              · Highlight
             </span>
           )}
         </div>
@@ -213,7 +211,7 @@ export default function LiveBlogTimeline({
     <div className="space-y-6">
       {/* Live status + new entries banner */}
       {status === "LIVE" && (
-        <div className="flex items-center gap-2 rounded-md bg-secondary/10 px-4 py-2.5">
+        <div className="flex items-center gap-2.5 border-l-4 border-secondary pl-3 py-1">
           <span className="relative flex h-2.5 w-2.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-secondary" />
@@ -231,8 +229,7 @@ export default function LiveBlogTimeline({
 
       {/* Scheduled — page auto-refreshes when the event goes live */}
       {status === "SCHEDULED" && (
-        <div className="flex items-center gap-2 rounded-md bg-primary-light px-4 py-2.5">
-          <Clock size={15} className="text-primary" />
+        <div className="border-l-4 border-primary pl-3 py-1">
           <span className="text-body-sm font-medium text-primary">
             Siaran belum dimulai — halaman akan diperbarui otomatis saat live.
           </span>
@@ -263,7 +260,6 @@ export default function LiveBlogTimeline({
       {/* Timeline grouped by date */}
       {grouped.length === 0 && entries.length === 0 && (
         <div className="py-12 text-center text-txt-muted">
-          <ImageIcon size={32} className="mx-auto mb-3 opacity-30" />
           <p className="text-body-md">Belum ada update. Pantau terus!</p>
         </div>
       )}

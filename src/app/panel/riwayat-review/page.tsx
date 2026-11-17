@@ -6,8 +6,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   ClipboardCheck,
-  CheckCircle,
-  XCircle,
   Filter,
   Search,
   Eye,
@@ -185,19 +183,14 @@ export default function RiwayatReviewPage() {
                       </td>
                       <td className="px-5 py-3">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                          className={`text-xs font-semibold ${
                             isApproved
-                              ? "bg-primary-light text-primary"
+                              ? "text-primary"
                               : isRejected
-                                ? "bg-red-50 text-red-600"
-                                : "bg-surface-tertiary text-txt-secondary"
+                                ? "text-red-700"
+                                : "text-txt-secondary"
                           }`}
                         >
-                          {isApproved ? (
-                            <CheckCircle size={12} />
-                          ) : isRejected ? (
-                            <XCircle size={12} />
-                          ) : null}
                           {isApproved ? "Disetujui" : isRejected ? "Ditolak" : article.status}
                         </span>
                       </td>

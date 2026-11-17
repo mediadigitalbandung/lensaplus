@@ -30,12 +30,12 @@ interface Group {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  PUBLISHED: "bg-primary-light text-primary",
-  DRAFT: "bg-surface-tertiary text-txt-muted",
-  IN_REVIEW: "bg-amber-50 text-amber-700",
-  APPROVED: "bg-blue-50 text-blue-700",
-  REJECTED: "bg-red-50 text-red-600",
-  ARCHIVED: "bg-surface-tertiary text-txt-muted",
+  PUBLISHED: "text-primary font-semibold",
+  DRAFT: "text-txt-muted font-medium",
+  IN_REVIEW: "text-amber-700 font-semibold",
+  APPROVED: "text-blue-700 font-semibold",
+  REJECTED: "text-red-700 font-semibold",
+  ARCHIVED: "text-txt-muted",
 };
 const STATUS_LABEL: Record<string, string> = {
   PUBLISHED: "Dipublikasi",

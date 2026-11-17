@@ -3,10 +3,6 @@
 import { useEffect, useState, useMemo } from "react";
 import {
   Mail,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  TrendingDown,
   Search,
   Loader2,
   Download,
@@ -49,9 +45,9 @@ function formatDate(iso: string | null): string {
 }
 
 function statusBadge(s: Subscriber): { label: string; cls: string } {
-  if (s.unsubscribedAt) return { label: "Berhenti", cls: "bg-red-50 text-red-700" };
-  if (s.confirmedAt) return { label: "Aktif", cls: "bg-emerald-50 text-emerald-700" };
-  return { label: "Menunggu", cls: "bg-yellow-50 text-yellow-700" };
+  if (s.unsubscribedAt) return { label: "Berhenti", cls: "text-red-700 font-semibold" };
+  if (s.confirmedAt) return { label: "Aktif", cls: "text-emerald-700 font-semibold" };
+  return { label: "Menunggu", cls: "text-amber-700 font-semibold" };
 }
 
 export default function NewsletterSubscribersPage() {
@@ -148,26 +144,22 @@ export default function NewsletterSubscribersPage() {
       {summary && (
         <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <SummaryCard
-            icon={Mail}
             label="Total Pendaftar"
             value={summary.all}
             tone="info"
           />
           <SummaryCard
-            icon={CheckCircle2}
             label="Aktif"
             value={summary.confirmed}
             tone="ok"
             hint={`${summary.all > 0 ? Math.round((summary.confirmed / summary.all) * 100) : 0}% dari total`}
           />
           <SummaryCard
-            icon={Clock}
             label="Menunggu Konfirmasi"
             value={summary.pending}
             tone="warn"
           />
           <SummaryCard
-            icon={TrendingDown}
             label="Berhenti"
             value={summary.unsubscribed}
             tone="danger"
@@ -177,7 +169,7 @@ export default function NewsletterSubscribersPage() {
       )}
 
       {/* Filter + search */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-4 border-b border-border pb-3">
         {(Object.keys(FILTER_LABEL) as Filter[]).map((f) => (
           <button
             key={f}
@@ -185,10 +177,10 @@ export default function NewsletterSubscribersPage() {
               setFilter(f);
               setPage(1);
             }}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+            className={`border-b-2 pb-1 text-xs font-semibold transition-colors ${
               filter === f
-                ? "bg-primary text-white"
-                : "bg-surface-secondary text-txt-secondary hover:bg-surface-tertiary"
+                ? "border-primary text-primary"
+                : "border-transparent text-txt-secondary hover:text-primary"
             }`}
           >
             {FILTER_LABEL[f]}
@@ -238,7 +230,7 @@ export default function NewsletterSubscribersPage() {
                     <tr key={s.id} className="hover:bg-surface-secondary/40">
                       <td className="px-4 py-2.5 font-medium text-txt-primary">{s.email}</td>
                       <td className="px-4 py-2.5">
-                        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${badge.cls}`}>
+                        <span className={`text-[11px] uppercase tracking-wider ${badge.cls}`}>
                           {badge.label}
                         </span>
                       </td>
@@ -281,33 +273,28 @@ export default function NewsletterSubscribersPage() {
 }
 
 function SummaryCard({
-  icon: Icon,
   label,
   value,
   tone,
   hint,
 }: {
-  icon: React.ElementType;
   label: string;
   value: number;
   tone: "info" | "ok" | "warn" | "danger";
   hint?: string;
 }) {
-  const toneCls: Record<string, string> = {
-    info: "text-blue-600 bg-blue-50",
-    ok: "text-emerald-600 bg-emerald-50",
-    warn: "text-yellow-600 bg-yellow-50",
-    danger: "text-red-600 bg-red-50",
+  const borderCls: Record<string, string> = {
+    info: "border-t-blue-600",
+    ok: "border-t-emerald-600",
+    warn: "border-t-amber-500",
+    danger: "border-t-red-600",
   };
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${toneCls[tone]}`}>
-        <Icon size={16} />
-      </div>
-      <p className="mt-2 text-2xl font-extrabold text-txt-primary tabular-nums">
+    <div className={`rounded-xl border border-border border-t-2 ${borderCls[tone]} bg-surface p-4 shadow-card`}>
+      <p className="text-xs font-semibold text-txt-secondary">{label}</p>
+      <p className="mt-1.5 text-2xl font-extrabold text-txt-primary tabular-nums">
         {value.toLocaleString("id-ID")}
       </p>
-      <p className="text-xs font-semibold text-txt-secondary">{label}</p>
       {hint && <p className="mt-0.5 text-[10px] text-txt-muted">{hint}</p>}
     </div>
   );

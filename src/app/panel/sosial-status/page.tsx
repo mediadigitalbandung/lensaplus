@@ -79,12 +79,12 @@ const PLATFORMS = [
 ] as const;
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  DRAFT: { label: "Draf", cls: "bg-zinc-100 text-zinc-600" },
-  PENDING: { label: "Menunggu", cls: "bg-amber-50 text-amber-700" },
-  PROCESSING: { label: "Diproses", cls: "bg-blue-50 text-blue-700" },
-  PUBLISHED: { label: "Terbit", cls: "bg-green-50 text-green-700" },
-  REJECTED: { label: "Ditolak", cls: "bg-red-50 text-red-700" },
-  DELETED: { label: "Dihapus", cls: "bg-zinc-100 text-zinc-500" },
+  DRAFT: { label: "Draf", cls: "text-txt-muted font-medium" },
+  PENDING: { label: "Menunggu", cls: "text-amber-700 font-semibold" },
+  PROCESSING: { label: "Diproses", cls: "text-blue-700 font-semibold" },
+  PUBLISHED: { label: "Terbit", cls: "text-emerald-700 font-semibold" },
+  REJECTED: { label: "Ditolak", cls: "text-red-700 font-semibold" },
+  DELETED: { label: "Dihapus", cls: "text-txt-muted" },
 };
 
 const STATUS_OPTIONS = ["DRAFT", "PENDING", "PROCESSING", "PUBLISHED", "REJECTED", "DELETED"];

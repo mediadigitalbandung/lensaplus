@@ -69,13 +69,13 @@ function LoginContent() {
         </div>
 
         {sessionExpired && (
-          <div className="mb-4 rounded-lg bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
+          <div className="mb-4 rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface px-4 py-3 text-sm text-amber-800">
             Sesi Anda telah berakhir. Silakan login kembali.
           </div>
         )}
 
         {error && (
-          <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="mb-6 rounded-lg border border-border border-l-4 border-l-red-600 bg-surface px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}

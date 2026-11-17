@@ -3,7 +3,7 @@ export const revalidate = 300;
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
-import { ChevronRight, Newspaper, CalendarDays, Layers } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
@@ -159,14 +159,12 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
         <div className="mb-8 max-w-3xl">
           <div className="flex items-center gap-3">
             <span className="block h-7 w-[3px] rounded-full bg-secondary" />
-            <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
-              <Newspaper size={22} className="text-primary" />
+            <h1 className="text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
               {digest.title}
             </h1>
           </div>
           <p className="mt-3 text-base text-on-surface-variant">{digest.intro}</p>
-          <p className="mt-2 flex items-center gap-2 text-xs uppercase tracking-wider text-primary">
-            <CalendarDays size={12} />
+          <p className="mt-2 text-xs uppercase tracking-wider text-primary">
             {digest.range.from.toLocaleDateString("id-ID", { day: "numeric", month: "long" })}
             {" – "}
             {digest.range.to.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
@@ -213,9 +211,8 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
               </article>
             ) : (
               <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
-                <Layers size={36} className="mx-auto text-border" />
-                <p className="mt-4 text-on-surface-variant">Belum ada artikel pada periode ini.</p>
-                <p className="text-sm text-txt-muted">Coba kembali nanti — redaksi rutin menerbitkan berita baru.</p>
+                <p className="text-on-surface-variant">Belum ada artikel pada periode ini.</p>
+                <p className="mt-1 text-sm text-txt-muted">Coba kembali nanti — redaksi rutin menerbitkan berita baru.</p>
               </div>
             )}
 

@@ -156,7 +156,7 @@ export default async function EmitenDetailPage({
               className="h-20 w-20 rounded-lg object-contain border border-border bg-white p-2"
             />
           ) : (
-            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg bg-primary-light text-headline-sm font-bold text-primary">
+            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container-low border border-border text-headline-sm font-bold text-primary">
               {ticker.slice(0, 2)}
             </div>
           )}
@@ -166,7 +166,7 @@ export default async function EmitenDetailPage({
               <h1 className="font-serif text-headline-lg font-bold text-on-surface">
                 {company.name}
               </h1>
-              <span className="font-mono text-label-lg font-bold text-primary bg-primary-light px-3 py-1 rounded-md">
+              <span className="font-mono text-label-lg font-bold text-primary">
                 {company.ticker}
               </span>
             </div>
@@ -176,7 +176,7 @@ export default async function EmitenDetailPage({
             <div className="mt-3 flex flex-wrap gap-2">
               <span className="badge badge-green">{SECTOR_LABELS[company.sector]}</span>
               {company.marketCap && (
-                <span className="badge bg-surface-container text-txt-secondary">
+                <span className="badge text-txt-secondary">
                   Market Cap: {formatMarketCap(company.marketCap)}
                 </span>
               )}

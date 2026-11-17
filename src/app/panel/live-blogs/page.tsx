@@ -17,7 +17,6 @@ import {
   ExternalLink,
   Filter,
   Edit,
-  Settings,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -46,10 +45,10 @@ const STATUS_LABELS: Record<LiveBlogStatus, string> = {
 };
 
 const STATUS_COLORS: Record<LiveBlogStatus, string> = {
-  SCHEDULED: "bg-blue-50 text-blue-600",
-  LIVE: "bg-red-50 text-red-600 font-bold animate-pulse",
-  ENDED: "bg-primary-light text-primary",
-  CANCELLED: "bg-surface-container-low text-txt-muted",
+  SCHEDULED: "text-blue-700 font-semibold",
+  LIVE: "text-red-600 font-bold animate-pulse",
+  ENDED: "text-primary font-semibold",
+  CANCELLED: "text-txt-muted",
 };
 
 const WRITE_ROLES = [

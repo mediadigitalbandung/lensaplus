@@ -19,9 +19,7 @@ export default function CategoryError({
 
   return (
     <div className="container-main flex min-h-[60vh] flex-col items-center justify-center text-center py-16">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 mb-6">
-        <AlertTriangle className="h-8 w-8 text-red-600" />
-      </div>
+      <AlertTriangle className="h-10 w-10 text-red-600 mb-5" />
       <h2 className="text-2xl font-bold text-txt-primary mb-2">
         Gagal Memuat Kategori
       </h2>

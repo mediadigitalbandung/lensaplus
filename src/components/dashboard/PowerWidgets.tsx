@@ -13,21 +13,8 @@ import Link from "next/link";
 import {
   AlertCircle,
   AlertTriangle,
-  Archive,
-  Award,
-  Bot,
   CheckCircle2,
   Clock,
-  Database,
-  Download,
-  FileText,
-  Flag,
-  GitBranch,
-  Highlighter,
-  MessageSquare,
-  Smartphone,
-  Trophy,
-  Users,
   XCircle,
 } from "lucide-react";
 
@@ -157,27 +144,21 @@ function InstallStatsWidget({ data }: { data: ExtrasResponse["install"] }) {
       hint: "Pasang via Chrome / Edge",
       count: data.pwaInstall,
       lastAt: data.lastPwaInstallAt,
-      icon: Smartphone,
-      color: "text-emerald-700",
-      bg: "bg-emerald-50",
+      barColor: "bg-emerald-600",
     },
     {
       label: "PWA Launch",
       hint: "Buka dari home screen",
       count: data.pwaLaunch,
       lastAt: data.lastPwaLaunchAt,
-      icon: CheckCircle2,
-      color: "text-blue-700",
-      bg: "bg-blue-50",
+      barColor: "bg-blue-600",
     },
     {
       label: "APK Download",
       hint: "Klik unduh APK manual",
       count: data.apkDownload,
       lastAt: data.lastApkDownloadAt,
-      icon: Download,
-      color: "text-amber-700",
-      bg: "bg-amber-50",
+      barColor: "bg-amber-600",
     },
   ];
   const max = Math.max(...channels.map((c) => c.count), 1);
@@ -185,10 +166,7 @@ function InstallStatsWidget({ data }: { data: ExtrasResponse["install"] }) {
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
-            <Smartphone size={14} />
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Atribusi Pasang Aplikasi
         </h2>
         <span className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">
@@ -197,14 +175,10 @@ function InstallStatsWidget({ data }: { data: ExtrasResponse["install"] }) {
       </div>
       <div className="p-5 space-y-3">
         {channels.map((c) => {
-          const Icon = c.icon;
           const pct = (c.count / max) * 100;
           return (
             <div key={c.label}>
-              <div className="flex items-center gap-3 mb-1">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${c.bg} ${c.color} shrink-0`}>
-                  <Icon size={14} />
-                </div>
+              <div className="flex items-center justify-between gap-3 mb-1.5">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-txt-primary">{c.label}</p>
                   <p className="text-[10px] text-txt-muted">
@@ -216,9 +190,9 @@ function InstallStatsWidget({ data }: { data: ExtrasResponse["install"] }) {
                   {c.count.toLocaleString("id-ID")}
                 </span>
               </div>
-              <div className="ml-11 h-2 rounded-full bg-surface-tertiary overflow-hidden">
+              <div className="h-2 rounded-full bg-surface-tertiary overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${c.bg.replace("bg-", "bg-").replace("-50", "-500")}`}
+                  className={`h-full rounded-full transition-all duration-500 ${c.barColor}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -244,74 +218,56 @@ function PendingItemsWidget({ data }: { data: ExtrasResponse["pendingItems"] }) 
       label: "Sorotan gagal indexing",
       count: data.sorotanFailed,
       href: "/panel/sorotan?indexStatus=failed",
-      icon: Highlighter,
-      color: "text-amber-600",
-      bg: "bg-amber-50",
+      color: "text-amber-700",
     },
     {
       label: "Artikel di-flag AI guardrail",
       count: data.aiFlaggedArticles,
       href: "/panel/artikel?flag=ai",
-      icon: Flag,
-      color: "text-red-600",
-      bg: "bg-red-50",
+      color: "text-red-700",
     },
     {
       label: "Laporan pending > 48 jam",
       count: data.oldPendingReports,
       href: "/panel/laporan",
-      icon: AlertCircle,
-      color: "text-orange-600",
-      bg: "bg-orange-50",
+      color: "text-orange-700",
     },
     {
       label: "Komentar pending > 24 jam",
       count: data.oldPendingComments,
       href: "/panel/komentar?filter=pending",
-      icon: MessageSquare,
-      color: "text-yellow-600",
-      bg: "bg-yellow-50",
+      color: "text-amber-700",
     },
   ];
   const allClear = data.totalPending === 0;
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${allClear ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
-            {allClear ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Butuh Tindakan
         </h2>
-        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${allClear ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+        <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${allClear ? "text-emerald-700" : "text-red-700"}`}>
+          {allClear ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
           {allClear ? "Semua aman" : `${data.totalPending} item`}
         </span>
       </div>
       <div className="divide-y divide-border">
-        {items.map((it) => {
-          const Icon = it.icon;
-          return (
-            <Link
-              key={it.label}
-              href={it.href}
-              className={`flex items-center justify-between px-5 py-3 transition-colors ${
-                it.count > 0 ? "hover:bg-surface-secondary/40" : "opacity-60"
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${it.bg} ${it.color} shrink-0`}>
-                  <Icon size={14} />
-                </div>
-                <span className="text-sm font-medium text-txt-primary truncate">
-                  {it.label}
-                </span>
-              </div>
-              <span className={`shrink-0 tabular-nums text-sm font-bold ${it.count > 0 ? it.color : "text-txt-muted"}`}>
-                {it.count}
-              </span>
-            </Link>
-          );
-        })}
+        {items.map((it) => (
+          <Link
+            key={it.label}
+            href={it.href}
+            className={`flex items-center justify-between px-5 py-3 transition-colors ${
+              it.count > 0 ? "hover:bg-surface-secondary/40" : "opacity-60"
+            }`}
+          >
+            <span className="text-sm font-medium text-txt-primary truncate pr-3">
+              {it.label}
+            </span>
+            <span className={`shrink-0 tabular-nums text-sm font-bold ${it.count > 0 ? it.color : "text-txt-muted"}`}>
+              {it.count}
+            </span>
+          </Link>
+        ))}
       </div>
     </div>
   );
@@ -320,30 +276,26 @@ function PendingItemsWidget({ data }: { data: ExtrasResponse["pendingItems"] }) 
 /* ─── Pipeline funnel ───────────────────────────────────────────────────── */
 function PipelineWidget({ data }: { data: ExtrasResponse["pipeline"] }) {
   const stages = [
-    { label: "Draf", count: data.draft, status: "DRAFT", icon: FileText, color: "text-gray-600", bg: "bg-gray-100" },
-    { label: "Review", count: data.inReview, status: "IN_REVIEW", icon: Clock, color: "text-yellow-700", bg: "bg-yellow-100" },
-    { label: "Disetujui", count: data.approved, status: "APPROVED", icon: CheckCircle2, color: "text-blue-700", bg: "bg-blue-100" },
-    { label: "Published", count: data.published, status: "PUBLISHED", icon: CheckCircle2, color: "text-emerald-700", bg: "bg-emerald-100" },
+    { label: "Draf", count: data.draft, status: "DRAFT", barColor: "bg-stone-400" },
+    { label: "Review", count: data.inReview, status: "IN_REVIEW", barColor: "bg-amber-500" },
+    { label: "Disetujui", count: data.approved, status: "APPROVED", barColor: "bg-blue-600" },
+    { label: "Published", count: data.published, status: "PUBLISHED", barColor: "bg-emerald-600" },
   ];
   const max = Math.max(...stages.map((s) => s.count), 1);
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-            <GitBranch size={14} />
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Pipeline Editorial
         </h2>
         {data.bottleneck && (
-          <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-yellow-50 text-yellow-700">
-            ⚠ Bottleneck di {data.bottleneck === "review" ? "review" : "publish"}
+          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+            Bottleneck di {data.bottleneck === "review" ? "review" : "publish"}
           </span>
         )}
       </div>
       <div className="p-5 space-y-3">
         {stages.map((s) => {
-          const Icon = s.icon;
           const pct = (s.count / max) * 100;
           return (
             <Link
@@ -351,10 +303,7 @@ function PipelineWidget({ data }: { data: ExtrasResponse["pipeline"] }) {
               href={`/panel/artikel?status=${s.status}`}
               className="block group"
             >
-              <div className="flex items-center gap-3 mb-1">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${s.bg} ${s.color} shrink-0`}>
-                  <Icon size={14} />
-                </div>
+              <div className="flex items-center justify-between gap-3 mb-1.5">
                 <span className="flex-1 text-sm font-semibold text-txt-primary group-hover:text-primary transition-colors">
                   {s.label}
                 </span>
@@ -362,9 +311,9 @@ function PipelineWidget({ data }: { data: ExtrasResponse["pipeline"] }) {
                   {s.count.toLocaleString("id-ID")}
                 </span>
               </div>
-              <div className="ml-11 h-2 rounded-full bg-surface-tertiary overflow-hidden">
+              <div className="h-2 rounded-full bg-surface-tertiary overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${s.bg.replace("bg-", "bg-").replace("-100", "-500")}`}
+                  className={`h-full rounded-full transition-all duration-500 ${s.barColor}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -382,10 +331,7 @@ function AIBreakdownWidget({ data }: { data: ExtrasResponse["aiBreakdown"] }) {
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <Bot size={14} />
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Konsumsi AI per Fitur
         </h2>
         <span className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">
@@ -432,19 +378,18 @@ function TopAuthorsWidget({ data }: { data: ExtrasResponse["topAuthors"] }) {
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-            <Trophy size={14} />
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Top Penulis
         </h2>
-        <div className="flex items-center gap-1 rounded-full bg-surface-secondary p-0.5">
+        <div className="flex items-center gap-3">
           {(["week", "month"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                tab === t ? "bg-primary text-white" : "text-txt-secondary"
+              className={`border-b-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                tab === t
+                  ? "border-primary text-primary"
+                  : "border-transparent text-txt-secondary hover:text-primary"
               }`}
             >
               {t === "week" ? "Minggu" : "Bulan"}
@@ -463,8 +408,8 @@ function TopAuthorsWidget({ data }: { data: ExtrasResponse["topAuthors"] }) {
               className="flex items-center justify-between px-5 py-3 hover:bg-surface-secondary/40 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${i < 3 ? "bg-primary text-white" : "bg-surface-tertiary text-txt-secondary"}`}>
-                  {i + 1}
+                <span className={`w-5 shrink-0 font-mono text-xs font-bold tabular-nums ${i < 3 ? "text-primary" : "text-txt-muted"}`}>
+                  {String(i + 1).padStart(2, "0")}.
                 </span>
                 {u.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -474,7 +419,7 @@ function TopAuthorsWidget({ data }: { data: ExtrasResponse["topAuthors"] }) {
                     className="h-8 w-8 rounded-full object-cover bg-surface-secondary"
                   />
                 ) : (
-                  <div className="h-8 w-8 rounded-full bg-primary-light text-primary flex items-center justify-center text-xs font-bold">
+                  <div className="h-8 w-8 rounded-full border border-border bg-surface-container-low text-primary flex items-center justify-center text-xs font-bold">
                     {u.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
                   </div>
                 )}
@@ -493,25 +438,22 @@ function TopAuthorsWidget({ data }: { data: ExtrasResponse["topAuthors"] }) {
 
 /* ─── Backup status ─────────────────────────────────────────────────────── */
 function BackupWidget({ data }: { data: ExtrasResponse["backup"] }) {
-  const statusMeta: Record<typeof data.status, { label: string; cls: string; Icon: typeof CheckCircle2 }> = {
-    healthy: { label: "Sehat", cls: "bg-emerald-50 text-emerald-700", Icon: CheckCircle2 },
-    stale: { label: "Stale", cls: "bg-yellow-50 text-yellow-700", Icon: Clock },
-    failed: { label: "Gagal", cls: "bg-red-50 text-red-700", Icon: XCircle },
-    unknown: { label: "Belum dikenali", cls: "bg-gray-50 text-gray-700", Icon: AlertCircle },
+  const statusMeta: Record<typeof data.status, { label: string; color: string; Icon: typeof CheckCircle2 }> = {
+    healthy: { label: "Sehat", color: "text-emerald-700", Icon: CheckCircle2 },
+    stale: { label: "Stale", color: "text-amber-700", Icon: Clock },
+    failed: { label: "Gagal", color: "text-red-700", Icon: XCircle },
+    unknown: { label: "Belum dikenali", color: "text-txt-muted", Icon: AlertCircle },
   };
   const meta = statusMeta[data.status];
   const Icon = meta.Icon;
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${meta.cls}`}>
-            <Database size={14} />
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Backup Database
         </h2>
-        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${meta.cls}`}>
-          <Icon size={10} className="inline -mt-0.5 mr-0.5" /> {meta.label}
+        <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${meta.color}`}>
+          <Icon size={12} /> {meta.label}
         </span>
       </div>
       <div className="p-5 space-y-2.5">
@@ -521,7 +463,7 @@ function BackupWidget({ data }: { data: ExtrasResponse["backup"] }) {
           <Row label="Durasi" value={`${(data.lastDurationMs / 1000).toFixed(1)}s`} mono />
         )}
         {data.lastError && (
-          <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+          <div className="mt-2 border-l-4 border-red-600 pl-3 py-1">
             <p className="text-[10px] font-bold uppercase tracking-wider text-red-700">Error</p>
             <p className="mt-0.5 text-xs font-mono text-red-700 line-clamp-3 break-all">
               {data.lastError}

@@ -2,7 +2,7 @@ export const revalidate = 60; // ISR: revalidate article list every 60 seconds
 
 import Link from "next/link";
 import { Metadata } from "next";
-import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
@@ -148,7 +148,7 @@ export default async function BeritaPage({ searchParams: searchParamsPromise }: 
         </div>
 
         {/* Filters bar */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-border bg-surface-secondary p-4">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-y border-border py-4">
           {/* Search */}
           <form method="GET" action="/berita" className="relative flex-1 max-w-md">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
@@ -163,42 +163,39 @@ export default async function BeritaPage({ searchParams: searchParamsPromise }: 
             <input type="hidden" name="category" value={categorySlug} />
           </form>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-4">
             {/* Sort */}
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal size={14} className="text-txt-muted" />
-              <div className="flex rounded-full border border-border overflow-hidden">
-                <Link
-                  href={buildUrl({ sort: "latest", page: 1 })}
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                    sort === "latest"
-                      ? "bg-primary text-white"
-                      : "bg-surface text-txt-secondary hover:bg-surface-tertiary"
-                  }`}
-                >
-                  Terbaru
-                </Link>
-                <Link
-                  href={buildUrl({ sort: "popular", page: 1 })}
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                    sort === "popular"
-                      ? "bg-primary text-white"
-                      : "bg-surface text-txt-secondary hover:bg-surface-tertiary"
-                  }`}
-                >
-                  Terpopuler
-                </Link>
-              </div>
+            <div className="flex items-center gap-3 border-r border-border pr-4">
+              <Link
+                href={buildUrl({ sort: "latest", page: 1 })}
+                className={`py-1 text-xs transition-colors ${
+                  sort === "latest"
+                    ? "border-b-2 border-primary font-bold text-primary"
+                    : "text-txt-secondary hover:text-primary"
+                }`}
+              >
+                Terbaru
+              </Link>
+              <Link
+                href={buildUrl({ sort: "popular", page: 1 })}
+                className={`py-1 text-xs transition-colors ${
+                  sort === "popular"
+                    ? "border-b-2 border-primary font-bold text-primary"
+                    : "text-txt-secondary hover:text-primary"
+                }`}
+              >
+                Terpopuler
+              </Link>
             </div>
 
             {/* Category filter */}
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={buildUrl({ category: "all", page: 1 })}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`rounded-md px-3 py-1.5 text-xs transition-colors ${
                   categorySlug === "all"
-                    ? "bg-primary text-white"
-                    : "bg-surface text-txt-secondary hover:bg-surface-tertiary border border-border"
+                    ? "border border-primary font-bold text-primary bg-white"
+                    : "border border-border bg-white font-medium text-txt-secondary hover:border-primary/50 hover:text-primary"
                 }`}
               >
                 Semua
@@ -207,10 +204,10 @@ export default async function BeritaPage({ searchParams: searchParamsPromise }: 
                 <Link
                   key={cat.slug}
                   href={buildUrl({ category: cat.slug, page: 1 })}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded-md px-3 py-1.5 text-xs transition-colors ${
                     categorySlug === cat.slug
-                      ? "bg-primary text-white"
-                      : "bg-surface text-txt-secondary hover:bg-surface-tertiary border border-border"
+                      ? "border border-primary font-bold text-primary bg-white"
+                      : "border border-border bg-white font-medium text-txt-secondary hover:border-primary/50 hover:text-primary"
                   }`}
                 >
                   {cat.name}

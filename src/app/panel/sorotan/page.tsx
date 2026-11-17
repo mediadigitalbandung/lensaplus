@@ -17,7 +17,6 @@ import {
   RefreshCw,
   Loader2,
   Zap,
-  Bot,
   ExternalLink,
   ChevronDown,
   ChevronRight,
@@ -368,22 +367,17 @@ export default function SorotanPage() {
       {isAdmin && (
         <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light">
-                <Bot size={18} className="text-primary" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-txt-primary">
-                  Auto Generate Sorotan
-                </h2>
-                <p className="text-xs text-txt-secondary">
-                  {autoEnabled
-                    ? batchSize === 0
-                      ? `Aktif tapi batch = 0 (pause). Cron tetap dipanggil tiap ${intervalMin} menit.`
-                      : `Cron akan generate ${batchSize} artikel setiap ${intervalMin} menit.`
-                    : "Nonaktif — Sorotan hanya dibuat manual via tombol di atas."}
-                </p>
-              </div>
+            <div className="border-l-4 border-primary pl-3">
+              <h2 className="text-base font-bold text-txt-primary">
+                Auto Generate Sorotan
+              </h2>
+              <p className="text-xs text-txt-secondary">
+                {autoEnabled
+                  ? batchSize === 0
+                    ? `Aktif tapi batch = 0 (pause). Cron tetap dipanggil tiap ${intervalMin} menit.`
+                    : `Cron akan generate ${batchSize} artikel setiap ${intervalMin} menit.`
+                  : "Nonaktif — Sorotan hanya dibuat manual via tombol di atas."}
+              </p>
             </div>
             <button
               onClick={handleToggleAuto}
@@ -572,7 +566,7 @@ export default function SorotanPage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title={s.title}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-light/50 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary-light"
+                                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:border-primary"
                               >
                                 {ANGLE_LABEL[s.angle] ?? s.angle}
                                 <ExternalLink size={11} className="opacity-70" />

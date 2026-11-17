@@ -3,16 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
-  Users,
   ChevronLeft,
-  Calendar,
-  Building2,
   Globe,
   Twitter,
   Instagram,
-  Briefcase,
-  GraduationCap,
-  Flag,
 } from "lucide-react";
 import type { OfficialLevel, OfficialStatus } from "@prisma/client";
 
@@ -28,16 +22,6 @@ const LEVEL_LABELS: Record<OfficialLevel, string> = {
   OTHER: "Lainnya",
 };
 
-const LEVEL_COLORS: Record<OfficialLevel, string> = {
-  NASIONAL: "bg-blue-100 text-blue-800",
-  PROVINSI: "bg-violet-100 text-violet-800",
-  KOTA_KABUPATEN: "bg-primary-light text-primary",
-  KECAMATAN: "bg-teal-100 text-teal-800",
-  YUDIKATIF: "bg-red-100 text-red-800",
-  LEMBAGA: "bg-amber-100 text-amber-800",
-  OTHER: "bg-surface-tertiary text-txt-secondary",
-};
-
 const STATUS_LABELS: Record<OfficialStatus, string> = {
   AKTIF: "Aktif",
   PURNA: "Purna",
@@ -45,11 +29,11 @@ const STATUS_LABELS: Record<OfficialStatus, string> = {
   NONAKTIF: "Nonaktif",
 };
 
-const STATUS_COLORS: Record<OfficialStatus, string> = {
-  AKTIF: "bg-primary-light text-primary border border-primary/20",
-  PURNA: "bg-surface-secondary text-txt-muted border border-border",
-  CUTI: "bg-yellow-50 text-yellow-700 border border-yellow-200",
-  NONAKTIF: "bg-red-50 text-red-700 border border-red-200",
+const STATUS_TEXT_COLORS: Record<OfficialStatus, string> = {
+  AKTIF: "text-primary font-semibold",
+  PURNA: "text-txt-muted font-medium",
+  CUTI: "text-amber-700 font-semibold",
+  NONAKTIF: "text-red-700 font-semibold",
 };
 
 interface PageProps {
@@ -169,7 +153,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
           <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
             <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
               {/* Photo / initials */}
-              <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-light shadow-md">
+              <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-container-low shadow-sm">
                 {official.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -186,16 +170,13 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
 
               {/* Identity */}
               <div className="flex-1 text-center sm:text-left">
-                {/* Badges */}
-                <div className="mb-3 flex flex-wrap justify-center gap-2 sm:justify-start">
-                  <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${LEVEL_COLORS[official.level]}`}
-                  >
+                {/* Level & status metadata */}
+                <div className="mb-2 flex flex-wrap justify-center items-center gap-x-2 gap-y-1 text-xs uppercase tracking-wider sm:justify-start">
+                  <span className="font-bold text-primary">
                     {LEVEL_LABELS[official.level]}
                   </span>
-                  <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${STATUS_COLORS[official.status]}`}
-                  >
+                  <span className="text-border">·</span>
+                  <span className={STATUS_TEXT_COLORS[official.status]}>
                     {STATUS_LABELS[official.status]}
                   </span>
                 </div>
@@ -252,58 +233,46 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
             {/* Meta grid */}
             <dl className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 pt-6 border-t border-border text-sm">
               {official.termStart && (
-                <div className="flex items-start gap-2">
-                  <Calendar size={14} className="text-txt-muted shrink-0 mt-0.5" />
-                  <div>
-                    <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
-                      Mulai Jabatan
-                    </dt>
-                    <dd className="text-txt-primary">
-                      {fmt.format(new Date(official.termStart))}
-                    </dd>
-                  </div>
+                <div>
+                  <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
+                    Mulai Jabatan
+                  </dt>
+                  <dd className="text-txt-primary">
+                    {fmt.format(new Date(official.termStart))}
+                  </dd>
                 </div>
               )}
               {official.termEnd && (
-                <div className="flex items-start gap-2">
-                  <Calendar size={14} className="text-txt-muted shrink-0 mt-0.5" />
-                  <div>
-                    <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
-                      Akhir Jabatan
-                    </dt>
-                    <dd className="text-txt-primary">
-                      {fmt.format(new Date(official.termEnd))}
-                    </dd>
-                  </div>
+                <div>
+                  <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
+                    Akhir Jabatan
+                  </dt>
+                  <dd className="text-txt-primary">
+                    {fmt.format(new Date(official.termEnd))}
+                  </dd>
                 </div>
               )}
               {official.party && (
-                <div className="flex items-start gap-2">
-                  <Flag size={14} className="text-txt-muted shrink-0 mt-0.5" />
-                  <div>
-                    <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
-                      Partai
-                    </dt>
-                    <dd className="text-txt-primary">{official.party}</dd>
-                  </div>
+                <div>
+                  <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
+                    Partai
+                  </dt>
+                  <dd className="text-txt-primary">{official.party}</dd>
                 </div>
               )}
               {official.birthplace && (
-                <div className="flex items-start gap-2">
-                  <Building2 size={14} className="text-txt-muted shrink-0 mt-0.5" />
-                  <div>
-                    <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
-                      Tempat Lahir
-                    </dt>
-                    <dd className="text-txt-primary">
-                      {official.birthplace}
-                      {official.birthdate && (
-                        <span className="text-txt-muted">
-                          , {fmt.format(new Date(official.birthdate))}
-                        </span>
-                      )}
-                    </dd>
-                  </div>
+                <div>
+                  <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
+                    Tempat Lahir
+                  </dt>
+                  <dd className="text-txt-primary">
+                    {official.birthplace}
+                    {official.birthdate && (
+                      <span className="text-txt-muted">
+                        , {fmt.format(new Date(official.birthdate))}
+                      </span>
+                    )}
+                  </dd>
                 </div>
               )}
             </dl>
@@ -312,8 +281,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
           {/* Bio */}
           {official.bio && (
             <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
-              <h2 className="flex items-center gap-2 text-title-md font-semibold text-txt-primary mb-4">
-                <Users size={18} className="text-primary" />
+              <h2 className="text-title-md font-semibold text-txt-primary mb-4 border-l-[3px] border-primary pl-3">
                 Biografi
               </h2>
               <div className="text-body-md text-txt-secondary leading-relaxed whitespace-pre-wrap">
@@ -325,8 +293,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
           {/* Education */}
           {official.education && (
             <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
-              <h2 className="flex items-center gap-2 text-title-md font-semibold text-txt-primary mb-4">
-                <GraduationCap size={18} className="text-primary" />
+              <h2 className="text-title-md font-semibold text-txt-primary mb-4 border-l-[3px] border-primary pl-3">
                 Pendidikan
               </h2>
               <div className="text-body-md text-txt-secondary leading-relaxed whitespace-pre-wrap">
@@ -338,8 +305,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
           {/* Career */}
           {official.career && (
             <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
-              <h2 className="flex items-center gap-2 text-title-md font-semibold text-txt-primary mb-4">
-                <Briefcase size={18} className="text-primary" />
+              <h2 className="text-title-md font-semibold text-txt-primary mb-4 border-l-[3px] border-primary pl-3">
                 Riwayat Karier
               </h2>
               <div className="text-body-md text-txt-secondary leading-relaxed whitespace-pre-wrap">

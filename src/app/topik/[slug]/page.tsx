@@ -6,7 +6,6 @@ import Image from "next/image";
 import { permanentRedirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ArticleCard from "@/components/artikel/ArticleCard";
-import { Layers } from "lucide-react";
 
 // Topic model added via schema migration — cast needed until Prisma client regenerates.
 // biome-ignore lint: prisma cast
@@ -203,8 +202,7 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
             />
           )}
           <div className="relative z-10 px-8 py-12">
-            <div className="mb-3 flex items-center gap-2">
-              <Layers size={22} className="text-on-primary/80" />
+            <div className="mb-3">
               <span className="text-sm font-medium uppercase tracking-widest text-on-primary/70">
                 Topic Cluster
               </span>
@@ -270,7 +268,6 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
           </div>
         ) : (
           <div className="rounded-lg border border-border bg-surface p-12 text-center">
-            <Layers size={40} className="mx-auto mb-3 text-txt-muted" />
             <p className="text-txt-secondary">
               Belum ada artikel yang dipublikasikan untuk topik ini.
             </p>

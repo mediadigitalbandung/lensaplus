@@ -120,17 +120,17 @@ function fmtUsd(n: number): string {
 function DirectionBadge({ dir, pct }: { dir: "up" | "down" | "flat"; pct: number }) {
   const sign = pct >= 0 ? "+" : "";
   if (dir === "up") return (
-    <span className="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-label-md font-mono font-bold bg-emerald-50 text-emerald-700">
+    <span className="inline-flex items-center gap-0.5 text-label-md font-mono font-bold text-emerald-700">
       <ArrowUpRight size={14} strokeWidth={2.5} />{sign}{pct.toFixed(2)}%
     </span>
   );
   if (dir === "down") return (
-    <span className="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-label-md font-mono font-bold bg-red-50 text-red-700">
+    <span className="inline-flex items-center gap-0.5 text-label-md font-mono font-bold text-red-700">
       <ArrowDownRight size={14} strokeWidth={2.5} />{pct.toFixed(2)}%
     </span>
   );
   return (
-    <span className="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-label-md font-mono font-bold bg-gray-100 text-gray-600">
+    <span className="inline-flex items-center gap-0.5 text-label-md font-mono font-bold text-txt-muted">
       <Minus size={14} strokeWidth={2.5} />{sign}{pct.toFixed(2)}%
     </span>
   );

@@ -12,7 +12,6 @@ import {
   X,
   Users,
   Upload,
-  UserPlus,
 } from "lucide-react";
 
 interface RedaksiMember {
@@ -434,7 +433,7 @@ export default function RedaksiPanelPage() {
               </div>
               <span className="text-xs text-txt-muted hidden sm:block">#{m.order}</span>
               {!m.isActive && (
-                <span className="rounded-full bg-red-50 text-red-600 px-2.5 py-0.5 text-xs font-medium">Nonaktif</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-red-600">Nonaktif</span>
               )}
               <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => openEdit(m)} className="btn-ghost rounded-lg p-2" title="Edit"><Edit size={16} /></button>

@@ -306,7 +306,7 @@ export default function TagsPage() {
                 <button
                   key={s}
                   onClick={() => handleAddSuggestion(s)}
-                  className="group inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary-light px-3 py-1 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
+                  className="group inline-flex items-center gap-1 rounded-md border border-border bg-surface px-3 py-1 text-xs font-semibold text-primary hover:border-primary transition-colors"
                   title={`Klik untuk menambah "${s}" sebagai tag`}
                 >
                   <Plus size={10} className="opacity-70 group-hover:opacity-100" />
@@ -380,9 +380,8 @@ export default function TagsPage() {
                   return (
                     <tr key={t.id} className="hover:bg-surface-secondary/50">
                       <td className="px-5 py-3">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-semibold text-primary">
-                          <Hash size={10} />
-                          {t.name}
+                        <span className="text-xs font-semibold text-primary">
+                          #{t.name}
                         </span>
                       </td>
                       <td className="px-5 py-3 text-xs text-txt-muted font-mono">

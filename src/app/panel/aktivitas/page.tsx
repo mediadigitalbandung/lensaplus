@@ -48,14 +48,14 @@ function formatDateTime(dateStr: string): string {
 }
 
 const actionLabels: Record<string, { label: string; color: string }> = {
-  CREATE: { label: "Buat", color: "bg-primary/10 text-primary" },
-  UPDATE: { label: "Ubah", color: "bg-blue-50 text-blue-600" },
-  DELETE: { label: "Hapus", color: "bg-red-50 text-red-600" },
-  LOGIN: { label: "Masuk", color: "bg-surface-tertiary text-txt-secondary" },
-  LOGOUT: { label: "Keluar", color: "bg-surface-tertiary text-txt-secondary" },
-  PUBLISH: { label: "Terbit", color: "bg-primary/10 text-primary" },
-  APPROVE: { label: "Setujui", color: "bg-primary/10 text-primary" },
-  REJECT: { label: "Tolak", color: "bg-red-50 text-red-600" },
+  CREATE: { label: "Buat", color: "text-primary font-semibold" },
+  UPDATE: { label: "Ubah", color: "text-blue-700 font-semibold" },
+  DELETE: { label: "Hapus", color: "text-red-700 font-semibold" },
+  LOGIN: { label: "Masuk", color: "text-txt-secondary font-medium" },
+  LOGOUT: { label: "Keluar", color: "text-txt-secondary font-medium" },
+  PUBLISH: { label: "Terbit", color: "text-primary font-semibold" },
+  APPROVE: { label: "Setujui", color: "text-primary font-semibold" },
+  REJECT: { label: "Tolak", color: "text-red-700 font-semibold" },
 };
 
 const entityLabels: Record<string, string> = {

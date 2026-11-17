@@ -217,16 +217,16 @@ export default function MembershipCardSection() {
 
       {/* Completeness warning */}
       {!complete && (
-        <div className="mb-4 flex items-start gap-3 rounded-lg border border-yellow-300 bg-yellow-50/70 p-4">
-          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-yellow-600" />
-          <div className="text-sm text-yellow-800">
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface p-4">
+          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-600" />
+          <div className="text-sm text-txt-primary">
             <p className="font-semibold">Lengkapi data berikut agar kartu bisa diterbitkan:</p>
-            <ul className="mt-1 list-inside list-disc">
+            <ul className="mt-1 list-inside list-disc text-txt-secondary">
               {missing.map((m) => (
                 <li key={m.key}>{m.label}</li>
               ))}
             </ul>
-            <p className="mt-1 text-xs text-yellow-700">
+            <p className="mt-1 text-xs text-txt-muted">
               Setelah lengkap, kartu Anda akan diverifikasi & diterbitkan oleh admin.
             </p>
           </div>

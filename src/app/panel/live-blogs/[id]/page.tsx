@@ -557,7 +557,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => togglePin(entry)}
-                    className={`rounded-lg p-1 text-xs transition-colors ${entry.isPinned ? "text-primary bg-primary-light" : "text-txt-muted hover:text-primary"}`}
+                    className={`rounded-lg p-1 text-xs transition-colors ${entry.isPinned ? "border border-primary text-primary" : "text-txt-muted hover:text-primary"}`}
                     title={entry.isPinned ? "Lepas sematan" : "Sematkan"}
                   >
                     <Pin size={13} />

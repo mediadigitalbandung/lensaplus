@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
-import { ChevronRight, CalendarDays, Newspaper } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
@@ -95,8 +95,7 @@ export default async function RangkumanHarianIndexPage() {
         <div className="mb-8 max-w-2xl">
           <div className="flex items-center gap-3">
             <span className="block h-7 w-[3px] rounded-full bg-secondary" />
-            <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
-              <CalendarDays size={22} className="text-primary" />
+            <h1 className="text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
               Rangkuman Harian
             </h1>
           </div>
@@ -123,13 +122,12 @@ export default async function RangkumanHarianIndexPage() {
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-primary/5">
-                      <CalendarDays size={36} className="text-primary/30" />
+                    <div className="flex h-full w-full items-center justify-center bg-surface-container-low">
+                      <span className="font-serif text-sm font-bold uppercase tracking-widest text-txt-muted/50">
+                        {day.date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
+                      </span>
                     </div>
                   )}
-                  <div className="absolute left-3 top-3 rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-white shadow">
-                    {day.date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
-                  </div>
                 </div>
                 <div className="flex flex-1 flex-col p-5">
                   <p className="text-label-sm uppercase tracking-wider text-primary font-semibold">
@@ -138,8 +136,7 @@ export default async function RangkumanHarianIndexPage() {
                   <p className="mt-2 line-clamp-2 font-serif text-title-md leading-snug text-on-surface group-hover:text-primary transition-colors">
                     {day.firstTitle}
                   </p>
-                  <div className="mt-auto pt-4 flex items-center gap-1.5 text-xs uppercase tracking-wider text-on-surface-variant">
-                    <Newspaper size={12} />
+                  <div className="mt-auto pt-4 text-xs uppercase tracking-wider text-on-surface-variant">
                     {day.count.toLocaleString("id-ID")} artikel
                   </div>
                 </div>
@@ -148,9 +145,8 @@ export default async function RangkumanHarianIndexPage() {
           </div>
         ) : (
           <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
-            <CalendarDays size={36} className="mx-auto text-border" />
-            <p className="mt-4 text-on-surface-variant">Belum ada arsip rangkuman harian.</p>
-            <p className="text-sm text-txt-muted">Arsip akan terisi otomatis seiring artikel diterbitkan.</p>
+            <p className="text-on-surface-variant">Belum ada arsip rangkuman harian.</p>
+            <p className="mt-1 text-sm text-txt-muted">Arsip akan terisi otomatis seiring artikel diterbitkan.</p>
           </div>
         )}
       </div>

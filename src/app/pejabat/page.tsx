@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { OfficialLevel, OfficialStatus } from "@prisma/client";
 
 export const revalidate = 600;
@@ -28,16 +28,6 @@ const LEVEL_LABELS: Record<OfficialLevel, string> = {
   OTHER: "Lainnya",
 };
 
-const LEVEL_COLORS: Record<OfficialLevel, string> = {
-  NASIONAL: "bg-blue-100 text-blue-800",
-  PROVINSI: "bg-violet-100 text-violet-800",
-  KOTA_KABUPATEN: "bg-primary-light text-primary",
-  KECAMATAN: "bg-teal-100 text-teal-800",
-  YUDIKATIF: "bg-red-100 text-red-800",
-  LEMBAGA: "bg-amber-100 text-amber-800",
-  OTHER: "bg-surface-tertiary text-txt-secondary",
-};
-
 const STATUS_LABELS: Record<OfficialStatus, string> = {
   AKTIF: "Aktif",
   PURNA: "Purna",
@@ -45,11 +35,11 @@ const STATUS_LABELS: Record<OfficialStatus, string> = {
   NONAKTIF: "Nonaktif",
 };
 
-const STATUS_COLORS: Record<OfficialStatus, string> = {
-  AKTIF: "bg-primary-light text-primary border border-primary/20",
-  PURNA: "bg-surface-secondary text-txt-muted border border-border",
-  CUTI: "bg-yellow-50 text-yellow-700 border border-yellow-200",
-  NONAKTIF: "bg-red-50 text-red-700 border border-red-200",
+const STATUS_TEXT_COLORS: Record<OfficialStatus, string> = {
+  AKTIF: "text-primary font-semibold",
+  PURNA: "text-txt-muted font-medium",
+  CUTI: "text-amber-700 font-semibold",
+  NONAKTIF: "text-red-700 font-semibold",
 };
 
 const ALL_LEVELS: OfficialLevel[] = [
@@ -164,13 +154,10 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
 
       <div className="container-main py-8 sm:py-12">
         {/* Page header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Users size={28} className="text-primary shrink-0" />
-            <h1 className="font-serif text-headline-md text-txt-primary">
-              Pejabat Publik
-            </h1>
-          </div>
+        <div className="mb-8 border-l-4 border-primary pl-3">
+          <h1 className="font-serif text-headline-md text-txt-primary mb-1">
+            Pejabat Publik
+          </h1>
           <p className="text-body-md text-txt-secondary max-w-2xl">
             Direktori pejabat publik daerah Bandung dan Jawa Barat — Walikota,
             Bupati, anggota DPRD, Kapolda, Kajati, Gubernur, dan pejabat
@@ -211,14 +198,14 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
             )}
           </form>
 
-          {/* Level filter pills */}
+          {/* Level filter tabs */}
           <div className="flex flex-wrap gap-2">
             <Link
               href={buildHref({ level: undefined, page: "1" })}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
                 !levelParam
-                  ? "bg-primary text-white"
-                  : "bg-surface-tertiary text-txt-secondary hover:bg-border"
+                  ? "border-primary text-primary font-bold bg-surface"
+                  : "border-border bg-surface text-txt-secondary hover:border-primary/40 hover:text-primary"
               }`}
             >
               Semua
@@ -227,10 +214,10 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
               <Link
                 key={l}
                 href={buildHref({ level: l, page: "1" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
                   levelParam === l
-                    ? "bg-primary text-white"
-                    : "bg-surface-tertiary text-txt-secondary hover:bg-border"
+                    ? "border-primary text-primary font-bold bg-surface"
+                    : "border-border bg-surface text-txt-secondary hover:border-primary/40 hover:text-primary"
                 }`}
               >
                 {LEVEL_LABELS[l]}
@@ -248,8 +235,7 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
 
         {/* Grid */}
         {officials.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface py-20 text-center">
-            <Users size={40} className="mx-auto text-border mb-3" />
+          <div className="rounded-xl border border-border bg-surface py-20 text-center">
             <p className="text-sm text-txt-secondary">
               Belum ada pejabat yang sesuai.
             </p>
@@ -263,7 +249,7 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
                 className="card group flex flex-col rounded-lg border border-border bg-surface p-4 transition-all hover:shadow-card-hover hover:-translate-y-0.5"
               >
                 {/* Photo or initials */}
-                <div className="mx-auto mb-3 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-light">
+                <div className="mx-auto mb-3 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-container-low">
                   {official.photoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -293,16 +279,13 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
                   {official.institution}
                 </p>
 
-                {/* Badges */}
-                <div className="mt-3 flex flex-wrap justify-center gap-1">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${LEVEL_COLORS[official.level]}`}
-                  >
+                {/* Level & status metadata */}
+                <div className="mt-3 flex flex-wrap justify-center items-center gap-x-2 gap-y-0.5 text-[11px]">
+                  <span className="font-bold uppercase tracking-wider text-primary">
                     {LEVEL_LABELS[official.level]}
                   </span>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[official.status]}`}
-                  >
+                  <span className="text-border">·</span>
+                  <span className={STATUS_TEXT_COLORS[official.status]}>
                     {STATUS_LABELS[official.status]}
                   </span>
                 </div>

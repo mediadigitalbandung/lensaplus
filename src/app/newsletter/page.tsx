@@ -41,10 +41,10 @@ export default async function NewsletterPage({ searchParams: searchParamsPromise
     <div className="bg-surface min-h-screen">
       <div className="container-main py-12 sm:py-16">
         <div className="max-w-2xl mx-auto">
-          <span className="inline-block rounded-full bg-primary-light px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
             Newsletter
-          </span>
-          <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold text-txt-primary tracking-tight font-serif leading-tight">
+          </p>
+          <h1 className="mt-3 text-3xl sm:text-4xl font-extrabold text-txt-primary tracking-tight font-serif leading-tight">
             Kabar hukum Bandung, langsung ke kotak masuk Anda.
           </h1>
           <p className="mt-4 text-lg text-txt-secondary leading-relaxed">
@@ -54,12 +54,12 @@ export default async function NewsletterPage({ searchParams: searchParamsPromise
 
           {banner && (
             <div
-              className={`mt-6 rounded-lg border px-4 py-3 text-sm ${
+              className={`mt-6 rounded-lg border border-border border-l-4 bg-surface px-4 py-3 text-sm ${
                 banner.tone === "success"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  ? "border-l-emerald-600 text-emerald-800"
                   : banner.tone === "error"
-                  ? "border-red-200 bg-red-50 text-red-800"
-                  : "border-blue-200 bg-blue-50 text-blue-800"
+                  ? "border-l-red-600 text-red-800"
+                  : "border-l-primary text-primary"
               }`}
             >
               <p className="font-semibold">{banner.title}</p>

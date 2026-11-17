@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { Scale, ExternalLink, FileText, ChevronLeft, Calendar, Building2, Tag } from "lucide-react";
+import { ExternalLink, FileText, ChevronLeft } from "lucide-react";
 import type { RegulationType, RegulationStatus } from "@prisma/client";
 
 export const revalidate = 3600;
@@ -25,24 +25,6 @@ const TYPE_LABELS: Record<RegulationType, string> = {
   OTHER: "Peraturan Lainnya",
 };
 
-const TYPE_COLORS: Record<RegulationType, string> = {
-  UU: "bg-blue-100 text-blue-800",
-  PERPPU: "bg-indigo-100 text-indigo-800",
-  PP: "bg-sky-100 text-sky-800",
-  PERPRES: "bg-violet-100 text-violet-800",
-  KEPPRES: "bg-purple-100 text-purple-800",
-  INPRES: "bg-fuchsia-100 text-fuchsia-800",
-  PERMEN: "bg-teal-100 text-teal-800",
-  KEPMEN: "bg-cyan-100 text-cyan-800",
-  PERDA_PROV: "bg-emerald-100 text-emerald-800",
-  PERDA_KAB: "bg-green-100 text-green-800",
-  PERGUB: "bg-lime-100 text-lime-800",
-  PERWAL: "bg-yellow-100 text-yellow-800",
-  PUTUSAN_MK: "bg-red-100 text-red-800",
-  PUTUSAN_MA: "bg-orange-100 text-orange-800",
-  OTHER: "bg-surface-tertiary text-txt-secondary",
-};
-
 const STATUS_LABELS: Record<RegulationStatus, string> = {
   DRAFT_RUU: "Masih RUU",
   ENACTED: "Berlaku",
@@ -50,11 +32,11 @@ const STATUS_LABELS: Record<RegulationStatus, string> = {
   REVOKED: "Dicabut / Dibatalkan",
 };
 
-const STATUS_COLORS: Record<RegulationStatus, string> = {
-  DRAFT_RUU: "bg-yellow-50 text-yellow-700 border border-yellow-200",
-  ENACTED: "bg-primary-light text-primary border border-primary/20",
-  AMENDED: "bg-blue-50 text-blue-700 border border-blue-200",
-  REVOKED: "bg-red-50 text-red-700 border border-red-200",
+const STATUS_TEXT_COLORS: Record<RegulationStatus, string> = {
+  DRAFT_RUU: "text-amber-700 font-semibold",
+  ENACTED: "text-primary font-semibold",
+  AMENDED: "text-blue-700 font-semibold",
+  REVOKED: "text-red-700 font-semibold",
 };
 
 interface PageProps {
@@ -159,24 +141,22 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
 
           {/* Header card */}
           <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card mb-6">
-            {/* Type + status badges */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              <span
-                className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${TYPE_COLORS[regulation.type]}`}
-              >
-                <Scale size={13} className="mr-1.5" />
+            {/* Type + status metadata */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4 text-xs uppercase tracking-wider">
+              <span className="font-bold text-primary">
                 {TYPE_LABELS[regulation.type]}
               </span>
-              <span
-                className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${STATUS_COLORS[regulation.status]}`}
-              >
+              <span className="text-border">·</span>
+              <span className={STATUS_TEXT_COLORS[regulation.status]}>
                 {STATUS_LABELS[regulation.status]}
               </span>
               {regulation.topic && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-surface-secondary px-3 py-1 text-sm text-txt-muted">
-                  <Tag size={12} />
-                  {regulation.topic}
-                </span>
+                <>
+                  <span className="text-border">·</span>
+                  <span className="font-medium text-txt-muted normal-case tracking-normal">
+                    {regulation.topic}
+                  </span>
+                </>
               )}
             </div>
 
@@ -198,60 +178,48 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
             {/* Meta grid */}
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 mt-5 pt-5 border-t border-border text-sm">
               {regulation.enactedAt && (
-                <div className="flex items-start gap-2">
-                  <Calendar size={14} className="text-txt-muted shrink-0 mt-0.5" />
-                  <div>
-                    <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
-                      Tanggal Diundangkan
-                    </dt>
-                    <dd className="text-txt-primary">
-                      {new Intl.DateTimeFormat("id-ID", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      }).format(new Date(regulation.enactedAt))}
-                    </dd>
-                  </div>
+                <div>
+                  <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
+                    Tanggal Diundangkan
+                  </dt>
+                  <dd className="text-txt-primary">
+                    {new Intl.DateTimeFormat("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    }).format(new Date(regulation.enactedAt))}
+                  </dd>
                 </div>
               )}
               {regulation.effectiveAt && (
-                <div className="flex items-start gap-2">
-                  <Calendar size={14} className="text-txt-muted shrink-0 mt-0.5" />
-                  <div>
-                    <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
-                      Mulai Berlaku
-                    </dt>
-                    <dd className="text-txt-primary">
-                      {new Intl.DateTimeFormat("id-ID", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      }).format(new Date(regulation.effectiveAt))}
-                    </dd>
-                  </div>
+                <div>
+                  <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
+                    Mulai Berlaku
+                  </dt>
+                  <dd className="text-txt-primary">
+                    {new Intl.DateTimeFormat("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    }).format(new Date(regulation.effectiveAt))}
+                  </dd>
                 </div>
               )}
               {regulation.issuedBy && (
-                <div className="flex items-start gap-2">
-                  <Building2 size={14} className="text-txt-muted shrink-0 mt-0.5" />
-                  <div>
-                    <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
-                      Diterbitkan Oleh
-                    </dt>
-                    <dd className="text-txt-primary">{regulation.issuedBy}</dd>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-start gap-2">
-                <FileText size={14} className="text-txt-muted shrink-0 mt-0.5" />
                 <div>
                   <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
-                    Dilihat
+                    Diterbitkan Oleh
                   </dt>
-                  <dd className="text-txt-primary">
-                    {regulation.viewCount.toLocaleString("id-ID")} kali
-                  </dd>
+                  <dd className="text-txt-primary">{regulation.issuedBy}</dd>
                 </div>
+              )}
+              <div>
+                <dt className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
+                  Dilihat
+                </dt>
+                <dd className="text-txt-primary">
+                  {regulation.viewCount.toLocaleString("id-ID")} kali
+                </dd>
               </div>
             </dl>
 
@@ -294,7 +262,7 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
 
           {/* Linked article */}
           {linkedArticle && (
-            <div className="rounded-xl border border-primary/20 bg-primary-light p-5 sm:p-6">
+            <div className="rounded-xl border border-border border-l-4 border-l-primary bg-surface p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-2">
                 Liputan Lensaplus
               </p>

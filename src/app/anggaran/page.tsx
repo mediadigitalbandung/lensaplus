@@ -31,7 +31,7 @@ function RegionSection({ data }: { data: (typeof APBD_DATA)[0] }) {
           </h2>
           <p className="mt-1 text-label-sm text-txt-muted">APBD {data.year} — Sumber: {data.source}</p>
         </div>
-        <div className="flex-shrink-0 rounded-md bg-primary-light px-5 py-2.5">
+        <div className="flex-shrink-0 rounded-md border border-border bg-surface-container-lowest px-5 py-2.5">
           <span className="text-label-sm text-txt-muted">Total APBD</span>
           <p className="font-serif text-title-lg font-bold text-primary">
             {formatAmount(data.totalAmount)}

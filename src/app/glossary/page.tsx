@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { Scale, Gavel, Building2, Globe2, FileText, BookOpen, Search } from "lucide-react";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 export const revalidate = 300; // 5 min ISR
@@ -24,16 +23,6 @@ const RANAH_LABEL: Record<string, string> = {
   HI: "Hukum Internasional",
   PROSEDUR: "Hukum Acara",
   UMUM: "Umum",
-};
-
-import type { LucideIcon } from "lucide-react";
-const RANAH_ICON: Record<string, LucideIcon> = {
-  PIDANA: Gavel,
-  PERDATA: FileText,
-  HTN: Building2,
-  HI: Globe2,
-  PROSEDUR: Scale,
-  UMUM: BookOpen,
 };
 
 export default async function GlossaryPage() {
@@ -96,14 +85,9 @@ export default async function GlossaryPage() {
         <div className="container-main">
           {/* Header */}
           <div className="mb-10">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-                <BookOpen size={20} strokeWidth={2.2} />
-              </div>
-              <span className="text-label-md uppercase tracking-widest text-primary font-bold">
-                Glossary
-              </span>
-            </div>
+            <span className="text-label-md uppercase tracking-widest text-primary font-bold block mb-2">
+              Glossary
+            </span>
             <h1 className="font-serif text-display-sm text-on-surface max-w-3xl">
               Istilah Hukum di Pemberitaan Lensaplus
             </h1>
@@ -129,13 +113,9 @@ export default async function GlossaryPage() {
           {ranahOrder.map((ranah) => {
             const list = grouped[ranah];
             if (!list || list.length === 0) return null;
-            const Icon = RANAH_ICON[ranah] || BookOpen;
             return (
               <section key={ranah} className="mb-12">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Icon size={16} strokeWidth={2.2} />
-                  </div>
+                <div className="mb-5 flex items-center gap-3 border-l-4 border-primary pl-3">
                   <h2 className="font-serif text-headline-sm text-on-surface">
                     {RANAH_LABEL[ranah]}
                   </h2>
@@ -164,13 +144,13 @@ export default async function GlossaryPage() {
                         </div>
                       </div>
                       {item.tags && item.tags.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
+                        <div className="mt-2 flex flex-wrap gap-2">
                           {item.tags.slice(0, 3).map((tag: string) => (
                             <span
                               key={tag}
-                              className="rounded-lg bg-primary/5 px-1.5 py-0.5 text-label-sm text-primary/70"
+                              className="text-label-sm text-on-surface-variant"
                             >
-                              {tag}
+                              #{tag}
                             </span>
                           ))}
                         </div>
@@ -184,7 +164,6 @@ export default async function GlossaryPage() {
 
           {items.length === 0 && (
             <div className="rounded-md border border-dashed border-outline-variant/60 bg-surface-container-lowest p-10 text-center">
-              <Search className="mx-auto mb-3 text-on-surface-variant/40" size={32} />
               <p className="text-body-md text-on-surface-variant">
                 Glossary belum tersedia. Tim editorial sedang menyusun daftar istilah hukum.
               </p>
@@ -192,7 +171,7 @@ export default async function GlossaryPage() {
           )}
 
           {/* Footer note */}
-          <div className="mt-16 rounded-md bg-primary/5 p-5 text-body-sm text-on-surface-variant">
+          <div className="mt-16 border-l-4 border-primary pl-5 py-2 text-body-sm text-on-surface-variant">
             <p>
               <strong className="text-on-surface">Catatan</strong> — definisi di sini adalah
               ringkasan untuk pembaca awam. Untuk konsultasi hukum profesional, silakan hubungi

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Eye, FileText, Users, MessageCircle, TrendingUp, Calendar, BarChart3, RefreshCw, ArrowUp, Trophy, Clock } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 interface AnalyticsData {
   overview: {
@@ -21,17 +21,14 @@ interface AnalyticsData {
   dailyChart: { date: string; count: number }[];
 }
 
-function StatCard({ label, value, icon: Icon, color, sub }: { label: string; value: string | number; icon: React.ElementType; color: string; sub?: string }) {
+function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
-      <div className="flex items-center justify-between mb-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>
-          <Icon size={18} />
-        </div>
-        {sub && <span className="text-xs font-medium text-green-500 flex items-center gap-0.5"><ArrowUp size={10} /> {sub}</span>}
+    <div className="rounded-xl border border-border border-t-2 border-t-primary bg-surface p-5 shadow-card">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium text-txt-muted">{label}</p>
+        {sub && <span className="text-xs font-semibold text-emerald-700">{sub}</span>}
       </div>
-      <p className="text-2xl font-bold text-txt-primary">{typeof value === "number" ? value.toLocaleString("id-ID") : value}</p>
-      <p className="text-xs text-txt-muted mt-1">{label}</p>
+      <p className="text-2xl font-bold text-txt-primary tabular-nums">{typeof value === "number" ? value.toLocaleString("id-ID") : value}</p>
     </div>
   );
 }
@@ -117,10 +114,10 @@ export default function AnalyticsDashboardPage() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total Tayangan" value={overview.totalViews} icon={Eye} color="bg-blue-50 text-blue-600" />
-        <StatCard label="Artikel Dipublikasi" value={overview.publishedArticles} icon={FileText} color="bg-green-50 text-green-600" />
-        <StatCard label="Total Komentar" value={overview.totalComments} icon={MessageCircle} color="bg-purple-50 text-purple-600" />
-        <StatCard label="Tim Aktif" value={overview.totalUsers} icon={Users} color="bg-orange-50 text-orange-600" />
+        <StatCard label="Total Tayangan" value={overview.totalViews} />
+        <StatCard label="Artikel Dipublikasi" value={overview.publishedArticles} />
+        <StatCard label="Total Komentar" value={overview.totalComments} />
+        <StatCard label="Tim Aktif" value={overview.totalUsers} />
       </div>
 
       {/* Article Production Cards */}
@@ -142,16 +139,16 @@ export default function AnalyticsDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Daily Chart */}
         <div className="lg:col-span-2 rounded-xl border border-border bg-surface p-5 shadow-card">
-          <h3 className="text-sm font-bold text-txt-primary mb-4 flex items-center gap-1.5">
-            <Calendar size={14} className="text-primary" /> Artikel Dipublikasi (14 Hari Terakhir)
+          <h3 className="text-sm font-bold text-txt-primary mb-4 border-l-[3px] border-primary pl-2.5">
+            Artikel Dipublikasi (14 Hari Terakhir)
           </h3>
           <BarChart data={dailyChart} />
         </div>
 
         {/* Category Stats */}
         <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
-          <h3 className="text-sm font-bold text-txt-primary mb-4 flex items-center gap-1.5">
-            <BarChart3 size={14} className="text-primary" /> Performa Kategori
+          <h3 className="text-sm font-bold text-txt-primary mb-4 border-l-[3px] border-primary pl-2.5">
+            Performa Kategori
           </h3>
           <div className="space-y-3 max-h-[280px] overflow-y-auto">
             {categoryStats.map((c, i) => {
@@ -176,14 +173,14 @@ export default function AnalyticsDashboardPage() {
         {/* Top Articles */}
         <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
-            <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><Trophy size={14} className="text-yellow-500" /> Top 10 Artikel</h3>
+            <h3 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">Top 10 Artikel</h3>
           </div>
           <div className="divide-y divide-border">
             {topArticles.map((a, i) => (
               <div key={a.slug} className="flex items-center gap-3 px-5 py-3 hover:bg-surface-secondary">
-                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                  i < 3 ? "bg-yellow-50 text-yellow-600" : "bg-surface-tertiary text-txt-muted"
-                }`}>{i + 1}</span>
+                <span className={`w-6 shrink-0 font-mono text-xs font-bold tabular-nums ${
+                  i < 3 ? "text-primary" : "text-txt-muted"
+                }`}>{String(i + 1).padStart(2, "0")}.</span>
                 <div className="flex-1 min-w-0">
                   <Link href={`/berita/${a.slug}`} className="text-sm font-medium text-txt-primary hover:text-primary truncate block">{a.title}</Link>
                   <span className="text-[10px] text-txt-muted">{a.category}</span>
@@ -200,7 +197,7 @@ export default function AnalyticsDashboardPage() {
         {/* Recent Activity */}
         <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
-            <h3 className="text-sm font-bold text-txt-primary flex items-center gap-1.5"><Clock size={14} className="text-primary" /> Artikel Terbaru</h3>
+            <h3 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">Artikel Terbaru</h3>
           </div>
           <div className="divide-y divide-border">
             {recentActivity.map((a) => (
@@ -211,7 +208,7 @@ export default function AnalyticsDashboardPage() {
                   <span>·</span>
                   <span>{a.category}</span>
                   <span>·</span>
-                  <span className="flex items-center gap-0.5"><Eye size={8} /> {a.views.toLocaleString("id-ID")}</span>
+                  <span>{a.views.toLocaleString("id-ID")} views</span>
                   <span>·</span>
                   <span>{timeAgo(a.publishedAt)}</span>
                 </div>

@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Activity,
   CheckCircle,
   AlertTriangle,
-  Clock,
   XCircle,
 } from "lucide-react";
 
@@ -101,23 +99,16 @@ export default function CronHealthWidget() {
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div
-            className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-              allHealthy ? "bg-emerald-50 text-emerald-600" : "bg-yellow-50 text-yellow-600"
-            }`}
-          >
-            <Activity size={14} />
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Kesehatan Cron
         </h2>
         <span
-          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+          className={`text-[10px] font-bold uppercase tracking-wider ${
             allHealthy
-              ? "bg-emerald-50 text-emerald-700"
+              ? "text-emerald-700"
               : totalErrored > 0
-              ? "bg-red-50 text-red-700"
-              : "bg-yellow-50 text-yellow-700"
+              ? "text-red-700"
+              : "text-amber-700"
           }`}
         >
           {allHealthy
@@ -151,7 +142,6 @@ export default function CronHealthWidget() {
                 <Icon size={14} className={`${color} shrink-0 mt-0.5`} />
               </div>
               <div className="flex items-center gap-1.5 text-[11px] text-txt-muted">
-                <Clock size={10} />
                 <span>{relativeTime(job.lastSuccessAt || job.lastRunAt)}</span>
                 {job.lastDurationMs !== null && (
                   <span className="text-txt-muted/60">

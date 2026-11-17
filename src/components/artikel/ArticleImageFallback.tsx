@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 const PLACEHOLDER_HTML = `
-  <span class="my-4 flex aspect-[16/9] w-full items-center justify-center rounded-lg bg-primary-light text-sm font-medium text-primary">
+  <span class="my-4 flex aspect-[16/9] w-full items-center justify-center rounded-lg border border-border bg-surface-container-low text-sm font-medium text-txt-secondary">
     Gambar tidak tersedia
   </span>
 `;

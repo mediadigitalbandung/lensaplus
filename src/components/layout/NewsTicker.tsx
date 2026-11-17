@@ -102,26 +102,20 @@ function StockCard({ s }: { s: StockItem }) {
   const isDown = s.direction === "down";
 
   return (
-    <div className={`shrink-0 flex items-center gap-2 rounded-full px-3.5 py-1 sm:py-1.5 border shadow-sm transition-all hover:-translate-y-0.5 cursor-default text-[11px] sm:text-body-sm font-bold select-none ${
-      isUp
-        ? "bg-emerald-50/80 border-emerald-100 text-emerald-800"
-        : isDown
-        ? "bg-rose-50/80 border-rose-100 text-rose-800"
-        : "bg-stone-50/80 border-stone-150 text-stone-800"
-    }`}>
+    <div className="shrink-0 flex items-center gap-2 rounded-md px-3 py-1 sm:py-1.5 border border-stone-200 bg-white transition-colors hover:border-stone-300 cursor-default text-[11px] sm:text-body-sm font-bold select-none">
       {/* Symbol */}
       <span className="font-bold tracking-tight text-stone-900">{s.symbol}</span>
-      
+
       {/* Price */}
       <span className="font-mono text-stone-700">{fmtPrice(s.price, s.symbol)}</span>
 
-      {/* Change percentage */}
-      <div className={`flex items-center gap-0.5 font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
-        isUp ? "bg-emerald-500/10 text-emerald-700" : isDown ? "bg-rose-500/10 text-rose-700" : "bg-stone-500/10 text-stone-600"
+      {/* Change percentage — plain colored text + arrow, no highlight background */}
+      <span className={`inline-flex items-center gap-0.5 font-mono text-[10px] ${
+        isUp ? "text-emerald-700" : isDown ? "text-rose-700" : "text-stone-500"
       }`}>
-        {isUp ? <ArrowUpRight size={10} strokeWidth={3} /> : isDown ? <ArrowDownRight size={10} strokeWidth={3} /> : <Minus size={10} strokeWidth={3} />}
+        {isUp ? <ArrowUpRight size={10} strokeWidth={2.5} /> : isDown ? <ArrowDownRight size={10} strokeWidth={2.5} /> : <Minus size={10} strokeWidth={2.5} />}
         <span>{s.changePercent >= 0 ? "+" : ""}{s.changePercent.toFixed(2)}%</span>
-      </div>
+      </span>
     </div>
   );
 }
@@ -240,7 +234,7 @@ export default function NewsTicker() {
                     <Link key={`a-${i}`} href={item.href}
                       className="mx-2.5 sm:mx-5 inline-flex items-center gap-1.5 sm:gap-2 text-body-sm sm:text-body-md font-semibold text-white/90 hover:text-white whitespace-nowrap transition-colors">
                       {item.hot && (
-                        <span className="inline-flex items-center rounded-sm bg-secondary px-1 sm:px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider">HOT</span>
+                        <span className="text-[10px] font-extrabold text-secondary tracking-widest uppercase">HOT</span>
                       )}
                       {item.category && (
                         <span className="text-[10px] sm:text-label-sm font-bold text-purple-300 uppercase tracking-wider">{item.category}</span>
@@ -256,7 +250,7 @@ export default function NewsTicker() {
                     <Link key={`b-${i}`} href={item.href}
                       className="mx-2.5 sm:mx-5 inline-flex items-center gap-1.5 sm:gap-2 text-body-sm sm:text-body-md font-semibold text-white/90 hover:text-white whitespace-nowrap transition-colors">
                       {item.hot && (
-                        <span className="inline-flex items-center rounded-sm bg-secondary px-1 sm:px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider">HOT</span>
+                        <span className="text-[10px] font-extrabold text-secondary tracking-widest uppercase">HOT</span>
                       )}
                       {item.category && (
                         <span className="text-[10px] sm:text-label-sm font-bold text-purple-300 uppercase tracking-wider">{item.category}</span>

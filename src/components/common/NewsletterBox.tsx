@@ -47,12 +47,11 @@ export default function NewsletterBox() {
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
         {/* Left Column: Heading & Info */}
         <div className="lg:col-span-6 space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-amber-300 backdrop-blur-md">
-            <Mail size={14} className="text-amber-300" />
-            <span>Newsletter Eksklusif</span>
-          </div>
+          <p className="text-xs font-bold uppercase tracking-widest text-amber-300">
+            Newsletter Eksklusif
+          </p>
           <h2 className="font-serif text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight">
-            Berita Bandung Terkini Langsung ke Inbocks Anda
+            Berita Terkini Langsung ke Kotak Masuk Anda
           </h2>
           <p className="text-sm text-stone-200 leading-relaxed">
             Dapatkan rangkuman isu ekonomi, kebijakan publik, dan peristiwa terkini setiap pagi tanpa spam.
@@ -62,8 +61,8 @@ export default function NewsletterBox() {
         {/* Right Column: Interactive Form */}
         <div className="lg:col-span-6">
           {status === "success" ? (
-            <div className="flex items-start gap-3.5 rounded-xl bg-emerald-500/20 border border-emerald-400/40 p-4 text-emerald-100 backdrop-blur-md animate-fade-in">
-              <CheckCircle2 size={24} className="shrink-0 text-emerald-400 mt-0.5" />
+            <div className="flex items-start gap-3 border-l-4 border-emerald-400 pl-4 py-2 text-emerald-100 animate-fade-in">
+              <CheckCircle2 size={20} className="shrink-0 text-emerald-400 mt-0.5" />
               <div>
                 <h4 className="font-bold text-sm text-white">Pendaftaran Berhasil!</h4>
                 <p className="text-xs text-emerald-200 mt-0.5 leading-relaxed">{message}</p>

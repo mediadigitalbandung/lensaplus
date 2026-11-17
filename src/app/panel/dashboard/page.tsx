@@ -5,19 +5,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   FileText,
-  Eye,
   Clock,
-  CheckCircle,
   AlertTriangle,
   TrendingUp,
   Users,
   Megaphone,
-  XCircle,
   Send,
   BarChart3,
   Layers,
-  CalendarClock,
-  Calendar,
   ChevronLeft,
   ChevronRight,
   MessageSquare,
@@ -33,9 +28,7 @@ import {
   Newspaper,
   Music,
   Mail,
-  Activity,
   Radio,
-  Bell,
 } from "lucide-react";
 
 interface Article {
@@ -57,8 +50,6 @@ interface Article {
 interface StatsItem {
   label: string;
   value: string;
-  icon: React.ElementType;
-  color: string;
   href?: string;
   hint?: string;
   accent?: "primary" | "warn" | "danger" | "info" | "ok" | "muted";
@@ -70,12 +61,12 @@ import PowerWidgets from "@/components/dashboard/PowerWidgets";
 import CountUp from "@/components/panel/CountUp";
 
 const statusColors: Record<string, string> = {
-  PUBLISHED: "bg-primary-light text-primary",
-  IN_REVIEW: "bg-yellow-50 text-yellow-600",
-  DRAFT: "bg-surface-tertiary text-txt-secondary",
-  REJECTED: "bg-red-50 text-red-600",
-  APPROVED: "bg-blue-50 text-blue-600",
-  ARCHIVED: "bg-surface-tertiary text-txt-muted",
+  PUBLISHED: "text-primary",
+  IN_REVIEW: "text-amber-700",
+  DRAFT: "text-txt-secondary",
+  REJECTED: "text-red-700",
+  APPROVED: "text-blue-700",
+  ARCHIVED: "text-txt-muted",
 };
 
 const statusLabels: Record<string, string> = {
@@ -96,9 +87,8 @@ function LoadingSkeleton() {
             key={i}
             className="rounded-lg border border-border bg-surface p-4 shadow-card"
           >
-            <div className="h-8 w-8 rounded-lg bg-surface-tertiary" />
-            <div className="mt-2 h-7 w-16 rounded-lg bg-surface-tertiary" />
-            <div className="mt-1 h-3 w-20 rounded-lg bg-surface-secondary" />
+            <div className="h-7 w-16 rounded bg-surface-tertiary" />
+            <div className="mt-2 h-3 w-20 rounded bg-surface-secondary" />
           </div>
         ))}
       </div>
@@ -139,33 +129,26 @@ const accentBar: Record<NonNullable<StatsItem["accent"]>, string> = {
 };
 
 function SectionHeader({
-  icon: Icon,
   title,
   subtitle,
   action,
 }: {
-  icon: React.ElementType;
   title: string;
   subtitle?: string;
   action?: { label: string; href: string };
 }) {
   return (
     <div className="kw-reveal mb-4 group">
-      <div className="flex items-end justify-between gap-3 mb-2">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/20 transition-transform group-hover:scale-110 group-hover:rotate-3">
-            <Icon size={16} strokeWidth={2.5} />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-sm sm:text-base font-bold text-txt-primary tracking-tight truncate">
-              {title}
-            </h2>
-            {subtitle && (
-              <p className="text-[10px] sm:text-[11px] text-txt-muted truncate font-medium">
-                {subtitle}
-              </p>
-            )}
-          </div>
+      <div className="flex items-end justify-between gap-3 border-l-4 border-primary pl-3">
+        <div className="min-w-0">
+          <h2 className="text-sm sm:text-base font-bold text-txt-primary tracking-tight truncate">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-[10px] sm:text-[11px] text-txt-muted truncate font-medium">
+              {subtitle}
+            </p>
+          )}
         </div>
         {action && (
           <Link
@@ -176,64 +159,49 @@ function SectionHeader({
           </Link>
         )}
       </div>
-      {/* Gradient underline yang shimmer on section hover */}
-      <div className="kw-section-bar h-[2px] w-12 rounded-full opacity-80" />
     </div>
   );
 }
 
 function PremiumStatCard({ stat }: { stat: StatsItem }) {
-  const Icon = stat.icon;
   const isClickable = !!stat.href;
   const Wrapper: any = isClickable ? Link : "div";
   const wrapperProps = isClickable ? { href: stat.href! } : {};
   const accent = stat.accent ?? "info";
 
-  // Detect special "live" state pada Live Blog card supaya bisa pulse-glow
   const isLiveAlert = stat.label === "Live Blog" && accent === "danger" && stat.value !== "0";
 
   return (
     <Wrapper
       {...wrapperProps}
-      className={`kw-card-glow kw-fade-in-up group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-gradient-to-br from-surface to-surface-secondary/30 p-3 sm:p-4 shadow-card transition-all duration-300 ${
-        isClickable ? "hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 cursor-pointer" : ""
+      className={`kw-card-glow kw-fade-in-up group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-surface p-3.5 sm:p-4 shadow-card transition-all duration-300 ${
+        isClickable ? "hover:-translate-y-0.5 hover:shadow-ambient hover:border-primary/40 cursor-pointer" : ""
       } ${isLiveAlert ? "kw-pulse-live border-secondary/40" : ""}`}
       aria-label={isClickable ? `Buka ${stat.label}` : undefined}
     >
-      {/* Top accent bar — gradient yang lebih bold + shimmer on hover */}
+      {/* Top accent bar */}
       <div
-        className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${accentBar[accent]} opacity-70 group-hover:opacity-100 transition-opacity`}
+        className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${accentBar[accent]} opacity-80 group-hover:opacity-100 transition-opacity`}
       />
 
-      {/* Decorative blob — subtle background per accent supaya tiap card punya identitas warna */}
-      <div
-        className={`pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-gradient-to-br ${accentBar[accent]} opacity-[0.05] group-hover:opacity-[0.10] transition-opacity blur-2xl`}
-        aria-hidden="true"
-      />
-
-      <div className="relative flex items-start justify-between gap-2">
-        <div
-          className={`inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg ${stat.color} shadow-sm ring-1 ring-inset ring-black/5 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-md`}
-        >
-          <Icon size={18} />
-        </div>
+      <div className="relative flex items-start justify-between gap-2 pt-1">
+        <p className="text-[11px] sm:text-xs font-semibold text-txt-secondary truncate group-hover:text-txt-primary transition-colors">
+          {stat.label}
+        </p>
         {isClickable && (
           <ChevronRight
-            size={16}
-            className="text-txt-muted opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all duration-300 -translate-x-2 group-hover:translate-x-0"
+            size={14}
+            className="shrink-0 text-txt-muted opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all duration-300"
           />
         )}
       </div>
 
-      <div className="relative mt-3">
+      <div className="relative mt-2.5">
         <p className="kw-stat-number text-2xl sm:text-3xl xl:text-[32px] font-extrabold leading-none text-txt-primary tracking-tight">
           <CountUp value={stat.value} duration={800} />
         </p>
-        <p className="mt-2 text-[11px] sm:text-xs font-semibold text-txt-secondary truncate group-hover:text-txt-primary transition-colors">
-          {stat.label}
-        </p>
         {stat.hint && (
-          <p className="mt-0.5 text-[10px] sm:text-[11px] text-txt-muted truncate font-medium">
+          <p className="mt-1.5 text-[10px] sm:text-[11px] text-txt-muted truncate font-medium">
             {stat.hint}
           </p>
         )}
@@ -274,10 +242,7 @@ function RecentActivity({ articles }: { articles: Article[] }) {
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
-            <Clock size={14} className="text-blue-500" />
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Aktivitas Terbaru
         </h2>
       </div>
@@ -294,13 +259,7 @@ function RecentActivity({ articles }: { articles: Article[] }) {
                   {a.author?.name || "—"} &middot; {a.timeAgo}
                 </p>
               </div>
-              <span className={`rounded-lg px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${
-                a.action.color === "text-primary" ? "bg-primary-light text-primary" :
-                a.action.color === "text-yellow-600" ? "bg-yellow-50 text-yellow-600" :
-                a.action.color === "text-blue-600" ? "bg-blue-50 text-blue-600" :
-                a.action.color === "text-red-600" ? "bg-red-50 text-red-600" :
-                "bg-surface-tertiary text-txt-secondary"
-              }`}>{a.action.label}</span>
+              <span className={`text-xs font-semibold whitespace-nowrap ${a.action.color}`}>{a.action.label}</span>
             </Link>
           ))
         )}
@@ -339,10 +298,7 @@ function ViewsRanking({ articles }: { articles: Article[] }) {
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-6 py-5">
-        <h2 className="flex items-center gap-2.5 text-base font-bold text-txt-primary">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light">
-            <TrendingUp size={16} className="text-primary" />
-          </div>
+        <h2 className="text-base font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Statistik Tayangan
         </h2>
       </div>
@@ -378,10 +334,10 @@ function ViewsRanking({ articles }: { articles: Article[] }) {
                   className="block group"
                 >
                   <div className="flex items-center gap-3 mb-1">
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-bold ${
-                      i < 3 ? "bg-primary text-white" : "bg-surface-tertiary text-txt-secondary"
+                    <span className={`w-6 shrink-0 font-mono text-xs font-bold tabular-nums ${
+                      i < 3 ? "text-primary" : "text-txt-muted"
                     }`}>
-                      {i + 1}
+                      {String(i + 1).padStart(2, "0")}.
                     </span>
                     <span className="flex-1 text-sm font-medium text-txt-primary truncate group-hover:text-primary transition-colors">
                       {article.title}
@@ -453,10 +409,7 @@ function MyArticleStats({ articles }: { articles: Article[] }) {
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-6 py-5">
-        <h2 className="flex items-center gap-2.5 text-base font-bold text-txt-primary">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light">
-            <TrendingUp size={16} className="text-primary" />
-          </div>
+        <h2 className="text-base font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Statistik Artikel Saya
         </h2>
       </div>
@@ -481,9 +434,9 @@ function MyArticleStats({ articles }: { articles: Article[] }) {
         {statusBreakdown.length > 0 && (
           <div className="mb-6">
             <p className="text-sm font-semibold text-txt-secondary mb-3">Artikel per Status</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
               {statusBreakdown.map(([status, count]) => (
-                <span key={status} className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColors[status] || "bg-surface-tertiary text-txt-secondary"}`}>
+                <span key={status} className={`text-xs font-semibold ${statusColors[status] || "text-txt-secondary"}`}>
                   {statusLabels[status] || status}: {count}
                 </span>
               ))}
@@ -506,10 +459,10 @@ function MyArticleStats({ articles }: { articles: Article[] }) {
                   className="block group"
                 >
                   <div className="flex items-center gap-3 mb-1">
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-bold ${
-                      i < 3 ? "bg-primary text-white" : "bg-surface-tertiary text-txt-secondary"
+                    <span className={`w-6 shrink-0 font-mono text-xs font-bold tabular-nums ${
+                      i < 3 ? "text-primary" : "text-txt-muted"
                     }`}>
-                      {i + 1}
+                      {String(i + 1).padStart(2, "0")}.
                     </span>
                     <span className="flex-1 text-sm font-medium text-txt-primary truncate group-hover:text-primary transition-colors">
                       {article.title}
@@ -590,10 +543,7 @@ function WeeklyArticleTrend({ articles }: { articles: Article[] }) {
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
-            <BarChart3 size={14} className="text-blue-500" />
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Aktivitas Mingguan
         </h2>
         <span className="text-xs text-txt-muted">{totalWeek} artikel</span>
@@ -642,8 +592,7 @@ function CategoryPerformance({ articles }: { articles: Article[] }) {
   return (
     <div className="rounded-lg border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border bg-surface-secondary px-5 py-4">
-        <h2 className="flex items-center gap-2 font-semibold text-txt-primary">
-          <Layers size={18} className="text-blue-500" />
+        <h2 className="font-semibold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Performa per Kategori
         </h2>
       </div>
@@ -737,10 +686,7 @@ function ArticleCalendar({ articles }: { articles: Article[] }) {
   return (
     <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
       <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-light">
-            <Calendar size={14} className="text-primary" />
-          </div>
+        <h2 className="text-sm font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
           Kalender Artikel
         </h2>
         <div className="flex items-center gap-2">
@@ -774,7 +720,7 @@ function ArticleCalendar({ articles }: { articles: Article[] }) {
                   key={day}
                   onClick={() => setSelectedDay(isSelected ? null : day)}
                   className={`relative flex flex-col items-center justify-center h-10 rounded-lg text-sm font-medium transition-colors ${
-                    isSelected ? "bg-primary text-white" : isToday ? "bg-primary-light text-primary font-bold" : count > 0 ? "bg-surface-secondary text-txt-primary hover:bg-primary-light" : "text-txt-muted hover:bg-surface-secondary"
+                    isSelected ? "bg-primary text-white" : isToday ? "border border-primary text-primary font-bold" : count > 0 ? "bg-surface-secondary text-txt-primary hover:border hover:border-primary/40" : "text-txt-muted hover:bg-surface-secondary"
                   }`}
                   aria-label={`${day} ${monthName}${count > 0 ? `, ${count} artikel` : ""}`}
                 >
@@ -801,10 +747,7 @@ function ArticleCalendar({ articles }: { articles: Article[] }) {
           <div className="max-h-[280px] overflow-y-auto">
             {selectedDay === null ? (
               <div className="flex items-center justify-center h-[200px] text-sm text-txt-muted">
-                <div className="text-center">
-                  <Calendar size={32} className="mx-auto text-border mb-2" />
-                  <p>Pilih tanggal di kalender</p>
-                </div>
+                <p>Pilih tanggal di kalender</p>
               </div>
             ) : selectedArticles.length === 0 ? (
               <div className="flex items-center justify-center h-[200px] text-sm text-txt-muted">
@@ -822,7 +765,7 @@ function ArticleCalendar({ articles }: { articles: Article[] }) {
                       a.status === "PUBLISHED" ? "bg-primary" : a.status === "APPROVED" ? "bg-blue-500" : a.status === "IN_REVIEW" ? "bg-yellow-500" : "bg-gray-400"
                     }`} />
                     <span className="flex-1 text-sm font-medium text-txt-primary truncate">{a.title}</span>
-                    <span className={`shrink-0 text-xs rounded-lg px-2 py-0.5 font-semibold ${statusColors[a.status] || "bg-surface-tertiary text-txt-secondary"}`}>
+                    <span className={`shrink-0 text-xs font-semibold ${statusColors[a.status] || "text-txt-secondary"}`}>
                       {statusLabels[a.status] || a.status}
                     </span>
                   </Link>
@@ -920,13 +863,13 @@ export default function DashboardPage() {
           })();
 
           setStats([
-            { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50", href: "/panel/artikel", accent: "info", hint: "Semua status" },
-            { label: "Total Tayangan", value: formatNumber(totalViews), icon: Eye, color: "text-primary bg-primary-light", href: "/panel/statistik", accent: "primary", hint: "Akumulasi semua artikel" },
-            { label: "Tayangan Artikel Hari Ini", value: formatNumber(todayViews), icon: TrendingUp, color: "text-purple-500 bg-purple-50", href: "/panel/statistik", accent: "primary", hint: "Akumulasi view artikel yang publish hari ini" },
-            { label: "Menunggu Review", value: pendingReview.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50", href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: pendingReview > 0 ? "Perlu tindakan editor" : "Antrean kosong" },
-            { label: "Dipublikasi", value: formatNumber(published), icon: CheckCircle, color: "text-primary bg-primary-light", href: "/panel/artikel?status=PUBLISHED", accent: "ok", hint: "Live di website" },
-            { label: "Dijadwalkan", value: scheduled.toString(), icon: CalendarClock, color: "text-blue-500 bg-blue-50", href: "/panel/artikel?status=APPROVED", accent: "info", hint: "Menunggu auto-publish" },
-            { label: "Laporan Masuk", value: reportsPending.toString(), icon: AlertTriangle, color: "text-red-500 bg-red-50", href: "/panel/laporan", accent: "danger", hint: reportsPending > 0 ? "Perlu ditinjau" : "Tidak ada laporan" },
+            { label: "Total Artikel", value: formatNumber(totalArticles), href: "/panel/artikel", accent: "info", hint: "Semua status" },
+            { label: "Total Tayangan", value: formatNumber(totalViews), href: "/panel/statistik", accent: "primary", hint: "Akumulasi semua artikel" },
+            { label: "Tayangan Artikel Hari Ini", value: formatNumber(todayViews), href: "/panel/statistik", accent: "primary", hint: "Akumulasi view artikel yang publish hari ini" },
+            { label: "Menunggu Review", value: pendingReview.toString(), href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: pendingReview > 0 ? "Perlu tindakan editor" : "Antrean kosong" },
+            { label: "Dipublikasi", value: formatNumber(published), href: "/panel/artikel?status=PUBLISHED", accent: "ok", hint: "Live di website" },
+            { label: "Dijadwalkan", value: scheduled.toString(), href: "/panel/artikel?status=APPROVED", accent: "info", hint: "Menunggu auto-publish" },
+            { label: "Laporan Masuk", value: reportsPending.toString(), href: "/panel/laporan", accent: "danger", hint: reportsPending > 0 ? "Perlu ditinjau" : "Tidak ada laporan" },
           ]);
 
           // Extra cards from aggregated dashboard-stats
@@ -946,23 +889,23 @@ export default function DashboardPage() {
                 : "Belum ada artikel published";
 
             setExtraStats([
-              { label: "Total Komentar", value: formatNumber(dashStats.comments?.total || 0), icon: MessageSquare, color: "text-blue-500 bg-blue-50", href: "/panel/komentar", accent: "info", hint: "Total semua komentar" },
-              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50", href: "/panel/komentar", accent: "warn", hint: "Belum disetujui" },
-              { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), icon: Highlighter, color: "text-amber-500 bg-amber-50", href: "/panel/sorotan", accent: "primary", hint: "Variasi SEO artikel" },
-              { label: "Topic Cluster", value: formatNumber(dashStats.topics?.total || 0), icon: Layers, color: "text-emerald-600 bg-emerald-50", href: "/panel/topik", accent: "ok", hint: `${dashStats.topics?.published || 0} aktif` },
-              { label: "Coverage FAQ", value: `${faqPercent}%`, icon: BookOpen, color: "text-violet-600 bg-violet-50", href: "/panel/artikel", accent: faqPercent >= 50 ? "ok" : "warn", hint: faqHint },
-              { label: "Newsletter", value: formatNumber(dashStats.newsletter?.confirmed || 0), icon: Mail, color: "text-indigo-600 bg-indigo-50", href: "/panel/newsletter-subscribers", accent: "primary", hint: `${dashStats.newsletter?.total || 0} pendaftar total` },
-              { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), icon: Vote, color: "text-purple-500 bg-purple-50", href: "/panel/polling", accent: "info", hint: `${dashStats.polls?.active || 0} aktif` },
-              { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), icon: BookOpen, color: "text-green-600 bg-green-50", href: "/panel/dokumentasi", accent: "ok", hint: `${dashStats.glossary?.published || 0} dipublikasi` },
-              { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), icon: Share2, color: "text-pink-500 bg-pink-50", href: "/panel/social", accent: "primary", hint: "Bulan ini" },
-              { label: "Token AI (30hr)", value: aiTokensDisplay, icon: Bot, color: "text-indigo-500 bg-indigo-50", href: "/panel/ai-log", accent: "info", hint: "Konsumsi 30 hari" },
-              { label: "Total Kategori", value: formatNumber(dashStats.categories?.total || 0), icon: Folder, color: "text-orange-500 bg-orange-50", href: "/panel/kategori", accent: "muted", hint: "Taksonomi utama" },
-              { label: "Total Tag", value: formatNumber(dashStats.tags?.total || 0), icon: Tag, color: "text-teal-500 bg-teal-50", href: "/panel/tags", accent: "muted", hint: "Taksonomi sekunder" },
-              { label: "Pengguna Aktif", value: formatNumber(dashStats.users?.active || 0), icon: Users, color: "text-blue-500 bg-blue-50", href: "/panel/pengguna", accent: "info", hint: `${dashStats.users?.total || 0} total` },
-              { label: "Iklan Aktif", value: formatNumber(dashStats.ads?.active || 0), icon: Megaphone, color: "text-rose-500 bg-rose-50", href: "/panel/iklan", accent: "danger", hint: `${dashStats.ads?.total || 0} total` },
-              { label: "Sumber Berita Aktif", value: formatNumber(dashStats.newsSources?.active || 0), icon: Newspaper, color: "text-cyan-600 bg-cyan-50", href: "/panel/sumber-berita", accent: "info", hint: "Untuk auto-artikel" },
-              { label: "Live Blog", value: formatNumber(dashStats.liveBlogs?.total || 0), icon: Radio, color: "text-red-500 bg-red-50", href: "/panel/live-blogs", accent: dashStats.liveBlogs?.live ? "danger" : "muted", hint: dashStats.liveBlogs?.live ? `${dashStats.liveBlogs.live} LIVE saat ini` : "Tidak ada yang live" },
-              { label: "Subscriber Push", value: formatNumber(dashStats.pushSubscribers?.active || 0), icon: Bell, color: "text-violet-500 bg-violet-50", href: "/panel/pengaturan", accent: "muted", hint: "Push notification" },
+              { label: "Total Komentar", value: formatNumber(dashStats.comments?.total || 0), href: "/panel/komentar", accent: "info", hint: "Total semua komentar" },
+              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), href: "/panel/komentar", accent: "warn", hint: "Belum disetujui" },
+              { label: "Total Sorotan", value: formatNumber(dashStats.sorotan?.total || 0), href: "/panel/sorotan", accent: "primary", hint: "Variasi SEO artikel" },
+              { label: "Topic Cluster", value: formatNumber(dashStats.topics?.total || 0), href: "/panel/topik", accent: "ok", hint: `${dashStats.topics?.published || 0} aktif` },
+              { label: "Coverage FAQ", value: `${faqPercent}%`, href: "/panel/artikel", accent: faqPercent >= 50 ? "ok" : "warn", hint: faqHint },
+              { label: "Newsletter", value: formatNumber(dashStats.newsletter?.confirmed || 0), href: "/panel/newsletter-subscribers", accent: "primary", hint: `${dashStats.newsletter?.total || 0} pendaftar total` },
+              { label: "Total Polling", value: formatNumber(dashStats.polls?.total || 0), href: "/panel/polling", accent: "info", hint: `${dashStats.polls?.active || 0} aktif` },
+              { label: "Total Glossary", value: formatNumber(dashStats.glossary?.total || 0), href: "/panel/dokumentasi", accent: "ok", hint: `${dashStats.glossary?.published || 0} dipublikasi` },
+              { label: "Posting Sosmed (30hr)", value: formatNumber(dashStats.socialPosts?.thisMonth || 0), href: "/panel/social", accent: "primary", hint: "Bulan ini" },
+              { label: "Token AI (30hr)", value: aiTokensDisplay, href: "/panel/ai-log", accent: "info", hint: "Konsumsi 30 hari" },
+              { label: "Total Kategori", value: formatNumber(dashStats.categories?.total || 0), href: "/panel/kategori", accent: "muted", hint: "Taksonomi utama" },
+              { label: "Total Tag", value: formatNumber(dashStats.tags?.total || 0), href: "/panel/tags", accent: "muted", hint: "Taksonomi sekunder" },
+              { label: "Pengguna Aktif", value: formatNumber(dashStats.users?.active || 0), href: "/panel/pengguna", accent: "info", hint: `${dashStats.users?.total || 0} total` },
+              { label: "Iklan Aktif", value: formatNumber(dashStats.ads?.active || 0), href: "/panel/iklan", accent: "danger", hint: `${dashStats.ads?.total || 0} total` },
+              { label: "Sumber Berita Aktif", value: formatNumber(dashStats.newsSources?.active || 0), href: "/panel/sumber-berita", accent: "info", hint: "Untuk auto-artikel" },
+              { label: "Live Blog", value: formatNumber(dashStats.liveBlogs?.total || 0), href: "/panel/live-blogs", accent: dashStats.liveBlogs?.live ? "danger" : "muted", hint: dashStats.liveBlogs?.live ? `${dashStats.liveBlogs.live} LIVE saat ini` : "Tidak ada yang live" },
+              { label: "Subscriber Push", value: formatNumber(dashStats.pushSubscribers?.active || 0), href: "/panel/pengaturan", accent: "muted", hint: "Push notification" },
             ]);
           }
 
@@ -978,10 +921,10 @@ export default function DashboardPage() {
           const myPublished = fetchedArticles.filter((a) => a.status === "PUBLISHED").length;
 
           setStats([
-            { label: "Artikel Saya", value: formatNumber(myTotal), icon: FileText, color: "text-blue-500 bg-blue-50", href: "/panel/artikel", accent: "info", hint: "Semua status" },
-            { label: "Draf Saya", value: myDrafts.toString(), icon: FileText, color: "text-surface-tertiary bg-surface-secondary", href: "/panel/artikel?status=DRAFT", accent: "muted", hint: "Belum dikirim" },
-            { label: "Menunggu Review", value: myPendingReview.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50", href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: "Diproses editor" },
-            { label: "Dipublikasi", value: formatNumber(myPublished), icon: CheckCircle, color: "text-primary bg-primary-light", href: "/panel/artikel?status=PUBLISHED", accent: "ok", hint: "Live di website" },
+            { label: "Artikel Saya", value: formatNumber(myTotal), href: "/panel/artikel", accent: "info", hint: "Semua status" },
+            { label: "Draf Saya", value: myDrafts.toString(), href: "/panel/artikel?status=DRAFT", accent: "muted", hint: "Belum dikirim" },
+            { label: "Menunggu Review", value: myPendingReview.toString(), href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: "Diproses editor" },
+            { label: "Dipublikasi", value: formatNumber(myPublished), href: "/panel/artikel?status=PUBLISHED", accent: "ok", hint: "Live di website" },
           ]);
 
           // Recent: my articles sorted by createdAt
@@ -1009,10 +952,10 @@ export default function DashboardPage() {
               ).length;
 
           setStats([
-            { label: "Antrean Review", value: reviewQueue.toString(), icon: Clock, color: "text-yellow-500 bg-yellow-50", href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: reviewQueue > 0 ? "Perlu tindakan" : "Antrean kosong" },
-            { label: "Disetujui Hari Ini", value: approvedToday.toString(), icon: CheckCircle, color: "text-primary bg-primary-light", href: "/panel/riwayat-review", accent: "ok", hint: "Approval hari ini" },
-            { label: "Ditolak", value: rejected.toString(), icon: XCircle, color: "text-red-500 bg-red-50", href: "/panel/artikel?status=REJECTED", accent: "danger", hint: "Perlu revisi" },
-            { label: "Total Artikel", value: formatNumber(totalArticles), icon: FileText, color: "text-blue-500 bg-blue-50", href: "/panel/artikel", accent: "info", hint: "Seluruh artikel" },
+            { label: "Antrean Review", value: reviewQueue.toString(), href: "/panel/artikel?status=IN_REVIEW", accent: "warn", hint: reviewQueue > 0 ? "Perlu tindakan" : "Antrean kosong" },
+            { label: "Disetujui Hari Ini", value: approvedToday.toString(), href: "/panel/riwayat-review", accent: "ok", hint: "Approval hari ini" },
+            { label: "Ditolak", value: rejected.toString(), href: "/panel/artikel?status=REJECTED", accent: "danger", hint: "Perlu revisi" },
+            { label: "Total Artikel", value: formatNumber(totalArticles), href: "/panel/artikel", accent: "info", hint: "Seluruh artikel" },
           ]);
 
           if (dashStats?.comments) {
@@ -1021,7 +964,7 @@ export default function DashboardPage() {
             // (sorotan/polling/glossary/social/users/ads/AI) are SUPER_ADMIN-only
             // — they'd link to pages this role can't open and aren't its data.
             setExtraStats([
-              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), icon: MessageSquare, color: "text-yellow-500 bg-yellow-50", href: "/panel/komentar", accent: "warn", hint: "Belum disetujui" },
+              { label: "Komentar Pending", value: formatNumber(dashStats.comments?.pending || 0), href: "/panel/komentar", accent: "warn", hint: "Belum disetujui" },
             ]);
           }
 
@@ -1081,7 +1024,7 @@ export default function DashboardPage() {
             Selamat datang kembali, {session?.user?.name}!
           </p>
         </div>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-700">
+        <div className="rounded-lg border border-border border-l-4 border-l-red-600 bg-surface p-6 text-center text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchData}
@@ -1130,14 +1073,14 @@ export default function DashboardPage() {
         <div className="relative px-5 py-5 sm:px-7 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 backdrop-blur-sm px-2.5 py-0.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider ring-1 ring-white/20">
+              <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-emerald-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
                 {roleLabel}
               </span>
-              <span className="text-[10px] sm:text-xs text-white/70 hidden sm:inline">{todayLabel}</span>
+              <span className="text-[10px] sm:text-xs text-white/70 hidden sm:inline">· {todayLabel}</span>
             </div>
             <h1 className="mt-2 text-xl sm:text-3xl font-extrabold tracking-tight">
-              Halo, {session?.user?.name?.split(" ")[0] || "Editor"} 👋
+              Halo, {session?.user?.name?.split(" ")[0] || "Editor"}
             </h1>
             <p className="mt-1 text-sm text-white/80">
               {isCreator
@@ -1158,7 +1101,6 @@ export default function DashboardPage() {
 
       {/* Section: Ikhtisar Editorial */}
       <SectionHeader
-        icon={BarChart3}
         title="Ikhtisar Editorial"
         subtitle="Ringkasan status artikel dan trafik"
       />
@@ -1172,7 +1114,6 @@ export default function DashboardPage() {
       {contentStats.length > 0 && (
         <>
           <SectionHeader
-            icon={MessageSquare}
             title="Konten & Engagement"
             subtitle="Komentar, sorotan, polling, dan distribusi sosial"
           />
@@ -1188,7 +1129,6 @@ export default function DashboardPage() {
       {operasionalStats.length > 0 && (
         <>
           <SectionHeader
-            icon={Settings}
             title="Operasional & Sistem"
             subtitle="Pengguna, taksonomi, AI, dan integrasi"
           />
@@ -1200,20 +1140,18 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* Quick actions — grouped premium */}
+      {/* Quick actions — clean editorial tiles */}
       {(() => {
         type Action = {
           href: string;
           label: string;
           icon: React.ElementType;
           color: string;
-          bg: string;
           show: boolean;
         };
         type Group = {
           id: string;
           title: string;
-          icon: React.ElementType;
           subtitle: string;
           actions: Action[];
         };
@@ -1221,49 +1159,46 @@ export default function DashboardPage() {
           {
             id: "editorial",
             title: "Editorial",
-            icon: FileText,
             subtitle: "Tulis, review, dan moderasi",
             actions: [
-              { href: "/panel/artikel/baru", label: "Tulis Artikel", icon: FileText, color: "text-primary", bg: "bg-primary-light", show: true },
-              { href: "/panel/auto-artikel", label: "Auto Artikel AI", icon: Sparkles, color: "text-indigo-600", bg: "bg-indigo-50", show: isAdmin },
-              { href: "/panel/material-artikel", label: "Material Artikel", icon: BookOpen, color: "text-emerald-600", bg: "bg-emerald-50", show: !isCreator },
-              { href: "/panel/sumber-berita", label: "Sumber Berita", icon: Newspaper, color: "text-cyan-600", bg: "bg-cyan-50", show: !isCreator },
-              { href: "/panel/artikel", label: isCreator ? "Artikel Saya" : "Review Artikel", icon: isCreator ? Send : Clock, color: isCreator ? "text-blue-600" : "text-yellow-600", bg: isCreator ? "bg-blue-50" : "bg-yellow-50", show: true },
-              { href: "/panel/komentar", label: "Komentar", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50", show: !isCreator },
-              { href: "/panel/laporan", label: "Laporan", icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50", show: !isCreator },
-              { href: "/panel/live-blogs", label: "Live Blog", icon: Radio, color: "text-red-600", bg: "bg-red-50", show: !isCreator },
+              { href: "/panel/artikel/baru", label: "Tulis Artikel", icon: FileText, color: "text-primary", show: true },
+              { href: "/panel/auto-artikel", label: "Auto Artikel AI", icon: Sparkles, color: "text-indigo-600", show: isAdmin },
+              { href: "/panel/material-artikel", label: "Material Artikel", icon: BookOpen, color: "text-emerald-600", show: !isCreator },
+              { href: "/panel/sumber-berita", label: "Sumber Berita", icon: Newspaper, color: "text-cyan-600", show: !isCreator },
+              { href: "/panel/artikel", label: isCreator ? "Artikel Saya" : "Review Artikel", icon: isCreator ? Send : Clock, color: isCreator ? "text-blue-600" : "text-amber-600", show: true },
+              { href: "/panel/komentar", label: "Komentar", icon: MessageSquare, color: "text-blue-600", show: !isCreator },
+              { href: "/panel/laporan", label: "Laporan", icon: AlertTriangle, color: "text-red-600", show: !isCreator },
+              { href: "/panel/live-blogs", label: "Live Blog", icon: Radio, color: "text-red-600", show: !isCreator },
             ],
           },
           {
             id: "distribusi",
             title: "Distribusi & SEO",
-            icon: Share2,
             subtitle: "Sebar ke pembaca, mesin pencari, dan sosmed",
             actions: [
-              { href: "/panel/sorotan", label: "Sorotan SEO", icon: Highlighter, color: "text-amber-600", bg: "bg-amber-50", show: isAdmin },
-              { href: "/panel/topik", label: "Topic Cluster", icon: Layers, color: "text-emerald-600", bg: "bg-emerald-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/seo", label: "SEO Panel", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", show: isManagement },
-              { href: "/panel/social", label: "Sosial Media", icon: Share2, color: "text-pink-600", bg: "bg-pink-50", show: isAdmin },
-              { href: "/panel/tiktok", label: "TikTok", icon: Music, color: "text-fuchsia-600", bg: "bg-fuchsia-50", show: !isCreator },
-              { href: "/panel/newsletter-subscribers", label: "Newsletter", icon: Mail, color: "text-indigo-600", bg: "bg-indigo-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/statistik", label: "Statistik", icon: BarChart3, color: "text-green-600", bg: "bg-green-50", show: !isCreator },
-              { href: "/panel/polling", label: "Polling", icon: Vote, color: "text-purple-600", bg: "bg-purple-50", show: isManagement },
+              { href: "/panel/sorotan", label: "Sorotan SEO", icon: Highlighter, color: "text-amber-600", show: isAdmin },
+              { href: "/panel/topik", label: "Topic Cluster", icon: Layers, color: "text-emerald-600", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/seo", label: "SEO Panel", icon: TrendingUp, color: "text-emerald-600", show: isManagement },
+              { href: "/panel/social", label: "Sosial Media", icon: Share2, color: "text-pink-600", show: isAdmin },
+              { href: "/panel/tiktok", label: "TikTok", icon: Music, color: "text-fuchsia-600", show: !isCreator },
+              { href: "/panel/newsletter-subscribers", label: "Newsletter", icon: Mail, color: "text-indigo-600", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/statistik", label: "Statistik", icon: BarChart3, color: "text-emerald-600", show: !isCreator },
+              { href: "/panel/polling", label: "Polling", icon: Vote, color: "text-purple-600", show: isManagement },
             ],
           },
           {
             id: "manajemen",
             title: "Manajemen",
-            icon: Settings,
             subtitle: "Pengguna, taksonomi, dan iklan",
             actions: [
-              { href: "/panel/redaksi", label: "Redaksi", icon: Users, color: "text-blue-600", bg: "bg-blue-50", show: isManagement },
-              { href: "/panel/pengguna", label: "Pengguna", icon: Users, color: "text-purple-600", bg: "bg-purple-50", show: isAdmin },
-              { href: "/panel/kategori", label: "Kategori", icon: Folder, color: "text-orange-600", bg: "bg-orange-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/tags", label: "Tag", icon: Tag, color: "text-teal-600", bg: "bg-teal-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/iklan", label: "Iklan", icon: Megaphone, color: "text-rose-600", bg: "bg-rose-50", show: isAdmin || userRole === "CHIEF_EDITOR" },
-              { href: "/panel/email", label: "Email", icon: Mail, color: "text-blue-700", bg: "bg-blue-50", show: isAdmin },
-              { href: "/panel/ai-log", label: "Log AI", icon: Bot, color: "text-indigo-600", bg: "bg-indigo-50", show: isAdmin },
-              { href: "/panel/pengaturan", label: "Pengaturan", icon: Settings, color: "text-slate-700", bg: "bg-slate-100", show: isAdmin },
+              { href: "/panel/redaksi", label: "Redaksi", icon: Users, color: "text-blue-600", show: isManagement },
+              { href: "/panel/pengguna", label: "Pengguna", icon: Users, color: "text-purple-600", show: isAdmin },
+              { href: "/panel/kategori", label: "Kategori", icon: Folder, color: "text-orange-600", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/tags", label: "Tag", icon: Tag, color: "text-teal-600", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/iklan", label: "Iklan", icon: Megaphone, color: "text-rose-600", show: isAdmin || userRole === "CHIEF_EDITOR" },
+              { href: "/panel/email", label: "Email", icon: Mail, color: "text-blue-700", show: isAdmin },
+              { href: "/panel/ai-log", label: "Log AI", icon: Bot, color: "text-indigo-600", show: isAdmin },
+              { href: "/panel/pengaturan", label: "Pengaturan", icon: Settings, color: "text-slate-700", show: isAdmin },
             ],
           },
         ];
@@ -1277,51 +1212,38 @@ export default function DashboardPage() {
         return (
           <div className="mb-8">
             <SectionHeader
-              icon={Layers}
               title="Aksi Cepat"
               subtitle="Pintasan ke tugas yang paling sering dipakai"
             />
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-              {visibleGroups.map((group) => {
-                const GIcon = group.icon;
-                return (
-                  <div key={group.id} className="kw-reveal rounded-xl border border-border bg-surface shadow-card overflow-hidden">
-                    <div className="flex items-center gap-2 border-b border-border bg-gradient-to-r from-surface-secondary/60 to-transparent px-4 py-2.5">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary-light text-primary">
-                        <GIcon size={12} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-txt-primary tracking-tight truncate">
-                          {group.title}
-                        </p>
-                        <p className="text-[10px] text-txt-muted truncate">{group.subtitle}</p>
-                      </div>
-                    </div>
-                    <div className="kw-stagger grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-3">
-                      {group.actions.map((a) => {
-                        const Icon = a.icon;
-                        return (
-                          <Link
-                            key={a.href}
-                            href={a.href}
-                            className="kw-fade-in-up group/action relative flex flex-col items-center gap-2 rounded-lg border border-border bg-surface p-3 text-center transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md overflow-hidden"
-                            aria-label={a.label}
-                          >
-                            {/* Hover gradient overlay */}
-                            <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${a.bg} opacity-0 group-hover/action:opacity-30 transition-opacity`} aria-hidden="true" />
-                            <div className={`relative flex h-10 w-10 items-center justify-center rounded-lg ${a.bg} ${a.color} ring-1 ring-inset ring-black/5 transition-all duration-300 group-hover/action:scale-110 group-hover/action:rotate-3 group-hover/action:shadow-md`}>
-                              <Icon size={18} strokeWidth={2.2} />
-                            </div>
-                            <span className="relative text-[11px] sm:text-xs font-semibold text-txt-secondary leading-tight group-hover/action:text-txt-primary transition-colors">
-                              {a.label}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
+              {visibleGroups.map((group) => (
+                <div key={group.id} className="kw-reveal rounded-xl border border-border bg-surface shadow-card overflow-hidden">
+                  <div className="border-b border-border px-4 py-2.5">
+                    <p className="text-xs font-bold text-txt-primary tracking-tight truncate">
+                      {group.title}
+                    </p>
+                    <p className="text-[10px] text-txt-muted truncate">{group.subtitle}</p>
                   </div>
-                );
-              })}
+                  <div className="kw-stagger grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-3">
+                    {group.actions.map((a) => {
+                      const Icon = a.icon;
+                      return (
+                        <Link
+                          key={a.href}
+                          href={a.href}
+                          className="kw-fade-in-up group/action flex flex-col items-center gap-2 rounded-lg border border-border bg-surface p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
+                          aria-label={a.label}
+                        >
+                          <Icon size={18} strokeWidth={2} className={`${a.color} transition-transform duration-200 group-hover/action:scale-110`} />
+                          <span className="text-[11px] sm:text-xs font-semibold text-txt-secondary leading-tight group-hover/action:text-txt-primary transition-colors">
+                            {a.label}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -1330,10 +1252,7 @@ export default function DashboardPage() {
       {/* Recent articles - full width, rich info */}
       <div className="mb-6 rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border px-6 py-5 flex items-center justify-between">
-          <h2 className="flex items-center gap-2.5 text-base font-bold text-txt-primary">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
-              <FileText size={16} className="text-blue-500" />
-            </div>
+          <h2 className="text-base font-bold text-txt-primary border-l-[3px] border-primary pl-2.5">
             {isCreator ? "Artikel Saya Terbaru" : isEditorRole ? "Antrean Review" : "Artikel Terbaru"}
           </h2>
           <Link href="/panel/artikel" className="text-sm font-semibold text-primary hover:text-primary-dark transition-colors">
@@ -1342,7 +1261,6 @@ export default function DashboardPage() {
         </div>
         {recentArticles.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <FileText size={40} className="mx-auto text-border mb-3" />
             <p className="text-base text-txt-secondary">
               {isCreator ? "Anda belum memiliki artikel." : "Belum ada artikel."}
             </p>
@@ -1360,37 +1278,32 @@ export default function DashboardPage() {
                     <p className="text-base font-semibold text-txt-primary mb-2 line-clamp-1">
                       {article.title}
                     </p>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-txt-secondary">
                       {article.author?.name && (
-                        <span className="flex items-center gap-1.5 text-sm text-txt-secondary">
-                          <Users size={14} className="text-blue-500" />
+                        <span>
                           <span className="text-txt-muted">Penulis:</span> {article.author.name}
                         </span>
                       )}
                       {article.reviewerName && (
-                        <span className="flex items-center gap-1.5 text-sm text-txt-secondary">
-                          <CheckCircle size={14} className="text-primary" />
+                        <span>
                           <span className="text-txt-muted">Editor:</span> {article.reviewerName}
                         </span>
                       )}
                       {article.category?.name && (
-                        <span className="flex items-center gap-1.5 text-sm text-txt-secondary">
-                          <Layers size={14} className="text-purple-500" />
+                        <span>
                           <span className="text-txt-muted">Kategori:</span> {article.category.name}
                         </span>
                       )}
-                      <span className="flex items-center gap-1.5 text-sm text-txt-secondary">
-                        <CalendarClock size={14} className="text-txt-muted" />
+                      <span>
                         <span className="text-txt-muted">Tanggal:</span> {formatDate(article.createdAt)}
                       </span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className={`badge text-sm ${statusColors[article.status] || "bg-surface-tertiary text-txt-secondary"}`}>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className={`text-xs font-bold uppercase tracking-wider ${statusColors[article.status] || "text-txt-secondary"}`}>
                       {statusLabels[article.status] || article.status}
                     </span>
-                    <span className="flex items-center gap-1.5 text-sm font-medium text-txt-muted">
-                      <Eye size={14} />
+                    <span className="text-sm font-medium text-txt-muted">
                       {formatNumber(article.viewCount)} tayangan
                     </span>
                   </div>
@@ -1412,7 +1325,6 @@ export default function DashboardPage() {
       {!isCreator && (
         <div className="kw-reveal mt-6">
           <SectionHeader
-            icon={Activity}
             title="Operasional Realtime"
             subtitle="Pipeline, item butuh tindakan, leaderboard, dan health"
           />
@@ -1436,12 +1348,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Editorial checklist reminder */}
-      <div className="mt-6 rounded-lg border border-primary/20 bg-primary-50 p-5">
-        <h3 className="flex items-center gap-2 font-semibold text-primary-dark">
-          <CheckCircle size={18} />
+      <div className="mt-6 rounded-lg border border-border border-l-4 border-l-primary bg-surface p-5">
+        <h3 className="font-semibold text-txt-primary">
           Pengingat Standar Jurnalistik
         </h3>
-        <ul className="mt-2 space-y-1 text-sm text-primary">
+        <ul className="mt-2 space-y-1 text-sm text-txt-secondary">
           <li>&#10003; Pastikan setiap artikel memiliki minimal 1 sumber terverifikasi</li>
           <li>&#10003; Judul tidak clickbait atau sensasional berlebihan</li>
           <li>&#10003; Cover both sides — berikan perspektif berimbang</li>

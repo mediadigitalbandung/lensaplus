@@ -18,25 +18,19 @@ function DirectionIcon({ dir, size = 16 }: { dir: "up" | "down" | "flat"; size?:
 
 const colors = {
   up: {
-    card: "bg-emerald-50/60 border-emerald-100",
+    card: "bg-white border-border",
     accent: "bg-emerald-500",
-    icon: "bg-emerald-50 text-emerald-600",
-    text: "text-emerald-600",
-    badge: "bg-emerald-50 text-emerald-600",
+    text: "text-emerald-700",
   },
   down: {
-    card: "bg-red-50/60 border-red-100",
+    card: "bg-white border-border",
     accent: "bg-red-500",
-    icon: "bg-red-50 text-red-600",
-    text: "text-red-600",
-    badge: "bg-red-50 text-red-600",
+    text: "text-red-700",
   },
   flat: {
-    card: "bg-gray-50/60 border-gray-100",
-    accent: "bg-gray-300",
-    icon: "bg-gray-100 text-gray-500",
-    text: "text-gray-500",
-    badge: "bg-gray-100 text-gray-500",
+    card: "bg-white border-border",
+    accent: "bg-stone-300",
+    text: "text-on-surface-variant",
   },
 } as const;
 
@@ -68,8 +62,8 @@ export default function MarketCard({
               <span className="block text-[10px] text-on-surface-variant mt-0.5 leading-tight">{sublabel}</span>
             )}
           </div>
-          <span className={`shrink-0 flex items-center justify-center rounded-md p-1 ${c.icon}`}>
-            <DirectionIcon dir={direction} size={14} />
+          <span className={`shrink-0 ${c.text}`}>
+            <DirectionIcon dir={direction} size={15} />
           </span>
         </div>
 
@@ -83,16 +77,16 @@ export default function MarketCard({
           <div className="text-label-sm font-mono text-on-surface-variant mt-0.5">{secondary}</div>
         )}
 
-        {/* Change row */}
-        <div className="mt-2.5 flex items-center gap-1.5">
+        {/* Change row — plain colored text, no highlight background */}
+        <div className="mt-2.5 flex items-center gap-2">
           <span className={`text-label-sm font-mono font-semibold ${c.text}`}>
             {sign}{changePercent.toFixed(2)}%
           </span>
           {change !== 0 && (
-            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-lg ${c.badge}`}>
-              {change > 0 ? "+" : ""}{change >= 1000 || change <= -1000
+            <span className={`text-[11px] font-mono ${c.text}`}>
+              ({change > 0 ? "+" : ""}{change >= 1000 || change <= -1000
                 ? Math.round(change).toLocaleString("id-ID")
-                : change.toFixed(2)}
+                : change.toFixed(2)})
             </span>
           )}
         </div>

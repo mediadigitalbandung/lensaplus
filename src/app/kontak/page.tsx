@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { Mail, MapPin, Phone, Send } from "lucide-react";
+import { Mail, Send } from "lucide-react";
 import Turnstile from "@/components/ui/Turnstile";
 
 export default function KontakPage() {
@@ -54,22 +54,19 @@ export default function KontakPage() {
             {/* Contact info */}
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-surface p-5">
-                <MapPin size={20} className="text-primary" />
-                <h3 className="mt-2 font-bold text-txt-primary">Alamat</h3>
+                <h3 className="font-bold text-txt-primary">Alamat</h3>
                 <p className="mt-1 text-sm text-txt-secondary">
                   Bandung, Jawa Barat<br />Indonesia
                 </p>
               </div>
               <div className="rounded-lg border border-border bg-surface p-5">
-                <Mail size={20} className="text-primary" />
-                <h3 className="mt-2 font-bold text-txt-primary">Email</h3>
+                <h3 className="font-bold text-txt-primary">Email</h3>
                 <p className="mt-1 text-sm text-txt-secondary">
                   redaksi@lensaplus.com
                 </p>
               </div>
               <div className="rounded-lg border border-border bg-surface p-5">
-                <Phone size={20} className="text-primary" />
-                <h3 className="mt-2 font-bold text-txt-primary">Telepon</h3>
+                <h3 className="font-bold text-txt-primary">Telepon</h3>
                 <p className="mt-1 text-sm text-txt-secondary">
                   {process.env.NEXT_PUBLIC_PUBLISHER_PHONE ? (
                     <a
@@ -88,13 +85,13 @@ export default function KontakPage() {
             {/* Contact form */}
             <div className="md:col-span-2">
               {sent ? (
-                <div className="flex h-full items-center justify-center rounded-lg border border-primary/20 bg-primary-light p-8 text-center">
+                <div className="flex h-full items-center justify-center rounded-lg border border-border border-l-4 border-l-primary bg-surface p-8 text-center">
                   <div>
-                    <Send size={40} className="mx-auto text-primary" />
-                    <h3 className="mt-4 text-lg font-bold text-primary-dark">
+                    <Mail size={32} className="mx-auto text-primary" />
+                    <h3 className="mt-4 text-lg font-bold text-txt-primary">
                       Pesan Terkirim!
                     </h3>
-                    <p className="mt-2 text-sm text-primary">
+                    <p className="mt-2 text-sm text-txt-secondary">
                       Terima kasih telah menghubungi kami. Tim redaksi akan merespons dalam 1-2 hari kerja.
                     </p>
                     <button

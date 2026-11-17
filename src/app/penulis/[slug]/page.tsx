@@ -2,7 +2,6 @@ export const revalidate = 120; // ISR: revalidate author page every 2 minutes
 
 import { Metadata } from "next";
 import ArticleCard from "@/components/artikel/ArticleCard";
-import { FileText, Eye, Calendar } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { slugify } from "@/lib/utils";
@@ -117,25 +116,22 @@ export default async function PenulisPage({ params: paramsPromise }: { params: P
                 {author.bio}
               </p>
 
-              <div className="mt-4 flex flex-wrap justify-center gap-4 sm:gap-6 sm:justify-start">
-                <div className="flex items-center gap-1.5 text-sm text-txt-muted">
-                  <FileText size={14} />
+              <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 sm:justify-start text-sm text-txt-muted">
+                <span>
                   <span className="font-semibold text-txt-primary">
                     {totalArticles}
                   </span>{" "}
                   artikel
-                </div>
-                <div className="flex items-center gap-1.5 text-sm text-txt-muted">
-                  <Eye size={14} />
+                </span>
+                <span>·</span>
+                <span>
                   <span className="font-semibold text-txt-primary">
                     {totalViews.toLocaleString("id-ID")}
                   </span>{" "}
-                  views
-                </div>
-                <div className="flex items-center gap-1.5 text-sm text-txt-muted">
-                  <Calendar size={14} />
-                  Bergabung {joinedDate}
-                </div>
+                  tayangan
+                </span>
+                <span>·</span>
+                <span>Bergabung {joinedDate}</span>
               </div>
             </div>
           </div>

@@ -71,11 +71,11 @@ export default function AdInquiryForm() {
 
   if (sent) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-primary/20 bg-primary-light p-8 text-center">
+      <div className="flex items-center justify-center rounded-xl border border-border border-l-4 border-l-primary bg-surface p-8 text-center shadow-card">
         <div>
-          <CheckCircle2 size={40} className="mx-auto text-primary" />
-          <h3 className="mt-4 text-lg font-bold text-primary-dark">Permintaan Terkirim!</h3>
-          <p className="mt-2 text-sm text-primary">
+          <CheckCircle2 size={36} className="mx-auto text-primary" />
+          <h3 className="mt-4 text-lg font-bold text-txt-primary">Permintaan Terkirim!</h3>
+          <p className="mt-2 text-sm text-txt-secondary">
             Terima kasih. Tim pemasaran Lensaplus akan menghubungi Anda dalam 1&ndash;2 hari kerja
             dengan media kit &amp; penawaran tarif.
           </p>

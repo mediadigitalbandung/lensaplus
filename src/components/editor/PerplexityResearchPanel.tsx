@@ -217,7 +217,7 @@ export default function PerplexityResearchPanel({
   return (
     <>
       {/* Trigger */}
-      <div className="rounded-lg border border-primary/20 bg-primary-light/40 p-3">
+      <div className="border-l-4 border-primary pl-3 py-1">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -246,12 +246,9 @@ export default function PerplexityResearchPanel({
           <div className="relative z-10 flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-border bg-primary px-5 py-4 text-on-primary">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                <Search size={18} />
-              </span>
               <div className="min-w-0 flex-1">
                 <h3 className="font-serif text-lg font-bold leading-tight">Riset &amp; Tulis dengan Perplexity</h3>
-                <p className="text-xs text-white/60">Riset web real-time → mengisi draf + sumber otomatis</p>
+                <p className="text-xs text-white/70">Riset web real-time → mengisi draf + sumber otomatis</p>
               </div>
               <button
                 type="button"
@@ -399,7 +396,7 @@ export default function PerplexityResearchPanel({
               </div>
 
               {!title.trim() && !researchNotes.trim() && (
-                <p className="flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-700">
+                <p className="flex items-center gap-1.5 border-l-4 border-amber-500 pl-3 py-1 text-[11px] font-medium text-amber-800">
                   <AlertCircle size={12} /> Isi <strong>Judul</strong> atau tulis topik di kotak arahan. (Judul bisa digenerate setelah draf jadi.)
                 </p>
               )}

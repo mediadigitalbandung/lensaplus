@@ -54,6 +54,7 @@ Sistem ini membagi seluruh alur kerja media ke dalam 28 Sub-Agen dengan keahlian
 | 🛡️ **Error Resilience Fallback Auditor**| `.agents/skills/error-resilience-fallback-auditor/`| Mengaudit halaman error.tsx, not-found.tsx, offline mode PWA, & pesan kesalahan pengguna. |
 | 🔒 **Data Isolation & Multi-Tenant Auditor**| `.agents/skills/data-isolation-auditor/`| Mengaudit isolasi basis data, pemisahan entitas multi-tenant, & proteksi zero-cross-tenant-leak. |
 | 📱 **Responsive Design & Multi-Device Auditor**| `.agents/skills/responsive-design-auditor/`| Mengaudit responsivitas 100% antarmuka Lensaplus di seluruh perangkat (Mobile, Tablet, Desktop), penanganan horizontal overflow, breakpoint Tailwind CSS, & kelancaran navigasi sentuh. |
+| 🏠 **Homepage Design Auditor Agent** | `.agents/skills/homepage-design-auditor/` | Mengaudit keseragaman tata letak antarmuka Halaman Utama (Homepage), kepatuhan token Editorial Authority, & hirarki visual. |
 
 ---
 
@@ -89,3 +90,4 @@ Seluruh rute antarmuka dan API pada Dashboard Redaksi (`/panel/*`) dikelola seca
 2. **Strict Verification:** Setiap kali mengubah kode, wajib jalankan `npx tsc --noEmit` dan `npm run build` untuk memastikan 0 type error dan 0 build break.
 3. **No External Brand Leaks:** Pastikan tidak ada kebocoran nama brand lain (seperti Kartawarta) di dalam kode, seed data, maupun aset SVG/gambar.
 4. **Indonesian Language Priority:** Seluruh konten publik, artikel, komentar, dan respon antarmuka disajikan dalam Bahasa Indonesia yang lugas dan sesuai PUEBI/EYD.
+5. **SOP Desain Antarmuka (`docs/DESIGN_SOP.md`):** Wajib mematuhi tiga aturan emas UI — **Zero Icon Boxes** (tidak ada icon dengan background lingkaran/persegi), **Minimal Icons** (tidak memakai icon dekoratif di heading/timestamp/kategori), dan **Zero Text Highlight Background** (tidak ada teks/label/badge/link dengan highlight warna di belakang teks).

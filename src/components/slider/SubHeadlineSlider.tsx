@@ -129,22 +129,22 @@ export default function SubHeadlineSlider({ items }: SubHeadlineSliderProps) {
         })}
       </div>
 
-      {/* Navigation arrows — same style as headline slider */}
+      {/* Navigation arrows — bare chevrons without circular backgrounds */}
       {totalPages > 1 && (
         <>
           <button
             onClick={prev}
-            className="absolute left-1 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/20 text-white/50 backdrop-blur-sm transition-all duration-200 hover:border-white/40 hover:bg-black/40 hover:text-white hover:scale-110"
+            className="absolute left-1 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center text-white/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)] transition-all duration-200 hover:text-white hover:scale-110"
             aria-label="Previous"
           >
-            <ChevronLeft size={16} strokeWidth={1.5} />
+            <ChevronLeft size={20} strokeWidth={1.75} />
           </button>
           <button
             onClick={next}
-            className="absolute right-1 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/20 text-white/50 backdrop-blur-sm transition-all duration-200 hover:border-white/40 hover:bg-black/40 hover:text-white hover:scale-110"
+            className="absolute right-1 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center text-white/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)] transition-all duration-200 hover:text-white hover:scale-110"
             aria-label="Next"
           >
-            <ChevronRight size={16} strokeWidth={1.5} />
+            <ChevronRight size={20} strokeWidth={1.75} />
           </button>
         </>
       )}

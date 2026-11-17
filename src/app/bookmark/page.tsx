@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bookmark, Trash2, ArrowLeft } from "lucide-react";
+import { Trash2, ArrowLeft } from "lucide-react";
 
 interface BookmarkedArticle {
   id: string;
@@ -73,8 +73,7 @@ export default function BookmarkPage() {
             <ArrowLeft size={14} />
             Beranda
           </Link>
-          <h1 className="flex items-center gap-3 font-serif text-headline-sm font-extrabold text-txt-primary sm:text-headline-md lg:text-headline-lg">
-            <Bookmark size={28} className="text-primary" />
+          <h1 className="border-l-4 border-primary pl-3 font-serif text-headline-sm font-extrabold text-txt-primary sm:text-headline-md lg:text-headline-lg">
             Bookmark Saya
           </h1>
           <p className="mt-1 text-sm text-txt-secondary">
@@ -97,7 +96,6 @@ export default function BookmarkPage() {
           </div>
         ) : bookmarks.length === 0 ? (
           <div className="rounded-lg border border-border bg-surface-secondary p-12 text-center">
-            <Bookmark size={48} className="mx-auto mb-4 text-txt-muted" />
             <p className="text-lg font-semibold text-txt-primary">
               Belum ada bookmark
             </p>
@@ -134,7 +132,7 @@ export default function BookmarkPage() {
                 ) : (
                   <Link href={`/berita/${article.slug}`}>
                     <div className="flex aspect-[16/9] items-center justify-center bg-surface-secondary">
-                      <Bookmark size={32} className="text-txt-muted" />
+                      <span className="font-serif text-sm font-bold uppercase tracking-widest text-txt-muted/40">Lensaplus</span>
                     </div>
                   </Link>
                 )}

@@ -2,7 +2,7 @@ export const revalidate = 60; // ISR: revalidate category page every 60 seconds
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Vote } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import PaginatedArticles from "@/components/artikel/PaginatedArticles";
 import SearchableArticleList from "@/components/artikel/SearchableArticleList";
@@ -249,8 +249,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
         {categoryPolling[params.slug] && (
           <div className="mb-8">
             <div className="flex items-center mb-4">
-              <h2 className="border-l-[3px] border-primary pl-3 text-lg font-bold text-txt-primary flex items-center">
-                <Vote size={18} className="mr-2 text-primary" />
+              <h2 className="border-l-[3px] border-primary pl-3 text-lg font-bold text-txt-primary">
                 Polling {category.name}
               </h2>
             </div>

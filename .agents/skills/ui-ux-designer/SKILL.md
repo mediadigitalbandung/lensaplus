@@ -5,28 +5,31 @@ description: Merancang antarmuka web yang memukau, responsif, berestetika editor
 
 # 🎨 UI/UX Designer Agent — Operational Manual
 
-Dokumentasi ini adalah panduan kerja tingkat lanjut untuk **UI/UX Designer Agent** dalam merancang antarmuka berestetika "Editorial Authority", tata letak responsif, dan mikro-animasi halus untuk Lensaplus v2.0.
+Dokumentasi ini adalah panduan kerja untuk **UI/UX Designer Agent** dalam merancang antarmuka berestetika **"Editorial Authority — Clean Typographic Discipline"** untuk Lensaplus v2.0.
+
+> **Wajib dibaca & dipatuhi:** [docs/DESIGN_SOP.md](../../../docs/DESIGN_SOP.md).
 
 ---
 
 ## 🎯 Panduan Sistem Desain "Editorial Authority"
 
-1. **Token Warna tailwind.config.ts:**
-   - `primary`: `#002045` (Navy Editorial)
-   - `secondary`: `#b7102a` (Crimson Urgensi)
-   - `surface`: `#fcf8f8` / `#ffffff`
-   - `surface-secondary`: `#f3f4f6`
-   - `dark-surface`: `#001530` (Section Sorotan)
+1. **Token Warna Resmi (`tailwind.config.ts`):**
+   - Selalu gunakan token semantik (`primary`, `secondary`, `tertiary`, `surface`, `surface-container-lowest`, `on-surface`, `on-surface-variant`, `border`).
+   - Dilarang memakai warna pastel acak (`bg-blue-50`, `bg-amber-50`, `bg-purple-100`) maupun teks highlight background (`bg-primary/5`, `bg-primary-light`) di belakang label, kategori, tag, status, atau link.
 
 2. **Tipografi & Pasangan Font:**
-   - **Serif (Judul Berita):** `Playfair Display` / `Merriweather` (`font-serif`) — Memberikan kesan kredibel, klasik, dan independen.
-   - **Sans-serif (Interface & Body):** `Inter` (`font-sans`) — Keterbacaan tinggi pada layar hp dan monitor desktop.
+   - **Serif / Heading (`font-serif`):** Untuk judul berita, headline, dan section header.
+   - **Sans-serif (`font-sans`):** Untuk body artikel, antarmuka, metadata, dan kontrol form.
 
-3. **Tata Letak Beranda Hero Grid (6-3-3):**
-   - **Spotlight Utama (6/12 cols):** Gambar 16:10 aspek rasio, badge kategori pill, verified badge, excerpt 3 baris.
-   - **Pilihan Redaksi (3/12 cols):** Berita rekomendasi editor dengan sekat border halus.
-   - **Terhangat (3/12 cols):** Berita real-time 24 jam terakhir dengan ikon `Flame`.
+3. **Disiplin Icon & Anti-Highlight (Aturan Emas SOP):**
+   - **Dilarang Icon Box:** Jangan membungkus icon di dalam lingkaran (`rounded-full`) atau persegi (`rounded-md`/`lg`/`xl`) ber-background warna.
+   - **Penggunaan Icon Minimal:** Hanya gunakan icon bila fungsional (pencarian, navigasi slider, menu, tutup modal, loading, status kritis). Jangan taruh icon dekoratif pada heading, timestamp (`Clock`), view count (`Eye`), atau daftar kategori.
+   - **Tanpa Text Highlight Background:** Kategori, tag, sudut pandang Sorotan, status, dan tautan `"Lihat Semua"` ditampilkan dengan tipografi uppercase bersih, garis aksen (`border-l-4`), atau border netral tipis tanpa blok background warna.
 
-4. **Mikro-Animasi & Glassmorphism:**
+4. **Tata Letak Beranda Hero Grid (6-3-3):**
+   - **Spotlight Utama (6/12 cols):** Gambar 16:10 aspek rasio bersih tanpa pill overlay, label kategori + status terverifikasi berupa teks uppercase di atas judul, excerpt 3 baris.
+   - **Pilihan Redaksi (3/12 cols):** Berita rekomendasi editor dengan sekat border halus, tanpa ikon dekoratif.
+   - **Terhangat (3/12 cols):** Berita terbaru/terhangat berbasis tipografi bersih, tanpa ikon dekoratif.
+
+5. **Mikro-Animasi:**
    - Efek scale gambar pada hover (`group-hover:scale-105 transition-transform duration-700`).
-   - Kartu Sorotan berlatar transparan `bg-white/5 backdrop-blur-md border border-white/10`.

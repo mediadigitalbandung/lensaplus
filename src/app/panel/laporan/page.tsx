@@ -21,13 +21,13 @@ interface Report {
 }
 
 const reasonLabels: Record<string, { label: string; color: string }> = {
-  HOAX: { label: "Berita Palsu/Hoax", color: "bg-red-50 text-red-600" },
-  MISLEADING: { label: "Menyesatkan", color: "bg-yellow-50 text-yellow-600" },
-  INACCURATE: { label: "Tidak Akurat", color: "bg-yellow-50 text-yellow-600" },
-  SARA: { label: "SARA", color: "bg-orange-50 text-orange-600" },
-  PLAGIARISM: { label: "Plagiarisme", color: "bg-blue-50 text-blue-600" },
-  DEFAMATION: { label: "Pencemaran Nama Baik", color: "bg-purple-50 text-purple-600" },
-  OTHER: { label: "Lainnya", color: "bg-surface-tertiary text-txt-secondary" },
+  HOAX: { label: "Berita Palsu/Hoax", color: "text-red-700 font-semibold" },
+  MISLEADING: { label: "Menyesatkan", color: "text-amber-700 font-semibold" },
+  INACCURATE: { label: "Tidak Akurat", color: "text-amber-700 font-semibold" },
+  SARA: { label: "SARA", color: "text-orange-700 font-semibold" },
+  PLAGIARISM: { label: "Plagiarisme", color: "text-blue-700 font-semibold" },
+  DEFAMATION: { label: "Pencemaran Nama Baik", color: "text-purple-700 font-semibold" },
+  OTHER: { label: "Lainnya", color: "text-txt-secondary font-medium" },
 };
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
@@ -252,7 +252,7 @@ export default function LaporanPage() {
                           <button
                             onClick={() => handleUpdateStatus(report.id, "REVIEWED")}
                             disabled={updating === report.id}
-                            className="rounded-lg bg-primary-light px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                            className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary hover:text-white transition-colors disabled:opacity-50"
                             aria-label="Tinjau laporan"
                           >
                             {updating === report.id ? "..." : "Tinjau"}
@@ -260,7 +260,7 @@ export default function LaporanPage() {
                           <button
                             onClick={() => handleUpdateStatus(report.id, "DISMISSED")}
                             disabled={updating === report.id}
-                            className="rounded-lg bg-surface-tertiary px-4 py-2 text-sm font-medium text-txt-secondary hover:bg-border disabled:opacity-50"
+                            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-txt-secondary hover:border-primary/40 disabled:opacity-50"
                             aria-label="Tolak laporan"
                           >
                             {updating === report.id ? "..." : "Tolak"}
@@ -272,7 +272,7 @@ export default function LaporanPage() {
                           <button
                             onClick={() => handleUpdateStatus(report.id, "RESOLVED")}
                             disabled={updating === report.id}
-                            className="rounded-lg bg-primary-light px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                            className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary hover:text-white transition-colors disabled:opacity-50"
                             aria-label="Tandai laporan selesai"
                           >
                             {updating === report.id ? "..." : "Tandai Selesai"}

@@ -167,22 +167,22 @@ export default function HeadlineSlider({ items }: HeadlineSliderProps) {
         </div>
       </div>
 
-      {/* Arrows — always visible, elegant */}
+      {/* Arrows — bare editorial chevrons without circular backgrounds */}
       {total > 1 && (
         <>
           <button
             onClick={prev}
-            className="absolute left-1 sm:left-3 top-1/2 -translate-y-1/2 z-20 flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/60 backdrop-blur-sm transition-all duration-200 hover:border-white/40 hover:bg-black/40 hover:text-white hover:scale-110"
+            className="absolute left-1 sm:left-3 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center text-white/75 drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)] transition-all duration-200 hover:text-white hover:scale-110"
             aria-label="Previous"
           >
-            <ChevronLeft size={18} strokeWidth={1.5} />
+            <ChevronLeft size={22} strokeWidth={1.75} />
           </button>
           <button
             onClick={next}
-            className="absolute right-1 sm:right-3 top-1/2 -translate-y-1/2 z-20 flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/60 backdrop-blur-sm transition-all duration-200 hover:border-white/40 hover:bg-black/40 hover:text-white hover:scale-110"
+            className="absolute right-1 sm:right-3 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center text-white/75 drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)] transition-all duration-200 hover:text-white hover:scale-110"
             aria-label="Next"
           >
-            <ChevronRight size={18} strokeWidth={1.5} />
+            <ChevronRight size={22} strokeWidth={1.75} />
           </button>
         </>
       )}

@@ -566,7 +566,7 @@ export default function TiktokEditorPage() {
                       <p className="text-[10px] text-txt-muted flex flex-wrap items-center gap-1.5">
                         <span>{humanSize(s.size)}</span>
                         {s.kind === "VIDEO" && (s.trimStartMs > 0 || s.trimEndMs !== null) && (
-                          <span className="inline-flex items-center rounded-lg bg-primary-light px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                          <span className="text-[10px] font-semibold text-primary">
                             Trim: {(s.trimStartMs / 1000).toFixed(1)}s - {s.trimEndMs !== null ? `${(s.trimEndMs / 1000).toFixed(1)}s` : "end"}
                           </span>
                         )}
@@ -1304,7 +1304,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                     type="button"
                     onClick={startPreview}
                     disabled={previewing}
-                    className="flex items-center gap-1 rounded-lg bg-blue-50 text-blue-700 px-3 py-1.5 text-xs font-semibold hover:bg-blue-100 disabled:opacity-50"
+                    className="flex items-center gap-1 rounded-lg border border-blue-300 bg-surface text-blue-700 px-3 py-1.5 text-xs font-semibold hover:border-blue-500 disabled:opacity-50"
                   >
                     <Play size={12} className="text-blue-700" />
                     Preview Clip

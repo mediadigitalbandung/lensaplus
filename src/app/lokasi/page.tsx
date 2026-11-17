@@ -4,10 +4,6 @@ import Link from "next/link";
 import { Metadata } from "next";
 import {
   ChevronRight,
-  MapPin,
-  Phone,
-  Clock,
-  Building2,
   ExternalLink,
 } from "lucide-react";
 import { courtLocations } from "@/data/court-locations";
@@ -49,8 +45,7 @@ export default function LokasiIndexPage() {
         <div className="mb-8 max-w-2xl">
           <div className="flex items-center gap-3">
             <span className="block h-7 w-[3px] rounded-full bg-secondary" />
-            <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
-              <Building2 size={22} className="text-primary" />
+            <h1 className="text-xl font-bold text-txt-primary sm:text-2xl lg:text-3xl">
               Direktori Lokasi Pengadilan
             </h1>
           </div>
@@ -68,7 +63,7 @@ export default function LokasiIndexPage() {
               className="group flex h-full flex-col rounded-lg border border-border bg-surface-container-lowest p-5 shadow-card transition-all hover:border-primary/40 hover:shadow-card-hover hover:-translate-y-0.5"
             >
               <div className="mb-3 flex items-center justify-between gap-2">
-                <span className="inline-block rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
                   {TYPE_LABEL[c.type] ?? c.type}
                 </span>
                 <span className="text-xs text-on-surface-variant">{c.city}</span>
@@ -81,19 +76,19 @@ export default function LokasiIndexPage() {
               <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant">
                 {c.description}
               </p>
-              <div className="mt-4 space-y-2 text-sm text-on-surface-variant">
-                <div className="flex items-start gap-2">
-                  <MapPin size={14} className="mt-0.5 shrink-0 text-primary" />
-                  <span className="line-clamp-2">{c.address}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Phone size={14} className="mt-0.5 shrink-0 text-primary" />
-                  <span>{c.phone}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Clock size={14} className="mt-0.5 shrink-0 text-primary" />
-                  <span>{c.hours}</span>
-                </div>
+              <div className="mt-4 space-y-1.5 text-sm text-on-surface-variant border-t border-border pt-3">
+                <p className="line-clamp-2">
+                  <span className="font-semibold text-on-surface">Alamat: </span>
+                  {c.address}
+                </p>
+                <p>
+                  <span className="font-semibold text-on-surface">Telp: </span>
+                  {c.phone}
+                </p>
+                <p>
+                  <span className="font-semibold text-on-surface">Jam: </span>
+                  {c.hours}
+                </p>
               </div>
               <div className="mt-auto flex items-center justify-between gap-3 pt-4">
                 <Link

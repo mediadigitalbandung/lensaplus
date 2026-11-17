@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { Scale, ExternalLink, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { ExternalLink, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import type { RegulationType, RegulationStatus } from "@prisma/client";
 
 export const revalidate = 600;
@@ -35,24 +35,6 @@ const TYPE_LABELS: Record<RegulationType, string> = {
   OTHER: "Lainnya",
 };
 
-const TYPE_COLORS: Record<RegulationType, string> = {
-  UU: "bg-blue-100 text-blue-800",
-  PERPPU: "bg-indigo-100 text-indigo-800",
-  PP: "bg-sky-100 text-sky-800",
-  PERPRES: "bg-violet-100 text-violet-800",
-  KEPPRES: "bg-purple-100 text-purple-800",
-  INPRES: "bg-fuchsia-100 text-fuchsia-800",
-  PERMEN: "bg-teal-100 text-teal-800",
-  KEPMEN: "bg-cyan-100 text-cyan-800",
-  PERDA_PROV: "bg-emerald-100 text-emerald-800",
-  PERDA_KAB: "bg-green-100 text-green-800",
-  PERGUB: "bg-lime-100 text-lime-800",
-  PERWAL: "bg-yellow-100 text-yellow-800",
-  PUTUSAN_MK: "bg-red-100 text-red-800",
-  PUTUSAN_MA: "bg-orange-100 text-orange-800",
-  OTHER: "bg-surface-tertiary text-txt-secondary",
-};
-
 const STATUS_LABELS: Record<RegulationStatus, string> = {
   DRAFT_RUU: "RUU",
   ENACTED: "Berlaku",
@@ -60,11 +42,11 @@ const STATUS_LABELS: Record<RegulationStatus, string> = {
   REVOKED: "Dicabut",
 };
 
-const STATUS_COLORS: Record<RegulationStatus, string> = {
-  DRAFT_RUU: "bg-yellow-50 text-yellow-700 border border-yellow-200",
-  ENACTED: "bg-primary-light text-primary border border-primary/20",
-  AMENDED: "bg-blue-50 text-blue-700 border border-blue-200",
-  REVOKED: "bg-red-50 text-red-700 border border-red-200",
+const STATUS_TEXT_COLORS: Record<RegulationStatus, string> = {
+  DRAFT_RUU: "text-amber-700 font-semibold",
+  ENACTED: "text-primary font-semibold",
+  AMENDED: "text-blue-700 font-semibold",
+  REVOKED: "text-red-700 font-semibold",
 };
 
 const ALL_TYPES: RegulationType[] = [
@@ -186,13 +168,10 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
 
       <div className="container-main py-8 sm:py-12">
         {/* Page header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Scale size={28} className="text-primary shrink-0" />
-            <h1 className="font-serif text-headline-md text-txt-primary">
-              Regulasi
-            </h1>
-          </div>
+        <div className="mb-8 border-l-4 border-primary pl-3">
+          <h1 className="font-serif text-headline-md text-txt-primary mb-1">
+            Regulasi
+          </h1>
           <p className="text-body-md text-txt-secondary max-w-2xl">
             Direktori peraturan perundang-undangan Indonesia — Undang-Undang,
             Peraturan Pemerintah, Perpres, Permen, Perda, hingga Putusan
@@ -230,14 +209,14 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
             )}
           </form>
 
-          {/* Type filter pills */}
+          {/* Type filter tabs */}
           <div className="flex flex-wrap gap-2">
             <Link
               href={buildHref({ type: undefined, page: "1" })}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
                 !typeParam
-                  ? "bg-primary text-white"
-                  : "bg-surface-tertiary text-txt-secondary hover:bg-border"
+                  ? "border-primary text-primary font-bold bg-surface"
+                  : "border-border bg-surface text-txt-secondary hover:border-primary/40 hover:text-primary"
               }`}
             >
               Semua
@@ -246,10 +225,10 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
               <Link
                 key={t}
                 href={buildHref({ type: t, page: "1" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
                   typeParam === t
-                    ? "bg-primary text-white"
-                    : "bg-surface-tertiary text-txt-secondary hover:bg-border"
+                    ? "border-primary text-primary font-bold bg-surface"
+                    : "border-border bg-surface text-txt-secondary hover:border-primary/40 hover:text-primary"
                 }`}
               >
                 {TYPE_LABELS[t]}
@@ -267,8 +246,7 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
 
         {/* Card list */}
         {regulations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface py-20 text-center">
-            <FileText size={40} className="mx-auto text-border mb-3" />
+          <div className="rounded-xl border border-border bg-surface py-20 text-center">
             <p className="text-sm text-txt-secondary">
               Belum ada regulasi yang sesuai.
             </p>
@@ -280,20 +258,16 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
                 key={reg.id}
                 className="card flex flex-col gap-2 rounded-lg border border-border bg-surface p-4 sm:p-5 transition-shadow hover:shadow-card-hover sm:flex-row sm:items-start sm:gap-5"
               >
-                {/* Left: badges */}
-                <div className="flex shrink-0 flex-wrap gap-2 sm:w-40 sm:flex-col sm:gap-1.5">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${TYPE_COLORS[reg.type]}`}
-                  >
+                {/* Left: labels */}
+                <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 sm:w-44 sm:flex-col sm:items-start sm:gap-1 sm:border-r sm:border-border sm:pr-4">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
                     {TYPE_LABELS[reg.type]}
                   </span>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[reg.status]}`}
-                  >
+                  <span className={`text-xs ${STATUS_TEXT_COLORS[reg.status]}`}>
                     {STATUS_LABELS[reg.status]}
                   </span>
                   {reg.topic && (
-                    <span className="inline-flex items-center rounded-full bg-surface-secondary px-2.5 py-0.5 text-xs text-txt-muted">
+                    <span className="text-xs text-txt-muted">
                       {reg.topic}
                     </span>
                   )}

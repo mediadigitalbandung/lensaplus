@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { ArrowLeft, BookOpen, Tag as TagIcon } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import DOMPurify from "isomorphic-dompurify";
 
 export const revalidate = 300;
@@ -23,7 +23,7 @@ const RANAH_LABEL: Record<string, string> = {
 export async function generateMetadata({ params: paramsPromise }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const params = await paramsPromise;
   const item = await prisma.glossary.findUnique({
-    where: { slug: params.slug },
+    where: { slug: params.slug, isPublished: true },
     select: { istilah: true, singkatan: true, ranah: true, bodyHtml: true },
   });
   if (!item) return { title: "Istilah tidak ditemukan | Lensaplus" };
@@ -124,7 +124,7 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
           {/* Header */}
           <header className="mb-8 border-b border-outline-variant/40 pb-8">
             <div className="mb-3 flex items-center gap-2 text-label-md uppercase tracking-wider">
-              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-primary font-semibold">
+              <span className="text-primary font-bold">
                 {RANAH_LABEL[item.ranah]}
               </span>
               {item.singkatan && (
@@ -138,14 +138,13 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
               </p>
             )}
             {item.tags && item.tags.length > 0 && (
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <TagIcon size={14} className="text-on-surface-variant/50" />
-                {item.tags.map((tag) => (
+              <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1">
+                {item.tags.map((tag, idx) => (
                   <span
                     key={tag}
-                    className="rounded-lg bg-surface-container-low px-2 py-0.5 text-label-sm text-on-surface-variant"
+                    className="text-label-sm text-on-surface-variant"
                   >
-                    {tag}
+                    #{tag}{idx < item.tags!.length - 1 ? " ·" : ""}
                   </span>
                 ))}
               </div>
@@ -161,8 +160,7 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
           {/* Related */}
           {related.length > 0 && (
             <section className="mt-12 border-t border-outline-variant/40 pt-8">
-              <h2 className="mb-4 flex items-center gap-2 font-serif text-headline-sm text-on-surface">
-                <BookOpen size={18} className="text-primary" />
+              <h2 className="mb-4 font-serif text-headline-sm text-on-surface border-l-4 border-primary pl-3">
                 Lihat Juga
               </h2>
               <ul className="space-y-2">
@@ -184,7 +182,7 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
           )}
 
           {/* Footer disclaimer */}
-          <div className="mt-12 rounded-md bg-primary/5 p-4 text-body-sm text-on-surface-variant">
+          <div className="mt-12 border-l-4 border-primary/40 pl-4 py-1 text-body-sm text-on-surface-variant">
             Definisi di sini adalah ringkasan untuk pembaca awam. Untuk konsultasi hukum
             profesional, hubungi advokat berlisensi.
           </div>

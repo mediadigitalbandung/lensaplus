@@ -243,10 +243,10 @@ export default function SlotWireframe({ slot }: { slot: string }) {
       </div>
 
       {/* ── Spec Summary ── */}
-      <div className="mt-4 rounded-lg bg-primary-light/50 p-3 space-y-1.5">
+      <div className="mt-4 rounded-lg border border-border border-l-4 border-l-primary bg-surface p-3 space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-txt-primary">{slotLabels[slot]}</span>
-          <span className="rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold text-white">{spec?.ratio}</span>
+          <span className="font-mono text-xs font-bold text-primary">{spec?.ratio}</span>
         </div>
         <p className="text-xs text-txt-secondary">{spec?.desc}</p>
         <div className="flex gap-3 text-[10px] text-txt-muted">

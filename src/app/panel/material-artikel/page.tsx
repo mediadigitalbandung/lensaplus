@@ -24,7 +24,6 @@ import {
   ArrowRight,
   Info,
   FileText,
-  Upload,
   RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
@@ -429,7 +428,7 @@ export default function MaterialArtikelPage() {
             </p>
           </button>
         ) : (
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary-light p-4">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border border-l-4 border-l-primary bg-surface p-4">
             <div className="flex items-center gap-3 min-w-0">
               <FileText size={20} className="shrink-0 text-primary" />
               <div className="min-w-0">
