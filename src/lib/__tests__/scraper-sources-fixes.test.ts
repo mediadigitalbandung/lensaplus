@@ -82,6 +82,8 @@ import { fetchListing } from "../scraper/fetch-listing";
 import { fetchSourceListing } from "../scraper/crawl-listings";
 import { fetchArticle } from "../scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "../scraper/paraphrase";
+import { detectLanguage, isForeignLanguage, languageLabelId } from "../scraper/lang";
+import { translatePreviewItems } from "../scraper/preview-translate";
 
 describe("scraper html-utils & validation", () => {
   it("pickImageSrc skips data: lazy-load placeholders and prefers data-src", () => {
@@ -547,5 +549,118 @@ describe("scraper image extraction & hero fallbacks", () => {
     expect(mockDownloadImage.mock.calls[0]?.[1]?.referer).toBe(
       "https://example.id/berita/ekonomi",
     );
+  });
+});
+
+describe("multi-language detection, translation & concept paraphrasing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("detectLanguage handles non-Latin scripts, European languages, and ignores stale <html lang='en'> on Indonesian text", () => {
+    expect(
+      detectLanguage(
+        "Pemerintah Provinsi Jawa Barat akan menggelar rapat koordinasi dengan pelaku industri untuk mendorong investasi dan perdagangan daerah.",
+        "en",
+      ),
+    ).toBe("id");
+
+    expect(
+      detectLanguage(
+        "The central bank announced that interest rates will remain unchanged after inflation cooled across key sectors.",
+      ),
+    ).toBe("en");
+
+    expect(detectLanguage("東京で新しい経済政策が発表されました。政府は中小企業を支援する方針です。")).toBe("ja");
+    expect(detectLanguage("한국 정부는 새로운 디지털 경제 정책을 발표하며 스타트업 지원을 확대할 예정이다.")).toBe("ko");
+    expect(detectLanguage("中国央行宣布下调存款准备金率，以进一步支持实体经济和中小企业发展。")).toBe("zh");
+    expect(detectLanguage("أعلنت الحكومة عن حزمة إصلاحات اقتصادية جديدة لدعم الشركات الناشئة والتجارة.")).toBe("ar");
+    expect(isForeignLanguage("ja")).toBe(true);
+    expect(isForeignLanguage("id")).toBe(false);
+    expect(languageLabelId("ja")).toBe("Jepang");
+    expect(languageLabelId("en")).toBe("Inggris");
+  });
+
+  it("paraphraseAndCreateDraft enforces concept-level paraphrasing & direct Indonesian translation for non-Indonesian sources", async () => {
+    mockCallAI.mockResolvedValueOnce({
+      text: JSON.stringify({
+        title: "Bank Sentral Jepang Pertahankan Suku Bunga Acuan",
+        excerpt: "",
+        content: "<p>Bank Sentral Jepang memutuskan mempertahankan suku bunga acuan demi menjaga stabilitas inflasi nasional.</p>",
+        suggestedTags: ["jepang", "ekonomi"],
+      }),
+      provider: "deepseek",
+      totalTokens: 450,
+    });
+    mockArticleFindUnique.mockResolvedValueOnce(null);
+    mockTagFindMany.mockResolvedValueOnce([]);
+    mockTagCreate.mockResolvedValue({ id: "t1" });
+    mockArticleCreate.mockResolvedValueOnce({
+      id: "art-ja-1",
+      slug: "bank-sentral-jepang",
+      title: "Bank Sentral Jepang Pertahankan Suku Bunga Acuan",
+    });
+
+    await paraphraseAndCreateDraft({
+      source: {
+        url: "https://www3.nhk.or.jp/news/123",
+        title: "日銀 金融政策の現状維持を決定",
+        excerpt: "日銀は金融政策決定会合を開き、現在の緩和策を維持することを決めました。",
+        contentHtml: "<p>日本銀行は金融政策決定会合を開き、物価安定目標に向けて現在の政策を維持しました。</p>",
+        wordCount: 80,
+        lang: "ja",
+      },
+      sourceName: "NHK",
+      authorId: "u1",
+      authorName: "Editor",
+      categoryId: "c1",
+      downloadImage: false,
+    });
+
+    const aiOpts = mockCallAI.mock.calls[0][0];
+    expect(aiOpts.systemPrompt).toContain("menerjemahkan langsung");
+    expect(aiOpts.userPrompt).toContain("PARAFRASE BERBASIS KONSEP");
+    expect(aiOpts.userPrompt).toContain("berbahasa Jepang");
+
+    // Empty parsed.excerpt on foreign source must NOT leak Japanese source.excerpt
+    const savedExcerpt = mockArticleCreate.mock.calls[0][0].data.excerpt as string;
+    expect(savedExcerpt).toContain("Bank Sentral Jepang");
+    expect(savedExcerpt).not.toContain("日銀");
+  });
+
+  it("translatePreviewItems translates foreign headlines/snippets and falls back cleanly on AI failure", async () => {
+    mockCallAI.mockResolvedValueOnce({
+      text: JSON.stringify([
+        {
+          idx: 0,
+          title: "Pasar Saham Asia Menguat Setelah Rilis Data Ekspor",
+          snippet: "Indeks utama di kawasan Asia dibuka menguat pada perdagangan pagi ini.",
+        },
+      ]),
+      provider: "deepseek",
+      totalTokens: 120,
+    });
+
+    const inputItems = [
+      {
+        url: "https://example.com/1",
+        title: "Asian markets rise after strong export figures",
+        snippet: "Major indexes across Asia opened higher in morning trading.",
+      },
+    ];
+
+    const ok = await translatePreviewItems(inputItems, "en", {
+      userId: "u1",
+      userName: "Editor",
+    });
+    expect(ok.applied).toBe(true);
+    expect(ok.items[0].title).toBe("Pasar Saham Asia Menguat Setelah Rilis Data Ekspor");
+    expect(ok.items[0].originalTitle).toBe("Asian markets rise after strong export figures");
+    expect(ok.items[0].translated).toBe(true);
+
+    mockCallAI.mockRejectedValueOnce(new Error("API unavailable"));
+    const fail = await translatePreviewItems(inputItems, "en");
+    expect(fail.applied).toBe(false);
+    expect(fail.items[0].title).toBe("Asian markets rise after strong export figures");
   });
 });

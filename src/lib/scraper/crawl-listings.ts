@@ -40,6 +40,8 @@ interface CrawlResult {
   pagesVisited: string[];
   /** First selector that matched on the root page. */
   selectorUsed: string;
+  /** Optional HTML/RSS language attribute from the listing root. */
+  htmlLang?: string;
 }
 
 /**
@@ -230,6 +232,7 @@ export async function crawlListings(
   const allItems: ListingItem[] = [];
   const pagesVisited: string[] = [];
   let firstSelectorUsed = "";
+  let firstHtmlLang: string | undefined;
   let succeededRoots = 0;
   let firstRootError: Error | null = null;
 
@@ -253,6 +256,7 @@ export async function crawlListings(
       allItems.push(...r.items);
       succeededRoots++;
       if (!firstSelectorUsed) firstSelectorUsed = r.selectorUsed;
+      if (!firstHtmlLang && r.htmlLang) firstHtmlLang = r.htmlLang;
     } catch (err) {
       pagesVisited.push(pageUrl);
       if (!firstRootError) {
@@ -315,6 +319,7 @@ export async function crawlListings(
     items: deduped,
     pagesVisited,
     selectorUsed: firstSelectorUsed || "(no cards detected)",
+    htmlLang: firstHtmlLang,
   };
 }
 
@@ -337,7 +342,7 @@ export interface SourceListingConfig {
  */
 export async function fetchSourceListing(
   source: SourceListingConfig,
-): Promise<{ items: ListingItem[]; selectorUsed: string; pagesVisited: string[] }> {
+): Promise<{ items: ListingItem[]; selectorUsed: string; pagesVisited: string[]; htmlLang?: string }> {
   const scrapeOptions: ScraperOptions = {
     articleSelector: source.articleSelector || undefined,
     titleSelector: source.titleSelector || undefined,
@@ -361,5 +366,6 @@ export async function fetchSourceListing(
     items: r.items,
     selectorUsed: r.selectorUsed,
     pagesVisited: [source.listingUrl],
+    htmlLang: r.htmlLang,
   };
 }

@@ -16,6 +16,8 @@ import {
 } from "@/lib/api-utils";
 import { fetchSourceListing } from "@/lib/scraper/crawl-listings";
 import { getClaimsForUrls } from "@/lib/scraper/claim";
+import { detectLanguage, isForeignLanguage, languageLabelId } from "@/lib/scraper/lang";
+import { translatePreviewItems } from "@/lib/scraper/preview-translate";
 import { SCRAPER_ROLES } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +52,7 @@ export async function POST(
       throw new ApiError(`Gagal preview listing: ${msg}`, 502);
     }
 
-    const { items, selectorUsed, pagesVisited } = listing;
+    const { items, selectorUsed, pagesVisited, htmlLang } = listing;
     await prisma.newsSource
       .update({
         where: { id: source.id },
@@ -114,12 +116,34 @@ export async function POST(
       };
     });
 
-    const visibleItems = enriched.slice(0, 60); // cap so preview is snappy
+    const visibleItemsRaw = enriched.slice(0, 60); // cap so preview is snappy
+    const sampleText = visibleItemsRaw
+      .slice(0, 20)
+      .map((i) => `${i.title} ${i.snippet || ""}`)
+      .join(" ");
+    const detectedLang = detectLanguage(sampleText, htmlLang);
+    const foreign = isForeignLanguage(detectedLang);
+
+    let visibleItems = visibleItemsRaw;
+    let translatedPreview = false;
+    if (foreign && detectedLang && visibleItemsRaw.length > 0) {
+      const tr = await translatePreviewItems(visibleItemsRaw, detectedLang, {
+        userId: session.user.id,
+        userName: session.user.name || session.user.email || "user",
+      });
+      visibleItems = tr.items;
+      translatedPreview = tr.applied;
+    }
+
     const countBy = (status: string) =>
       visibleItems.filter((i) => i.articleStatus === status).length;
 
     return successResponse({
       selectorUsed,
+      detectedLang: detectedLang ?? null,
+      detectedLangLabel: detectedLang ? languageLabelId(detectedLang) : null,
+      isForeign: foreign,
+      translatedPreview,
       total: items.length,
       newCount: countBy("NEW"),
       totalNewCount: enriched.filter((i) => i.articleStatus === "NEW").length,

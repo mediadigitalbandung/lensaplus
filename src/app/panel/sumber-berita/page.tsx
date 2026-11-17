@@ -89,8 +89,11 @@ type PreviewArticleStatus =
 interface PreviewItem {
   url: string;
   title: string;
+  originalTitle?: string;
   thumbnail?: string;
   snippet?: string;
+  originalSnippet?: string;
+  translated?: boolean;
   alreadyScraped: boolean;
   canGenerate?: boolean;
   wasDeleted?: boolean;
@@ -107,6 +110,10 @@ interface PreviewItem {
 
 interface PreviewResponse {
   selectorUsed: string;
+  detectedLang?: string | null;
+  detectedLangLabel?: string | null;
+  isForeign?: boolean;
+  translatedPreview?: boolean;
   total: number;
   newCount: number;
   totalNewCount?: number;
@@ -237,7 +244,7 @@ export default function SumberBeritaPage() {
   async function handleScrape(s: NewsSource, limit = 3) {
     const ok = await confirm({
       title: "Jalankan scrape?",
-      message: `Akan mengambil maksimal ${limit} artikel baru dari ${s.name}, paraphrase via AI, lalu simpan sebagai draft. Lanjut?`,
+      message: `Akan mengambil maksimal ${limit} artikel baru dari ${s.name}, diterjemahkan langsung ke Bahasa Indonesia bila berbahasa asing, lalu diparafrase konsepnya via AI menjadi draft. Lanjut?`,
       variant: "default",
     });
     if (!ok) return;
@@ -411,9 +418,8 @@ export default function SumberBeritaPage() {
             Sumber Berita
           </h1>
           <p className="mt-1 max-w-3xl text-sm text-txt-secondary">
-            Pilih sumber, <strong>Preview</strong>, lalu <strong>Generate</strong> — Lensaplus ambil judul, isi, dan
-            gambar, paraphrase via AI jadi draft baru atas nama Anda. Setiap artikel <strong>dikunci begitu diambil</strong>:
-            kalau penulis lain sudah mengambilnya, artikel itu otomatis terkunci dan tidak bisa diambil dobel.
+            Pilih sumber, <strong>Preview</strong>, lalu <strong>Generate</strong> — Lensaplus mengambil judul, isi, dan
+            gambar, melakukan <strong>parafrase berbasis konsep</strong> (dan otomatis <strong>menerjemahkan ke Bahasa Indonesia</strong> jika sumber berbahasa asing) menjadi draft baru atas nama Anda. Setiap artikel <strong>dikunci begitu diambil</strong> agar tidak diambil ganda.
             <> Daftar sumber ini <strong>milik akun Anda sendiri</strong> — tambah situs yang ingin Anda scrape.</>
             {isSuperAdmin && (
               <> Sebagai Super Admin, Anda melihat sumber dari <strong>semua akun</strong> (ada keterangan pemiliknya).</>
@@ -1274,6 +1280,7 @@ function PreviewModal({
   const [filterTab, setFilterTab] = useState<
     "ALL" | "NEW" | "DELETED" | "IN_PROGRESS" | "PUBLISHED"
   >("ALL");
+  const [showOriginalText, setShowOriginalText] = useState(false);
   // Bulk-generate progress state.
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; failed: number } | null>(null);
@@ -1429,6 +1436,7 @@ function PreviewModal({
     }
   }
 
+  const hasTranslatedItems = data.items.some((item) => Boolean(item.translated));
   const effectiveStatuses = data.items.map((item) => ({
     item,
     effective: getEffectiveStatus(item),
@@ -1548,6 +1556,14 @@ function PreviewModal({
               <p className="mt-0.5 text-[11px] text-txt-muted">
                 Klik <strong>Generate</strong> untuk artikel baru, atau{" "}
                 <strong>Generate Lagi</strong> untuk artikel yang drafnya sudah dihapus.
+                {data.isForeign && data.detectedLangLabel && (
+                  <>
+                    {" "}· Bahasa sumber: <strong>{data.detectedLangLabel}</strong>{" "}
+                    {data.translatedPreview
+                      ? "(daftar judul & draf otomatis diterjemahkan + diparafrase konsep ke Bahasa Indonesia)"
+                      : "(draf artikel otomatis diterjemahkan & diparafrase konsep ke Bahasa Indonesia saat Generate)"}
+                  </>
+                )}
               </p>
               {bulkProgress && (
                 <p className="mt-1 text-[11px] font-semibold text-primary">
@@ -1603,29 +1619,42 @@ function PreviewModal({
           </div>
 
           {/* Filter status */}
-          <div className="flex flex-wrap gap-1.5">
-            {(
-              [
-                { key: "ALL", label: `Semua (${data.items.length})` },
-                { key: "NEW", label: `Baru (${countNew})` },
-                { key: "DELETED", label: `Dihapus (${countDeleted})` },
-                { key: "IN_PROGRESS", label: `Draf / Review (${countInProgress})` },
-                { key: "PUBLISHED", label: `Dipublikasi (${countPublished})` },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setFilterTab(tab.key)}
-                className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                  filterTab === tab.key
-                    ? "border-primary text-primary bg-surface"
-                    : "border-border text-txt-secondary hover:border-primary/50 hover:text-txt-primary"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  { key: "ALL", label: `Semua (${data.items.length})` },
+                  { key: "NEW", label: `Baru (${countNew})` },
+                  { key: "DELETED", label: `Dihapus (${countDeleted})` },
+                  { key: "IN_PROGRESS", label: `Draf / Review (${countInProgress})` },
+                  { key: "PUBLISHED", label: `Dipublikasi (${countPublished})` },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setFilterTab(tab.key)}
+                  className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    filterTab === tab.key
+                      ? "border-primary text-primary bg-surface"
+                      : "border-border text-txt-secondary hover:border-primary/50 hover:text-txt-primary"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            {hasTranslatedItems && (
+              <label className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-txt-secondary">
+                <input
+                  type="checkbox"
+                  checked={showOriginalText}
+                  onChange={(e) => setShowOriginalText(e.target.checked)}
+                  className="h-3.5 w-3.5 accent-primary"
+                />
+                Tampilkan judul asli
+              </label>
+            )}
           </div>
         </div>
 
@@ -1685,9 +1714,19 @@ function PreviewModal({
                         <p className="line-clamp-2 text-sm font-medium text-txt-primary">
                           {item.title}
                         </p>
+                        {showOriginalText && item.originalTitle && (
+                          <p className="mt-0.5 line-clamp-2 text-[11px] italic text-txt-muted">
+                            Asli ({data.detectedLangLabel || "Asing"}): {item.originalTitle}
+                          </p>
+                        )}
                         {item.snippet && (
                           <p className="mt-1 line-clamp-2 text-[11px] text-txt-muted">
                             {item.snippet}
+                          </p>
+                        )}
+                        {showOriginalText && item.originalSnippet && (
+                          <p className="mt-0.5 line-clamp-2 text-[10px] italic text-txt-muted">
+                            {item.originalSnippet}
                           </p>
                         )}
                         <div className="mt-1 flex items-center gap-1.5">

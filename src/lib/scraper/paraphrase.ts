@@ -27,10 +27,16 @@ import { slugify } from "@/lib/utils";
 import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
 import { downloadImageToUploads } from "./download-image";
 import { pickImageSrc, looksLikeContentImageUrl } from "./html-utils";
+import { detectLanguage, isForeignLanguage, languageLabelId } from "./lang";
 import { sourceLabelFromUrl } from "./source-label";
 import type { ScrapedArticle } from "./types";
 
 const MAX_BODY_IMAGES = 5;
+
+const PARAPHRASE_SYSTEM_PROMPT =
+  "Kamu adalah redaktur senior di Lensaplus (media berita digital nasional Indonesia). " +
+  "Tugasmu memahami konsep/inti berita dari naskah sumber, menerjemahkan langsung bila sumber berbahasa asing, lalu menuliskannya ulang dari nol menjadi berita Bahasa Indonesia yang orisinal, lugas sesuai PUEBI/EYD, akurat pada fakta, dan tidak menjiplak kalimat sumber. " +
+  "Jawab HANYA dalam format JSON valid tanpa markdown code fence dan tanpa teks tambahan di luar JSON.";
 
 /**
  * Pull every `<img>` URL from the source body in document order, dedup,
@@ -267,42 +273,55 @@ export async function paraphraseAndCreateDraft(
   // be parsed into a brand.
   const creditLabel = sourceLabelFromUrl(source.url) ?? sourceName;
 
-  const isEnglish = source.lang === "en";
-  const langInstruction = isEnglish
-    ? `Sumber dalam Bahasa Inggris — terjemahkan SEKALIGUS parafrase ke Bahasa Indonesia jurnalistik yang baik dan benar.`
-    : `Sumber dalam Bahasa Indonesia — parafrase ulang dengan kalimat yang berbeda namun mempertahankan fakta.`;
+  const plainSourceText = source.contentHtml
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const detectedLang =
+    source.lang || detectLanguage(`${source.title} ${plainSourceText}`);
+  const foreignSource = isForeignLanguage(detectedLang);
+  const langLabel = languageLabelId(detectedLang);
 
-  const userPrompt = `Anda menulis ulang sebuah artikel berita untuk Lensaplus (media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain) dengan gaya jurnalistik objektif.
+  const langInstruction = foreignSource
+    ? `TERJEMAHAN OTOMATIS KE BAHASA INDONESIA (WAJIB): Sumber berita ini terdeteksi berbahasa ${langLabel}. ` +
+      `TERJEMAHKAN LANGSUNG seluruh komponen — judul, ringkasan, seluruh isi artikel, kutipan langsung narasumber, istilah, dan tag — ke dalam Bahasa Indonesia jurnalistik yang alami, mengalir, dan sesuai PUEBI/EYD. Jangan menyisakan kalimat berbahasa asing.`
+    : detectedLang === "id"
+      ? `BAHASA OUTPUT: Tetap dalam Bahasa Indonesia jurnalistik sesuai PUEBI/EYD dengan susunan kalimat yang sepenuhnya baru.`
+      : `DETEKSI & TERJEMAHAN BAHASA (WAJIB): Periksa bahasa teks sumber terlebih dahulu. Bila sumber BUKAN Bahasa Indonesia, terjemahkan langsung seluruh komponen (judul, ringkasan, isi, kutipan narasumber, dan tag) ke Bahasa Indonesia jurnalistik yang alami sekaligus parafrase; bila sudah Bahasa Indonesia, parafrase ulang sepenuhnya.`;
+
+  const userPrompt = `Anda menuliskan ulang berita dari sumber eksternal untuk Lensaplus dengan metode PARAFRASE BERBASIS KONSEP (bukan sekadar mengganti sinonim kata per kata).
 
 ${langInstruction}
 
-ATURAN WAJIB:
-- JANGAN menjiplak kalimat sumber. Susun ulang sepenuhnya.
-- JANGAN tambahkan klaim yang tidak ada di sumber.
-- Pertahankan SEMUA angka, nama, jabatan, dan kutipan langsung dari sumber dengan akurat.
-- Lead paragraf wajib menjawab 5W+1H.
-- Panjang body: 500-800 kata.
-- Hasil HTML rapi: <p>, <h2>, <ul>, <strong> seperlunya.
+METODE PARAFRASE KONSEP & ATURAN JURNALISTIK:
+1. Serap konsep inti berita (5W+1H, sebab-akibat, konteks kebijakan/bisnis/peristiwa, dan dampaknya), lalu bangun ulang alur cerita sepenuhnya memakai struktur piramida terbalik redaksi Lensaplus.
+2. DILARANG menjiplak struktur kalimat sumber atau menerjemahkan secara kaku kata per kata. Ubah struktur kalimat, urutan penyajian, serta transisi antarparagraf.
+3. JANGAN menambah fakta, opini, atau klaim yang tidak tercantum pada sumber.
+4. Pertahankan SEMUA fakta penting: angka, tanggal, nama tokoh, jabatan, nama lembaga/perusahaan, lokasi, dan inti kutipan langsung secara akurat (untuk sumber berbahasa asing, terjemahkan isi kutipan ke Bahasa Indonesia dengan makna persis).
+5. Lead paragraf pertama wajib kuat dan langsung menjawab unsur utama 5W+1H.
+6. Panjang proporsional: 450–800 kata bila bahan sumber memadai; bila rilis singkat, tulis padat 250–450 kata tanpa mengarang detail tambahan.
+7. Format body HTML bersih dan nyaman dibaca: <p> untuk paragraf pendek, <h2> untuk sub-judul tematik (1–3 sub-judul bila panjang), <blockquote> untuk kutipan penting, <ul>/<li> dan <strong> seperlunya.
 
 JUDUL SUMBER: "${source.title}"
 
 ISI SUMBER (${source.wordCount} kata):
 """
-${source.contentHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 6_000)}
+${plainSourceText.slice(0, 6_000)}
 """
 
-Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
+Format output WAJIB JSON valid dalam Bahasa Indonesia untuk SEMUA field (tanpa teks lain di luar JSON):
 {
-  "title": "judul Lensaplus yang fresh & menarik (50-80 karakter, hindari clickbait)",
-  "excerpt": "ringkasan 130-160 karakter dalam Bahasa Indonesia",
-  "content": "body artikel HTML 500-800 kata, lead 5W+1H, paragraf rapi",
-  "suggestedTags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  "title": "judul berita Bahasa Indonesia yang segar, informatif, dan lugas (50-85 karakter, hindari clickbait)",
+  "excerpt": "ringkasan Bahasa Indonesia 130-160 karakter",
+  "content": "body artikel HTML Bahasa Indonesia lengkap hasil parafrase konsep",
+  "suggestedTags": ["tag1 indonesia", "tag2", "tag3", "tag4", "tag5"]
 }`;
 
   const ai = await callAI({
     feature: "article_draft",
+    systemPrompt: PARAPHRASE_SYSTEM_PROMPT,
     userPrompt,
-    maxTokens: 2_500,
+    maxTokens: 2_800,
     temperature: 0.65,
     allowCombo: true,
     userId: authorId,
@@ -422,13 +441,23 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
   const resolvedTagIds = await resolveTagIds(allTagNames);
   const tagConnections = resolvedTagIds.map((id) => ({ id }));
 
+  const contentExcerptFallback = parsed.content
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160);
+  const resolvedExcerpt =
+    parsed.excerpt.slice(0, 500) ||
+    contentExcerptFallback ||
+    (!foreignSource ? source.excerpt.slice(0, 500) : "") ||
+    null;
+
   const article = await prisma.article.create({
     data: {
       title: parsed.title.slice(0, 250),
       slug,
       content: finalContent,
-      excerpt:
-        parsed.excerpt.slice(0, 500) || source.excerpt.slice(0, 500) || null,
+      excerpt: resolvedExcerpt,
       status: "DRAFT",
       isAutoGenerated: true,
       sourceArticleId: null,
@@ -458,6 +487,6 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
     tokens: ai.totalTokens,
     provider: ai.provider,
     featuredImage,
-    sourceLang: source.lang,
+    sourceLang: detectedLang,
   };
 }

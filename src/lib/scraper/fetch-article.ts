@@ -19,22 +19,9 @@ import type { Element as DomElement } from "domhandler";
 import { fetchHtml } from "./fetch";
 import { fetchHtmlHeadless } from "./headless";
 import { pickImageSrc, looksLikeContentImageUrl } from "./html-utils";
+import { detectLanguage } from "./lang";
 import { sanitizeHtml } from "@/lib/sanitize";
 import type { ScrapedArticle, ScraperOptions } from "./types";
-
-function detectLang(text: string): "id" | "en" | undefined {
-  if (!text) return undefined;
-  const sample = text.toLowerCase().slice(0, 4_000);
-  // Indonesian function words (high frequency, low overlap with English)
-  const idHits =
-    (sample.match(/\b(yang|dengan|untuk|tidak|dari|telah|akan|adalah|pada|atau|saja|juga|sudah)\b/g) || [])
-      .length;
-  const enHits =
-    (sample.match(/\b(the|that|with|this|have|from|will|been|were|their|which|would|could)\b/g) || [])
-      .length;
-  if (idHits === 0 && enHits === 0) return undefined;
-  return idHits >= enHits ? "id" : "en";
-}
 
 function absolutise(href: string, base: string): string | null {
   try {
@@ -262,6 +249,11 @@ export async function fetchArticle(
 
   const heroImageUrl = heroCandidates[0];
 
+  const htmlLangHint =
+    $("html").attr("lang")?.trim() ||
+    $('meta[property="og:locale"]').attr("content")?.trim() ||
+    undefined;
+
   return {
     url: finalUrl,
     title: articleTitle,
@@ -273,6 +265,6 @@ export async function fetchArticle(
     heroImageUrl,
     heroImageCandidates: heroCandidates,
     bodyImageUrls: rawBodyImages,
-    lang: detectLang(plain),
+    lang: detectLanguage(`${articleTitle} ${plain}`, htmlLangHint),
   };
 }

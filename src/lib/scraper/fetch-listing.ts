@@ -401,7 +401,7 @@ function extractFromCard(
 export async function fetchListing(
   listingUrl: string,
   options: ScraperOptions = {},
-): Promise<{ items: ListingItem[]; selectorUsed: string }> {
+): Promise<{ items: ListingItem[]; selectorUsed: string; htmlLang?: string }> {
   const { html, finalUrl } = options.useHeadless
     ? await fetchHtmlHeadless(listingUrl, {
         timeoutMs: options.timeoutMs,
@@ -413,6 +413,10 @@ export async function fetchListing(
         timeoutMs: options.timeoutMs,
       });
   const $ = cheerio.load(html);
+  const htmlLang =
+    $("html").attr("lang")?.trim() ||
+    $('meta[property="og:locale"]').attr("content")?.trim() ||
+    undefined;
 
   // Auto-detect and parse RSS/Atom feeds without misclassifying XHTML pages
   const isRss =
@@ -422,6 +426,7 @@ export async function fetchListing(
     const rssItems: ListingItem[] = [];
     const seen = new Set<string>();
     const $xml = cheerio.load(html, { xml: true });
+    const rssLang = $xml("channel > language").first().text().trim() || htmlLang;
 
     $xml("item, entry").each((_, el) => {
       const $el = $xml(el);
@@ -449,7 +454,7 @@ export async function fetchListing(
     });
 
     if (rssItems.length > 0) {
-      return { items: rssItems, selectorUsed: "rss-feed" };
+      return { items: rssItems, selectorUsed: "rss-feed", htmlLang: rssLang };
     }
   }
 
@@ -462,7 +467,7 @@ export async function fetchListing(
       );
     }
     const items = extractCardsFromSet($, cards, finalUrl, options);
-    return { items, selectorUsed };
+    return { items, selectorUsed, htmlLang };
   }
 
   const detected = detectCardsAndExtract($, finalUrl, options);
@@ -473,5 +478,5 @@ export async function fetchListing(
     );
   }
 
-  return { items: detected.items, selectorUsed: detected.selector };
+  return { items: detected.items, selectorUsed: detected.selector, htmlLang };
 }

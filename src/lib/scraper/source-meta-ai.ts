@@ -222,6 +222,9 @@ function buildUserPrompt(
   if (pageContext) lines.push(`- Konteks dari halaman situs:\n${pageContext}`);
 
   lines.push("");
+  lines.push(
+    `Catatan bahasa: Jika nama sumber, deskripsi situs, atau contoh headline masih berbahasa asing, TERJEMAHKAN dan adaptasikan konsepnya langsung ke dalam Bahasa Indonesia untuk seluruh nilai defaultTags maupun description.`,
+  );
   if (input.mode === "both" || input.mode === "tags") {
     lines.push(
       `Aturan defaultTags: 5-8 tag relevan dalam Bahasa Indonesia, huruf kecil semua, tanpa tanda #, maks 40 karakter per tag (campuran nama entitas/instansi, topik utama, dan wilayah/sektor terkait).`,
