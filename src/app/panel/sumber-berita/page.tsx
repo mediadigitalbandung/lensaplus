@@ -1265,14 +1265,17 @@ function PreviewModal({
 
   async function handleGenerate(
     url: string,
-    opts?: { suppressRefresh?: boolean },
+    opts?: { suppressRefresh?: boolean; thumbnail?: string },
   ): Promise<"ok" | "skipped" | "error"> {
     setItemState((s) => ({ ...s, [url]: { status: "running" } }));
     try {
       const res = await fetch(`/api/news-sources/${sourceId}/scrape-one`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({
+          url,
+          ...(opts?.thumbnail ? { thumbnail: opts.thumbnail } : {}),
+        }),
       });
       const json = await parseApiJson(res);
       if (!res.ok || !json?.success) {
@@ -1343,7 +1346,10 @@ function PreviewModal({
     let failed = 0;
     for (const item of targets) {
       if (bulkAbortRef.current) break;
-      const outcome = await handleGenerate(item.url, { suppressRefresh: true });
+      const outcome = await handleGenerate(item.url, {
+        suppressRefresh: true,
+        thumbnail: item.thumbnail,
+      });
       if (outcome === "ok") okCount++;
       else if (outcome === "skipped") skippedCount++;
       else failed++;
@@ -1543,7 +1549,7 @@ function PreviewModal({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => handleGenerate(item.url)}
+                          onClick={() => handleGenerate(item.url, { thumbnail: item.thumbnail })}
                           disabled={isRunning || bulkRunning}
                           className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                             isRunning

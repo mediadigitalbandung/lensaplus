@@ -6,12 +6,12 @@
  * suitable for storing in `Article.featuredImage`.
  *
  * Hardening:
- *   - HEAD-first to validate content-type + size before pulling bytes.
+ *   - SSRF guard: block private IPs & unsafe redirects.
  *   - Hard cap on size (default 8 MB) to defend the disk.
- *   - Sniff magic bytes on the first 12 bytes; reject if it's not a
- *     known raster format we can serve (jpeg / png / webp / gif).
- *   - SSRF guard: block private IPs.
- *   - Falls back to GET when HEAD is blocked (some CDNs do).
+ *   - Sniff magic bytes on the downloaded buffer; reject if not a real
+ *     raster image (jpeg / png / webp / gif / avif→jpg).
+ *   - Sends Referer + retries once with browser User-Agent when hotlink/WAF
+ *     checks return 403/401/406.
  */
 
 import { writeFile, mkdir } from "fs/promises";
@@ -21,7 +21,9 @@ import { prisma } from "@/lib/prisma";
 import { assertSafePublicUrl, safePublicFetch, userAgent } from "./fetch";
 
 const MAX_BYTES = 8 * 1024 * 1024;
-const FETCH_TIMEOUT_MS = 20_000;
+const PER_ATTEMPT_TIMEOUT_MS = 12_000;
+const BROWSER_FALLBACK_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -30,14 +32,6 @@ const ALLOWED_TYPES = new Set([
   "image/webp",
   "image/gif",
 ]);
-
-function extFromContentType(ct: string): string {
-  const lower = ct.toLowerCase();
-  if (lower.includes("png")) return "png";
-  if (lower.includes("webp")) return "webp";
-  if (lower.includes("gif")) return "gif";
-  return "jpg";
-}
 
 function sniffExt(bytes: Uint8Array): string | null {
   if (bytes.length < 4) return null;
@@ -72,6 +66,20 @@ function sniffExt(bytes: Uint8Array): string | null {
     bytes[11] === 0x50
   )
     return "webp";
+  // AVIF / HEIF: ....ftypavif / ....ftypavis
+  if (
+    bytes.length >= 12 &&
+    bytes[4] === 0x66 &&
+    bytes[5] === 0x74 &&
+    bytes[6] === 0x79 &&
+    bytes[7] === 0x70 &&
+    bytes[8] === 0x61 &&
+    bytes[9] === 0x76 &&
+    bytes[10] === 0x69 &&
+    (bytes[11] === 0x66 || bytes[11] === 0x73)
+  ) {
+    return "avif";
+  }
   return null;
 }
 
@@ -80,11 +88,27 @@ function buildFilename(ext: string): string {
 }
 
 /**
+ * Extract the underlying image URL when a site uses Next.js `/_next/image?url=...`.
+ */
+function unwrapNextImageProxy(primary: URL): string | null {
+  if (primary.pathname !== "/_next/image") return null;
+  const inner = primary.searchParams.get("url");
+  if (!inner) return null;
+  try {
+    const resolved = new URL(inner, `${primary.protocol}//${primary.host}`).toString();
+    return /^https?:\/\//i.test(resolved) ? resolved : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Build alternative URLs to retry when the primary image URL 404s.
  * Targets common SPA-host CMS patterns where the og:image path is
  * resolved against an upload prefix the page never tells you about.
  */
 function buildFallbackUrls(primary: URL): string[] {
+  if (primary.pathname === "/_next/image") return [];
   const path = primary.pathname;
   const origin = `${primary.protocol}//${primary.host}`;
   const fallbacks: string[] = [];
@@ -107,6 +131,38 @@ function buildFallbackUrls(primary: URL): string[] {
   return fallbacks;
 }
 
+function isAcceptableImageContentType(rawCt: string): boolean {
+  const base = rawCt.split(";")[0].trim().toLowerCase();
+  if (!base) return true; // Missing Content-Type — verify via magic bytes
+  if (base === "application/octet-stream" || base === "binary/octet-stream") {
+    return true;
+  }
+  if (base === "image/avif" || base === "image/heif") return true;
+  return ALLOWED_TYPES.has(base);
+}
+
+async function fetchOneAttempt(
+  candidateUrl: string,
+  ua: string,
+  referer: string,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PER_ATTEMPT_TIMEOUT_MS);
+  try {
+    const { response } = await safePublicFetch(candidateUrl, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": ua,
+        Accept: "image/jpeg,image/png,image/webp,image/gif,*/*;q=0.5",
+        Referer: referer,
+      },
+    });
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export interface DownloadResult {
   /** Site-relative URL — store this in featuredImage. */
   url: string;
@@ -125,6 +181,8 @@ export interface DownloadOptions {
   caption?: string;
   /** Source attribution e.g. "Bank BJB". */
   credit?: string;
+  /** Upstream article URL to send as Referer (bypasses CDN hotlink blocks). */
+  referer?: string;
   /** Owner user id for the Media row. */
   uploadedBy: string;
   /** Owner display name for the Media row. */
@@ -136,112 +194,139 @@ export async function downloadImageToUploads(
   options: DownloadOptions,
 ): Promise<DownloadResult> {
   const parsed = await assertSafePublicUrl(imageUrl);
+  const referer = options.referer || `${parsed.protocol}//${parsed.host}/`;
 
-  // Try the URL as-is, then a few common SPA-host fallbacks if it 404s.
-  // E.g. Bank BJB's og:image emits "2026/04/photo.jpg" relative to the
-  // article URL, but the file actually lives under /files/2026/04/photo.jpg.
-  const tryUrls = [imageUrl, ...buildFallbackUrls(parsed)];
+  const primaryUrls = [imageUrl];
+  const unwrappedNext = unwrapNextImageProxy(parsed);
+  if (unwrappedNext && unwrappedNext !== imageUrl) {
+    primaryUrls.push(unwrappedNext);
+  }
 
   let response: Response | null = null;
   let lastStatus = 0;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    for (const candidateUrl of tryUrls) {
-      const { response: fetched } = await safePublicFetch(candidateUrl, {
-        signal: controller.signal,
-        headers: {
-          "User-Agent": userAgent(),
-          Accept: "image/jpeg,image/png,image/webp,image/gif,image/*;q=0.8",
-        },
-      });
-      response = fetched;
-      if (response.ok) break;
-      lastStatus = response.status;
-    }
-    if (!response || !response.ok) {
-      throw new Error(`HTTP ${lastStatus || "??"} fetching image (tried ${tryUrls.length} URL${tryUrls.length > 1 ? "s" : ""})`);
-    }
-    const contentType = (response.headers.get("content-type") || "").toLowerCase();
-    if (!contentType.startsWith("image/")) {
-      throw new Error(`Not an image: content-type=${contentType}`);
-    }
-    if (!ALLOWED_TYPES.has(contentType.split(";")[0].trim())) {
-      throw new Error(`Unsupported image type: ${contentType}`);
-    }
-    const contentLengthHeader = response.headers.get("content-length");
-    if (
-      contentLengthHeader &&
-      parseInt(contentLengthHeader, 10) > MAX_BYTES
-    ) {
-      throw new Error(
-        `Image too large: ${contentLengthHeader} bytes (cap ${MAX_BYTES})`,
-      );
-    }
 
-    // Stream guard: read into buffer but bail at MAX_BYTES.
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response body");
-    const chunks: Uint8Array[] = [];
-    let total = 0;
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      if (value) {
-        total += value.length;
-        if (total > MAX_BYTES) {
-          await reader.cancel();
-          throw new Error(`Image exceeded ${MAX_BYTES} bytes during download`);
-        }
-        chunks.push(value);
-      }
+  const tryFetch = async (targetUrl: string): Promise<Response | null> => {
+    let res = await fetchOneAttempt(targetUrl, userAgent(), referer);
+    if (res.ok) return res;
+    if (res.status === 403 || res.status === 401 || res.status === 406) {
+      await res.body?.cancel().catch(() => {});
+      res = await fetchOneAttempt(targetUrl, BROWSER_FALLBACK_UA, referer);
+      if (res.ok) return res;
     }
-    const bytes = Buffer.concat(chunks);
-    const sniffed = sniffExt(new Uint8Array(bytes));
-    if (!sniffed) {
-      throw new Error(
-        "Downloaded bytes do not match a recognised image format",
-      );
-    }
-    const ext = sniffed === "jpg" ? "jpg" : sniffed;
-    const filename = buildFilename(ext);
-    const dir = join(process.cwd(), "public", "uploads");
-    await mkdir(dir, { recursive: true });
-    await writeFile(join(dir, filename), bytes);
+    lastStatus = res.status;
+    await res.body?.cancel().catch(() => {});
+    return null;
+  };
 
-    const localUrl = `/uploads/${filename}`;
-    const finalCt =
-      ALLOWED_TYPES.has(contentType.split(";")[0])
-        ? contentType.split(";")[0]
-        : `image/${ext === "jpg" ? "jpeg" : ext}`;
-
-    // Register in Media library so it shows up in the picker.
-    try {
-      await prisma.media.create({
-        data: {
-          filename,
-          url: localUrl,
-          type: finalCt,
-          size: bytes.length,
-          title: options.title?.slice(0, 255) || null,
-          caption: options.caption?.slice(0, 1000) || null,
-          credit: options.credit?.slice(0, 255) || null,
-          uploadedBy: options.uploadedBy,
-          uploaderName: options.uploaderName,
-        },
-      });
-    } catch {
-      // Non-fatal — image already on disk + visible to articles.
-    }
-
-    return {
-      url: localUrl,
-      filename,
-      size: bytes.length,
-      contentType: finalCt,
-    };
-  } finally {
-    clearTimeout(timeout);
+  for (const u of primaryUrls) {
+    response = await tryFetch(u);
+    if (response) break;
   }
-  // unreachable, but keeps TS happy
+
+  // Only probe SPA upload prefix fallbacks when the primary URL 404'd.
+  let triedCount = primaryUrls.length;
+  if (!response && lastStatus === 404) {
+    const fallbacks = buildFallbackUrls(parsed);
+    for (const u of fallbacks) {
+      triedCount++;
+      response = await tryFetch(u);
+      if (response) break;
+    }
+  }
+
+  if (!response || !response.ok) {
+    throw new Error(
+      `HTTP ${lastStatus || "??"} fetching image (tried ${triedCount} URL${triedCount > 1 ? "s" : ""})`,
+    );
+  }
+
+  const contentType = (response.headers.get("content-type") || "").toLowerCase();
+  if (!isAcceptableImageContentType(contentType)) {
+    await response.body?.cancel().catch(() => {});
+    throw new Error(`Unsupported image type: ${contentType}`);
+  }
+  const contentLengthHeader = response.headers.get("content-length");
+  if (
+    contentLengthHeader &&
+    parseInt(contentLengthHeader, 10) > MAX_BYTES
+  ) {
+    await response.body?.cancel().catch(() => {});
+    throw new Error(
+      `Image too large: ${contentLengthHeader} bytes (cap ${MAX_BYTES})`,
+    );
+  }
+
+  // Stream guard: read into buffer but bail at MAX_BYTES.
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("No response body");
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (value) {
+      total += value.length;
+      if (total > MAX_BYTES) {
+        await reader.cancel();
+        throw new Error(`Image exceeded ${MAX_BYTES} bytes during download`);
+      }
+      chunks.push(value);
+    }
+  }
+
+  let bytes: Buffer = Buffer.concat(chunks);
+  const sniffed = sniffExt(new Uint8Array(bytes));
+  if (!sniffed) {
+    throw new Error(
+      "Downloaded bytes do not match a recognised image format",
+    );
+  }
+
+  let ext = sniffed;
+  if (sniffed === "avif") {
+    // Convert AVIF to JPEG for universal CMS/social/OG compatibility.
+    const { default: sharp } = await import("sharp");
+    bytes = await sharp(bytes).jpeg({ quality: 88 }).toBuffer();
+    ext = "jpg";
+  }
+
+  const filename = buildFilename(ext);
+  const dir = join(process.cwd(), "public", "uploads");
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, filename), bytes);
+
+  const localUrl = `/uploads/${filename}`;
+  const baseCt = contentType.split(";")[0].trim();
+  const finalCt =
+    ext === "jpg"
+      ? "image/jpeg"
+      : ALLOWED_TYPES.has(baseCt)
+        ? baseCt
+        : `image/${ext}`;
+
+  // Register in Media library so it shows up in the picker.
+  try {
+    await prisma.media.create({
+      data: {
+        filename,
+        url: localUrl,
+        type: finalCt,
+        size: bytes.length,
+        title: options.title?.slice(0, 255) || null,
+        caption: options.caption?.slice(0, 1000) || null,
+        credit: options.credit?.slice(0, 255) || null,
+        uploadedBy: options.uploadedBy,
+        uploaderName: options.uploaderName,
+      },
+    });
+  } catch {
+    // Non-fatal — image already on disk + visible to articles.
+  }
+
+  return {
+    url: localUrl,
+    filename,
+    size: bytes.length,
+    contentType: finalCt,
+  };
 }

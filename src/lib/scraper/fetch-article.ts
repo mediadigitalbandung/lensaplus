@@ -18,7 +18,7 @@ import * as cheerio from "cheerio";
 import type { Element as DomElement } from "domhandler";
 import { fetchHtml } from "./fetch";
 import { fetchHtmlHeadless } from "./headless";
-import { pickImageSrc } from "./html-utils";
+import { pickImageSrc, looksLikeContentImageUrl } from "./html-utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import type { ScrapedArticle, ScraperOptions } from "./types";
 
@@ -44,32 +44,64 @@ function absolutise(href: string, base: string): string | null {
   }
 }
 
-function extractHeroFromMeta(
+function extractMetaImageCandidates(
   $: cheerio.CheerioAPI,
   baseUrl: string,
-): string | undefined {
-  const candidates = [
+): { clean: string[]; fallback: string[] } {
+  const raw = [
     $('meta[property="og:image:secure_url"]').attr("content"),
     $('meta[property="og:image"]').attr("content"),
     $('meta[name="twitter:image"]').attr("content"),
+    $('meta[name="twitter:image:src"]').attr("content"),
     $('link[rel="image_src"]').attr("href"),
-  ].filter((s): s is string => typeof s === "string" && s.length > 0);
-  for (const c of candidates) {
-    const abs = absolutise(c, baseUrl);
-    if (abs && /^https?:/i.test(abs)) return abs;
+  ].filter((s): s is string => typeof s === "string" && s.trim().length > 0);
+
+  const clean: string[] = [];
+  const fallback: string[] = [];
+  const seen = new Set<string>();
+  for (const c of raw) {
+    const abs = absolutise(c.trim(), baseUrl);
+    if (!abs || !/^https?:/i.test(abs) || seen.has(abs)) continue;
+    seen.add(abs);
+    if (looksLikeContentImageUrl(abs)) clean.push(abs);
+    else fallback.push(abs);
   }
-  return undefined;
+  return { clean, fallback };
 }
 
-function extractHeroFromHtml(html: string, baseUrl: string): string | undefined {
+function isTinyTrackingImg($img: cheerio.Cheerio<DomElement>): boolean {
+  const w = parseInt($img.attr("width") || "", 10);
+  const h = parseInt($img.attr("height") || "", 10);
+  if ((Number.isFinite(w) && w > 0 && w <= 24) || (Number.isFinite(h) && h > 0 && h <= 24)) {
+    return true;
+  }
+  return false;
+}
+
+function extractImagesFromMarkup(
+  $: cheerio.CheerioAPI,
+  selectorScope: cheerio.Cheerio<DomElement>,
+  baseUrl: string,
+): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  selectorScope.each((_, el) => {
+    const $img = $(el) as cheerio.Cheerio<DomElement>;
+    if (isTinyTrackingImg($img)) return;
+    const src = pickImageSrc($img, $);
+    if (!src) return;
+    const abs = absolutise(src, baseUrl);
+    if (!abs || !/^https?:/i.test(abs) || seen.has(abs)) return;
+    if (!looksLikeContentImageUrl(abs)) return;
+    seen.add(abs);
+    out.push(abs);
+  });
+  return out;
+}
+
+function extractBodyImagesFromHtml(html: string, baseUrl: string): string[] {
   const $ = cheerio.load(html);
-  // First img inside the article — Readability usually keeps figure>img
-  const first = $("img").first();
-  if (first.length === 0) return undefined;
-  const src = pickImageSrc(first as cheerio.Cheerio<DomElement>);
-  if (!src) return undefined;
-  const abs = absolutise(src, baseUrl);
-  return abs && /^https?:/i.test(abs) ? abs : undefined;
+  return extractImagesFromMarkup($, $("img") as cheerio.Cheerio<DomElement>, baseUrl);
 }
 
 function extractDateFromMeta(
@@ -176,6 +208,9 @@ export async function fetchArticle(
   }
   articleTitle = articleTitle.replace(/\s+/g, " ").trim().slice(0, 250);
 
+  // Extract raw body images BEFORE sanitizeHtml strips data-src / srcset / <picture>
+  const rawBodyImages = extractBodyImagesFromHtml(articleHtml, finalUrl);
+
   // Sanitise — same whitelist as user-submitted HTML.
   const cleanHtml = sanitizeHtml(articleHtml);
 
@@ -189,24 +224,43 @@ export async function fetchArticle(
 
   const wordCount = countWords(plain);
 
-  // Hero image: manual selector → Readability output → meta
-  let heroImageUrl: string | undefined;
+  // Build ordered hero image candidates:
+  //   1. Manual imageSelector (if configured)
+  //   2. Clean og:image / twitter:image meta tags (most reliable editorial hero)
+  //   3. Clean inline images inside extracted article body
+  //   4. Hero/featured image containers in full page DOM (when Readability stripped the hero)
+  //   5. Any fallback meta image (e.g. generic logo if nothing else exists)
+  const heroCandidates: string[] = [];
+  const pushUnique = (u: string | undefined) => {
+    if (u && !heroCandidates.includes(u)) heroCandidates.push(u);
+  };
+
   if (options.imageSelector) {
     const sel = $(options.imageSelector).first();
     if (sel.length > 0) {
-      const src = pickImageSrc(sel as cheerio.Cheerio<DomElement>);
+      const src = pickImageSrc(sel as cheerio.Cheerio<DomElement>, $);
       if (src) {
         const abs = absolutise(src, finalUrl);
-        if (abs && /^https?:/i.test(abs)) heroImageUrl = abs;
+        if (abs && /^https?:/i.test(abs)) pushUnique(abs);
       }
     }
   }
-  if (!heroImageUrl) {
-    heroImageUrl = extractHeroFromHtml(articleHtml, finalUrl);
-  }
-  if (!heroImageUrl) {
-    heroImageUrl = extractHeroFromMeta($, finalUrl);
-  }
+
+  const metaImgs = extractMetaImageCandidates($, finalUrl);
+  for (const u of metaImgs.clean) pushUnique(u);
+  for (const u of rawBodyImages) pushUnique(u);
+
+  const pageHeroImgs = extractImagesFromMarkup(
+    $,
+    $(
+      ".detail__media img, .featured-image img, .post-thumbnail img, article figure img, main figure img, article img, main img",
+    ) as cheerio.Cheerio<DomElement>,
+    finalUrl,
+  );
+  for (const u of pageHeroImgs) pushUnique(u);
+  for (const u of metaImgs.fallback) pushUnique(u);
+
+  const heroImageUrl = heroCandidates[0];
 
   return {
     url: finalUrl,
@@ -217,6 +271,8 @@ export async function fetchArticle(
     wordCount,
     publishedAt: extractDateFromMeta($),
     heroImageUrl,
+    heroImageCandidates: heroCandidates,
+    bodyImageUrls: rawBodyImages,
     lang: detectLang(plain),
   };
 }

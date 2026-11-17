@@ -58,11 +58,21 @@ vi.mock("../scraper/headless", () => ({
   fetchHtmlHeadless: vi.fn(),
 }));
 
+const mockDownloadImage = vi.fn<
+  (url: string, opts?: { referer?: string }) => Promise<{ url: string }>
+>(async () => ({
+  url: "/uploads/test.jpg",
+}));
 vi.mock("../scraper/download-image", () => ({
-  downloadImageToUploads: vi.fn(async () => ({ url: "/uploads/test.jpg" })),
+  downloadImageToUploads: (url: string, opts?: { referer?: string }) =>
+    mockDownloadImage(url, opts),
 }));
 
-import { pickImageSrc, isSameSiteHost } from "../scraper/html-utils";
+import {
+  pickImageSrc,
+  pickBestFromSrcset,
+  isSameSiteHost,
+} from "../scraper/html-utils";
 import { normalizeDefaultTags } from "../scraper/source-validation";
 import {
   parseSourceMetaOutput,
@@ -70,6 +80,7 @@ import {
 } from "../scraper/source-meta-ai";
 import { fetchListing } from "../scraper/fetch-listing";
 import { fetchSourceListing } from "../scraper/crawl-listings";
+import { fetchArticle } from "../scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "../scraper/paraphrase";
 
 describe("scraper html-utils & validation", () => {
@@ -423,5 +434,118 @@ describe("paraphraseAndCreateDraft fixes", () => {
     expect(createdNames[1]).toBe("jawa barat");
     expect(createdNames).not.toContain("Bank BJB");
     expect(createdNames).toHaveLength(8);
+  });
+});
+
+describe("scraper image extraction & hero fallbacks", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("pickBestFromSrcset and pickImageSrc handle <picture> sources and CDN commas", () => {
+    const srcset =
+      "https://example.com/cdn-cgi/image/w=400,q=80/a.jpg 400w, https://example.com/cdn-cgi/image/w=1200,q=80/a.jpg 1200w";
+    expect(pickBestFromSrcset(srcset)).toBe(
+      "https://example.com/cdn-cgi/image/w=1200,q=80/a.jpg",
+    );
+
+    const $ = cheerio.load(`
+      <picture>
+        <source srcset="https://cdn.example.id/small.webp 400w, https://cdn.example.id/hero.webp 1200w" />
+        <img src="data:image/gif;base64,R0lGODlh" alt="Foto" />
+      </picture>
+    `);
+    const img = $("img").first() as cheerio.Cheerio<DomElement>;
+    expect(pickImageSrc(img, $)).toBe("https://cdn.example.id/hero.webp");
+  });
+
+  it("fetchArticle skips leading logo/pixel images, prioritizes og:image, and preserves lazy body images", async () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:image" content="https://cdn.example.id/uploads/hero-berita.jpg" />
+        </head>
+        <body>
+          <article>
+            <h1>Rapat Koordinasi Ekonomi Jawa Barat Digelar di Bandung</h1>
+            <img src="https://cdn.example.id/assets/logo.svg" />
+            <img src="https://cdn.example.id/pixel.gif" width="1" height="1" />
+            <p>Pemerintah Provinsi Jawa Barat menggelar rapat koordinasi ekonomi bersama pelaku usaha daerah untuk memperkuat investasi dan perdagangan sektor industri kreatif pada kuartal keempat tahun ini.</p>
+            <img src="data:image/svg+xml;base64,AAA" data-src="https://cdn.example.id/uploads/foto-rapat-2.jpg" />
+            <p>Pertemuan tersebut membahas berbagai insentif pembiayaan bagi UMKM serta percepatan pembangunan infrastruktur penunjang logistik di kawasan Bandung Raya dan sekitarnya.</p>
+          </article>
+        </body>
+      </html>`;
+    mockFetchHtml.mockResolvedValueOnce({
+      html,
+      finalUrl: "https://example.id/berita/rapat-ekonomi",
+      contentType: "text/html",
+    });
+
+    const art = await fetchArticle("https://example.id/berita/rapat-ekonomi");
+    expect(art.heroImageUrl).toBe("https://cdn.example.id/uploads/hero-berita.jpg");
+    expect(art.heroImageCandidates).toContain("https://cdn.example.id/uploads/hero-berita.jpg");
+    expect(art.heroImageCandidates).not.toContain("https://cdn.example.id/assets/logo.svg");
+    expect(art.bodyImageUrls).toContain("https://cdn.example.id/uploads/foto-rapat-2.jpg");
+  });
+
+  it("paraphraseAndCreateDraft falls back across hero candidates and promotes body image if all hero candidates fail", async () => {
+    mockCallAI.mockResolvedValueOnce({
+      text: JSON.stringify({
+        title: "Ekonomi Bandung Tumbuh Stabil di Akhir Tahun",
+        excerpt: "Pertumbuhan ekonomi Bandung tetap terjaga positif di kuartal akhir.",
+        content: "<p>Paragraf satu lengkap 5W1H.</p><p>Paragraf dua tentang dampak ekonomi.</p>",
+        suggestedTags: ["ekonomi", "bandung"],
+      }),
+      provider: "anthropic",
+      totalTokens: 320,
+    });
+    mockArticleFindUnique.mockResolvedValueOnce(null);
+    mockTagFindMany.mockResolvedValueOnce([]);
+    mockTagCreate.mockResolvedValue({ id: "t1" });
+    mockArticleCreate.mockResolvedValueOnce({
+      id: "art-img-1",
+      slug: "ekonomi-bandung-tumbuh",
+      title: "Ekonomi Bandung Tumbuh Stabil di Akhir Tahun",
+    });
+
+    mockDownloadImage
+      .mockRejectedValueOnce(new Error("HTTP 403")) // hero candidate 1 fails
+      .mockRejectedValueOnce(new Error("HTTP 404")) // listing thumbnail fails
+      .mockResolvedValueOnce({ url: "/uploads/body-promoted.jpg" }) // body image 1 succeeds
+      .mockResolvedValueOnce({ url: "/uploads/body-kept.jpg" }); // body image 2 succeeds
+
+    const res = await paraphraseAndCreateDraft({
+      source: {
+        url: "https://example.id/berita/ekonomi",
+        title: "Berita Ekonomi",
+        excerpt: "Ringkasan",
+        contentHtml: "<p>Isi berita.</p>",
+        wordCount: 100,
+        lang: "id",
+        heroImageUrl: "https://cdn.example.id/broken-hero.jpg",
+        heroImageCandidates: ["https://cdn.example.id/broken-hero.jpg"],
+        bodyImageUrls: [
+          "https://cdn.example.id/body-1.jpg",
+          "https://cdn.example.id/body-2.jpg",
+        ],
+      },
+      sourceName: "Example",
+      authorId: "u1",
+      authorName: "Editor",
+      categoryId: "c1",
+      listingThumbnail: "https://cdn.example.id/missing-thumb.jpg",
+      downloadImage: true,
+    });
+
+    expect(res.featuredImage).toBe("/uploads/body-promoted.jpg");
+    // Promoted body image must not be duplicated inside body HTML
+    const savedContent = mockArticleCreate.mock.calls[0][0].data.content as string;
+    expect(savedContent).not.toContain("/uploads/body-promoted.jpg");
+    expect(savedContent).toContain("/uploads/body-kept.jpg");
+    // Referer was forwarded to downloadImageToUploads
+    expect(mockDownloadImage.mock.calls[0]?.[1]?.referer).toBe(
+      "https://example.id/berita/ekonomi",
+    );
   });
 });

@@ -76,9 +76,10 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ----- Sorotan: retry failed + pending -----
+    // ----- Sorotan: retry failed + pending (published articles only) -----
     const sorotanRecords = await prisma.sorotan.findMany({
       where: {
+        article: { status: "PUBLISHED" },
         OR: [
           { indexStatus: "failed" },
           { indexStatus: "pending" },

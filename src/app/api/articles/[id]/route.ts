@@ -22,6 +22,7 @@ import {
   sendNewReviewEmail,
 } from "@/lib/email";
 import { onArticlePublished, onArticleUnpublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
+import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
 import { extractFirstImageUrl } from "@/lib/image-extract";
 import { checkArticleQuality } from "@/lib/article-quality";
 import { revalidatePath } from "next/cache";
@@ -47,6 +48,7 @@ const updateArticleSchema = z.object({
   reviewNote: z.string().max(1000).optional().nullable(),
   assignedEditorId: z.string().optional().nullable(),
   authorId: z.string().optional(),
+  isAutosave: z.boolean().optional(),
 });
 
 // GET /api/articles/:id
@@ -194,10 +196,11 @@ async function buildAdminFieldUpdates(opts: {
   alwaysCreateRevisionOnContentChange: boolean;
 }): Promise<{ updateData: Record<string, unknown>; revisionCreated: boolean }> {
   const { data, rawTags, sourcesData, article, actorLabel, alwaysCreateRevisionOnContentChange } = opts;
-  const { reviewNote: _rn, status: _st, scheduledAt: _sch, ...adminEditData } = data;
+  const { reviewNote: _rn, status: _st, scheduledAt: _sch, isAutosave: _ias, ...adminEditData } = data;
   void _rn;
   void _st;
   void _sch;
+  void _ias;
 
   let revisionCreated = false;
   if (alwaysCreateRevisionOnContentChange && data.content && data.content !== article.content) {
@@ -408,8 +411,8 @@ export async function PUT(
       const resolvedTagIds = rawTags ? await resolveTagIds(rawTags) : null;
       const sanitizedSources = buildSanitizedSourcesCreate(sourcesData);
 
-      // Strip verificationLabel — system-controlled
-      const { reviewNote: _rn, ...cleanData } = data;
+      // Strip verificationLabel and request-only flags — system-controlled
+      const { reviewNote: _rn, isAutosave, ...cleanData } = data;
       void _rn;
 
       const updated = await prisma.article.update({
@@ -452,6 +455,10 @@ export async function PUT(
         await notifyArticleStatusChange(article.id, updated.title, "IN_REVIEW", assignedReviewerId);
         const editor = await prisma.user.findUnique({ where: { id: assignedReviewerId }, select: { email: true } });
         if (editor) await sendNewReviewEmail(editor.email, updated.title, session.user.name || "");
+      }
+
+      if (!isAutosave) {
+        enqueueSorotanGeneration(updated.id);
       }
 
       return successResponse(updated);
@@ -566,6 +573,10 @@ export async function PUT(
           }
         }
 
+        if (data.status === "APPROVED") {
+          enqueueSorotanGeneration(updated.id);
+        }
+
         return successResponse(updated);
       }
 
@@ -654,6 +665,8 @@ export async function PUT(
             article.id,
             `Admin menjadwalkan publikasi artikel: ${updated.title} pada ${new Date(data.scheduledAt).toLocaleString("id-ID")}`
           );
+
+          enqueueSorotanGeneration(updated.id);
 
           return successResponse(updated);
         }
@@ -842,6 +855,11 @@ export async function PUT(
       }
 
       await logAudit(session.user.id, "UPDATE", "article", article.id, `Admin mengedit artikel: ${updated.title}`);
+
+      if (!data.isAutosave && updated.status !== "ARCHIVED") {
+        enqueueSorotanGeneration(updated.id);
+      }
+
       return successResponse(updated);
     }
 

@@ -49,6 +49,7 @@ import { slugify } from "@/lib/utils";
 import { resolveTagIds } from "@/lib/resolve-tags";
 import { getScraperAuthor } from "@/lib/scraper/author";
 import { checkArticle } from "@/lib/ai-guardrail";
+import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
 import * as Sentry from "@sentry/nextjs";
 
 export const dynamic = "force-dynamic";
@@ -620,6 +621,8 @@ export async function POST(request: NextRequest) {
           article.id,
           `Material → article: ${article.title}${batchName ? ` (batch: ${batchName})` : ""}. Doc: ${document.name}, slot ${i + 1}/${photoEntries.length}, provider=${ai.provider}, tokens=${ai.totalTokens}, guardrailWarnings=${guardrail.warnings.length}`,
         ).catch(() => {});
+
+        enqueueSorotanGeneration(article.id);
 
         slot.ok = true;
         slot.articleId = article.id;

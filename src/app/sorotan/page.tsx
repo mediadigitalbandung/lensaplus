@@ -2,6 +2,7 @@ export const revalidate = 120;
 
 import Link from "next/link";
 import { Metadata } from "next";
+import { Prisma, SorotanAngle } from "@prisma/client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
@@ -91,16 +92,17 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
   const searchParams = await searchParamsPromise;
   const page = parsePositiveInt(searchParams.page, 1);
   const angleParam = searchParams.angle?.toUpperCase();
-  const validAngle =
+  const validAngle: SorotanAngle | null =
     angleParam && (VALID_ANGLES as string[]).includes(angleParam)
-      ? (angleParam as (typeof VALID_ANGLES)[number])
+      ? (angleParam as SorotanAngle)
       : null;
 
-  // Cast diperlukan karena Prisma SorotanAngle enum strict-typed dan validAngle
-  // sudah kita verifikasi sebagai member set yang valid.
-  const where = validAngle
-    ? ({ angle: validAngle } as { angle: (typeof VALID_ANGLES)[number] })
-    : {};
+  // Hanya tampilkan Sorotan untuk artikel yang sudah PUBLISHED agar draf tidak
+  // bocor ke halaman publik sebelum diterbitkan redaksi.
+  const where: Prisma.SorotanWhereInput = {
+    article: { status: "PUBLISHED" },
+    ...(validAngle ? { angle: validAngle } : {}),
+  };
 
   const [sorotan, total] = await Promise.all([
     prisma.sorotan.findMany({

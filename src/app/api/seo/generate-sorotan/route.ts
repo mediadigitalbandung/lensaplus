@@ -1,7 +1,7 @@
 /**
  * POST /api/seo/generate-sorotan
  * Batch-generate Sorotan for multiple articles. If `articleIds` omitted,
- * targets the most recent PUBLISHED articles without all 3 angles, up to
+ * targets the most recent non-archived articles without all 9 angles, up to
  * `limit` (default 5, max 25).
  *
  * Body: { articleIds?: string[], limit?: number }
@@ -17,10 +17,10 @@ import {
   successResponse,
   logAudit,
 } from "@/lib/api-utils";
-import { generateSorotan } from "@/lib/seo/sorotan-generator";
+import { generateSorotan, SOROTAN_ANGLE_COUNT } from "@/lib/seo/sorotan-generator";
 
 export const dynamic = "force-dynamic";
-// Sorotan generation hits the AI provider 3x per article — allow longer runtime.
+// Sorotan generation hits the AI provider up to 9x per article — allow longer runtime.
 export const maxDuration = 300;
 
 const bodySchema = z.object({
@@ -37,19 +37,19 @@ export async function POST(req: NextRequest) {
     let targets: string[] = articleIds ?? [];
 
     if (targets.length === 0) {
-      // Auto-pick recent PUBLISHED articles that don't yet have all 3 angles.
+      // Auto-pick recent non-archived articles that don't yet have all active angles.
       const cap = limit ?? 5;
       const candidates = await prisma.article.findMany({
-        where: { status: "PUBLISHED" },
+        where: { status: { not: "ARCHIVED" } },
         select: {
           id: true,
           _count: { select: { sorotan: true } },
         },
-        orderBy: { publishedAt: "desc" },
-        take: cap * 3,
+        orderBy: { createdAt: "desc" },
+        take: cap * 4,
       });
       targets = candidates
-        .filter((c) => c._count.sorotan < 3)
+        .filter((c) => c._count.sorotan < SOROTAN_ANGLE_COUNT)
         .slice(0, cap)
         .map((c) => c.id);
     }

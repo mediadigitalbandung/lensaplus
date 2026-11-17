@@ -32,6 +32,10 @@ export interface ScrapedArticle {
   publishedAt?: Date;
   /** Hero / lead image URL on the upstream site (absolute), if any. */
   heroImageUrl?: string;
+  /** Ordered fallback list of hero image candidates (manual → og:image → inline). */
+  heroImageCandidates?: string[];
+  /** Non-hero body image URLs extracted before HTML sanitization strips lazy attributes. */
+  bodyImageUrls?: string[];
   /** Detected language code, e.g. "id", "en". Heuristic. */
   lang?: string;
 }

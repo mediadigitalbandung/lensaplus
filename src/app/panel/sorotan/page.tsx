@@ -35,9 +35,19 @@ interface Article {
   id: string;
   title: string;
   slug: string;
+  status?: string;
+  createdAt?: string;
   publishedAt: string | null;
   sorotan: SorotanItem[];
 }
+
+const ARTICLE_STATUS_LABEL: Record<string, string> = {
+  PUBLISHED: "Terbit",
+  IN_REVIEW: "Review",
+  APPROVED: "Disetujui",
+  DRAFT: "Draf",
+  REJECTED: "Ditolak",
+};
 
 const ANGLE_LABEL: Record<string, string> = {
   KRONOLOGI: "Kronologi",
@@ -355,7 +365,7 @@ export default function SorotanPage() {
         </div>
         <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
           <p className="text-xs text-txt-secondary">
-            {onlyWithSorotan ? "Artikel ber-Sorotan" : "Artikel Dipublikasi"}
+            {onlyWithSorotan ? "Artikel ber-Sorotan" : "Total Artikel"}
           </p>
           <p className="mt-1 text-2xl font-extrabold text-primary">
             {totalArticles.toLocaleString("id-ID")}
@@ -487,7 +497,7 @@ export default function SorotanPage() {
           <p className="text-sm text-txt-secondary">
             {onlyWithSorotan
               ? "Belum ada artikel yang punya Sorotan. Klik “Generate Batch” atau pilih “Semua artikel” untuk membuat."
-              : "Belum ada artikel dipublikasi."}
+              : "Belum ada artikel tersedia."}
           </p>
         </div>
       ) : (
@@ -518,7 +528,16 @@ export default function SorotanPage() {
                           {a.title}
                         </span>
                         <span className="block truncate text-[11px] text-txt-muted">
-                          /{a.slug} · {formatDate(a.publishedAt)} ·{" "}
+                          /{a.slug} ·{" "}
+                          {a.status && (
+                            <>
+                              <span className="font-semibold text-txt-secondary">
+                                {ARTICLE_STATUS_LABEL[a.status] ?? a.status}
+                              </span>
+                              {" · "}
+                            </>
+                          )}
+                          {formatDate(a.publishedAt || a.createdAt || null)} ·{" "}
                           <span
                             className={
                               a.sorotan.length

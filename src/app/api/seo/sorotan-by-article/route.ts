@@ -1,12 +1,12 @@
 /**
  * GET /api/seo/sorotan-by-article?page=&limit=&search=&onlyWithSorotan=
  *
- * Article-centric Sorotan listing for the panel: published articles, each with
- * the list of its Sorotan angle-pages (slug + angle + title) so the panel can
- * show the source article and let the user jump to any of its Sorotan pages.
+ * Article-centric Sorotan listing for the panel: non-archived articles, each
+ * with the list of its Sorotan angle-pages (slug + angle + title) so the panel
+ * can show the source article and let the user jump to any of its Sorotan pages.
  *
  *   onlyWithSorotan=true (default) → only articles that already have ≥1 Sorotan
- *   onlyWithSorotan=false          → every published article (to generate for)
+ *   onlyWithSorotan=false          → all non-archived articles (to generate for)
  *
  * Auth: SUPER_ADMIN | CHIEF_EDITOR | EDITOR
  */
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     // scope=me → only articles the requester authored ("Sorotan Saya" tab).
     const scope = searchParams.get("scope");
 
-    const where: Record<string, unknown> = { status: "PUBLISHED" };
+    const where: Record<string, unknown> = { status: { not: "ARCHIVED" } };
     if (scope === "me") where.authorId = session.user.id;
     if (onlyWithSorotan) where.sorotan = { some: {} };
     if (search) where.title = { contains: search, mode: "insensitive" };
@@ -42,22 +42,27 @@ export async function GET(req: NextRequest) {
           id: true,
           slug: true,
           title: true,
+          status: true,
+          createdAt: true,
           publishedAt: true,
           sorotan: {
             select: { slug: true, angle: true, title: true },
             orderBy: { angle: "asc" },
           },
         },
-        orderBy: { publishedAt: "desc" },
+        orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
       }),
       prisma.article.count({ where }),
-      prisma.sorotan.count(
-        scope === "me"
-          ? { where: { article: { authorId: session.user.id } } }
-          : undefined,
-      ),
+      prisma.sorotan.count({
+        where: {
+          article: {
+            status: { not: "ARCHIVED" },
+            ...(scope === "me" ? { authorId: session.user.id } : {}),
+          },
+        },
+      }),
     ]);
 
     return successResponse({

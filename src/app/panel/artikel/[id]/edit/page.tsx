@@ -233,6 +233,7 @@ export default function EditArticlePage() {
           assignedEditorId: selectedEditorId || null,
         };
         if (allowStatusWrite) body.status = "DRAFT";
+        if (silent) body.isAutosave = true;
 
         const res = await fetch(`/api/articles/${articleId}`, {
           method: "PUT",

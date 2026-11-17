@@ -54,12 +54,27 @@ async function getSorotan(slug: string) {
   });
 }
 
+async function canAccessSorotan(sorotan: NonNullable<Awaited<ReturnType<typeof getSorotan>>>): Promise<boolean> {
+  if (sorotan.article.status === "PUBLISHED") return true;
+  const { getServerSession } = await import("next-auth");
+  const { authOptions } = await import("@/lib/auth");
+  const session = await getServerSession(authOptions);
+  const userRole = session?.user?.role || "";
+  const isAuthor = session?.user?.id === sorotan.article.authorId;
+  return Boolean(
+    !session?.sessionInvalid &&
+      (isAuthor || ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"].includes(userRole)),
+  );
+}
+
 export async function generateMetadata({ params: paramsPromise }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const params = await paramsPromise;
   const sorotan = await getSorotan(params.slug);
-  if (!sorotan) return { title: "Sorotan Tidak Ditemukan" };
+  if (!sorotan || !(await canAccessSorotan(sorotan))) {
+    return { title: "Sorotan Tidak Ditemukan" };
+  }
 
   const title = `${ANGLE_LABEL[sorotan.angle] ?? sorotan.angle} — ${sorotan.article.title}`;
   const description = sorotan.content.slice(0, 160).replace(/\s+/g, " ").trim();
@@ -111,7 +126,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
 }) {
   const params = await paramsPromise;
   const sorotan = await getSorotan(params.slug);
-  if (!sorotan) notFound();
+  if (!sorotan || !(await canAccessSorotan(sorotan))) notFound();
 
   const { article } = sorotan;
   const appUrl =

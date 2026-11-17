@@ -18,6 +18,7 @@ import { resolveTagIds } from "@/lib/resolve-tags";
 import { canWriteArticles, canApproveArticles, canViewAllArticles } from "@/lib/auth";
 import { guardPublicRead } from "@/lib/rate-limit";
 import { isSafeImageRef } from "@/lib/safe-path";
+import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
 
 const createArticleSchema = z.object({
   title: z.string().min(5, "Judul minimal 5 karakter").max(255),
@@ -46,6 +47,7 @@ const createArticleSchema = z.object({
     )
     .optional(),
   scheduledAt: z.string().datetime().optional().nullable(),
+  isAutosave: z.boolean().optional(),
 });
 
 // GET /api/articles — list articles (public)
@@ -332,6 +334,10 @@ export async function POST(request: NextRequest) {
       article.id,
       `Membuat artikel: ${article.title} [status: ${finalStatus}]${assignedReviewerId ? ` [editor: ${assignedReviewerId}]` : ""}`
     );
+
+    if (!data.isAutosave) {
+      enqueueSorotanGeneration(article.id);
+    }
 
     return successResponse(article, 201);
   } catch (error) {

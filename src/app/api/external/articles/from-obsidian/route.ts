@@ -35,6 +35,7 @@ import { ApiError, errorResponse, successResponse, logAudit } from "@/lib/api-ut
 import { sanitizeHtml, sanitizeSlug } from "@/lib/sanitize";
 import { calculateReadTime } from "@/lib/utils";
 import { resolveTagIds } from "@/lib/resolve-tags";
+import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -175,6 +176,8 @@ export async function POST(req: NextRequest) {
       article.id,
       `Imported from Obsidian vault: ${data.sourceMarkdownPath ?? "(unknown path)"} — title: "${data.title}", category: ${category.name}`
     );
+
+    enqueueSorotanGeneration(article.id);
 
     return successResponse({
       articleId: article.id,

@@ -173,6 +173,7 @@ async function handler(req: NextRequest) {
               authorName: draftAuthorName,
               categoryId,
               defaultTags: source.defaultTags,
+              listingThumbnail: candidate.thumbnail,
               downloadImage: true,
             });
             await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);

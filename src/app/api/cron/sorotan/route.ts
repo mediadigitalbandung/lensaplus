@@ -1,8 +1,9 @@
 /**
  * POST/GET /api/cron/sorotan
  *
- * Cron endpoint: generate missing Sorotan (3-angle AI summaries) for the N
- * oldest PUBLISHED articles that have no Sorotan yet. Cadence and batch
+ * Cron endpoint: generate missing Sorotan (9-angle AI summaries) for the
+ * articles that have no Sorotan yet (prioritising PUBLISHED first, then any
+ * non-archived created drafts/in-review). Cadence and batch
  * size are controlled from /panel/sorotan via SystemSetting so editors
  * can tune throughput without touching crontab.
  *
@@ -140,9 +141,10 @@ async function handler(req: NextRequest) {
       );
     }
 
-    // 4. Pick batch — oldest published articles missing Sorotan first so we
-    //    drain the backlog rather than re-processing recent ones.
-    const candidates = await prisma.article.findMany({
+    // 4. Pick batch — oldest published articles missing Sorotan first, then any
+    //    remaining non-archived articles missing Sorotan so every created news
+    //    article has a safety-net backfill.
+    const publishedCandidates = await prisma.article.findMany({
       where: {
         status: "PUBLISHED",
         sorotan: { none: {} },
@@ -151,6 +153,22 @@ async function handler(req: NextRequest) {
       take: batchSize,
       select: { id: true, slug: true, title: true },
     });
+
+    const remainingSlots = batchSize - publishedCandidates.length;
+    const prePublishCandidates =
+      remainingSlots > 0
+        ? await prisma.article.findMany({
+            where: {
+              status: { in: ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED"] },
+              sorotan: { none: {} },
+            },
+            orderBy: { createdAt: "desc" },
+            take: remainingSlots,
+            select: { id: true, slug: true, title: true },
+          })
+        : [];
+
+    const candidates = [...publishedCandidates, ...prePublishCandidates];
 
     if (candidates.length === 0) {
       return NextResponse.json(

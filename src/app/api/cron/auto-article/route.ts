@@ -38,6 +38,7 @@ import { trackCron } from "@/lib/cron-tracker";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { extractFirstImageUrl } from "@/lib/image-extract";
 import { generateArticleViaPerplexity } from "@/lib/perplexity-article";
+import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
 import * as Sentry from "@sentry/nextjs";
 
 /** Escape a string for use in an HTML attribute value (double-quoted). */
@@ -294,6 +295,8 @@ async function generateOne(): Promise<GenerateResult> {
   } catch {
     /* swallow */
   }
+
+  enqueueSorotanGeneration(article.id);
 
   return {
     ok: true,

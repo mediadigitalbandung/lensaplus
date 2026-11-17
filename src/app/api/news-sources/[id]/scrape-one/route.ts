@@ -34,6 +34,7 @@ import { SCRAPER_ROLES } from "@/lib/roles";
 
 const bodySchema = z.object({
   url: z.string().refine(isSafeHttpUrl, "URL artikel harus http/https"),
+  thumbnail: z.string().refine(isSafeHttpUrl).optional().nullable(),
 });
 
 export const dynamic = "force-dynamic";
@@ -133,6 +134,7 @@ export async function POST(
         authorName: session.user.name,
         categoryId,
         defaultTags: source.defaultTags,
+        listingThumbnail: data.thumbnail ?? undefined,
         downloadImage: true,
       });
     } catch (e) {

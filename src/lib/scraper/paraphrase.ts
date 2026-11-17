@@ -24,8 +24,9 @@ import { callAI } from "@/lib/ai-client";
 import { sanitizeHtml, cleanAIShortText, cleanAILongText } from "@/lib/sanitize";
 import { resolveTagIds } from "@/lib/resolve-tags";
 import { slugify } from "@/lib/utils";
+import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
 import { downloadImageToUploads } from "./download-image";
-import { pickImageSrc } from "./html-utils";
+import { pickImageSrc, looksLikeContentImageUrl } from "./html-utils";
 import { sourceLabelFromUrl } from "./source-label";
 import type { ScrapedArticle } from "./types";
 
@@ -36,31 +37,6 @@ const MAX_BODY_IMAGES = 5;
  * resolve relative URLs against `baseUrl`, and skip the hero image so we
  * don't duplicate what's already used as featuredImage.
  */
-/**
- * Reject URLs that look like logos, icons, avatars, or chrome — i.e.
- * NOT body images. We can't inspect dimensions from a URL alone, so we
- * filter on filename + path tokens that are reliably non-content.
- */
-const NON_BODY_IMAGE_PATTERNS = [
-  /logo/i,
-  /favicon/i,
-  /\bicon[s]?\b/i,
-  /watermark/i,
-  /placeholder/i,
-  /spinner/i,
-  /loading/i,
-  /\bavatar\b/i,
-  /\bsprite\b/i,
-  /\bbutton\b/i,
-  /\bbadge\b/i,
-  /\.svg(\?|$)/i,
-  /\bblank\b/i,
-];
-
-function looksLikeBodyImage(url: string): boolean {
-  return !NON_BODY_IMAGE_PATTERNS.some((re) => re.test(url));
-}
-
 function extractBodyImageUrls(
   html: string,
   baseUrl: string,
@@ -71,7 +47,7 @@ function extractBodyImageUrls(
   const out: string[] = [];
   $("img").each((_, el) => {
     const $img = $(el) as cheerio.Cheerio<DomElement>;
-    const raw = pickImageSrc($img);
+    const raw = pickImageSrc($img, $);
     if (!raw) return;
     let abs: string;
     try {
@@ -81,7 +57,7 @@ function extractBodyImageUrls(
     }
     if (!/^https?:\/\//i.test(abs)) return;
     if (excludeHeroUrl && abs === excludeHeroUrl) return;
-    if (!looksLikeBodyImage(abs)) return;
+    if (!looksLikeContentImageUrl(abs)) return;
     if (seen.has(abs)) return;
     seen.add(abs);
     out.push(abs);
@@ -258,6 +234,8 @@ export interface ParaphraseInput {
   categoryId: string;
   /** Default tags from the NewsSource. */
   defaultTags?: string[];
+  /** Optional thumbnail URL captured from the listing card as a fallback hero. */
+  listingThumbnail?: string;
   /** Whether to download the hero image. Default true. */
   downloadImage?: boolean;
 }
@@ -337,49 +315,80 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
     );
   }
 
-  // Image: download hero + body images to /uploads if requested.
+  // Image: download hero (trying candidates in priority order) + body images to /uploads.
+  const heroCandidateUrls = Array.from(
+    new Set(
+      [
+        ...(source.heroImageCandidates ??
+          (source.heroImageUrl ? [source.heroImageUrl] : [])),
+        ...(input.listingThumbnail ? [input.listingThumbnail] : []),
+      ].filter((u) => /^https?:\/\//i.test(u)),
+    ),
+  );
+
   let featuredImage: string | undefined;
-  if (downloadImage && source.heroImageUrl) {
-    try {
-      const dl = await downloadImageToUploads(source.heroImageUrl, {
-        title: parsed.title.slice(0, 200),
-        caption: parsed.excerpt || source.excerpt,
-        credit: creditLabel,
-        uploadedBy: authorId,
-        uploaderName: input.authorName,
-      });
-      featuredImage = dl.url;
-    } catch {
-      // Non-fatal — draft still gets created without an image.
+  let downloadedHeroUpstreamUrl: string | undefined;
+
+  if (downloadImage && heroCandidateUrls.length > 0) {
+    for (const candidateUrl of heroCandidateUrls) {
+      try {
+        const dl = await downloadImageToUploads(candidateUrl, {
+          title: parsed.title.slice(0, 200),
+          caption: parsed.excerpt || source.excerpt,
+          credit: creditLabel,
+          referer: source.url,
+          uploadedBy: authorId,
+          uploaderName: input.authorName,
+        });
+        featuredImage = dl.url;
+        downloadedHeroUpstreamUrl = candidateUrl;
+        break;
+      } catch (err) {
+        console.warn(
+          `[scraper] hero image download failed (${candidateUrl}):`,
+          err instanceof Error ? err.message : String(err),
+        );
+      }
     }
-  } else if (source.heroImageUrl) {
-    featuredImage = source.heroImageUrl;
+  } else if (heroCandidateUrls.length > 0) {
+    featuredImage = heroCandidateUrls[0];
+    downloadedHeroUpstreamUrl = heroCandidateUrls[0];
   }
 
-  // Pull body images from the upstream article and download each to
-  // /uploads. We then inject them into the AI-paraphrased body so the
-  // resulting draft is fully illustrated, not just hero + walls of text.
+  // Pull body images from pre-sanitized extraction (preserves lazy data-src/srcset)
+  // falling back to contentHtml, excluding whichever URL became the hero image.
   const localBodyImageUrls: string[] = [];
   if (downloadImage) {
-    const upstreamBodyImageUrls = extractBodyImageUrls(
-      source.contentHtml,
-      source.url,
-      source.heroImageUrl,
-    );
+    const rawCandidates =
+      source.bodyImageUrls && source.bodyImageUrls.length > 0
+        ? source.bodyImageUrls
+        : extractBodyImageUrls(source.contentHtml, source.url);
+    const upstreamBodyImageUrls = rawCandidates
+      .filter((u) => !downloadedHeroUpstreamUrl || u !== downloadedHeroUpstreamUrl)
+      .slice(0, MAX_BODY_IMAGES);
+
     for (const upstreamUrl of upstreamBodyImageUrls) {
       try {
         const dl = await downloadImageToUploads(upstreamUrl, {
           title: parsed.title.slice(0, 200),
           caption: parsed.excerpt || source.excerpt,
           credit: creditLabel,
+          referer: source.url,
           uploadedBy: authorId,
           uploaderName: input.authorName,
         });
         localBodyImageUrls.push(dl.url);
-      } catch {
-        // Skip individual failures — still want the rest of the
-        // images to make it through.
+      } catch (err) {
+        console.warn(
+          `[scraper] body image download failed (${upstreamUrl}):`,
+          err instanceof Error ? err.message : String(err),
+        );
       }
+    }
+
+    // Last-resort hero promotion: if all hero candidates failed, promote first body image.
+    if (!featuredImage && localBodyImageUrls.length > 0) {
+      featuredImage = localBodyImageUrls.shift();
     }
   }
 
@@ -438,6 +447,8 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
     },
     select: { id: true, slug: true, title: true },
   });
+
+  enqueueSorotanGeneration(article.id);
 
   return {
     articleId: article.id,

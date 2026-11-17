@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { submitUrlToGoogle } from "./seo/google-indexing";
 import { pingIndexNow } from "./seo/indexnow";
+import { generateSorotanIfMissing } from "./seo/sorotan-generator";
 import { publishArticleToSocial, autoRenderReelIfEnabled } from "./social/orchestrator";
 import { purgeCache } from "./cloudflare/purge";
 import { invalidateCachePrefix } from "./cache";
@@ -225,10 +226,7 @@ export async function onArticlePublished(
   const [googleRes, indexNowRes, sorotanRes, socialRes, cloudflareRes, pushRes] = await Promise.allSettled([
     submitUrlToGoogle(url, "URL_UPDATED"),
     pingIndexNow(indexNowUrls),
-    // Sorotan auto-generation DISABLED for AdSense compliance: it produced up
-    // to 10 AI re-framings per article ("scaled content"). Existing Sorotan
-    // pages are now noindexed; no new ones are created on publish.
-    Promise.resolve(),
+    resolvedId ? generateSorotanIfMissing(resolvedId) : Promise.resolve(),
     resolvedId ? publishArticleToSocial(resolvedId) : Promise.resolve({ results: [] }),
     purgeCache(purgeUrls),
     sendPushToSubscribers(

@@ -151,7 +151,7 @@ export default function NewArticlePage() {
         const res = await fetch(id ? `/api/articles/${id}` : "/api/articles", {
           method: id ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, isAutosave: true }),
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.success) {
@@ -475,7 +475,7 @@ export default function NewArticlePage() {
       const saveRes = await fetch(id ? `/api/articles/${id}` : "/api/articles", {
         method: id ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildArticlePayload(latestRef.current, "DRAFT")),
+        body: JSON.stringify({ ...buildArticlePayload(latestRef.current, "DRAFT"), isAutosave: true }),
       });
       const saveData = await saveRes.json();
       if (!saveData.success) {

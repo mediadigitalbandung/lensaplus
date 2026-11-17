@@ -128,7 +128,7 @@ function extractFromArticleAnchors(
       : $a.find("img").first();
     const fallbackImg = imgEl.length > 0 ? imgEl : $a.parent().find("img").first();
     if (fallbackImg.length > 0) {
-      const src = pickImageSrc(fallbackImg as cheerio.Cheerio<DomElement>);
+      const src = pickImageSrc(fallbackImg as cheerio.Cheerio<DomElement>, $);
       if (src) {
         const abs = absolutise(src, baseUrl);
         if (abs && /^https?:\/\//i.test(abs)) thumbnail = abs;
@@ -375,7 +375,7 @@ function extractFromCard(
     ? $card.find(options.imageSelector).first()
     : $card.find("img").first();
   if (imgEl.length > 0) {
-    const src = pickImageSrc(imgEl as cheerio.Cheerio<DomElement>);
+    const src = pickImageSrc(imgEl as cheerio.Cheerio<DomElement>, $);
     if (src) {
       const abs = absolutise(src, baseUrl);
       if (abs && /^https?:\/\//i.test(abs)) thumbnail = abs;
