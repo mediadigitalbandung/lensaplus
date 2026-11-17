@@ -336,7 +336,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
                     )}
                     <div className="flex-1 min-w-0">
                       <Link
-                        href={`/artikel/${article.slug}`}
+                        href={`/berita/${article.slug}`}
                         className="text-body-md font-semibold text-txt-primary hover:text-primary transition-colors line-clamp-2"
                       >
                         {article.title}

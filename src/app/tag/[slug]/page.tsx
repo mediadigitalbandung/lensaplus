@@ -7,6 +7,7 @@ import ArticleCard from "@/components/artikel/ArticleCard";
 import BannerAd from "@/components/ads/BannerAd";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { parsePositiveInt } from "@/lib/utils";
 
 const PER_PAGE = 12;
 
@@ -28,7 +29,7 @@ const TAG_META_OVERRIDES: Record<string, { title: string; description: string }>
 export async function generateMetadata({ params: paramsPromise, searchParams: searchParamsPromise }: PageProps): Promise<Metadata> {
   const params = await paramsPromise;
   const searchParams = await searchParamsPromise;
-  const page = Math.max(1, parseInt(searchParams.page || "1"));
+  const page = parsePositiveInt(searchParams.page, 1);
   const tag = await prisma.tag.findUnique({ where: { slug: params.slug } });
   if (!tag) return { title: "Tag Tidak Ditemukan" };
   const override = TAG_META_OVERRIDES[params.slug];
@@ -69,7 +70,7 @@ export default async function TagPage({ params: paramsPromise, searchParams: sea
 
   if (!tag) notFound();
 
-  const page = Math.max(1, parseInt(searchParams.page || "1"));
+  const page = parsePositiveInt(searchParams.page, 1);
 
   const where = {
     status: "PUBLISHED" as const,

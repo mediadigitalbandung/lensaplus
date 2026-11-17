@@ -912,18 +912,42 @@ export default function PengaturanPage() {
         });
         return;
       }
-      const results = json.data?.results;
-      const platforms = results
-        ? Object.entries(results)
-            .map(([p, r]) => {
-              const obj = r as { success?: boolean; error?: string };
-              return obj.success ? `${p} OK` : `${p} FAIL`;
-            })
-            .join(" · ")
-        : "selesai";
+      const rawResults = json.data?.results;
+      const items: Array<{
+        platform?: string;
+        status?: string;
+        isStory?: boolean;
+        error?: string;
+        note?: string;
+      }> = Array.isArray(rawResults)
+        ? rawResults
+        : rawResults && typeof rawResults === "object"
+          ? Object.entries(rawResults).map(([platform, r]) => ({
+              platform,
+              status: (r as { success?: boolean; status?: string })?.status ||
+                ((r as { success?: boolean })?.success ? "PUBLISHED" : "REJECTED"),
+              error: (r as { error?: string })?.error,
+            }))
+          : [];
+
+      const okCount = items.filter(
+        (r) => r.status === "PUBLISHED" || r.status === "DRAFT",
+      ).length;
+      const failCount = items.filter((r) => r.status === "REJECTED").length;
+      const platforms =
+        items.length > 0
+          ? items
+              .map((r) => {
+                const label = `${r.platform || "?"}${r.isStory ? " (Story)" : ""}`;
+                const suffix = r.error ? `: ${r.error}` : "";
+                return `${label} ${r.status || "OK"}${suffix}`;
+              })
+              .join(" · ")
+          : "Tidak ada platform aktif atau artikel terpublikasi untuk diuji";
+
       setTest("meta", {
         loading: false,
-        success: true,
+        success: okCount > 0 && failCount === 0,
         message: platforms,
       });
     } catch (err) {

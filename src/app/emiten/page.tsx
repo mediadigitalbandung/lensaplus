@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import { parsePositiveInt } from "@/lib/utils";
 type CompanySector =
   | "KEUANGAN" | "ENERGI" | "KONSUMER" | "PROPERTI" | "TELEKOMUNIKASI"
   | "INFRASTRUKTUR" | "PERTAMBANGAN" | "PERTANIAN_PERKEBUNAN" | "TRANSPORTASI"
@@ -63,7 +64,7 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
   const sp = await searchParams;
   const sectorFilter = sp.sector as CompanySector | undefined;
   const searchQuery = sp.search ?? "";
-  const page = Math.max(1, parseInt(sp.page ?? "1", 10));
+  const page = parsePositiveInt(sp.page, 1);
   const limit = 24;
 
   const where = {

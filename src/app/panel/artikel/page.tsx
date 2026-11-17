@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
@@ -143,8 +143,22 @@ function LoadingSkeleton() {
   );
 }
 
-export default function ArtikelPage() {
+const VALID_STATUS_FILTERS = new Set([
+  "ALL",
+  "DRAFT",
+  "IN_REVIEW",
+  "APPROVED",
+  "PUBLISHED",
+  "REJECTED",
+  "ARCHIVED",
+]);
+const VALID_ORIGIN_FILTERS = new Set(["all", "manual", "cron", "scraper"]);
+
+function ArtikelPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialStatusParam = (searchParams.get("status") || "").toUpperCase();
+  const initialOriginParam = (searchParams.get("origin") || "").toLowerCase();
   const { data: session } = useSession();
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
@@ -166,12 +180,17 @@ export default function ArtikelPage() {
     userRoleForActions === "SUPER_ADMIN" ||
     userRoleForActions === "CHIEF_EDITOR" ||
     userRoleForActions === "EDITOR";
-  // Default to ALL for everyone — editors prefer to see the full pipeline
-  // at a glance and switch to "Menunggu Review" only when actively triaging.
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  // Origin filter: "all" | "manual" | "auto" — lets staff separate their own
-  // articles from cron-generated drafts.
-  const [filterOrigin, setFilterOrigin] = useState<"all" | "manual" | "cron" | "scraper">("all");
+  // Default to ALL (or honour ?status= / ?origin= query params when linked from Sumber Berita).
+  const [filterStatus, setFilterStatus] = useState(() =>
+    VALID_STATUS_FILTERS.has(initialStatusParam) ? initialStatusParam : "ALL",
+  );
+  // Origin filter: "all" | "manual" | "cron" | "scraper" — lets staff separate
+  // human articles from cron or external scraper drafts.
+  const [filterOrigin, setFilterOrigin] = useState<"all" | "manual" | "cron" | "scraper">(() =>
+    VALID_ORIGIN_FILTERS.has(initialOriginParam)
+      ? (initialOriginParam as "all" | "manual" | "cron" | "scraper")
+      : "all",
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -958,5 +977,13 @@ export default function ArtikelPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ArtikelPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <ArtikelPageContent />
+    </Suspense>
   );
 }

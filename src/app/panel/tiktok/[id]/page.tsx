@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { toLocalDatetimeInputValue } from "@/lib/utils";
 import {
   ArrowLeft,
   Loader2,
@@ -154,7 +155,7 @@ export default function TiktokEditorPage() {
       setBgmUrl(data.bgmUrl);
       setBgmVolume(data.bgmVolume);
       setOverlayJson(data.overlayJson ? JSON.stringify(data.overlayJson, null, 2) : "");
-      setScheduledAt(data.scheduledAt ? data.scheduledAt.slice(0, 16) : "");
+      setScheduledAt(data.scheduledAt ? toLocalDatetimeInputValue(data.scheduledAt) : "");
       setStatus(data.status);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal memuat konten");
@@ -1179,8 +1180,8 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
             <Scissors size={18} className="text-primary" />
             {editingSlot ? "Edit Trim Slot" : "Clipper Video TikTok"}
           </h3>
-          <button onClick={onClose} className="rounded-lg p-1 text-txt-muted hover:bg-surface-secondary">
-            <X size={18} />
+          <button type="button" onClick={onClose} aria-label="Tutup" className="rounded-lg p-1 text-txt-muted hover:bg-surface-secondary">
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 

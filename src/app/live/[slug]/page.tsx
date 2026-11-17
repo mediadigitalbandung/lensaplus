@@ -159,6 +159,13 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
 
   if (!blog) notFound();
 
+  const linkedArticle = blog.articleId
+    ? await prisma.article.findFirst({
+        where: { id: blog.articleId, status: "PUBLISHED" },
+        select: { slug: true },
+      })
+    : null;
+
   // Increment view count
   prisma.liveBlog
     .update({ where: { id: blog.id }, data: { viewCount: { increment: 1 } } })
@@ -241,12 +248,12 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
             <span>{scheduledDateStr} WIB</span>
             <span>·</span>
             <span>{blog.entries.length} update</span>
-            {blog.articleId && (
+            {linkedArticle && (
               <Link
-                href={`/artikel/${blog.articleId}`}
+                href={`/berita/${linkedArticle.slug}`}
                 className="inline-flex items-center gap-1 text-primary hover:underline"
               >
-                <ExternalLink size={12} />
+                <ExternalLink size={12} aria-hidden="true" />
                 Baca artikel terkait
               </Link>
             )}

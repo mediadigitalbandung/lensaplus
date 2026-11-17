@@ -49,6 +49,7 @@ export async function GET() {
         _count: { select: { comments: true, revisions: true, corrections: true } },
       },
       orderBy: { createdAt: "asc" },
+      take: 5000,
     });
 
     const byTitle = new Map<string, typeof articles>();

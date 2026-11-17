@@ -5,7 +5,6 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
   successResponse,
@@ -16,6 +15,10 @@ import {
 } from "@/lib/api-utils";
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
 import { assertSafePublicUrl } from "@/lib/scraper/fetch";
+import {
+  newsSourceUpdateSchema,
+  assertCategoryExists,
+} from "@/lib/scraper/source-validation";
 import { SCRAPER_ROLES } from "@/lib/roles";
 
 /** A source is manageable by its owner, or by any SUPER_ADMIN. */
@@ -25,27 +28,6 @@ function canManageSource(
 ): boolean {
   return session.user.role === "SUPER_ADMIN" || source.ownerId === session.user.id;
 }
-
-const updateSchema = z.object({
-  name: z.string().min(2).max(120).optional(),
-  listingUrl: z.string().url().optional(),
-  categoryId: z.string().min(1).optional().nullable(),
-  description: z.string().max(500).optional().nullable(),
-  isActive: z.boolean().optional(),
-  priority: z.number().int().min(0).max(100).optional(),
-  frequencyHours: z.number().int().min(1).max(24).optional(),
-  articleSelector: z.string().max(500).optional().nullable(),
-  titleSelector: z.string().max(500).optional().nullable(),
-  contentSelector: z.string().max(500).optional().nullable(),
-  imageSelector: z.string().max(500).optional().nullable(),
-  useHeadless: z.boolean().optional(),
-  waitForSelector: z.string().max(500).optional().nullable(),
-  crawlSubcategories: z.boolean().optional(),
-  crawlMaxPages: z.number().int().min(1).max(50).optional(),
-  paginationMaxPages: z.number().int().min(1).max(30).optional(),
-  paginationPattern: z.string().max(60).optional().nullable(),
-  defaultTags: z.array(z.string().min(1).max(40)).max(10).optional(),
-});
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +65,11 @@ export async function PUT(
       throw new ApiError("Sumber tidak ditemukan", 404);
     }
 
-    const data = updateSchema.parse(await request.json());
+    const data = newsSourceUpdateSchema.parse(await request.json());
+
+    if (data.categoryId !== undefined) {
+      await assertCategoryExists(data.categoryId);
+    }
 
     if (data.listingUrl && data.listingUrl !== existing.listingUrl) {
       try {

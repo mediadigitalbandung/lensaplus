@@ -18,6 +18,7 @@ import {
 } from "@/lib/api-utils";
 import { submitUrlToGoogle } from "@/lib/seo/google-indexing";
 import { pingIndexNow } from "@/lib/seo/indexnow";
+import { isSafeHttpUrl } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ function isOwnDomain(rawUrl: string): boolean {
 }
 
 const bodySchema = z.object({
-  url: z.string().url(),
+  url: z.string().refine(isSafeHttpUrl, "URL harus http/https"),
   articleId: z.string().optional(),
   type: z.enum(["URL_UPDATED", "URL_DELETED"]).optional(),
 });

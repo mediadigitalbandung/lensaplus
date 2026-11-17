@@ -11,14 +11,16 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { isSafeHttpUrl } from "@/lib/api-utils";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 const updateAdSchema = z.object({
   name: z.string().min(1).optional(),
   type: z.enum(["IMAGE", "GIF", "HTML"]).optional(),
   slot: z.enum(["HEADER", "SIDEBAR", "IN_ARTICLE", "FOOTER", "BETWEEN_SECTIONS", "POPUP", "FLOATING_BOTTOM"]).optional(),
-  imageUrl: z.string().url().nullable().optional(),
+  imageUrl: z.string().refine(isSafeImageRef, "URL atau path gambar tidak valid").nullable().optional(),
   htmlCode: z.string().nullable().optional(),
-  targetUrl: z.string().url().nullable().optional(),
+  targetUrl: z.string().refine(isSafeHttpUrl, "URL tujuan harus http/https").nullable().optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   isActive: z.boolean().optional(),

@@ -1,59 +1,101 @@
-/**
- * Postgres session-level advisory locks for cron idempotency.
- *
- * pg_try_advisory_lock acquires a session-level lock immediately — no
- * blocking. Returns true if the lock was acquired, false if another session
- * already holds it. The lock is released automatically when the DB session
- * closes (end of the Prisma connection), or explicitly via
- * releaseAdvisoryLock().
- *
- * Use this for cron handlers that are non-idempotent (auto-article, sorotan)
- * to prevent concurrent invocations (e.g. Vercel cron + manual curl arriving
- * within the same interval window) from producing duplicate rows.
- */
-
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 
+const DEFAULT_TTL_MS = 10 * 60_000;
+const LOCK_PREFIX = "cron_lock_";
+
+// Fallback token registry only for legacy tryAdvisoryLock/releaseAdvisoryLock callers.
+const legacyTokens = new Map<string, string>();
+
 /**
- * Hash a string key to a signed 63-bit integer suitable for
- * pg_try_advisory_lock. Uses a simple polynomial rolling hash.
- * The sign bit is always 0 to stay safely in Postgres bigint range.
+ * Acquire an atomic, lease-based PostgreSQL lock stored in `system_settings`.
+ *
+ * Uses a single-statement `INSERT ... ON CONFLICT DO UPDATE ... WHERE expired`
+ * query so connection pooling (PgBouncer / Prisma pool) never splits lock
+ * acquisition and release across different backend PostgreSQL sessions.
+ *
+ * Returns an opaque owner token string when acquired, or `null` if another
+ * active run holds a non-expired lease (or on database error).
  */
-function keyToInt(key: string): bigint {
-  let hash = BigInt(0);
-  const MOD = (BigInt(1) << BigInt(63)) - BigInt(1); // 2^63 - 1
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash * BigInt(31) + BigInt(key.charCodeAt(i))) & MOD;
+export async function acquireCronLock(
+  key: string,
+  ttlMs = DEFAULT_TTL_MS,
+): Promise<string | null> {
+  const token = randomBytes(16).toString("hex");
+  const nowMs = Date.now();
+  const expiresAt = nowMs + Math.max(1_000, Math.floor(ttlMs));
+  const settingKey = `${LOCK_PREFIX}${key}`;
+  const value = `${expiresAt}:${token}`;
+  const nowStr = String(nowMs);
+
+  try {
+    const rows = await prisma.$queryRaw<Array<{ value: string }>>`
+      INSERT INTO "system_settings" ("id", "key", "value")
+      VALUES (${settingKey}, ${settingKey}, ${value})
+      ON CONFLICT ("key") DO UPDATE
+        SET "value" = EXCLUDED."value"
+        WHERE (
+          CASE
+            WHEN split_part("system_settings"."value", ':', 1) ~ '^[0-9]{1,15}$'
+            THEN (split_part("system_settings"."value", ':', 1))::bigint
+            ELSE 0
+          END
+        ) <= (${nowStr})::bigint
+      RETURNING "value"
+    `;
+
+    if (Array.isArray(rows) && rows.length > 0 && rows[0]?.value === value) {
+      return token;
+    }
+    return null;
+  } catch (err) {
+    console.error(`[cron-lock] Failed to acquire lock "${key}":`, err);
+    return null;
   }
-  return hash;
 }
 
 /**
- * Attempt to acquire a Postgres session-level advisory lock.
- *
- * @param key  Stable string identifier, e.g. "cron:auto-article".
- * @returns    true if lock was acquired; false if already held by another
- *             session (another cron invocation is in progress — caller
- *             should return a 200 SKIP response).
+ * Release a lease lock only if the stored owner token matches `token`.
+ * Safe against deleting another worker's lock after TTL expiration.
  */
-export async function tryAdvisoryLock(key: string): Promise<boolean> {
-  const id = keyToInt(key);
-  const result = await prisma.$queryRaw<{ ok: boolean }[]>`
-    SELECT pg_try_advisory_lock(${id}::bigint) AS ok
-  `;
-  return result[0]?.ok === true;
+export async function releaseCronLock(
+  key: string,
+  token: string | null | undefined,
+): Promise<void> {
+  if (!token) return;
+  const settingKey = `${LOCK_PREFIX}${key}`;
+  try {
+    await prisma.$executeRaw`
+      DELETE FROM "system_settings"
+      WHERE "key" = ${settingKey}
+        AND split_part("value", ':', 2) = ${token}
+    `;
+  } catch (err) {
+    console.warn(`[cron-lock] Failed to release lock "${key}":`, err);
+  }
 }
 
 /**
- * Release a previously acquired advisory lock.
- * Call in a finally block so the lock is freed even when the handler
- * throws, allowing the next cron invocation to proceed without waiting
- * for the DB session to close naturally.
- *
- * Safe to call even if the lock was not acquired (pg_advisory_unlock
- * returns false rather than erroring in that case).
+ * Legacy boolean wrapper for `acquireCronLock`. Prefer `acquireCronLock` +
+ * `releaseCronLock` with an explicit owner token in new code.
+ */
+export async function tryAdvisoryLock(
+  key: string,
+  ttlMs = DEFAULT_TTL_MS,
+): Promise<boolean> {
+  const token = await acquireCronLock(key, ttlMs);
+  if (!token) return false;
+  legacyTokens.set(key, token);
+  return true;
+}
+
+/**
+ * Legacy boolean-pair release wrapper.
  */
 export async function releaseAdvisoryLock(key: string): Promise<void> {
-  const id = keyToInt(key);
-  await prisma.$executeRaw`SELECT pg_advisory_unlock(${id}::bigint)`;
+  const token = legacyTokens.get(key);
+  legacyTokens.delete(key);
+  if (token) {
+    await releaseCronLock(key, token);
+  }
 }

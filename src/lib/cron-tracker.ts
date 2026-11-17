@@ -75,6 +75,53 @@ export async function recordCronRun(
  * route handler style). Throws are also caught + recorded + rethrown so the
  * outer errorResponse() can format the response.
  */
+function isResponseLike(val: unknown): val is Response {
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    "status" in val &&
+    typeof (val as { status: unknown }).status === "number"
+  );
+}
+
+async function inspectCronResponse(
+  res: Response,
+): Promise<{ skipRecord: boolean; ok: boolean; error?: string }> {
+  let body: Record<string, unknown> | null = null;
+  if (typeof res.clone === "function") {
+    try {
+      const parsed: unknown = await res.clone().json();
+      if (typeof parsed === "object" && parsed !== null) {
+        body = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // Non-JSON response; rely on HTTP status code.
+    }
+  }
+
+  if (body?.reason === "ANOTHER_RUN_IN_PROGRESS") {
+    return { skipRecord: true, ok: true };
+  }
+
+  if (res.status >= 400) {
+    const errMsg =
+      typeof body?.error === "string" && body.error.trim()
+        ? body.error
+        : `HTTP ${res.status}`;
+    return { skipRecord: false, ok: false, error: errMsg };
+  }
+
+  if (body && body.success === false && body.skipped !== true) {
+    const errMsg =
+      typeof body.error === "string" && body.error.trim()
+        ? body.error
+        : "Cron handler returned success=false";
+    return { skipRecord: false, ok: false, error: errMsg };
+  }
+
+  return { skipRecord: false, ok: true };
+}
+
 export async function trackCron<T>(
   name: CronJobName,
   fn: () => Promise<T>,
@@ -82,7 +129,19 @@ export async function trackCron<T>(
   const start = Date.now();
   try {
     const out = await fn();
-    await recordCronRun(name, { ok: true, durationMs: Date.now() - start });
+    const durationMs = Date.now() - start;
+    if (isResponseLike(out)) {
+      const verdict = await inspectCronResponse(out);
+      if (!verdict.skipRecord) {
+        await recordCronRun(name, {
+          ok: verdict.ok,
+          durationMs,
+          error: verdict.error,
+        });
+      }
+    } else {
+      await recordCronRun(name, { ok: true, durationMs });
+    }
     return out;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

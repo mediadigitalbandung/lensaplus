@@ -7,6 +7,7 @@ import {
   logAudit,
   requireAuth,
   successResponse,
+  parsePositiveInt,
 } from "@/lib/api-utils";
 import {
   TIKTOK_CAPTION_MAX,
@@ -39,8 +40,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const accountId = searchParams.get("accountId");
     const search = searchParams.get("search")?.trim();
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 20, 100);
 
     const where: Record<string, unknown> = {};
     if (status) where.status = status;

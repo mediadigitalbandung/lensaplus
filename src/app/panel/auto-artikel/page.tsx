@@ -189,14 +189,23 @@ export default function AutoArtikelPage() {
   const fetchArticles = useCallback(async () => {
     try {
       setLoadingArticles(true);
-      // Server-side filter via ?origin=auto so we don't waste a 500-row
-      // payload on manual articles we'd just discard. Limit raised to 5000
-      // to cover the long tail (~684 today and growing daily via cron).
-      const res = await fetch("/api/articles?origin=auto&status=ALL&limit=5000");
-      if (res.ok) {
+      // Fetch in bounded 500-row pages so /api/articles never needs an
+      // unbounded limit while covering the full long tail (>684 articles).
+      const collected: Article[] = [];
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const res = await fetch(
+          `/api/articles?origin=auto&status=ALL&page=${page}&limit=500`,
+        );
+        if (!res.ok) break;
         const json = await res.json();
-        setArticles((json.data?.articles || []) as Article[]);
-      }
+        const batch = (json.data?.articles || []) as Article[];
+        collected.push(...batch);
+        totalPages = json.data?.pagination?.totalPages ?? 1;
+        page++;
+      } while (page <= totalPages && page <= 30);
+      setArticles(collected);
     } catch {
       /* non-critical */
     } finally {

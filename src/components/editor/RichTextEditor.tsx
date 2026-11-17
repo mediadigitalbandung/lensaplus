@@ -79,6 +79,8 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-label={title}
+      aria-pressed={active}
       className={cn(
         "rounded-lg p-1.5 transition-colors",
         active

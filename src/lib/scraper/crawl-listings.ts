@@ -22,9 +22,12 @@ import * as cheerio from "cheerio";
 import { fetchListing } from "./fetch-listing";
 import { fetchHtml } from "./fetch";
 import { fetchHtmlHeadless } from "./headless";
+import { isSameSiteHost } from "./html-utils";
 import type { ListingItem, ScraperOptions } from "./types";
 
 interface CrawlOptions extends ScraperOptions {
+  /** Whether to follow sub-category links from the root listing. Default true. */
+  crawlSubcategories?: boolean;
   crawlMaxPages?: number;
   /** Number of paginated listing pages to follow (1 = root only). */
   paginationMaxPages?: number;
@@ -146,9 +149,10 @@ function findSubListings(
   } catch {
     return [];
   }
-  if (current.host !== root.host) return [];
+  if (!isSameSiteHost(current, root)) return [];
 
   const rootPath = root.pathname.replace(/\/$/, "");
+  const currentPath = current.pathname.replace(/\/$/, "");
   const rootSegments = rootPath.split("/").filter(Boolean);
   // We accept links whose path starts with root's parent. So
   // "/page/berita" → parent "/page" → accept "/page/berita/keuangan".
@@ -170,11 +174,11 @@ function findSubListings(
     } catch {
       return;
     }
-    if (abs.host !== root.host) return;
+    if (!isSameSiteHost(abs, root)) return;
     if (!/^https?:$/.test(abs.protocol)) return;
     const linkPath = abs.pathname.replace(/\/$/, "");
     if (linkPath === rootPath) return; // root itself
-    if (linkPath === currentPageUrl.replace(/\/$/, "")) return;
+    if (linkPath === currentPath) return;
     if (looksLikeArticle(linkPath)) return;
 
     // Path must share at least the parent path with the root.
@@ -215,8 +219,12 @@ export async function crawlListings(
   rootUrl: string,
   options: CrawlOptions = {},
 ): Promise<CrawlResult> {
-  const maxPages = Math.max(1, Math.min(options.crawlMaxPages ?? 8, 50));
+  const followSubcategories = options.crawlSubcategories ?? true;
   const paginationMax = Math.max(1, Math.min(options.paginationMaxPages ?? 1, 30));
+  const rawMaxPages = Math.max(1, Math.min(options.crawlMaxPages ?? 8, 50));
+  const maxPages = followSubcategories
+    ? rawMaxPages
+    : Math.max(rawMaxPages, paginationMax);
   const visited = new Set<string>();
   const queue: string[] = [];
   const allItems: ListingItem[] = [];
@@ -247,12 +255,12 @@ export async function crawlListings(
     }
   }
 
-  // 3. From the first paginated root only, discover sub-listing URLs to
-  //    queue. Skip if we'd already exceed maxPages.
-  if (pagesVisited.length < maxPages) {
+  // 3. Only when sub-category crawling is enabled: discover sub-listing URLs
+  //    from the root page and BFS through them up to maxPages.
+  if (followSubcategories && pagesVisited.length < maxPages) {
     try {
-      const { html: rootHtml } = await getRawHtml(rootUrl, options);
-      for (const sub of findSubListings(rootHtml, rootUrl, rootUrl)) {
+      const { html: rootHtml, finalUrl } = await getRawHtml(rootUrl, options);
+      for (const sub of findSubListings(rootHtml, finalUrl, finalUrl)) {
         if (!visited.has(sub) && visited.size < maxPages) {
           visited.add(sub);
           queue.push(sub);
@@ -264,7 +272,7 @@ export async function crawlListings(
   }
 
   // 4. BFS through sub-listings — extract candidates from each.
-  while (queue.length > 0 && pagesVisited.length < maxPages) {
+  while (followSubcategories && queue.length > 0 && pagesVisited.length < maxPages) {
     const url = queue.shift()!;
     try {
       const r = await fetchListing(url, options);
@@ -277,7 +285,7 @@ export async function crawlListings(
     }
   }
 
-  // 4. Dedup by article URL.
+  // 5. Dedup by article URL.
   const seen = new Set<string>();
   const deduped: ListingItem[] = [];
   for (const item of allItems) {
@@ -290,5 +298,51 @@ export async function crawlListings(
     items: deduped,
     pagesVisited,
     selectorUsed: firstSelectorUsed || "(no cards detected)",
+  };
+}
+
+export interface SourceListingConfig {
+  listingUrl: string;
+  articleSelector?: string | null;
+  titleSelector?: string | null;
+  imageSelector?: string | null;
+  useHeadless: boolean;
+  waitForSelector?: string | null;
+  crawlSubcategories: boolean;
+  crawlMaxPages: number;
+  paginationMaxPages?: number | null;
+  paginationPattern?: string | null;
+}
+
+/**
+ * Shared listing fetcher used by Preview, manual Scrape Now, and cron so all
+ * three honour pagination and sub-category crawl identically.
+ */
+export async function fetchSourceListing(
+  source: SourceListingConfig,
+): Promise<{ items: ListingItem[]; selectorUsed: string; pagesVisited: string[] }> {
+  const scrapeOptions: ScraperOptions = {
+    articleSelector: source.articleSelector || undefined,
+    titleSelector: source.titleSelector || undefined,
+    imageSelector: source.imageSelector || undefined,
+    useHeadless: source.useHeadless,
+    waitForSelector: source.waitForSelector,
+  };
+  const wantsMultiPage =
+    source.crawlSubcategories || (source.paginationMaxPages ?? 1) > 1;
+  if (wantsMultiPage) {
+    return crawlListings(source.listingUrl, {
+      ...scrapeOptions,
+      crawlSubcategories: source.crawlSubcategories,
+      crawlMaxPages: source.crawlMaxPages,
+      paginationMaxPages: source.paginationMaxPages ?? 1,
+      paginationPattern: source.paginationPattern,
+    });
+  }
+  const r = await fetchListing(source.listingUrl, scrapeOptions);
+  return {
+    items: r.items,
+    selectorUsed: r.selectorUsed,
+    pagesVisited: [source.listingUrl],
   };
 }

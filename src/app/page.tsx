@@ -382,7 +382,7 @@ export default async function HomePage() {
             {heroSpotlight && (
               <div className="lg:col-span-6 flex flex-col">
                 <article className="group flex-1 flex flex-col">
-                  <Link href={`/berita/${heroSpotlight.slug}`} className="block overflow-hidden rounded-2xl relative aspect-[16/10] bg-stone-150 shadow-sm group-hover:shadow-md transition-all duration-300">
+                  <Link href={`/berita/${heroSpotlight.slug}`} className="block overflow-hidden rounded-2xl relative aspect-[16/10] bg-stone-200/70 shadow-sm group-hover:shadow-md transition-all duration-300">
                     <Image
                       src={heroSpotlight.featuredImage || getAIImage(heroSpotlight.category?.slug, 0)}
                       alt={heroSpotlight.title}
@@ -651,7 +651,7 @@ export default async function HomePage() {
               {terkiniArticles[0] && (
                 <article className="group mb-8">
                   <Link href={`/berita/${terkiniArticles[0].slug}`} className="block">
-                    <div className="relative aspect-[2/1] overflow-hidden rounded-2xl bg-stone-150 shadow-sm">
+                    <div className="relative aspect-[2/1] overflow-hidden rounded-2xl bg-stone-200/70 shadow-sm">
                       <Image
                         src={terkiniArticles[0].featuredImage || getAIImage(terkiniArticles[0].category?.slug, 1)}
                         alt={terkiniArticles[0].title}
@@ -684,7 +684,7 @@ export default async function HomePage() {
                 {terkiniArticles.slice(1).map((a, idx) => (
                   <article key={a.slug} className="group flex gap-3.5 sm:gap-4">
                     <Link href={`/berita/${a.slug}`} className="shrink-0">
-                      <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-xl bg-stone-150 shadow-sm">
+                      <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
                         <Image
                           src={a.featuredImage || getAIImage(a.category?.slug, idx + 2)}
                           alt={a.title}
@@ -739,14 +739,14 @@ export default async function HomePage() {
 
                 <div className="divide-y divide-stone-100">
                   <Link
-                    href="/jadwal-sidang"
+                    href="/live"
                     className="group flex items-center justify-between py-3 transition-colors"
                   >
                     <div>
-                      <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Jadwal Sidang Pengadilan</h4>
-                      <p className="text-[10px] text-stone-500 mt-0.5">Agenda sidang PN, PTUN, &amp; PA Bandung</p>
+                      <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Liputan Langsung Persidangan</h4>
+                      <p className="text-[10px] text-stone-500 mt-0.5">Laporan real-time sidang &amp; konferensi pers</p>
                     </div>
-                    <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" aria-hidden="true" />
                   </Link>
 
                   <Link
@@ -805,7 +805,7 @@ export default async function HomePage() {
                 <article key={a.slug} className="group flex flex-col justify-between">
                   <div>
                     <Link href={`/berita/${a.slug}`} className="block">
-                      <div className="relative aspect-[3/2] overflow-hidden rounded-xl bg-stone-150 shadow-sm">
+                      <div className="relative aspect-[3/2] overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
                         <Image
                           src={a.featuredImage || getAIImage(a.category?.slug, idx)}
                           alt={a.title}
@@ -958,7 +958,7 @@ export default async function HomePage() {
                                 {top2.map((a, subIdx) => (
                                   <article key={a.slug} className="group">
                                     <Link href={`/berita/${a.slug}`} className="block">
-                                      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-stone-150">
+                                      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-stone-200/70">
                                         <Image
                                           src={a.featuredImage || getAIImage(a.category?.slug, subIdx)}
                                           alt={a.title}
@@ -987,7 +987,7 @@ export default async function HomePage() {
                                 {rest.map((a, subIdx) => (
                                   <article key={a.slug} className="group flex gap-3">
                                     <Link href={`/berita/${a.slug}`} className="shrink-0">
-                                      <div className="relative h-16 w-24 overflow-hidden rounded-lg bg-stone-150">
+                                      <div className="relative h-16 w-24 overflow-hidden rounded-lg bg-stone-200/70">
                                         <Image
                                           src={a.featuredImage || getAIImage(a.category?.slug, subIdx + 2)}
                                           alt={a.title}
@@ -1017,7 +1017,7 @@ export default async function HomePage() {
                       {main && (
                         <div className="md:col-span-7">
                           <Link href={`/berita/${main.slug}`} className="group block">
-                            <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-stone-150 shadow-sm">
+                            <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-stone-200/70 shadow-sm">
                               <Image
                                 src={main.featuredImage || getAIImage(main.category?.slug, 0)}
                                 alt={main.title}
@@ -1045,7 +1045,7 @@ export default async function HomePage() {
                           {side.map((a, subIdx) => (
                             <article key={a.slug} className="group flex gap-3 sm:gap-4">
                               <Link href={`/berita/${a.slug}`} className="shrink-0">
-                                <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-xl bg-stone-150 shadow-sm">
+                                <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
                                   <Image
                                     src={a.featuredImage || getAIImage(a.category?.slug, subIdx + 1)}
                                     alt={a.title}
@@ -1072,7 +1072,7 @@ export default async function HomePage() {
                     {catArticles.slice(0, 3).map((a, subIdx) => (
                       <article key={a.slug} className="group">
                         <Link href={`/berita/${a.slug}`} className="block">
-                          <div className="relative aspect-[3/2] overflow-hidden rounded-xl bg-stone-150 shadow-sm">
+                          <div className="relative aspect-[3/2] overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
                             <Image
                               src={a.featuredImage || getAIImage(a.category?.slug, subIdx)}
                               alt={a.title}

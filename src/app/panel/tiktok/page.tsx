@@ -443,8 +443,8 @@ function YoutubeImportModal({
             <Youtube size={18} className="text-red-600" />
             Import & Auto-Clip dari YouTube
           </h3>
-          <button onClick={close} className="rounded-lg p-1 text-txt-muted hover:bg-surface-secondary">
-            <X size={18} />
+          <button type="button" onClick={close} aria-label="Tutup" className="rounded-lg p-1 text-txt-muted hover:bg-surface-secondary">
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 

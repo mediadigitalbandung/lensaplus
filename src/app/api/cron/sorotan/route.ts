@@ -25,7 +25,7 @@ import { prisma } from "@/lib/prisma";
 import { generateSorotan } from "@/lib/seo/sorotan-generator";
 import { verifyCronSecret, errorResponse } from "@/lib/api-utils";
 import { trackCron } from "@/lib/cron-tracker";
-import { tryAdvisoryLock, releaseAdvisoryLock } from "@/lib/cron-lock";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import * as Sentry from "@sentry/nextjs";
 
 export const dynamic = "force-dynamic";
@@ -75,8 +75,8 @@ async function handler(req: NextRequest) {
     // 1. Advisory lock — prevent concurrent invocations from generating
     //    duplicate sorotan for the same articles.
     const LOCK_KEY = "cron:sorotan";
-    const lockAcquired = await tryAdvisoryLock(LOCK_KEY);
-    if (!lockAcquired) {
+    const lockToken = await acquireCronLock(LOCK_KEY);
+    if (!lockToken) {
       return NextResponse.json(
         {
           success: false,
@@ -218,7 +218,7 @@ async function handler(req: NextRequest) {
     );
     } finally {
       // Release lock so the next cron tick can proceed normally.
-      await releaseAdvisoryLock(LOCK_KEY);
+      await releaseCronLock(LOCK_KEY, lockToken);
     }
   } catch (e) {
     // Unexpected error — 5xx so monitoring detects real failures.
@@ -237,9 +237,11 @@ async function handler(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try { return await trackCron("sorotan", () => handler(req)); } catch (e) { return errorResponse(e); }
 }
 
 export async function POST(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try { return await trackCron("sorotan", () => handler(req)); } catch (e) { return errorResponse(e); }
 }

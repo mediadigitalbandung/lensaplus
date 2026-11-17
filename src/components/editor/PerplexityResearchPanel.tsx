@@ -242,6 +242,7 @@ export default function PerplexityResearchPanel({
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
             onClick={() => !researching && setOpen(false)}
+            aria-hidden="true"
           />
           <div className="relative z-10 flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
             {/* Header */}

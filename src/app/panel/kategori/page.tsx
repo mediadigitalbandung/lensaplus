@@ -241,19 +241,18 @@ export default function KategoriPage() {
     try {
       const slug = tagForm.slug.trim() || slugify(tagForm.name);
       if (editingTag) {
-        // Tags API doesn't have PUT by id, so delete + recreate
-        const delRes = await fetch(`/api/tags?id=${editingTag.id}`, { method: "DELETE" });
-        if (!delRes.ok) throw new Error("Gagal menghapus tag lama");
-        try {
-          const res = await fetch("/api/tags", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: tagForm.name.trim(), slug }),
-          });
-          const json = await res.json();
-          if (!json.success) throw new Error(json.error);
-        } catch {
-          throw new Error("Gagal memperbarui tag. Tag mungkin terhapus, silakan buat ulang.");
+        const res = await fetch("/api/tags", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: editingTag.id,
+            name: tagForm.name.trim(),
+            slug,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json?.error || "Gagal memperbarui tag");
         }
         showFeedback("success", "Tag berhasil diperbarui");
       } else {
@@ -282,8 +281,14 @@ export default function KategoriPage() {
     setTagDeleting(tag.id);
     try {
       const res = await fetch(`/api/tags?id=${tag.id}`, { method: "DELETE" });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error);
+      if (res.status !== 204) {
+        const json = await res.json().catch(() => null);
+        if (!res.ok || (json && !json.success)) {
+          throw new Error(json?.error || "Gagal menghapus tag");
+        }
+      } else if (!res.ok) {
+        throw new Error("Gagal menghapus tag");
+      }
       showFeedback("success", "Tag berhasil dihapus");
       fetchTags();
     } catch (err: unknown) {

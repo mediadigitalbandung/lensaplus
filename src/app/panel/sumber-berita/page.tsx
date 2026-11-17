@@ -9,8 +9,8 @@
  * so two writers can never turn the same article into two drafts — first
  * to grab it wins; everyone else sees it as "sudah diambil".
  *
- * Managing the source catalogue (add / edit / toggle / delete) stays
- * limited to SUPER_ADMIN & CHIEF_EDITOR (`canManage`).
+ * Managing each source (edit / toggle / delete) is available to its
+ * owner account and SUPER_ADMIN (`canManageSource`).
  *
  * Cron `/api/cron/scrape-sources` walks all active sources hourly
  * and obeys each source's `frequencyHours` (1–24).
@@ -68,6 +68,8 @@ interface NewsSource {
   waitForSelector: string | null;
   crawlSubcategories: boolean;
   crawlMaxPages: number;
+  paginationMaxPages: number;
+  paginationPattern: string | null;
   lastCheckedAt: string | null;
   lastSuccessAt: string | null;
   lastError: string | null;
@@ -83,6 +85,8 @@ interface PreviewItem {
   claimedBy?: string | null;
   /** "CLAIMED" (in progress) | "DONE" (already a draft) | null. */
   claimStatus?: string | null;
+  /** Linked draft article ID when claimStatus === "DONE". */
+  articleId?: string | null;
 }
 
 interface PreviewResponse {
@@ -123,7 +127,9 @@ export default function SumberBeritaPage() {
     data: PreviewResponse;
   } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [busyAction, setBusyAction] = useState<"preview" | "scrape" | "toggle" | "delete" | null>(null);
+  const [busyAction, setBusyAction] = useState<
+    "preview" | "scrape" | "toggle" | "delete" | "ai_meta" | null
+  >(null);
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
 
@@ -137,15 +143,20 @@ export default function SumberBeritaPage() {
       if (sRes.ok) {
         const json = await sRes.json();
         setSources(json.data?.sources || []);
+      } else {
+        const json = await sRes.json().catch(() => null);
+        showError(json?.error || "Gagal memuat daftar sumber berita");
       }
       if (cRes.ok) {
         const json = await cRes.json();
         setCategories(json.data || []);
       }
+    } catch {
+      showError("Gagal menghubungi server saat memuat sumber berita");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showError]);
 
   useEffect(() => {
     fetchSources();
@@ -193,16 +204,71 @@ export default function SumberBeritaPage() {
       const d = json.data;
       if (d.skipped === "no-new-articles") {
         success("Tidak ada artikel baru — semua sudah pernah di-scrape");
+      } else if (d.ok === 0 && d.failed > 0) {
+        const firstErr =
+          d.results?.find((r: { ok?: boolean; skipped?: boolean; error?: string }) => !r.ok && !r.skipped && r.error)
+            ?.error || "Scrape gagal untuk semua artikel";
+        showError(`Gagal membuat draft: ${firstErr}`);
       } else {
         const skippedNote =
           typeof d.skipped === "number" && d.skipped > 0
             ? `, ${d.skipped} dilewati (sudah diambil penulis lain)`
             : "";
-        success(`Selesai: ${d.ok} draft baru dibuat${skippedNote}`);
+        const failedNote =
+          typeof d.failed === "number" && d.failed > 0
+            ? `, ${d.failed} gagal`
+            : "";
+        success(`Selesai: ${d.ok} draft baru dibuat${skippedNote}${failedNote}`);
       }
       fetchSources();
     } catch {
       showError("Gagal scrape");
+    } finally {
+      setBusyId(null);
+      setBusyAction(null);
+    }
+  }
+
+  async function handleQuickAiMeta(s: NewsSource) {
+    const missingTags = !s.defaultTags || s.defaultTags.length === 0;
+    const missingDesc = !s.description || !s.description.trim();
+    if (!missingTags && !missingDesc) {
+      const ok = await confirm({
+        title: "Generate ulang via AI?",
+        message: `Sumber "${s.name}" sudah memiliki default tags dan deskripsi. Timpa keduanya dengan hasil AI baru?`,
+        variant: "default",
+      });
+      if (!ok) return;
+    }
+
+    setBusyId(s.id);
+    setBusyAction("ai_meta");
+    try {
+      const mode =
+        missingTags && !missingDesc
+          ? "tags"
+          : !missingTags && missingDesc
+            ? "description"
+            : "both";
+      const res = await fetch("/api/news-sources/generate-meta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceId: s.id,
+          mode,
+          save: true,
+          onlyFillMissing: missingTags || missingDesc,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        showError(json?.error || "Gagal generate metadata AI");
+        return;
+      }
+      success("Default tags & deskripsi berhasil diperbarui AI");
+      fetchSources();
+    } catch {
+      showError("Gagal menghubungi AI service");
     } finally {
       setBusyId(null);
       setBusyAction(null);
@@ -218,13 +284,15 @@ export default function SumberBeritaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !s.isActive }),
       });
+      const json = await res.json().catch(() => null);
       if (!res.ok) {
-        const json = await res.json();
-        showError(json.error || "Gagal update");
+        showError(json?.error || "Gagal update");
         return;
       }
       success(s.isActive ? "Sumber dinonaktifkan" : "Sumber diaktifkan");
       fetchSources();
+    } catch {
+      showError("Gagal menghubungi server");
     } finally {
       setBusyId(null);
       setBusyAction(null);
@@ -243,12 +311,14 @@ export default function SumberBeritaPage() {
     try {
       const res = await fetch(`/api/news-sources/${s.id}`, { method: "DELETE" });
       if (!res.ok) {
-        const json = await res.json();
-        showError(json.error || "Gagal hapus");
+        const json = await res.json().catch(() => null);
+        showError(json?.error || "Gagal hapus");
         return;
       }
       success("Sumber dihapus");
       fetchSources();
+    } catch {
+      showError("Gagal menghubungi server");
     } finally {
       setBusyId(null);
       setBusyAction(null);
@@ -260,8 +330,7 @@ export default function SumberBeritaPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-txt-primary sm:text-3xl">
-            <Globe size={26} />
+          <h1 className="text-2xl font-bold text-txt-primary sm:text-3xl">
             Sumber Berita
           </h1>
           <p className="mt-1 max-w-3xl text-sm text-txt-secondary">
@@ -377,6 +446,17 @@ export default function SumberBeritaPage() {
                         </span>
                       </>
                     )}
+                    {s.paginationMaxPages > 1 && (
+                      <>
+                        <span className="text-txt-muted">·</span>
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider text-primary"
+                          title={`Ikuti hingga ${s.paginationMaxPages} halaman pagination`}
+                        >
+                          {s.paginationMaxPages} Hal
+                        </span>
+                      </>
+                    )}
                   </div>
                   <a
                     href={s.listingUrl}
@@ -389,6 +469,18 @@ export default function SumberBeritaPage() {
                   {s.description && (
                     <p className="mt-2 text-sm text-txt-secondary">{s.description}</p>
                   )}
+                  {s.defaultTags && s.defaultTags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {s.defaultTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded border border-border bg-transparent px-2 py-0.5 text-[11px] text-on-surface-variant"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-txt-muted">
                     <span><strong className="text-txt-primary">{s.totalScraped}</strong> draft dibuat</span>
                     <span>Frekuensi tiap <strong className="text-txt-primary">{s.frequencyHours}j</strong></span>
@@ -398,7 +490,7 @@ export default function SumberBeritaPage() {
                     )}
                   </div>
                   {s.lastError && (
-                    <div className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                    <div className="mt-2 rounded-md border border-border border-l-4 border-l-red-600 bg-surface px-3 py-2 text-xs text-red-700">
                       <span className="font-semibold">Error terakhir:</span> {s.lastError}
                     </div>
                   )}
@@ -434,6 +526,22 @@ export default function SumberBeritaPage() {
                   </button>
                   {canManageSource(s) && (
                     <>
+                      <button
+                        onClick={() => handleQuickAiMeta(s)}
+                        disabled={busyId === s.id}
+                        className="btn-ghost text-xs text-primary disabled:opacity-50"
+                        title={
+                          !s.description?.trim() || !s.defaultTags?.length
+                            ? "Lengkapi Default Tags & Deskripsi dengan AI"
+                            : "Generate ulang Default Tags & Deskripsi dengan AI"
+                        }
+                      >
+                        {busyId === s.id && busyAction === "ai_meta" ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={14} />
+                        )}
+                      </button>
                       <button
                         onClick={() => setEditing(s)}
                         className="btn-ghost text-xs"
@@ -477,7 +585,7 @@ export default function SumberBeritaPage() {
               Endpoint <code className="rounded-lg bg-surface-tertiary px-1.5 py-0.5 text-xs font-mono">POST /api/cron/scrape-sources</code> sudah dilindungi <code className="text-xs font-mono">CRON_SECRET</code>.
               Setting di crontab VPS (per jam):
             </p>
-            <pre className="mt-2 overflow-x-auto rounded-md bg-primary px-3 py-2 text-[11px] text-white">{`0 * * * * curl -s -X POST https://lensaplus.com/api/cron/scrape-sources -H "Authorization: Bearer $CRON_SECRET" >> /var/log/karta-scrape.log 2>&1`}</pre>
+            <pre className="mt-2 overflow-x-auto rounded-md bg-primary px-3 py-2 text-[11px] text-white">{`0 * * * * curl -s -X POST https://lensaplus.com/api/cron/scrape-sources -H "Authorization: Bearer $CRON_SECRET" >> /var/log/lensaplus-scrape.log 2>&1`}</pre>
             <p className="mt-2 text-xs">
               Tiap jam cron akan walk semua sumber aktif yang sudah lewat <em>frequencyHours</em>-nya, ambil maks 2 artikel baru per sumber, dan stop setelah total 6 draft.
             </p>
@@ -489,6 +597,7 @@ export default function SumberBeritaPage() {
       {/* Add / Edit modal */}
       {canAdd && (showAdd || editing) && (
         <SourceFormModal
+          key={editing?.id ?? "new"}
           source={editing}
           categories={categories}
           onClose={() => {
@@ -535,8 +644,10 @@ function SourceFormModal({
   const [listingUrl, setListingUrl] = useState(source?.listingUrl || "");
   const [description, setDescription] = useState(source?.description || "");
   const [categoryId, setCategoryId] = useState(source?.categoryId || source?.category?.id || "");
-  const [frequencyHours, setFrequencyHours] = useState(source?.frequencyHours ?? 4);
-  const [priority, setPriority] = useState(source?.priority ?? 0);
+  const [frequencyHoursInput, setFrequencyHoursInput] = useState(
+    String(source?.frequencyHours ?? 4),
+  );
+  const [priority] = useState(source?.priority ?? 0);
   const [defaultTagsRaw, setDefaultTagsRaw] = useState(
     (source?.defaultTags ?? []).join(", "),
   );
@@ -548,9 +659,66 @@ function SourceFormModal({
   const [useHeadless, setUseHeadless] = useState(source?.useHeadless ?? false);
   const [waitForSelector, setWaitForSelector] = useState(source?.waitForSelector || "");
   const [crawlSubcategories, setCrawlSubcategories] = useState(source?.crawlSubcategories ?? false);
-  const [crawlMaxPages, setCrawlMaxPages] = useState(source?.crawlMaxPages ?? 8);
+  const [crawlMaxPagesInput, setCrawlMaxPagesInput] = useState(
+    String(source?.crawlMaxPages ?? 8),
+  );
+  const [paginationMaxPagesInput, setPaginationMaxPagesInput] = useState(
+    String(source?.paginationMaxPages ?? 1),
+  );
+  const [paginationPattern, setPaginationPattern] = useState(
+    source?.paginationPattern || "",
+  );
+  const [aiLoading, setAiLoading] = useState<"both" | "tags" | "description" | null>(null);
   const [saving, setSaving] = useState(false);
   const { success, error: showError } = useToast();
+
+  async function handleGenerateMeta(mode: "both" | "tags" | "description") {
+    if (name.trim().length < 2 && !listingUrl.trim()) {
+      showError("Isi Nama Sumber atau URL Halaman Berita terlebih dahulu");
+      return;
+    }
+    setAiLoading(mode);
+    try {
+      const res = await fetch("/api/news-sources/generate-meta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceId: source?.id,
+          name: name.trim(),
+          listingUrl: listingUrl.trim(),
+          categoryId: categoryId || null,
+          mode,
+          save: false,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        showError(json?.error || "Gagal generate metadata AI");
+        return;
+      }
+      const d = json.data as {
+        defaultTags?: string[];
+        description?: string;
+      };
+      if (d.defaultTags && d.defaultTags.length > 0) {
+        setDefaultTagsRaw(d.defaultTags.join(", "));
+      }
+      if (d.description) {
+        setDescription(d.description);
+      }
+      if (mode === "both") {
+        success("Default tags & deskripsi berhasil di-generate AI");
+      } else if (mode === "tags") {
+        success("Default tags berhasil di-generate AI");
+      } else {
+        success("Deskripsi berhasil di-generate AI");
+      }
+    } catch {
+      showError("Gagal menghubungi AI service");
+    } finally {
+      setAiLoading(null);
+    }
+  }
 
   async function handleSave() {
     if (!name.trim() || !listingUrl.trim()) {
@@ -559,16 +727,20 @@ function SourceFormModal({
     }
     setSaving(true);
     try {
+      const parsedFreq = Number.parseInt(frequencyHoursInput, 10);
+      const parsedCrawlMax = Number.parseInt(crawlMaxPagesInput, 10);
+      const parsedPaginationMax = Number.parseInt(paginationMaxPagesInput, 10);
+
       const body = {
         name: name.trim(),
         listingUrl: listingUrl.trim(),
         description: description.trim() || null,
         categoryId: categoryId || null,
-        frequencyHours: Math.max(1, Math.min(24, Number(frequencyHours) || 4)),
+        frequencyHours: Math.max(1, Math.min(24, Number.isFinite(parsedFreq) ? parsedFreq : 4)),
         priority: Number(priority) || 0,
         defaultTags: defaultTagsRaw
           .split(",")
-          .map((t) => t.trim())
+          .map((t) => t.trim().replace(/^#+/, "").trim())
           .filter(Boolean)
           .slice(0, 10),
         articleSelector: articleSelector.trim() || null,
@@ -578,7 +750,9 @@ function SourceFormModal({
         useHeadless,
         waitForSelector: waitForSelector.trim() || null,
         crawlSubcategories,
-        crawlMaxPages: Math.max(1, Math.min(20, Number(crawlMaxPages) || 8)),
+        crawlMaxPages: Math.max(1, Math.min(50, Number.isFinite(parsedCrawlMax) ? parsedCrawlMax : 8)),
+        paginationMaxPages: Math.max(1, Math.min(30, Number.isFinite(parsedPaginationMax) ? parsedPaginationMax : 1)),
+        paginationPattern: paginationPattern.trim() || null,
       };
       const res = await fetch(
         isEdit ? `/api/news-sources/${source!.id}` : "/api/news-sources",
@@ -588,13 +762,15 @@ function SourceFormModal({
           body: JSON.stringify(body),
         },
       );
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        showError(json.error || "Gagal simpan");
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        showError(json?.error || "Gagal simpan");
         return;
       }
       success(isEdit ? "Sumber diperbarui" : "Sumber ditambahkan");
       onSaved();
+    } catch {
+      showError("Gagal menghubungi server saat menyimpan sumber");
     } finally {
       setSaving(false);
     }
@@ -613,8 +789,8 @@ function SourceFormModal({
           <h2 className="text-base font-bold text-txt-primary">
             {isEdit ? "Edit Sumber Berita" : "Tambah Sumber Berita"}
           </h2>
-          <button onClick={onClose} className="btn-ghost p-2">
-            <X size={18} />
+          <button type="button" onClick={onClose} aria-label="Tutup" className="btn-ghost p-2">
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -675,17 +851,51 @@ function SourceFormModal({
                 type="number"
                 min={1}
                 max={24}
-                value={frequencyHours}
-                onChange={(e) => setFrequencyHours(Number(e.target.value))}
+                value={frequencyHoursInput}
+                onChange={(e) => setFrequencyHoursInput(e.target.value)}
                 className="input"
               />
             </div>
           </div>
 
+          <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-surface-container-low px-3 py-2">
+            <p className="text-[11px] text-txt-secondary">
+              Otomatis isi <strong>Default Tags</strong> &amp; <strong>Deskripsi</strong> berdasarkan nama, URL, dan kategori sumber.
+            </p>
+            <button
+              type="button"
+              onClick={() => handleGenerateMeta("both")}
+              disabled={aiLoading !== null || (name.trim().length < 2 && !listingUrl.trim())}
+              className="btn-secondary shrink-0 text-xs disabled:opacity-50"
+            >
+              {aiLoading === "both" ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Sparkles size={13} />
+              )}
+              Generate Keduanya
+            </button>
+          </div>
+
           <div>
-            <label className="mb-1 block text-xs font-semibold text-txt-primary">
-              Default Tags (opsional, pisah koma)
-            </label>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <label className="block text-xs font-semibold text-txt-primary">
+                Default Tags (opsional, pisah koma)
+              </label>
+              <button
+                type="button"
+                onClick={() => handleGenerateMeta("tags")}
+                disabled={aiLoading !== null || (name.trim().length < 2 && !listingUrl.trim())}
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+              >
+                {aiLoading === "tags" ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Sparkles size={12} />
+                )}
+                Generate AI
+              </button>
+            </div>
             <input
               type="text"
               value={defaultTagsRaw}
@@ -696,9 +906,24 @@ function SourceFormModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-txt-primary">
-              Deskripsi (opsional)
-            </label>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <label className="block text-xs font-semibold text-txt-primary">
+                Deskripsi (opsional)
+              </label>
+              <button
+                type="button"
+                onClick={() => handleGenerateMeta("description")}
+                disabled={aiLoading !== null || (name.trim().length < 2 && !listingUrl.trim())}
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+              >
+                {aiLoading === "description" ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Sparkles size={12} />
+                )}
+                Generate AI
+              </button>
+            </div>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -767,18 +992,14 @@ function SourceFormModal({
             {crawlSubcategories && (
               <div className="mt-3">
                 <label className="mb-1 block text-[11px] font-semibold text-txt-primary">
-                  Max halaman di-crawl (1–20)
+                  Max halaman di-crawl (1–50)
                 </label>
                 <input
                   type="number"
                   min={1}
-                  max={20}
-                  value={crawlMaxPages}
-                  onChange={(e) =>
-                    setCrawlMaxPages(
-                      Math.max(1, Math.min(20, Math.floor(Number(e.target.value) || 8))),
-                    )
-                  }
+                  max={50}
+                  value={crawlMaxPagesInput}
+                  onChange={(e) => setCrawlMaxPagesInput(e.target.value)}
                   className="input w-24"
                 />
                 <p className="mt-1 text-[10px] text-txt-muted">
@@ -786,6 +1007,44 @@ function SourceFormModal({
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Pagination settings */}
+          <div className="rounded-md border border-border bg-surface-container-low p-3">
+            <p className="text-xs font-semibold text-txt-primary">
+              Pagination halaman arsip (opsional)
+            </p>
+            <p className="mt-0.5 text-[11px] text-txt-muted">
+              Set ke &gt; 1 jika daftar berita dipecah per halaman (mis. <code className="font-mono">?page=1</code>, <code className="font-mono">/page/2</code>). Nilai 1 = hanya halaman root.
+            </p>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold text-txt-primary">
+                  Jumlah Halaman (1–30)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={paginationMaxPagesInput}
+                  onChange={(e) => setPaginationMaxPagesInput(e.target.value)}
+                  className="input w-28"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold text-txt-primary">
+                  Pola Pagination (opsional)
+                </label>
+                <input
+                  type="text"
+                  value={paginationPattern}
+                  onChange={(e) => setPaginationPattern(e.target.value)}
+                  maxLength={60}
+                  placeholder="?page={n} atau /page/{n}"
+                  className="input font-mono text-xs"
+                />
+              </div>
+            </div>
           </div>
 
           <div>
@@ -915,7 +1174,16 @@ function PreviewModal({
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; failed: number } | null>(null);
   const bulkAbortRef = useRef(false);
 
-  async function handleGenerate(url: string) {
+  useEffect(() => {
+    return () => {
+      bulkAbortRef.current = true;
+    };
+  }, []);
+
+  async function handleGenerate(
+    url: string,
+    opts?: { suppressRefresh?: boolean },
+  ): Promise<"ok" | "skipped" | "error"> {
     setItemState((s) => ({ ...s, [url]: { status: "running" } }));
     try {
       const res = await fetch(`/api/news-sources/${sourceId}/scrape-one`, {
@@ -923,15 +1191,15 @@ function PreviewModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        const errMsg = json.error || `HTTP ${res.status}`;
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        const errMsg = json?.error || `HTTP ${res.status}`;
         setItemState((s) => ({
           ...s,
           [url]: { status: "error", message: errMsg },
         }));
         showError(`Gagal generate: ${errMsg}`);
-        return;
+        return "error";
       }
       const d = json.data;
       if (d.skipped) {
@@ -943,7 +1211,7 @@ function PreviewModal({
         if (d.skipped === "in-progress") {
           showError("Artikel ini sedang diambil penulis lain.");
         }
-        return;
+        return "skipped";
       }
       setScrapedSet((prev) => new Set(prev).add(url));
       setItemState((s) => ({
@@ -951,7 +1219,10 @@ function PreviewModal({
         [url]: { status: "done", articleId: d.articleId },
       }));
       success(`Draft dibuat: "${d.title}"`);
-      onScraped();
+      if (!opts?.suppressRefresh) {
+        onScraped();
+      }
+      return "ok";
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : "Network error";
       setItemState((s) => ({
@@ -959,6 +1230,7 @@ function PreviewModal({
         [url]: { status: "error", message: errMsg },
       }));
       showError(`Gagal generate: ${errMsg}`);
+      return "error";
     }
   }
 
@@ -979,26 +1251,37 @@ function PreviewModal({
     setBulkRunning(true);
     setBulkProgress({ done: 0, total: targets.length, failed: 0 });
     let done = 0;
+    let okCount = 0;
+    let skippedCount = 0;
     let failed = 0;
     for (const item of targets) {
       if (bulkAbortRef.current) break;
-      try {
-        await handleGenerate(item.url);
-        // Give the upstream site + AI a short rest between requests.
-        await new Promise((r) => setTimeout(r, 350));
-      } catch {
-        failed++;
-      }
+      const outcome = await handleGenerate(item.url, { suppressRefresh: true });
+      if (outcome === "ok") okCount++;
+      else if (outcome === "skipped") skippedCount++;
+      else failed++;
       done++;
       setBulkProgress({ done, total: targets.length, failed });
+      if (!bulkAbortRef.current && done < targets.length) {
+        // Give the upstream site + AI a short rest between requests.
+        await new Promise((r) => setTimeout(r, 350));
+      }
     }
     setBulkRunning(false);
     const aborted = bulkAbortRef.current;
     bulkAbortRef.current = false;
+    if (okCount > 0) {
+      onScraped();
+    }
     if (aborted) {
-      showError(`Dihentikan setelah ${done}/${targets.length} artikel.`);
+      showError(`Dihentikan setelah ${done}/${targets.length} artikel (${okCount} sukses).`);
+    } else if (okCount === 0 && failed > 0) {
+      showError(`Semua ${failed} artikel gagal di-generate.`);
     } else {
-      success(`Selesai: ${done - failed} sukses${failed ? `, ${failed} gagal` : ""}.`);
+      const notes: string[] = [];
+      if (skippedCount > 0) notes.push(`${skippedCount} dilewati`);
+      if (failed > 0) notes.push(`${failed} gagal`);
+      success(`Selesai: ${okCount} sukses${notes.length ? `, ${notes.join(", ")}` : ""}.`);
     }
   }
 
@@ -1042,7 +1325,7 @@ function PreviewModal({
                 onClick={() => {
                   bulkAbortRef.current = true;
                 }}
-                className="flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
+                className="flex items-center gap-1 rounded-md border border-red-600 bg-surface px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-surface-secondary"
                 title="Stop setelah artikel yang sedang berjalan selesai"
               >
                 Stop
@@ -1061,8 +1344,8 @@ function PreviewModal({
                 Generate Semua ({remainingNew})
               </button>
             )}
-            <button onClick={onClose} className="btn-ghost p-2">
-              <X size={18} />
+            <button type="button" onClick={onClose} aria-label="Tutup" className="btn-ghost p-2">
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -1073,18 +1356,22 @@ function PreviewModal({
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {data.items.map((item, i) => {
+              {data.items.map((item) => {
                 const isScraped = scrapedSet.has(item.url);
                 const state = itemState[item.url];
                 const isRunning = state?.status === "running";
-                const isDone = state?.status === "done" || isScraped;
+                const isClaimedInProgress =
+                  item.claimStatus === "CLAIMED" && state?.status !== "done";
+                const isDone =
+                  !isClaimedInProgress && (state?.status === "done" || isScraped);
+                const resolvedArticleId = state?.articleId || item.articleId || null;
 
                 return (
                   <div
-                    key={i}
+                    key={item.url}
                     className={`group flex flex-col gap-2 rounded-md border p-3 transition-colors ${
                       isDone
-                        ? "border-emerald-200 bg-emerald-50/40"
+                        ? "border-emerald-600/40 bg-surface"
                         : "border-border bg-surface"
                     }`}
                   >
@@ -1141,9 +1428,13 @@ function PreviewModal({
                       >
                         Lihat sumber <ExternalLink size={10} />
                       </a>
-                      {isDone && state?.articleId ? (
+                      {isClaimedInProgress ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-txt-muted">
+                          <Lock size={11} /> Sedang diproses
+                        </span>
+                      ) : isDone && resolvedArticleId ? (
                         <Link
-                          href={`/panel/artikel/${state.articleId}/edit`}
+                          href={`/panel/artikel/${resolvedArticleId}/edit`}
                           target="_blank"
                           className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-emerald-700"
                           title="Buka draft di editor (tab baru)"
@@ -1152,12 +1443,12 @@ function PreviewModal({
                           <ExternalLink size={10} className="opacity-70" />
                         </Link>
                       ) : isDone ? (
-                        // Already-scraped early-exit: no articleId surfaced.
+                        // Legacy scraped item without ScrapedUrl.articleId:
                         // Send user to the article list filtered to scraper output.
                         <Link
                           href="/panel/artikel?status=DRAFT&origin=scraper"
                           target="_blank"
-                          className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-200"
+                          className="inline-flex items-center gap-1 rounded-md border border-emerald-600/40 bg-surface px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-surface-secondary"
                           title="Buka daftar draft hasil scraper"
                         >
                           <CheckCircle size={11} /> Lihat di list
@@ -1166,10 +1457,10 @@ function PreviewModal({
                         <button
                           type="button"
                           onClick={() => handleGenerate(item.url)}
-                          disabled={isRunning}
-                          className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed ${
+                          disabled={isRunning || bulkRunning}
+                          className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                             isRunning
-                              ? "bg-primary/10 text-primary"
+                              ? "border border-primary bg-surface text-primary"
                               : "bg-primary text-white hover:bg-primary-dark"
                           }`}
                           title={

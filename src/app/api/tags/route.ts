@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
+import { ApiError, successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
 import { slugify } from "@/lib/utils";
 
 // GET /api/tags
@@ -44,6 +44,48 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const updateTagSchema = z.object({
+  id: z.string().min(1, "ID tag diperlukan"),
+  name: z.string().min(2).max(50),
+  slug: z.string().min(2).max(60).optional(),
+});
+
+// PUT /api/tags
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    const body = await request.json();
+    const data = updateTagSchema.parse(body);
+
+    const existing = await prisma.tag.findUnique({ where: { id: data.id } });
+    if (!existing) {
+      return errorResponse(new ApiError("Tag tidak ditemukan", 404));
+    }
+
+    const nextSlug = data.slug || slugify(data.name);
+    const conflict = await prisma.tag.findFirst({
+      where: {
+        id: { not: data.id },
+        OR: [{ slug: nextSlug }, { name: data.name }],
+      },
+    });
+    if (conflict) {
+      return errorResponse(new ApiError("Nama atau slug tag sudah digunakan", 409));
+    }
+
+    const updated = await prisma.tag.update({
+      where: { id: data.id },
+      data: { name: data.name, slug: nextSlug },
+    });
+
+    await logAudit(session.user.id, "UPDATE", "tag", updated.id, `Memperbarui tag: ${updated.name}`);
+
+    return successResponse(updated);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
 // DELETE /api/tags
 export async function DELETE(request: NextRequest) {
   try {
@@ -52,7 +94,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return errorResponse(new Error("ID tag diperlukan"));
+      return errorResponse(new ApiError("ID tag diperlukan", 400));
     }
 
     const tag = await prisma.tag.findUnique({
@@ -61,7 +103,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!tag) {
-      return errorResponse(new Error("Tag tidak ditemukan"));
+      return errorResponse(new ApiError("Tag tidak ditemukan", 404));
     }
 
     await prisma.tag.delete({ where: { id } });

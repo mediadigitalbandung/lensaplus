@@ -12,7 +12,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { errorResponse, successResponse } from "@/lib/api-utils";
+import { errorResponse, successResponse, parsePositiveInt } from "@/lib/api-utils";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -33,11 +33,8 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const limit = Math.min(
-      100,
-      Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
-    );
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = parsePositiveInt(searchParams.get("limit"), 20, 100);
+    const page = parsePositiveInt(searchParams.get("page"), 1);
 
     const levelParam = searchParams.get("level");
     const regionParam = searchParams.get("region");

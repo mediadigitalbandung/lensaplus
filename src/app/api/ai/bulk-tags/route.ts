@@ -2,9 +2,11 @@ import { NextRequest } from "next/server";
 import { requireRole, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
+import { slugify } from "@/lib/utils";
+import { recordAiUsage } from "@/lib/ai-usage";
 
 function slugifyTag(name: string): string {
-  return name.replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  return slugify(name).slice(0, 60);
 }
 
 /** Run an array of async tasks in parallel batches of `size`. */
@@ -21,7 +23,8 @@ async function batchedAllSettled<T>(
   return results;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
+  void _req;
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
 
@@ -34,13 +37,22 @@ export async function POST(req: NextRequest) {
     }
     const deepseekApiKey = decryptSecret(setting.value);
 
-    // Get articles that have fewer than 5 tags
+    // Bound scan + select minimal fields; cap AI calls per invocation to 20.
     const articles = await prisma.article.findMany({
       where: { status: "PUBLISHED" },
-      include: { tags: true, category: true },
+      orderBy: { publishedAt: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        tags: { select: { name: true } },
+        category: { select: { name: true } },
+      },
     });
 
-    const articlesNeedingTags = articles.filter((a) => a.tags.length < 5);
+    const articlesNeedingTags = articles.filter((a) => a.tags.length < 5).slice(0, 20);
+    const actorName = session.user.name || session.user.email || "admin";
 
     // --- Phase 1: call AI for each article, collect (article, newTagNames[]) pairs ---
     const articleTagPairs: { articleId: string; tagNames: string[] }[] = [];
@@ -94,6 +106,19 @@ Format jawaban HANYA tag dipisah koma, tanpa penjelasan.`;
         if (!response.ok) continue;
 
         const data = await response.json();
+        const inputTokens = data.usage?.prompt_tokens ?? 0;
+        const outputTokens = data.usage?.completion_tokens ?? 0;
+        recordAiUsage({
+          userId: session.user.id,
+          userName: actorName,
+          feature: "bulk_tags",
+          provider: "deepseek",
+          model: "deepseek-chat",
+          inputTokens,
+          outputTokens,
+          totalTokens: data.usage?.total_tokens ?? inputTokens + outputTokens,
+          articleTitle: article.title,
+        });
         const result = data.choices?.[0]?.message?.content?.trim() || "";
 
         const existingTagNames = new Set(article.tags.map((t) => t.name));
@@ -136,37 +161,60 @@ Format jawaban HANYA tag dipisah koma, tanpa penjelasan.`;
       });
     }
 
-    // ONE query: fetch tags that already exist
+    const allTagSlugs = [...new Set(allTagNames.map((n) => slugifyTag(n)).filter(Boolean))];
+
+    // ONE query: fetch tags that already exist by slug OR name
     const existingTags = await prisma.tag.findMany({
-      where: { name: { in: allTagNames } },
-      select: { id: true, name: true },
+      where: {
+        OR: [
+          { slug: { in: allTagSlugs } },
+          { name: { in: allTagNames } },
+        ],
+      },
+      select: { id: true, name: true, slug: true },
     });
-    const existingTagMap = new Map(existingTags.map((t) => [t.name, t.id]));
+    const existingSlugSet = new Set(existingTags.map((t) => t.slug));
+    const existingNameSet = new Set(existingTags.map((t) => t.name.toLowerCase()));
 
     // ONE createMany for new tags
-    const missingTagNames = allTagNames.filter((name) => !existingTagMap.has(name));
-    if (missingTagNames.length > 0) {
+    const missingEntries = allTagNames
+      .map((name) => ({ name, slug: slugifyTag(name) }))
+      .filter((t) => t.slug && !existingSlugSet.has(t.slug) && !existingNameSet.has(t.name.toLowerCase()));
+    if (missingEntries.length > 0) {
       await prisma.tag.createMany({
-        data: missingTagNames.map((name) => ({ name, slug: slugifyTag(name) })),
+        data: missingEntries,
         skipDuplicates: true,
       });
     }
 
     // Re-fetch all relevant tags to get their IDs (including newly created ones)
     const allTags = await prisma.tag.findMany({
-      where: { name: { in: allTagNames } },
-      select: { id: true, name: true },
+      where: {
+        OR: [
+          { slug: { in: allTagSlugs } },
+          { name: { in: allTagNames } },
+        ],
+      },
+      select: { id: true, name: true, slug: true },
     });
-    const tagNameToId = new Map(allTags.map((t) => [t.name, t.id]));
+    const tagLookup = new Map<string, string>();
+    for (const t of allTags) {
+      tagLookup.set(t.slug, t.id);
+      tagLookup.set(t.name.toLowerCase(), t.id);
+    }
 
     // --- Phase 3: fan-out article updates in parallel batches of 5 ---
     let totalTagsAdded = 0;
     const results: { title: string; tags: string[] }[] = [];
 
     const updateTasks = articleTagPairs.map(({ articleId, tagNames }) => async () => {
-      const tagIds = tagNames
-        .map((name) => tagNameToId.get(name))
-        .filter((id): id is string => id !== undefined);
+      const tagIds = Array.from(
+        new Set(
+          tagNames
+            .map((name) => tagLookup.get(slugifyTag(name)) ?? tagLookup.get(name.toLowerCase()))
+            .filter((id): id is string => id !== undefined),
+        ),
+      );
 
       if (tagIds.length === 0) return;
 

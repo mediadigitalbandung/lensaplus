@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
           { indexStatus: null },
         ],
       },
-      orderBy: [{ lastIndexedAt: "asc" }, { publishedAt: "desc" }],
+      orderBy: [{ lastIndexedAt: { sort: "asc", nulls: "first" } }, { publishedAt: "desc" }],
       take: BATCH_ARTICLES,
       select: { id: true, slug: true },
     });
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
           { indexStatus: null },
         ],
       },
-      orderBy: [{ lastIndexedAt: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ lastIndexedAt: { sort: "asc", nulls: "first" } }, { createdAt: "desc" }],
       take: BATCH_SOROTAN,
       select: { id: true, slug: true },
     });

@@ -13,7 +13,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole, successResponse, errorResponse } from "@/lib/api-utils";
+import { requireRole, successResponse, errorResponse, parsePositiveInt } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
 
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "15", 10)));
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 15, 50);
     const search = (searchParams.get("search") || "").trim();
     // Default: only show articles that already have Sorotan (the browse case).
     const onlyWithSorotan = searchParams.get("onlyWithSorotan") !== "false";

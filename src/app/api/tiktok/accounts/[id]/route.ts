@@ -9,12 +9,13 @@ import {
   successResponse,
 } from "@/lib/api-utils";
 import { canManageTiktok, ownsTiktok } from "@/lib/tiktok/specs";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 export const dynamic = "force-dynamic";
 
 const updateSchema = z.object({
   displayName: z.string().min(1).max(120).optional(),
-  avatarUrl: z.string().url().nullable().optional(),
+  avatarUrl: z.string().refine(isSafeImageRef, "URL atau path avatar tidak valid").nullable().optional(),
 });
 
 // PATCH /api/tiktok/accounts/:id

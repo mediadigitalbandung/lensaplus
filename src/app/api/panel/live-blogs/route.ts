@@ -14,8 +14,11 @@ import {
   requireRole,
   successResponse,
   ApiError,
+  parsePositiveInt,
+  isSafeHttpUrl,
 } from "@/lib/api-utils";
 import { sanitizeText } from "@/lib/sanitize";
+import { isSafeImageRef } from "@/lib/safe-path";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -41,10 +44,10 @@ const createSchema = z.object({
   scheduledAt: z.string().datetime(),
   startedAt: z.string().datetime().optional().nullable(),
   endedAt: z.string().datetime().optional().nullable(),
-  coverImage: z.string().url().optional().nullable(),
+  coverImage: z.string().refine(isSafeImageRef, "URL atau path cover tidak valid").optional().nullable(),
   liveStreamUrl: z.preprocess(
     (v) => (typeof v === "string" ? v.trim() || null : v),
-    z.string().url("URL video tidak valid").max(2000).optional().nullable(),
+    z.string().max(2000).refine(isSafeHttpUrl, "URL video harus http/https").optional().nullable(),
   ),
   articleId: z.string().optional().nullable(),
   isPublished: z.boolean().default(true),
@@ -56,11 +59,8 @@ export async function GET(req: NextRequest) {
     const session = await requireRole([...WRITE_ROLES]);
 
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(
-      100,
-      Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
-    );
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 20, 100);
     const statusFilter = searchParams.get("status");
 
     const VALID_STATUSES = new Set([

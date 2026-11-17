@@ -6,7 +6,6 @@
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 600; // 10 min
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
@@ -21,14 +20,21 @@ function esc(input: string): string {
 }
 
 export async function GET() {
-  const items = await prisma.glossary.findMany({
-    where: { isPublished: true },
-    select: { slug: true, updatedAt: true },
-    orderBy: { istilah: "asc" },
-  });
+  let items: Array<{ slug: string; updatedAt: Date }> = [];
+  let dbFailed = false;
+  try {
+    items = await prisma.glossary.findMany({
+      where: { isPublished: true },
+      select: { slug: true, updatedAt: true },
+      orderBy: { istilah: "asc" },
+    });
+  } catch (err) {
+    dbFailed = true;
+    console.warn("[sitemap-glossary.xml] DB query failed:", err);
+  }
 
   const urls: string[] = [
-    `<url><loc>${SITE_URL}/glossary</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+    `<url><loc>${esc(SITE_URL)}/glossary</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
   ];
 
   for (const item of items) {
@@ -51,7 +57,7 @@ export async function GET() {
   return new Response(xml, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "s-maxage=600, stale-while-revalidate=86400",
+      "Cache-Control": dbFailed ? "no-store" : "s-maxage=600, stale-while-revalidate=86400",
     },
   });
 }

@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { parsePositiveInt } from "@/lib/utils";
 
 const PER_PAGE = 12;
 
@@ -26,7 +27,7 @@ export async function generateMetadata({
   searchParams: searchParamsPromise,
 }: PageProps): Promise<Metadata> {
   const searchParams = await searchParamsPromise;
-  const page = Math.max(1, parseInt(searchParams.page || "1"));
+  const page = parsePositiveInt(searchParams.page, 1);
   const canonical = page > 1 ? `/berita?page=${page}` : "/berita";
   const titleSuffix = page > 1 ? ` — Halaman ${page}` : "";
 
@@ -55,7 +56,7 @@ export async function generateMetadata({
 
 export default async function BeritaPage({ searchParams: searchParamsPromise }: PageProps) {
   const searchParams = await searchParamsPromise;
-  const page = Math.max(1, parseInt(searchParams.page || "1"));
+  const page = parsePositiveInt(searchParams.page, 1);
   const sort = searchParams.sort || "latest";
   const categorySlug = searchParams.category || "all";
   const searchQuery = searchParams.q || "";

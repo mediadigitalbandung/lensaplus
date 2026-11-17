@@ -19,15 +19,15 @@ export default function NotFound() {
         </p>
 
         {/* Search bar */}
-        <form action="/search" method="GET" className="mt-8 mx-auto max-w-lg">
+        <form action="/search" method="GET" role="search" aria-label="Pencarian berita" className="mt-8 mx-auto max-w-lg">
           <div className="relative">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-txt-muted" />
+            <Search size={18} aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 text-txt-muted" />
             <input
               type="text"
               name="q"
               placeholder="Cari berita..."
+              aria-label="Cari berita"
               className="input w-full py-3 pl-12 pr-4 text-base"
-              autoFocus
             />
           </div>
         </form>
@@ -35,12 +35,12 @@ export default function NotFound() {
         {/* Action buttons */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link href="/" className="btn-primary">
-            <Home size={16} />
+            <Home size={16} aria-hidden="true" />
             Kembali ke Beranda
           </Link>
           <Link href="/berita" className="btn-secondary">
             Semua Berita
-            <ArrowRight size={16} />
+            <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
       </div>

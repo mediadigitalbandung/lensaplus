@@ -208,7 +208,7 @@ export default async function EmitenDetailPage({
                   {relatedArticles.map((a) => (
                     <Link
                       key={a.id}
-                      href={`/artikel/${a.slug}`}
+                      href={`/berita/${a.slug}`}
                       className="flex gap-4 rounded-md p-3 hover:bg-surface-container transition-colors"
                     >
                       {a.featuredImage && (

@@ -98,16 +98,40 @@ export default function UserCardManager({
 
   const status = card?.status;
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busy) onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [busy, onClose]);
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg border border-border bg-surface p-6 shadow-lg">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="user-card-modal-title"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      onClick={() => !busy && onClose()}
+    >
+      <div
+        className="w-full max-w-md rounded-lg border border-border bg-surface p-6 shadow-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CreditCard size={20} className="text-primary" />
-            <h2 className="text-lg font-bold text-txt-primary">Kartu Anggota — {userName}</h2>
+            <CreditCard size={20} className="text-primary" aria-hidden="true" />
+            <h2 id="user-card-modal-title" className="text-lg font-bold text-txt-primary">
+              Kartu Anggota — {userName}
+            </h2>
           </div>
-          <button onClick={onClose} className="text-txt-muted hover:text-txt-primary" aria-label="Tutup">
-            <X size={20} />
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-txt-muted hover:text-txt-primary"
+            aria-label="Tutup"
+          >
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 

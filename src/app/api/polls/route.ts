@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 // GET /api/polls — public: active polls; admin: all
 export async function GET(request: NextRequest) {
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
 
 const createSchema = z.object({
   question: z.string().min(5).max(300),
-  image: z.string().url().optional().nullable(),
+  image: z.string().refine(isSafeImageRef, "URL atau path gambar tidak valid").optional().nullable(),
   categoryId: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
   order: z.number().int().min(0).optional(),

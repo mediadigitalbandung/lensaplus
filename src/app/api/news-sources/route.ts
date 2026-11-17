@@ -7,7 +7,6 @@
  */
 
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
   successResponse,
@@ -18,28 +17,11 @@ import {
 } from "@/lib/api-utils";
 import { isAllowedByRobots } from "@/lib/scraper/robots-check";
 import { assertSafePublicUrl } from "@/lib/scraper/fetch";
+import {
+  newsSourceCreateSchema,
+  assertCategoryExists,
+} from "@/lib/scraper/source-validation";
 import { SCRAPER_ROLES } from "@/lib/roles";
-
-const createSchema = z.object({
-  name: z.string().min(2).max(120),
-  listingUrl: z.string().url(),
-  categoryId: z.string().min(1).optional().nullable(),
-  description: z.string().max(500).optional().nullable(),
-  isActive: z.boolean().optional(),
-  priority: z.number().int().min(0).max(100).optional(),
-  frequencyHours: z.number().int().min(1).max(24).optional(),
-  articleSelector: z.string().max(500).optional().nullable(),
-  titleSelector: z.string().max(500).optional().nullable(),
-  contentSelector: z.string().max(500).optional().nullable(),
-  imageSelector: z.string().max(500).optional().nullable(),
-  useHeadless: z.boolean().optional(),
-  waitForSelector: z.string().max(500).optional().nullable(),
-  crawlSubcategories: z.boolean().optional(),
-  crawlMaxPages: z.number().int().min(1).max(50).optional(),
-  paginationMaxPages: z.number().int().min(1).max(30).optional(),
-  paginationPattern: z.string().max(60).optional().nullable(),
-  defaultTags: z.array(z.string().min(1).max(40)).max(10).optional(),
-});
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +50,9 @@ export async function POST(request: NextRequest) {
     // Every writer may add their OWN sources to scrape.
     const session = await requireRole([...SCRAPER_ROLES]);
     const body = await request.json();
-    const data = createSchema.parse(body);
+    const data = newsSourceCreateSchema.parse(body);
+
+    await assertCategoryExists(data.categoryId);
 
     // SSRF guard before any network call (including robots.txt fetch)
     try {

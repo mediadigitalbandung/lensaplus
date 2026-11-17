@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
   if (!sub) {
     return NextResponse.redirect(`${SITE_URL}/newsletter?status=invalid-token`);
   }
-  if (sub.confirmedAt) {
+  if (sub.confirmedAt && !sub.unsubscribedAt) {
     return NextResponse.redirect(`${SITE_URL}/newsletter?status=already-confirmed`);
   }
 
@@ -31,8 +32,9 @@ export async function GET(request: NextRequest) {
     where: { id: sub.id },
     data: {
       confirmedAt: new Date(),
-      // Rotate token — confirmation token shouldn't double as unsubscribe key.
-      token: "uns" + Math.random().toString(36).slice(2) + Date.now().toString(36),
+      unsubscribedAt: null,
+      // Rotate token with CSPRNG — confirmation token shouldn't double as unsubscribe key.
+      token: `uns_${randomBytes(24).toString("hex")}`,
     },
   });
 

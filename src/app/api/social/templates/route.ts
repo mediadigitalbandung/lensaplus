@@ -12,6 +12,7 @@ import {
   logAudit,
   requireRole,
   successResponse,
+  parsePositiveInt,
 } from "@/lib/api-utils";
 import type { Prisma } from "@prisma/client";
 import { isSafeImageRef, resolvePublicSubpath } from "@/lib/safe-path";
@@ -59,8 +60,8 @@ export async function GET(req: NextRequest) {
     const platform = searchParams.get("platform");
     const categoryId = searchParams.get("categoryId");
     const isActiveRaw = searchParams.get("isActive");
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50")));
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = parsePositiveInt(searchParams.get("limit"), 50, 100);
+    const page = parsePositiveInt(searchParams.get("page"), 1);
 
     const where: Prisma.SocialTemplateWhereInput = {};
     if (platform && ALLOWED_PLATFORMS.has(platform)) {

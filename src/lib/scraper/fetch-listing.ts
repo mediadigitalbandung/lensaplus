@@ -17,6 +17,7 @@ import * as cheerio from "cheerio";
 import type { Element as DomElement } from "domhandler";
 import { fetchHtml } from "./fetch";
 import { fetchHtmlHeadless } from "./headless";
+import { pickImageSrc } from "./html-utils";
 import type { ListingItem, ScraperOptions } from "./types";
 
 interface CandidateContainer {
@@ -249,14 +250,10 @@ function extractFromCard(
     ? $card.find(options.imageSelector).first()
     : $card.find("img").first();
   if (imgEl.length > 0) {
-    const src =
-      imgEl.attr("src") ||
-      imgEl.attr("data-src") ||
-      imgEl.attr("data-lazy-src") ||
-      imgEl.attr("data-original");
+    const src = pickImageSrc(imgEl as cheerio.Cheerio<DomElement>);
     if (src) {
       const abs = absolutise(src, baseUrl);
-      if (abs) thumbnail = abs;
+      if (abs && /^https?:\/\//i.test(abs)) thumbnail = abs;
     }
   }
 
@@ -292,22 +289,28 @@ export async function fetchListing(
       });
   const $ = cheerio.load(html);
 
-  // Auto-detect and parse RSS/XML feeds (bypasses HTML card selector logic completely)
-  const isRss = html.includes("<rss") || html.includes("<channel") || html.includes("<feed") || html.includes("<?xml");
+  // Auto-detect and parse RSS/Atom feeds without misclassifying XHTML pages
+  const isRss =
+    /<(rss|feed|rdf:RDF)\b/i.test(html) ||
+    (html.includes("<channel>") && html.includes("<item>"));
   if (isRss) {
     const rssItems: ListingItem[] = [];
     const seen = new Set<string>();
     const $xml = cheerio.load(html, { xml: true });
-    
+
     $xml("item, entry").each((_, el) => {
       const $el = $xml(el);
-      const href = $el.find("link").text().trim() || $el.find("link").attr("href")?.trim();
-      let title = $el.find("title").text().trim();
-      let description = $el.find("description, summary").text().trim();
-      
+      const href =
+        $el.find('link[rel="alternate"][href]').first().attr("href")?.trim() ||
+        $el.find("link[href]").not('[rel="self"]').first().attr("href")?.trim() ||
+        $el.children("link").first().text().trim() ||
+        $el.find("link").first().text().trim();
+      let title = $el.find("title").first().text().trim();
+      let description = $el.find("description, summary").first().text().trim();
+
       if (href) {
         const url = absolutise(href, finalUrl);
-        if (url && !seen.has(url)) {
+        if (url && /^https?:\/\//i.test(url) && !seen.has(url)) {
           seen.add(url);
           title = title.replace(/<[^>]*>/g, "").trim();
           description = description.replace(/<[^>]*>/g, "").slice(0, 240).trim();
@@ -319,7 +322,7 @@ export async function fetchListing(
         }
       }
     });
-    
+
     if (rssItems.length > 0) {
       return { items: rssItems, selectorUsed: "rss-feed" };
     }

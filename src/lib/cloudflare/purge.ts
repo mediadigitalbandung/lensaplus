@@ -9,14 +9,21 @@ import { decryptSecret } from "../crypto-secrets";
 
 const CF_API = "https://api.cloudflare.com/client/v4";
 
+const CF_MAX_PURGE_FILES = 30;
+
 async function getCredentials(): Promise<{ token: string; zoneId: string } | null> {
   const [tokenRow, zoneRow] = await Promise.all([
     prisma.systemSetting.findUnique({ where: { key: "cloudflare_api_token" } }).catch(() => null),
     prisma.systemSetting.findUnique({ where: { key: "cloudflare_zone_id" } }).catch(() => null),
   ]);
-  const token = tokenRow?.value
-    ? decryptSecret(tokenRow.value)
-    : process.env.CLOUDFLARE_API_TOKEN;
+  let token = process.env.CLOUDFLARE_API_TOKEN;
+  if (tokenRow?.value) {
+    try {
+      token = decryptSecret(tokenRow.value);
+    } catch {
+      // Decryption failure — fall back to env var if set
+    }
+  }
   const zoneId = zoneRow?.value || process.env.CLOUDFLARE_ZONE_ID;
   if (!token || !zoneId) return null;
   return { token, zoneId };
@@ -47,31 +54,43 @@ export async function purgeCache(urls: string[]): Promise<PurgeResult> {
   }
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    let purgedCount = 0;
+    const errors: string[] = [];
 
-    const res = await fetch(`${CF_API}/zones/${creds.zoneId}/purge_cache`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${creds.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ files: validUrls }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+    for (let i = 0; i < validUrls.length; i += CF_MAX_PURGE_FILES) {
+      const chunk = validUrls.slice(i, i + CF_MAX_PURGE_FILES);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        const res = await fetch(`${CF_API}/zones/${creds.zoneId}/purge_cache`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${creds.token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ files: chunk }),
+          signal: controller.signal,
+        });
 
-    const json = (await res.json().catch(() => null)) as {
-      success?: boolean;
-      errors?: Array<{ message: string }>;
-    } | null;
+        const json = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          errors?: Array<{ message: string }>;
+        } | null;
 
-    if (!json?.success) {
-      const errMsg = json?.errors?.[0]?.message || `HTTP ${res.status}`;
-      return { success: false, purgedCount: 0, error: errMsg };
+        if (!res.ok || !json?.success) {
+          errors.push(json?.errors?.[0]?.message || `HTTP ${res.status}`);
+        } else {
+          purgedCount += chunk.length;
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
     }
 
-    return { success: true, purgedCount: validUrls.length };
+    if (errors.length > 0) {
+      return { success: false, purgedCount, error: errors.join("; ") };
+    }
+    return { success: true, purgedCount };
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e);
     return { success: false, purgedCount: 0, error };

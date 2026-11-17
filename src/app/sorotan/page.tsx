@@ -5,6 +5,7 @@ import { Metadata } from "next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { parsePositiveInt } from "@/lib/utils";
 
 // Pagination + angle filter canonical: page 1 tanpa filter → "/sorotan",
 // page>1 → "/sorotan?page=N", angle filter → "/sorotan?angle=X". Filter
@@ -14,7 +15,7 @@ export async function generateMetadata({
   searchParams: searchParamsPromise,
 }: PageProps): Promise<Metadata> {
   const searchParams = await searchParamsPromise;
-  const page = Math.max(1, parseInt(searchParams.page || "1"));
+  const page = parsePositiveInt(searchParams.page, 1);
   const angleParam = searchParams.angle?.toUpperCase();
   const angleKey = angleParam && Object.prototype.hasOwnProperty.call(ANGLE_LABEL, angleParam) ? angleParam : null;
   const angleLabel = angleKey ? ANGLE_LABEL[angleKey] : null;
@@ -88,7 +89,7 @@ interface PageProps {
 
 export default async function SorotanListPage({ searchParams: searchParamsPromise }: PageProps) {
   const searchParams = await searchParamsPromise;
-  const page = Math.max(1, parseInt(searchParams.page || "1"));
+  const page = parsePositiveInt(searchParams.page, 1);
   const angleParam = searchParams.angle?.toUpperCase();
   const validAngle =
     angleParam && (VALID_ANGLES as string[]).includes(angleParam)

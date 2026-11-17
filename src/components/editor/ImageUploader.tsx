@@ -374,17 +374,27 @@ export default function ImageUploader({
           <button
             type="button"
             onClick={removeImage}
+            aria-label="Hapus gambar"
             className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         </div>
       ) : (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Pilih atau seret gambar untuk diupload"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onClick={() => inputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              inputRef.current?.click();
+            }
+          }}
           className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
             dragActive
               ? "border-primary bg-primary/5"

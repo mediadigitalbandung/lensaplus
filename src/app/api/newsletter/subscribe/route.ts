@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { randomBytes } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
@@ -43,32 +44,31 @@ export async function POST(request: NextRequest) {
         message: "Email Anda sudah terdaftar.",
       });
     } else if (existing) {
-      // Re-subscribe / re-confirm: regenerate token, clear unsubscribe.
+      // Re-subscribe / re-confirm: regenerate token in a single update and keep
+      // unsubscribedAt until the confirmation link is clicked (reset confirmedAt
+      // when re-subscribing after unsubscribe so double opt-in is enforced).
+      const nextToken = generateConfirmToken();
       subscriber = await prisma.newsletterSubscriber.update({
         where: { email: data.email },
         data: {
-          token: undefined, // regen via @default(cuid()) doesn't fire on update
-          unsubscribedAt: null,
+          token: nextToken,
+          ...(existing.unsubscribedAt ? { confirmedAt: null } : {}),
           source: data.source || existing.source,
           signupIp: ip,
         },
-      });
-      // Force token regen explicitly
-      subscriber = await prisma.newsletterSubscriber.update({
-        where: { email: data.email },
-        data: { token: cryptoRandom() },
       });
     } else {
       subscriber = await prisma.newsletterSubscriber.create({
         data: {
           email: data.email,
+          token: generateConfirmToken(),
           source: data.source || "form",
           signupIp: ip,
         },
       });
     }
 
-    const confirmUrl = `${SITE_URL}/api/newsletter/confirm?token=${subscriber.token}`;
+    const confirmUrl = `${SITE_URL}/api/newsletter/confirm?token=${encodeURIComponent(subscriber.token)}`;
     const html = `
       <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto; color: #191c1d;">
         <h2 style="color: #002045;">Konfirmasi Berlangganan Lensaplus</h2>
@@ -81,7 +81,10 @@ export async function POST(request: NextRequest) {
         <p style="color:#74777f; font-size:12px;">Jika Anda tidak mendaftar, abaikan saja email ini — Anda tidak akan menerima email lain.</p>
       </div>
     `;
-    await sendEmail(data.email, "Konfirmasi Berlangganan Lensaplus", html);
+    const mail = await sendEmail(data.email, "Konfirmasi Berlangganan Lensaplus", html);
+    if (!mail.ok) {
+      throw new ApiError("Gagal mengirim email konfirmasi. Silakan coba lagi nanti.", 502);
+    }
 
     return successResponse({
       status: "pending-confirmation",
@@ -92,8 +95,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function cryptoRandom(): string {
-  // Reuse cuid pattern via uuid-ish random. The schema default already does
-  // cuid on create, but for re-subscribe we need a fresh value here.
-  return "ck" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+function generateConfirmToken(): string {
+  return `sub_${randomBytes(24).toString("hex")}`;
 }

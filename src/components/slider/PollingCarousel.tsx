@@ -233,7 +233,7 @@ export default function PollingCarousel({ categorySlug }: Props) {
                       <div key={opt.id}>
                         <div className="flex items-center justify-between gap-1 text-xs mb-0.5 sm:mb-1">
                           <span className={`text-[11px] sm:text-xs flex items-center gap-1 truncate ${isSelected ? "font-bold text-primary" : "text-txt-primary"}`}>
-                            {isSelected && <CheckCircle size={10} className="shrink-0" />}
+                            {isSelected && <CheckCircle size={10} className="shrink-0" aria-hidden="true" />}
                             <span className="truncate">{opt.label}</span>
                           </span>
                           <span className={`shrink-0 font-bold text-[11px] sm:text-xs ${isTop ? "text-primary" : "text-txt-primary"}`}>
@@ -249,6 +249,7 @@ export default function PollingCarousel({ categorySlug }: Props) {
                       </div>
                     ) : (
                       <button
+                        type="button"
                         key={opt.id}
                         onClick={() => handleVote(poll.id, opt.id)}
                         disabled={isVoting}

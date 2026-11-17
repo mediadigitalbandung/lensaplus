@@ -18,11 +18,14 @@
  */
 
 import * as cheerio from "cheerio";
+import type { Element as DomElement } from "domhandler";
 import { prisma } from "@/lib/prisma";
 import { callAI } from "@/lib/ai-client";
 import { sanitizeHtml, cleanAIShortText, cleanAILongText } from "@/lib/sanitize";
+import { resolveTagIds } from "@/lib/resolve-tags";
 import { slugify } from "@/lib/utils";
 import { downloadImageToUploads } from "./download-image";
+import { pickImageSrc } from "./html-utils";
 import { sourceLabelFromUrl } from "./source-label";
 import type { ScrapedArticle } from "./types";
 
@@ -67,12 +70,8 @@ function extractBodyImageUrls(
   const seen = new Set<string>();
   const out: string[] = [];
   $("img").each((_, el) => {
-    const $img = $(el);
-    const raw =
-      $img.attr("src") ||
-      $img.attr("data-src") ||
-      $img.attr("data-lazy-src") ||
-      $img.attr("data-original");
+    const $img = $(el) as cheerio.Cheerio<DomElement>;
+    const raw = pickImageSrc($img);
     if (!raw) return;
     let abs: string;
     try {
@@ -98,7 +97,7 @@ function extractBodyImageUrls(
  * Layout: image #1 lands after the first paragraph (right under the
  * lead), the rest are spaced through the body.
  */
-function injectImagesIntoBody(
+export function injectImagesIntoBody(
   bodyHtml: string,
   imageUrls: string[],
   altText: string,
@@ -128,32 +127,28 @@ function injectImagesIntoBody(
     return `${bodyHtml}\n${figures}`;
   }
 
-  // Pick insertion indexes: spread over paragraph closes, capped by image count.
-  // E.g. 6 paragraphs + 3 images → indexes [1, 3, 5] (after p1, p3, p5).
-  const insertAt: number[] = [];
-  const N = paragraphCloses.length;
-  const M = Math.min(imageUrls.length, N);
-  for (let k = 1; k <= M; k++) {
-    const pos = Math.floor((k * N) / (M + 1));
-    insertAt.push(paragraphCloses[pos]);
-  }
+  // Always place image #0 right after the first paragraph (lead), then spread
+  // any remaining images (slice(1)) across subsequent paragraphs without duplicating #0.
   const insertSet = new Map<number, string>();
-  insertAt.forEach((idx, k) => {
-    const url = imageUrls[k];
-    insertSet.set(
-      idx,
-      `<figure><img src="${url}" alt="${escapeAttr(altText)}" />${captionHtml}</figure>`,
-    );
-  });
+  const makeFigure = (url: string) =>
+    `<figure><img src="${url}" alt="${escapeAttr(altText)}" />${captionHtml}</figure>`;
 
-  // Always put image #0 right after the first paragraph (lead) when there's
-  // at least one. This makes the article feel illustrated from the start.
-  if (imageUrls.length > 0) {
-    const firstClose = paragraphCloses[0];
-    insertSet.set(
-      firstClose,
-      `<figure><img src="${imageUrls[0]}" alt="${escapeAttr(altText)}" />${captionHtml}</figure>`,
-    );
+  const remaining = imageUrls.slice(1);
+  const remainingCloses = paragraphCloses.slice(1);
+
+  if (remainingCloses.length === 0) {
+    insertSet.set(paragraphCloses[0], imageUrls.map(makeFigure).join("\n"));
+  } else {
+    insertSet.set(paragraphCloses[0], makeFigure(imageUrls[0]));
+    const N = remainingCloses.length;
+    const M = Math.min(remaining.length, N);
+    for (let k = 0; k < M; k++) {
+      const pos = M === N ? k : Math.floor(((k + 1) * N) / (M + 1));
+      const closeIdx = remainingCloses[Math.min(N - 1, pos)];
+      if (!insertSet.has(closeIdx)) {
+        insertSet.set(closeIdx, makeFigure(remaining[k]));
+      }
+    }
   }
 
   // Re-assemble.
@@ -188,33 +183,45 @@ function stripCodeFence(raw: string): string {
 }
 
 function tryParseAi(raw: string): AiParaphrase | null {
-  try {
-    const cleaned = stripCodeFence(raw);
-    const parsed = JSON.parse(cleaned);
-    if (
-      parsed &&
-      typeof parsed.title === "string" &&
-      typeof parsed.content === "string"
-    ) {
-      const cleanedTitle = cleanAIShortText(parsed.title) || parsed.title.trim();
-      const cleanedExcerpt =
-        typeof parsed.excerpt === "string"
-          ? cleanAIShortText(parsed.excerpt) || parsed.excerpt.trim()
-          : "";
-      const cleanedContent = cleanAILongText(parsed.content) || parsed.content.trim();
-      return {
-        title: cleanedTitle,
-        excerpt: cleanedExcerpt,
-        content: cleanedContent,
-        suggestedTags: Array.isArray(parsed.suggestedTags)
-          ? parsed.suggestedTags
-              .filter((t: unknown): t is string => typeof t === "string")
-              .slice(0, 8)
-          : [],
-      };
+  const tryParseJson = (candidate: string): Record<string, unknown> | null => {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      /* fall through */
     }
-  } catch {
-    // fall through
+    return null;
+  };
+
+  const cleaned = stripCodeFence(raw);
+  let parsed = tryParseJson(cleaned);
+  if (!parsed) {
+    const objMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (objMatch) parsed = tryParseJson(objMatch[0]);
+  }
+  if (
+    parsed &&
+    typeof parsed.title === "string" &&
+    typeof parsed.content === "string"
+  ) {
+    const cleanedTitle = cleanAIShortText(parsed.title) || parsed.title.trim();
+    const cleanedExcerpt =
+      typeof parsed.excerpt === "string"
+        ? cleanAIShortText(parsed.excerpt) || parsed.excerpt.trim()
+        : "";
+    const cleanedContent = cleanAILongText(parsed.content) || parsed.content.trim();
+    return {
+      title: cleanedTitle,
+      excerpt: cleanedExcerpt,
+      content: cleanedContent,
+      suggestedTags: Array.isArray(parsed.suggestedTags)
+        ? parsed.suggestedTags
+            .filter((t: unknown): t is string => typeof t === "string")
+            .slice(0, 8)
+        : [],
+    };
   }
   return null;
 }
@@ -235,8 +242,8 @@ function buildAttribution(
   sourceName: string,
   originalTitle: string,
 ): string {
-  const safeTitle = originalTitle.replace(/[<>"]/g, "");
-  return `<p class="text-sm italic text-txt-muted mt-8 pt-4 border-t border-border">Disarikan dari rilis <a href="${sourceUrl}" target="_blank" rel="nofollow noopener">${sourceName} — "${safeTitle}"</a>. Versi Lensaplus ditulis ulang oleh tim editorial dengan dukungan AI; fakta dan kutipan tetap mengacu ke publikasi asli.</p>`;
+  const safeTitle = escapeAttr(originalTitle.replace(/[<>"]/g, ""));
+  return `<p class="text-sm italic text-txt-muted mt-8 pt-4 border-t border-border">Disarikan dari rilis <a href="${escapeAttr(sourceUrl)}" target="_blank" rel="nofollow noopener">${escapeAttr(sourceName)} — "${safeTitle}"</a>. Versi Lensaplus ditulis ulang oleh tim editorial dengan dukungan AI; fakta dan kutipan tetap mengacu ke publikasi asli.</p>`;
 }
 
 export interface ParaphraseInput {
@@ -319,6 +326,8 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
     userPrompt,
     maxTokens: 2_500,
     temperature: 0.65,
+    userId: authorId,
+    articleTitle: source.title,
   });
 
   const parsed = tryParseAi(ai.text);
@@ -385,33 +394,23 @@ Format output WAJIB JSON valid (tanpa teks lain di luar JSON):
 
   const slug = await uniqueSlug(parsed.title);
 
-  // Tags: union of AI-suggested + defaults (capped 8)
-  const allTagNames = Array.from(
-    new Set(
-      [...parsed.suggestedTags, ...defaultTags]
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0 && t.length <= 40),
-    ),
-  ).slice(0, 8);
-
-  // Upsert tags + collect IDs
-  const tagConnections: { id: string }[] = [];
-  if (allTagNames.length > 0) {
-    await Promise.all(
-      allTagNames.map((name) =>
-        prisma.tag.upsert({
-          where: { slug: slugify(name) },
-          update: {},
-          create: { name, slug: slugify(name) },
-        }),
-      ),
-    );
-    const tags = await prisma.tag.findMany({
-      where: { slug: { in: allTagNames.map((n) => slugify(n)) } },
-      select: { id: true },
-    });
-    tagConnections.push(...tags.map((t) => ({ id: t.id })));
+  // Tags: prioritise configured source defaults first, then AI suggestions (capped 8).
+  const seenTagSlugs = new Set<string>();
+  const allTagNames: string[] = [];
+  for (const rawTag of [...defaultTags, ...parsed.suggestedTags]) {
+    if (typeof rawTag !== "string") continue;
+    const trimmed = rawTag.trim().slice(0, 40);
+    if (!trimmed) continue;
+    const slug = slugify(trimmed);
+    if (!slug || seenTagSlugs.has(slug)) continue;
+    seenTagSlugs.add(slug);
+    allTagNames.push(trimmed);
+    if (allTagNames.length >= 8) break;
   }
+
+  // Safely resolve/create tag IDs without P2002 race collisions
+  const resolvedTagIds = await resolveTagIds(allTagNames);
+  const tagConnections = resolvedTagIds.map((id) => ({ id }));
 
   const article = await prisma.article.create({
     data: {

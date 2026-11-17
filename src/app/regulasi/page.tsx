@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { parsePositiveInt } from "@/lib/utils";
 import { ExternalLink, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import type { RegulationType, RegulationStatus } from "@prisma/client";
 
@@ -81,7 +82,7 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
     : undefined;
   const searchParam = sp.search?.trim() || undefined;
   const topicParam = sp.topic?.trim() || undefined;
-  const page = Math.max(1, parseInt(sp.page || "1", 10));
+  const page = parsePositiveInt(sp.page, 1);
 
   const where = {
     isPublished: true,

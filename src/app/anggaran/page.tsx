@@ -56,8 +56,10 @@ function RegionSection({ data }: { data: (typeof APBD_DATA)[0] }) {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ")
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
                     setExpanded((prev) => (prev === item.sector ? null : item.sector));
+                  }
                 }}
                 aria-label={`${item.sector}: ${w}% dari total APBD`}
               />

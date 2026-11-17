@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-utils";
+import { successResponse, errorResponse, parsePositiveInt } from "@/lib/api-utils";
 import { guardPublicRead } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q") || "";
-    const page = parseInt(searchParams.get("page") || "1");
+    const page = parsePositiveInt(searchParams.get("page"), 1);
     const limit = 12;
 
     if (query.length < 2) {

@@ -14,8 +14,11 @@ import {
   requireRole,
   successResponse,
   ApiError,
+  parsePositiveInt,
+  isSafeHttpUrl,
 } from "@/lib/api-utils";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { isSafeImageRef } from "@/lib/safe-path";
 import { syndicateLiveBlogEntry } from "@/lib/social/live-syndicator";
 
 export const dynamic = "force-dynamic";
@@ -33,8 +36,8 @@ const createEntrySchema = z.object({
     .max(10000, "Konten maksimal 10.000 karakter"),
   isPinned: z.boolean().default(false),
   isHighlight: z.boolean().default(false),
-  imageUrl: z.string().url().optional().nullable(),
-  videoUrl: z.string().url().optional().nullable(),
+  imageUrl: z.string().refine(isSafeImageRef, "URL atau path gambar tidak valid").optional().nullable(),
+  videoUrl: z.string().refine(isSafeHttpUrl, "URL video harus http/https").optional().nullable(),
   postedAt: z.string().datetime().optional(),
 });
 
@@ -59,11 +62,8 @@ export async function GET(
     }
 
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(
-      100,
-      Math.max(1, parseInt(searchParams.get("limit") || "50", 10))
-    );
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 50, 100);
 
     const [entries, total] = await Promise.all([
       prisma.liveBlogEntry.findMany({

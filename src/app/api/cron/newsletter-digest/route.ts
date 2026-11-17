@@ -16,6 +16,7 @@ import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse, verifyCronSecret, logAudit } from "@/lib/api-utils";
 import { sendEmail } from "@/lib/email";
 import { trackCron } from "@/lib/cron-tracker";
+import { escapeHtml } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -56,20 +57,21 @@ async function handler(req: NextRequest) {
   // unique unsubscribe footer appended).
   const articleListHtml = articles
     .map((a) => {
-      const url = `${SITE_URL}/berita/${a.slug}?utm_source=newsletter&utm_medium=email&utm_campaign=weekly-digest`;
+      const url = `${SITE_URL}/berita/${encodeURIComponent(a.slug)}?utm_source=newsletter&utm_medium=email&utm_campaign=weekly-digest`;
       const img = a.featuredImage
-        ? `<img src="${a.featuredImage}" alt="" width="120" height="80" style="display:block;border-radius:6px;object-fit:cover;" />`
+        ? `<img src="${escapeHtml(a.featuredImage)}" alt="" width="120" height="80" style="display:block;border-radius:6px;object-fit:cover;" />`
         : "";
+      const excerpt = (a.excerpt || "").slice(0, 120);
       return `
         <table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-bottom:20px;">
           <tr>
             <td valign="top" style="width:120px;padding-right:14px;">${img}</td>
             <td valign="top">
-              <p style="margin:0 0 4px 0;font-size:11px;color:#74777f;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">${a.category.name}</p>
+              <p style="margin:0 0 4px 0;font-size:11px;color:#74777f;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">${escapeHtml(a.category.name)}</p>
               <a href="${url}" style="color:#002045;text-decoration:none;">
-                <h3 style="margin:0 0 6px 0;font-size:16px;line-height:1.3;font-weight:700;color:#002045;">${a.title}</h3>
+                <h3 style="margin:0 0 6px 0;font-size:16px;line-height:1.3;font-weight:700;color:#002045;">${escapeHtml(a.title)}</h3>
               </a>
-              <p style="margin:0;font-size:13px;line-height:1.5;color:#44474e;">${(a.excerpt || "").slice(0, 120)}${a.excerpt && a.excerpt.length > 120 ? "..." : ""}</p>
+              <p style="margin:0;font-size:13px;line-height:1.5;color:#44474e;">${escapeHtml(excerpt)}${a.excerpt && a.excerpt.length > 120 ? "..." : ""}</p>
             </td>
           </tr>
         </table>
@@ -118,7 +120,11 @@ async function handler(req: NextRequest) {
       </div>
     `;
     try {
-      await sendEmail(sub.email, "Pekan Ini di Lensaplus", html);
+      const mail = await sendEmail(sub.email, "Pekan Ini di Lensaplus", html);
+      if (!mail.ok) {
+        failures.push(`${sub.email}: ${mail.error || mail.reason || "SEND_FAIL"}`);
+        continue;
+      }
       await prisma.newsletterSubscriber.update({
         where: { id: sub.id },
         data: { lastSentAt: new Date() },
@@ -151,9 +157,11 @@ async function handler(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try { return await trackCron("newsletter-digest", () => handler(req)); } catch (e) { return errorResponse(e); }
 }
 
 export async function POST(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try { return await trackCron("newsletter-digest", () => handler(req)); } catch (e) { return errorResponse(e); }
 }

@@ -176,7 +176,7 @@ export async function releaseClaim(
  * annotate the preview so writers can see what's already been grabbed.
  */
 export async function getClaimsForUrls(urls: string[]): Promise<
-  Map<string, { status: string; scrapedByName: string | null }>
+  Map<string, { status: string; scrapedByName: string | null; articleId: string | null }>
 > {
   if (urls.length === 0) return new Map();
   const rows = await prisma.scrapedUrl.findMany({
@@ -184,13 +184,18 @@ export async function getClaimsForUrls(urls: string[]): Promise<
     select: {
       url: true,
       status: true,
+      articleId: true,
       scrapedBy: { select: { name: true } },
     },
   });
   return new Map(
     rows.map((r) => [
       r.url,
-      { status: r.status, scrapedByName: r.scrapedBy?.name ?? null },
+      {
+        status: r.status,
+        scrapedByName: r.scrapedBy?.name ?? null,
+        articleId: r.articleId ?? null,
+      },
     ]),
   );
 }

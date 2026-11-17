@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Link2, Check, Image } from "lucide-react";
+import { Link2, Check, Image as ImageIcon } from "lucide-react";
 
 interface ShareBarProps {
   articleUrl: string;
@@ -124,7 +124,7 @@ export default function ShareBar({ articleUrl, articleTitle, slug }: ShareBarPro
               title="Unduh Story Card untuk WA Status / IG Story"
               aria-label="Unduh Story Card untuk WA Status / IG Story"
             >
-              <Image size={13} />
+              <ImageIcon size={13} aria-hidden="true" />
               <span className="hidden sm:inline">Story Card</span>
             </a>
           )}
@@ -133,9 +133,9 @@ export default function ShareBar({ articleUrl, articleTitle, slug }: ShareBarPro
 
       {/* Toast notification */}
       {copied && (
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+        <div role="status" className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <div className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white shadow-lg whitespace-nowrap">
-            <Check size={14} />
+            <Check size={14} aria-hidden="true" />
             Link berhasil disalin!
           </div>
         </div>

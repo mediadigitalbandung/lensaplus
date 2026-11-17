@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { successResponse, errorResponse, requireRole, requireAuth, ApiError } from "@/lib/api-utils";
+import { successResponse, errorResponse, requireRole, requireAuth, ApiError, parsePositiveInt } from "@/lib/api-utils";
 import { reportRateLimit, getClientIp } from "@/lib/rate-limit";
 import { sanitizeText } from "@/lib/sanitize";
 
@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
     const isEditor = ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"].includes(role);
 
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 20, 100);
     const status = searchParams.get("status");
 
     const baseWhere: Record<string, unknown> = {};

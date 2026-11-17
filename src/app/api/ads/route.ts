@@ -3,8 +3,9 @@ export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { successResponse, errorResponse, requireRole, logAudit, getSession } from "@/lib/api-utils";
+import { successResponse, errorResponse, requireRole, logAudit, getSession, isSafeHttpUrl } from "@/lib/api-utils";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 // GET /api/ads — public: get active ads; admin: get all
 export async function GET(request: NextRequest) {
@@ -45,9 +46,9 @@ export async function GET(request: NextRequest) {
 const createAdSchema = z.object({
   name: z.string().min(2).max(100),
   type: z.enum(["IMAGE", "GIF", "HTML"]),
-  imageUrl: z.string().url().optional().nullable(),
+  imageUrl: z.string().refine(isSafeImageRef, "URL atau path gambar tidak valid").optional().nullable(),
   htmlCode: z.string().optional().nullable(),
-  targetUrl: z.string().url().optional().nullable(),
+  targetUrl: z.string().refine(isSafeHttpUrl, "URL tujuan harus http/https").optional().nullable(),
   slot: z.enum(["HEADER", "SIDEBAR", "IN_ARTICLE", "FOOTER", "BETWEEN_SECTIONS", "POPUP", "FLOATING_BOTTOM"]),
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),

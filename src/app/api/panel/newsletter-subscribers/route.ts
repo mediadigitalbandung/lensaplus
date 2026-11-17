@@ -1,4 +1,4 @@
-import { successResponse, errorResponse, requireRole } from "@/lib/api-utils";
+import { successResponse, errorResponse, requireRole, parsePositiveInt } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +19,8 @@ export async function GET(req: Request) {
     await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
 
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 50, 100);
     const filter = searchParams.get("filter") || "all";
 
     // PrismaClient model name is `newsletterSubscriber` (camelCase) regardless

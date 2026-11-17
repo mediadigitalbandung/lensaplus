@@ -15,8 +15,10 @@
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import * as cheerio from "cheerio";
+import type { Element as DomElement } from "domhandler";
 import { fetchHtml } from "./fetch";
 import { fetchHtmlHeadless } from "./headless";
+import { pickImageSrc } from "./html-utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import type { ScrapedArticle, ScraperOptions } from "./types";
 
@@ -64,13 +66,10 @@ function extractHeroFromHtml(html: string, baseUrl: string): string | undefined 
   // First img inside the article — Readability usually keeps figure>img
   const first = $("img").first();
   if (first.length === 0) return undefined;
-  const src =
-    first.attr("src") ||
-    first.attr("data-src") ||
-    first.attr("data-lazy-src");
+  const src = pickImageSrc(first as cheerio.Cheerio<DomElement>);
   if (!src) return undefined;
   const abs = absolutise(src, baseUrl);
-  return abs || undefined;
+  return abs && /^https?:/i.test(abs) ? abs : undefined;
 }
 
 function extractDateFromMeta(
@@ -113,9 +112,15 @@ export async function fetchArticle(
   let articleTitle = "";
   let byline: string | undefined;
   if (options.contentSelector) {
-    const node = $(options.contentSelector).first();
-    if (node.length > 0) {
-      articleHtml = node.html() || "";
+    const nodes = $(options.contentSelector);
+    if (nodes.length > 0) {
+      articleHtml =
+        nodes.length === 1
+          ? nodes.first().html() || ""
+          : nodes
+              .map((_, el) => $.html(el))
+              .get()
+              .join("\n");
       articleTitle =
         $("h1").first().text().trim() ||
         $('meta[property="og:title"]').attr("content") ||
@@ -184,16 +189,15 @@ export async function fetchArticle(
 
   const wordCount = countWords(plain);
 
-  // Hero image: Readability output → meta → first <img>
+  // Hero image: manual selector → Readability output → meta
   let heroImageUrl: string | undefined;
   if (options.imageSelector) {
     const sel = $(options.imageSelector).first();
     if (sel.length > 0) {
-      const src =
-        sel.attr("src") || sel.attr("data-src") || sel.attr("data-lazy-src");
+      const src = pickImageSrc(sel as cheerio.Cheerio<DomElement>);
       if (src) {
         const abs = absolutise(src, finalUrl);
-        if (abs) heroImageUrl = abs;
+        if (abs && /^https?:/i.test(abs)) heroImageUrl = abs;
       }
     }
   }

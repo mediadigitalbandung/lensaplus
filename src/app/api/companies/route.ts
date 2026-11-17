@@ -5,7 +5,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { errorResponse, successResponse } from "@/lib/api-utils";
+import { errorResponse, successResponse, parsePositiveInt } from "@/lib/api-utils";
 import { guardPublicRead } from "@/lib/rate-limit";
 
 type CompanySector =
@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
   if (blocked) return blocked;
   try {
     const { searchParams } = new URL(req.url);
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "24", 10)));
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = parsePositiveInt(searchParams.get("limit"), 24, 100);
+    const page = parsePositiveInt(searchParams.get("page"), 1);
     const sectorParam = searchParams.get("sector");
     const search = searchParams.get("search");
 

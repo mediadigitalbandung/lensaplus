@@ -159,7 +159,7 @@ export default function PenggunaPage() {
   function openEditModal(user: User) {
     setEditingUser(user);
     setFormName(user.name);
-    setFormEmail(user.email.replace("@gmail.com", ""));
+    setFormEmail(user.email);
     setFormPassword("");
     setFormRole(user.role);
     setFormSpec(user.specialization || "");
@@ -184,11 +184,10 @@ export default function PenggunaPage() {
       setSubmitting(true);
 
       if (editingUser) {
-        // Update existing user
-        const fullGmailEdit = formEmail.includes("@") ? formEmail : `${formEmail}@gmail.com`;
+        // Update existing user — preserve exact email / custom domain
         const body: Record<string, string | undefined> = {
           name: formName,
-          email: fullGmailEdit,
+          email: formEmail.trim().toLowerCase(),
           role: formRole,
           specialization: formSpec || undefined,
         };
@@ -502,19 +501,21 @@ export default function PenggunaPage() {
                 className="input w-full"
               />
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Email Gmail</label>
+                <label className="mb-1.5 block text-sm font-medium text-txt-secondary">Email</label>
                 <div className="flex items-center gap-0">
                   <input
-                    type="text"
-                    placeholder="namauser"
-                    value={formEmail.replace("@gmail.com", "")}
-                    onChange={(e) => setFormEmail(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
+                    type={editingUser || formEmail.includes("@") ? "email" : "text"}
+                    placeholder="nama@domain.com atau namauser"
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value.toLowerCase().replace(/[^a-z0-9._@+-]/g, ""))}
                     required
-                    className="input rounded-r-none flex-1"
+                    className={`input flex-1 ${!editingUser && !formEmail.includes("@") ? "rounded-r-none" : ""}`}
                   />
-                  <span className="inline-flex items-center px-3 py-2 border border-l-0 border-border bg-surface-secondary text-sm text-txt-secondary rounded-r-lg whitespace-nowrap">
-                    @gmail.com
-                  </span>
+                  {!editingUser && !formEmail.includes("@") && (
+                    <span className="inline-flex items-center px-3 py-2 border border-l-0 border-border bg-surface-secondary text-sm text-txt-secondary rounded-r-lg whitespace-nowrap">
+                      @gmail.com
+                    </span>
+                  )}
                 </div>
               </div>
               <div>

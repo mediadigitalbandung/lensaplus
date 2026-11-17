@@ -2,12 +2,13 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, logAudit, ApiError } from "@/lib/api-utils";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 const updateSchema = z.object({
   position: z.string().min(1).max(100).optional(),
   name: z.string().min(1).max(100).optional(),
   desc: z.string().max(300).nullable().optional(),
-  photo: z.string().url().nullable().optional(),
+  photo: z.string().refine(isSafeImageRef, "URL atau path foto tidak valid").nullable().optional(),
   order: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
 });

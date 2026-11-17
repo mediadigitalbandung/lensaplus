@@ -80,7 +80,22 @@ export default function Header() {
 
   useEffect(() => {
     setMoreOpen(false);
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!moreOpen && !userMenuOpen && !mobileMenuOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMoreOpen(false);
+        setUserMenuOpen(false);
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [moreOpen, userMenuOpen, mobileMenuOpen]);
 
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -140,7 +155,7 @@ export default function Header() {
                 name="q"
                 placeholder="Cari berita..."
                 aria-label="Cari artikel"
-                className="w-full rounded-full bg-stone-100 border border-transparent py-1.5 pl-9 pr-4 text-body-sm text-stone-900 placeholder:text-stone-400 transition-all focus:bg-white focus:border-stone-250 focus:outline-none focus:ring-2 focus:ring-primary/10"
+                className="w-full rounded-full bg-stone-100 border border-transparent py-1.5 pl-9 pr-4 text-body-sm text-stone-900 placeholder:text-stone-400 transition-all focus:bg-white focus:border-stone-300 focus:outline-none focus:ring-2 focus:ring-primary/10"
               />
             </form>
 
@@ -151,7 +166,7 @@ export default function Header() {
               title="Bookmark Saya"
               aria-label="Bookmark Saya"
             >
-              <Bookmark size={17} />
+              <Bookmark size={17} aria-hidden="true" />
             </Link>
 
             {/* User Profile */}
@@ -160,14 +175,18 @@ export default function Header() {
             ) : session ? (
               <div className="relative">
                 <button
+                  type="button"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  aria-label="Menu pengguna"
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="menu"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-label-md font-bold text-primary hover:bg-primary/20 transition-all"
                 >
                   {session.user?.name?.charAt(0)?.toUpperCase() || "U"}
                 </button>
                 {userMenuOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+                    <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} aria-hidden="true" />
                     <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl bg-white border border-stone-200/60 py-1 shadow-ambient">
                       <div className="px-4 py-2.5">
                         <p className="text-title-sm text-on-surface font-semibold">{session.user?.name}</p>
@@ -241,14 +260,16 @@ export default function Header() {
                   <button
                     type="button"
                     onClick={() => setMoreOpen((o) => !o)}
+                    aria-expanded={moreOpen}
+                    aria-haspopup="menu"
                     className="inline-flex items-center gap-1 px-3 py-3 text-label-md font-bold text-stone-600 hover:text-primary whitespace-nowrap"
                   >
                     Lainnya
-                    <ChevronDown size={14} className={`transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`} />
                   </button>
                   {moreOpen && (
                     <>
-                      <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
+                      <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} aria-hidden="true" />
                       <div className="absolute right-0 top-full z-40 max-h-[70vh] w-56 overflow-y-auto overscroll-contain rounded-b-xl border border-stone-200 bg-white py-1 shadow-ambient-lg">
                         {categoryNav.slice(visibleCount).map((item) => {
                           const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -324,14 +345,18 @@ export default function Header() {
           ) : session ? (
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
+                aria-label="Menu pengguna"
+                aria-expanded={userMenuOpen}
+                aria-haspopup="menu"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-label-sm font-bold text-primary hover:bg-primary/20 transition-all"
               >
                 {session.user?.name?.charAt(0)?.toUpperCase() || "U"}
               </button>
               {userMenuOpen && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+                  <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} aria-hidden="true" />
                   <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl bg-white border border-stone-200/60 py-1 shadow-ambient">
                     <div className="px-4 py-2.5">
                       <p className="text-title-sm text-on-surface font-semibold">{session.user?.name}</p>
@@ -358,11 +383,14 @@ export default function Header() {
 
           {/* Mobile menu toggle */}
           <button
+            type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="inline-flex items-center justify-center p-1.5 text-stone-700 hover:text-primary md:hidden transition-colors"
             aria-label="Buka menu navigasi"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-nav-drawer"
           >
-            <Menu size={18} />
+            <Menu size={18} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -378,6 +406,7 @@ export default function Header() {
             mobileMenuOpen ? "opacity-100" : "opacity-0"
           }`}
           onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
         />
 
         <div
@@ -392,11 +421,12 @@ export default function Header() {
           <div className="flex items-center justify-between px-5 py-4">
             <span className="text-title-sm text-on-surface">Menu</span>
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(false)}
               className="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface"
               aria-label="Tutup menu"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
 

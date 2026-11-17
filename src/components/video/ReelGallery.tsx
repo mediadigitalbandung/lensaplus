@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Play, X } from "lucide-react";
@@ -8,6 +8,15 @@ import type { VideoStoryItem } from "@/lib/video-story";
 
 export default function ReelGallery({ items }: { items: VideoStoryItem[] }) {
   const [playing, setPlaying] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!playing) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPlaying(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [playing]);
 
   if (items.length === 0) {
     return (
@@ -54,6 +63,9 @@ export default function ReelGallery({ items }: { items: VideoStoryItem[] }) {
 
       {playing && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pemutar video"
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4"
           onClick={() => setPlaying(null)}
         >
@@ -63,7 +75,7 @@ export default function ReelGallery({ items }: { items: VideoStoryItem[] }) {
             className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center text-white/80 hover:text-white transition-colors"
             aria-label="Tutup"
           >
-            <X size={24} />
+            <X size={24} aria-hidden="true" />
           </button>
           <div
             className="aspect-[9/16] h-full max-h-[88vh] w-auto max-w-full"

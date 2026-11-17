@@ -12,12 +12,13 @@ import {
   errorResponse,
   requireRole,
   successResponse,
+  parsePositiveInt,
 } from "@/lib/api-utils";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const ALLOWED_PLATFORMS = new Set(["INSTAGRAM", "FACEBOOK", "TWITTER"]);
+const ALLOWED_PLATFORMS = new Set(["INSTAGRAM", "FACEBOOK", "TWITTER", "THREADS"]);
 const ALLOWED_STATUSES = new Set([
   "DRAFT",
   "PENDING",
@@ -35,8 +36,8 @@ export async function GET(req: NextRequest) {
     const platform = searchParams.get("platform");
     const status = searchParams.get("status");
     const articleId = searchParams.get("articleId");
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 20, 100);
 
     const where: Prisma.SocialPostWhereInput = {};
     if (platform && ALLOWED_PLATFORMS.has(platform)) {

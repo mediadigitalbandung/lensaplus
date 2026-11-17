@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { successResponse, errorResponse, requireRole } from "@/lib/api-utils";
+import { successResponse, errorResponse, requireRole, parsePositiveInt } from "@/lib/api-utils";
 
 // GET /api/comments — list all comments with pagination (admin/editor only)
 export async function GET(request: NextRequest) {
@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
     await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
 
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 20, 100);
     const filter = searchParams.get("filter"); // "pending" | "approved" | null (all)
 
     const where: Record<string, unknown> = {};

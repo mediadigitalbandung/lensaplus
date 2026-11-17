@@ -218,7 +218,7 @@ export default function RedaksiPanelPage() {
           <div className="lg:col-span-3 rounded-xl border border-border bg-surface p-5 sm:p-6 shadow-card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold text-txt-primary">{editingId ? "Edit Anggota" : "Tambah Anggota Baru"}</h2>
-              <button onClick={closeForm} className="p-1 hover:bg-surface-secondary rounded-lg"><X size={18} /></button>
+              <button type="button" onClick={closeForm} aria-label="Tutup form" className="p-1 hover:bg-surface-secondary rounded-lg"><X size={18} aria-hidden="true" /></button>
             </div>
 
             {/* Pick from existing users */}

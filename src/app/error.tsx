@@ -18,8 +18,8 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="container-main flex min-h-[60vh] flex-col items-center justify-center text-center py-16">
-      <AlertTriangle className="h-10 w-10 text-red-600 mb-5" />
+    <div role="alert" className="container-main flex min-h-[60vh] flex-col items-center justify-center text-center py-16">
+      <AlertTriangle className="h-10 w-10 text-red-600 mb-5" aria-hidden="true" />
       <h2 className="text-2xl font-bold text-txt-primary mb-2">
         Terjadi Kesalahan
       </h2>
@@ -28,12 +28,12 @@ export default function Error({
         kembali ke beranda.
       </p>
       <div className="flex gap-3">
-        <button onClick={reset} className="btn-primary">
-          <RotateCcw className="h-4 w-4" />
+        <button type="button" onClick={reset} className="btn-primary">
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
           Coba Lagi
         </button>
         <Link href="/" className="btn-secondary">
-          <Home className="h-4 w-4" />
+          <Home className="h-4 w-4" aria-hidden="true" />
           Ke Beranda
         </Link>
       </div>

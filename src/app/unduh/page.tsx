@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import QRCode from "qrcode";
@@ -19,9 +21,9 @@ export const metadata: Metadata = {
       "Berita digital modern dalam aplikasi — lebih cepat, hemat data, bisa offline. Tersedia untuk Android, iPhone, dan Desktop.",
     images: [
       {
-        url: "/twa/playstore-assets/feature-graphic.png",
-        width: 1024,
-        height: 500,
+        url: "/lensaplus-icon-512.png",
+        width: 512,
+        height: 512,
         alt: "Lensaplus — Portal Berita Digital Modern",
       },
     ],
@@ -30,11 +32,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Pasang Aplikasi Lensaplus — Gratis",
     description: "Berita digital modern dalam aplikasi. Lebih cepat, hemat data, bisa offline.",
-    images: ["/twa/playstore-assets/feature-graphic.png"],
+    images: ["/lensaplus-icon-512.png"],
   },
 };
 
 export default async function UnduhPage() {
+  const hasApk = fs.existsSync(
+    path.join(process.cwd(), "public", "downloads", "lensaplus.apk")
+  );
   // QR code untuk share link install lewat poster fisik / WA story / dll.
   // Generate sekali saat build (page is mostly static), embed inline SVG.
   const qrSvg = await QRCode.toString(INSTALL_URL, {
@@ -68,7 +73,7 @@ export default async function UnduhPage() {
       url: SITE_URL,
     },
     downloadUrl: INSTALL_URL,
-    screenshot: `${SITE_URL}/twa/playstore-assets/feature-graphic.png`,
+    screenshot: `${SITE_URL}/lensaplus-icon-512.png`,
     featureList:
       "Berita harian modern, Notifikasi push, Bisa offline, Bookmark, Newsletter mingguan, Topic cluster",
     inLanguage: "id-ID",
@@ -191,16 +196,25 @@ export default async function UnduhPage() {
                 resmi Google — sama seperti app yang akan kami terbitkan di Play Store.
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                <a
-                  href="/downloads/lensaplus.apk"
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-dark transition-colors"
-                  download
-                >
-                  <Download size={16} /> Unduh APK (~2 MB)
-                </a>
-                <span className="text-xs text-txt-muted">
-                  Versi 1.0.0 · diperbarui otomatis dari web
-                </span>
+                {hasApk ? (
+                  <>
+                    <a
+                      href="/downloads/lensaplus.apk"
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-dark transition-colors"
+                      download
+                    >
+                      <Download size={16} aria-hidden="true" /> Unduh APK (~2 MB)
+                    </a>
+                    <span className="text-xs text-txt-muted">
+                      Versi 1.0.0 · diperbarui otomatis dari web
+                    </span>
+                  </>
+                ) : (
+                  <p className="rounded-lg border border-border bg-surface-container-low px-4 py-2.5 text-xs text-txt-secondary">
+                    Paket APK mandiri belum tersedia untuk diunduh langsung. Gunakan opsi{" "}
+                    <strong className="text-txt-primary">Pasang via Browser (PWA)</strong> di atas untuk instalasi resmi tanpa toko aplikasi.
+                  </p>
+                )}
               </div>
               <details className="mt-4 text-sm">
                 <summary className="cursor-pointer font-semibold text-txt-primary">

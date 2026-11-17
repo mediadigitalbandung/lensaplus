@@ -26,12 +26,14 @@ import {
 } from "@/lib/api-utils";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { assertSafePublicUrl } from "@/lib/scraper/fetch";
+import { isSameSiteHost } from "@/lib/scraper/html-utils";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
 import { claimUrl, finalizeClaim, releaseClaim } from "@/lib/scraper/claim";
+import { isSafeHttpUrl } from "@/lib/api-utils";
 import { SCRAPER_ROLES } from "@/lib/roles";
 
 const bodySchema = z.object({
-  url: z.string().url(),
+  url: z.string().refine(isSafeHttpUrl, "URL artikel harus http/https"),
 });
 
 export const dynamic = "force-dynamic";
@@ -65,7 +67,7 @@ export async function POST(
     } catch {
       throw new ApiError("URL tidak valid", 400);
     }
-    if (targetUrl.host !== listingUrl.host) {
+    if (!isSameSiteHost(targetUrl, listingUrl)) {
       throw new ApiError(
         `URL harus dari domain yang sama dengan sumber (${listingUrl.host})`,
         400,

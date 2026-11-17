@@ -6,6 +6,7 @@ import Image from "next/image";
 import { permanentRedirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ArticleCard from "@/components/artikel/ArticleCard";
+import { parsePositiveInt } from "@/lib/utils";
 
 // Topic model added via schema migration — cast needed until Prisma client regenerates.
 // biome-ignore lint: prisma cast
@@ -117,7 +118,7 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
     permanentRedirect(`/kategori/${params.slug}`);
   }
 
-  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10));
+  const page = parsePositiveInt(searchParams.page, 1);
   const tagIds = topic.tags.map((t: TopicTag) => t.id);
   const { articles, total, totalPages } = await getArticlesForTopic(tagIds, page);
 

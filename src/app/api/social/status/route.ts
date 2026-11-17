@@ -17,7 +17,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { errorResponse, requireAuth, successResponse } from "@/lib/api-utils";
+import { errorResponse, requireAuth, successResponse, parsePositiveInt } from "@/lib/api-utils";
 import { EDITOR_ROLES } from "@/lib/roles";
 import type { Prisma } from "@prisma/client";
 
@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status");
     const categoryId = searchParams.get("categoryId");
     const authorId = searchParams.get("authorId");
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "12", 10)));
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 12, 50);
 
     // Visibility & privacy:
     //  - Creators (journalist/contributor) are HARD-scoped to their OWN

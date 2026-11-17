@@ -3,6 +3,7 @@ import { requireRole, ApiError, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { cleanAIShortText } from "@/lib/sanitize";
 import { decryptSecret } from "@/lib/crypto-secrets";
+import { recordAiUsage } from "@/lib/ai-usage";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
     }
     const deepseekApiKey = decryptSecret(setting.value);
 
+    const actorName = session.user.name || session.user.email || "admin";
     let processed = 0;
     const results: { title: string; seoTitle?: string; seoDescription?: string }[] = [];
 
@@ -53,13 +55,35 @@ export async function POST(req: NextRequest) {
         const updates: Record<string, string> = {};
 
         if (!article.seoTitle) {
-          const raw = await callAI(deepseekApiKey, "seo_title", article.title, article.content);
-          const cleaned = cleanAIShortText(raw);
+          const aiRes = await callAI(deepseekApiKey, "seo_title", article.title, article.content);
+          recordAiUsage({
+            userId: session.user.id,
+            userName: actorName,
+            feature: "bulk_seo_title",
+            provider: "deepseek",
+            model: "deepseek-chat",
+            inputTokens: aiRes.inputTokens,
+            outputTokens: aiRes.outputTokens,
+            totalTokens: aiRes.totalTokens,
+            articleTitle: article.title,
+          });
+          const cleaned = cleanAIShortText(aiRes.text);
           if (cleaned) updates.seoTitle = cleaned.slice(0, 70);
         }
         if (!article.seoDescription) {
-          const raw = await callAI(deepseekApiKey, "meta_description", article.title, article.content);
-          const cleaned = cleanAIShortText(raw);
+          const aiRes = await callAI(deepseekApiKey, "meta_description", article.title, article.content);
+          recordAiUsage({
+            userId: session.user.id,
+            userName: actorName,
+            feature: "bulk_meta_description",
+            provider: "deepseek",
+            model: "deepseek-chat",
+            inputTokens: aiRes.inputTokens,
+            outputTokens: aiRes.outputTokens,
+            totalTokens: aiRes.totalTokens,
+            articleTitle: article.title,
+          });
+          const cleaned = cleanAIShortText(aiRes.text);
           if (cleaned) updates.seoDescription = cleaned.slice(0, 160);
         }
 
@@ -88,7 +112,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function callAI(apiKey: string, feature: string, title: string, content: string): Promise<string> {
+async function callAI(
+  apiKey: string,
+  feature: string,
+  title: string,
+  content: string,
+): Promise<{ text: string; inputTokens: number; outputTokens: number; totalTokens: number }> {
   const prompts: Record<string, string> = {
     seo_title: `Buatkan SEO title (maks 60 karakter) untuk artikel berita berikut. Hanya output title saja, tanpa tanda kutip. Judul: ${title}`,
     meta_description: `Buatkan meta description (maks 155 karakter) untuk artikel berita berikut. Hanya output deskripsi saja, tanpa tanda kutip. Judul: ${title}. Konten: ${content.replace(/<[^>]+>/g, " ").slice(0, 800)}`,
@@ -111,8 +140,19 @@ async function callAI(apiKey: string, feature: string, title: string, content: s
         temperature: 0.5,
       }),
     });
+    if (!res.ok) {
+      throw new Error(`DeepSeek HTTP ${res.status}`);
+    }
     const data = await res.json();
-    return data.choices?.[0]?.message?.content?.trim().replace(/^["']|["']$/g, "") || "";
+    const inputTokens = data.usage?.prompt_tokens ?? 0;
+    const outputTokens = data.usage?.completion_tokens ?? 0;
+    const totalTokens = data.usage?.total_tokens ?? inputTokens + outputTokens;
+    return {
+      text: data.choices?.[0]?.message?.content?.trim().replace(/^["']|["']$/g, "") || "",
+      inputTokens,
+      outputTokens,
+      totalTokens,
+    };
   } finally {
     clearTimeout(timeout);
   }

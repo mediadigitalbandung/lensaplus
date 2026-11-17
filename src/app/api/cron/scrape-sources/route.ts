@@ -17,8 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyCronSecret, errorResponse, logAudit } from "@/lib/api-utils";
 import { trackCron } from "@/lib/cron-tracker";
-import { fetchListing } from "@/lib/scraper/fetch-listing";
-import { crawlListings } from "@/lib/scraper/crawl-listings";
+import { fetchSourceListing } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
 import { getScraperAuthor } from "@/lib/scraper/author";
@@ -111,23 +110,7 @@ async function handler(req: NextRequest) {
       };
 
       try {
-        const baseOpts = {
-          articleSelector: source.articleSelector || undefined,
-          titleSelector: source.titleSelector || undefined,
-          imageSelector: source.imageSelector || undefined,
-          useHeadless: source.useHeadless,
-          waitForSelector: source.waitForSelector,
-        };
-        const wantsMultiPage =
-          source.crawlSubcategories || (source.paginationMaxPages ?? 1) > 1;
-        const listing = wantsMultiPage
-          ? await crawlListings(source.listingUrl, {
-              ...baseOpts,
-              crawlMaxPages: source.crawlMaxPages,
-              paginationMaxPages: source.paginationMaxPages,
-              paginationPattern: source.paginationPattern,
-            })
-          : await fetchListing(source.listingUrl, baseOpts);
+        const listing = await fetchSourceListing(source);
 
         const scrapedSet = new Set(source.scrapedUrls);
         const cronGlobalClaims = await getClaimsForUrls(
@@ -212,6 +195,7 @@ async function handler(req: NextRequest) {
           }
         }
 
+        const firstFailure = sourceResult.drafts.find((d) => !d.ok && d.error)?.error;
         await prisma.newsSource.update({
           where: { id: source.id },
           data: {
@@ -220,7 +204,9 @@ async function handler(req: NextRequest) {
             lastCheckedAt: new Date(),
             ...(sourceResult.ok > 0
               ? { lastSuccessAt: new Date(), lastError: null }
-              : {}),
+              : firstFailure
+                ? { lastError: firstFailure.slice(0, 500) }
+                : {}),
           },
         });
       } catch (e) {
@@ -277,9 +263,11 @@ async function handler(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try { return await trackCron("scrape-sources", () => handler(req)); } catch (e) { return errorResponse(e); }
 }
 
 export async function POST(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try { return await trackCron("scrape-sources", () => handler(req)); } catch (e) { return errorResponse(e); }
 }

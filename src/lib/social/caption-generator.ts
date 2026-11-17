@@ -222,13 +222,14 @@ Aturan:
     .filter((t): t is string => Boolean(t));
   const tags = Array.from(new Set(tagsList)).join(" ");
 
-  // Resolve placeholders in the custom template
+  // Resolve placeholders in the custom template using function replacers so
+  // literal '$' sequences in titles/bodies never expand regex replacement patterns.
   const resolvedCaption = template
-    .replace(/\{\{title\}\}/g, article.title || "")
-    .replace(/\{\{summary\}\}/g, body || "")
-    .replace(/\{\{link\}\}/g, link)
-    .replace(/\{\{cta\}\}/g, (cta && cta.trim()) || "")
-    .replace(/\{\{hashtags\}\}/g, tags)
+    .replace(/\{\{title\}\}/g, () => article.title || "")
+    .replace(/\{\{summary\}\}/g, () => body || "")
+    .replace(/\{\{link\}\}/g, () => link)
+    .replace(/\{\{cta\}\}/g, () => (cta && cta.trim()) || "")
+    .replace(/\{\{hashtags\}\}/g, () => tags)
     // Clean up empty lines or double line breaks that occurred due to missing fields
     .replace(/\n{3,}/g, "\n\n")
     .trim();

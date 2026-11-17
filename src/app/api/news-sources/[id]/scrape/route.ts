@@ -25,8 +25,7 @@ import {
   ApiError,
   logAudit,
 } from "@/lib/api-utils";
-import { fetchListing } from "@/lib/scraper/fetch-listing";
-import { crawlListings } from "@/lib/scraper/crawl-listings";
+import { fetchSourceListing } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
 import {
@@ -80,22 +79,10 @@ export async function POST(
       throw new ApiError("Tidak ada kategori untuk artikel", 500);
     }
 
-    // 1. Fetch listing — crawl sub-categories if enabled.
+    // 1. Fetch listing — honours both sub-category crawl and pagination.
     let listing;
     try {
-      const baseOpts = {
-        articleSelector: source.articleSelector || undefined,
-        titleSelector: source.titleSelector || undefined,
-        imageSelector: source.imageSelector || undefined,
-        useHeadless: source.useHeadless,
-        waitForSelector: source.waitForSelector,
-      };
-      listing = source.crawlSubcategories
-        ? await crawlListings(source.listingUrl, {
-            ...baseOpts,
-            crawlMaxPages: source.crawlMaxPages,
-          })
-        : await fetchListing(source.listingUrl, baseOpts);
+      listing = await fetchSourceListing(source);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await prisma.newsSource.update({
@@ -153,7 +140,12 @@ export async function POST(
     const operatorId = session.user.id;
     const operatorName = session.user.name;
 
-    for (const candidate of newCandidates.slice(0, limit)) {
+    const maxAttempts = Math.min(newCandidates.length, limit * 3);
+    let attempts = 0;
+    let successes = 0;
+
+    for (const candidate of newCandidates) {
+      if (successes >= limit || attempts >= maxAttempts) break;
       // Atomically claim the URL globally before spending any AI tokens.
       // If another writer grabbed it in the meantime, skip — no duplicate.
       const claim = await claimUrl({
@@ -174,6 +166,7 @@ export async function POST(
         });
         continue;
       }
+      attempts++;
       try {
         const detail = await fetchArticle(candidate.url, {
           contentSelector: source.contentSelector || undefined,
@@ -201,6 +194,7 @@ export async function POST(
           featuredImage: draft.featuredImage ?? null,
         });
         newlyScrapedUrls.push(candidate.url);
+        successes++;
       } catch (e) {
         // Scrape failed — release the claim so the URL can be retried.
         await releaseClaim(claim.claimId, claim.claimToken);
@@ -213,7 +207,7 @@ export async function POST(
     }
 
     // 4. Persist progress
-    const successes = results.filter((r) => r.ok).length;
+    const firstFailure = results.find((r) => !r.ok && !r.skipped && r.error)?.error;
     await prisma.newsSource.update({
       where: { id: source.id },
       data: {
@@ -222,7 +216,9 @@ export async function POST(
         lastCheckedAt: new Date(),
         ...(successes > 0
           ? { lastSuccessAt: new Date(), lastError: null }
-          : {}),
+          : firstFailure
+            ? { lastError: firstFailure.slice(0, 500) }
+            : {}),
       },
     });
 

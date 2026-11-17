@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
+import { ApiError, successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
 import { slugify } from "@/lib/utils";
 
 const updateCategorySchema = z.object({
@@ -25,7 +25,7 @@ export async function PUT(
 
     const existing = await prisma.category.findUnique({ where: { id: params.id } });
     if (!existing) {
-      return errorResponse(new Error("Kategori tidak ditemukan"));
+      return errorResponse(new ApiError("Kategori tidak ditemukan", 404));
     }
 
     const slug = data.name ? (data.slug || slugify(data.name)) : data.slug;
@@ -64,12 +64,12 @@ export async function DELETE(
     });
 
     if (!category) {
-      return errorResponse(new Error("Kategori tidak ditemukan"));
+      return errorResponse(new ApiError("Kategori tidak ditemukan", 404));
     }
 
     if (category._count.articles > 0) {
       return errorResponse(
-        new Error(`Tidak bisa menghapus kategori yang memiliki ${category._count.articles} artikel`)
+        new ApiError(`Tidak bisa menghapus kategori yang memiliki ${category._count.articles} artikel`, 400)
       );
     }
 

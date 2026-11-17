@@ -140,11 +140,13 @@ export default function LiveBlogsPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={fetchLiveBlogs}
             className="btn-ghost flex items-center gap-1.5 text-sm"
             title="Refresh"
+            aria-label="Muat ulang daftar live blog"
           >
-            <RefreshCw size={15} />
+            <RefreshCw size={15} aria-hidden="true" />
           </button>
           {canWrite && (
             <Link

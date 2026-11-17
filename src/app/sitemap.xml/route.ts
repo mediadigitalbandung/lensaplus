@@ -70,57 +70,60 @@ export async function GET() {
     url(`${SITE_URL}/pedoman-media`, now, "yearly", 0.2),
   ];
 
-  // Category pages
-  const categories = await prisma.category.findMany({ select: { slug: true } });
-  const categoryUrls = categories.map((c) =>
-    url(`${SITE_URL}/kategori/${c.slug}`, now, "hourly", 0.8),
-  );
-
-  // Published articles (latest 1000)
-  const articles = await prisma.article.findMany({
-    where: { status: "PUBLISHED" },
-    select: { slug: true, updatedAt: true },
-    orderBy: { publishedAt: "desc" },
-    take: 1000,
-  });
-  const articleUrls = articles.map((a) =>
-    url(`${SITE_URL}/berita/${a.slug}`, a.updatedAt, "weekly", 0.6),
-  );
-
-  // Tag pages — only tags that actually have published articles. Empty/sparse
-  // tags are thin content (AdSense) and are noindexed at the page level, so we
-  // must not advertise them in the sitemap either.
-  const tags = await prisma.tag.findMany({
-    where: { articles: { some: { status: "PUBLISHED" } } },
-    select: { slug: true },
-  });
-  const tagUrls = tags.map((t) =>
-    url(`${SITE_URL}/tag/${t.slug}`, now, "daily", 0.5),
-  );
-
-  // Author pages — only real bylines (>= 1 published article). Excludes
-  // system/auto-content accounts with empty profiles (thin content).
-  const authors = await prisma.user.findMany({
-    where: { isActive: true, articles: { some: { status: "PUBLISHED" } } },
-    select: { name: true },
-  });
-  const authorUrls = authors.map((u) =>
-    url(`${SITE_URL}/penulis/${slugify(u.name)}`, now, "weekly", 0.4),
-  );
-
-  // Topic cluster pages (published only) — guard against missing model
+  let categoryUrls: string[] = [];
+  let articleUrls: string[] = [];
+  let tagUrls: string[] = [];
+  let authorUrls: string[] = [];
   let topicUrls: string[] = [];
+  let dbFailed = false;
+
   try {
-    // biome-ignore lint: prisma cast until Topic model is in generated client
-    const topics = await (prisma as any).topic.findMany({
-      where: { isPublished: true },
-      select: { slug: true, updatedAt: true },
-    }) as { slug: string; updatedAt: Date }[];
-    topicUrls = topics.map((t) =>
-      url(`${SITE_URL}/topik/${t.slug}`, t.updatedAt, "weekly", 0.7),
+    const [categories, articles, tags, authors] = await Promise.all([
+      prisma.category.findMany({ select: { slug: true } }),
+      prisma.article.findMany({
+        where: { status: "PUBLISHED" },
+        select: { slug: true, updatedAt: true },
+        orderBy: { publishedAt: "desc" },
+        take: 1000,
+      }),
+      prisma.tag.findMany({
+        where: { articles: { some: { status: "PUBLISHED" } } },
+        select: { slug: true },
+      }),
+      prisma.user.findMany({
+        where: { isActive: true, articles: { some: { status: "PUBLISHED" } } },
+        select: { name: true },
+      }),
+    ]);
+
+    categoryUrls = categories.map((c) =>
+      url(`${SITE_URL}/kategori/${c.slug}`, now, "hourly", 0.8),
     );
-  } catch {
-    // Topic model may not be available — skip silently
+    articleUrls = articles.map((a) =>
+      url(`${SITE_URL}/berita/${a.slug}`, a.updatedAt, "weekly", 0.6),
+    );
+    tagUrls = tags.map((t) =>
+      url(`${SITE_URL}/tag/${t.slug}`, now, "daily", 0.5),
+    );
+    authorUrls = authors.map((u) =>
+      url(`${SITE_URL}/penulis/${slugify(u.name)}`, now, "weekly", 0.4),
+    );
+
+    try {
+      // biome-ignore lint: prisma cast until Topic model is in generated client
+      const topics = await (prisma as any).topic.findMany({
+        where: { isPublished: true },
+        select: { slug: true, updatedAt: true },
+      }) as { slug: string; updatedAt: Date }[];
+      topicUrls = topics.map((t) =>
+        url(`${SITE_URL}/topik/${t.slug}`, t.updatedAt, "weekly", 0.7),
+      );
+    } catch {
+      // Topic model may not be available — skip silently
+    }
+  } catch (err) {
+    dbFailed = true;
+    console.warn("[sitemap.xml] DB query failed, returning static fallback:", err);
   }
 
   const allUrls = [
@@ -142,9 +145,10 @@ export async function GET() {
   return new Response(xml, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      // s-maxage=600: Cloudflare caches for 10 min. stale-while-revalidate
-      // allows serving stale while Next revalidates in background (up to 24h).
-      "Cache-Control": "public, s-maxage=600, stale-while-revalidate=86400",
+      // Don't edge-cache fallback output when DB was unavailable.
+      "Cache-Control": dbFailed
+        ? "no-store"
+        : "public, s-maxage=600, stale-while-revalidate=86400",
     },
   });
 }

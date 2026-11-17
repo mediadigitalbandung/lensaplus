@@ -14,8 +14,7 @@ import {
   requireRole,
   ApiError,
 } from "@/lib/api-utils";
-import { fetchListing } from "@/lib/scraper/fetch-listing";
-import { crawlListings } from "@/lib/scraper/crawl-listings";
+import { fetchSourceListing } from "@/lib/scraper/crawl-listings";
 import { getClaimsForUrls } from "@/lib/scraper/claim";
 import { SCRAPER_ROLES } from "@/lib/roles";
 
@@ -37,36 +36,7 @@ export async function POST(
       throw new ApiError("Sumber tidak ditemukan", 404);
     }
 
-    const scrapeOptions = {
-      articleSelector: source.articleSelector || undefined,
-      titleSelector: source.titleSelector || undefined,
-      imageSelector: source.imageSelector || undefined,
-      useHeadless: source.useHeadless,
-      waitForSelector: source.waitForSelector,
-    };
-
-    let items;
-    let selectorUsed: string;
-    let pagesVisited: string[] = [source.listingUrl];
-
-    // Use crawlListings whenever sub-category crawl OR pagination is enabled.
-    const wantsMultiPage =
-      source.crawlSubcategories || (source.paginationMaxPages ?? 1) > 1;
-    if (wantsMultiPage) {
-      const crawl = await crawlListings(source.listingUrl, {
-        ...scrapeOptions,
-        crawlMaxPages: source.crawlMaxPages,
-        paginationMaxPages: source.paginationMaxPages,
-        paginationPattern: source.paginationPattern,
-      });
-      items = crawl.items;
-      selectorUsed = crawl.selectorUsed;
-      pagesVisited = crawl.pagesVisited;
-    } else {
-      const r = await fetchListing(source.listingUrl, scrapeOptions);
-      items = r.items;
-      selectorUsed = r.selectorUsed;
-    }
+    const { items, selectorUsed, pagesVisited } = await fetchSourceListing(source);
 
     // Mark which items are already scraped — both the legacy per-source
     // list AND the global claim ledger (so a URL another writer already
@@ -81,6 +51,7 @@ export async function POST(
         // Who already claimed/scraped this URL (null = free to grab).
         claimedBy: claim?.scrapedByName ?? null,
         claimStatus: claim?.status ?? null, // "CLAIMED" | "DONE" | null
+        articleId: claim?.articleId ?? null,
       };
     });
 

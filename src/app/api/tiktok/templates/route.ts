@@ -9,6 +9,7 @@ import {
   successResponse,
 } from "@/lib/api-utils";
 import { canManageTiktok } from "@/lib/tiktok/specs";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ const createSchema = z.object({
   maxSlots: z.number().int().min(1).max(20).optional(),
   acceptedKinds: z.string().optional(),
   aspectRatio: z.enum(["PORTRAIT_9_16", "SQUARE_1_1"]).optional(),
-  thumbnailUrl: z.string().url().optional().nullable(),
+  thumbnailUrl: z.string().refine(isSafeImageRef, "URL atau path thumbnail tidak valid").optional().nullable(),
 });
 
 // POST /api/tiktok/templates — register a Hyperframes template (Phase 2 prep)

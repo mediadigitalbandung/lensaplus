@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import {
+  ApiError,
   successResponse,
   errorResponse,
   requireAuth,
@@ -41,7 +42,7 @@ export async function GET() {
       where: { id: session.user.id },
       select: profileFields,
     });
-    if (!user) return errorResponse(new Error("User tidak ditemukan"));
+    if (!user) return errorResponse(new ApiError("User tidak ditemukan", 404));
     return successResponse(user);
   } catch (error) {
     return errorResponse(error);

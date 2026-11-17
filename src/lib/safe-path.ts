@@ -132,4 +132,18 @@ export function isSafeImageRef(value: string): boolean {
   }
 }
 
+export function isSafeHttpUrl(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.includes("\0")) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return (
+      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+      parsed.hostname.length > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
 export { PUBLIC_DIR, UPLOAD_DIR };

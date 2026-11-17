@@ -16,6 +16,7 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { Role } from "@prisma/client";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 // Topic model added via schema migration — cast needed until Prisma client regenerates.
 const db = prisma as any; // biome-ignore lint: prisma cast
@@ -35,7 +36,7 @@ const updateTopicSchema = z.object({
   description: z.string().min(1).max(2000).optional(),
   metaTitle: z.string().max(70).optional().nullable(),
   metaDescription: z.string().max(160).optional().nullable(),
-  coverImage: z.string().url().optional().nullable(),
+  coverImage: z.string().refine(isSafeImageRef, "URL atau path cover tidak valid").optional().nullable(),
   isPublished: z.boolean().optional(),
   tagSlugs: z.array(z.string()).optional(),
 });

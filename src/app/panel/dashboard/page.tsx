@@ -623,7 +623,7 @@ function CategoryPerformance({ articles }: { articles: Article[] }) {
                 <tr key={cat.name} className="hover:bg-surface-secondary/50">
                   <td className="px-5 py-2.5 font-medium text-txt-primary">{cat.name}</td>
                   <td className="px-5 py-2.5 text-right text-txt-secondary">{cat.count}</td>
-                  <td className="px-5 py-2.5 text-right font-semibold text-gold">
+                  <td className="px-5 py-2.5 text-right font-semibold text-amber-700">
                     {formatNumber(cat.views)}
                   </td>
                 </tr>

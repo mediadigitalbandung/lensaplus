@@ -25,6 +25,7 @@ export default function PushSubscribeButton({
 }) {
   const [state, setState] = useState<State>("loading");
   const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     let cancel = false;
@@ -38,7 +39,7 @@ export default function PushSubscribeButton({
         return;
       }
       try {
-        const reg = await navigator.serviceWorker.register("/push-sw.js");
+        const reg = await navigator.serviceWorker.register("/sw.js");
         const sub = await reg.pushManager.getSubscription();
         if (!cancel) setState(sub ? "subscribed" : "unsubscribed");
       } catch {
@@ -53,6 +54,7 @@ export default function PushSubscribeButton({
 
   async function subscribe() {
     setBusy(true);
+    setFeedback(null);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
@@ -63,7 +65,7 @@ export default function PushSubscribeButton({
       const keyRes = await fetch("/api/push/vapid-key");
       const keyJson = await keyRes.json();
       if (!keyJson?.data?.publicKey) {
-        alert("Push notification belum dikonfigurasi server");
+        setFeedback("Push notification belum dikonfigurasi server.");
         return;
       }
       const sub = await reg.pushManager.subscribe({
@@ -82,7 +84,7 @@ export default function PushSubscribeButton({
       setState("subscribed");
     } catch (e) {
       console.error("Subscribe error:", e);
-      alert("Gagal subscribe notification");
+      setFeedback("Gagal mengaktifkan notifikasi.");
     } finally {
       setBusy(false);
     }
@@ -90,6 +92,7 @@ export default function PushSubscribeButton({
 
   async function unsubscribe() {
     setBusy(true);
+    setFeedback(null);
     try {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
@@ -104,6 +107,7 @@ export default function PushSubscribeButton({
       setState("unsubscribed");
     } catch (e) {
       console.error("Unsubscribe error:", e);
+      setFeedback("Gagal menonaktifkan notifikasi.");
     } finally {
       setBusy(false);
     }
@@ -114,7 +118,7 @@ export default function PushSubscribeButton({
       <div
         className={`inline-flex items-center gap-1.5 text-xs text-txt-muted ${className}`}
       >
-        <Loader2 size={12} className="animate-spin" />
+        <Loader2 size={12} className="animate-spin" aria-hidden="true" />
         <span>...</span>
       </div>
     );
@@ -129,35 +133,51 @@ export default function PushSubscribeButton({
   }
   if (state === "subscribed") {
     return (
-      <button
-        onClick={unsubscribe}
-        disabled={busy}
-        aria-label="Nonaktifkan notifikasi push"
-        className={`inline-flex items-center gap-1.5 rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-all ${className}`}
-      >
-        {busy ? (
-          <Loader2 size={12} className="animate-spin" />
-        ) : (
-          <Bell size={12} />
+      <div className="inline-flex flex-col items-start gap-1">
+        <button
+          type="button"
+          onClick={unsubscribe}
+          disabled={busy}
+          aria-label="Nonaktifkan notifikasi push"
+          className={`inline-flex items-center gap-1.5 rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-all ${className}`}
+        >
+          {busy ? (
+            <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Bell size={12} aria-hidden="true" />
+          )}
+          Notifikasi Aktif
+        </button>
+        {feedback && (
+          <p role="alert" className="text-[11px] text-red-600">
+            {feedback}
+          </p>
         )}
-        Notifikasi Aktif
-      </button>
+      </div>
     );
   }
   // state === "unsubscribed"
   return (
-    <button
-      onClick={subscribe}
-      disabled={busy}
-      aria-label="Aktifkan notifikasi push"
-      className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-txt-primary hover:border-primary hover:text-primary transition-all ${className}`}
-    >
-      {busy ? (
-        <Loader2 size={12} className="animate-spin" />
-      ) : (
-        <BellOff size={12} />
+    <div className="inline-flex flex-col items-start gap-1">
+      <button
+        type="button"
+        onClick={subscribe}
+        disabled={busy}
+        aria-label="Aktifkan notifikasi push"
+        className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-txt-primary hover:border-primary hover:text-primary transition-all ${className}`}
+      >
+        {busy ? (
+          <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+        ) : (
+          <BellOff size={12} aria-hidden="true" />
+        )}
+        Aktifkan Notifikasi
+      </button>
+      {feedback && (
+        <p role="alert" className="text-[11px] text-red-600">
+          {feedback}
+        </p>
       )}
-      Aktifkan Notifikasi
-    </button>
+    </div>
   );
 }

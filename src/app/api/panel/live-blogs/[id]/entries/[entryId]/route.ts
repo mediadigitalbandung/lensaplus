@@ -16,6 +16,8 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { isSafeHttpUrl } from "@/lib/api-utils";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +31,8 @@ const updateEntrySchema = z.object({
   content: z.string().min(1).max(10000).optional(),
   isPinned: z.boolean().optional(),
   isHighlight: z.boolean().optional(),
-  imageUrl: z.string().url().optional().nullable(),
-  videoUrl: z.string().url().optional().nullable(),
+  imageUrl: z.string().refine(isSafeImageRef, "URL atau path gambar tidak valid").optional().nullable(),
+  videoUrl: z.string().refine(isSafeHttpUrl, "URL video harus http/https").optional().nullable(),
 });
 
 export async function PUT(

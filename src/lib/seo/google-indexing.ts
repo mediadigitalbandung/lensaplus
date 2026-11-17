@@ -42,42 +42,65 @@ export async function getQuotaLimit(): Promise<number> {
   return 200; // default fallback
 }
 
-async function getDailyCount(): Promise<number> {
+type QuotaTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+async function withQuotaLock<T>(fn: (tx: QuotaTx) => Promise<T>): Promise<T> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('google_indexing_quota'))`;
+    return fn(tx);
+  });
+}
+
+async function readOrResetDailyCountTx(tx: QuotaTx): Promise<number> {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const dateRow = await prisma.systemSetting.findUnique({ where: { key: QUOTA_DATE_KEY } });
+  const dateRow = await tx.systemSetting.findUnique({ where: { key: QUOTA_DATE_KEY } });
   if (dateRow?.value !== today) {
-    // Reset counter
-    await prisma.systemSetting.upsert({
+    await tx.systemSetting.upsert({
       where: { key: QUOTA_DATE_KEY },
       create: { key: QUOTA_DATE_KEY, value: today },
       update: { value: today },
     });
-    await prisma.systemSetting.upsert({
+    await tx.systemSetting.upsert({
       where: { key: QUOTA_KEY },
       create: { key: QUOTA_KEY, value: "0" },
       update: { value: "0" },
     });
     return 0;
   }
-  const countRow = await prisma.systemSetting.findUnique({ where: { key: QUOTA_KEY } });
-  return parseInt(countRow?.value || "0", 10);
+  const countRow = await tx.systemSetting.findUnique({ where: { key: QUOTA_KEY } });
+  const parsed = Number.parseInt(countRow?.value || "0", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+async function getDailyCount(): Promise<number> {
+  return withQuotaLock(readOrResetDailyCountTx);
 }
 
 async function incrementDailyCount(): Promise<void> {
-  const current = await getDailyCount();
-  await prisma.systemSetting.upsert({
-    where: { key: QUOTA_KEY },
-    create: { key: QUOTA_KEY, value: String(current + 1) },
-    update: { value: String(current + 1) },
+  await withQuotaLock(async (tx) => {
+    const current = await readOrResetDailyCountTx(tx);
+    await tx.systemSetting.upsert({
+      where: { key: QUOTA_KEY },
+      create: { key: QUOTA_KEY, value: String(current + 1) },
+      update: { value: String(current + 1) },
+    });
   });
 }
 
 async function saturateDailyCount(): Promise<void> {
   const limit = await getQuotaLimit();
-  await prisma.systemSetting.upsert({
-    where: { key: QUOTA_KEY },
-    create: { key: QUOTA_KEY, value: String(limit) },
-    update: { value: String(limit) },
+  const today = new Date().toISOString().slice(0, 10);
+  await withQuotaLock(async (tx) => {
+    await tx.systemSetting.upsert({
+      where: { key: QUOTA_DATE_KEY },
+      create: { key: QUOTA_DATE_KEY, value: today },
+      update: { value: today },
+    });
+    await tx.systemSetting.upsert({
+      where: { key: QUOTA_KEY },
+      create: { key: QUOTA_KEY, value: String(limit) },
+      update: { value: String(limit) },
+    });
   });
 }
 

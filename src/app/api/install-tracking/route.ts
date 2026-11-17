@@ -39,20 +39,19 @@ export async function POST(req: NextRequest) {
     const lastKey = `install_last_${event}_at`;
     const now = new Date().toISOString();
 
-    // Upsert counter — increment if exists, create with "1" if not.
-    // Two-step but only run once per event so no contention concern.
-    const existing = await prisma.systemSetting.findUnique({
-      where: { key: countKey },
-      select: { value: true },
-    });
-    const current = parseInt(existing?.value || "0", 10) || 0;
-
+    // Atomic single-statement upsert + integer increment in PostgreSQL.
     await Promise.all([
-      prisma.systemSetting.upsert({
-        where: { key: countKey },
-        update: { value: String(current + 1) },
-        create: { key: countKey, value: "1" },
-      }),
+      prisma.$executeRaw`
+        INSERT INTO "system_settings" ("id", "key", "value")
+        VALUES (${countKey}, ${countKey}, '1')
+        ON CONFLICT ("key") DO UPDATE
+          SET "value" = (
+            (CASE WHEN "system_settings"."value" ~ '^[0-9]{1,15}$'
+              THEN "system_settings"."value"::bigint
+              ELSE 0
+            END) + 1
+          )::text
+      `,
       prisma.systemSetting.upsert({
         where: { key: lastKey },
         update: { value: now },

@@ -30,7 +30,13 @@ export async function GET(
       .update({ where: { ticker }, data: { viewCount: { increment: 1 } } })
       .catch(() => null);
 
-    return successResponse(company);
+    return successResponse({
+      ...company,
+      marketCap:
+        company.marketCap === null || company.marketCap === undefined
+          ? null
+          : String(company.marketCap),
+    });
   } catch (err) {
     return errorResponse(err);
   }

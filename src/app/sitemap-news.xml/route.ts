@@ -31,33 +31,42 @@ function escapeXml(input: string): string {
 export async function GET() {
   const since = new Date(Date.now() - TWO_DAYS_MS);
 
-  // Google News rejects entries without an associated image. Filter at the
-  // query level so a flooding of publish-without-image articles doesn't
-  // contaminate the news sitemap with entries Google will silently drop
-  // (and that drag down our news submission credibility ratio).
-  const articles = await prisma.article.findMany({
-    where: {
-      status: "PUBLISHED",
-      publishedAt: { gte: since },
-      featuredImage: { not: null },
-    },
-    select: {
-      slug: true,
-      title: true,
-      publishedAt: true,
-      featuredImage: true,
-      tags: { select: { name: true } },
-    },
-    orderBy: { publishedAt: "desc" },
-    take: 1000,
-  });
+  let articles: Array<{
+    slug: string;
+    title: string;
+    publishedAt: Date | null;
+    featuredImage: string | null;
+    tags: { name: string }[];
+  }> = [];
+  let dbFailed = false;
+
+  try {
+    articles = await prisma.article.findMany({
+      where: {
+        status: "PUBLISHED",
+        publishedAt: { gte: since },
+        featuredImage: { not: null },
+      },
+      select: {
+        slug: true,
+        title: true,
+        publishedAt: true,
+        featuredImage: true,
+        tags: { select: { name: true } },
+      },
+      orderBy: { publishedAt: "desc" },
+      take: 1000,
+    });
+  } catch (err) {
+    dbFailed = true;
+    console.warn("[sitemap-news.xml] DB query failed:", err);
+  }
 
   const urls = articles
     .filter((a) => a.publishedAt)
     .map((a) => {
       const loc = `${SITE_URL}/berita/${a.slug}`;
       const keywords = a.tags.map((t) => t.name).join(", ");
-      // featuredImage may be relative (/uploads/...) or absolute. Normalize.
       const img = a.featuredImage!.startsWith("http")
         ? a.featuredImage!
         : `${SITE_URL}${a.featuredImage!.startsWith("/") ? "" : "/"}${a.featuredImage}`;
@@ -90,7 +99,7 @@ ${urls}
   return new Response(xml, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, max-age=300, s-maxage=300",
+      "Cache-Control": dbFailed ? "no-store" : "public, max-age=300, s-maxage=300",
     },
   });
 }

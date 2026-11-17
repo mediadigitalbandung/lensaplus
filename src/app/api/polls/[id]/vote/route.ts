@@ -41,33 +41,35 @@ export async function POST(request: NextRequest, { params: paramsPromise }: { pa
       throw new ApiError("Opsi tidak valid", 400);
     }
 
-    // Check if already voted (any option in this poll)
+    // Lock per (pollId, ip) inside a transaction so concurrent requests for
+    // different options on the same poll cannot bypass the one-vote-per-poll check.
     const allOptionIds = poll.options.map((o) => o.id);
-    const existingVote = await prisma.pollVote.findFirst({
-      where: {
-        optionId: { in: allOptionIds },
-        ip,
-      },
-    });
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${poll.id}:${ip}`}))`;
 
-    if (existingVote) {
-      throw new ApiError("Anda sudah memberikan suara di polling ini", 409);
-    }
+      const existingVote = await tx.pollVote.findFirst({
+        where: {
+          optionId: { in: allOptionIds },
+          ip,
+        },
+      });
 
-    // Create vote + increment option count
-    await prisma.$transaction([
-      prisma.pollVote.create({
+      if (existingVote) {
+        throw new ApiError("Anda sudah memberikan suara di polling ini", 409);
+      }
+
+      await tx.pollVote.create({
         data: {
           optionId: data.optionId,
           ip,
           fingerprint: data.fingerprint || null,
         },
-      }),
-      prisma.pollOption.update({
+      });
+      await tx.pollOption.update({
         where: { id: data.optionId },
         data: { votes: { increment: 1 } },
-      }),
-    ]);
+      });
+    });
 
     // Return updated poll
     const updatedPoll = await prisma.poll.findUnique({
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest, { params: paramsPromise }: { pa
     });
   } catch (error) {
     if (typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === "P2002") {
-      throw new ApiError("Anda sudah memberikan suara di polling ini", 409);
+      return errorResponse(new ApiError("Anda sudah memberikan suara di polling ini", 409));
     }
     return errorResponse(error);
   }

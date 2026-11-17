@@ -7,6 +7,8 @@ import { Role } from "@prisma/client";
 import { prisma } from "./prisma";
 import { ZodError } from "zod";
 import { EDITOR_ROLES } from "./roles";
+export { parsePositiveInt } from "./utils";
+export { isSafeHttpUrl } from "./safe-path";
 
 export async function getSession() {
   return getServerSession(authOptions);

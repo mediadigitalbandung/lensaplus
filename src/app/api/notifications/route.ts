@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
+import { requireAuth, successResponse, errorResponse, ApiError, logAudit, parsePositiveInt } from "@/lib/api-utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const unreadOnly = searchParams.get("unread") === "true";
-    const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 100);
+    const limit = parsePositiveInt(searchParams.get("limit"), 20, 100);
     const cursor = searchParams.get("cursor") || undefined;
 
     const where: Record<string, unknown> = { userId };

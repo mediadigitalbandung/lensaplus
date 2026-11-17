@@ -16,15 +16,17 @@
 import { NextRequest } from "next/server";
 import { GET as seoPingGet } from "@/app/api/seo/ping/route";
 import { trackCron } from "@/lib/cron-tracker";
-import { errorResponse } from "@/lib/api-utils";
+import { errorResponse, verifyCronSecret } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try { return await trackCron("seo-submit", () => seoPingGet(req)); } catch (e) { return errorResponse(e); }
 }
 
 export async function POST(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try { return await trackCron("seo-submit", () => seoPingGet(req)); } catch (e) { return errorResponse(e); }
 }

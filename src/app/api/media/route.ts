@@ -7,11 +7,13 @@ import {
   requireAuth,
   ApiError,
   logAudit,
+  parsePositiveInt,
 } from "@/lib/api-utils";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 const createMediaSchema = z.object({
   filename: z.string().min(1),
-  url: z.string().url(),
+  url: z.string().min(1).refine(isSafeImageRef, "URL atau path media tidak valid"),
   type: z.string().min(1),
   size: z.number().int().min(0),
 });
@@ -22,8 +24,8 @@ export async function GET(request: NextRequest) {
     await requireAuth();
 
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")));
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 20, 50);
     const uploadedBy = searchParams.get("uploadedBy") || undefined;
     const search = (searchParams.get("search") || searchParams.get("q") || "").trim();
 

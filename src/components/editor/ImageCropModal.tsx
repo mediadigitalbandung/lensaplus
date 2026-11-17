@@ -268,6 +268,9 @@ export default function ImageCropModal({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="crop-modal-title"
       className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel();
@@ -277,8 +280,8 @@ export default function ImageCropModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <div className="flex items-center gap-2">
-            <Crop size={18} className="text-primary" />
-            <h2 className="text-base font-semibold text-on-surface">
+            <Crop size={18} className="text-primary" aria-hidden="true" />
+            <h2 id="crop-modal-title" className="text-base font-semibold text-on-surface">
               Crop Gambar
             </h2>
           </div>
@@ -288,7 +291,7 @@ export default function ImageCropModal({
             className="rounded-md p-2 text-on-surface-variant hover:bg-surface-container"
             aria-label="Tutup"
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 

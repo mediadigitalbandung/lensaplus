@@ -11,8 +11,10 @@ import {
   logAudit,
   ApiError,
   assertValidEditorAssignment,
+  parsePositiveInt,
 } from "@/lib/api-utils";
 import { slugify, calculateReadTime } from "@/lib/utils";
+import { resolveTagIds } from "@/lib/resolve-tags";
 import { canWriteArticles, canApproveArticles, canViewAllArticles } from "@/lib/auth";
 import { guardPublicRead } from "@/lib/rate-limit";
 import { isSafeImageRef } from "@/lib/safe-path";
@@ -50,8 +52,8 @@ const createArticleSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "12")));
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const rawLimit = searchParams.get("limit");
     const category = searchParams.get("category");
     const status = searchParams.get("status") || "PUBLISHED";
     // Anti-scraping: throttle/honeypot-ban only the PUBLIC listing path. Authed
@@ -111,6 +113,8 @@ export async function GET(request: NextRequest) {
       }
       where.status = status;
     }
+
+    const limit = parsePositiveInt(rawLimit, 12, status === "PUBLISHED" ? 100 : 500);
 
     if (category) {
       where.category = { slug: category };
@@ -254,25 +258,10 @@ export async function POST(request: NextRequest) {
     // Calculate read time
     const readTime = calculateReadTime(data.content);
 
-    // Handle tags (batch to avoid N+1)
-    const tagConnections = [];
-    if (data.tags && data.tags.length > 0) {
-      const tagEntries = data.tags.map((name) => ({ name, slug: slugify(name) }));
-      await Promise.all(
-        tagEntries.map((t) =>
-          prisma.tag.upsert({
-            where: { slug: t.slug },
-            update: {},
-            create: { name: t.name, slug: t.slug },
-          })
-        )
-      );
-      const tags = await prisma.tag.findMany({
-        where: { slug: { in: tagEntries.map((t) => t.slug) } },
-        select: { id: true },
-      });
-      tagConnections.push(...tags.map((t) => ({ id: t.id })));
-    }
+    // Handle tags via safe slug+name deduped resolution
+    const tagConnections = data.tags?.length
+      ? (await resolveTagIds(data.tags)).map((id) => ({ id }))
+      : [];
 
     // Determine the actual author
     const effectiveAuthorId = (canApproveArticles(session.user.role) && data.authorId) ? data.authorId : session.user.id;

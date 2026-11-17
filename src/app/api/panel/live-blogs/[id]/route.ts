@@ -18,6 +18,8 @@ import {
   ApiError,
 } from "@/lib/api-utils";
 import { sanitizeText } from "@/lib/sanitize";
+import { isSafeHttpUrl } from "@/lib/api-utils";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +31,10 @@ const updateSchema = z.object({
   scheduledAt: z.string().datetime().optional(),
   startedAt: z.string().datetime().optional().nullable(),
   endedAt: z.string().datetime().optional().nullable(),
-  coverImage: z.string().url().optional().nullable(),
+  coverImage: z.string().refine(isSafeImageRef, "URL atau path cover tidak valid").optional().nullable(),
   liveStreamUrl: z.preprocess(
     (v) => (typeof v === "string" ? v.trim() || null : v),
-    z.string().url("URL video tidak valid").max(2000).optional().nullable(),
+    z.string().max(2000).refine(isSafeHttpUrl, "URL video harus http/https").optional().nullable(),
   ),
   articleId: z.string().optional().nullable(),
   isPublished: z.boolean().optional(),

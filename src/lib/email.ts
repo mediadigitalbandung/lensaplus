@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret, isSensitiveKey } from "@/lib/crypto-secrets";
+import { escapeHtml } from "@/lib/sanitize";
 
 // ---------------------------------------------------------------------------
 // CRIT-12: async client factory — reads SystemSetting first, env as fallback.
@@ -60,12 +61,12 @@ function baseTemplate(title: string, body: string): string {
     <div style="max-width:560px;margin:0 auto;padding:40px 20px;">
       <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
         <div style="text-align:center;margin-bottom:24px;">
-          <h2 style="margin:0;color:#0F172A;font-size:18px;">${APP_NAME}</h2>
+          <h2 style="margin:0;color:#0F172A;font-size:18px;">${escapeHtml(APP_NAME)}</h2>
         </div>
-        <h1 style="margin:0 0 16px;font-size:20px;color:#1c1c1e;">${title}</h1>
+        <h1 style="margin:0 0 16px;font-size:20px;color:#1c1c1e;">${escapeHtml(title)}</h1>
         ${body}
         <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center;">
-          <a href="${APP_URL}" style="color:#0F172A;font-size:12px;text-decoration:none;">${APP_NAME}</a>
+          <a href="${escapeHtml(APP_URL)}" style="color:#0F172A;font-size:12px;text-decoration:none;">${escapeHtml(APP_NAME)}</a>
         </div>
       </div>
     </div>
@@ -115,13 +116,14 @@ export async function sendEmail(
 }
 
 export async function sendVerificationEmail(to: string, name: string, link: string) {
-  const safeName = (name || "").replace(/[<>]/g, "");
+  const safeName = escapeHtml(name);
+  const safeLink = escapeHtml(link);
   const html = baseTemplate("Verifikasi Email Anda", `
-    <p style="color:#6b7280;line-height:1.6;">Halo${safeName ? ` <strong style="color:#1c1c1e;">${safeName}</strong>` : ""}, konfirmasi bahwa alamat email ini benar milik Anda untuk mengamankan akun ${APP_NAME} Anda.</p>
+    <p style="color:#6b7280;line-height:1.6;">Halo${safeName ? ` <strong style="color:#1c1c1e;">${safeName}</strong>` : ""}, konfirmasi bahwa alamat email ini benar milik Anda untuk mengamankan akun ${escapeHtml(APP_NAME)} Anda.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${link}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Verifikasi Email</a>
+      <a href="${safeLink}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Verifikasi Email</a>
     </div>
-    <p style="color:#9ca3af;font-size:12px;line-height:1.6;">Tautan berlaku 24 jam. Jika tombol tidak berfungsi, salin URL ini ke browser:<br><span style="color:#0F172A;word-break:break-all;">${link}</span></p>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.6;">Tautan berlaku 24 jam. Jika tombol tidak berfungsi, salin URL ini ke browser:<br><span style="color:#0F172A;word-break:break-all;">${safeLink}</span></p>
     <p style="color:#9ca3af;font-size:12px;line-height:1.6;">Jika Anda tidak merasa membuat akun ini, abaikan email ini.</p>
   `);
   return sendEmail(to, `Verifikasi email Anda — ${APP_NAME}`, html);
@@ -130,42 +132,49 @@ export async function sendVerificationEmail(to: string, name: string, link: stri
 export async function sendArticleApprovedEmail(to: string, articleTitle: string, articleSlug: string) {
   // articleSlug retained for future deep-link use
   void articleSlug;
+  const safeTitle = escapeHtml(articleTitle);
   const html = baseTemplate("Artikel Anda Disetujui!", `
-    <p style="color:#6b7280;line-height:1.6;">Artikel <strong style="color:#1c1c1e;">"${articleTitle}"</strong> telah disetujui oleh editor dan siap untuk dipublikasikan.</p>
+    <p style="color:#6b7280;line-height:1.6;">Artikel <strong style="color:#1c1c1e;">"${safeTitle}"</strong> telah disetujui oleh editor dan siap untuk dipublikasikan.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${APP_URL}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Lihat di Panel</a>
+      <a href="${escapeHtml(APP_URL)}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Lihat di Panel</a>
     </div>
   `);
   await sendEmail(to, `Artikel Disetujui: ${articleTitle}`, html);
 }
 
 export async function sendArticleRejectedEmail(to: string, articleTitle: string, reviewNote?: string) {
+  const safeTitle = escapeHtml(articleTitle);
+  const safeNote = reviewNote ? escapeHtml(reviewNote) : "";
   const html = baseTemplate("Artikel Anda Ditolak", `
-    <p style="color:#6b7280;line-height:1.6;">Artikel <strong style="color:#1c1c1e;">"${articleTitle}"</strong> ditolak oleh editor.</p>
-    ${reviewNote ? `<div style="background:#fef2f2;border-left:4px solid #ef4444;padding:12px 16px;border-radius:8px;margin:16px 0;"><p style="margin:0;color:#991b1b;font-size:14px;"><strong>Catatan editor:</strong> ${reviewNote}</p></div>` : ""}
+    <p style="color:#6b7280;line-height:1.6;">Artikel <strong style="color:#1c1c1e;">"${safeTitle}"</strong> ditolak oleh editor.</p>
+    ${safeNote ? `<div style="background:#fef2f2;border-left:4px solid #ef4444;padding:12px 16px;border-radius:8px;margin:16px 0;"><p style="margin:0;color:#991b1b;font-size:14px;"><strong>Catatan editor:</strong> ${safeNote}</p></div>` : ""}
     <p style="color:#6b7280;line-height:1.6;">Silakan revisi dan ajukan kembali.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${APP_URL}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Revisi Artikel</a>
+      <a href="${escapeHtml(APP_URL)}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Revisi Artikel</a>
     </div>
   `);
   await sendEmail(to, `Artikel Ditolak: ${articleTitle}`, html);
 }
 
 export async function sendArticlePublishedEmail(to: string, articleTitle: string, articleSlug: string) {
+  const safeTitle = escapeHtml(articleTitle);
+  const safeSlug = encodeURIComponent(articleSlug);
   const html = baseTemplate("Artikel Anda Dipublikasikan!", `
-    <p style="color:#6b7280;line-height:1.6;">Selamat! Artikel <strong style="color:#1c1c1e;">"${articleTitle}"</strong> telah dipublikasikan dan dapat dibaca oleh publik.</p>
+    <p style="color:#6b7280;line-height:1.6;">Selamat! Artikel <strong style="color:#1c1c1e;">"${safeTitle}"</strong> telah dipublikasikan dan dapat dibaca oleh publik.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${APP_URL}/berita/${articleSlug}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Baca Artikel</a>
+      <a href="${escapeHtml(APP_URL)}/berita/${safeSlug}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Baca Artikel</a>
     </div>
   `);
   await sendEmail(to, `Artikel Dipublikasikan: ${articleTitle}`, html);
 }
 
 export async function sendNewReviewEmail(to: string, articleTitle: string, authorName: string) {
+  const safeTitle = escapeHtml(articleTitle);
+  const safeAuthor = escapeHtml(authorName);
   const html = baseTemplate("Artikel Baru untuk Direview", `
-    <p style="color:#6b7280;line-height:1.6;">Artikel <strong style="color:#1c1c1e;">"${articleTitle}"</strong> dari <strong>${authorName}</strong> telah diajukan untuk review.</p>
+    <p style="color:#6b7280;line-height:1.6;">Artikel <strong style="color:#1c1c1e;">"${safeTitle}"</strong> dari <strong>${safeAuthor}</strong> telah diajukan untuk review.</p>
     <div style="text-align:center;margin:24px 0;">
-      <a href="${APP_URL}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Review Sekarang</a>
+      <a href="${escapeHtml(APP_URL)}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Review Sekarang</a>
     </div>
   `);
   await sendEmail(to, `Review Baru: ${articleTitle}`, html);

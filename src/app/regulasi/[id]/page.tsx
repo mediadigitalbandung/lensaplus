@@ -267,7 +267,7 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
                 Liputan Lensaplus
               </p>
               <Link
-                href={`/artikel/${linkedArticle.slug}`}
+                href={`/berita/${linkedArticle.slug}`}
                 className="text-body-lg font-semibold text-primary hover:underline line-clamp-2"
               >
                 {linkedArticle.title}

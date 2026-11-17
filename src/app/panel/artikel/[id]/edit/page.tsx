@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { toLocalDatetimeInputValue } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
@@ -1166,7 +1167,7 @@ export default function EditArticlePage() {
               Review Artikel (Admin)
             </h1>
             <p className="text-sm text-txt-secondary">
-              Status: <span className="font-medium text-gold">{statusLabel[currentStatus] || currentStatus}</span> | Penulis: {articleAuthorName || "—"}
+              Status: <span className="font-medium text-amber-700">{statusLabel[currentStatus] || currentStatus}</span> | Penulis: {articleAuthorName || "—"}
             </p>
           </div>
           <button
@@ -1276,7 +1277,7 @@ export default function EditArticlePage() {
                     type="datetime-local"
                     value={scheduleDate}
                     onChange={(e) => setScheduleDate(e.target.value)}
-                    min={new Date().toISOString().slice(0, 16)}
+                    min={toLocalDatetimeInputValue(new Date())}
                     className="input w-full max-w-xs text-sm"
                   />
                   <div className="mt-3 flex items-center gap-2">
@@ -1352,7 +1353,7 @@ export default function EditArticlePage() {
                     type="datetime-local"
                     value={scheduleDate}
                     onChange={(e) => setScheduleDate(e.target.value)}
-                    min={new Date().toISOString().slice(0, 16)}
+                    min={toLocalDatetimeInputValue(new Date())}
                     className="input w-full max-w-xs text-sm"
                   />
                   <div className="mt-3 flex items-center gap-2">
@@ -1667,7 +1668,7 @@ export default function EditArticlePage() {
             Review Artikel
           </h1>
           <p className="text-sm text-txt-secondary">
-            Status: <span className="font-medium text-gold">{statusLabel[currentStatus] || currentStatus}</span>
+            Status: <span className="font-medium text-amber-700">{statusLabel[currentStatus] || currentStatus}</span>
             {" | "}Penulis: <span className="font-medium">{articleAuthorName}</span>
           </p>
         </div>
@@ -1941,7 +1942,16 @@ export default function EditArticlePage() {
                     const res = await fetch(`/api/articles/${articleId}`, {
                       method: "PUT",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ title, content, excerpt, categoryId, featuredImage, seoTitle, seoDescription, tags: tags.split(",").map(t => t.trim()).filter(Boolean) }),
+                      body: JSON.stringify({
+                        title,
+                        content,
+                        excerpt: excerpt || undefined,
+                        categoryId,
+                        featuredImage: featuredImage || undefined,
+                        seoTitle: seoTitle || undefined,
+                        seoDescription: seoDescription || undefined,
+                        tags: tags.split(",").map(t => t.trim()).filter(Boolean),
+                      }),
                     });
                     if (res.ok) {
                       clearAutosave();
@@ -2006,7 +2016,7 @@ export default function EditArticlePage() {
             Edit Artikel
           </h1>
           <p className="text-sm text-txt-secondary">
-            Status saat ini: <span className="font-medium text-gold">{statusLabel[currentStatus] || currentStatus}</span>
+            Status saat ini: <span className="font-medium text-amber-700">{statusLabel[currentStatus] || currentStatus}</span>
           </p>
         </div>
         {/* Action buttons only for editable states */}
@@ -2160,7 +2170,7 @@ export default function EditArticlePage() {
             type="datetime-local"
             value={scheduleDate}
             onChange={(e) => setScheduleDate(e.target.value)}
-            min={new Date().toISOString().slice(0, 16)}
+            min={toLocalDatetimeInputValue(new Date())}
             className="input w-full max-w-xs text-sm"
           />
           <div className="mt-3 flex items-center gap-2">

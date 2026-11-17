@@ -13,7 +13,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { errorResponse, successResponse } from "@/lib/api-utils";
+import { errorResponse, successResponse, parsePositiveInt } from "@/lib/api-utils";
 import { guardPublicRead } from "@/lib/rate-limit";
 import type { Prisma } from "@prisma/client";
 
@@ -39,10 +39,7 @@ export async function GET(req: NextRequest) {
     const tickerParam = searchParams.get("ticker");
     const fromParam = searchParams.get("from");
     const toParam = searchParams.get("to");
-    const limit = Math.min(
-      200,
-      Math.max(1, parseInt(searchParams.get("limit") || "50", 10)),
-    );
+    const limit = parsePositiveInt(searchParams.get("limit"), 50, 200);
 
     const fromDate = fromParam
       ? new Date(fromParam)

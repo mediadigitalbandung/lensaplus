@@ -8,10 +8,12 @@ import {
   logAudit,
   ApiError,
   assertValidEditorAssignment,
+  isSafeHttpUrl,
 } from "@/lib/api-utils";
-import { calculateReadTime, slugify } from "@/lib/utils";
+import { calculateReadTime } from "@/lib/utils";
 import { canApproveArticles, canViewAllArticles } from "@/lib/auth";
-import { sanitizeHtml, cleanAIShortText } from "@/lib/sanitize";
+import { sanitizeHtml, sanitizeText, cleanAIShortText } from "@/lib/sanitize";
+import { resolveTagIds } from "@/lib/resolve-tags";
 import { notifyArticleStatusChange } from "@/lib/notifications";
 import {
   sendArticleApprovedEmail,
@@ -130,6 +132,138 @@ export async function GET(
   }
 }
 
+type UpdateArticlePayload = z.infer<typeof updateArticleSchema>;
+
+const ARTICLE_FULL_INCLUDE = {
+  author: { select: { id: true, name: true } },
+  category: { select: { id: true, name: true, slug: true } },
+  tags: true,
+  sources: true,
+} as const;
+
+type SourceDraftInput = {
+  name: string;
+  title?: string;
+  institution?: string;
+  url?: string;
+};
+
+function buildSanitizedSourcesCreate(sourcesData: unknown) {
+  if (!Array.isArray(sourcesData)) return undefined;
+  return sourcesData
+    .filter(
+      (s): s is SourceDraftInput =>
+        Boolean(
+          s &&
+            typeof s === "object" &&
+            typeof (s as SourceDraftInput).name === "string" &&
+            (s as SourceDraftInput).name.trim(),
+        ),
+    )
+    .map((s) => ({
+      name: sanitizeText(s.name).slice(0, 200),
+      title: s.title ? sanitizeText(s.title).slice(0, 200) : null,
+      institution: s.institution ? sanitizeText(s.institution).slice(0, 200) : null,
+      url: s.url && isSafeHttpUrl(s.url) ? s.url.trim().slice(0, 500) : null,
+    }));
+}
+
+async function cleanupReplacedFeaturedImage(
+  prevImage: string | null,
+  nextImage: string | null | undefined,
+): Promise<void> {
+  if (nextImage === undefined || prevImage === (nextImage || null)) return;
+  const key = extractSafeUploadKey(prevImage);
+  if (key) {
+    const storage = getStorageDriver();
+    await storage.delete(key).catch(() => {});
+  }
+}
+
+/**
+ * Assemble all admin/editor content & metadata field updates so edits sent
+ * alongside a status transition (e.g. approve or publish) are persisted
+ * instead of silently dropped.
+ */
+async function buildAdminFieldUpdates(opts: {
+  data: UpdateArticlePayload;
+  rawTags: string[] | undefined;
+  sourcesData: unknown;
+  article: { id: string; status: string; title: string; content: string };
+  actorLabel: string;
+  alwaysCreateRevisionOnContentChange: boolean;
+}): Promise<{ updateData: Record<string, unknown>; revisionCreated: boolean }> {
+  const { data, rawTags, sourcesData, article, actorLabel, alwaysCreateRevisionOnContentChange } = opts;
+  const { reviewNote: _rn, status: _st, scheduledAt: _sch, ...adminEditData } = data;
+  void _rn;
+  void _st;
+  void _sch;
+
+  let revisionCreated = false;
+  if (alwaysCreateRevisionOnContentChange && data.content && data.content !== article.content) {
+    await prisma.revision.create({
+      data: {
+        articleId: article.id,
+        title: article.title,
+        content: article.content,
+        changedBy: actorLabel,
+      },
+    });
+    revisionCreated = true;
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (adminEditData.title) updateData.title = adminEditData.title;
+  if (adminEditData.content) {
+    updateData.content = adminEditData.content;
+    updateData.readTime = calculateReadTime(adminEditData.content);
+  }
+  if (adminEditData.excerpt !== undefined) updateData.excerpt = adminEditData.excerpt || null;
+  if (adminEditData.categoryId) updateData.categoryId = adminEditData.categoryId;
+  if (adminEditData.featuredImage !== undefined) {
+    updateData.featuredImage = adminEditData.featuredImage || null;
+  }
+  if (adminEditData.seoTitle !== undefined) updateData.seoTitle = adminEditData.seoTitle || null;
+  if (adminEditData.seoDescription !== undefined) {
+    updateData.seoDescription = adminEditData.seoDescription || null;
+  }
+  if (adminEditData.authorId) updateData.authorId = adminEditData.authorId;
+  if (adminEditData.assignedEditorId !== undefined) {
+    updateData.assignedEditorId = adminEditData.assignedEditorId;
+    if (adminEditData.assignedEditorId) {
+      updateData.reviewedBy = adminEditData.assignedEditorId;
+    } else if (article.status === "IN_REVIEW") {
+      const editors = await prisma.user.findMany({
+        where: { role: { in: ["EDITOR", "CHIEF_EDITOR"] }, isActive: true },
+        select: { id: true },
+      });
+      if (editors.length > 0) {
+        const randomIndex = Math.floor(Math.random() * editors.length);
+        updateData.reviewedBy = editors[randomIndex].id;
+      } else {
+        updateData.reviewedBy = null;
+      }
+    } else {
+      updateData.reviewedBy = null;
+    }
+  }
+  if (rawTags) {
+    const resolvedIds = await resolveTagIds(rawTags);
+    updateData.tags = {
+      set: resolvedIds.map((id) => ({ id })),
+    };
+  }
+  const sanitizedSources = buildSanitizedSourcesCreate(sourcesData);
+  if (sanitizedSources) {
+    updateData.sources = {
+      deleteMany: {},
+      create: sanitizedSources,
+    };
+  }
+
+  return { updateData, revisionCreated };
+}
+
 // PUT /api/articles/:id
 export async function PUT(
   request: NextRequest,
@@ -159,6 +293,9 @@ export async function PUT(
 
     const body = await request.json();
     const { tags: tagNames, sources: sourcesData, reviewNote: bodyReviewNote, ...rawData } = body;
+    const rawTags = Array.isArray(tagNames)
+      ? tagNames.filter((t: unknown): t is string => typeof t === "string")
+      : undefined;
     const data = updateArticleSchema.parse({ ...rawData, reviewNote: bodyReviewNote });
 
     // Reject a bogus / non-editor assignedEditorId across every branch below
@@ -177,10 +314,10 @@ export async function PUT(
     if (data.seoDescription) data.seoDescription = cleanAIShortText(data.seoDescription);
     if (data.excerpt) data.excerpt = cleanAIShortText(data.excerpt);
 
-    // Featured image is now derived from the article body's first image — if the
-    // client doesn't send a value but content was edited, re-extract from content.
-    // This keeps the featured image in sync as users add/remove inline images.
-    if (data.content !== undefined && !data.featuredImage) {
+    // Featured image is derived from the article body's first image when missing
+    // on both payload and article (don't overwrite an explicit stored image on
+    // partial content edits).
+    if (data.content !== undefined && !data.featuredImage && !article.featuredImage) {
       data.featuredImage = extractFirstImageUrl(data.content);
     }
 
@@ -268,51 +405,39 @@ export async function PUT(
 
       const readTime = data.content ? calculateReadTime(data.content) : undefined;
 
+      const resolvedTagIds = rawTags ? await resolveTagIds(rawTags) : null;
+      const sanitizedSources = buildSanitizedSourcesCreate(sourcesData);
+
       // Strip verificationLabel — system-controlled
       const { reviewNote: _rn, ...cleanData } = data;
+      void _rn;
 
       const updated = await prisma.article.update({
         where: { id: params.id },
         data: {
           ...cleanData,
+          ...(cleanData.featuredImage !== undefined
+            ? { featuredImage: cleanData.featuredImage || null }
+            : {}),
           readTime,
           verificationLabel: "UNVERIFIED",
           reviewedBy: data.status === "IN_REVIEW" ? assignedReviewerId : article.reviewedBy,
           reviewNote: data.status === "IN_REVIEW" ? null : article.reviewNote,
           scheduledAt: cleanData.scheduledAt ? new Date(cleanData.scheduledAt) : undefined,
-          ...(tagNames && Array.isArray(tagNames) && {
+          ...(resolvedTagIds && {
             tags: {
-              set: [],
-              connectOrCreate: tagNames.map((name: string) => {
-                const slug = slugify(name);
-                return { where: { slug }, create: { name, slug } };
-              }),
+              set: resolvedTagIds.map((id) => ({ id })),
+            },
+          }),
+          ...(sanitizedSources && {
+            sources: {
+              deleteMany: {},
+              create: sanitizedSources,
             },
           }),
         },
-        include: {
-          author: { select: { id: true, name: true } },
-          category: { select: { id: true, name: true, slug: true } },
-          tags: true,
-          sources: true,
-        },
+        include: ARTICLE_FULL_INCLUDE,
       });
-
-      // Handle sources
-      if (sourcesData && Array.isArray(sourcesData)) {
-        await prisma.source.deleteMany({ where: { articleId: params.id } });
-        if (sourcesData.length > 0) {
-          await prisma.source.createMany({
-            data: sourcesData.map((s: { name: string; title?: string; institution?: string; url?: string }) => ({
-              name: s.name,
-              title: s.title,
-              institution: s.institution,
-              url: s.url,
-              articleId: params.id,
-            })),
-          });
-        }
-      }
 
       await logAudit(
         session.user.id,
@@ -339,11 +464,22 @@ export async function PUT(
     // that gated actions on `isAssignedEditor` lived here but was unreachable
     // (isEditor and isAdmin cover the same role set) and has been removed.
     if (isAdmin) {
+      const actorLabel = session.user.name || session.user.email;
+
       // Admin "Kembalikan ke Editor": APPROVED -> IN_REVIEW
       if (data.status === "IN_REVIEW" && article.status === "APPROVED") {
+        const { updateData } = await buildAdminFieldUpdates({
+          data,
+          rawTags,
+          sourcesData,
+          article,
+          actorLabel,
+          alwaysCreateRevisionOnContentChange: true,
+        });
         const updated = await prisma.article.update({
           where: { id: params.id },
           data: {
+            ...updateData,
             status: "IN_REVIEW",
             verificationLabel: "UNVERIFIED",
             reviewNote: data.reviewNote || "Dikembalikan oleh admin untuk review ulang",
@@ -352,20 +488,16 @@ export async function PUT(
             approvedById: null,
             approvedAt: null,
           },
-          include: {
-            author: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true, slug: true } },
-            tags: true,
-            sources: true,
-          },
+          include: ARTICLE_FULL_INCLUDE,
         });
+        await cleanupReplacedFeaturedImage(article.featuredImage, data.featuredImage);
 
         await logAudit(
           session.user.id,
           "STATUS_CHANGE",
           "article",
           article.id,
-          `Admin/Editor batalkan persetujuan: APPROVED → IN_REVIEW. Artikel: ${article.title}`
+          `Admin/Editor batalkan persetujuan: APPROVED → IN_REVIEW. Artikel: ${updated.title}`
         );
 
         return successResponse(updated);
@@ -389,10 +521,19 @@ export async function PUT(
         }
 
         const verificationLabel = data.status === "APPROVED" ? "VERIFIED" : "UNVERIFIED";
+        const { updateData } = await buildAdminFieldUpdates({
+          data,
+          rawTags,
+          sourcesData,
+          article,
+          actorLabel,
+          alwaysCreateRevisionOnContentChange: true,
+        });
 
         const updated = await prisma.article.update({
           where: { id: params.id },
           data: {
+            ...updateData,
             status: data.status === "REJECTED" ? "DRAFT" : (data.status as "APPROVED" | "REJECTED"),
             verificationLabel,
             reviewNote: data.reviewNote || null,
@@ -402,30 +543,26 @@ export async function PUT(
             approvedById: data.status === "APPROVED" ? session.user.id : null,
             approvedAt: data.status === "APPROVED" ? new Date() : null,
           },
-          include: {
-            author: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true, slug: true } },
-            tags: true,
-            sources: true,
-          },
+          include: ARTICLE_FULL_INCLUDE,
         });
+        await cleanupReplacedFeaturedImage(article.featuredImage, data.featuredImage);
 
         await logAudit(
           session.user.id,
           "STATUS_CHANGE",
           "article",
           article.id,
-          `Admin ${data.status === "APPROVED" ? "menyetujui" : "menolak"} artikel: ${article.title}${data.reviewNote ? ` — Catatan: ${data.reviewNote}` : ""}`
+          `Admin ${data.status === "APPROVED" ? "menyetujui" : "menolak"} artikel: ${updated.title}${data.reviewNote ? ` — Catatan: ${data.reviewNote}` : ""}`
         );
 
         // Notify & email article author
-        await notifyArticleStatusChange(article.id, article.title, data.status!, article.authorId, data.reviewNote || undefined);
+        await notifyArticleStatusChange(article.id, updated.title, data.status!, article.authorId, data.reviewNote || undefined);
         const authorAdmin = await prisma.user.findUnique({ where: { id: article.authorId }, select: { email: true } });
         if (authorAdmin) {
           if (data.status === "APPROVED") {
-            await sendArticleApprovedEmail(authorAdmin.email, article.title, article.slug);
+            await sendArticleApprovedEmail(authorAdmin.email, updated.title, updated.slug);
           } else {
-            await sendArticleRejectedEmail(authorAdmin.email, article.title, data.reviewNote || undefined);
+            await sendArticleRejectedEmail(authorAdmin.email, updated.title, data.reviewNote || undefined);
           }
         }
 
@@ -449,13 +586,22 @@ export async function PUT(
         );
         if (!q.ok) throw new ApiError(q.reason!, 400);
 
-        // Save revision before publish
+        const { updateData } = await buildAdminFieldUpdates({
+          data,
+          rawTags,
+          sourcesData,
+          article,
+          actorLabel,
+          alwaysCreateRevisionOnContentChange: false,
+        });
+
+        // Save pre-publish revision snapshot
         await prisma.revision.create({
           data: {
             articleId: article.id,
             title: article.title,
             content: article.content,
-            changedBy: session.user.name || session.user.email,
+            changedBy: actorLabel,
           },
         });
 
@@ -487,6 +633,7 @@ export async function PUT(
           const updated = await prisma.article.update({
             where: { id: params.id },
             data: {
+              ...updateData,
               status: "APPROVED",
               verificationLabel:
                 article.status === "APPROVED"
@@ -496,20 +643,16 @@ export async function PUT(
               approvedById: publishApprovedById,
               approvedAt: publishApprovedAt,
             },
-            include: {
-              author: { select: { id: true, name: true } },
-              category: { select: { id: true, name: true, slug: true } },
-              tags: true,
-              sources: true,
-            },
+            include: ARTICLE_FULL_INCLUDE,
           });
+          await cleanupReplacedFeaturedImage(article.featuredImage, data.featuredImage);
 
           await logAudit(
             session.user.id,
             "STATUS_CHANGE",
             "article",
             article.id,
-            `Admin menjadwalkan publikasi artikel: ${article.title} pada ${new Date(data.scheduledAt).toLocaleString("id-ID")}`
+            `Admin menjadwalkan publikasi artikel: ${updated.title} pada ${new Date(data.scheduledAt).toLocaleString("id-ID")}`
           );
 
           return successResponse(updated);
@@ -523,6 +666,7 @@ export async function PUT(
         const updated = await prisma.article.update({
           where: { id: params.id },
           data: {
+            ...updateData,
             status: "PUBLISHED",
             verificationLabel: verificationLabelForPublish,
             publishedAt: new Date(),
@@ -530,50 +674,38 @@ export async function PUT(
             approvedById: publishApprovedById,
             approvedAt: publishApprovedAt,
           },
-          include: {
-            author: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true, slug: true } },
-            tags: true,
-            sources: true,
-          },
+          include: ARTICLE_FULL_INCLUDE,
         });
+        await cleanupReplacedFeaturedImage(article.featuredImage, data.featuredImage);
 
         await logAudit(
           session.user.id,
           "STATUS_CHANGE",
           "article",
           article.id,
-          `Admin mempublikasi artikel: ${article.title}`
+          `Admin mempublikasi artikel: ${updated.title}`
         );
 
         // In-app notification (fast DB write) — the user-visible confirmation.
-        await notifyArticleStatusChange(article.id, article.title, "PUBLISHED", article.authorId);
+        await notifyArticleStatusChange(article.id, updated.title, "PUBLISHED", article.authorId);
 
         // SEO: auto-fill seoTitle/seoDescription if empty (fast DB write).
-        if (!article.seoTitle || !article.seoDescription) {
+        if (!updated.seoTitle || !updated.seoDescription) {
           await prisma.article.update({
             where: { id: article.id },
             data: {
-              ...(!article.seoTitle && { seoTitle: generateSeoTitle(article.title) }),
-              ...(!article.seoDescription && { seoDescription: generateSeoDescription(article.excerpt, article.content) }),
+              ...(!updated.seoTitle && { seoTitle: generateSeoTitle(updated.title) }),
+              ...(!updated.seoDescription && { seoDescription: generateSeoDescription(updated.excerpt, updated.content) }),
             },
           });
         }
 
         // Fire-and-forget the SLOW post-publish work so the publish response
-        // returns immediately. Previously these were awaited, so the publish
-        // blocked on the author email AND the SEO/Social/Cloudflare/Sorotan
-        // chain — which makes slow external calls (AI Sorotan generation
-        // ~10-30s, social posting). On a gateway timeout the publish looked
-        // like it FAILED ("Terjadi kesalahan") even though the article was
-        // already PUBLISHED, so the user retried and double-published it.
-        // Detaching is safe on the long-lived PM2 `next start` server (not
-        // serverless), and matches the bulk-publish path; both functions are
-        // internally defensive (timeouts + Promise.allSettled).
+        // returns immediately.
         void (async () => {
           try {
             const authorPub = await prisma.user.findUnique({ where: { id: article.authorId }, select: { email: true } });
-            if (authorPub) await sendArticlePublishedEmail(authorPub.email, article.title, updated.slug);
+            if (authorPub) await sendArticlePublishedEmail(authorPub.email, updated.title, updated.slug);
           } catch (e) {
             console.error("[publish-email] fail for", updated.slug, e);
           }
@@ -599,16 +731,12 @@ export async function PUT(
           where: { id: params.id },
           data: {
             status: data.status,
+            ...(data.status === "DRAFT" ? { verificationLabel: "UNVERIFIED" as const } : {}),
             publishedAt: null,
             scheduledAt: null,
             reviewNote: data.reviewNote || null,
           },
-          include: {
-            author: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true, slug: true } },
-            tags: true,
-            sources: true,
-          },
+          include: ARTICLE_FULL_INCLUDE,
         });
 
         await logAudit(
@@ -629,46 +757,12 @@ export async function PUT(
         return successResponse(updated);
       }
 
-      // Admin "Takedown": PUBLISHED -> DRAFT (unpublish, allow edit)
-      if (data.status === "DRAFT" && article.status === "PUBLISHED") {
-        const updated = await prisma.article.update({
-          where: { id: params.id },
-          data: {
-            status: "DRAFT",
-            verificationLabel: "UNVERIFIED",
-            publishedAt: null,
-            scheduledAt: null,
-          },
-          include: {
-            author: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true, slug: true } },
-            tags: true,
-            sources: true,
-          },
-        });
-
-        await logAudit(
-          session.user.id,
-          "STATUS_CHANGE",
-          "article",
-          article.id,
-          `Admin takedown artikel (PUBLISHED → DRAFT): ${article.title}`
-        );
-
-        return successResponse(updated);
-      }
-
       // Admin "Arsipkan": any status -> ARCHIVED (hide from public, lock edits)
       if (data.status === "ARCHIVED" && article.status !== "ARCHIVED") {
         const updated = await prisma.article.update({
           where: { id: params.id },
           data: { status: "ARCHIVED" },
-          include: {
-            author: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true, slug: true } },
-            tags: true,
-            sources: true,
-          },
+          include: ARTICLE_FULL_INCLUDE,
         });
 
         // Auto-resolve PENDING reports (Report has only status field — no resolvedAt/By)
@@ -703,12 +797,7 @@ export async function PUT(
         const updated = await prisma.article.update({
           where: { id: params.id },
           data: { status: "DRAFT", verificationLabel: "UNVERIFIED" },
-          include: {
-            author: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true, slug: true } },
-            tags: true,
-            sources: true,
-          },
+          include: ARTICLE_FULL_INCLUDE,
         });
 
         await logAudit(
@@ -723,89 +812,23 @@ export async function PUT(
       }
 
       // Admin content edit — save changes without status change
-      if (data.content && data.content !== article.content) {
-        await prisma.revision.create({
-          data: {
-            articleId: article.id,
-            title: article.title,
-            content: article.content,
-            changedBy: session.user.name || session.user.email,
-          },
-        });
-      }
-
-      const readTime = data.content ? calculateReadTime(data.content) : undefined;
-      const { reviewNote: _rn, status: _st, ...adminEditData } = data;
-
-      const updateData: Record<string, unknown> = {};
-      if (adminEditData.title) updateData.title = adminEditData.title;
-      if (adminEditData.content) updateData.content = adminEditData.content;
-      if (adminEditData.excerpt !== undefined) updateData.excerpt = adminEditData.excerpt;
-      if (adminEditData.categoryId) updateData.categoryId = adminEditData.categoryId;
-      if (adminEditData.featuredImage !== undefined) updateData.featuredImage = adminEditData.featuredImage;
-      if (adminEditData.seoTitle !== undefined) updateData.seoTitle = adminEditData.seoTitle;
-      if (adminEditData.seoDescription !== undefined) updateData.seoDescription = adminEditData.seoDescription;
-      if (adminEditData.authorId) updateData.authorId = adminEditData.authorId;
-      if (adminEditData.assignedEditorId !== undefined) {
-        updateData.assignedEditorId = adminEditData.assignedEditorId;
-        if (adminEditData.assignedEditorId) {
-          updateData.reviewedBy = adminEditData.assignedEditorId;
-        } else {
-          if (article.status === "IN_REVIEW") {
-            const editors = await prisma.user.findMany({
-              where: { role: { in: ["EDITOR", "CHIEF_EDITOR"] }, isActive: true },
-              select: { id: true },
-            });
-            if (editors.length > 0) {
-              const randomIndex = Math.floor(Math.random() * editors.length);
-              updateData.reviewedBy = editors[randomIndex].id;
-            } else {
-              updateData.reviewedBy = null;
-            }
-          } else {
-            updateData.reviewedBy = null;
-          }
-        }
-      }
-      if (readTime) updateData.readTime = readTime;
-      if (tagNames && Array.isArray(tagNames)) {
-        updateData.tags = {
-          set: [],
-          connectOrCreate: tagNames.map((name: string) => {
-            const slug = slugify(name);
-            return { where: { slug }, create: { name, slug } };
-          }),
-        };
-      }
-      if (sourcesData && Array.isArray(sourcesData)) {
-        await prisma.source.deleteMany({ where: { articleId: article.id } });
-        updateData.sources = {
-          create: sourcesData.filter((s: { name: string }) => s.name?.trim()),
-        };
-      }
+      const { updateData } = await buildAdminFieldUpdates({
+        data,
+        rawTags,
+        sourcesData,
+        article,
+        actorLabel,
+        alwaysCreateRevisionOnContentChange: true,
+      });
 
       const updated = await prisma.article.update({
         where: { id: params.id },
         data: updateData,
-        include: {
-          author: { select: { id: true, name: true } },
-          category: { select: { id: true, name: true, slug: true } },
-          tags: true,
-          sources: true,
-        },
+        include: ARTICLE_FULL_INCLUDE,
       });
 
       // Clean up old featured image if replaced
-      if (
-        data.featuredImage !== undefined &&
-        article.featuredImage !== data.featuredImage
-      ) {
-        const key = extractSafeUploadKey(article.featuredImage);
-        if (key) {
-          const storage = getStorageDriver();
-          storage.delete(key).catch(() => {});
-        }
-      }
+      await cleanupReplacedFeaturedImage(article.featuredImage, data.featuredImage);
 
       if (updated.status === "PUBLISHED") {
         try {
@@ -818,7 +841,7 @@ export async function PUT(
         } catch {/* swallow */}
       }
 
-      await logAudit(session.user.id, "UPDATE", "article", article.id, `Admin mengedit artikel: ${article.title}`);
+      await logAudit(session.user.id, "UPDATE", "article", article.id, `Admin mengedit artikel: ${updated.title}`);
       return successResponse(updated);
     }
 

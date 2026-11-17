@@ -23,6 +23,7 @@ export async function GET() {
       articlesMonth,
       topArticles,
       topCategories,
+      categoryViewGroups,
       recentActivity,
       dailyStats,
     ] = await Promise.all([
@@ -41,15 +42,20 @@ export async function GET() {
         orderBy: { viewCount: "desc" },
         take: 10,
       }),
-      // Top categories by article count & views
+      // Top categories (article count via _count; views aggregated below)
       prisma.category.findMany({
         select: {
+          id: true,
           name: true,
           slug: true,
           _count: { select: { articles: true } },
-          articles: { where: { status: "PUBLISHED" }, select: { viewCount: true } },
         },
         orderBy: { order: "asc" },
+      }),
+      prisma.article.groupBy({
+        by: ["categoryId"],
+        where: { status: "PUBLISHED" },
+        _sum: { viewCount: true },
       }),
       // Recent 10 published articles
       prisma.article.findMany({
@@ -69,11 +75,14 @@ export async function GET() {
     ]);
 
     // Process category stats
+    const viewsByCategory = new Map(
+      categoryViewGroups.map((g) => [g.categoryId, g._sum.viewCount ?? 0]),
+    );
     const categoryStats = topCategories.map((c) => ({
       name: c.name,
       slug: c.slug,
       articles: c._count.articles,
-      views: c.articles.reduce((sum, a) => sum + a.viewCount, 0),
+      views: viewsByCategory.get(c.id) ?? 0,
     })).sort((a, b) => b.views - a.views);
 
     // Process daily stats for chart

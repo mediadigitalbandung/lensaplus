@@ -72,12 +72,13 @@ export default function NewsletterBox() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <div className="relative flex flex-col sm:flex-row gap-2.5">
                 <div className="relative flex-1">
-                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <Mail size={18} aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Masukkan alamat email Anda..."
+                    aria-label="Alamat email"
                     required
                     disabled={status === "loading"}
                     className="w-full rounded-xl border border-white/20 bg-white/10 py-3.5 pl-11 pr-4 text-sm text-white placeholder-stone-300 backdrop-blur-md outline-none transition duration-200 focus:border-amber-400 focus:bg-white/15 focus:ring-2 focus:ring-amber-400/30 disabled:opacity-50"
@@ -90,21 +91,21 @@ export default function NewsletterBox() {
                 >
                   {status === "loading" ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" />
+                      <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                       <span>Mengirim...</span>
                     </>
                   ) : (
                     <>
                       <span>Langganan</span>
-                      <Send size={15} />
+                      <Send size={15} aria-hidden="true" />
                     </>
                   )}
                 </button>
               </div>
 
               {status === "error" && (
-                <div className="flex items-center gap-2 text-xs text-rose-300 mt-1">
-                  <AlertCircle size={14} className="shrink-0" />
+                <div role="alert" className="flex items-center gap-2 text-xs text-rose-300 mt-1">
+                  <AlertCircle size={14} className="shrink-0" aria-hidden="true" />
                   <span>{message}</span>
                 </div>
               )}

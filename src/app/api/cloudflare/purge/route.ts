@@ -6,10 +6,11 @@ import {
   successResponse,
   errorResponse,
   logAudit,
+  isSafeHttpUrl,
 } from "@/lib/api-utils";
 
 const PurgeBodySchema = z.union([
-  z.object({ urls: z.array(z.string().url()).min(1).max(30) }),
+  z.object({ urls: z.array(z.string().refine(isSafeHttpUrl, "URL harus http/https")).min(1).max(30) }),
   z.object({ everything: z.literal(true) }),
 ]);
 

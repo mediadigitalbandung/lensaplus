@@ -16,7 +16,6 @@
  */
 
 import fs from "fs/promises";
-import path from "path";
 import { existsSync } from "fs";
 import type {
   Article,

@@ -9,6 +9,7 @@ import {
   successResponse,
 } from "@/lib/api-utils";
 import { canManageTiktok } from "@/lib/tiktok/specs";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export async function GET() {
 const manualCreateSchema = z.object({
   username: z.string().min(2).max(60),
   displayName: z.string().min(1).max(120),
-  avatarUrl: z.string().url().optional().nullable(),
+  avatarUrl: z.string().refine(isSafeImageRef, "URL atau path avatar tidak valid").optional().nullable(),
 });
 
 // POST /api/tiktok/accounts — Phase 1 manual connect (no OAuth yet).

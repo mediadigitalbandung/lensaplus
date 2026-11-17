@@ -1,14 +1,15 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
+import { successResponse, errorResponse, requireRole, logAudit, parsePositiveInt } from "@/lib/api-utils";
+import { isSafeImageRef } from "@/lib/safe-path";
 
 // GET /api/redaksi — public
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = parsePositiveInt(searchParams.get("limit"), 50, 100);
+    const page = parsePositiveInt(searchParams.get("page"), 1);
 
     const [members, total] = await Promise.all([
       prisma.redaksiMember.findMany({
@@ -30,7 +31,7 @@ const createSchema = z.object({
   position: z.string().min(1).max(100),
   name: z.string().min(1).max(100),
   desc: z.string().max(300).optional().nullable(),
-  photo: z.string().url().optional().nullable(),
+  photo: z.string().refine(isSafeImageRef, "URL atau path foto tidak valid").optional().nullable(),
   order: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
 });

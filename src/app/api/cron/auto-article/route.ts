@@ -31,10 +31,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { resolveTagIds } from "@/lib/resolve-tags";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { verifyCronSecret, errorResponse, logAudit } from "@/lib/api-utils";
 import { trackCron } from "@/lib/cron-tracker";
-import { tryAdvisoryLock, releaseAdvisoryLock } from "@/lib/cron-lock";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { extractFirstImageUrl } from "@/lib/image-extract";
 import { generateArticleViaPerplexity } from "@/lib/perplexity-article";
 import * as Sentry from "@sentry/nextjs";
@@ -246,21 +247,16 @@ async function generateOne(): Promise<GenerateResult> {
 
   // Persist suggestedTags (best-effort — tag failures must not abort creation).
   if (gen.suggestedTags.length > 0) {
-    const tagsToConnect = gen.suggestedTags
-      .filter((t) => t.trim().length > 0)
-      .slice(0, 8)
-      .map((name) => ({ name: name.trim(), slug: slugify(name.trim()) }));
+    const rawTags = gen.suggestedTags.filter((t) => t.trim().length > 0).slice(0, 8);
+    const tagIds = await resolveTagIds(rawTags);
 
-    if (tagsToConnect.length > 0) {
+    if (tagIds.length > 0) {
       await prisma.article
         .update({
           where: { id: article.id },
           data: {
             tags: {
-              connectOrCreate: tagsToConnect.map((t) => ({
-                where: { slug: t.slug },
-                create: { name: t.name, slug: t.slug },
-              })),
+              connect: tagIds.map((id) => ({ id })),
             },
           },
         })
@@ -338,8 +334,8 @@ async function handler(req: NextRequest) {
     //    Acquire BEFORE the toggle/throttle checks so a concurrent request
     //    that already passed those gates doesn't race into generateOne().
     const LOCK_KEY = "cron:auto-article";
-    const lockAcquired = await tryAdvisoryLock(LOCK_KEY);
-    if (!lockAcquired) {
+    const lockToken = await acquireCronLock(LOCK_KEY);
+    if (!lockToken) {
       return NextResponse.json(
         {
           success: false,
@@ -435,7 +431,7 @@ async function handler(req: NextRequest) {
     } finally {
       // Release lock regardless of success, error, or early return inside the
       // inner try so the next cron tick can acquire it normally.
-      await releaseAdvisoryLock(LOCK_KEY);
+      await releaseCronLock(LOCK_KEY, lockToken);
     }
   } catch (e) {
     // Unexpected error — surface as 5xx so monitoring (UptimeRobot, Sentry)
@@ -455,6 +451,7 @@ async function handler(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try {
     return await trackCron("auto-article", () => handler(req));
   } catch (e) {
@@ -463,6 +460,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
   try {
     return await trackCron("auto-article", () => handler(req));
   } catch (e) {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { toLocalDatetimeInputValue } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -598,7 +599,7 @@ export default function NewArticlePage() {
             type="datetime-local"
             value={scheduleDate}
             onChange={(e) => setScheduleDate(e.target.value)}
-            min={new Date().toISOString().slice(0, 16)}
+            min={toLocalDatetimeInputValue(new Date())}
             className="input w-full max-w-xs text-sm"
           />
           <div className="mt-3 flex items-center gap-2">

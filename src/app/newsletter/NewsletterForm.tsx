@@ -59,6 +59,7 @@ export default function NewsletterForm({ source }: { source: string }) {
             type="email"
             required
             placeholder="anda@email.com"
+            aria-label="Alamat email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="input w-full pl-9 min-h-[44px]"
@@ -72,7 +73,7 @@ export default function NewsletterForm({ source }: { source: string }) {
         >
           {busy ? (
             <>
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
               Memproses...
             </>
           ) : (
@@ -82,6 +83,7 @@ export default function NewsletterForm({ source }: { source: string }) {
       </div>
       {result && (
         <div
+          role={result.ok ? "status" : "alert"}
           className={`flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
             result.ok
               ? "bg-emerald-50 text-emerald-800"
@@ -89,9 +91,9 @@ export default function NewsletterForm({ source }: { source: string }) {
           }`}
         >
           {result.ok ? (
-            <CheckCircle size={16} className="mt-0.5 shrink-0" />
+            <CheckCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
           ) : (
-            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
           )}
           <p>{result.message}</p>
         </div>

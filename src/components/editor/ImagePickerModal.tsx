@@ -131,6 +131,16 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
     return () => clearTimeout(t);
   }, [query]);
 
+  // Close on Escape when idle
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !uploading) onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, uploading, onClose]);
+
   // Reset state when modal closes
   useEffect(() => {
     if (!open) {
@@ -271,6 +281,9 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Pilih atau upload gambar"
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
     >
@@ -290,7 +303,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                   : "text-txt-secondary hover:bg-surface-secondary"
               }`}
             >
-              <Upload size={14} />
+              <Upload size={14} aria-hidden="true" />
               Upload Baru
             </button>
             <button
@@ -302,7 +315,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                   : "text-txt-secondary hover:bg-surface-secondary"
               }`}
             >
-              <ImageIcon size={14} />
+              <ImageIcon size={14} aria-hidden="true" />
               Galeri
             </button>
           </div>
@@ -312,7 +325,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
             className="rounded-md p-2 text-txt-secondary hover:bg-surface-secondary"
             aria-label="Tutup"
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 

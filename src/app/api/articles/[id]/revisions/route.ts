@@ -5,6 +5,7 @@ import {
   errorResponse,
   requireAuth,
   ApiError,
+  parsePositiveInt,
 } from "@/lib/api-utils";
 import { canViewAllArticles } from "@/lib/auth";
 
@@ -39,8 +40,8 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = parsePositiveInt(searchParams.get("limit"), 50, 100);
+    const page = parsePositiveInt(searchParams.get("page"), 1);
 
     const [revisions, total] = await Promise.all([
       prisma.revision.findMany({

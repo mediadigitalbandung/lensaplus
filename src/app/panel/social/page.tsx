@@ -244,6 +244,7 @@ function ReelBgmPicker({
           onClick={handleDelete}
           className="btn-ghost shrink-0 rounded-md border border-border px-2.5 py-2 text-xs text-red-500"
           title="Hapus musik tersimpan"
+          aria-label="Hapus musik tersimpan"
         >
           <Trash2 size={14} />
         </button>

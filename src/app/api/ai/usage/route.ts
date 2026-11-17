@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireRole, successResponse, errorResponse } from "@/lib/api-utils";
+import { requireRole, successResponse, errorResponse, parsePositiveInt } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
@@ -11,14 +11,14 @@ export async function GET(req: NextRequest) {
     await requireRole(["SUPER_ADMIN"]);
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const limit = parsePositiveInt(searchParams.get("limit"), 20, 100);
     const userId = searchParams.get("userId") || undefined;
     const skip = (page - 1) * limit;
 
     const where = userId ? { userId } : {};
 
-    const [logs, total] = await Promise.all([
+    const [logs, total, agg, userGroups, featureGroups] = await Promise.all([
       prisma.aIUsageLog.findMany({
         where,
         orderBy: { createdAt: "desc" },
@@ -26,48 +26,46 @@ export async function GET(req: NextRequest) {
         take: limit,
       }),
       prisma.aIUsageLog.count({ where }),
+      prisma.aIUsageLog.aggregate({
+        where,
+        _sum: { totalTokens: true },
+        _count: { _all: true },
+      }),
+      prisma.aIUsageLog.groupBy({
+        by: ["userId", "userName"],
+        where,
+        _sum: { totalTokens: true },
+        _count: { _all: true },
+      }),
+      prisma.aIUsageLog.groupBy({
+        by: ["feature"],
+        where,
+        _sum: { totalTokens: true },
+        _count: { _all: true },
+      }),
     ]);
 
-    // Summary stats
-    const allLogs = await prisma.aIUsageLog.findMany({
-      where,
-      select: {
-        userId: true,
-        userName: true,
-        feature: true,
-        totalTokens: true,
-      },
-    });
+    const totalTokens = agg._sum.totalTokens ?? 0;
+    const totalRequests = agg._count._all;
 
-    const totalTokens = allLogs.reduce((sum, l) => sum + l.totalTokens, 0);
-    const totalRequests = allLogs.length;
-
-    // By user
+    // Fold by userId cleanly in case display name changed across historical logs
     const byUserMap: Record<string, { name: string; tokens: number; requests: number }> = {};
-    for (const l of allLogs) {
-      if (!byUserMap[l.userId]) {
-        byUserMap[l.userId] = { name: l.userName, tokens: 0, requests: 0 };
+    for (const g of userGroups) {
+      if (!byUserMap[g.userId]) {
+        byUserMap[g.userId] = { name: g.userName, tokens: 0, requests: 0 };
       }
-      byUserMap[l.userId].tokens += l.totalTokens;
-      byUserMap[l.userId].requests += 1;
+      byUserMap[g.userId].tokens += g._sum.totalTokens ?? 0;
+      byUserMap[g.userId].requests += g._count._all;
     }
     const byUser = Object.entries(byUserMap).map(([id, data]) => ({
       userId: id,
       ...data,
     }));
 
-    // By feature
-    const byFeatureMap: Record<string, { tokens: number; requests: number }> = {};
-    for (const l of allLogs) {
-      if (!byFeatureMap[l.feature]) {
-        byFeatureMap[l.feature] = { tokens: 0, requests: 0 };
-      }
-      byFeatureMap[l.feature].tokens += l.totalTokens;
-      byFeatureMap[l.feature].requests += 1;
-    }
-    const byFeature = Object.entries(byFeatureMap).map(([feature, data]) => ({
-      feature,
-      ...data,
+    const byFeature = featureGroups.map((g) => ({
+      feature: g.feature,
+      tokens: g._sum.totalTokens ?? 0,
+      requests: g._count._all,
     }));
 
     return successResponse({

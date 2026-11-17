@@ -183,3 +183,17 @@ export function cleanAILongText(raw: string | null | undefined): string {
 
   return s;
 }
+
+/**
+ * Escape HTML special characters so user/article strings interpolated into HTML
+ * emails or templates cannot inject markup or scripts.
+ */
+export function escapeHtml(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return String(raw)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { parsePositiveInt } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { OfficialLevel, OfficialStatus } from "@prisma/client";
 
@@ -71,7 +72,7 @@ export default async function PejabatPage({ searchParams: searchParamsPromise }:
     : undefined;
   const searchParam = sp.search?.trim() || undefined;
   const regionParam = sp.region?.trim() || undefined;
-  const page = Math.max(1, parseInt(sp.page || "1", 10));
+  const page = parsePositiveInt(sp.page, 1);
 
   const where = {
     isPublished: true,

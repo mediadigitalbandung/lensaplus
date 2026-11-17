@@ -52,11 +52,12 @@ function formatDate(d: Date | null | undefined): string {
   }
 }
 
-function resolvePlaceholders(
+export function resolvePlaceholders(
   text: string,
   article: ArticleForPublish,
   enriched?: EnrichedData,
 ): string {
+  const paraphrasedTitleVal = enriched?.paraphrasedTitle || article.title;
   const titleVal = article.title;
   const summaryVal = enriched?.shortSummary || article.excerpt || "";
   const categoryVal = article.category?.name || "";
@@ -64,23 +65,23 @@ function resolvePlaceholders(
   const authorVal = article.author?.name || "";
 
   return text
-    // Double curly braces variations
-    .replace(/\{\{paraphrased_title\}\}/g, titleVal)
-    .replace(/\{\{short_summary\}\}/g, summaryVal)
-    .replace(/\{\{title\}\}/g, titleVal)
-    .replace(/\{\{summary\}\}/g, summaryVal)
-    .replace(/\{\{category\}\}/g, categoryVal)
-    .replace(/\{\{date\}\}/g, dateVal)
-    .replace(/\{\{author\}\}/g, authorVal)
-    
+    // Double curly braces variations (use function replacers so '$' in titles stays literal)
+    .replace(/\{\{paraphrased_title\}\}/g, () => paraphrasedTitleVal)
+    .replace(/\{\{short_summary\}\}/g, () => summaryVal)
+    .replace(/\{\{title\}\}/g, () => titleVal)
+    .replace(/\{\{summary\}\}/g, () => summaryVal)
+    .replace(/\{\{category\}\}/g, () => categoryVal)
+    .replace(/\{\{date\}\}/g, () => dateVal)
+    .replace(/\{\{author\}\}/g, () => authorVal)
+
     // Single curly braces variations
-    .replace(/\{paraphrased_title\}/g, titleVal)
-    .replace(/\{short_summary\}/g, summaryVal)
-    .replace(/\{title\}/g, titleVal)
-    .replace(/\{summary\}/g, summaryVal)
-    .replace(/\{category\}/g, categoryVal)
-    .replace(/\{date\}/g, dateVal)
-    .replace(/\{author\}/g, authorVal);
+    .replace(/\{paraphrased_title\}/g, () => paraphrasedTitleVal)
+    .replace(/\{short_summary\}/g, () => summaryVal)
+    .replace(/\{title\}/g, () => titleVal)
+    .replace(/\{summary\}/g, () => summaryVal)
+    .replace(/\{category\}/g, () => categoryVal)
+    .replace(/\{date\}/g, () => dateVal)
+    .replace(/\{author\}/g, () => authorVal);
 }
 
 /**
@@ -153,7 +154,7 @@ function estimateWordWidth(
  * Split a text into lines that fit `width` pixels at `fontSize`.
  * Uses our precise character-weighted pixel-width estimation.
  */
-function wrapText(
+export function wrapText(
   text: string,
   width: number,
   fontSize: number,
@@ -180,14 +181,20 @@ function wrapText(
       // If a single word is wider than the allowed width, we have to hard-break it
       if (wordWidth > width) {
         let w = word;
-        while (estimateWordWidth(w, fontSize, fontFamily, weight) > width) {
-          // Find how many characters can fit
-          let fitChars = 1;
-          while (fitChars < w.length && estimateWordWidth(w.slice(0, fitChars), fontSize, fontFamily, weight) <= width) {
-            fitChars++;
+        while (
+          w.length > 0 &&
+          estimateWordWidth(w, fontSize, fontFamily, weight) > width
+        ) {
+          // Consume at least 1 character per iteration so wide glyphs never loop infinitely
+          let take = 1;
+          while (
+            take < w.length &&
+            estimateWordWidth(w.slice(0, take + 1), fontSize, fontFamily, weight) <= width
+          ) {
+            take++;
           }
-          lines.push(w.slice(0, fitChars - 1));
-          w = w.slice(fitChars - 1);
+          lines.push(w.slice(0, take));
+          w = w.slice(take);
         }
         current = w;
         currentWidth = estimateWordWidth(w, fontSize, fontFamily, weight);
