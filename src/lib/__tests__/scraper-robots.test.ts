@@ -1,10 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
+const { mockDnsLookup } = vi.hoisted(() => ({
+  mockDnsLookup: vi.fn(async () => [{ address: "93.184.216.34", family: 4 }]),
+}));
+
+vi.mock("node:dns/promises", () => ({
+  default: { lookup: mockDnsLookup },
+  lookup: mockDnsLookup,
+}));
+
 import { isAllowedByRobots } from "../scraper/robots-check";
 
 function mockFetchOnce(body: string, ok = true) {
   (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
     ok,
+    status: ok ? 200 : 404,
+    headers: new Headers(),
     text: async () => body,
   });
 }
@@ -12,6 +23,7 @@ function mockFetchOnce(body: string, ok = true) {
 describe("isAllowedByRobots", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    mockDnsLookup.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
   });
 
   it("allows when robots.txt is unreachable (fail-open)", async () => {

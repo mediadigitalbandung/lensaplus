@@ -305,6 +305,9 @@ describe("audit-fix-backend regressions", () => {
         autoPublish: true,
       });
 
+      // Flush unawaited dynamic import("@/lib/seo-auto").then(...) microtask
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       expect(mocks.prisma.article.create).toHaveBeenCalledTimes(2);
       expect(res.status).toBe("PUBLISHED");
       expect(mocks.onArticlePublished).toHaveBeenCalledTimes(1);
@@ -313,25 +316,27 @@ describe("audit-fix-backend regressions", () => {
 
   describe("push/send pagination, trimmed categories & failure threshold (#8.7)", () => {
     it("paginates with cursor, trims categorySlugs, disables at 5 failures, and ignores DB update failure", async () => {
+      const page1 = [
+        {
+          id: "sub-1",
+          endpoint: "https://push.example/1",
+          p256dh: "k1",
+          auth: "a1",
+          categorySlugs: " hukum , ekonomi ",
+          failureCount: 0,
+        },
+        ...Array.from({ length: 199 }, (_, idx) => ({
+          id: `sub-skip-${idx + 2}`,
+          endpoint: `https://push.example/skip-${idx + 2}`,
+          p256dh: "k2",
+          auth: "a2",
+          categorySlugs: "olahraga",
+          failureCount: 0,
+        })),
+      ];
+
       mocks.prisma.pushSubscription.findMany
-        .mockResolvedValueOnce([
-          {
-            id: "sub-1",
-            endpoint: "https://push.example/1",
-            p256dh: "k1",
-            auth: "a1",
-            categorySlugs: " hukum , ekonomi ",
-            failureCount: 0,
-          },
-          {
-            id: "sub-2",
-            endpoint: "https://push.example/2",
-            p256dh: "k2",
-            auth: "a2",
-            categorySlugs: "olahraga",
-            failureCount: 0,
-          },
-        ])
+        .mockResolvedValueOnce(page1)
         .mockResolvedValueOnce([
           {
             id: "sub-3",
@@ -341,8 +346,7 @@ describe("audit-fix-backend regressions", () => {
             categorySlugs: "",
             failureCount: 4,
           },
-        ])
-        .mockResolvedValueOnce([]);
+        ]);
 
       mocks.webPushSend
         .mockResolvedValueOnce({})
@@ -357,8 +361,8 @@ describe("audit-fix-backend regressions", () => {
         { categorySlug: "ekonomi" },
       );
 
-      expect(summary).toEqual({ sent: 1, failed: 1, skipped: 1 });
-      expect(mocks.prisma.pushSubscription.findMany).toHaveBeenCalledTimes(3);
+      expect(summary).toEqual({ sent: 1, failed: 1, skipped: 199 });
+      expect(mocks.prisma.pushSubscription.findMany).toHaveBeenCalledTimes(2);
       expect(mocks.prisma.pushSubscription.update).toHaveBeenLastCalledWith({
         where: { id: "sub-3" },
         data: { failureCount: 5, isActive: false },
@@ -408,7 +412,6 @@ describe("audit-fix-backend regressions", () => {
       const missingSlugRes = await pub.publish({
         articleId: "clx12345cuid",
         caption: "Halo",
-        imageUrl: null,
         hashtags: [],
       });
       expect(missingSlugRes.success).toBe(false);
@@ -424,7 +427,6 @@ describe("audit-fix-backend regressions", () => {
         articleId: "clx12345cuid",
         articleSlug: "berita-nasional-terkini",
         caption: "Ringkasan berita",
-        imageUrl: null,
         hashtags: ["Berita"],
       });
       expect(okRes.success).toBe(true);
@@ -497,7 +499,6 @@ describe("audit-fix-backend regressions", () => {
       const res = await callAI({
         feature: "article_draft",
         userPrompt: "Ringkas isu ekonomi.",
-        forceProvider: "anthropic",
       });
 
       expect(res.provider).toBe("deepseek");
