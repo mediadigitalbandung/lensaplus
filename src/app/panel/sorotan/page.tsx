@@ -10,7 +10,7 @@
  * Sorotan per article, for selected articles, or in batch.
  */
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -32,6 +32,7 @@ import {
   SOROTAN_ANGLE_COUNT,
   SOROTAN_ANGLE_LABEL,
 } from "@/lib/seo/sorotan-constants";
+import { parseApiJson } from "@/lib/http-json";
 
 interface SorotanItem {
   slug: string;
@@ -67,11 +68,26 @@ interface TabCounts {
   without: number;
 }
 
+interface ActiveSorotanJob {
+  jobId: string;
+  mode: "single" | "batch" | "bulk";
+  targetArticleId?: string;
+  status: "running" | "done";
+  totalArticles: number;
+  completedArticles: number;
+  currentArticleId: string | null;
+  totalCreated: number;
+  totalSkipped: number;
+  totalErrors: number;
+  errors: string[];
+}
+
 type SorotanFilter = "all" | "with" | "without";
 
 const ACTIVE_ANGLE_SET = new Set<string>(ACTIVE_SOROTAN_ANGLES);
 const PAGE_SIZE = 20;
 const MAX_BULK_SELECT = 10;
+const POLL_INTERVAL_MS = 2000;
 
 const ARTICLE_STATUS_LABEL: Record<string, string> = {
   PUBLISHED: "Terbit",
@@ -197,6 +213,8 @@ function SorotanPageContent() {
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [singleProcessing, setSingleProcessing] = useState<string | null>(null);
+  const [activeJob, setActiveJob] = useState<ActiveSorotanJob | null>(null);
+  const [inFlightIds, setInFlightIds] = useState<Set<string>>(new Set());
 
   // Auto-generation settings (sorotan_*) — SUPER_ADMIN only
   const [autoEnabled, setAutoEnabled] = useState(false);
@@ -207,7 +225,10 @@ function SorotanPageContent() {
   const [savingBatch, setSavingBatch] = useState(false);
   const isAdmin = userRole === "SUPER_ADMIN";
   const isAnyGenerating =
-    batchGenerating || bulkGenerating || singleProcessing !== null;
+    batchGenerating ||
+    bulkGenerating ||
+    singleProcessing !== null ||
+    activeJob?.status === "running";
 
   if (
     sessionStatus !== "loading" &&
@@ -217,53 +238,89 @@ function SorotanPageContent() {
     redirect("/panel/dashboard");
   }
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setFetchError(null);
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(PAGE_SIZE),
-        scope,
-        filter: sorotanFilter,
-      });
-      if (debouncedSearch) params.set("search", debouncedSearch);
-      if (articleStatus !== "ALL") params.set("articleStatus", articleStatus);
-      if (activeIndexStatus) params.set("indexStatus", activeIndexStatus);
+  const fetchData = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      const silent = Boolean(opts?.silent);
+      try {
+        if (!silent) {
+          setLoading(true);
+          setFetchError(null);
+        }
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(PAGE_SIZE),
+          scope,
+          filter: sorotanFilter,
+        });
+        if (debouncedSearch) params.set("search", debouncedSearch);
+        if (articleStatus !== "ALL") params.set("articleStatus", articleStatus);
+        if (activeIndexStatus) params.set("indexStatus", activeIndexStatus);
 
-      const res = await fetch(`/api/seo/sorotan-by-article?${params}`);
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.success) {
-        throw new Error(json?.error || "Gagal memuat data Sorotan");
-      }
+        const res = await fetch(`/api/seo/sorotan-by-article?${params}`);
+        const json = await parseApiJson<{
+          articles?: Article[];
+          summary?: SummaryCounts;
+          tabCounts?: TabCounts;
+          inFlightArticleIds?: string[];
+          pagination?: { total?: number; totalPages?: number };
+        }>(res);
+        if (!res.ok || !json?.success) {
+          throw new Error(
+            json?.error || `Gagal memuat data Sorotan (HTTP ${res.status})`,
+          );
+        }
 
-      const data = json.data || {};
-      setArticles(data.articles || []);
-      if (data.summary) {
-        setSummary(data.summary);
+        const data = json.data || {};
+        setArticles(data.articles || []);
+        if (data.summary) {
+          setSummary(data.summary);
+        }
+        if (data.tabCounts) {
+          setTabCounts(data.tabCounts);
+        }
+        if (Array.isArray(data.inFlightArticleIds)) {
+          setInFlightIds(new Set(data.inFlightArticleIds));
+        }
+        setPaginationTotal(data.pagination?.total || 0);
+        setTotalPages(data.pagination?.totalPages || 1);
+        if (!silent) {
+          setSelectedIds(new Set());
+        }
+      } catch (err) {
+        if (!silent) {
+          setFetchError(
+            err instanceof Error ? err.message : "Gagal memuat data Sorotan.",
+          );
+        }
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
       }
-      if (data.tabCounts) {
-        setTabCounts(data.tabCounts);
-      }
-      setPaginationTotal(data.pagination?.total || 0);
-      setTotalPages(data.pagination?.totalPages || 1);
-      setSelectedIds(new Set());
-    } catch (err) {
-      setFetchError(
-        err instanceof Error ? err.message : "Gagal memuat data Sorotan.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [page, scope, sorotanFilter, debouncedSearch, articleStatus, activeIndexStatus]);
+    },
+    [
+      page,
+      scope,
+      sorotanFilter,
+      debouncedSearch,
+      articleStatus,
+      activeIndexStatus,
+    ],
+  );
+
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
+  const sorotanFilterRef = useRef(sorotanFilter);
+  sorotanFilterRef.current = sorotanFilter;
 
   const fetchAutoSettings = useCallback(async () => {
     if (!isAdmin) return;
     try {
       const res = await fetch("/api/settings");
       if (!res.ok) return;
-      const json = await res.json();
-      const data = json.data || {};
+      const json = await parseApiJson<Record<string, unknown>>(res);
+      const data = json?.data || {};
       setAutoEnabled(String(data.sorotan_auto_enabled ?? "false") === "true");
       const iv = Number(data.sorotan_interval_minutes ?? "60");
       setIntervalMin([5, 10, 15, 20, 30, 60].includes(iv) ? iv : 60);
@@ -282,6 +339,163 @@ function SorotanPageContent() {
     fetchAutoSettings();
   }, [fetchAutoSettings]);
 
+  // Poll background Sorotan generation job until completion.
+  useEffect(() => {
+    if (!activeJob || activeJob.status !== "running") return;
+
+    let cancelled = false;
+    let consecutiveFailures = 0;
+    let lastCompleted = activeJob.completedArticles;
+    let tickCount = 0;
+
+    const timer = setInterval(async () => {
+      if (cancelled) return;
+      tickCount += 1;
+
+      try {
+        const res = await fetch(
+          `/api/seo/sorotan-job?jobId=${encodeURIComponent(activeJob.jobId)}`,
+        );
+        const json = await parseApiJson<{
+          found?: boolean;
+          inFlightArticleIds?: string[];
+          job?: {
+            jobId: string;
+            status: "running" | "done";
+            totalArticles: number;
+            completedArticles: number;
+            currentArticleId: string | null;
+            totalCreated: number;
+            totalSkipped: number;
+            totalErrors: number;
+            errors: string[];
+          } | null;
+        }>(res);
+
+        if (cancelled) return;
+
+        if (!res.ok || !json?.success) {
+          consecutiveFailures += 1;
+          if (consecutiveFailures >= 4) {
+            setActiveJob(null);
+            setBatchGenerating(false);
+            setBulkGenerating(false);
+            setSingleProcessing(null);
+            showError(
+              json?.error ||
+                `Gagal memantau proses Sorotan (HTTP ${res.status}). Silakan klik Refresh.`,
+            );
+            void fetchDataRef.current({ silent: true });
+          }
+          return;
+        }
+
+        consecutiveFailures = 0;
+        const payload = json.data;
+
+        if (Array.isArray(payload?.inFlightArticleIds)) {
+          setInFlightIds(new Set(payload.inFlightArticleIds));
+        }
+
+        if (!payload?.found || !payload.job) {
+          setActiveJob(null);
+          setBatchGenerating(false);
+          setBulkGenerating(false);
+          setSingleProcessing(null);
+          showError(
+            "Proses di latar belakang terputus atau server restart. Daftar diperbarui dari database.",
+          );
+          void fetchDataRef.current({ silent: true });
+          return;
+        }
+
+        const j = payload.job;
+
+        if (j.status === "running") {
+          setActiveJob((prev) =>
+            prev && prev.jobId === j.jobId
+              ? {
+                  ...prev,
+                  status: "running",
+                  totalArticles: j.totalArticles,
+                  completedArticles: j.completedArticles,
+                  currentArticleId: j.currentArticleId,
+                  totalCreated: j.totalCreated,
+                  totalSkipped: j.totalSkipped,
+                  totalErrors: j.totalErrors,
+                  errors: j.errors || [],
+                }
+              : prev,
+          );
+          if (j.completedArticles > lastCompleted || tickCount % 3 === 0) {
+            lastCompleted = j.completedArticles;
+            void fetchDataRef.current({ silent: true });
+          }
+          return;
+        }
+
+        // Job completed
+        setActiveJob(null);
+        setBatchGenerating(false);
+        setBulkGenerating(false);
+        setSingleProcessing(null);
+        setSelectedIds(new Set());
+
+        const currentFilter = sorotanFilterRef.current;
+        if (
+          activeJob.mode === "single" &&
+          activeJob.targetArticleId &&
+          currentFilter !== "without" &&
+          (j.totalCreated > 0 || j.totalSkipped > 0)
+        ) {
+          setExpandedId(activeJob.targetArticleId);
+        }
+
+        if (j.totalCreated === 0 && j.totalErrors > 0) {
+          showError(
+            `Gagal membuat Sorotan: ${j.errors[0] || "Periksa konfigurasi AI di Pengaturan."}`,
+          );
+        } else if (j.totalErrors > 0) {
+          showError(
+            `Selesai dengan catatan: ${j.totalCreated} sudut dibuat, ${j.totalErrors} gagal (${j.errors[0] || "error"}).`,
+          );
+        } else if (j.totalCreated === 0 && j.totalSkipped > 0) {
+          showSuccess("Semua sudut pandang Sorotan sudah lengkap sebelumnya.");
+        } else if (activeJob.mode === "single") {
+          const movedNote =
+            currentFilter === "without"
+              ? " Berita dipindahkan ke tab Sudah Ada Sorotan."
+              : "";
+          showSuccess(
+            `${j.totalCreated} sudut pandang Sorotan berhasil dibuat.${movedNote}`,
+          );
+        } else {
+          showSuccess(
+            `Selesai memproses ${j.totalArticles} berita — ${j.totalCreated} sudut Sorotan dibuat.`,
+          );
+        }
+
+        void fetchDataRef.current({ silent: true });
+      } catch {
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= 4 && !cancelled) {
+          setActiveJob(null);
+          setBatchGenerating(false);
+          setBulkGenerating(false);
+          setSingleProcessing(null);
+          showError(
+            "Koneksi terputus saat memantau pembuatan Sorotan. Klik Refresh untuk melihat hasil.",
+          );
+        }
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [activeJob, showError, showSuccess]);
+
   // Debounce search input -> reset to page 1.
   useEffect(() => {
     const t = setTimeout(() => {
@@ -298,8 +512,10 @@ function SorotanPageContent() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ key, value }),
     });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error || "Gagal menyimpan");
+    const json = await parseApiJson(res);
+    if (!res.ok || !json?.success) {
+      throw new Error(json?.error || `Gagal menyimpan (HTTP ${res.status})`);
+    }
   }
 
   async function handleToggleAuto() {
@@ -352,6 +568,7 @@ function SorotanPageContent() {
   }
 
   async function handleBatchGenerate() {
+    let startedAsync = false;
     try {
       setBatchGenerating(true);
       const res = await fetch("/api/seo/generate-sorotan", {
@@ -359,21 +576,57 @@ function SorotanPageContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ limit: 5 }),
       });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Gagal");
-      showSuccess(
-        `Diproses ${json.data?.targets ?? 0} artikel — ${json.data?.totalCreated ?? 0} sorotan dibuat, ${json.data?.totalErrors ?? 0} error.`,
-      );
-      fetchData();
+      const json = await parseApiJson<{
+        async?: boolean;
+        jobId?: string;
+        targets?: number;
+        articleIds?: string[];
+        totalCreated?: number;
+        totalErrors?: number;
+      }>(res);
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.error || `Gagal batch generate (HTTP ${res.status})`);
+      }
+
+      if (json.data?.async && json.data.jobId) {
+        startedAsync = true;
+        const ids = json.data.articleIds ?? [];
+        setInFlightIds((prev) => new Set([...prev, ...ids]));
+        setActiveJob({
+          jobId: json.data.jobId,
+          mode: "batch",
+          status: "running",
+          totalArticles: json.data.targets ?? ids.length,
+          completedArticles: 0,
+          currentArticleId: ids[0] ?? null,
+          totalCreated: 0,
+          totalSkipped: 0,
+          totalErrors: 0,
+          errors: [],
+        });
+        return;
+      }
+
+      if ((json.data?.targets ?? 0) === 0) {
+        showSuccess("Semua artikel sudah memiliki Sorotan lengkap.");
+      } else {
+        showSuccess(
+          `Diproses ${json.data?.targets ?? 0} artikel — ${json.data?.totalCreated ?? 0} sorotan dibuat, ${json.data?.totalErrors ?? 0} error.`,
+        );
+      }
+      void fetchData({ silent: true });
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal batch generate");
     } finally {
-      setBatchGenerating(false);
+      if (!startedAsync) {
+        setBatchGenerating(false);
+      }
     }
   }
 
   async function handleBulkSelectedGenerate() {
     if (selectedIds.size === 0) return;
+    let startedAsync = false;
     try {
       setBulkGenerating(true);
       const articleIds = Array.from(selectedIds).slice(0, MAX_BULK_SELECT);
@@ -382,13 +635,44 @@ function SorotanPageContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ articleIds }),
       });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Gagal");
+      const json = await parseApiJson<{
+        async?: boolean;
+        jobId?: string;
+        targets?: number;
+        articleIds?: string[];
+        totalCreated?: number;
+        totalErrors?: number;
+      }>(res);
+      if (!res.ok || !json?.success) {
+        throw new Error(
+          json?.error || `Gagal generate artikel terpilih (HTTP ${res.status})`,
+        );
+      }
+
+      if (json.data?.async && json.data.jobId) {
+        startedAsync = true;
+        const ids = json.data.articleIds ?? articleIds;
+        setInFlightIds((prev) => new Set([...prev, ...ids]));
+        setActiveJob({
+          jobId: json.data.jobId,
+          mode: "bulk",
+          status: "running",
+          totalArticles: json.data.targets ?? ids.length,
+          completedArticles: 0,
+          currentArticleId: ids[0] ?? null,
+          totalCreated: 0,
+          totalSkipped: 0,
+          totalErrors: 0,
+          errors: [],
+        });
+        return;
+      }
+
       showSuccess(
         `Diproses ${json.data?.targets ?? articleIds.length} artikel terpilih — ${json.data?.totalCreated ?? 0} sorotan dibuat, ${json.data?.totalErrors ?? 0} error.`,
       );
       setSelectedIds(new Set());
-      fetchData();
+      void fetchData({ silent: true });
     } catch (err) {
       showError(
         err instanceof Error
@@ -396,11 +680,14 @@ function SorotanPageContent() {
           : "Gagal generate artikel terpilih",
       );
     } finally {
-      setBulkGenerating(false);
+      if (!startedAsync) {
+        setBulkGenerating(false);
+      }
     }
   }
 
   async function handleSingle(articleId: string) {
+    let startedAsync = false;
     try {
       setSingleProcessing(articleId);
       const res = await fetch("/api/seo/generate-sorotan-single", {
@@ -408,17 +695,51 @@ function SorotanPageContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ articleId }),
       });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Gagal");
+      const json = await parseApiJson<{
+        async?: boolean;
+        jobId?: string;
+        articleIds?: string[];
+        created?: number;
+        skipped?: number;
+        errors?: string[];
+      }>(res);
+      if (!res.ok || !json?.success) {
+        throw new Error(
+          json?.error || `Gagal memulai generate (HTTP ${res.status})`,
+        );
+      }
+
+      if (json.data?.async && json.data.jobId) {
+        startedAsync = true;
+        const ids = json.data.articleIds ?? [articleId];
+        setInFlightIds((prev) => new Set([...prev, ...ids]));
+        setActiveJob({
+          jobId: json.data.jobId,
+          mode: "single",
+          targetArticleId: articleId,
+          status: "running",
+          totalArticles: ids.length,
+          completedArticles: 0,
+          currentArticleId: articleId,
+          totalCreated: 0,
+          totalSkipped: 0,
+          totalErrors: 0,
+          errors: [],
+        });
+        return;
+      }
+
       showSuccess(
         `${json.data?.created ?? 0} angle dibuat, ${json.data?.skipped ?? 0} di-skip, ${(json.data?.errors || []).length} error.`,
       );
       setExpandedId(articleId);
-      fetchData();
+      void fetchData({ silent: true });
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal generate");
     } finally {
-      setSingleProcessing(null);
+      if (!startedAsync) {
+        setSingleProcessing(null);
+      }
     }
   }
 
@@ -500,7 +821,7 @@ function SorotanPageContent() {
           </a>
           <button
             type="button"
-            onClick={fetchData}
+            onClick={() => void fetchData()}
             disabled={loading}
             className="btn-ghost flex items-center gap-2 px-3 py-2.5 text-sm disabled:opacity-50"
           >
@@ -709,6 +1030,34 @@ function SorotanPageContent() {
         </div>
       )}
 
+      {/* Background generation live progress banner */}
+      {activeJob?.status === "running" && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border border-l-4 border-l-primary bg-surface px-4 py-3 text-sm shadow-card">
+          <div className="flex items-center gap-2.5 text-txt-primary">
+            <Loader2 size={15} className="animate-spin text-primary shrink-0" />
+            <span>
+              Sedang membuat Sorotan di latar belakang —{" "}
+              <strong className="tabular-nums">
+                {activeJob.completedArticles}/{activeJob.totalArticles}
+              </strong>{" "}
+              berita diproses ·{" "}
+              <strong className="tabular-nums text-emerald-700">
+                {activeJob.totalCreated}
+              </strong>{" "}
+              sudut dibuat
+              {activeJob.totalErrors > 0 && (
+                <span className="ml-1 font-semibold text-red-700">
+                  · {activeJob.totalErrors} error
+                </span>
+              )}
+            </span>
+          </div>
+          <span className="text-xs text-txt-muted">
+            Proses berjalan otomatis di server, halaman tidak perlu ditahan terbuka.
+          </span>
+        </div>
+      )}
+
       {/* Error banner */}
       {fetchError && (
         <div className="mb-4 rounded-xl border border-border border-l-4 border-l-red-600 bg-surface p-4 text-sm text-red-700">
@@ -716,7 +1065,7 @@ function SorotanPageContent() {
             <p>{fetchError}</p>
             <button
               type="button"
-              onClick={fetchData}
+              onClick={() => void fetchData()}
               className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
             >
               Coba Lagi
@@ -937,6 +1286,10 @@ function SorotanPageContent() {
                   const expanded = expandedId === a.id;
                   const progress = getSorotanProgress(a.sorotan);
                   const isSelected = selectedIds.has(a.id);
+                  const isRowProcessing =
+                    singleProcessing === a.id ||
+                    activeJob?.currentArticleId === a.id ||
+                    inFlightIds.has(a.id);
 
                   return (
                     <FragmentRow
@@ -945,7 +1298,7 @@ function SorotanPageContent() {
                       expanded={expanded}
                       isSelected={isSelected}
                       progress={progress}
-                      isSingleProcessing={singleProcessing === a.id}
+                      isSingleProcessing={isRowProcessing}
                       isAnyGenerating={isAnyGenerating}
                       onToggleExpand={() =>
                         setExpandedId(expanded ? null : a.id)
@@ -1189,7 +1542,7 @@ function FragmentRow({
               <button
                 type="button"
                 onClick={onGenerate}
-                disabled={isAnyGenerating}
+                disabled={isAnyGenerating || isSingleProcessing}
                 className="btn-secondary inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
                 title={
                   progress.hasAny
@@ -1202,7 +1555,11 @@ function FragmentRow({
                 ) : (
                   <Sparkles size={12} />
                 )}
-                {progress.hasAny ? "Lengkapi" : "Buat Sorotan"}
+                {isSingleProcessing
+                  ? "Memproses..."
+                  : progress.hasAny
+                    ? "Lengkapi"
+                    : "Buat Sorotan"}
               </button>
             )}
             {progress.hasAny && (
@@ -1235,7 +1592,7 @@ function FragmentRow({
                 <button
                   type="button"
                   onClick={onGenerate}
-                  disabled={isAnyGenerating}
+                  disabled={isAnyGenerating || isSingleProcessing}
                   className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline disabled:opacity-50"
                 >
                   {isSingleProcessing ? (
@@ -1243,9 +1600,11 @@ function FragmentRow({
                   ) : (
                     <Sparkles size={12} />
                   )}
-                  {progress.hasAny
-                    ? `Generate ${missingCount} sudut yang belum ada`
-                    : `Buat semua ${SOROTAN_ANGLE_COUNT} sudut pandang`}
+                  {isSingleProcessing
+                    ? "Sedang memproses..."
+                    : progress.hasAny
+                      ? `Generate ${missingCount} sudut yang belum ada`
+                      : `Buat semua ${SOROTAN_ANGLE_COUNT} sudut pandang`}
                 </button>
               )}
             </div>

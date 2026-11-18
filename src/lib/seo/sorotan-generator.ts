@@ -94,11 +94,25 @@ function deriveTitle(article: { title: string }, angle: SorotanAngle): string {
 const ANGLE_CONCURRENCY = 3;
 const ARTICLE_QUEUE_CONCURRENCY = 2;
 
-const inFlightByArticle = new Map<string, Promise<GenerateSorotanResult>>();
+export interface GenerateSorotanOptions {
+  userId?: string;
+  userName?: string;
+}
+
+const globalForSorotan = globalThis as unknown as {
+  __lensaplusSorotanInFlight?: Map<string, Promise<GenerateSorotanResult>>;
+};
+const inFlightByArticle =
+  globalForSorotan.__lensaplusSorotanInFlight ??
+  (globalForSorotan.__lensaplusSorotanInFlight = new Map());
 const queuedArticleIds = new Set<string>();
 const pendingArticleQueue: string[] = [];
 let activeQueueWorkers = 0;
 const idleWaiters: Array<() => void> = [];
+
+export function getInFlightSorotanArticleIds(): string[] {
+  return Array.from(inFlightByArticle.keys());
+}
 
 type SingleAngleOutcome =
   | { id: string; angle: SorotanAngle }
@@ -117,6 +131,7 @@ function isPrismaUniqueError(err: unknown): boolean {
 async function generateSingleAngle(
   article: { id: string; slug: string; title: string; content: string; excerpt: string | null },
   angle: SorotanAngle,
+  opts?: GenerateSorotanOptions,
 ): Promise<SingleAngleOutcome> {
   const sourceText = stripHtml(article.content);
   // Trim context to ~6000 chars to keep prompt under model limits.
@@ -138,6 +153,8 @@ ${context}`;
       temperature: 0.65,
       allowCombo: true,
       articleTitle: article.title,
+      ...(opts?.userId ? { userId: opts.userId } : {}),
+      ...(opts?.userName ? { userName: opts.userName } : {}),
     });
 
     const content = cleanAILongText(result.text);
@@ -168,6 +185,7 @@ ${context}`;
 
 async function runGenerateSorotan(
   articleId: string,
+  opts?: GenerateSorotanOptions,
 ): Promise<GenerateSorotanResult> {
   const article = await prisma.article.findUnique({
     where: { id: articleId },
@@ -218,7 +236,7 @@ async function runGenerateSorotan(
       while (angleQueue.length > 0) {
         const angle = angleQueue.shift();
         if (!angle) break;
-        outcomes.push(await generateSingleAngle(article, angle));
+        outcomes.push(await generateSingleAngle(article, angle, opts));
       }
     }),
   );
@@ -257,11 +275,12 @@ async function runGenerateSorotan(
  */
 export async function generateSorotan(
   articleId: string,
+  opts?: GenerateSorotanOptions,
 ): Promise<GenerateSorotanResult> {
   const existing = inFlightByArticle.get(articleId);
   if (existing) return existing;
 
-  const promise = runGenerateSorotan(articleId).finally(() => {
+  const promise = runGenerateSorotan(articleId, opts).finally(() => {
     inFlightByArticle.delete(articleId);
   });
   inFlightByArticle.set(articleId, promise);

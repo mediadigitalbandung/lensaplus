@@ -111,4 +111,22 @@ describe("Homepage stability, layout & widget fixes", () => {
     expect(live).toContain("flex gap-3 sm:block");
     expect(kategori).toContain("grid-cols-1 gap-8 lg:grid-cols-3");
   });
+
+  it("renders HeadlineSlider + SubHeadlineSlider in both Hero and Berita Terkini following DESIGN_SOP", () => {
+    const home = readProjectFile("src/app/page.tsx");
+    const headlineSlider = readProjectFile("src/components/slider/HeadlineSlider.tsx");
+    const subHeadlineSlider = readProjectFile("src/components/slider/SubHeadlineSlider.tsx");
+
+    expect(home).toContain('badgeLabel="Terhangat Hari Ini"');
+    expect(home).toContain('badgeLabel="Berita Terbaru"');
+    expect((home.match(/<HeadlineSlider/g) || []).length).toBeGreaterThanOrEqual(2);
+    expect((home.match(/<SubHeadlineSlider/g) || []).length).toBeGreaterThanOrEqual(2);
+
+    // DESIGN_SOP compliance: zero circular arrow boxes, serif titles
+    expect(headlineSlider).toContain("font-serif");
+    expect(headlineSlider).not.toContain("rounded-full bg-black");
+    expect(subHeadlineSlider).toContain("font-serif");
+    expect(subHeadlineSlider).toContain("grid-cols-2");
+    expect(subHeadlineSlider).not.toContain("rounded-full bg-black");
+  });
 });

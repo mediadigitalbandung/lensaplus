@@ -24,6 +24,7 @@ import {
   parsePositiveInt,
 } from "@/lib/api-utils";
 import { SOROTAN_ANGLE_COUNT } from "@/lib/seo/sorotan-constants";
+import { getInFlightSorotanArticleIds } from "@/lib/seo/sorotan-generator";
 
 export const dynamic = "force-dynamic";
 
@@ -180,6 +181,7 @@ export async function GET(req: NextRequest) {
     return successResponse({
       articles,
       totalSorotan,
+      inFlightArticleIds: getInFlightSorotanArticleIds(),
       summary: {
         totalArticles: summaryTotalArticles,
         withSorotanCount: summaryWithSorotan,

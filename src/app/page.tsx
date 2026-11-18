@@ -7,6 +7,8 @@ export const revalidate = 30;
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import HeadlineSlider from "@/components/slider/HeadlineSlider";
+import SubHeadlineSlider from "@/components/slider/SubHeadlineSlider";
 import PollingCarousel from "@/components/slider/PollingCarousel";
 import BannerAd, { SidebarAd, InlineAd, NativeAd } from "@/components/ads/BannerAd";
 import NewsletterBox from "@/components/common/NewsletterBox";
@@ -303,12 +305,57 @@ export default async function HomePage() {
 
   const activeTrending = trendingArticles.length > 0 ? trendingArticles : demoArticles;
 
-  const heroSpotlight = dedupedArticles[0];
-  const heroMiddle = dedupedArticles.slice(1, 4);
-  const heroRight = dedupedArticles.slice(4, 7);
+  // 1) Hero Lead Carousel (1 besar di atas): berita terhangat hari ini + terbaru (maks 5 slide)
+  const heroLeadCandidates: HomeArticle[] = [];
+  const heroLeadSeen = new Set<string>();
+  const heroLeadPool = [
+    ...(dedupedArticles[0] ? [dedupedArticles[0]] : []),
+    ...activeTrending,
+    ...dedupedArticles,
+  ];
+  for (const candidate of heroLeadPool) {
+    if (heroLeadSeen.has(candidate.slug)) continue;
+    heroLeadSeen.add(candidate.slug);
+    heroLeadCandidates.push(candidate);
+    if (heroLeadCandidates.length >= 5) break;
+  }
 
-  // Pilihan Editor — prioritaskan artikel populer yang tidak duplikat dengan 4 artikel Hero teratas
-  const heroLeadSlugs = new Set([heroSpotlight, ...heroMiddle].map((a) => a.slug));
+  // Kolom Pilihan Redaksi & Terhangat di samping Hero Carousel
+  const afterHeroLead = dedupedArticles.filter((a) => !heroLeadSeen.has(a.slug));
+  const heroMiddle =
+    afterHeroLead.length >= 3 ? afterHeroLead.slice(0, 3) : dedupedArticles.slice(1, 4);
+  const heroRight =
+    afterHeroLead.length >= 6 ? afterHeroLead.slice(3, 6) : dedupedArticles.slice(4, 7);
+
+  // 2) Hero Sub-Carousel (2 berita carousel di bawahnya): 6 berita = 3 slide × 2 kartu
+  const heroSideSlugs = new Set([
+    ...heroLeadCandidates.map((a) => a.slug),
+    ...heroMiddle.map((a) => a.slug),
+    ...heroRight.map((a) => a.slug),
+  ]);
+  const afterHeroAll = dedupedArticles.filter((a) => !heroSideSlugs.has(a.slug));
+  const heroSubCandidates =
+    afterHeroAll.length >= 4 ? afterHeroAll.slice(0, 6) : dedupedArticles.slice(1, 5);
+
+  const toCarouselItems = (list: HomeArticle[], imageOffset = 0) =>
+    list.map((a, idx) => ({
+      title: a.title,
+      slug: a.slug,
+      excerpt: a.excerpt,
+      featuredImage: resolveArticleImage(a.featuredImage, a.category?.slug, idx + imageOffset),
+      category: a.category
+        ? { name: a.category.name, slug: a.category.slug }
+        : { name: "Berita", slug: "umum" },
+      author: a.author ? { name: a.author.name } : { name: "Redaksi Lensaplus" },
+      publishedAt: a.publishedAt ? new Date(a.publishedAt).toISOString() : null,
+      readTime: null,
+    }));
+
+  const heroCarouselItems = toCarouselItems(heroLeadCandidates, 0);
+  const heroSubCarouselItems = toCarouselItems(heroSubCandidates, 2);
+
+  // Pilihan Editor — prioritaskan artikel populer yang tidak duplikat dengan Hero atas
+  const heroLeadSlugs = new Set([...heroLeadCandidates, ...heroMiddle].map((a) => a.slug));
   const distinctTrending = activeTrending.filter((a) => !heroLeadSlugs.has(a.slug));
   const editorsPickArticles = (
     distinctTrending.length >= 4
@@ -318,11 +365,30 @@ export default async function HomePage() {
       : dedupedArticles.slice(0, 4)
   );
 
-  // Berita Terkini — lanjut setelah 7 artikel Hero (maks 11 artikel agar seimbang dengan sidebar)
-  const terkiniArticles =
+  // Berita Terkini — lanjut setelah artikel Hero (maks 17 artikel: 5 lead carousel + 6 sub-carousel + 6 grid)
+  const terkiniFallback =
     dedupedArticles.length > 7
       ? dedupedArticles.slice(7, 18)
       : dedupedArticles.slice(1, 12);
+  const heroAllSlugs = new Set([...heroSideSlugs, ...heroSubCandidates.map((a) => a.slug)]);
+  const afterHeroPool = dedupedArticles.filter((a) => !heroAllSlugs.has(a.slug));
+  const terkiniArticles =
+    afterHeroPool.length >= 11 ? afterHeroPool.slice(0, 17) : terkiniFallback;
+
+  const terkiniLeadCandidates = terkiniArticles.slice(0, 5);
+  const terkiniSubCandidates =
+    terkiniArticles.length >= 9
+      ? terkiniArticles.slice(5, 11)
+      : terkiniArticles.length >= 7
+        ? terkiniArticles.slice(5, 7)
+        : dedupedArticles.slice(1, 5);
+  const terkiniGridArticles =
+    terkiniArticles.length > 11
+      ? terkiniArticles.slice(11, 17)
+      : terkiniArticles.slice(1, 7);
+
+  const terkiniCarouselItems = toCarouselItems(terkiniLeadCandidates, 1);
+  const terkiniSubCarouselItems = toCarouselItems(terkiniSubCandidates, 3);
 
   // Category sections
   const articlesByCategory: Record<string, { slug: string; articles: HomeArticle[] }> = {};
@@ -426,57 +492,22 @@ export default async function HomePage() {
       <section className="bg-surface py-4 sm:py-8 lg:py-10">
         <div className="container-main">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10">
-            {/* Column 1: Main Spotlight (6/12) */}
-            {heroSpotlight && (
-              <div className="lg:col-span-6 flex flex-col">
-                <article className="group flex-1 flex flex-col">
-                  <Link href={`/berita/${heroSpotlight.slug}`} className="block overflow-hidden rounded-xl sm:rounded-2xl relative aspect-[16/9] sm:aspect-[16/10] bg-stone-200/70 shadow-sm group-hover:shadow-md transition-all duration-300">
-                    <Image
-                      src={resolveArticleImage(heroSpotlight.featuredImage, heroSpotlight.category?.slug, 0)}
-                      alt={heroSpotlight.title}
-                      fill
-                      priority
-                      loading="eager"
-                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                    />
-                  </Link>
-                  <div className="mt-3 sm:mt-4 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1 sm:mb-1.5">
-                        <Link
-                          href={`/kategori/${heroSpotlight.category?.slug || "umum"}`}
-                          className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors"
-                        >
-                          {heroSpotlight.category?.name || "Berita"}
-                        </Link>
-                        {heroSpotlight.verificationLabel === "VERIFIED" && (
-                          <>
-                            <span className="text-stone-300">·</span>
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-emerald-700">
-                              Terverifikasi
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      <Link href={`/berita/${heroSpotlight.slug}`}>
-                        <h2 className="mt-0.5 sm:mt-1 font-serif text-title-lg sm:text-headline-md lg:text-headline-lg leading-tight text-on-surface group-hover:text-primary transition-colors">
-                          {heroSpotlight.title}
-                        </h2>
-                      </Link>
-                      {heroSpotlight.excerpt && (
-                        <p className="mt-1.5 sm:mt-2.5 text-body-sm sm:text-body-md text-stone-600 line-clamp-2 sm:line-clamp-3 leading-relaxed">
-                          {heroSpotlight.excerpt}
-                        </p>
-                      )}
-                    </div>
-                    <p className="mt-2.5 sm:mt-4 flex items-center gap-2 text-[10px] sm:text-label-sm uppercase tracking-wider text-stone-500 border-t border-stone-200/50 pt-2 sm:pt-3">
-                      <span className="font-bold text-stone-700">{heroSpotlight.author?.name || "Redaksi Lensaplus"}</span>
-                      <span className="text-stone-300">/</span>
-                      <span>{timeAgo(heroSpotlight.publishedAt)}</span>
-                    </p>
-                  </div>
-                </article>
+            {/* Column 1: Main Spotlight Carousel + 2-Card Carousel (6/12) */}
+            {heroCarouselItems.length > 0 && (
+              <div className="lg:col-span-6 flex flex-col gap-3 sm:gap-4">
+                <HeadlineSlider
+                  items={heroCarouselItems}
+                  badgeLabel="Terhangat Hari Ini"
+                  aspectClass="aspect-[16/10] sm:aspect-[16/10] min-h-[220px] sm:min-h-[290px]"
+                  intervalMs={6000}
+                />
+                {heroSubCarouselItems.length > 0 && (
+                  <SubHeadlineSlider
+                    items={heroSubCarouselItems}
+                    aspectClass="aspect-[16/9] sm:aspect-[16/6.2] min-h-[148px] sm:min-h-[172px]"
+                    intervalMs={5000}
+                  />
+                )}
               </div>
             )}
 
@@ -749,41 +780,31 @@ export default async function HomePage() {
                 </Link>
               </div>
 
-              {/* Lead article */}
-              {terkiniArticles[0] && (
-                <article className="group mb-4 sm:mb-7">
-                  <Link href={`/berita/${terkiniArticles[0].slug}`} className="block">
-                    <div className="relative aspect-[16/9] sm:aspect-[2/1] overflow-hidden rounded-xl sm:rounded-2xl bg-stone-200/70 shadow-sm">
-                      <Image
-                        src={resolveArticleImage(terkiniArticles[0].featuredImage, terkiniArticles[0].category?.slug, 1)}
-                        alt={terkiniArticles[0].title}
-                        fill
-                        sizes="(max-width: 1024px) 100vw, 58vw"
-                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                      />
-                    </div>
-                  </Link>
-                  <div className="mt-2.5 sm:mt-4">
-                    <span className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-secondary">
-                      {terkiniArticles[0].category?.name || "Berita"}
-                    </span>
-                    <Link href={`/berita/${terkiniArticles[0].slug}`}>
-                      <h3 className="mt-1 sm:mt-2 font-serif text-title-md sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
-                        {terkiniArticles[0].title}
-                      </h3>
-                    </Link>
-                    {terkiniArticles[0].excerpt && (
-                      <p className="mt-1.5 sm:mt-2 text-body-sm sm:text-body-md text-stone-600 line-clamp-2 leading-relaxed">
-                        {terkiniArticles[0].excerpt}
-                      </p>
-                    )}
-                  </div>
-                </article>
+              {/* Lead Carousel — Berita Terbaru (1 besar di atas + 2 berita carousel di bawahnya) */}
+              {terkiniCarouselItems.length > 0 && (
+                <div className="mb-3 sm:mb-4">
+                  <HeadlineSlider
+                    items={terkiniCarouselItems}
+                    badgeLabel="Berita Terbaru"
+                    aspectClass="aspect-[16/10] sm:aspect-[16/9] min-h-[210px] sm:min-h-[270px]"
+                    intervalMs={6500}
+                  />
+                </div>
+              )}
+
+              {terkiniSubCarouselItems.length > 0 && (
+                <div className="mb-5 sm:mb-7">
+                  <SubHeadlineSlider
+                    items={terkiniSubCarouselItems}
+                    aspectClass="aspect-[16/9] sm:aspect-[16/6] min-h-[145px] sm:min-h-[175px]"
+                    intervalMs={5200}
+                  />
+                </div>
               )}
 
               {/* Rest as compact list grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-stone-200/60 sm:divide-y-0 gap-x-6 sm:gap-y-5">
-                {terkiniArticles.slice(1).map((a, idx) => (
+                {terkiniGridArticles.map((a, idx) => (
                   <article key={a.slug} className="group flex gap-3 sm:gap-3.5 py-2.5 first:pt-0 last:pb-0 sm:py-0 items-center sm:items-start">
                     <Link href={`/berita/${a.slug}`} className="shrink-0">
                       <div className="relative h-[60px] w-[88px] sm:h-20 sm:w-28 overflow-hidden rounded-lg sm:rounded-xl bg-stone-200/70 shadow-sm">

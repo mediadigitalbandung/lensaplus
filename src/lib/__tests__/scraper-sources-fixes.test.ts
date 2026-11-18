@@ -784,3 +784,20 @@ describe("multi-language detection, translation & concept paraphrasing", () => {
     expect(createData.sources.create[0].name).toBe("Bankbjb (bankbjb.co.id)");
   });
 });
+
+describe("Sumber Berita responsive compact cards & detail modal", () => {
+  it("renders a 2-column compact card grid on narrow screens and opens SourceDetailModal on click", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const src = fs.readFileSync(
+      path.join(process.cwd(), "src/app/panel/sumber-berita/page.tsx"),
+      "utf8",
+    );
+
+    expect(src).toContain("grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-1 lg:gap-4");
+    expect(src).toContain("setDetailSourceId(s.id)");
+    expect(src).toContain("function SourceDetailModal");
+    expect(src).toContain('aria-labelledby="source-detail-title"');
+    expect(src).toContain("getShortHost");
+  });
+});

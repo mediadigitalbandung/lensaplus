@@ -133,6 +133,14 @@ function fmtDate(iso: string | null): string {
   });
 }
 
+function getShortHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
 async function parseApiJson(
   res: Response,
 ): Promise<{ success?: boolean; data?: unknown; error?: string } | null> {
@@ -168,11 +176,15 @@ export default function SumberBeritaPage() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<NewsSource | null>(null);
+  const [detailSourceId, setDetailSourceId] = useState<string | null>(null);
   const [preview, setPreview] = useState<{
     sourceId: string;
     sourceName: string;
     data: PreviewResponse;
   } | null>(null);
+  const detailSource = detailSourceId
+    ? sources.find((s) => s.id === detailSourceId) ?? null
+    : null;
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<
     "preview" | "scrape" | "toggle" | "toggle_auto_scrape" | "toggle_auto_publish" | "bulk_toggle" | "delete" | "ai_meta" | null
@@ -495,6 +507,9 @@ export default function SumberBeritaPage() {
         return;
       }
       success("Sumber dihapus");
+      if (detailSourceId === s.id) {
+        setDetailSourceId(null);
+      }
       fetchSources();
     } catch {
       showError("Gagal menghubungi server");
@@ -691,268 +706,142 @@ export default function SumberBeritaPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {sources.map((s) => (
-            <div
-              key={s.id}
-              className="rounded-lg border border-border bg-surface p-5 shadow-card"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base font-bold text-txt-primary">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-1 lg:gap-4">
+          {sources.map((s) => {
+            const isManageable = canManageSource(s);
+            return (
+              <div
+                key={s.id}
+                className="rounded-lg border border-border bg-surface shadow-card transition-colors hover:border-primary/40 lg:hover:border-border"
+              >
+                {/* Compact card for narrow screens (< lg): 2 per row, click to open full details popup */}
+                <button
+                  type="button"
+                  onClick={() => setDetailSourceId(s.id)}
+                  className="flex h-full w-full flex-col justify-between p-3 text-left sm:p-3.5 lg:hidden"
+                >
+                  <div className="w-full min-w-0">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider truncate">
+                      <span className={s.isActive ? "text-emerald-700" : "text-txt-muted"}>
+                        {s.isActive ? "Aktif" : "Nonaktif"}
+                      </span>
+                      {s.category && (
+                        <>
+                          <span className="text-txt-muted">·</span>
+                          <span className="truncate text-primary">{s.category.name}</span>
+                        </>
+                      )}
+                    </div>
+                    <h3 className="mt-1 line-clamp-2 text-xs font-bold leading-snug text-txt-primary sm:text-sm">
                       {s.name}
                     </h3>
-                    {s.isActive ? (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                        Aktif
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-txt-muted">
-                        Nonaktif
-                      </span>
-                    )}
-                    {s.category && (
-                      <>
-                        <span className="text-txt-muted">·</span>
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-                          {s.category.name}
-                        </span>
-                      </>
-                    )}
-                    {isSuperAdmin && (
-                      <>
-                        <span className="text-txt-muted">·</span>
-                        <span
-                          className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary"
-                          title="Akun yang menambahkan / men-scrape sumber ini"
-                        >
-                          {s.owner?.name ?? "Bersama (lama)"}
-                        </span>
-                      </>
-                    )}
-                    {s.useHeadless && (
-                      <>
-                        <span className="text-txt-muted">·</span>
-                        <span
-                          className="text-[10px] font-bold uppercase tracking-wider text-amber-700"
-                          title="Render JavaScript via headless Chromium (lambat, untuk SPA)"
-                        >
-                          JS Render
-                        </span>
-                      </>
-                    )}
-                    {s.crawlSubcategories && (
-                      <>
-                        <span className="text-txt-muted">·</span>
-                        <span
-                          className="text-[10px] font-bold uppercase tracking-wider text-violet-700"
-                          title={`Deep crawl ke max ${s.crawlMaxPages} halaman sub-kategori`}
-                        >
-                          Deep Crawl
-                        </span>
-                      </>
-                    )}
-                    {s.paginationMaxPages > 1 && (
-                      <>
-                        <span className="text-txt-muted">·</span>
-                        <span
-                          className="text-[10px] font-bold uppercase tracking-wider text-primary"
-                          title={`Ikuti hingga ${s.paginationMaxPages} halaman pagination`}
-                        >
-                          {s.paginationMaxPages} Hal
-                        </span>
-                      </>
-                    )}
-                    <span className="text-txt-muted">·</span>
-                    <span
-                      className={`text-[10px] font-bold uppercase tracking-wider ${
-                        (s.autoScrape ?? true) ? "text-emerald-700" : "text-txt-muted"
-                      }`}
-                    >
-                      Auto-Scrape: {(s.autoScrape ?? true) ? "ON" : "OFF"}
-                    </span>
-                    <span className="text-txt-muted">·</span>
-                    <span
-                      className={`text-[10px] font-bold uppercase tracking-wider ${
-                        s.autoPublish ? "text-primary" : "text-txt-muted"
-                      }`}
-                    >
-                      Auto-Publish: {s.autoPublish ? "ON" : "OFF"}
-                    </span>
+                    <p className="mt-1 truncate text-[11px] text-txt-muted">
+                      {getShortHost(s.listingUrl)}
+                    </p>
                   </div>
-                  <a
-                    href={s.listingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 text-xs text-txt-secondary hover:text-primary break-all"
-                  >
-                    {s.listingUrl} <ExternalLink size={11} />
-                  </a>
-                  {s.description && (
-                    <p className="mt-2 text-sm text-txt-secondary">{s.description}</p>
-                  )}
-                  {s.defaultTags && s.defaultTags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      {s.defaultTags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded border border-border bg-transparent px-2 py-0.5 text-[11px] text-on-surface-variant"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
+
+                  <div className="mt-2.5 w-full border-t border-border pt-2">
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-txt-secondary sm:text-[11px]">
+                      <span>
+                        <strong className="text-txt-primary">{s.totalScraped}</strong> artikel
+                      </span>
+                      <span>·</span>
+                      <span>{s.frequencyHours}j</span>
+                      {s.lastError && (
+                        <span className="font-semibold text-red-600">· Error</span>
+                      )}
                     </div>
-                  )}
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-txt-muted">
-                    <span><strong className="text-txt-primary">{s.totalScraped}</strong> artikel di-scrape</span>
-                    <span>Frekuensi tiap <strong className="text-txt-primary">{s.frequencyHours}j</strong></span>
-                    <span>Last check: {fmtDate(s.lastCheckedAt)}</span>
-                    {s.lastSuccessAt && (
-                      <span>Last success: {fmtDate(s.lastSuccessAt)}</span>
-                    )}
+                    <div className="mt-1.5 flex items-center justify-between gap-1 text-[10px] font-semibold">
+                      <span className={(s.autoScrape ?? true) ? "text-emerald-700" : "text-txt-muted"}>
+                        Auto: {(s.autoScrape ?? true) ? "ON" : "OFF"}
+                      </span>
+                      <span className="text-primary">Detail →</span>
+                    </div>
                   </div>
-                  {canManageSource(s) && (
-                    <div className="mt-3 flex flex-wrap items-center gap-3 pt-2 border-t border-border">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={s.autoScrape ?? true}
-                        disabled={busyId === s.id}
-                        onClick={() => handleToggleOption(s, "autoScrape")}
-                        className="inline-flex items-center gap-2 text-xs font-medium text-txt-primary hover:text-primary disabled:opacity-50"
-                        title="Aktifkan/nonaktifkan pengambilan otomatis terjadwal (cron) untuk sumber ini"
-                      >
-                        <span
-                          className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
-                            (s.autoScrape ?? true) ? "bg-emerald-600" : "bg-stone-300"
-                          }`}
+                </button>
+
+                {/* Full detailed card for wide/desktop screens (lg+) */}
+                <div className="hidden p-5 lg:block">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setDetailSourceId(s.id)}
+                          className="text-left text-base font-bold text-txt-primary hover:text-primary transition-colors"
+                          title="Lihat detail lengkap sumber berita"
                         >
-                          <span
-                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                              (s.autoScrape ?? true) ? "translate-x-4" : "translate-x-0.5"
-                            }`}
-                          />
+                          {s.name}
+                        </button>
+                        <SourceMetaLine source={s} isSuperAdmin={isSuperAdmin} />
+                      </div>
+                      <a
+                        href={s.listingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 break-all text-xs text-txt-secondary hover:text-primary"
+                      >
+                        {s.listingUrl} <ExternalLink size={11} />
+                      </a>
+                      {s.description && (
+                        <p className="mt-2 text-sm text-txt-secondary">{s.description}</p>
+                      )}
+                      {s.defaultTags && s.defaultTags.length > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          {s.defaultTags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded border border-border bg-transparent px-2 py-0.5 text-[11px] text-on-surface-variant"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-txt-muted">
+                        <span>
+                          <strong className="text-txt-primary">{s.totalScraped}</strong> artikel di-scrape
                         </span>
                         <span>
-                          Auto-Scrape:{" "}
-                          <strong className={(s.autoScrape ?? true) ? "text-emerald-700" : "text-txt-muted"}>
-                            {(s.autoScrape ?? true) ? "ON" : "OFF"}
-                          </strong>
+                          Frekuensi tiap <strong className="text-txt-primary">{s.frequencyHours}j</strong>
                         </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={s.autoPublish ?? false}
-                        disabled={busyId === s.id}
-                        onClick={() => handleToggleOption(s, "autoPublish")}
-                        className="inline-flex items-center gap-2 text-xs font-medium text-txt-primary hover:text-primary disabled:opacity-50"
-                        title="Aktifkan/nonaktifkan publikasi otomatis (PUBLISHED) saat artikel sumber ini di-scrape"
-                      >
-                        <span
-                          className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
-                            s.autoPublish ? "bg-primary" : "bg-stone-300"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                              s.autoPublish ? "translate-x-4" : "translate-x-0.5"
-                            }`}
-                          />
-                        </span>
-                        <span>
-                          Auto-Publish:{" "}
-                          <strong className={s.autoPublish ? "text-primary" : "text-txt-muted"}>
-                            {s.autoPublish ? "ON" : "OFF"}
-                          </strong>
-                        </span>
-                      </button>
-                    </div>
-                  )}
-                  {s.lastError && (
-                    <div className="mt-2 rounded-md border border-border border-l-4 border-l-red-600 bg-surface px-3 py-2 text-xs text-red-700">
-                      <span className="font-semibold">Error terakhir:</span> {s.lastError}
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-1">
-                  <button
-                    onClick={() => handlePreview(s)}
-                    disabled={busyId === s.id}
-                    className="btn-secondary text-xs disabled:opacity-50"
-                    title="Lihat artikel terdeteksi tanpa save"
-                  >
-                    {busyId === s.id && busyAction === "preview" ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Eye size={14} />
-                    )}
-                    Preview
-                  </button>
-                  <button
-                    onClick={() => handleScrape(s, 3)}
-                    disabled={busyId === s.id || !s.isActive}
-                    className="btn-primary text-xs disabled:opacity-50"
-                    title="Ambil 3 artikel baru sekarang"
-                  >
-                    {busyId === s.id && busyAction === "scrape" ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <RefreshCw size={14} />
-                    )}
-                    Scrape Now
-                  </button>
-                  {canManageSource(s) && (
-                    <>
-                      <button
-                        onClick={() => handleQuickAiMeta(s)}
-                        disabled={busyId === s.id}
-                        className="btn-ghost text-xs text-primary disabled:opacity-50"
-                        title={
-                          !s.description?.trim() || !s.defaultTags?.length
-                            ? "Lengkapi Default Tags & Deskripsi dengan AI"
-                            : "Generate ulang Default Tags & Deskripsi dengan AI"
-                        }
-                      >
-                        {busyId === s.id && busyAction === "ai_meta" ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <Sparkles size={14} />
+                        <span>Last check: {fmtDate(s.lastCheckedAt)}</span>
+                        {s.lastSuccessAt && (
+                          <span>Last success: {fmtDate(s.lastSuccessAt)}</span>
                         )}
-                      </button>
-                      <button
-                        onClick={() => setEditing(s)}
-                        className="btn-ghost text-xs"
-                        title="Edit"
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleToggle(s)}
-                        disabled={busyId === s.id}
-                        className="btn-ghost text-xs disabled:opacity-50"
-                        title={s.isActive ? "Nonaktifkan" : "Aktifkan"}
-                      >
-                        {s.isActive ? <PowerOff size={14} /> : <Power size={14} />}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(s)}
-                        disabled={busyId === s.id}
-                        className="btn-ghost text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        title="Hapus"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </>
-                  )}
+                      </div>
+                      {isManageable && (
+                        <SourceOptionSwitches
+                          source={s}
+                          disabled={busyId === s.id}
+                          onToggle={(field) => handleToggleOption(s, field)}
+                        />
+                      )}
+                      {s.lastError && (
+                        <div className="mt-2 rounded-md border border-border border-l-4 border-l-red-600 bg-surface px-3 py-2 text-xs text-red-700">
+                          <span className="font-semibold">Error terakhir:</span> {s.lastError}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <SourceActionButtons
+                      source={s}
+                      canManage={isManageable}
+                      busy={busyId === s.id}
+                      busyAction={busyId === s.id ? busyAction : null}
+                      onPreview={() => handlePreview(s)}
+                      onScrape={() => handleScrape(s, 3)}
+                      onAiMeta={() => handleQuickAiMeta(s)}
+                      onEdit={() => setEditing(s)}
+                      onToggle={() => handleToggle(s)}
+                      onDelete={() => handleDelete(s)}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -974,6 +863,32 @@ export default function SumberBeritaPage() {
           </div>
         </div>
       </div>
+      )}
+
+      {/* Source detail popup modal */}
+      {detailSource && (
+        <SourceDetailModal
+          source={detailSource}
+          isSuperAdmin={isSuperAdmin}
+          canManage={canManageSource(detailSource)}
+          busy={busyId === detailSource.id}
+          busyAction={busyId === detailSource.id ? busyAction : null}
+          onClose={() => setDetailSourceId(null)}
+          onPreview={() => {
+            const target = detailSource;
+            setDetailSourceId(null);
+            void handlePreview(target);
+          }}
+          onScrape={() => void handleScrape(detailSource, 3)}
+          onAiMeta={() => void handleQuickAiMeta(detailSource)}
+          onEdit={() => {
+            setDetailSourceId(null);
+            setEditing(detailSource);
+          }}
+          onToggleActive={() => void handleToggle(detailSource)}
+          onToggleOption={(field) => void handleToggleOption(detailSource, field)}
+          onDelete={() => void handleDelete(detailSource)}
+        />
       )}
 
       {/* Add / Edit modal */}
@@ -1012,6 +927,478 @@ export default function SumberBeritaPage() {
           onScraped={fetchSources}
         />
       )}
+    </div>
+  );
+}
+
+/* ─────────────────────────  Shared Source Helpers & Detail Modal  ───────────────────────── */
+
+function SourceMetaLine({
+  source: s,
+  isSuperAdmin,
+}: {
+  source: NewsSource;
+  isSuperAdmin: boolean;
+}) {
+  return (
+    <>
+      {s.isActive ? (
+        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+          Aktif
+        </span>
+      ) : (
+        <span className="text-[10px] font-bold uppercase tracking-wider text-txt-muted">
+          Nonaktif
+        </span>
+      )}
+      {s.category && (
+        <>
+          <span className="text-txt-muted">·</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+            {s.category.name}
+          </span>
+        </>
+      )}
+      {isSuperAdmin && (
+        <>
+          <span className="text-txt-muted">·</span>
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary"
+            title="Akun yang menambahkan / men-scrape sumber ini"
+          >
+            {s.owner?.name ?? "Bersama (lama)"}
+          </span>
+        </>
+      )}
+      {s.useHeadless && (
+        <>
+          <span className="text-txt-muted">·</span>
+          <span
+            className="text-[10px] font-bold uppercase tracking-wider text-amber-700"
+            title="Render JavaScript via headless Chromium (lambat, untuk SPA)"
+          >
+            JS Render
+          </span>
+        </>
+      )}
+      {s.crawlSubcategories && (
+        <>
+          <span className="text-txt-muted">·</span>
+          <span
+            className="text-[10px] font-bold uppercase tracking-wider text-violet-700"
+            title={`Deep crawl ke max ${s.crawlMaxPages} halaman sub-kategori`}
+          >
+            Deep Crawl
+          </span>
+        </>
+      )}
+      {s.paginationMaxPages > 1 && (
+        <>
+          <span className="text-txt-muted">·</span>
+          <span
+            className="text-[10px] font-bold uppercase tracking-wider text-primary"
+            title={`Ikuti hingga ${s.paginationMaxPages} halaman pagination`}
+          >
+            {s.paginationMaxPages} Hal
+          </span>
+        </>
+      )}
+      <span className="text-txt-muted">·</span>
+      <span
+        className={`text-[10px] font-bold uppercase tracking-wider ${
+          (s.autoScrape ?? true) ? "text-emerald-700" : "text-txt-muted"
+        }`}
+      >
+        Auto-Scrape: {(s.autoScrape ?? true) ? "ON" : "OFF"}
+      </span>
+      <span className="text-txt-muted">·</span>
+      <span
+        className={`text-[10px] font-bold uppercase tracking-wider ${
+          s.autoPublish ? "text-primary" : "text-txt-muted"
+        }`}
+      >
+        Auto-Publish: {s.autoPublish ? "ON" : "OFF"}
+      </span>
+    </>
+  );
+}
+
+function SourceOptionSwitches({
+  source: s,
+  disabled,
+  onToggle,
+}: {
+  source: NewsSource;
+  disabled: boolean;
+  onToggle: (field: "autoScrape" | "autoPublish") => void;
+}) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border pt-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={s.autoScrape ?? true}
+        disabled={disabled}
+        onClick={() => onToggle("autoScrape")}
+        className="inline-flex items-center gap-2 text-xs font-medium text-txt-primary hover:text-primary disabled:opacity-50"
+        title="Aktifkan/nonaktifkan pengambilan otomatis terjadwal (cron) untuk sumber ini"
+      >
+        <span
+          className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
+            (s.autoScrape ?? true) ? "bg-emerald-600" : "bg-stone-300"
+          }`}
+        >
+          <span
+            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+              (s.autoScrape ?? true) ? "translate-x-4" : "translate-x-0.5"
+            }`}
+          />
+        </span>
+        <span>
+          Auto-Scrape:{" "}
+          <strong className={(s.autoScrape ?? true) ? "text-emerald-700" : "text-txt-muted"}>
+            {(s.autoScrape ?? true) ? "ON" : "OFF"}
+          </strong>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        role="switch"
+        aria-checked={s.autoPublish ?? false}
+        disabled={disabled}
+        onClick={() => onToggle("autoPublish")}
+        className="inline-flex items-center gap-2 text-xs font-medium text-txt-primary hover:text-primary disabled:opacity-50"
+        title="Aktifkan/nonaktifkan publikasi otomatis (PUBLISHED) saat artikel sumber ini di-scrape"
+      >
+        <span
+          className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
+            s.autoPublish ? "bg-primary" : "bg-stone-300"
+          }`}
+        >
+          <span
+            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+              s.autoPublish ? "translate-x-4" : "translate-x-0.5"
+            }`}
+          />
+        </span>
+        <span>
+          Auto-Publish:{" "}
+          <strong className={s.autoPublish ? "text-primary" : "text-txt-muted"}>
+            {s.autoPublish ? "ON" : "OFF"}
+          </strong>
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function SourceActionButtons({
+  source: s,
+  canManage,
+  busy,
+  busyAction,
+  onPreview,
+  onScrape,
+  onAiMeta,
+  onEdit,
+  onToggle,
+  onDelete,
+}: {
+  source: NewsSource;
+  canManage: boolean;
+  busy: boolean;
+  busyAction: string | null;
+  onPreview: () => void;
+  onScrape: () => void;
+  onAiMeta: () => void;
+  onEdit: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      <button
+        type="button"
+        onClick={onPreview}
+        disabled={busy}
+        className="btn-secondary text-xs disabled:opacity-50"
+        title="Lihat artikel terdeteksi tanpa save"
+      >
+        {busy && busyAction === "preview" ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : (
+          <Eye size={14} />
+        )}
+        Preview
+      </button>
+      <button
+        type="button"
+        onClick={onScrape}
+        disabled={busy || !s.isActive}
+        className="btn-primary text-xs disabled:opacity-50"
+        title="Ambil 3 artikel baru sekarang"
+      >
+        {busy && busyAction === "scrape" ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : (
+          <RefreshCw size={14} />
+        )}
+        Scrape Now
+      </button>
+      {canManage && (
+        <>
+          <button
+            type="button"
+            onClick={onAiMeta}
+            disabled={busy}
+            className="btn-ghost text-xs text-primary disabled:opacity-50"
+            title={
+              !s.description?.trim() || !s.defaultTags?.length
+                ? "Lengkapi Default Tags & Deskripsi dengan AI"
+                : "Generate ulang Default Tags & Deskripsi dengan AI"
+            }
+          >
+            {busy && busyAction === "ai_meta" ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Sparkles size={14} />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="btn-ghost text-xs"
+            title="Edit"
+          >
+            <Edit size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={onToggle}
+            disabled={busy}
+            className="btn-ghost text-xs disabled:opacity-50"
+            title={s.isActive ? "Nonaktifkan" : "Aktifkan"}
+          >
+            {s.isActive ? <PowerOff size={14} /> : <Power size={14} />}
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={busy}
+            className="btn-ghost text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+            title="Hapus"
+          >
+            <Trash2 size={14} />
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function SourceDetailModal({
+  source: s,
+  isSuperAdmin,
+  canManage,
+  busy,
+  busyAction,
+  onClose,
+  onPreview,
+  onScrape,
+  onAiMeta,
+  onEdit,
+  onToggleActive,
+  onToggleOption,
+  onDelete,
+}: {
+  source: NewsSource;
+  isSuperAdmin: boolean;
+  canManage: boolean;
+  busy: boolean;
+  busyAction: string | null;
+  onClose: () => void;
+  onPreview: () => void;
+  onScrape: () => void;
+  onAiMeta: () => void;
+  onEdit: () => void;
+  onToggleActive: () => void;
+  onToggleOption: (field: "autoScrape" | "autoPublish") => void;
+  onDelete: () => void;
+}) {
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  const hasSelectors = Boolean(
+    s.articleSelector ||
+      s.titleSelector ||
+      s.contentSelector ||
+      s.imageSelector ||
+      s.waitForSelector ||
+      s.paginationPattern,
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3 sm:p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="source-detail-title"
+    >
+      <div
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-surface shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+          <div className="min-w-0 flex-1">
+            <h2 id="source-detail-title" className="text-base font-bold text-txt-primary sm:text-lg">
+              {s.name}
+            </h2>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <SourceMetaLine source={s} isSuperAdmin={isSuperAdmin} />
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Tutup detail" className="btn-ghost shrink-0 p-2">
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-txt-muted">
+              URL Sumber
+            </p>
+            <a
+              href={s.listingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-flex items-center gap-1 break-all text-xs text-primary hover:underline sm:text-sm"
+            >
+              {s.listingUrl} <ExternalLink size={12} className="shrink-0" />
+            </a>
+          </div>
+
+          {s.description && (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-txt-muted">
+                Deskripsi
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-txt-secondary">{s.description}</p>
+            </div>
+          )}
+
+          {s.defaultTags && s.defaultTags.length > 0 && (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-txt-muted">
+                Default Tags
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                {s.defaultTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded border border-border bg-transparent px-2 py-0.5 text-[11px] text-on-surface-variant"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3 rounded-md border border-border bg-surface-container-low p-3 text-xs">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">
+                Total Di-scrape
+              </p>
+              <p className="mt-0.5 font-bold text-txt-primary">{s.totalScraped} artikel</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">
+                Frekuensi Cron
+              </p>
+              <p className="mt-0.5 font-bold text-txt-primary">Tiap {s.frequencyHours} jam</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">
+                Last Check
+              </p>
+              <p className="mt-0.5 font-medium text-txt-primary">{fmtDate(s.lastCheckedAt)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">
+                Last Success
+              </p>
+              <p className="mt-0.5 font-medium text-txt-primary">{fmtDate(s.lastSuccessAt)}</p>
+            </div>
+          </div>
+
+          {(s.useHeadless || s.crawlSubcategories || s.paginationMaxPages > 1 || hasSelectors) && (
+            <div className="space-y-1.5 rounded-md border border-border bg-surface p-3 text-xs">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-txt-muted">
+                Konfigurasi Teknis Scraper
+              </p>
+              <div className="grid grid-cols-1 gap-1 text-txt-secondary sm:grid-cols-2">
+                <p>Mode Render: <strong className="text-txt-primary">{s.useHeadless ? "Headless JS" : "HTML Statis"}</strong></p>
+                <p>Deep Crawl: <strong className="text-txt-primary">{s.crawlSubcategories ? `Ya (maks ${s.crawlMaxPages} hal)` : "Tidak"}</strong></p>
+                <p>Pagination: <strong className="text-txt-primary">{s.paginationMaxPages} halaman</strong></p>
+                {s.paginationPattern && (
+                  <p>Pola Page: <code className="font-mono text-txt-primary">{s.paginationPattern}</code></p>
+                )}
+                {s.waitForSelector && (
+                  <p className="sm:col-span-2">Wait Selector: <code className="font-mono text-txt-primary">{s.waitForSelector}</code></p>
+                )}
+                {s.articleSelector && (
+                  <p className="sm:col-span-2">Article Selector: <code className="font-mono text-txt-primary">{s.articleSelector}</code></p>
+                )}
+                {s.titleSelector && (
+                  <p>Title Selector: <code className="font-mono text-txt-primary">{s.titleSelector}</code></p>
+                )}
+                {s.contentSelector && (
+                  <p>Content Selector: <code className="font-mono text-txt-primary">{s.contentSelector}</code></p>
+                )}
+                {s.imageSelector && (
+                  <p>Image Selector: <code className="font-mono text-txt-primary">{s.imageSelector}</code></p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {canManage && (
+            <SourceOptionSwitches
+              source={s}
+              disabled={busy}
+              onToggle={onToggleOption}
+            />
+          )}
+
+          {s.lastError && (
+            <div className="rounded-md border border-border border-l-4 border-l-red-600 bg-surface px-3 py-2 text-xs text-red-700">
+              <span className="font-semibold">Error terakhir:</span> {s.lastError}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-container-low px-4 py-3 sm:px-5">
+          <SourceActionButtons
+            source={s}
+            canManage={canManage}
+            busy={busy}
+            busyAction={busyAction}
+            onPreview={onPreview}
+            onScrape={onScrape}
+            onAiMeta={onAiMeta}
+            onEdit={onEdit}
+            onToggle={onToggleActive}
+            onDelete={onDelete}
+          />
+        </div>
+      </div>
     </div>
   );
 }
