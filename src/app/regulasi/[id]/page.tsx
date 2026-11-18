@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { safeHref } from "@/components/common/safeHref";
 import { ExternalLink, FileText, ChevronLeft } from "lucide-react";
 import type { RegulationType, RegulationStatus } from "@prisma/client";
 
@@ -91,6 +92,9 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
       })
     : null;
 
+  const safeSourceUrl = safeHref(regulation.sourceUrl);
+  const safePdfUrl = safeHref(regulation.pdfUrl, { allowRelative: true });
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Legislation",
@@ -102,7 +106,7 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
     publisher: regulation.issuedBy
       ? { "@type": "Organization", name: regulation.issuedBy }
       : undefined,
-    url: regulation.sourceUrl || undefined,
+    url: safeSourceUrl || undefined,
     description: regulation.description?.slice(0, 500) || regulation.title,
   };
 
@@ -187,6 +191,7 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
                       day: "numeric",
                       month: "long",
                       year: "numeric",
+                      timeZone: "Asia/Jakarta",
                     }).format(new Date(regulation.enactedAt))}
                   </dd>
                 </div>
@@ -201,6 +206,7 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
                       day: "numeric",
                       month: "long",
                       year: "numeric",
+                      timeZone: "Asia/Jakarta",
                     }).format(new Date(regulation.effectiveAt))}
                   </dd>
                 </div>
@@ -224,28 +230,30 @@ export default async function RegulasiDetailPage({ params: paramsPromise }: Page
             </dl>
 
             {/* Action buttons */}
-            <div className="flex flex-wrap gap-3 mt-6">
-              {regulation.sourceUrl && (
-                <a
-                  href={regulation.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold"
-                >
-                  <ExternalLink size={14} /> Lihat Sumber Resmi
-                </a>
-              )}
-              {regulation.pdfUrl && (
-                <a
-                  href={regulation.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-secondary flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold"
-                >
-                  <FileText size={14} /> Unduh PDF
-                </a>
-              )}
-            </div>
+            {(safeSourceUrl || safePdfUrl) && (
+              <div className="flex flex-wrap gap-3 mt-6">
+                {safeSourceUrl && (
+                  <a
+                    href={safeSourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold"
+                  >
+                    <ExternalLink size={14} aria-hidden="true" /> Lihat Sumber Resmi
+                  </a>
+                )}
+                {safePdfUrl && (
+                  <a
+                    href={safePdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-secondary flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold"
+                  >
+                    <FileText size={14} aria-hidden="true" /> Unduh PDF
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Description */}

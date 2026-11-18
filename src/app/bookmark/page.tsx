@@ -18,11 +18,22 @@ interface BookmarkedArticle {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString("id-ID", {
+    timeZone: "Asia/Jakarta",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
+}
+
+function readBookmarks(): string[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem("bookmarks") || "[]");
+    return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
 }
 
 export default function BookmarkPage() {
@@ -31,7 +42,7 @@ export default function BookmarkPage() {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("bookmarks") || "[]");
+    const stored = readBookmarks();
     setBookmarks(stored);
 
     if (stored.length === 0) {
@@ -57,7 +68,11 @@ export default function BookmarkPage() {
   function removeBookmark(slug: string) {
     const updated = bookmarks.filter((s) => s !== slug);
     setBookmarks(updated);
-    localStorage.setItem("bookmarks", JSON.stringify(updated));
+    try {
+      localStorage.setItem("bookmarks", JSON.stringify(updated));
+    } catch {
+      /* storage quota / disabled */
+    }
     setArticles((prev) => prev.filter((a) => a.slug !== slug));
   }
 
@@ -177,11 +192,13 @@ export default function BookmarkPage() {
                       )}
                     </div>
                     <button
+                      type="button"
                       onClick={() => removeBookmark(article.slug)}
                       className="shrink-0 rounded-lg p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                       title="Hapus bookmark"
+                      aria-label={`Hapus bookmark ${article.title}`}
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={15} aria-hidden="true" />
                     </button>
                   </div>
                 </div>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Playfair_Display, Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Suspense } from "react";
@@ -16,6 +16,13 @@ import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import { getDewanPersNumber } from "@/lib/public-settings";
 
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-playfair-display",
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -117,7 +124,7 @@ export default async function RootLayout({
   const fundingPubId = adsenseClientId.replace(/^ca-/, "");
 
   return (
-    <html lang="id" className={`${plusJakartaSans.variable} ${inter.variable}`}>
+    <html lang="id" className={`${playfairDisplay.variable} ${plusJakartaSans.variable} ${inter.variable}`}>
       <head>
         {/* Google Tag (GTM-N9S7N99M) */}
         <script

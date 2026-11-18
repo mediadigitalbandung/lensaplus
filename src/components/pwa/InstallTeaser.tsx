@@ -40,10 +40,14 @@ export default function InstallTeaser() {
     if (isStandalone) return;
 
     // Dismissed recently?
-    const dismissed = localStorage.getItem(STORAGE_KEY);
-    if (dismissed) {
-      const dismissedMs = parseInt(dismissed, 10);
-      if (Date.now() - dismissedMs < DISMISS_DAYS * 24 * 60 * 60 * 1000) return;
+    try {
+      const dismissed = localStorage.getItem(STORAGE_KEY);
+      if (dismissed) {
+        const dismissedMs = Number(dismissed);
+        if (Number.isFinite(dismissedMs) && Date.now() - dismissedMs < DISMISS_DAYS * 24 * 60 * 60 * 1000) return;
+      }
+    } catch {
+      /* ignore */
     }
 
     // Mobile only
@@ -70,7 +74,7 @@ export default function InstallTeaser() {
     <div
       role="region"
       aria-label="Pasang aplikasi Lensaplus"
-      className="fixed bottom-3 left-3 right-3 z-[140] sm:hidden animate-in fade-in slide-in-from-bottom-2 duration-300"
+      className="fixed bottom-3 left-3 right-3 z-[140] sm:hidden animate-fade-up"
     >
       <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-white px-4 py-2.5 shadow-ambient">
         <div className="flex-1 min-w-0">
@@ -88,11 +92,12 @@ export default function InstallTeaser() {
           Pasang
         </Link>
         <button
+          type="button"
           onClick={dismiss}
           aria-label="Tutup"
           className="shrink-0 -mr-1 p-1.5 rounded-md text-txt-muted hover:bg-surface-tertiary transition-colors"
         >
-          <X size={14} />
+          <X size={14} aria-hidden="true" />
         </button>
       </div>
     </div>

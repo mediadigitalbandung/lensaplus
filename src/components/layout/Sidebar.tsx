@@ -16,17 +16,40 @@ interface SidebarProps {
   popular?: SidebarArticle[];
 }
 
+export function parseSidebarDate(dateStr: string): Date | null {
+  const trimmed = dateStr?.trim();
+  if (!trimmed) return null;
+
+  // Support legacy DD/MM/YYYY strings without yielding Invalid Date
+  const dmyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmyMatch) {
+    const day = Number.parseInt(dmyMatch[1], 10);
+    const month = Number.parseInt(dmyMatch[2], 10);
+    const year = Number.parseInt(dmyMatch[3], 10);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const mm = String(month).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    const parsedDmy = new Date(`${year}-${mm}-${dd}T00:00:00+07:00`);
+    return Number.isNaN(parsedDmy.getTime()) ? null : parsedDmy;
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
+  const d = parseSidebarDate(dateStr);
+  if (!d) return "";
+  const diffMs = Math.max(0, Date.now() - d.getTime());
   const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Baru saja";
   if (diffMins < 60) return `${diffMins}m yang lalu`;
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}j yang lalu`;
   return d.toLocaleDateString("id-ID", {
     day: "numeric",
     month: "short",
+    timeZone: "Asia/Jakarta",
   });
 }
 

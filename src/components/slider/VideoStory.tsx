@@ -48,6 +48,12 @@ export default function VideoStory({ items }: VideoStoryProps) {
   }, [isPaused]);
 
   useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
     animRef.current = requestAnimationFrame(animate);
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);

@@ -34,7 +34,7 @@ export default function PrivasiPage() {
 
         <nav
           aria-label="Daftar isi"
-          className="mt-8 rounded-sm border border-border-default bg-surface-container p-5 text-sm"
+          className="mt-8 rounded-sm border border-border bg-surface-container p-5 text-sm"
         >
           <p className="mb-3 font-semibold text-on-surface">Daftar Isi</p>
           <ol className="list-decimal ml-5 space-y-1 text-primary">
@@ -206,7 +206,7 @@ export default function PrivasiPage() {
               disimpan lebih lama dari yang diperlukan untuk tujuan pemrosesannya.
               Jadwal retensi konkret:
             </p>
-            <div className="mt-4 overflow-x-auto rounded-sm border border-border-default">
+            <div className="mt-4 overflow-x-auto rounded-sm border border-border">
               <table className="min-w-full text-sm">
                 <thead className="bg-surface-container">
                   <tr>
@@ -214,7 +214,7 @@ export default function PrivasiPage() {
                     <th className={TABLE_TH}>Periode Penyimpanan</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-default">
+                <tbody className="divide-y divide-border">
                   {[
                     ["Akun pengguna (jurnalis/kontributor)", "Selama akun aktif + 30 hari setelah deaktivasi"],
                     ["Komentar publik", "Sampai artikel induk dihapus (cascade)"],
@@ -252,7 +252,7 @@ export default function PrivasiPage() {
               komitmen perlindungan data yang setara (Standard Contractual Clauses /
               Data Processing Agreement):
             </p>
-            <div className="mt-4 overflow-x-auto rounded-sm border border-border-default">
+            <div className="mt-4 overflow-x-auto rounded-sm border border-border">
               <table className="min-w-full text-sm">
                 <thead className="bg-surface-container">
                   <tr>
@@ -262,7 +262,7 @@ export default function PrivasiPage() {
                     <th className={TABLE_TH}>Tujuan</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-default">
+                <tbody className="divide-y divide-border">
                   {[
                     ["Cloudflare", "AS/Global", "Request log, cache konten", "CDN, anti-DDoS, proteksi WAF"],
                     ["Cloudflare Turnstile", "AS/Global", "Token challenge", "Anti-bot pada form publik"],
@@ -505,7 +505,7 @@ export default function PrivasiPage() {
               Untuk pertanyaan, permintaan DSR, atau keluhan terkait kebijakan privasi
               ini, hubungi Data Protection Officer (DPO) Lensaplus:
             </p>
-            <div className="mt-4 rounded-sm border border-border-default bg-surface-container p-6">
+            <div className="mt-4 rounded-sm border border-border bg-surface-container p-6">
               <div className="space-y-2 text-base">
                 <p>
                   <strong>Lensaplus — Redaksi Media Berita Digital Bandung</strong>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Format = "relative" | "short" | "long" | "weekday-long";
+type Format = "relative" | "relative-or-long" | "short" | "long" | "weekday-long";
 
 interface Props {
   date?: Date | string | null;
@@ -28,8 +28,16 @@ function render(d: Date, format: Format): string {
       timeZone: "Asia/Jakarta",
     });
   }
+  if (format === "relative-or-long") {
+    const mins = Math.floor(Math.max(0, Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return "Baru saja";
+    if (mins < 60) return `${mins}m yang lalu`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}j yang lalu`;
+    return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
+  }
   // relative
-  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  const mins = Math.floor(Math.max(0, Date.now() - d.getTime()) / 60000);
   if (mins < 1) return "Baru saja";
   if (mins < 60) return `${mins}m lalu`;
   const hrs = Math.floor(mins / 60);
@@ -62,7 +70,7 @@ export default function ClientDate({ date, format = "relative", live = true }: P
       return;
     }
     setText(render(d, format));
-    if (format === "relative" && live) {
+    if ((format === "relative" || format === "relative-or-long") && live) {
       const i = setInterval(() => setText(render(d, format)), 60_000);
       return () => clearInterval(i);
     }

@@ -19,7 +19,14 @@ export const metadata: Metadata = {
 };
 
 function fmt(d: Date | null): string {
-  return d ? new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric" }).format(d) : "-";
+  return d
+    ? new Intl.DateTimeFormat("id-ID", {
+        timeZone: "Asia/Jakarta",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).format(d)
+    : "-";
 }
 
 export default async function VerifyCardPage({ params }: { params: Promise<{ number: string }> }) {

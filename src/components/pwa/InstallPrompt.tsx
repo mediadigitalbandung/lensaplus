@@ -101,7 +101,7 @@ export default function InstallPrompt() {
       aria-label="Prompt pasang aplikasi Lensaplus"
       className="fixed bottom-4 left-4 right-4 z-[150] sm:left-auto sm:right-6 sm:w-80"
     >
-      <div className="card shadow-ambient border border-border-default flex items-start gap-3 p-4 rounded-md">
+      <div className="card shadow-ambient border border-border flex items-start gap-3 p-4 rounded-md">
         {/* App icon */}
         <Image
           src="/lensaplus-icon-192.png"

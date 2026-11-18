@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { truncate } from "@/lib/utils";
+import ClientDate from "@/components/ClientDate";
 
 // Small inline "X dilihat" count shown next to the date in every card variant.
 // Hidden when the count is missing or zero so brand-new articles stay clean.
@@ -28,28 +29,6 @@ interface ArticleCardProps {
   viewCount?: number;
   verificationLabel?: string;
   variant?: "hero" | "standard" | "compact" | "headline" | "default" | "featured";
-}
-
-function formatDate(date: Date | string | null): string {
-  if (!date) return "-";
-  const d = new Date(date);
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatTime(date: Date | string | null): string {
-  if (!date) return "";
-  const d = new Date(date);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 60) return `${diffMins}m yang lalu`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}j yang lalu`;
-  return formatDate(date);
 }
 
 export default function ArticleCard({
@@ -100,8 +79,12 @@ export default function ArticleCard({
             </p>
           )}
           <p className="mt-2 sm:mt-3 text-[10px] sm:text-label-md uppercase tracking-wider text-on-surface-variant truncate">
-            {formatTime(publishedAt)}
-            <span className="mx-1.5">&middot;</span>
+            {publishedAt && (
+              <>
+                <ClientDate date={publishedAt} format="relative-or-long" />
+                <span className="mx-1.5">&middot;</span>
+              </>
+            )}
             {author.name}
             <Views count={viewCount} />
           </p>
@@ -134,7 +117,7 @@ export default function ArticleCard({
             {title}
           </Link>
           <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-on-surface-variant truncate">
-            {formatTime(publishedAt)}
+            {publishedAt && <ClientDate date={publishedAt} format="relative-or-long" />}
             <Views count={viewCount} />
           </p>
         </div>
@@ -158,7 +141,7 @@ export default function ArticleCard({
           </h3>
         </Link>
         <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-on-surface-variant">
-          {formatTime(publishedAt)}
+          {publishedAt && <ClientDate date={publishedAt} format="relative-or-long" />}
           <Views count={viewCount} />
         </p>
       </article>
@@ -195,8 +178,12 @@ export default function ArticleCard({
           </h3>
         </Link>
         <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-label-sm uppercase tracking-wider text-on-surface-variant truncate">
-          {formatTime(publishedAt)}
-          <span className="mx-1 sm:mx-1.5">&middot;</span>
+          {publishedAt && (
+            <>
+              <ClientDate date={publishedAt} format="relative-or-long" />
+              <span className="mx-1 sm:mx-1.5">&middot;</span>
+            </>
+          )}
           {author.name}
           <Views count={viewCount} />
         </p>

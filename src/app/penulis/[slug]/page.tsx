@@ -68,6 +68,7 @@ export default async function PenulisPage({ params: paramsPromise }: { params: P
   const totalArticles = articles.length;
   const totalViews = viewAgg._sum.viewCount || 0;
   const joinedDate = author.createdAt.toLocaleDateString("id-ID", {
+    timeZone: "Asia/Jakarta",
     month: "long",
     year: "numeric",
   });

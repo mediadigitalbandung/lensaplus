@@ -3,19 +3,12 @@ export const revalidate = 600;
 import Link from "next/link";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import {
-  ChevronRight,
-  MapPin,
-  Phone,
-  Mail,
-  Clock,
-  Globe,
-  ExternalLink,
-} from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { courtLocations, getCourtLocationBySlug } from "@/data/court-locations";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { safeHref } from "@/components/common/safeHref";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -85,6 +78,8 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
     relatedArticles = [];
   }
 
+  const safeWebsiteUrl = safeHref(court.website);
+  const safeMapsUrl = safeHref(court.mapsUrl);
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const jsonLd = {
     "@context": "https://schema.org",
@@ -100,7 +95,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
     },
     telephone: court.phone,
     ...(court.email && { email: court.email }),
-    ...(court.website && { sameAs: [court.website] }),
+    ...(safeWebsiteUrl && { sameAs: [safeWebsiteUrl] }),
     openingHours: court.hours,
   };
 
@@ -139,20 +134,21 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
               <p className="mt-3 max-w-2xl text-base text-on-surface-variant">
                 {court.description}
               </p>
-              <p className="mt-4 flex items-start gap-2 text-sm text-on-surface-variant">
-                <MapPin size={16} className="mt-0.5 shrink-0 text-primary" />
-                {court.address}
+              <p className="mt-4 text-sm text-on-surface-variant">
+                <span className="font-semibold text-on-surface">Alamat:</span> {court.address}
               </p>
             </div>
-            <a
-              href={court.mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
-            >
-              <ExternalLink size={14} />
-              Buka di Google Maps
-            </a>
+            {safeMapsUrl && (
+              <a
+                href={safeMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
+              >
+                <ExternalLink size={14} aria-hidden="true" />
+                Buka di Google Maps
+              </a>
+            )}
           </div>
         </header>
 
@@ -195,33 +191,33 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
                 Kontak &amp; Operasional
               </h3>
               <ul className="space-y-3 text-sm text-on-surface-variant">
-                <li className="flex items-start gap-2">
-                  <Phone size={14} className="mt-0.5 shrink-0 text-primary" />
+                <li>
+                  <span className="font-semibold text-on-surface">Telepon:</span>{" "}
                   <span>{court.phone}</span>
                 </li>
                 {court.email && (
-                  <li className="flex items-start gap-2">
-                    <Mail size={14} className="mt-0.5 shrink-0 text-primary" />
+                  <li>
+                    <span className="font-semibold text-on-surface">Email:</span>{" "}
                     <a href={`mailto:${court.email}`} className="hover:text-primary">
                       {court.email}
                     </a>
                   </li>
                 )}
-                {court.website && (
-                  <li className="flex items-start gap-2">
-                    <Globe size={14} className="mt-0.5 shrink-0 text-primary" />
+                {safeWebsiteUrl && (
+                  <li>
+                    <span className="font-semibold text-on-surface">Situs Web:</span>{" "}
                     <a
-                      href={court.website}
+                      href={safeWebsiteUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="break-all hover:text-primary"
                     >
-                      {court.website.replace(/^https?:\/\//, "")}
+                      {safeWebsiteUrl.replace(/^https?:\/\//, "")}
                     </a>
                   </li>
                 )}
-                <li className="flex items-start gap-2">
-                  <Clock size={14} className="mt-0.5 shrink-0 text-primary" />
+                <li>
+                  <span className="font-semibold text-on-surface">Jam Layanan:</span>{" "}
                   <span>{court.hours}</span>
                 </li>
               </ul>

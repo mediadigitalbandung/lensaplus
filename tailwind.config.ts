@@ -56,17 +56,19 @@ const config: Config = {
           DEFAULT: "#EAE8E260",
           light: "#EAE8E230",
         },
-        /* Legacy aliases mapped to Midnight Amethyst */
-        goto: {
-          green: "#2E1065",
-          dark: "#1E0A45",
-          light: "#F5F3FF",
-          50: "#FAF5FF",
-        },
       },
       fontFamily: {
-        serif: ["var(--font-plus-jakarta-sans)", "system-ui", "sans-serif"], // Geometric headings
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],            // Clean body
+        serif: [
+          "var(--font-playfair-display)",
+          "var(--font-plus-jakarta-sans)",
+          "Georgia",
+          "Cambria",
+          '"Times New Roman"',
+          "Times",
+          "serif",
+        ], // Editorial serif headings
+        display: ["var(--font-plus-jakarta-sans)", "system-ui", "sans-serif"], // Geometric display
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"], // Clean body
       },
       fontSize: {
         "display-lg": ["3.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "800" }],
@@ -128,8 +130,8 @@ const config: Config = {
         },
       },
       backgroundImage: {
-        "gradient-primary": "linear-gradient(135deg, #002045, #1a3a5c)",
-        "gradient-hero": "linear-gradient(135deg, #002045 0%, #1a3a5c 50%, #002045 100%)",
+        "gradient-primary": "linear-gradient(135deg, #2E1065, #4C1D95)",
+        "gradient-hero": "linear-gradient(135deg, #2E1065 0%, #4C1D95 50%, #1E0A45 100%)",
       },
       backdropBlur: {
         glass: "20px",

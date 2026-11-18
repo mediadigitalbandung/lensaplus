@@ -62,10 +62,31 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
 }) {
   const searchParams = await searchParamsPromise;
   const sp = await searchParams;
-  const sectorFilter = sp.sector as CompanySector | undefined;
-  const searchQuery = sp.search ?? "";
+  const validSectors = Object.keys(SECTOR_LABELS) as CompanySector[];
+  const rawSector = sp.sector?.trim().toUpperCase();
+  const sectorFilter: CompanySector | undefined =
+    rawSector && validSectors.includes(rawSector as CompanySector)
+      ? (rawSector as CompanySector)
+      : undefined;
+  const searchQuery = sp.search?.trim() ?? "";
   const page = parsePositiveInt(sp.page, 1);
   const limit = 24;
+
+  function buildEmitenHref(overrides: {
+    sector?: CompanySector | undefined;
+    search?: string;
+    page?: number;
+  }): string {
+    const params = new URLSearchParams();
+    const targetSector = "sector" in overrides ? overrides.sector : sectorFilter;
+    const targetSearch = "search" in overrides ? overrides.search : searchQuery;
+    const targetPage = overrides.page ?? page;
+    if (targetPage > 1) params.set("page", String(targetPage));
+    if (targetSector) params.set("sector", targetSector);
+    if (targetSearch) params.set("search", targetSearch);
+    const qs = params.toString();
+    return `/emiten${qs ? `?${qs}` : ""}`;
+  }
 
   const where = {
     isActive: true,
@@ -152,7 +173,7 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
         {/* Sector filter tabs */}
         <div className="mb-8 flex flex-wrap gap-2">
           <Link
-            href="/emiten"
+            href={buildEmitenHref({ sector: undefined, page: 1 })}
             className={`rounded-md px-3.5 py-1.5 text-label-sm font-medium border transition-colors ${
               !sectorFilter
                 ? "border-primary text-primary font-bold bg-surface"
@@ -164,7 +185,7 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
           {sectors.map(([key, label]) => (
             <Link
               key={key}
-              href={`/emiten?sector=${key}`}
+              href={buildEmitenHref({ sector: key, page: 1 })}
               className={`rounded-md px-3.5 py-1.5 text-label-sm font-medium border transition-colors ${
                 sectorFilter === key
                   ? "border-primary text-primary font-bold bg-surface"
@@ -234,7 +255,7 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
               <div className="mt-10 flex items-center justify-center gap-2">
                 {page > 1 && (
                   <Link
-                    href={`/emiten?page=${page - 1}${sectorFilter ? `&sector=${sectorFilter}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}`}
+                    href={buildEmitenHref({ page: page - 1 })}
                     className="btn-outline-green rounded-md px-4 py-2 text-label-sm"
                   >
                     Sebelumnya
@@ -245,7 +266,7 @@ export default async function EmitenPage({ searchParams: searchParamsPromise }: 
                 </span>
                 {page < totalPages && (
                   <Link
-                    href={`/emiten?page=${page + 1}${sectorFilter ? `&sector=${sectorFilter}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}`}
+                    href={buildEmitenHref({ page: page + 1 })}
                     className="btn-outline-green rounded-md px-4 py-2 text-label-sm"
                   >
                     Berikutnya

@@ -19,6 +19,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { safeHref } from "@/components/common/safeHref";
 
 interface Ad {
   id: string;
@@ -76,10 +77,11 @@ function RailContent() {
         className="h-full w-full object-cover"
       />
     );
-    if (ad.targetUrl) {
+    const safeTargetUrl = safeHref(ad.targetUrl, { allowRelative: true });
+    if (safeTargetUrl) {
       return (
         <a
-          href={ad.targetUrl}
+          href={safeTargetUrl}
           target="_blank"
           rel="noopener noreferrer sponsored"
           onClick={() => trackClick(ad.id)}
@@ -101,7 +103,7 @@ function RailContent() {
       className="flex h-full w-full flex-col justify-between bg-gradient-to-b from-primary to-primary-dark px-4 py-6 text-white transition-opacity hover:opacity-95"
     >
       <div>
-        <span className="inline-block rounded-sm bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest">
+        <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-secondary">
           Setiap Hari
         </span>
         <h3 className="mt-4 font-serif text-xl font-bold leading-tight">
@@ -166,7 +168,7 @@ export default function SideRailAds() {
     "rounded-md border border-primary/10 bg-surface-container-lowest shadow-ambient";
 
   const cap =
-    "shrink-0 border-b border-primary/10 bg-primary/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary/60";
+    "shrink-0 border-b border-border bg-surface-container-low px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-txt-muted";
 
   // Anchor rails to the outside edge of the 1152-px container, not to the
   // screen edge. At 2xl/1536px the formula falls back to ~16 px from the

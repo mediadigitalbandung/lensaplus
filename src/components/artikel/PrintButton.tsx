@@ -36,38 +36,40 @@ export default function PrintButton() {
     <>
       <div className="flex items-center gap-2 no-print">
         <button
+          type="button"
           onClick={() => setShowPreview(true)}
           className="btn-ghost rounded-full px-3 py-1.5 text-xs"
           title="Preview PDF"
           aria-label="Preview PDF"
         >
-          <FileText size={14} className="mr-1" />
+          <FileText size={14} className="mr-1" aria-hidden="true" />
           Preview PDF
         </button>
         <button
+          type="button"
           onClick={() => window.print()}
           className="btn-ghost rounded-full px-3 py-1.5 text-xs"
           title="Cetak Artikel"
           aria-label="Cetak artikel"
         >
-          <Printer size={14} className="mr-1" />
+          <Printer size={14} className="mr-1" aria-hidden="true" />
           Cetak
         </button>
       </div>
 
       {/* PDF Preview Modal */}
       {showPreview && (
-        <div
-          className="fixed inset-0 z-[999] bg-black/60 flex items-center justify-center p-4 no-print"
-          onClick={close}
-          aria-hidden="true"
-        >
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 no-print">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={close}
+            aria-hidden="true"
+          />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="print-modal-title"
-            className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col"
           >
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -171,7 +173,7 @@ function PrintPreviewContent() {
       {/* Footer */}
       <div style={{ marginTop: 24, paddingTop: 12, borderTop: "1px solid #E5E7EB", fontSize: 9, color: "#9CA3AF", textAlign: "center" }}>
         &copy; {new Date().getFullYear()} Lensaplus &mdash; lensaplus.com
-        <br />Artikel ini dicetak pada {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+        <br />Artikel ini dicetak pada {new Date().toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long", year: "numeric" })}
         <br />Sumber: {typeof window !== "undefined" ? window.location.href : ""}
       </div>
     </div>

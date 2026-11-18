@@ -248,6 +248,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
                 <span className="mx-2">·</span>
                 <span>
                   {sorotan.createdAt.toLocaleDateString("id-ID", {
+                    timeZone: "Asia/Jakarta",
                     day: "numeric",
                     month: "long",
                     year: "numeric",

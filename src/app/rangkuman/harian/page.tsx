@@ -5,6 +5,11 @@ import Image from "next/image";
 import { Metadata } from "next";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import {
+  formatWibDate,
+  getWibDateParts,
+  wibStartOfDayFromKey,
+} from "@/components/common/wib-date";
 
 export const metadata: Metadata = {
   title: "Rangkuman Harian",
@@ -18,16 +23,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/rangkuman/harian" },
 };
 
-function dayKey(d: Date): string {
-  // YYYY-MM-DD in local timezone
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
 function fmtDay(d: Date): string {
-  return d.toLocaleDateString("id-ID", {
+  return formatWibDate(d, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -61,14 +58,14 @@ export default async function RangkumanHarianIndexPage() {
   for (const a of articles) {
     if (!a.publishedAt) continue;
     const d = new Date(a.publishedAt);
-    const key = dayKey(d);
+    const { key } = getWibDateParts(d);
     const existing = byDay.get(key);
     if (existing) {
       existing.count += 1;
       if (!existing.image && a.featuredImage) existing.image = a.featuredImage;
     } else {
       byDay.set(key, {
-        date: new Date(d.getFullYear(), d.getMonth(), d.getDate()),
+        date: wibStartOfDayFromKey(key),
         count: 1,
         image: a.featuredImage ?? null,
         firstTitle: a.title,
@@ -124,7 +121,7 @@ export default async function RangkumanHarianIndexPage() {
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-surface-container-low">
                       <span className="font-serif text-xs sm:text-sm font-bold uppercase tracking-widest text-txt-muted/50">
-                        {day.date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
+                        {formatWibDate(day.date, { day: "2-digit", month: "short" })}
                       </span>
                     </div>
                   )}

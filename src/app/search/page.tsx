@@ -35,7 +35,8 @@ function getSearchHistory(): string[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((h): h is string => typeof h === "string") : [];
   } catch {
     return [];
   }
@@ -64,11 +65,13 @@ function clearSearchHistory() {
 }
 
 function highlightText(text: string, keyword: string): React.ReactNode {
-  if (!keyword || keyword.length < 2) return text;
-  const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const trimmed = keyword.trim();
+  if (!trimmed || trimmed.length < 2) return text;
+  const regex = new RegExp(`(${trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const lowerKeyword = trimmed.toLowerCase();
   const parts = text.split(regex);
   return parts.map((part, i) =>
-    regex.test(part) ? (
+    part.toLowerCase() === lowerKeyword ? (
       <mark key={i} className="bg-transparent font-bold text-primary underline decoration-primary/50 underline-offset-2">
         {part}
       </mark>
@@ -98,11 +101,16 @@ function SearchContent() {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [inputFocused, setInputFocused] = useState(false);
   const suggestRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load search history on mount
   useEffect(() => {
     setSearchHistory(getSearchHistory());
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+    };
   }, []);
 
   // Close suggestions on outside click
@@ -150,7 +158,7 @@ function SearchContent() {
     }
   };
 
-  const fetchResults = async (q: string) => {
+  const fetchResults = useCallback(async (q: string) => {
     if (q.length < 2) {
       setResults([]);
       setTotal(0);
@@ -177,23 +185,28 @@ function SearchContent() {
       setSearched(true);
       setPage(0);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    setQuery(initialQuery);
     if (initialQuery) {
       fetchResults(initialQuery);
     }
-  }, [initialQuery]);
+  }, [initialQuery, fetchResults]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      addSearchHistory(query.trim());
+    const trimmed = query.trim();
+    if (trimmed) {
+      addSearchHistory(trimmed);
       setSearchHistory(getSearchHistory());
     }
     setShowSuggestions(false);
-    router.push(`/search?q=${encodeURIComponent(query)}`);
-    fetchResults(query);
+    if (trimmed === initialQuery.trim()) {
+      fetchResults(trimmed);
+    } else {
+      router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+    }
   };
 
   const handleSuggestionClick = (slug: string, title: string) => {
@@ -206,8 +219,11 @@ function SearchContent() {
   const handleHistoryClick = (q: string) => {
     setQuery(q);
     setShowSuggestions(false);
-    router.push(`/search?q=${encodeURIComponent(q)}`);
-    fetchResults(q);
+    if (q === initialQuery) {
+      fetchResults(q);
+    } else {
+      router.push(`/search?q=${encodeURIComponent(q)}`);
+    }
   };
 
   const handleClearHistory = () => {
@@ -283,7 +299,8 @@ function SearchContent() {
               }}
               onBlur={() => {
                 // Delay to allow clicks on suggestions
-                setTimeout(() => setInputFocused(false), 200);
+                if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+                blurTimerRef.current = setTimeout(() => setInputFocused(false), 200);
               }}
               placeholder="Cari berita..."
               className="input w-full py-3 pl-12 pr-4 text-lg"
@@ -434,7 +451,7 @@ function SearchContent() {
                   </h3>
                 </Link>
                 <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-txt-muted truncate">
-                  {new Date(article.publishedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                  {new Date(article.publishedAt).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long", year: "numeric" })}
                   <span className="mx-1">&middot;</span>
                   {article.author.name}
                   {(article.viewCount ?? 0) > 0 && (

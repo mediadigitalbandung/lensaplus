@@ -52,32 +52,40 @@ export default function SearchableArticleList({ articles, categoryName }: Search
       return new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime();
     });
 
-    setPage(0);
     return result;
   }, [articles, query, sortBy]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
-  const paginated = filtered.slice(page * perPage, (page + 1) * perPage);
+  const safePage = totalPages > 0 ? Math.min(page, totalPages - 1) : 0;
+  const paginated = filtered.slice(safePage * perPage, (safePage + 1) * perPage);
 
   return (
     <div>
       {/* Search + Filter Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-txt-muted" />
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-txt-muted" aria-hidden="true" />
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(0);
+            }}
             placeholder={`Cari berita ${categoryName}...`}
+            aria-label={`Cari berita ${categoryName}`}
             className="input pl-10"
           />
         </div>
         <div className="flex items-center gap-3">
           {(["terbaru", "terlama", "terpopuler"] as SortBy[]).map((s) => (
             <button
+              type="button"
               key={s}
-              onClick={() => setSortBy(s)}
+              onClick={() => {
+                setSortBy(s);
+                setPage(0);
+              }}
               className={`px-3 py-1.5 text-xs transition-colors ${
                 sortBy === s
                   ? "border-b-2 border-primary font-bold text-primary"
@@ -152,23 +160,25 @@ export default function SearchableArticleList({ articles, categoryName }: Search
       {totalPages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-3">
           <button
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0}
+            type="button"
+            onClick={() => setPage((p) => Math.max(0, Math.min(p, totalPages - 1) - 1))}
+            disabled={safePage === 0}
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-txt-primary transition-all hover:border-primary hover:text-primary disabled:opacity-30 disabled:hover:border-border disabled:hover:text-txt-primary"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={16} aria-hidden="true" />
             Sebelumnya
           </button>
           <span className="text-sm text-txt-muted">
-            {page + 1} / {totalPages}
+            {safePage + 1} / {totalPages}
           </span>
           <button
+            type="button"
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={page === totalPages - 1}
+            disabled={safePage >= totalPages - 1}
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-txt-primary transition-all hover:border-primary hover:text-primary disabled:opacity-30 disabled:hover:border-border disabled:hover:text-txt-primary"
           >
             Selanjutnya
-            <ChevronRight size={16} />
+            <ChevronRight size={16} aria-hidden="true" />
           </button>
         </div>
       )}

@@ -18,12 +18,14 @@ interface Comment {
 function timeAgo(dateStr: string): string {
   const now = new Date();
   const d = new Date(dateStr);
-  const seconds = Math.floor((now.getTime() - d.getTime()) / 1000);
+  if (Number.isNaN(d.getTime())) return "";
+  const seconds = Math.max(0, Math.floor((now.getTime() - d.getTime()) / 1000));
   if (seconds < 60) return "Baru saja";
   if (seconds < 3600) return `${Math.floor(seconds / 60)} menit lalu`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)} jam lalu`;
   if (seconds < 604800) return `${Math.floor(seconds / 86400)} hari lalu`;
   return d.toLocaleDateString("id-ID", {
+    timeZone: "Asia/Jakarta",
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -167,14 +169,14 @@ export default function CommentSection({ articleId }: { articleId: string }) {
         </h3>
 
         {success && (
-          <div className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-4 py-2 text-sm text-primary">
-            <CheckCircle size={16} />
+          <div role="status" className="mb-4 flex items-center gap-2 border-l-4 border-primary pl-4 py-2 text-sm text-primary">
+            <CheckCircle size={16} aria-hidden="true" />
             Komentar Anda akan ditampilkan setelah disetujui moderator.
           </div>
         )}
 
         {error && (
-          <div className="mb-4 border-l-4 border-red-600 pl-4 py-2 text-sm text-red-700">
+          <div role="alert" className="mb-4 border-l-4 border-red-600 pl-4 py-2 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -182,30 +184,34 @@ export default function CommentSection({ articleId }: { articleId: string }) {
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-txt-secondary">
+              <label htmlFor="comment-name" className="mb-1 block text-xs font-medium text-txt-secondary">
                 Nama *
               </label>
               <input
+                id="comment-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nama Anda"
                 className="input w-full text-sm"
                 required
+                aria-required="true"
                 maxLength={100}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-txt-secondary">
+              <label htmlFor="comment-email" className="mb-1 block text-xs font-medium text-txt-secondary">
                 Email *
               </label>
               <input
+                id="comment-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="email@contoh.com"
                 className="input w-full text-sm"
                 required
+                aria-required="true"
               />
               <p className="mt-0.5 text-[10px] text-txt-muted">
                 Email tidak akan ditampilkan publik
@@ -213,10 +219,11 @@ export default function CommentSection({ articleId }: { articleId: string }) {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-txt-secondary">
+            <label htmlFor="comment-content" className="mb-1 block text-xs font-medium text-txt-secondary">
               Komentar *
             </label>
             <textarea
+              id="comment-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onFocus={(e) => {
@@ -227,6 +234,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
               className="input w-full text-sm"
               rows={4}
               required
+              aria-required="true"
               maxLength={2000}
             />
             <p className="mt-0.5 text-right text-[10px] text-txt-muted">

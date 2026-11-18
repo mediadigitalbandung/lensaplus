@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import Link from "next/link";
 import { Loader2, Mail, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function NewsletterForm({ source }: { source: string }) {
@@ -84,10 +85,10 @@ export default function NewsletterForm({ source }: { source: string }) {
       {result && (
         <div
           role={result.ok ? "status" : "alert"}
-          className={`flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
+          className={`flex items-start gap-2 border-l-4 pl-3 py-1 text-sm ${
             result.ok
-              ? "bg-emerald-50 text-emerald-800"
-              : "bg-red-50 text-red-800"
+              ? "border-secondary text-emerald-800"
+              : "border-red-600 text-red-700"
           }`}
         >
           {result.ok ? (
@@ -100,9 +101,9 @@ export default function NewsletterForm({ source }: { source: string }) {
       )}
       <p className="text-[11px] text-txt-muted">
         Dengan berlangganan, Anda menyetujui{" "}
-        <a href="/privasi" className="underline">
+        <Link href="/privasi" className="underline hover:text-primary">
           Kebijakan Privasi
-        </a>{" "}
+        </Link>{" "}
         Lensaplus.
       </p>
     </form>

@@ -230,9 +230,14 @@ export default async function UnduhPage() {
                   ⚠️ Pesan &quot;Pemindaian Play Protect&quot; mungkin muncul karena APK belum lewat Play Store —
                   tap &quot;Tetap install&quot; / &quot;Install anyway&quot;. Aman karena APK ditandatangani oleh kami
                   dan terverifikasi via{" "}
-                  <Link href="/.well-known/assetlinks.json" className="underline">
+                  <a
+                    href="/.well-known/assetlinks.json"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
                     Digital Asset Links
-                  </Link>{" "}
+                  </a>{" "}
                   ke domain lensaplus.com.
                 </p>
               </details>
@@ -261,10 +266,10 @@ export default async function UnduhPage() {
         </div>
 
         {/* QR + Share — bagikan ke teman / media sosial */}
-        <div className="max-w-4xl mx-auto mt-10 rounded-xl border border-border bg-gradient-to-br from-primary/5 via-surface to-surface p-6 sm:p-8">
+        <div className="max-w-4xl mx-auto mt-10 rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-card">
           <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-6 items-center">
             <div
-              className="mx-auto sm:mx-0 shrink-0 rounded-lg bg-white p-3 shadow-sm border border-border w-[200px] h-[200px] flex items-center justify-center"
+              className="mx-auto sm:mx-0 shrink-0 rounded-lg bg-white p-3 shadow-sm border border-border w-[200px] h-[200px] flex items-center justify-center [&>svg]:h-full [&>svg]:w-full"
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
             <div className="text-center sm:text-left">

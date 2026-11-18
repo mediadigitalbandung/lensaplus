@@ -265,7 +265,9 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
     const session = await getServerSession(authOptions);
     const userRole = session?.user?.role || "";
     const isAuthor = session?.user?.id === article.authorId;
-    const hasAccess = isAuthor || ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"].includes(userRole);
+    const hasAccess =
+      !session?.sessionInvalid &&
+      (isAuthor || ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"].includes(userRole));
 
     if (!hasAccess) {
       notFound();
@@ -380,7 +382,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
     slug: a.slug,
     category: a.category.name,
     publishedAt: a.publishedAt
-      ? new Date(a.publishedAt).toLocaleDateString("id-ID")
+      ? new Date(a.publishedAt).toISOString()
       : "",
     viewCount: a.viewCount,
     featuredImage: a.featuredImage,
@@ -490,7 +492,16 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
         articleUrl={articleUrl}
         articleTitle={article.title}
         categoryName={article.category.name}
-        publishedAt={article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : ""}
+        publishedAt={
+          article.publishedAt
+            ? new Date(article.publishedAt).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                timeZone: "Asia/Jakarta",
+              })
+            : ""
+        }
       />
 
       <div className="bg-surface min-h-screen overflow-x-hidden">
@@ -576,7 +587,12 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                 <span className="text-txt-muted/50">&middot;</span>
                 <span>
                   {article.publishedAt
-                    ? new Date(article.publishedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+                    ? new Date(article.publishedAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        timeZone: "Asia/Jakarta",
+                      })
                     : "-"}
                 </span>
                 <span className="text-txt-muted/50">&middot;</span>
@@ -868,8 +884,8 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
 
               {/* Print-only footer */}
               <div className="print-footer hidden">
-                &copy; {new Date().getFullYear()} Lensaplus — lensaplus.com
-                <br />Artikel ini dicetak pada {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                &copy; {new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date())} Lensaplus — lensaplus.com
+                <br />Artikel ini dicetak pada {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" })}
                 <br />Sumber: {articleUrl}
               </div>
             </article>

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Pedoman Media Siber",
@@ -41,7 +42,7 @@ export default function PedomanMediaPage() {
               Permohonan hak jawab atau koreksi dapat diajukan melalui email{" "}
               <a href="mailto:redaksi@lensaplus.com" className="text-primary hover:underline">redaksi@lensaplus.com</a>{" "}
               atau formulir pada halaman{" "}
-              <a href="/kontak" className="text-primary hover:underline">Kontak</a> dengan subjek
+              <Link href="/kontak" className="text-primary hover:underline">Kontak</Link> dengan subjek
               &quot;Koreksi Berita&quot;. Redaksi menindaklanjuti setiap permohonan dalam waktu wajar dan
               memuat koreksi pada artikel terkait.
             </p>
@@ -77,7 +78,7 @@ export default function PedomanMediaPage() {
               <p className="text-sm text-txt-secondary">
                 Pedoman ini mengacu pada Peraturan Dewan Pers Nomor 1/Peraturan-DP/III/2012 tentang
                 Pedoman Pemberitaan Media Siber. Lihat juga{" "}
-                <a href="/kode-etik" className="font-medium text-primary underline">Kode Etik Jurnalistik</a> yang kami patuhi.
+                <Link href="/kode-etik" className="font-medium text-primary underline">Kode Etik Jurnalistik</Link> yang kami patuhi.
               </p>
               <p className="mt-2 text-xs text-txt-muted">Terakhir diperbarui: Juni 2026.</p>
             </div>

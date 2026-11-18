@@ -168,11 +168,16 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
     slug: a.slug,
     category: a.category.name,
     publishedAt: a.publishedAt
-      ? new Date(a.publishedAt).toLocaleDateString("id-ID")
+      ? new Date(a.publishedAt).toISOString()
       : "",
     viewCount: a.viewCount,
     featuredImage: a.featuredImage,
   }));
+
+  const gridOffset = articles.length >= 7 ? 11 : articles.length >= 3 ? 5 : 0;
+  const remainingGridArticles = articles.slice(gridOffset);
+  const paginatedArticles =
+    remainingGridArticles.length > 0 ? remainingGridArticles : articles;
 
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   // CollectionPage + ItemList so crawlers see what's in this category, plus a
@@ -313,9 +318,9 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
               </h2>
             </div>
             {/* Articles grid — paginated, 6 per page */}
-            <PaginatedArticles articles={JSON.parse(JSON.stringify(articles.slice(11)))} perPage={6} />
-
-            {articles.length === 0 && (
+            {paginatedArticles.length > 0 ? (
+              <PaginatedArticles articles={JSON.parse(JSON.stringify(paginatedArticles))} perPage={6} />
+            ) : (
               <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
                 <p className="text-txt-muted">Belum ada artikel di kategori ini.</p>
               </div>

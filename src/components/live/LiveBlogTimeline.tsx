@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Pin, Play } from "lucide-react";
+import { Play } from "lucide-react";
+import { safeHref } from "@/components/common/safeHref";
 
 type LiveBlogStatus = "SCHEDULED" | "LIVE" | "ENDED" | "CANCELLED";
 
@@ -92,19 +93,23 @@ function EntryCard({ entry }: { entry: LiveBlogEntry }) {
             />
           </div>
         )}
-        {entry.videoUrl && (
-          <div className="mt-3">
-            <a
-              href={entry.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-body-sm text-primary hover:underline"
-            >
-              <Play size={14} />
-              Tonton video
-            </a>
-          </div>
-        )}
+        {(() => {
+          const safeVideoUrl = safeHref(entry.videoUrl, { allowRelative: true });
+          if (!safeVideoUrl) return null;
+          return (
+            <div className="mt-3">
+              <a
+                href={safeVideoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-body-sm text-primary hover:underline"
+              >
+                <Play size={14} aria-hidden="true" />
+                Tonton video
+              </a>
+            </div>
+          );
+        })()}
       </div>
     </article>
   );
@@ -245,8 +250,7 @@ export default function LiveBlogTimeline({
       {/* Pinned entries */}
       {pinnedEntries.length > 0 && (
         <section aria-label="Update disematkan">
-          <h3 className="mb-3 text-label-md font-semibold uppercase tracking-wider text-txt-muted flex items-center gap-2">
-            <Pin size={14} />
+          <h3 className="mb-3 border-l-2 border-primary pl-2 text-label-md font-semibold uppercase tracking-wider text-txt-muted">
             Disematkan
           </h3>
           <div className="space-y-0">

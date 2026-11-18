@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 export default function TopLoader() {
@@ -8,15 +8,23 @@ export default function TopLoader() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const timersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+
+  const clearTimers = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+  }, []);
 
   // Complete the loading bar when route actually changes
   const completeLoading = useCallback(() => {
+    clearTimers();
     setProgress(100);
-    setTimeout(() => {
+    const id = setTimeout(() => {
       setLoading(false);
       setProgress(0);
     }, 400);
-  }, []);
+    timersRef.current.push(id);
+  }, [clearTimers]);
 
   // Listen for route changes to complete
   useEffect(() => {
@@ -29,8 +37,9 @@ export default function TopLoader() {
   // Intercept all <a> clicks to start loading immediately
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const anchor = target.closest("a");
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (!(e.target instanceof Element)) return;
+      const anchor = e.target.closest("a");
       if (!anchor) return;
 
       const href = anchor.getAttribute("href");
@@ -48,27 +57,35 @@ export default function TopLoader() {
       // Skip if same page
       if (href === pathname) return;
 
+      clearTimers();
+
       // Start loading immediately on click
       setLoading(true);
       setProgress(20);
 
       // Animate progress
-      setTimeout(() => setProgress(45), 100);
-      setTimeout(() => setProgress(65), 300);
-      setTimeout(() => setProgress(80), 600);
-      // Safety: auto-complete after 3s if route hasn't changed
-      setTimeout(() => {
-        setProgress(100);
+      timersRef.current.push(
+        setTimeout(() => setProgress(45), 100),
+        setTimeout(() => setProgress(65), 300),
+        setTimeout(() => setProgress(80), 600),
         setTimeout(() => {
-          setLoading(false);
-          setProgress(0);
-        }, 400);
-      }, 3000);
+          setProgress(100);
+          timersRef.current.push(
+            setTimeout(() => {
+              setLoading(false);
+              setProgress(0);
+            }, 400)
+          );
+        }, 3000)
+      );
     };
 
     document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
-  }, [pathname]);
+    return () => {
+      document.removeEventListener("click", handleClick);
+      clearTimers();
+    };
+  }, [pathname, clearTimers]);
 
   if (!loading && progress === 0) return null;
 

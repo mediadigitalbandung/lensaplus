@@ -231,6 +231,7 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
                   <span className="mx-1">·</span>
                   <span>
                     {s.createdAt.toLocaleDateString("id-ID", {
+                      timeZone: "Asia/Jakarta",
                       day: "numeric",
                       month: "short",
                       year: "numeric",

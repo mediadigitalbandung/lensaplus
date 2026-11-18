@@ -42,8 +42,8 @@ export default function CopyProtection({
 
     // Block right-click on article content
     const handleContextMenu = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest(".article-content")) {
+      if (!(e.target instanceof Element)) return;
+      if (e.target.closest(".article-content")) {
         e.preventDefault();
       }
     };
@@ -62,8 +62,8 @@ export default function CopyProtection({
 
     // Block drag on images
     const handleDragStart = (e: DragEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === "IMG" && target.closest(".article-content")) {
+      if (!(e.target instanceof Element)) return;
+      if (e.target.tagName === "IMG" && e.target.closest(".article-content")) {
         e.preventDefault();
       }
     };

@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { ArrowUpRight, ArrowDownRight, Minus, RefreshCw } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import MarketGrid from "@/components/pasar/MarketGrid";
 import MoversList from "@/components/pasar/MoversList";
 import type { MarketCardProps } from "@/components/pasar/MarketCard";
-import type { MoverItem } from "@/components/pasar/MoversList";
+import { getMarketData } from "./market-data";
 
 export const revalidate = 60;
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "https://lensaplus.com";
 
 // ─── Metadata ────────────────────────────────────────────────────────────────
 
@@ -18,90 +23,12 @@ export const metadata: Metadata = {
     description:
       "Data pasar real-time: IHSG, kurs USD/IDR/EUR/SGD/JPY/CNY, harga emas, minyak, Bitcoin, Ethereum.",
     type: "website",
-    url: "https://lensaplus.com/pasar",
+    url: `${SITE_URL}/pasar`,
     siteName: "Lensaplus",
   },
-  alternates: { canonical: "https://lensaplus.com/pasar" },
+  alternates: { canonical: `${SITE_URL}/pasar` },
   robots: { index: true, follow: true },
 };
-
-// ─── Types matching /api/market response ────────────────────────────────────
-
-interface IhsgData {
-  price: number;
-  prevClose: number;
-  change: number;
-  changePercent: number;
-  direction: "up" | "down" | "flat";
-}
-
-interface ForexItem {
-  label: string;
-  base: string;
-  price: number;
-  prevClose: number;
-  change: number;
-  changePercent: number;
-  direction: "up" | "down" | "flat";
-  currency: string;
-}
-
-interface GoldData {
-  label: string;
-  usdPerOz: number;
-  idrPerGram: number;
-  prevIdrPerGram: number;
-  change: number;
-  changePercent: number;
-  direction: "up" | "down" | "flat";
-}
-
-interface OilData {
-  label: string;
-  usdPerBarrel: number;
-  change: number;
-  changePercent: number;
-  direction: "up" | "down" | "flat";
-}
-
-interface CryptoItem {
-  symbol: string;
-  label: string;
-  priceUsd: number;
-  priceIdr: number;
-  change: number;
-  changePercent: number;
-  direction: "up" | "down" | "flat";
-}
-
-interface MarketData {
-  ihsg: IhsgData | null;
-  forex: ForexItem[];
-  commodity: { gold: GoldData; oil: OilData };
-  crypto: CryptoItem[];
-  movers: { gainers: MoverItem[]; losers: MoverItem[] };
-  usdIdrRate: number;
-  updatedAt: string;
-  source: string;
-}
-
-// ─── Fetch ───────────────────────────────────────────────────────────────────
-
-async function getMarketData(): Promise<MarketData | null> {
-  try {
-    // Call the route handler logic directly via Yahoo Finance (same origin
-    // fetch would require absolute URL in RSC — use internal URL pattern).
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://lensaplus.com";
-    const res = await fetch(`${baseUrl}/api/market`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json?.data ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -121,17 +48,17 @@ function DirectionBadge({ dir, pct }: { dir: "up" | "down" | "flat"; pct: number
   const sign = pct >= 0 ? "+" : "";
   if (dir === "up") return (
     <span className="inline-flex items-center gap-0.5 text-label-md font-mono font-bold text-emerald-700">
-      <ArrowUpRight size={14} strokeWidth={2.5} />{sign}{pct.toFixed(2)}%
+      <ArrowUpRight size={14} strokeWidth={2.5} aria-hidden="true" />{sign}{pct.toFixed(2)}%
     </span>
   );
   if (dir === "down") return (
     <span className="inline-flex items-center gap-0.5 text-label-md font-mono font-bold text-red-700">
-      <ArrowDownRight size={14} strokeWidth={2.5} />{pct.toFixed(2)}%
+      <ArrowDownRight size={14} strokeWidth={2.5} aria-hidden="true" />{pct.toFixed(2)}%
     </span>
   );
   return (
     <span className="inline-flex items-center gap-0.5 text-label-md font-mono font-bold text-txt-muted">
-      <Minus size={14} strokeWidth={2.5} />{sign}{pct.toFixed(2)}%
+      <Minus size={14} strokeWidth={2.5} aria-hidden="true" />{sign}{pct.toFixed(2)}%
     </span>
   );
 }
@@ -144,8 +71,8 @@ function JsonLd({ updatedAt }: { updatedAt: string }) {
     "@graph": [
       {
         "@type": "WebPage",
-        "@id": "https://lensaplus.com/pasar",
-        url: "https://lensaplus.com/pasar",
+        "@id": `${SITE_URL}/pasar`,
+        url: `${SITE_URL}/pasar`,
         name: "Pasar & Bursa — IHSG, Forex, Komoditas, Kripto | Lensaplus",
         description:
           "Data pasar real-time: IHSG, kurs USD/IDR/EUR/SGD/JPY/CNY, harga emas, minyak, Bitcoin, Ethereum.",
@@ -153,22 +80,22 @@ function JsonLd({ updatedAt }: { updatedAt: string }) {
         publisher: {
           "@type": "Organization",
           name: "Lensaplus",
-          url: "https://lensaplus.com",
+          url: SITE_URL,
         },
         dateModified: updatedAt,
       },
       {
         "@type": "Dataset",
-        "@id": "https://lensaplus.com/pasar#dataset",
+        "@id": `${SITE_URL}/pasar#dataset`,
         name: "Data Pasar Keuangan Indonesia",
         description:
           "IHSG, kurs valuta asing, harga emas, minyak, dan kripto. Bersumber dari Yahoo Finance.",
-        url: "https://lensaplus.com/pasar",
+        url: `${SITE_URL}/pasar`,
         creator: { "@type": "Organization", name: "Lensaplus" },
         distribution: [
           {
             "@type": "DataDownload",
-            contentUrl: "https://lensaplus.com/api/market",
+            contentUrl: `${SITE_URL}/api/market`,
             encodingFormat: "application/json",
           },
         ],
@@ -271,15 +198,14 @@ export default async function PasarPage() {
         {/* ── Page header ────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 sm:mb-8">
           <div>
-            <h1 className="headline-lg font-serif font-bold text-on-surface tracking-tight">
+            <h1 className="text-headline-lg font-serif font-bold text-on-surface tracking-tight">
               Pasar &amp; Bursa
             </h1>
             <p className="text-body-md text-on-surface-variant mt-1">
               Data pasar keuangan terkini — IHSG, forex, komoditas, dan kripto.
             </p>
           </div>
-          <div className="flex items-center gap-1.5 text-label-sm text-on-surface-variant">
-            <RefreshCw size={12} className="shrink-0" />
+          <div className="text-label-sm text-on-surface-variant">
             <span>
               {data
                 ? <>Update: {updateDisplay} WIB &bull; Delay ~15 mnt</>
@@ -299,16 +225,6 @@ export default async function PasarPage() {
                 : "border-l-gray-300"
             }`}
           >
-            {/* Background tint */}
-            <div
-              className={`absolute inset-0 pointer-events-none ${
-                ihsg?.direction === "up"
-                  ? "bg-emerald-50/30"
-                  : ihsg?.direction === "down"
-                  ? "bg-red-50/30"
-                  : "bg-gray-50/20"
-              }`}
-            />
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -326,7 +242,7 @@ export default async function PasarPage() {
                   </div>
 
                   <div className="flex items-baseline gap-3 flex-wrap">
-                    <span className="display-md font-mono font-bold text-on-surface tracking-tight">
+                    <span className="text-display-md font-mono font-bold text-on-surface tracking-tight">
                       {ihsgPriceStr}
                     </span>
                     {ihsg && <DirectionBadge dir={ihsg.direction} pct={ihsg.changePercent} />}

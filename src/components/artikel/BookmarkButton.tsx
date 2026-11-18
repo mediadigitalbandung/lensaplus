@@ -3,32 +3,38 @@
 import { useState, useEffect } from "react";
 import { Bookmark } from "lucide-react";
 
+function readBookmarks(): string[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem("bookmarks") || "[]");
+    return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function BookmarkButton({ slug }: { slug: string }) {
   const [bookmarked, setBookmarked] = useState(false);
 
   useEffect(() => {
-    const stored: string[] = JSON.parse(
-      localStorage.getItem("bookmarks") || "[]"
-    );
-    setBookmarked(stored.includes(slug));
+    setBookmarked(readBookmarks().includes(slug));
   }, [slug]);
 
   function toggleBookmark() {
-    const stored: string[] = JSON.parse(
-      localStorage.getItem("bookmarks") || "[]"
-    );
-    let updated: string[];
-    if (stored.includes(slug)) {
-      updated = stored.filter((s) => s !== slug);
-    } else {
-      updated = [...stored, slug];
+    const stored = readBookmarks();
+    const updated = stored.includes(slug)
+      ? stored.filter((s) => s !== slug)
+      : [...stored, slug];
+    try {
+      localStorage.setItem("bookmarks", JSON.stringify(updated));
+    } catch {
+      /* storage quota / disabled */
     }
-    localStorage.setItem("bookmarks", JSON.stringify(updated));
     setBookmarked(!bookmarked);
   }
 
   return (
     <button
+      type="button"
       onClick={toggleBookmark}
       className={`btn-ghost min-h-[44px] rounded-md px-4 py-2.5 text-xs flex items-center gap-1.5 transition-colors active:scale-95 ${
         bookmarked

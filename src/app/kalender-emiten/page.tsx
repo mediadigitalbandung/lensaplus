@@ -2,6 +2,8 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { safeHref } from "@/components/common/safeHref";
+import { getWibDateParts, wibStartOfDayFromKey } from "@/components/common/wib-date";
 
 export const revalidate = 600; // 10-min ISR
 
@@ -32,6 +34,7 @@ function formatDate(d: Date): string {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "Asia/Jakarta",
   }).format(d);
 }
 
@@ -39,7 +42,25 @@ function formatTime(d: Date): string {
   return new Intl.DateTimeFormat("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Jakarta",
   }).format(d);
+}
+
+interface MarketEventItem {
+  id: string;
+  type: string;
+  title: string;
+  companyName: string;
+  ticker: string | null;
+  description: string | null;
+  scheduledAt: Date;
+  articleId: string | null;
+  source: string | null;
+}
+
+interface EventTypeGroup {
+  type: string;
+  _count: { _all: number };
 }
 
 export default async function KalenderEmitenPage() {
@@ -47,8 +68,9 @@ export default async function KalenderEmitenPage() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const ninetyDaysFwd = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-  let events: any[] = [];
-  let typeGroups: any[] = [];
+  let events: MarketEventItem[] = [];
+  let typeGroups: EventTypeGroup[] = [];
+  let slugByArticleId = new Map<string, string>();
   try {
     [events, typeGroups] = await Promise.all([
       prisma.marketEvent.findMany({
@@ -68,15 +90,26 @@ export default async function KalenderEmitenPage() {
         _count: { _all: true },
       }),
     ]);
+
+    const articleIds = Array.from(
+      new Set(events.map((e) => e.articleId).filter((id): id is string => Boolean(id)))
+    );
+    if (articleIds.length > 0) {
+      const linkedArticles = await prisma.article.findMany({
+        where: { id: { in: articleIds }, status: "PUBLISHED" },
+        select: { id: true, slug: true },
+      });
+      slugByArticleId = new Map(linkedArticles.map((a) => [a.id, a.slug]));
+    }
   } catch {
     events = [];
     typeGroups = [];
   }
 
-  // Group events by date key (YYYY-MM-DD)
-  const byDate = new Map<string, typeof events>();
+  // Group events by WIB date key (YYYY-MM-DD in Asia/Jakarta)
+  const byDate = new Map<string, MarketEventItem[]>();
   for (const e of events) {
-    const key = e.scheduledAt.toISOString().slice(0, 10);
+    const key = getWibDateParts(new Date(e.scheduledAt)).key;
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key)!.push(e);
   }
@@ -85,7 +118,7 @@ export default async function KalenderEmitenPage() {
   for (const g of typeGroups) typeCounts[g.type] = g._count._all;
   const total = events.length;
 
-  const todayKey = now.toISOString().slice(0, 10);
+  const todayKey = getWibDateParts(now).key;
 
   return (
     <main className="container-main py-8 sm:py-12">
@@ -130,7 +163,7 @@ export default async function KalenderEmitenPage() {
       ) : (
         <div className="space-y-8">
           {Array.from(byDate.entries()).map(([dateKey, dateEvents]) => {
-            const date = new Date(dateKey + "T00:00:00");
+            const date = wibStartOfDayFromKey(dateKey);
             const isPast = dateKey < todayKey;
             const isToday = dateKey === todayKey;
 
@@ -159,6 +192,10 @@ export default async function KalenderEmitenPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {dateEvents.map((event) => {
                     const meta = TYPE_META[event.type] ?? TYPE_META.OTHER;
+                    const articleSlug = event.articleId
+                      ? slugByArticleId.get(event.articleId)
+                      : undefined;
+                    const safeSourceUrl = safeHref(event.source);
                     return (
                       <article
                         key={event.id}
@@ -170,7 +207,7 @@ export default async function KalenderEmitenPage() {
                               {meta.label}
                             </p>
                             <p className="text-xs text-txt-secondary mt-0.5">
-                              {formatTime(event.scheduledAt)} WIB
+                              {formatTime(new Date(event.scheduledAt))} WIB
                               {event.ticker && (
                                 <span className="ml-2 font-mono font-bold text-primary">
                                   {event.ticker}
@@ -194,19 +231,19 @@ export default async function KalenderEmitenPage() {
                           </p>
                         )}
 
-                        {(event.articleId || event.source) && (
+                        {(articleSlug || safeSourceUrl) && (
                           <div className="flex items-center gap-3 mt-auto pt-2">
-                            {event.articleId && (
+                            {articleSlug && (
                               <Link
-                                href={`/berita/${event.articleId}`}
+                                href={`/berita/${articleSlug}`}
                                 className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium"
                               >
-                                Coverage <ArrowRight size={10} />
+                                Coverage <ArrowRight size={10} aria-hidden="true" />
                               </Link>
                             )}
-                            {event.source && (
+                            {safeSourceUrl && (
                               <a
-                                href={event.source}
+                                href={safeSourceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-txt-muted hover:text-txt-primary hover:underline"

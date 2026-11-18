@@ -226,11 +226,14 @@ export default function Header() {
 
             {/* Mobile menu toggle */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="inline-flex items-center justify-center p-1.5 text-stone-700 hover:text-primary md:hidden transition-colors"
               aria-label="Buka menu navigasi"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-nav-drawer"
             >
-              <Menu size={20} />
+              <Menu size={20} aria-hidden="true" />
             </button>
           </div>
         </div>

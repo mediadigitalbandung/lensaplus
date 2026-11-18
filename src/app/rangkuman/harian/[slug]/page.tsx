@@ -6,6 +6,12 @@ import { ChevronRight } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import {
+  formatWibDate,
+  getWibDateParts,
+  wibStartOfDayFromKey,
+  wibEndOfDayFromKey,
+} from "@/components/common/wib-date";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -20,20 +26,17 @@ function parseSlugDate(slug: string): { from: Date; to: Date } | null {
   const mo = parseInt(m[2], 10);
   const d = parseInt(m[3], 10);
   if (!y || !mo || !d || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
-  const from = new Date(y, mo - 1, d, 0, 0, 0, 0);
-  if (
-    from.getFullYear() !== y ||
-    from.getMonth() !== mo - 1 ||
-    from.getDate() !== d
-  )
-    return null;
-  const to = new Date(y, mo - 1, d, 23, 59, 59, 999);
+  const from = wibStartOfDayFromKey(slug);
+  if (Number.isNaN(from.getTime())) return null;
+  const parts = getWibDateParts(from);
+  if (parts.year !== y || parts.month !== mo || parts.day !== d) return null;
+  const to = wibEndOfDayFromKey(slug);
   if (from.getTime() > Date.now()) return null;
   return { from, to };
 }
 
 function fmtDay(d: Date): string {
-  return d.toLocaleDateString("id-ID", {
+  return formatWibDate(d, {
     weekday: "long",
     day: "numeric",
     month: "long",

@@ -7,6 +7,7 @@ import { ChevronRight } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { formatWibDate, wibStartOfMonth } from "@/components/common/wib-date";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -31,7 +32,7 @@ async function resolveDigest(slug: string): Promise<ResolvedDigest | null> {
     };
   }
   if (slug === "bulan-ini") {
-    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    const from = wibStartOfMonth(now);
     return {
       title: "Rangkuman Bulan Ini",
       intro:
@@ -165,9 +166,9 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
           </div>
           <p className="mt-3 text-base text-on-surface-variant">{digest.intro}</p>
           <p className="mt-2 text-xs uppercase tracking-wider text-primary">
-            {digest.range.from.toLocaleDateString("id-ID", { day: "numeric", month: "long" })}
+            {formatWibDate(digest.range.from, { day: "numeric", month: "long" })}
             {" – "}
-            {digest.range.to.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+            {formatWibDate(digest.range.to, { day: "numeric", month: "long", year: "numeric" })}
             <span className="mx-1.5 text-on-surface-variant/40">/</span>
             {articles.length} artikel
           </p>

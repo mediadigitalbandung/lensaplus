@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Tentang Kami",
@@ -32,7 +33,7 @@ export default function TentangPage() {
               Tim redaksi kami terdiri dari jurnalis berpengalaman dengan latar belakang jurnalistik. Setiap artikel
               yang kami terbitkan melalui proses verifikasi ketat untuk memastikan keakuratan dan keberimbangan informasi.
               Susunan redaksi selengkapnya dapat dilihat pada halaman{" "}
-              <a href="/redaksi" className="text-primary hover:underline">Redaksi</a>.
+              <Link href="/redaksi" className="text-primary hover:underline">Redaksi</Link>.
             </p>
           </div>
 

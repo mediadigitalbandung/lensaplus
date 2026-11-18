@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
-import { ShieldCheck, Building2, MapPin, BookOpen, Mail } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
@@ -89,10 +88,9 @@ export default async function RedaksiPage() {
 
             <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="rounded-lg border border-border bg-surface p-5">
-                <div className="flex items-center gap-2 text-primary">
-                  <ShieldCheck size={20} />
-                  <h3 className="font-bold text-txt-primary">Terverifikasi Dewan Pers</h3>
-                </div>
+                <h3 className="border-l-[3px] border-primary pl-2.5 font-bold text-txt-primary">
+                  Terverifikasi Dewan Pers
+                </h3>
                 <p className="mt-2 text-sm text-txt-secondary">
                   Lensaplus tunduk pada Kode Etik Jurnalistik dan Pedoman Pemberitaan
                   Media Siber yang ditetapkan Dewan Pers.
@@ -106,46 +104,41 @@ export default async function RedaksiPage() {
               </div>
 
               <div className="rounded-lg border border-border bg-surface p-5">
-                <div className="flex items-center gap-2 text-primary">
-                  <Building2 size={20} />
-                  <h3 className="font-bold text-txt-primary">Penerbit</h3>
-                </div>
+                <h3 className="border-l-[3px] border-primary pl-2.5 font-bold text-txt-primary">
+                  Penerbit
+                </h3>
                 <p className="mt-2 text-sm text-txt-primary">
                   {legalName || "Lensaplus"}
                   {founding && (
                     <span className="text-txt-muted"> · berdiri {founding}</span>
                   )}
                 </p>
-                <p className="mt-2 flex items-start gap-1.5 text-sm text-txt-secondary">
-                  <MapPin size={14} className="mt-0.5 shrink-0" />
+                <p className="mt-2 text-sm text-txt-secondary">
                   {addressLine}
                 </p>
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2.5">
-              <Link href="/pedoman-media" className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-txt-primary hover:border-primary/40">
-                <BookOpen size={15} /> Pedoman Media Siber
+              <Link href="/pedoman-media" className="inline-flex items-center rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-txt-primary hover:border-primary/40">
+                Pedoman Media Siber
               </Link>
-              <Link href="/kode-etik" className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-txt-primary hover:border-primary/40">
-                <BookOpen size={15} /> Kode Etik Jurnalistik
+              <Link href="/kode-etik" className="inline-flex items-center rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-txt-primary hover:border-primary/40">
+                Kode Etik Jurnalistik
               </Link>
-              <Link href="/privasi" className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-txt-primary hover:border-primary/40">
-                <BookOpen size={15} /> Kebijakan Privasi
+              <Link href="/privasi" className="inline-flex items-center rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-txt-primary hover:border-primary/40">
+                Kebijakan Privasi
               </Link>
             </div>
           </div>
 
           <div className="mt-8 rounded-lg border border-border bg-surface-secondary p-5">
-            <p className="flex items-start gap-2 text-sm text-txt-muted">
-              <Mail size={16} className="mt-0.5 shrink-0 text-primary" />
-              <span>
-                Untuk pengaduan pemberitaan, hak jawab, atau koreksi, hubungi{" "}
-                <a href="mailto:redaksi@lensaplus.com" className="text-primary hover:underline">
-                  redaksi@lensaplus.com
-                </a>
-                . Setiap masukan ditindaklanjuti sesuai mekanisme Dewan Pers.
-              </span>
+            <p className="text-sm text-txt-muted">
+              Untuk pengaduan pemberitaan, hak jawab, atau koreksi, hubungi{" "}
+              <a href="mailto:redaksi@lensaplus.com" className="text-primary hover:underline">
+                redaksi@lensaplus.com
+              </a>
+              . Setiap masukan ditindaklanjuti sesuai mekanisme Dewan Pers.
             </p>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { safeHref } from "@/components/common/safeHref";
 import {
   ChevronLeft,
   Globe,
@@ -87,6 +88,14 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
     take: 5,
   });
 
+  const safeWebsiteUrl = safeHref(official.websiteUrl);
+  const safeTwitterHandle = official.twitterHandle
+    ? official.twitterHandle.trim().replace(/^@/, "").replace(/[^a-zA-Z0-9._-]/g, "")
+    : "";
+  const safeInstagramHandle = official.instagramHandle
+    ? official.instagramHandle.trim().replace(/^@/, "").replace(/[^a-zA-Z0-9._-]/g, "")
+    : "";
+
   // JSON-LD Person + GovernmentOrganization
   const jsonLd = {
     "@context": "https://schema.org",
@@ -101,9 +110,9 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
       birthDate: official.birthdate.toISOString().split("T")[0],
     }),
     ...(official.birthplace && { birthPlace: official.birthplace }),
-    ...(official.websiteUrl && { url: official.websiteUrl }),
-    ...(official.twitterHandle && {
-      sameAs: `https://twitter.com/${official.twitterHandle.replace(/^@/, "")}`,
+    ...(safeWebsiteUrl && { url: safeWebsiteUrl }),
+    ...(safeTwitterHandle && {
+      sameAs: `https://twitter.com/${safeTwitterHandle}`,
     }),
     description: official.bio?.slice(0, 500) || `${official.position} di ${official.institution}`,
     image: official.photoUrl || undefined,
@@ -113,6 +122,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "Asia/Jakarta",
   });
 
   return (
@@ -196,34 +206,34 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
 
                 {/* Social links */}
                 <div className="mt-3 flex flex-wrap justify-center gap-3 sm:justify-start">
-                  {official.websiteUrl && (
+                  {safeWebsiteUrl && (
                     <a
-                      href={official.websiteUrl}
+                      href={safeWebsiteUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-sm text-txt-secondary hover:text-primary transition-colors"
                     >
-                      <Globe size={14} /> Website
+                      <Globe size={14} aria-hidden="true" /> Website
                     </a>
                   )}
-                  {official.twitterHandle && (
+                  {safeTwitterHandle && (
                     <a
-                      href={`https://twitter.com/${official.twitterHandle.replace(/^@/, "")}`}
+                      href={`https://twitter.com/${safeTwitterHandle}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-sm text-txt-secondary hover:text-primary transition-colors"
                     >
-                      <Twitter size={14} /> @{official.twitterHandle.replace(/^@/, "")}
+                      <Twitter size={14} aria-hidden="true" /> @{safeTwitterHandle}
                     </a>
                   )}
-                  {official.instagramHandle && (
+                  {safeInstagramHandle && (
                     <a
-                      href={`https://instagram.com/${official.instagramHandle.replace(/^@/, "")}`}
+                      href={`https://instagram.com/${safeInstagramHandle}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-sm text-txt-secondary hover:text-primary transition-colors"
                     >
-                      <Instagram size={14} /> @{official.instagramHandle.replace(/^@/, "")}
+                      <Instagram size={14} aria-hidden="true" /> @{safeInstagramHandle}
                     </a>
                   )}
                 </div>

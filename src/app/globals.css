@@ -334,7 +334,7 @@
     color: #44474e;
   }
   .print-article-title {
-    font-family: "Plus Jakarta Sans", var(--font-plus-jakarta-sans), sans-serif;
+    font-family: var(--font-playfair-display), "Plus Jakarta Sans", Georgia, serif;
     font-size: 18pt !important;
     font-weight: 800 !important;
     line-height: 1.3 !important;
@@ -445,47 +445,56 @@
   50%      { transform: translateY(-2px); }
 }
 
+/* Lensaplus utility animations (with legacy `.kw-*` aliases kept temporarily
+ * until `src/app/panel/dashboard/page.tsx` finishes migrating to `.lp-*`). */
+.lp-fade-in-up,
 .kw-fade-in-up {
   animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 /* Stagger delays untuk grid cards — 10 step cycle dengan langkah lebih panjang
  * supaya cascade-nya benar-benar kebaca (efek "berjatuhan" satu per satu). */
-.kw-stagger > *:nth-child(10n+1)  { animation-delay: 0.00s; }
-.kw-stagger > *:nth-child(10n+2)  { animation-delay: 0.06s; }
-.kw-stagger > *:nth-child(10n+3)  { animation-delay: 0.12s; }
-.kw-stagger > *:nth-child(10n+4)  { animation-delay: 0.18s; }
-.kw-stagger > *:nth-child(10n+5)  { animation-delay: 0.24s; }
-.kw-stagger > *:nth-child(10n+6)  { animation-delay: 0.30s; }
-.kw-stagger > *:nth-child(10n+7)  { animation-delay: 0.36s; }
-.kw-stagger > *:nth-child(10n+8)  { animation-delay: 0.42s; }
-.kw-stagger > *:nth-child(10n+9)  { animation-delay: 0.48s; }
-.kw-stagger > *:nth-child(10n+10) { animation-delay: 0.54s; }
+.lp-stagger > *:nth-child(10n+1), .kw-stagger > *:nth-child(10n+1)  { animation-delay: 0.00s; }
+.lp-stagger > *:nth-child(10n+2), .kw-stagger > *:nth-child(10n+2)  { animation-delay: 0.06s; }
+.lp-stagger > *:nth-child(10n+3), .kw-stagger > *:nth-child(10n+3)  { animation-delay: 0.12s; }
+.lp-stagger > *:nth-child(10n+4), .kw-stagger > *:nth-child(10n+4)  { animation-delay: 0.18s; }
+.lp-stagger > *:nth-child(10n+5), .kw-stagger > *:nth-child(10n+5)  { animation-delay: 0.24s; }
+.lp-stagger > *:nth-child(10n+6), .kw-stagger > *:nth-child(10n+6)  { animation-delay: 0.30s; }
+.lp-stagger > *:nth-child(10n+7), .kw-stagger > *:nth-child(10n+7)  { animation-delay: 0.36s; }
+.lp-stagger > *:nth-child(10n+8), .kw-stagger > *:nth-child(10n+8)  { animation-delay: 0.42s; }
+.lp-stagger > *:nth-child(10n+9), .kw-stagger > *:nth-child(10n+9)  { animation-delay: 0.48s; }
+.lp-stagger > *:nth-child(10n+10), .kw-stagger > *:nth-child(10n+10) { animation-delay: 0.54s; }
 
+.lp-pulse-live,
 .kw-pulse-live {
   animation: pulseGlow 2s ease-in-out infinite;
 }
 
+.lp-float-icon,
 .kw-float-icon {
   animation: floatY 3s ease-in-out infinite;
 }
 
 /* Section header gradient underline — shimmer halus berjalan terus, lebih cepat on hover */
+.lp-section-bar,
 .kw-section-bar {
   background: linear-gradient(90deg, #0F172A 0%, #0EA5E9 50%, #0F172A 100%);
   background-size: 200% 100%;
   animation: shimmer 6s linear infinite;
   transition: opacity 0.3s;
 }
+.lp-section-bar:hover,
 .kw-section-bar:hover {
   animation: shimmer 1.5s linear infinite;
 }
 
 /* Card hover: subtle radial gradient di latar saat hover */
+.lp-card-glow,
 .kw-card-glow {
   position: relative;
   isolation: isolate;
 }
+.lp-card-glow::before,
 .kw-card-glow::before {
   content: '';
   position: absolute;
@@ -496,15 +505,18 @@
   z-index: -1;
   border-radius: inherit;
 }
+.lp-card-glow:hover::before,
 .kw-card-glow:hover::before {
   opacity: 1;
 }
 
 /* Number tabular nums + smooth color shift on hover */
+.lp-stat-number,
 .kw-stat-number {
   font-variant-numeric: tabular-nums;
   transition: color 0.2s, transform 0.2s;
 }
+.lp-card-glow:hover .lp-stat-number,
 .kw-card-glow:hover .kw-stat-number {
   color: var(--primary, #0F172A);
   transform: scale(1.02);
@@ -517,6 +529,7 @@
   50%  { transform: translate3d(10%, 6%, 0) rotate(180deg); }
   100% { transform: translate3d(-10%, -6%, 0) rotate(360deg); }
 }
+.lp-aurora,
 .kw-aurora {
   position: absolute;
   inset: -40%;
@@ -537,6 +550,7 @@
   18%  { opacity: 0.65; }
   100% { transform: translateX(130%) skewX(-20deg); opacity: 0; }
 }
+.lp-card-glow::after,
 .kw-card-glow::after {
   content: '';
   position: absolute;
@@ -551,6 +565,7 @@
   z-index: 1;
   border-radius: inherit;
 }
+.lp-card-glow:hover::after,
 .kw-card-glow:hover::after {
   animation: cardSheen 0.85s ease-out;
 }
@@ -565,6 +580,7 @@
 }
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
+    .lp-reveal,
     .kw-reveal {
       animation: revealUp linear both;
       animation-timeline: view();

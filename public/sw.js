@@ -102,7 +102,7 @@ self.addEventListener('fetch', (event) => {
 
   // 1. Static Next.js assets — cache-first, 30 days
   if (url.pathname.startsWith('/_next/static/')) {
-    event.respondWith(cacheFirst(request, STATIC_CACHE));
+    event.respondWith(cacheFirst(request, STATIC_CACHE, event));
     return;
   }
 
@@ -112,45 +112,59 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/icons/') ||
     url.pathname.startsWith('/lensaplus-icon')
   ) {
-    event.respondWith(
-      cacheFirst(request, IMAGE_CACHE).then(async (resp) => {
-        await trimCacheEntries(IMAGE_CACHE, IMAGE_MAX_ENTRIES);
-        await trimCacheSize(IMAGE_CACHE, IMAGE_MAX_BYTES);
-        return resp;
-      })
-    );
+    event.respondWith(cacheFirst(request, IMAGE_CACHE, event));
     return;
   }
 
   // 3. HTML navigation — network-first with offline fallback
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirstWithFallback(request));
+    event.respondWith(networkFirstWithFallback(request, event));
     return;
   }
 });
 
 /** Cache-first: serve from cache (or precache); on miss fetch, store, and return. */
-async function cacheFirst(request, cacheName) {
+async function cacheFirst(request, cacheName, event) {
   const cache  = await caches.open(cacheName);
   const cached = (await cache.match(request)) || (await caches.match(request));
   if (cached) return cached;
 
   const response = await fetch(request);
   if (response.ok) {
-    cache.put(request, response.clone());
+    const clone = response.clone();
+    const persistAndTrim = (async () => {
+      await cache.put(request, clone);
+      if (cacheName === IMAGE_CACHE) {
+        await trimCacheEntries(IMAGE_CACHE, IMAGE_MAX_ENTRIES);
+        await trimCacheSize(IMAGE_CACHE, IMAGE_MAX_BYTES);
+      }
+    })();
+    if (event && typeof event.waitUntil === 'function') {
+      event.waitUntil(persistAndTrim);
+    } else {
+      await persistAndTrim;
+    }
   }
   return response;
 }
 
 /** Network-first: try network; on failure serve cache or offline page. */
-async function networkFirstWithFallback(request) {
+async function networkFirstWithFallback(request, event) {
   const cache = await caches.open(PAGE_CACHE);
 
   try {
     const response = await fetch(request);
     if (response.ok) {
-      cache.put(request, response.clone());
-      await trimCacheEntries(PAGE_CACHE, PAGE_MAX_ENTRIES);
+      const clone = response.clone();
+      const persistAndTrim = (async () => {
+        await cache.put(request, clone);
+        await trimCacheEntries(PAGE_CACHE, PAGE_MAX_ENTRIES);
+      })();
+      if (event && typeof event.waitUntil === 'function') {
+        event.waitUntil(persistAndTrim);
+      } else {
+        await persistAndTrim;
+      }
     }
     return response;
   } catch {

@@ -42,9 +42,9 @@ function VerifyInner() {
     loading: { icon: <Loader2 size={48} className="animate-spin text-primary" />, title: "Memverifikasi…", desc: "Mohon tunggu sebentar." },
     verified: { icon: <ShieldCheck size={48} className="text-green-600" />, title: "Email Terverifikasi ✓", desc: email ? `${email} berhasil diverifikasi. Terima kasih!` : "Email Anda berhasil diverifikasi. Terima kasih!" },
     already: { icon: <MailCheck size={48} className="text-green-600" />, title: "Sudah Terverifikasi", desc: "Email ini sudah pernah diverifikasi sebelumnya." },
-    expired: { icon: <ShieldX size={48} className="text-secondary" />, title: "Tautan Kedaluwarsa", desc: "Tautan verifikasi sudah lewat masa berlaku (24 jam). Minta tautan baru dari halaman Profil." },
-    invalid: { icon: <ShieldX size={48} className="text-secondary" />, title: "Tautan Tidak Valid", desc: "Tautan verifikasi tidak dikenali atau sudah digunakan." },
-    error: { icon: <ShieldX size={48} className="text-secondary" />, title: "Terjadi Kesalahan", desc: "Tidak dapat memproses verifikasi saat ini. Coba lagi nanti." },
+    expired: { icon: <ShieldX size={48} className="text-red-600" aria-hidden="true" />, title: "Tautan Kedaluwarsa", desc: "Tautan verifikasi sudah lewat masa berlaku (24 jam). Minta tautan baru dari halaman Profil." },
+    invalid: { icon: <ShieldX size={48} className="text-red-600" aria-hidden="true" />, title: "Tautan Tidak Valid", desc: "Tautan verifikasi tidak dikenali atau sudah digunakan." },
+    error: { icon: <ShieldX size={48} className="text-red-600" aria-hidden="true" />, title: "Terjadi Kesalahan", desc: "Tidak dapat memproses verifikasi saat ini. Coba lagi nanti." },
   }[state];
 
   return (

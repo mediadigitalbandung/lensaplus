@@ -94,7 +94,7 @@ export default function AdInquiryForm() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="ad-nama" className="mb-1 block text-sm font-medium text-txt-primary">
-              Nama <span className="text-secondary">*</span>
+              Nama <span className="text-red-600">*</span>
             </label>
             <input
               id="ad-nama"
@@ -107,7 +107,7 @@ export default function AdInquiryForm() {
           </div>
           <div>
             <label htmlFor="ad-email" className="mb-1 block text-sm font-medium text-txt-primary">
-              Email <span className="text-secondary">*</span>
+              Email <span className="text-red-600">*</span>
             </label>
             <input
               id="ad-email"
@@ -148,7 +148,7 @@ export default function AdInquiryForm() {
         </div>
         <div>
           <label htmlFor="ad-pkg" className="mb-1 block text-sm font-medium text-txt-primary">
-            Jenis Kerjasama <span className="text-secondary">*</span>
+            Jenis Kerjasama <span className="text-red-600">*</span>
           </label>
           <select
             id="ad-pkg"
@@ -167,7 +167,7 @@ export default function AdInquiryForm() {
         </div>
         <div>
           <label htmlFor="ad-pesan" className="mb-1 block text-sm font-medium text-txt-primary">
-            Pesan <span className="text-secondary">*</span>
+            Pesan <span className="text-red-600">*</span>
           </label>
           <textarea
             id="ad-pesan"
@@ -180,7 +180,7 @@ export default function AdInquiryForm() {
           />
         </div>
         <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} />
-        {error && <p className="text-sm text-secondary">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <p className="text-xs text-txt-muted">
           Dengan mengirim, Anda menyetujui pemrosesan data sesuai{" "}
           <Link href="/privasi" className="text-primary underline hover:text-primary-dark">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 
 interface TurnstileProps {
   onVerify: (token: string) => void;
@@ -18,6 +18,58 @@ declare global {
   }
 }
 
+const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad";
+const loadListeners = new Set<() => void>();
+const errorListeners = new Set<() => void>();
+let scriptState: "idle" | "loading" | "ready" | "error" = "idle";
+
+function loadTurnstileScript(onReady: () => void, onError: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  if (window.turnstile) {
+    scriptState = "ready";
+    onReady();
+    return () => {};
+  }
+
+  loadListeners.add(onReady);
+  errorListeners.add(onError);
+
+  if (scriptState === "error") {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT_SRC}"]`);
+    existing?.remove();
+    scriptState = "idle";
+  }
+
+  if (scriptState === "idle") {
+    scriptState = "loading";
+    window.onTurnstileLoad = () => {
+      scriptState = "ready";
+      loadListeners.forEach((cb) => cb());
+      loadListeners.clear();
+      errorListeners.clear();
+    };
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT_SRC}"]`);
+    if (!existing) {
+      const script = document.createElement("script");
+      script.src = SCRIPT_SRC;
+      script.async = true;
+      script.defer = true;
+      script.onerror = () => {
+        scriptState = "error";
+        errorListeners.forEach((cb) => cb());
+        loadListeners.clear();
+        errorListeners.clear();
+      };
+      document.head.appendChild(script);
+    }
+  }
+
+  return () => {
+    loadListeners.delete(onReady);
+    errorListeners.delete(onError);
+  };
+}
+
 export default function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -26,13 +78,23 @@ export default function Turnstile({ onVerify, onExpire }: TurnstileProps) {
   onVerifyRef.current = onVerify;
   onExpireRef.current = onExpire;
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const renderWidget = useCallback(() => {
     if (!containerRef.current || !window.turnstile || widgetIdRef.current) return;
+    setFailed(false);
     widgetIdRef.current = window.turnstile.render(containerRef.current, {
       sitekey: siteKey,
-      callback: (token: string) => onVerifyRef.current(token),
+      callback: (token: string) => {
+        setFailed(false);
+        onVerifyRef.current(token);
+      },
       "expired-callback": () => onExpireRef.current?.(),
+      "error-callback": () => {
+        setFailed(true);
+        onExpireRef.current?.();
+      },
       theme: "light",
       size: "normal",
     });
@@ -46,28 +108,45 @@ export default function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       return;
     }
 
-    // If turnstile already loaded
     if (window.turnstile) {
       renderWidget();
-      return;
     }
 
-    // Load script
-    window.onTurnstileLoad = renderWidget;
-    const script = document.createElement("script");
-    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad";
-    script.async = true;
-    document.head.appendChild(script);
+    const cleanup = loadTurnstileScript(renderWidget, () => setFailed(true));
 
     return () => {
+      cleanup();
       if (widgetIdRef.current && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, renderWidget]);
+  }, [siteKey, renderWidget, attempt]);
 
   if (!siteKey) return null;
 
-  return <div ref={containerRef} className="my-2" />;
+  return (
+    <div className="my-2">
+      <div ref={containerRef} />
+      {failed && (
+        <div role="alert" className="mt-1.5 flex items-center gap-2 text-xs text-red-700">
+          <span>Verifikasi keamanan gagal dimuat.</span>
+          <button
+            type="button"
+            onClick={() => {
+              if (widgetIdRef.current && window.turnstile) {
+                window.turnstile.remove(widgetIdRef.current);
+                widgetIdRef.current = null;
+              }
+              setFailed(false);
+              setAttempt((n) => n + 1);
+            }}
+            className="font-semibold text-primary underline hover:text-primary-dark"
+          >
+            Muat ulang verifikasi
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }

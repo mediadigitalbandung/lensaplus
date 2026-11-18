@@ -2,15 +2,6 @@ export const revalidate = 3600; // stats refresh hourly — no need for live dat
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  ShieldCheck,
-  Newspaper,
-  LayoutTemplate,
-  Handshake,
-  FileText,
-  TrendingUp,
-  MapPin,
-} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { slotLabels, slotSpecs } from "@/app/panel/iklan/_components/ad-constants";
 import AdInquiryForm from "@/components/ads/AdInquiryForm";
@@ -38,7 +29,6 @@ const DISPLAY_PRICES: Record<string, string> = {
 
 const PACKAGES = [
   {
-    icon: FileText,
     title: "Advertorial / Berita Berbayar",
     price: "Mulai Rp 1.000.000",
     unit: "/ artikel",
@@ -46,7 +36,6 @@ const PACKAGES = [
     points: ["Penulisan oleh tim redaksi", "Tayang permanen + label transparan", "Distribusi sosial media"],
   },
   {
-    icon: Handshake,
     title: "Kerjasama Media / Pemda",
     price: "Paket Bulanan",
     unit: "/ kontrak",
@@ -54,33 +43,28 @@ const PACKAGES = [
     points: ["Kuota artikel bulanan", "Liputan acara/agenda", "Laporan kinerja berkala"],
   },
   {
-    icon: LayoutTemplate,
     title: "Banner Display",
     price: "Mulai Rp 1.000.000",
     unit: "/ bulan / slot",
-    desc: "Banner statis/GIF/HTML di posisi strategis. Cocok untuk branding bisnis lokal, properti, event, kampus, dan klinik.",
+    desc: "Banner statis/HTML di posisi strategis. Cocok untuk branding bisnis lokal, properti, event, kampus, dan klinik.",
     points: ["7 posisi slot tersedia", "Statistik impresi & klik", "Ganti materi kapan saja"],
   },
 ];
 
 const WHY = [
   {
-    icon: MapPin,
     title: "Audiens Bandung & Jawa Barat",
     desc: "Pembaca terkonsentrasi di Bandung Raya & Jabar — tepat untuk menjangkau pasar lokal Anda.",
   },
   {
-    icon: ShieldCheck,
     title: "Media Kredibel",
     desc: "Terverifikasi standar Dewan Pers. Brand Anda tampil di lingkungan berita tepercaya, bukan situs abal-abal.",
   },
   {
-    icon: Newspaper,
     title: "Multi-Kanal",
     desc: "Konten Anda tersebar ke Website, Google News, serta Instagram & kanal sosial Lensaplus.",
   },
   {
-    icon: TrendingUp,
     title: "Terukur",
     desc: "Setiap banner dilengkapi statistik impresi & klik. Advertorial dapat dilacak via Google Analytics.",
   },
@@ -136,7 +120,7 @@ export default async function PasangIklanPage() {
       </section>
 
       {/* Stats strip */}
-      <section className="border-b border-border bg-surface-lowest">
+      <section className="border-b border-border bg-surface-container-lowest">
         <div className="container-main grid grid-cols-2 gap-4 py-8 sm:grid-cols-4">
           {stats.map((s) => (
             <div key={s.label} className="text-center">
@@ -164,7 +148,7 @@ export default async function PasangIklanPage() {
       </section>
 
       {/* Packages */}
-      <section id="paket" className="bg-surface-lowest py-12 sm:py-14">
+      <section id="paket" className="bg-surface-container-lowest py-12 sm:py-14">
         <div className="container-main">
           <h2 className="flex items-center gap-3 font-serif text-headline-sm font-bold text-txt-primary sm:text-headline-md">
             <span className="block h-7 w-[3px] rounded-full bg-secondary" />
@@ -208,7 +192,7 @@ export default async function PasangIklanPage() {
         </h2>
         <div className="mt-6 overflow-x-auto rounded-xl border border-border">
           <table className="w-full min-w-[560px] text-left text-sm">
-            <thead className="bg-surface-lowest text-txt-secondary">
+            <thead className="bg-surface-container-lowest text-txt-secondary">
               <tr>
                 <th className="px-4 py-3 font-semibold">Posisi</th>
                 <th className="px-4 py-3 font-semibold">Ukuran</th>
@@ -233,13 +217,13 @@ export default async function PasangIklanPage() {
           </table>
         </div>
         <p className="mt-3 text-xs text-txt-muted">
-          Format materi: gambar (JPG/PNG), GIF animasi, atau kode HTML. Diskon tersedia untuk
+          Format materi: gambar (JPG/PNG/WebP) atau kode HTML. Diskon tersedia untuk
           kontrak 3/6/12 bulan.
         </p>
       </section>
 
       {/* Inquiry form */}
-      <section id="formulir" className="bg-surface-lowest py-12 sm:py-16">
+      <section id="formulir" className="bg-surface-container-lowest py-12 sm:py-16">
         <div className="container-main">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             <div>

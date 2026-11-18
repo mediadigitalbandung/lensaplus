@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { safeHref } from "@/components/common/safeHref";
 type CompanySector =
   | "KEUANGAN" | "ENERGI" | "KONSUMER" | "PROPERTI" | "TELEKOMUNIKASI"
   | "INFRASTRUKTUR" | "PERTAMBANGAN" | "PERTANIAN_PERKEBUNAN" | "TRANSPORTASI"
@@ -37,7 +38,12 @@ function formatMarketCap(cap: bigint | null): string {
 
 function formatDate(d: Date | null): string {
   if (!d) return "—";
-  return d.toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
+  return d.toLocaleDateString("id-ID", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Jakarta",
+  });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,6 +112,8 @@ export default async function EmitenDetailPage({
     },
   });
 
+  const safeWebsiteUrl = safeHref(company.website);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -113,7 +121,7 @@ export default async function EmitenDetailPage({
         "@type": "Organization",
         name: company.name,
         alternateName: company.shortName ?? undefined,
-        url: company.website ?? undefined,
+        url: safeWebsiteUrl ?? undefined,
         logo: company.logoUrl ?? undefined,
         foundingDate: company.founded?.toString(),
         numberOfEmployees: company.employees ?? undefined,
@@ -266,16 +274,16 @@ export default async function EmitenDetailPage({
                   )
               )}
 
-              {company.website && (
+              {safeWebsiteUrl && (
                 <div>
                   <span className="text-label-sm text-txt-muted">Website</span>
                   <a
-                    href={company.website}
+                    href={safeWebsiteUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-0.5 block truncate text-body-sm text-primary hover:underline"
                   >
-                    {company.website.replace(/^https?:\/\//, "")}
+                    {safeWebsiteUrl.replace(/^https?:\/\//i, "")}
                   </a>
                 </div>
               )}

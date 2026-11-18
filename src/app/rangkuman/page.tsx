@@ -5,6 +5,11 @@ import Image from "next/image";
 import { Metadata } from "next";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import {
+  formatWibDate,
+  wibStartOfWeek,
+  wibStartOfMonth,
+} from "@/components/common/wib-date";
 
 export const metadata: Metadata = {
   title: "Rangkuman",
@@ -29,30 +34,17 @@ interface DigestCard {
   dateRange: string;
 }
 
-function startOfWeek(d: Date): Date {
-  const date = new Date(d);
-  const day = date.getDay();
-  const diff = (day === 0 ? -6 : 1) - day;
-  date.setDate(date.getDate() + diff);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-function startOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
 function fmtDateRange(from: Date, to: Date): string {
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
-  const fromStr = from.toLocaleDateString("id-ID", opts);
-  const toStr = to.toLocaleDateString("id-ID", { ...opts, year: "numeric" });
+  const fromStr = formatWibDate(from, opts);
+  const toStr = formatWibDate(to, { ...opts, year: "numeric" });
   return `${fromStr} – ${toStr}`;
 }
 
 export default async function RangkumanIndexPage() {
   const now = new Date();
-  const weekStart = startOfWeek(now);
-  const monthStart = startOfMonth(now);
+  const weekStart = wibStartOfWeek(now);
+  const monthStart = wibStartOfMonth(now);
   const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 

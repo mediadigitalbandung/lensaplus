@@ -85,7 +85,10 @@ function buildJsonLd(blog: {
   author: { name: string };
   entries: Array<{ id: string; content: string; postedAt: Date }>;
 }) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://lensaplus.com";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    "https://lensaplus.com";
   const liveEntry = blog.entries.map((e) => ({
     "@type": "BlogPosting",
     "@id": `${baseUrl}/live/${blog.slug}#${e.id}`,

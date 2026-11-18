@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { parsePositiveInt } from "@/lib/utils";
+import { safeHref } from "@/components/common/safeHref";
 import { ExternalLink, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import type { RegulationType, RegulationStatus } from "@prisma/client";
 
@@ -299,31 +300,40 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
                         day: "numeric",
                         month: "long",
                         year: "numeric",
+                        timeZone: "Asia/Jakarta",
                       }).format(new Date(reg.enactedAt))}
                     </p>
                   )}
                   {/* Links */}
                   <div className="mt-2 flex flex-wrap gap-3">
-                    {reg.sourceUrl && (
-                      <a
-                        href={reg.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        <ExternalLink size={11} /> Sumber Resmi
-                      </a>
-                    )}
-                    {reg.pdfUrl && (
-                      <a
-                        href={reg.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-secondary hover:underline"
-                      >
-                        <FileText size={11} /> Unduh PDF
-                      </a>
-                    )}
+                    {(() => {
+                      const safeSourceUrl = safeHref(reg.sourceUrl);
+                      const safePdfUrl = safeHref(reg.pdfUrl, { allowRelative: true });
+                      return (
+                        <>
+                          {safeSourceUrl && (
+                            <a
+                              href={safeSourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            >
+                              <ExternalLink size={11} aria-hidden="true" /> Sumber Resmi
+                            </a>
+                          )}
+                          {safePdfUrl && (
+                            <a
+                              href={safePdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-secondary hover:underline"
+                            >
+                              <FileText size={11} aria-hidden="true" /> Unduh PDF
+                            </a>
+                          )}
+                        </>
+                      );
+                    })()}
                     <Link
                       href={`/regulasi/${reg.id}`}
                       className="inline-flex items-center gap-1 text-xs text-txt-secondary hover:text-primary"

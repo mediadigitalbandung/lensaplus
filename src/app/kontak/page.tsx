@@ -1,17 +1,49 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { Suspense, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Mail, Send } from "lucide-react";
 import Turnstile from "@/components/ui/Turnstile";
 
-export default function KontakPage() {
-  const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
+const SUBJECT_OPTIONS = [
+  { value: "umum", label: "Pertanyaan Umum" },
+  { value: "redaksi", label: "Kirim Tulisan / Opini" },
+  { value: "iklan", label: "Pasang Iklan" },
+  { value: "koreksi", label: "Koreksi Berita" },
+  { value: "laporan", label: "Laporkan Berita" },
+  { value: "kerjasama", label: "Kerjasama" },
+  { value: "lainnya", label: "Lainnya" },
+] as const;
+
+function resolveInitialSubject(raw: string | null): string {
+  if (!raw) return "";
+  const normalized = raw.trim().toLowerCase();
+  if (!normalized) return "";
+  if (normalized === "laporkan berita" || normalized === "laporan" || normalized.includes("lapor")) {
+    return "laporan";
+  }
+  const matched = SUBJECT_OPTIONS.find(
+    (opt) => opt.value === normalized || opt.label.toLowerCase() === normalized
+  );
+  return matched ? matched.value : "";
+}
+
+function KontakFormContent() {
+  const searchParams = useSearchParams();
+  const initialSubject = resolveInitialSubject(searchParams.get("subject"));
+  const [formData, setFormData] = useState({ name: "", email: "", subject: initialSubject, message: "" });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
   const onCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+
+  useEffect(() => {
+    if (initialSubject) {
+      setFormData((prev) => (prev.subject ? prev : { ...prev, subject: initialSubject }));
+    }
+  }, [initialSubject]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +119,7 @@ export default function KontakPage() {
               {sent ? (
                 <div className="flex h-full items-center justify-center rounded-lg border border-border border-l-4 border-l-primary bg-surface p-8 text-center">
                   <div>
-                    <Mail size={32} className="mx-auto text-primary" />
+                    <Mail size={32} className="mx-auto text-primary" aria-hidden="true" />
                     <h3 className="mt-4 text-lg font-bold text-txt-primary">
                       Pesan Terkirim!
                     </h3>
@@ -95,7 +127,8 @@ export default function KontakPage() {
                       Terima kasih telah menghubungi kami. Tim redaksi akan merespons dalam 1-2 hari kerja.
                     </p>
                     <button
-                      onClick={() => { setSent(false); setFormData({ name: "", email: "", subject: "", message: "" }); }}
+                      type="button"
+                      onClick={() => { setSent(false); setFormData({ name: "", email: "", subject: initialSubject, message: "" }); }}
                       className="mt-4 text-sm text-primary hover:underline"
                     >
                       Kirim pesan lagi
@@ -120,12 +153,9 @@ export default function KontakPage() {
                       <label htmlFor="kontak-subjek" className="mb-1 block text-sm font-medium text-txt-primary">Subjek</label>
                       <select id="kontak-subjek" required aria-required="true" value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="input w-full">
                         <option value="">Pilih subjek</option>
-                        <option value="umum">Pertanyaan Umum</option>
-                        <option value="redaksi">Kirim Tulisan / Opini</option>
-                        <option value="iklan">Pasang Iklan</option>
-                        <option value="koreksi">Koreksi Berita</option>
-                        <option value="kerjasama">Kerjasama</option>
-                        <option value="lainnya">Lainnya</option>
+                        {SUBJECT_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
@@ -134,7 +164,7 @@ export default function KontakPage() {
                     </div>
                     <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} />
                     {error && (
-                      <p className="text-sm text-red-600">{error}</p>
+                      <p role="alert" className="text-sm text-red-600">{error}</p>
                     )}
                     <p className="text-sm text-on-surface-variant">
                       Dengan mengirim, Anda menyetujui pemrosesan data sesuai{" "}
@@ -144,7 +174,7 @@ export default function KontakPage() {
                       Lensaplus sesuai UU PDP No. 27/2022.
                     </p>
                     <button type="submit" disabled={sending || !captchaToken} className="btn-primary flex items-center gap-2 disabled:opacity-50">
-                      <Send size={16} /> {sending ? "Mengirim..." : "Kirim Pesan"}
+                      <Send size={16} aria-hidden="true" /> {sending ? "Mengirim..." : "Kirim Pesan"}
                     </button>
                   </div>
                 </form>
@@ -154,5 +184,23 @@ export default function KontakPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function KontakPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-surface min-h-screen">
+          <div className="container-main py-8 sm:py-10 lg:py-12 2xl:py-16">
+            <div className="mx-auto max-w-4xl">
+              <p className="text-sm text-txt-muted">Memuat formulir kontak...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <KontakFormContent />
+    </Suspense>
   );
 }
