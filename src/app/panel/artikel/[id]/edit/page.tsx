@@ -39,6 +39,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { stripHtml, downloadTextFile, exportArticlePdf } from "@/lib/export-utils";
+import { stripAttributionFooter } from "@/lib/scraper/source-label";
 import DOMPurify from "isomorphic-dompurify";
 
 const RichTextEditor = dynamic(
@@ -461,15 +462,7 @@ export default function EditArticlePage() {
       const data = await res.json();
       if (data.success && data.data?.result) {
         const extra = String(data.data.result).trim();
-        setContent((prev) => {
-          const footerMatch = prev.match(/<p[^>]*>\s*Disarikan dari rilis[\s\S]*?<\/p>\s*$/i);
-          if (footerMatch && typeof footerMatch.index === "number") {
-            const before = prev.slice(0, footerMatch.index).trimEnd();
-            const footer = footerMatch[0];
-            return `${before}\n${extra}\n${footer}`;
-          }
-          return `${prev.trimEnd()}\n${extra}`;
-        });
+        setContent((prev) => `${stripAttributionFooter(prev).trimEnd()}\n${extra}`);
         setError("");
         success("Isi artikel berhasil diperpanjang dengan paragraf tambahan AI!");
       } else {
@@ -568,7 +561,7 @@ export default function EditArticlePage() {
 
       const clamp = (s: string, max: number) => (s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s);
       setTitle(clamp(article.title || "", 255));
-      setContent(article.content || "");
+      setContent(stripAttributionFooter(article.content || ""));
       setExcerpt(clamp(article.excerpt || "", 500));
       setCategoryId(article.categoryId || article.category?.id || "");
       setTags(article.tags?.map((t: { name: string }) => t.name).join(", ") || "");

@@ -27,10 +27,12 @@ const dryRun = process.argv.includes("--dry-run");
 // (set by buildAttribution); the inner text varies per source so we anchor
 // on the unique marker phrase.
 const ATTRIBUTION_RE =
-  /\s*<p\s+class="text-sm italic text-txt-muted mt-8 pt-4 border-t border-border">Disarikan dari[\s\S]*?ditulis ulang oleh tim editorial[\s\S]*?<\/p>\s*$/i;
+  /\s*<p\s+class="text-sm italic text-txt-muted mt-8 pt-4 border-t border-border">Disarikan dari[\s\S]*?(?:ditulis ulang oleh tim editorial|mengacu ke publikasi asli)[\s\S]*?<\/p>\s*/gi;
 // Fallback: the marker phrase alone, even if class attribute drifts.
 const FALLBACK_RE =
-  /\s*<p[^>]*>Disarikan dari[\s\S]*?ditulis ulang oleh tim editorial[\s\S]*?<\/p>\s*$/i;
+  /\s*<p\b[^>]*>\s*Disarikan dari(?:\s+rilis)?\b[\s\S]*?(?:ditulis ulang oleh tim editorial|mengacu ke publikasi asli|<a\b)[\s\S]*?<\/p>\s*/gi;
+const SENTENCE_RE =
+  /\s*Versi\s+\S+\s+ditulis ulang oleh tim editorial dengan dukungan AI;\s*fakta dan kutipan tetap mengacu ke publikasi asli\.?/gi;
 
 async function main() {
   console.log("Strip attribution footer");
@@ -41,7 +43,10 @@ async function main() {
   // has thousands of articles and most never carried this footer.
   const articles = await prisma.article.findMany({
     where: {
-      content: { contains: "ditulis ulang oleh tim editorial" },
+      OR: [
+        { content: { contains: "ditulis ulang oleh tim editorial" } },
+        { content: { contains: "Disarikan dari rilis" } },
+      ],
     },
     select: { id: true, slug: true, status: true, content: true },
   });
@@ -52,12 +57,11 @@ async function main() {
   let skippedNoMatch = 0;
 
   for (const a of articles) {
-    let stripped = a.content.replace(ATTRIBUTION_RE, "").trimEnd();
-    if (stripped === a.content) {
-      // Class attribute may have been altered by a sanitizer somewhere —
-      // try the looser match.
-      stripped = a.content.replace(FALLBACK_RE, "").trimEnd();
-    }
+    let stripped = a.content
+      .replace(ATTRIBUTION_RE, "")
+      .replace(FALLBACK_RE, "")
+      .replace(SENTENCE_RE, "")
+      .trimEnd();
     if (stripped === a.content) {
       skippedNoMatch++;
       continue;

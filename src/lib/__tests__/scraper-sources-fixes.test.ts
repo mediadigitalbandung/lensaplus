@@ -728,10 +728,11 @@ describe("multi-language detection, translation & concept paraphrasing", () => {
     expect(createData.seoTitle).toBeTruthy();
     expect(createData.seoDescription).toBeTruthy();
     expect(createData.sources.create[0].name).toBe("Example (example.id)");
-    expect(createData.content).toContain("Example (example.id)");
+    expect(createData.content).not.toContain("Disarikan dari rilis");
+    expect(createData.content).not.toContain("dengan dukungan AI");
   });
 
-  it("automatically expands paraphrased drafts shorter than 320 words and includes (websitenya) in attribution", async () => {
+  it("automatically expands paraphrased drafts shorter than 320 words and records (websitenya) in sources without appending AI footer", async () => {
     mockCallAI
       .mockResolvedValueOnce({
         text: JSON.stringify({
@@ -778,7 +779,8 @@ describe("multi-language detection, translation & concept paraphrasing", () => {
     expect(res.tokens).toBe(350);
     const createData = mockArticleCreate.mock.calls[0][0].data;
     expect(createData.content).toContain("Dampak bagi Perekonomian Daerah");
-    expect(createData.content).toContain("Bankbjb (bankbjb.co.id)");
+    expect(createData.content).not.toContain("Disarikan dari rilis");
+    expect(createData.content).not.toContain("dengan dukungan AI");
     expect(createData.sources.create[0].name).toBe("Bankbjb (bankbjb.co.id)");
   });
 });

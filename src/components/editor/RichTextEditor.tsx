@@ -305,15 +305,7 @@ export default function RichTextEditor({
         } else if (feature === "social_caption" && onAiCaption) {
           onAiCaption(suggestion);
         } else if (feature === "expand_article") {
-          const footerMatch = html.match(/<p[^>]*>\s*Disarikan dari rilis[\s\S]*?<\/p>\s*$/i);
-          if (footerMatch && typeof footerMatch.index === "number") {
-            const before = html.slice(0, footerMatch.index).trimEnd();
-            const footer = footerMatch[0];
-            const nextHtml = `${before}\n${suggestion}\n${footer}`;
-            editor.commands.setContent(nextHtml, { emitUpdate: true });
-          } else {
-            editor.chain().focus("end").insertContent(suggestion).run();
-          }
+          editor.chain().focus("end").insertContent(suggestion).run();
         } else if (["content_ideas", "write_article", "high_ctr_meta"].includes(feature)) {
           // Insert the generated HTML directly into the TipTap editor at cursor
           editor.chain().focus().insertContent(suggestion).run();

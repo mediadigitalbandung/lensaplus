@@ -6,6 +6,7 @@ import {
   formatSourceWithWebsite,
   rewriteCreditsInContent,
   footerSourceHref,
+  stripAttributionFooter,
   uploadUrlsInContent,
 } from "../scraper/source-label";
 
@@ -134,5 +135,11 @@ describe("sourceWebsiteFromUrl & formatSourceWithWebsite", () => {
     expect(
       formatSourceWithWebsite("bola.com", "https://www.bola.com/indonesia/read/1")
     ).toBe("bola.com");
+  });
+
+  it("strips the legacy Disarikan dari rilis / tim editorial dengan dukungan AI footer paragraph", () => {
+    const html =
+      '<p>Paragraf utama artikel.</p><p class="text-sm italic text-txt-muted mt-8 pt-4 border-t border-border">Disarikan dari rilis <a href="https://www.manutd.com/en/news/detail/why-tooney-has-been-back-to-school" target="_blank" rel="nofollow noopener">Manutd (manutd.com) — "Why Tooney has been back to school!"</a>. Versi Lensaplus ditulis ulang oleh tim editorial dengan dukungan AI; fakta dan kutipan tetap mengacu ke publikasi asli.</p>';
+    expect(stripAttributionFooter(html)).toBe("<p>Paragraf utama artikel.</p>");
   });
 });

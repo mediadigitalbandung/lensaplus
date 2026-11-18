@@ -21,7 +21,12 @@ import { notFound } from "next/navigation";
 import { getCached } from "@/lib/cache";
 // Note: DOMPurify removed — content sanitized at input via API validation
 import { slugify } from "@/lib/utils";
-import { sourceLabelFromUrl, footerSourceHref, formatSourceWithWebsite } from "@/lib/scraper/source-label";
+import {
+  sourceLabelFromUrl,
+  footerSourceHref,
+  formatSourceWithWebsite,
+  stripAttributionFooter,
+} from "@/lib/scraper/source-label";
 import { faqJsonLd, newsArticleJsonLd } from "@/lib/seo/json-ld";
 import ReadTracker from "@/components/personalization/ReadTracker";
 
@@ -384,20 +389,22 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const articleUrl = `${appUrl}/berita/${params.slug}`;
 
+  const cleanedBodyContent = stripAttributionFooter(article.content);
+
   // Avoid double-rendering when the article body opens with the same image as
   // the featured image at the top — strips the leading <img> or <figure>...img...</figure>
   // from `content` only when its src matches `article.featuredImage` exactly.
   // 16 articles in the wild had this from the auto-article / migration flow.
   const dedupedContent = (() => {
     const featured = article.featuredImage?.trim();
-    if (!featured) return article.content;
+    if (!featured) return cleanedBodyContent;
     const figureRe = /^\s*<figure[^>]*>\s*<img[^>]*\bsrc=["']([^"']+)["'][^>]*>[\s\S]*?<\/figure>\s*/i;
     const imgRe = /^\s*<img[^>]*\bsrc=["']([^"']+)["'][^>]*\/?>\s*(?:<\/img>)?\s*/i;
-    const figMatch = article.content.match(figureRe);
-    if (figMatch && figMatch[1] === featured) return article.content.slice(figMatch[0].length);
-    const imgMatch = article.content.match(imgRe);
-    if (imgMatch && imgMatch[1] === featured) return article.content.slice(imgMatch[0].length);
-    return article.content;
+    const figMatch = cleanedBodyContent.match(figureRe);
+    if (figMatch && figMatch[1] === featured) return cleanedBodyContent.slice(figMatch[0].length);
+    const imgMatch = cleanedBodyContent.match(imgRe);
+    if (imgMatch && imgMatch[1] === featured) return cleanedBodyContent.slice(imgMatch[0].length);
+    return cleanedBodyContent;
   })();
 
   // Inject inline "Baca Juga" suggestions BEFORE pagination so the threshold
@@ -416,7 +423,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
     title: article.title,
     slug: article.slug,
     excerpt: article.excerpt,
-    content: article.content,
+    content: cleanedBodyContent,
     featuredImage: article.featuredImage,
     // Guaranteed fallback so image[] is never empty (Google rich-result req).
     ogImageUrl: `/api/og?slug=${encodeURIComponent(article.slug)}&v=${article.updatedAt.getTime()}`,
@@ -425,7 +432,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
     author: { name: article.author.name, slug: slugify(article.author.name) },
     category: { name: article.category.name, slug: article.category.slug },
     tags: article.tags.map((t: { name: string }) => ({ name: t.name })),
-    wordCount: countWords(article.content),
+    wordCount: countWords(cleanedBodyContent),
   });
 
   const breadcrumbLd = {

@@ -40,6 +40,7 @@ interface Source {
 }
 
 import { CAN_SUBMIT_REVIEW, EDITOR_ROLES, roleLabelsMap } from "@/lib/roles";
+import { stripAttributionFooter } from "@/lib/scraper/source-label";
 import PerplexityResearchPanel from "@/components/editor/PerplexityResearchPanel";
 
 const AUTOSAVE_KEY = "autosave_draft_new";
@@ -318,15 +319,7 @@ export default function NewArticlePage() {
       const data = await res.json();
       if (data.success && data.data?.result) {
         const extra = String(data.data.result).trim();
-        setContent((prev) => {
-          const footerMatch = prev.match(/<p[^>]*>\s*Disarikan dari rilis[\s\S]*?<\/p>\s*$/i);
-          if (footerMatch && typeof footerMatch.index === "number") {
-            const before = prev.slice(0, footerMatch.index).trimEnd();
-            const footer = footerMatch[0];
-            return `${before}\n${extra}\n${footer}`;
-          }
-          return `${prev.trimEnd()}\n${extra}`;
-        });
+        setContent((prev) => `${stripAttributionFooter(prev).trimEnd()}\n${extra}`);
         setError("");
         success("Isi artikel berhasil diperpanjang dengan paragraf tambahan AI!");
       } else {

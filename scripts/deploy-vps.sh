@@ -116,6 +116,7 @@ npx prisma generate || fail "prisma generate failed"
 # the changed model). No --accept-data-loss: a destructive diff aborts the
 # deploy instead of silently dropping data.
 npx prisma db push --skip-generate || fail "prisma db push failed"
+node scripts/strip-attribution-footer.js || true
 
 # Keep the previous build as .next.old, then build a fresh .next. If the build
 # fails, fail() restores .next.old so the site returns to the last good build.

@@ -171,6 +171,29 @@ export function footerSourceHref(html: string): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * Strip the legacy scraper attribution footer paragraph
+ * (`<p ...>Disarikan dari rilis … Versi Lensaplus ditulis ulang oleh tim editorial dengan dukungan AI…</p>`)
+ * and any standalone AI-editorial disclaimer sentence from article HTML.
+ */
+export function stripAttributionFooter(html: string): string {
+  if (!html) return html;
+  return html
+    .replace(
+      /\s*<p\b[^>]*>\s*Disarikan dari(?:\s+rilis)?\b[\s\S]*?(?:ditulis ulang oleh tim editorial|mengacu ke publikasi asli)[\s\S]*?<\/p>\s*/gi,
+      "",
+    )
+    .replace(
+      /\s*<p\b[^>]*>\s*Disarikan dari rilis\s*<a\b[\s\S]*?<\/p>\s*$/gi,
+      "",
+    )
+    .replace(
+      /\s*Versi\s+\S+\s+ditulis ulang oleh tim editorial dengan dukungan AI;\s*fakta dan kutipan tetap mengacu ke publikasi asli\.?/gi,
+      "",
+    )
+    .trimEnd();
+}
+
 /** Collect distinct local /uploads/... image URLs referenced in article HTML. */
 export function uploadUrlsInContent(html: string): string[] {
   if (!html) return [];
