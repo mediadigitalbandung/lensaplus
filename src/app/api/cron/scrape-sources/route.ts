@@ -32,8 +32,8 @@ import {
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const PER_SOURCE_LIMIT = 2; // be polite to upstream + don't burn tokens
-const TOTAL_RUN_LIMIT = 6; // safety: stop the whole cron after N drafts
+const PER_SOURCE_LIMIT = 4; // be polite to upstream + don't burn tokens
+const TOTAL_RUN_LIMIT = 10; // safety: stop the whole cron after N drafts
 
 async function handler() {
   const started = Date.now();
@@ -62,7 +62,14 @@ async function handler() {
     const eligible = sources.filter((s) => {
       if (!s.lastCheckedAt) return true;
       const elapsedMs = now.getTime() - s.lastCheckedAt.getTime();
-      return elapsedMs >= s.frequencyHours * 60 * 60 * 1000;
+      // When frequencyHours is 1 (minimum), allow every 15-min/30-min cron tick
+      // (>= 10 min elapsed) to check the listing (listing check uses 0 AI tokens
+      // unless genuinely new URLs are detected).
+      const windowMs =
+        s.frequencyHours <= 1
+          ? 10 * 60 * 1000
+          : s.frequencyHours * 60 * 60 * 1000;
+      return elapsedMs >= windowMs;
     });
 
     if (eligible.length === 0) {
@@ -150,6 +157,7 @@ async function handler() {
         const draftAuthorName = source.owner?.name ?? admin.name;
 
         const maxAttempts = Math.min(newCandidates.length, PER_SOURCE_LIMIT * 3);
+        let candidatesSeen = 0;
         for (const candidate of newCandidates) {
           if (
             sourceResult.ok >= PER_SOURCE_LIMIT ||
@@ -158,6 +166,7 @@ async function handler() {
           ) {
             break;
           }
+          candidatesSeen++;
           if (!categoryId) {
             sourceResult.drafts.push({
               sourceUrl: candidate.url,
@@ -221,12 +230,17 @@ async function handler() {
           listing.items.length === 0
             ? "0 artikel terdeteksi di halaman sumber. Aktifkan Render JS (headless) untuk situs SPA atau isi CSS Selector manual."
             : null;
+        // If there are still untouched new candidates left in the listing and this run
+        // succeeded on at least one article, keep `lastCheckedAt` unchanged so the next
+        // cron tick continues draining the remaining new articles without waiting `frequencyHours`.
+        const hasRemainingNew =
+          candidatesSeen < newCandidates.length && sourceResult.ok > 0;
         await prisma.newsSource.update({
           where: { id: source.id },
           data: {
             scrapedUrls: { push: newlyScrapedUrls },
             totalScraped: { increment: sourceResult.ok },
-            lastCheckedAt: new Date(),
+            ...(hasRemainingNew ? {} : { lastCheckedAt: new Date() }),
             ...(sourceResult.ok > 0
               ? { lastSuccessAt: new Date(), lastError: null }
               : firstFailure

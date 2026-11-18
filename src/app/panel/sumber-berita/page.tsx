@@ -858,7 +858,7 @@ export default function SumberBeritaPage() {
             </p>
             <pre className="mt-2 overflow-x-auto rounded-md bg-primary px-3 py-2 text-[11px] text-white">{`*/30 * * * * curl -sS -X POST https://lensaplus.com/api/cron/scrape-sources -H "Authorization: Bearer $CRON_SECRET" >> /var/log/lensaplus-cron.log 2>&1`}</pre>
             <p className="mt-2 text-xs">
-              Tiap 30 menit cron memeriksa semua sumber aktif dengan <em>Auto-Scrape ON</em> yang sudah melewati jendela <em>frequencyHours</em>-nya, mengambil maks 2 artikel baru per sumber (dan otomatis mempublikasikan jika <em>Auto-Publish ON</em>), serta berhenti setelah total 6 artikel per siklus.
+              Tiap siklus cron memeriksa semua sumber aktif dengan <em>Auto-Scrape ON</em> yang sudah melewati jendela <em>frequencyHours</em>-nya, mengambil maks 4 artikel baru per sumber (dan otomatis mempublikasikan jika <em>Auto-Publish ON</em>), serta berhenti setelah total 10 artikel per siklus. Bila di satu sumber masih ada sisa berita baru, siklus cron berikutnya langsung melanjutkan tanpa menunggu <em>frequencyHours</em>.
             </p>
           </div>
         </div>
@@ -914,6 +914,9 @@ export default function SumberBeritaPage() {
         <PreviewModal
           sourceId={preview.sourceId}
           sourceName={preview.sourceName}
+          initialAutoScrape={
+            sources.find((s) => s.id === preview.sourceId)?.autoScrape ?? true
+          }
           initialAutoPublish={
             sources.find((s) => s.id === preview.sourceId)?.autoPublish ?? false
           }
@@ -1422,10 +1425,10 @@ function SourceFormModal({
   const [description, setDescription] = useState(source?.description || "");
   const [categoryId, setCategoryId] = useState(source?.categoryId || source?.category?.id || "");
   const [frequencyHoursInput, setFrequencyHoursInput] = useState(
-    String(source?.frequencyHours ?? 4),
+    String(source?.frequencyHours ?? 1),
   );
   const [autoScrape, setAutoScrape] = useState(source?.autoScrape ?? true);
-  const [autoPublish, setAutoPublish] = useState(source?.autoPublish ?? false);
+  const [autoPublish, setAutoPublish] = useState(source?.autoPublish ?? true);
   const [priority] = useState(source?.priority ?? 0);
   const [defaultTagsRaw, setDefaultTagsRaw] = useState(
     (source?.defaultTags ?? []).join(", "),
@@ -1517,7 +1520,7 @@ function SourceFormModal({
         categoryId: categoryId || null,
         autoScrape,
         autoPublish,
-        frequencyHours: Math.max(1, Math.min(24, Number.isFinite(parsedFreq) ? parsedFreq : 4)),
+        frequencyHours: Math.max(1, Math.min(24, Number.isFinite(parsedFreq) ? parsedFreq : 1)),
         priority: Number(priority) || 0,
         defaultTags: defaultTagsRaw
           .split(",")
@@ -1997,6 +2000,7 @@ function SourceFormModal({
 function PreviewModal({
   sourceId,
   sourceName,
+  initialAutoScrape = true,
   initialAutoPublish = false,
   data,
   refreshing,
@@ -2006,6 +2010,7 @@ function PreviewModal({
 }: {
   sourceId: string;
   sourceName: string;
+  initialAutoScrape?: boolean;
   initialAutoPublish?: boolean;
   data: PreviewResponse;
   refreshing?: boolean;
@@ -2185,6 +2190,17 @@ function PreviewModal({
       success(`Selesai: ${okCount} sukses${notes.length ? `, ${notes.join(", ")}` : ""}.`);
     }
   }
+
+  const autoStartedDataRef = useRef<PreviewResponse | null>(null);
+  useEffect(() => {
+    if (!initialAutoScrape || !initialAutoPublish) return;
+    if (autoStartedDataRef.current === data) return;
+    const hasNew = data.items.some((item) => getEffectiveStatus(item) === "NEW");
+    if (!hasNew) return;
+    autoStartedDataRef.current = data;
+    void handleGenerateAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, initialAutoScrape, initialAutoPublish]);
 
   const hasTranslatedItems = data.items.some((item) => Boolean(item.translated));
   const effectiveStatuses = data.items.map((item) => ({
