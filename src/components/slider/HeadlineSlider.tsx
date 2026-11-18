@@ -90,7 +90,7 @@ export default function HeadlineSlider({
 
   return (
     <div
-      className={`group relative overflow-hidden ${roundedClass} bg-primary shadow-sm`}
+      className={`group relative overflow-hidden ${roundedClass} bg-surface-dark shadow-sm`}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={(e) => {
@@ -154,7 +154,7 @@ export default function HeadlineSlider({
                       priority={i === 0}
                     />
                   ) : (
-                    <div className="h-full w-full bg-gradient-to-br from-primary to-stone-900" />
+                    <div className="h-full w-full bg-gradient-to-br from-surface-dark to-stone-900" />
                   )}
                 </div>
 

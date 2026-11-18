@@ -88,13 +88,13 @@
 
   /* ── Angle Badges (Sorotan & Bedah Isu — Clean Typography) ── */
   .badge-angle-kronologi {
-    @apply text-amber-300;
+    @apply text-amber-700;
   }
   .badge-angle-analisis {
-    @apply text-secondary;
+    @apply text-secondary-dark;
   }
   .badge-angle-dampak {
-    @apply text-emerald-300;
+    @apply text-tertiary-dark;
   }
 
   /* ── Buttons — Redesigned Premium Style ── */

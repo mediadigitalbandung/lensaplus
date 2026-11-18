@@ -99,17 +99,43 @@ function timeAgo(date: Date | string | null): string {
   });
 }
 
+function stripHtml(text: string): string {
+  return text
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getAngleBadge(angle: string) {
   switch (angle) {
     case "KRONOLOGI":
-      return { label: "Kronologi Kejadian", color: "badge-angle-kronologi" };
+      return { label: "Kronologi Kejadian", color: "text-amber-700" };
     case "ANALISIS":
-      return { label: "Analisis Mendalam", color: "badge-angle-analisis" };
+      return { label: "Analisis Mendalam", color: "text-secondary-dark" };
     case "DAMPAK":
+      return { label: "Dampak & Implikasi", color: "text-tertiary-dark" };
     case "PROYEKSI":
-      return { label: "Dampak & Implikasi", color: "badge-angle-dampak" };
+      return { label: "Proyeksi", color: "text-primary" };
+    case "HUKUM":
+      return { label: "Sudut Hukum", color: "text-primary" };
+    case "EKONOMI":
+      return { label: "Sudut Ekonomi", color: "text-secondary-dark" };
+    case "LATAR_BELAKANG":
+      return { label: "Latar Belakang", color: "text-stone-700" };
+    case "PROFIL":
+      return { label: "Profil Tokoh", color: "text-secondary-dark" };
+    case "REAKSI":
+      return { label: "Reaksi Publik", color: "text-tertiary-dark" };
+    case "FAQ":
+      return { label: "Tanya Jawab", color: "text-primary" };
     default:
-      return { label: "Sudut Pandang", color: "text-stone-300" };
+      return { label: "Sudut Pandang", color: "text-stone-600" };
   }
 }
 
@@ -661,20 +687,20 @@ export default async function HomePage() {
       </section>
 
       {/* ── SOROTAN & ANALISIS SUDUT PANDANG (EDITORIAL AUTHORITY DESIGN SYSTEM) ── */}
-      <section className="bg-primary text-white py-7 sm:py-12 border-y border-stone-800/40">
+      <section className="bg-surface py-7 sm:py-12 border-b border-stone-200/70">
         <div className="container-main">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-5 sm:mb-8 border-b border-white/15 pb-3.5 sm:pb-5">
-            <div>
-              <div className="inline-flex items-center gap-2 text-[11px] sm:text-xs font-bold uppercase tracking-widest text-secondary mb-0.5 sm:mb-1">
-                <span>Desk Sorotan & Bedah Isu</span>
-              </div>
-              <h2 className="font-serif text-xl sm:text-3xl font-bold text-white">
-                Analisis Sudut Pandang & Bedah Isu Nasional
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-4 mb-5 sm:mb-8">
+            <div className="border-l-4 border-secondary pl-3">
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-secondary-dark block">
+                Desk Sorotan &amp; Bedah Isu
+              </span>
+              <h2 className="font-serif text-xl sm:text-3xl font-bold text-on-surface mt-0.5">
+                Analisis Sudut Pandang &amp; Bedah Isu Nasional
               </h2>
             </div>
             <Link
               href="/sorotan"
-              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white/85 hover:text-secondary transition-colors shrink-0 self-start sm:self-auto"
+              className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-primary hover:text-primary-dark transition-colors shrink-0 self-start sm:self-auto"
             >
               Jelajahi Semua Sorotan <ChevronRight size={14} aria-hidden="true" />
             </Link>
@@ -684,37 +710,40 @@ export default async function HomePage() {
             {sorotanList.length > 0 ? (
               sorotanList.slice(0, 3).map((item) => {
                 const badge = getAngleBadge(item.angle);
+                const plainExcerpt = stripHtml(item.content);
                 return (
                   <article
                     key={item.id}
-                    className="w-[74vw] min-w-[244px] max-w-[300px] sm:w-[46%] md:w-auto shrink-0 snap-start group flex flex-col justify-between rounded-xl sm:rounded-2xl bg-white/5 p-4 sm:p-5 md:p-6 border border-white/10 hover:border-secondary/60 hover:bg-white/10 transition-all duration-300 shadow-lg"
+                    className="w-[74vw] min-w-[244px] max-w-[300px] sm:w-[46%] md:w-auto shrink-0 snap-start group flex flex-col justify-between rounded-xl sm:rounded-2xl bg-white p-4 sm:p-5 md:p-6 border border-stone-200/80 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
-                        <span className={`text-[10px] font-bold uppercase tracking-widest ${badge.color}`}>
+                        <span className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest ${badge.color}`}>
                           {badge.label}
                         </span>
-                        <span className="text-[10px] text-stone-300">
+                        <span className="text-[10px] text-stone-500">
                           {timeAgo(item.createdAt)}
                         </span>
                       </div>
                       <Link href={`/sorotan/${item.slug}`}>
-                        <h3 className="font-serif text-base sm:text-lg font-bold leading-snug text-white group-hover:text-stone-200 transition-colors line-clamp-2">
+                        <h3 className="font-serif text-base sm:text-lg font-bold leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-2">
                           {item.title}
                         </h3>
                       </Link>
-                      <p className="mt-2 text-xs text-stone-300 line-clamp-2 sm:line-clamp-3 leading-relaxed">
-                        {item.content}
-                      </p>
+                      {plainExcerpt && (
+                        <p className="mt-2 text-xs text-stone-600 line-clamp-2 sm:line-clamp-3 leading-relaxed">
+                          {plainExcerpt}
+                        </p>
+                      )}
                     </div>
 
-                    <div className="mt-3.5 sm:mt-5 border-t border-white/10 pt-2.5 sm:pt-3 flex items-center justify-between gap-3">
-                      <span className="text-[11px] text-stone-300 truncate max-w-[165px] sm:max-w-[200px]">
+                    <div className="mt-3.5 sm:mt-5 border-t border-stone-200/60 pt-2.5 sm:pt-3 flex items-center justify-between gap-3">
+                      <span className="text-[11px] text-stone-500 truncate max-w-[165px] sm:max-w-[200px]">
                         {item.article?.title ? `Berita Terkait: ${item.article.title}` : "Bedah Isu Lensaplus"}
                       </span>
                       <Link
                         href={`/sorotan/${item.slug}`}
-                        className="text-xs font-bold text-white group-hover:text-secondary group-hover:translate-x-1 transition-all inline-flex items-center gap-1 shrink-0"
+                        className="text-xs font-bold text-primary group-hover:text-secondary-dark group-hover:translate-x-0.5 transition-all inline-flex items-center gap-1 shrink-0"
                       >
                         Baca <ChevronRight size={14} aria-hidden="true" />
                       </Link>
@@ -723,7 +752,7 @@ export default async function HomePage() {
                 );
               })
             ) : (
-              // Fallback cards with AI visual demo
+              // Fallback cards with clean editorial typography
               [
                 { title: "Kronologi & Evaluasi Kebijakan Ekonomi Nasional", angle: "KRONOLOGI", desc: "Rekap urutan keputusan anggaran dan alokasi prioritas pembangunan infrastruktur publik Indonesia." },
                 { title: "Analisis Dampak Regulasi Perdagangan & Investasi", angle: "ANALISIS", desc: "Kajian komprehensif pengaruh kebijakan tarif dan pajak terhadap iklim usaha dan investasi nasional." },
@@ -733,26 +762,26 @@ export default async function HomePage() {
                 return (
                   <article
                     key={idx}
-                    className="w-[74vw] min-w-[244px] max-w-[300px] sm:w-[46%] md:w-auto shrink-0 snap-start group flex flex-col justify-between rounded-xl sm:rounded-2xl bg-white/5 p-4 sm:p-5 md:p-6 border border-white/10 hover:border-secondary/60 hover:bg-white/10 transition-all duration-300 shadow-lg"
+                    className="w-[74vw] min-w-[244px] max-w-[300px] sm:w-[46%] md:w-auto shrink-0 snap-start group flex flex-col justify-between rounded-xl sm:rounded-2xl bg-white p-4 sm:p-5 md:p-6 border border-stone-200/80 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
-                        <span className={`text-[10px] font-bold uppercase tracking-widest ${badge.color}`}>
+                        <span className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest ${badge.color}`}>
                           {badge.label}
                         </span>
                       </div>
                       <Link href="/sorotan">
-                        <h3 className="font-serif text-base sm:text-lg font-bold leading-snug text-white group-hover:text-stone-200 transition-colors line-clamp-2">
+                        <h3 className="font-serif text-base sm:text-lg font-bold leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-2">
                           {item.title}
                         </h3>
                       </Link>
-                      <p className="mt-2 text-xs text-stone-300 line-clamp-2 sm:line-clamp-3 leading-relaxed">
+                      <p className="mt-2 text-xs text-stone-600 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                         {item.desc}
                       </p>
                     </div>
-                    <div className="mt-3.5 sm:mt-5 border-t border-white/10 pt-2.5 sm:pt-3 flex items-center justify-end">
-                      <Link href="/sorotan" className="text-xs font-bold text-white group-hover:text-secondary inline-flex items-center gap-1">
-                        Jelajahi <ChevronRight size={14} />
+                    <div className="mt-3.5 sm:mt-5 border-t border-stone-200/60 pt-2.5 sm:pt-3 flex items-center justify-end">
+                      <Link href="/sorotan" className="text-xs font-bold text-primary group-hover:text-secondary-dark inline-flex items-center gap-1">
+                        Jelajahi <ChevronRight size={14} aria-hidden="true" />
                       </Link>
                     </div>
                   </article>

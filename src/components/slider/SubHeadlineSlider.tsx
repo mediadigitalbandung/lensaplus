@@ -137,7 +137,7 @@ export default function SubHeadlineSlider({
               {pageItems.map((article, cardIdx) => (
                 <div
                   key={`${article.slug}-${pageIdx}-${cardIdx}`}
-                  className={`group/card relative overflow-hidden ${roundedClass} bg-primary shadow-sm`}
+                  className={`group/card relative overflow-hidden ${roundedClass} bg-surface-dark shadow-sm`}
                 >
                   {/* Image with Ken Burns */}
                   <div
@@ -156,7 +156,7 @@ export default function SubHeadlineSlider({
                         sizes="(max-width: 640px) 50vw, 25vw"
                       />
                     ) : (
-                      <div className="h-full w-full bg-gradient-to-br from-primary to-stone-900" />
+                      <div className="h-full w-full bg-gradient-to-br from-surface-dark to-stone-900" />
                     )}
                   </div>
 

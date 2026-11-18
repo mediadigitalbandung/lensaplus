@@ -218,7 +218,13 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
                   {s.title}
                 </h2>
                 <p className="mt-1.5 sm:mt-2 line-clamp-2 sm:line-clamp-3 text-xs sm:text-sm text-txt-secondary">
-                  {s.content.slice(0, 200).replace(/\s+/g, " ").trim()}…
+                  {s.content
+                    .replace(/<[^>]+>/g, " ")
+                    .replace(/&nbsp;/gi, " ")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .slice(0, 200)}
+                  …
                 </p>
                 <div className="mt-auto pt-2.5 sm:pt-4 text-[11px] sm:text-xs text-txt-muted truncate">
                   <span>{s.article.author.name}</span>

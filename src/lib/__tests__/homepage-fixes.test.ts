@@ -128,5 +128,17 @@ describe("Homepage stability, layout & widget fixes", () => {
     expect(subHeadlineSlider).toContain("font-serif");
     expect(subHeadlineSlider).toContain("grid-cols-2");
     expect(subHeadlineSlider).not.toContain("rounded-full bg-black");
+
+    // Sorotan section on homepage follows light-surface DESIGN_SOP (no full-bleed bg-primary) and strips HTML tags
+    const sorotanSection = home.slice(
+      home.indexOf("SOROTAN & ANALISIS SUDUT PANDANG"),
+      home.indexOf("TERKINI + SIDEBAR POLLING"),
+    );
+    expect(sorotanSection).not.toContain("bg-primary");
+    expect(sorotanSection).not.toContain("bg-white/5");
+    expect(sorotanSection).toContain("border-l-4 border-secondary");
+    expect(sorotanSection).toContain("stripHtml(item.content)");
+    expect(home).toContain('case "HUKUM"');
+    expect(home).toContain('case "EKONOMI"');
   });
 });
