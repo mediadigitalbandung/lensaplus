@@ -410,6 +410,8 @@ describe("audit-fix-backend regressions", () => {
       });
 
       const missingSlugRes = await pub.publish({
+        platform: "FACEBOOK",
+        imageUrl: "",
         articleId: "clx12345cuid",
         caption: "Halo",
       });
@@ -423,6 +425,8 @@ describe("audit-fix-backend regressions", () => {
       vi.stubGlobal("fetch", fetchMock);
 
       const okRes = await pub.publish({
+        platform: "FACEBOOK",
+        imageUrl: "",
         articleId: "clx12345cuid",
         articleSlug: "berita-nasional-terkini",
         caption: "Ringkasan berita",
