@@ -4,8 +4,7 @@ import { useState, useEffect, FormEvent } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { canManageAds } from "@/lib/auth";
-import { Role } from "@prisma/client";
+import { MANAGEMENT_ROLES } from "@/lib/roles";
 import { useToast } from "@/components/ui/Toast";
 import {
   ArrowLeft,
@@ -22,7 +21,7 @@ import { slotLabels, slotSpecs, typeLabels } from "../_components/ad-constants";
 export default function TambahIklanPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const authorized = Boolean(session && canManageAds(session.user.role as Role));
+  const authorized = Boolean(session?.user?.role && MANAGEMENT_ROLES.includes(session.user.role));
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);

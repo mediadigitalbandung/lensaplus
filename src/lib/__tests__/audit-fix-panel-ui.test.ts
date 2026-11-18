@@ -121,7 +121,7 @@ describe("Phase 2 Panel, Editor & Dashboard UI Audit Fixes", () => {
     expect(login).toMatch(/try\s*\{[\s\S]*\/api\/auth\/logout/);
   });
 
-  it("no client component under src/app/panel or src/components/panel calls redirect() during render", () => {
+  it("no client component under src/app/panel or src/components/panel calls redirect() or imports server-only @/lib/auth", () => {
     const files = [
       ...collectTsxFiles("src/app/panel"),
       ...collectTsxFiles("src/components/panel"),
@@ -132,6 +132,7 @@ describe("Phase 2 Panel, Editor & Dashboard UI Audit Fixes", () => {
         expect(content, `${rel} should use router.replace instead of redirect()`).not.toMatch(
           /\bredirect\s*\(/,
         );
+        expect(content, `${rel} must not import server-only @/lib/auth`).not.toContain("@/lib/auth");
       }
     }
   });

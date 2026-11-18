@@ -223,11 +223,11 @@ function CompareModal({
               Perubahan Judul
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="rounded-[8px] bg-red-50 border border-red-200 px-3 py-2">
+              <div className="rounded-[8px] border border-red-300 border-l-4 border-l-red-600 bg-surface px-3 py-2">
                 <p className="text-xs font-medium text-red-700 mb-1">{labelA}</p>
                 <p className="text-sm text-txt-primary">{revisionA.title}</p>
               </div>
-              <div className="rounded-[8px] bg-emerald-50 border border-emerald-200 px-3 py-2">
+              <div className="rounded-[8px] border border-emerald-300 border-l-4 border-l-emerald-600 bg-surface px-3 py-2">
                 <p className="text-xs font-medium text-emerald-700 mb-1">{labelB}</p>
                 <p className="text-sm text-txt-primary">{revisionB.title}</p>
               </div>

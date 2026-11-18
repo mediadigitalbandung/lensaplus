@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { canManageAds } from "@/lib/auth";
-import { Role } from "@prisma/client";
+import { MANAGEMENT_ROLES } from "@/lib/roles";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Link from "next/link";
@@ -112,7 +111,7 @@ function LoadingSkeleton() {
 export default function IklanPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const authorized = Boolean(session && canManageAds(session.user.role as Role));
+  const authorized = Boolean(session?.user?.role && MANAGEMENT_ROLES.includes(session.user.role));
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
   const [ads, setAds] = useState<Ad[]>([]);
