@@ -50,6 +50,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 */5 * * * * curl -sS -X POST https://lensaplus.com/api/cron/auto-article \
   -H "Authorization: Bearer ${CRON_SECRET}" >> /var/log/lensaplus-cron.log 2>&1
 
+# Auto-scrape active news sources (every 30 min — internal frequencyHours gate controls per-source cadence)
+*/30 * * * * curl -sS -X POST https://lensaplus.com/api/cron/scrape-sources \
+  -H "Authorization: Bearer ${CRON_SECRET}" >> /var/log/lensaplus-cron.log 2>&1
+
 # Generate Sorotan (3-angle SEO summaries) for new published articles (every 6 hours)
 0 */6 * * * curl -sS -X POST https://lensaplus.com/api/cron/sorotan \
   -H "Authorization: Bearer ${CRON_SECRET}" >> /var/log/lensaplus-cron.log 2>&1
@@ -113,7 +117,8 @@ chmod +x /var/www/lensaplus/scripts/backup-db.sh \
 | Endpoint | Method | Frequency | What it does |
 | --- | --- | --- | --- |
 | `/api/cron/publish` | GET or POST | every 5 min | Publish APPROVED articles whose `scheduledAt <= now`, runs full `onArticlePublished` chain (SEO + social + Cloudflare purge). |
-| `/api/cron/auto-article` | GET or POST | every 1 hour | If `SystemSetting.auto_article_enabled === "true"`, pick a random active `TargetKeyword` and generate a DRAFT via `callAI()`. |
+| `/api/cron/auto-article` | GET or POST | every 5 min | If `SystemSetting.auto_article_enabled === "true"`, pick a random active `TargetKeyword` and generate a DRAFT via `callAI()`. |
+| `/api/cron/scrape-sources` | GET or POST | every 30 min | Iterate active `NewsSource` whose `frequencyHours` has elapsed, crawl listing, paraphrase via AI, and save as DRAFT (or PUBLISHED if `autoPublish=true`). |
 | `/api/cron/sorotan` | GET or POST | every 6 hours | Generate missing Sorotan for the 5 most recent PUBLISHED articles with none yet. |
 | `/api/cron/seo-submit` or `/api/seo/ping` | GET or POST | every 12 hours | Retry Articles + Sorotan with `indexStatus` of `failed`/`pending`/`null`. Re-submits to Google Indexing + IndexNow. |
 | `/api/cron/check-meta-tokens` | GET or POST | every Monday | Hit Meta `/debug_token` for IG + FB tokens; update `tokenExpiresAt` in DB; email SUPER_ADMINs if <14 days left. (CRIT-11) |
