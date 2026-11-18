@@ -77,10 +77,12 @@ describe("Homepage stability, layout & widget fixes", () => {
     expect(layout).toContain("overflow-x-clip");
     expect(layout).not.toContain("overflow-x-hidden");
 
-    // NewsletterBox obeys DESIGN_SOP (semantic tokens, no hardcoded #002a5c, no amber, no blur orbs)
+    // NewsletterBox obeys DESIGN_SOP (semantic tokens, light card surface, no hardcoded #002a5c, no amber, no blur orbs)
     expect(newsletter).not.toContain("#002a5c");
     expect(newsletter).not.toContain("amber-");
     expect(newsletter).not.toContain("blur-3xl");
+    expect(newsletter).not.toContain("bg-primary");
+    expect(newsletter).toContain("bg-white");
     expect(newsletter).toContain("border-l-4 border-secondary");
   });
 
