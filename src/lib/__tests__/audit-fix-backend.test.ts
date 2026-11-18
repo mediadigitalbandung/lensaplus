@@ -412,7 +412,6 @@ describe("audit-fix-backend regressions", () => {
       const missingSlugRes = await pub.publish({
         articleId: "clx12345cuid",
         caption: "Halo",
-        hashtags: [],
       });
       expect(missingSlugRes.success).toBe(false);
       expect(missingSlugRes.error).toContain("articleSlug");
@@ -427,7 +426,6 @@ describe("audit-fix-backend regressions", () => {
         articleId: "clx12345cuid",
         articleSlug: "berita-nasional-terkini",
         caption: "Ringkasan berita",
-        hashtags: ["Berita"],
       });
       expect(okRes.success).toBe(true);
       const bodyStr = String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body);
