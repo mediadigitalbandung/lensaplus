@@ -1,14 +1,14 @@
 /**
  * GET /api/seo/ping
  *
- * Cron endpoint: retry Articles + Sorotan that have indexStatus='failed'
+ * Cron endpoint: retry published Articles that have indexStatus='failed'
  * (and pending records that haven't been attempted yet). Protected by
  * `Authorization: Bearer ${CRON_SECRET}`.
  *
- * For each candidate URL:
- *  1. Submit to Google Indexing API
- *  2. Update indexStatus/lastIndexedAt
- *  3. Ping IndexNow (single batch at the end)
+ * Google Indexing API (~200/day free quota) is reserved strictly for published
+ * main `/berita/*` articles. Sorotan pages carry `robots: noindex` for AdSense
+ * compliance (`src/app/sorotan/[slug]/page.tsx`), so published Sorotan URLs
+ * are only pinged via IndexNow and never burn Google's daily quota.
  *
  * Recommend invocation: every 12 hours.
  */
@@ -24,14 +24,14 @@ export const maxDuration = 300;
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
-const BATCH_ARTICLES = 50;
+const BATCH_ARTICLES = 100;
 const BATCH_SOROTAN = 50;
 
 export async function GET(req: NextRequest) {
   try {
     verifyCronSecret(req);
 
-    // ----- Articles: retry failed + oldest pending -----
+    // ----- Articles: pending / failed retries → Google Indexing API + IndexNow -----
     const articles = await prisma.article.findMany({
       where: {
         status: "PUBLISHED",
@@ -74,9 +74,12 @@ export async function GET(req: NextRequest) {
         success: r.success,
         error: r.error,
       });
+      if (!r.success && r.error === "QUOTA_EXCEEDED_DAILY") {
+        break;
+      }
     }
 
-    // ----- Sorotan: retry failed + pending (published articles only) -----
+    // ----- Sorotan: published articles only → IndexNow only (avoid wasting Google quota on noindex pages) -----
     const sorotanRecords = await prisma.sorotan.findMany({
       where: {
         article: { status: "PUBLISHED" },
@@ -91,45 +94,25 @@ export async function GET(req: NextRequest) {
       select: { id: true, slug: true },
     });
 
-    const sorotanResults: Array<{
-      id: string;
-      url: string;
-      success: boolean;
-      error?: string;
-    }> = [];
-
-    for (const s of sorotanRecords) {
-      const url = `${SITE_URL}/sorotan/${s.slug}`;
-      const r = await submitUrlToGoogle(url, "URL_UPDATED");
-      try {
-        await prisma.sorotan.update({
-          where: { id: s.id },
-          data: {
-            indexStatus: r.success ? "submitted" : "failed",
-            indexLastError: r.success ? null : (r.error ?? "Unknown error").slice(0, 500),
-            lastIndexedAt: new Date(),
-          },
-        });
-      } catch {
-        // ignore
-      }
-      sorotanResults.push({
-        id: s.id,
-        url,
-        success: r.success,
-        error: r.error,
-      });
-    }
-
-    // Single IndexNow batch for everything processed this run.
-    const urls = [
-      ...articleResults.map((r) => r.url),
-      ...sorotanResults.map((r) => r.url),
-    ];
+    const sorotanUrls = sorotanRecords.map((s) => `${SITE_URL}/sorotan/${s.slug}`);
+    const urls = [...articleResults.map((r) => r.url), ...sorotanUrls];
     const indexNow = urls.length > 0 ? await pingIndexNow(urls) : { success: true };
 
+    if (sorotanRecords.length > 0 && indexNow.success) {
+      await prisma.sorotan
+        .updateMany({
+          where: { id: { in: sorotanRecords.map((s) => s.id) } },
+          data: {
+            indexStatus: "submitted",
+            indexLastError: null,
+            lastIndexedAt: new Date(),
+          },
+        })
+        .catch(() => {});
+    }
+
     const articleSucceeded = articleResults.filter((r) => r.success).length;
-    const sorotanSucceeded = sorotanResults.filter((r) => r.success).length;
+    const sorotanSucceeded = indexNow.success ? sorotanRecords.length : 0;
 
     return successResponse({
       articles: {
@@ -138,9 +121,9 @@ export async function GET(req: NextRequest) {
         failed: articleResults.length - articleSucceeded,
       },
       sorotan: {
-        processed: sorotanResults.length,
+        processed: sorotanRecords.length,
         succeeded: sorotanSucceeded,
-        failed: sorotanResults.length - sorotanSucceeded,
+        failed: sorotanRecords.length - sorotanSucceeded,
       },
       indexNow,
     });

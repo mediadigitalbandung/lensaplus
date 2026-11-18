@@ -188,6 +188,25 @@ export async function PUT(req: NextRequest) {
       create: { key: data.key, value: storedValue },
     });
 
+    // When rotating/updating the Google service account JSON, reset the daily
+    // quota counter so a new Google Cloud project starts fresh at 0/day instead
+    // of inheriting a saturated 200/200 count from the previous project.
+    if (data.key === "google_credentials_json") {
+      const today = new Date().toISOString().slice(0, 10);
+      await Promise.all([
+        prisma.systemSetting.upsert({
+          where: { key: "google_indexing_daily_count_date" },
+          update: { value: today },
+          create: { key: "google_indexing_daily_count_date", value: today },
+        }),
+        prisma.systemSetting.upsert({
+          where: { key: "google_indexing_daily_count" },
+          update: { value: "0" },
+          create: { key: "google_indexing_daily_count", value: "0" },
+        }),
+      ]).catch(() => {});
+    }
+
     // Never return the plaintext back to the client.
     const responseValue = sensitive
       ? maskSecret(data.value)

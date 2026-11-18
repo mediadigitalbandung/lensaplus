@@ -117,7 +117,7 @@ export default function SeoDashboardPage() {
   async function handleBulkReindex() {
     const ok = await confirm({
       title: "Re-index Semua",
-      message: "Semua artikel PUBLISHED akan ditandai 'pending' dan disubmit ulang oleh cron. Lanjutkan?",
+      message: "Semua artikel PUBLISHED akan ditandai ulang dan batch awal langsung dikirim ke Google Indexing API & IndexNow. Lanjutkan?",
       variant: "warning",
     });
     if (!ok) return;
@@ -126,7 +126,11 @@ export default function SeoDashboardPage() {
       const res = await fetch("/api/seo/bulk-reindex", { method: "POST" });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Gagal");
-      showSuccess(`${json.data?.marked ?? 0} artikel ditandai untuk re-index.`);
+      const d = json.data ?? {};
+      showSuccess(
+        d.note ||
+          `${d.submittedNow ?? 0} dari ${d.marked ?? 0} artikel langsung dikirim untuk re-index.`,
+      );
       fetchData();
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal bulk reindex");
@@ -650,7 +654,12 @@ export default function SeoDashboardPage() {
 
         {sorotanStatus && (
           <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-xs font-semibold text-txt-secondary mb-2">Sorotan index</p>
+            <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+              <p className="text-xs font-semibold text-txt-secondary">Sorotan index</p>
+              <p className="text-[11px] text-txt-muted">
+                Halaman Sorotan memakai <code className="font-mono">noindex</code> (kepatuhan AdSense) dan diping via IndexNow saja agar kuota Google Indexing 200/hari diprioritaskan penuh untuk artikel utama.
+              </p>
+            </div>
             {sorotanStatus.counts.failed > 0 && sorotanStatus.topErrors && sorotanStatus.topErrors.length > 0 && (
               <div className="mb-3 rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface px-3 py-2 text-[11px]">
                 <p className="font-bold text-amber-800 mb-1 flex items-center gap-1">
