@@ -76,6 +76,7 @@ describe("Homepage stability, layout & widget fixes", () => {
     expect(header).not.toContain("h-0 overflow-hidden");
     expect(layout).toContain("overflow-x-clip");
     expect(layout).not.toContain("overflow-x-hidden");
+    expect(layout).toContain("https://www.googletagmanager.com/gtm.js?id=GTM-N9S7N99M");
 
     // NewsletterBox obeys DESIGN_SOP (semantic tokens, light card surface, no hardcoded #002a5c, no amber, no blur orbs)
     expect(newsletter).not.toContain("#002a5c");

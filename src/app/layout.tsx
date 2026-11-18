@@ -119,6 +119,17 @@ export default async function RootLayout({
   return (
     <html lang="id" className={`${plusJakartaSans.variable} ${inter.variable}`}>
       <head>
+        {/* Google Tag (GTM-N9S7N99M) */}
+        <script
+          async
+          src="https://www.googletagmanager.com/gtm.js?id=GTM-N9S7N99M"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());",
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" />
