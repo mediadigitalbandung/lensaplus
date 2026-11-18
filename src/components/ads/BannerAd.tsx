@@ -142,7 +142,7 @@ function AdContent({ ad }: { ad: Ad }) {
 
 function AdPlaceholder({ label = "Iklan" }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center bg-surface-container-low py-5">
+    <div className="flex items-center justify-center bg-surface-container-low py-3 sm:py-5">
       <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">{label}</span>
     </div>
   );
@@ -160,7 +160,7 @@ export default function BannerAd({ size = "banner", slot, className = "", noWrap
 
   return (
     <div className={className}>
-      <div className="container-main py-6">
+      <div className="container-main py-3 sm:py-5">
         {inner}
       </div>
     </div>
@@ -256,7 +256,7 @@ export function InlineAd({ className = "" }: { className?: string }) {
 
   return (
     <div className={className}>
-      <div className="container-main py-6">
+      <div className="container-main py-3 sm:py-5">
         {ad ? <AdContent ad={ad} /> : <AdPlaceholder label="Sponsored Content" />}
       </div>
     </div>
@@ -269,8 +269,8 @@ export function NativeAd({ className = "" }: { className?: string }) {
   const { ad } = useAd("IN_ARTICLE");
 
   return (
-    <div className={`bg-surface-container-low p-5 ${className}`}>
-      <span className="text-label-sm uppercase tracking-wider text-on-surface-variant mb-3 block">Sponsored</span>
+    <div className={`bg-surface-container-low p-3.5 sm:p-5 ${className}`}>
+      <span className="text-label-sm uppercase tracking-wider text-on-surface-variant mb-2 sm:mb-3 block">Sponsored</span>
       {ad ? (
         <AdContent ad={ad} />
       ) : (

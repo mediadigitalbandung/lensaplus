@@ -15,34 +15,29 @@ import { callAI } from "@/lib/ai-client";
 import { invalidateCachePrefix } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
 import { cleanAILongText } from "@/lib/sanitize";
+import {
+  ACTIVE_SOROTAN_ANGLES,
+  SOROTAN_ANGLE_COUNT,
+  SOROTAN_ANGLE_LABEL,
+} from "./sorotan-constants";
 
 // ANGLES = angle yang aktif diproduksi oleh generator. FAQ legacy enum
 // value tetap valid untuk read tapi tidak digenerate baru.
-export const ANGLES: SorotanAngle[] = [
-  "KRONOLOGI",
-  "ANALISIS",
-  "DAMPAK",
-  "LATAR_BELAKANG",
-  "PROFIL",
-  "REAKSI",
-  "HUKUM",
-  "EKONOMI",
-  "PROYEKSI",
-];
+export const ANGLES: SorotanAngle[] = [...ACTIVE_SOROTAN_ANGLES];
 
-export const SOROTAN_ANGLE_COUNT = ANGLES.length;
+export { SOROTAN_ANGLE_COUNT };
 
 const ANGLE_LABEL: Record<SorotanAngle, string> = {
-  KRONOLOGI: "Kronologi",
-  ANALISIS: "Analisis",
-  DAMPAK: "Dampak",
-  LATAR_BELAKANG: "Latar Belakang",
-  PROFIL: "Profil Tokoh",
-  REAKSI: "Reaksi",
-  HUKUM: "Sudut Hukum",
-  EKONOMI: "Sudut Ekonomi",
-  PROYEKSI: "Proyeksi",
-  FAQ: "Tanya Jawab",
+  KRONOLOGI: SOROTAN_ANGLE_LABEL.KRONOLOGI,
+  ANALISIS: SOROTAN_ANGLE_LABEL.ANALISIS,
+  DAMPAK: SOROTAN_ANGLE_LABEL.DAMPAK,
+  LATAR_BELAKANG: SOROTAN_ANGLE_LABEL.LATAR_BELAKANG,
+  PROFIL: SOROTAN_ANGLE_LABEL.PROFIL,
+  REAKSI: SOROTAN_ANGLE_LABEL.REAKSI,
+  HUKUM: SOROTAN_ANGLE_LABEL.HUKUM,
+  EKONOMI: SOROTAN_ANGLE_LABEL.EKONOMI,
+  PROYEKSI: SOROTAN_ANGLE_LABEL.PROYEKSI,
+  FAQ: SOROTAN_ANGLE_LABEL.FAQ,
 };
 
 const ANGLE_PROMPTS: Record<SorotanAngle, string> = {

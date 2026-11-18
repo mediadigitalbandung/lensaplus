@@ -106,14 +106,14 @@ export default async function RangkumanHarianIndexPage() {
         </div>
 
         {days.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {days.map((day) => (
               <Link
                 key={day.key}
                 href={`/rangkuman/harian/${day.key}`}
-                className="card group flex h-full flex-col overflow-hidden"
+                className="card group flex flex-row sm:flex-col h-full overflow-hidden"
               >
-                <div className="relative aspect-[16/9] w-full overflow-hidden bg-surface-container">
+                <div className="relative w-28 sm:w-full min-h-[96px] sm:min-h-0 sm:aspect-[16/9] shrink-0 overflow-hidden bg-surface-container">
                   {day.image ? (
                     <Image
                       src={day.image}
@@ -123,20 +123,20 @@ export default async function RangkumanHarianIndexPage() {
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-surface-container-low">
-                      <span className="font-serif text-sm font-bold uppercase tracking-widest text-txt-muted/50">
+                      <span className="font-serif text-xs sm:text-sm font-bold uppercase tracking-widest text-txt-muted/50">
                         {day.date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
                       </span>
                     </div>
                   )}
                 </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <p className="text-label-sm uppercase tracking-wider text-primary font-semibold">
+                <div className="flex flex-1 min-w-0 flex-col justify-center sm:justify-start p-3 sm:p-5">
+                  <p className="text-[10px] sm:text-label-sm uppercase tracking-wider text-primary font-semibold truncate">
                     {fmtDay(day.date)}
                   </p>
-                  <p className="mt-2 line-clamp-2 font-serif text-title-md leading-snug text-on-surface group-hover:text-primary transition-colors">
+                  <p className="mt-1 sm:mt-2 line-clamp-2 font-serif text-sm sm:text-title-md leading-snug text-on-surface group-hover:text-primary transition-colors">
                     {day.firstTitle}
                   </p>
-                  <div className="mt-auto pt-4 text-xs uppercase tracking-wider text-on-surface-variant">
+                  <div className="mt-1.5 sm:mt-auto sm:pt-4 text-[10px] sm:text-xs uppercase tracking-wider text-on-surface-variant">
                     {day.count.toLocaleString("id-ID")} artikel
                   </div>
                 </div>

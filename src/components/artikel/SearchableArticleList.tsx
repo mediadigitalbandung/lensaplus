@@ -99,11 +99,11 @@ export default function SearchableArticleList({ articles, categoryName }: Search
       {/* Article list — 1 article per row */}
       <div className="space-y-0 divide-y divide-border">
         {paginated.map((article) => (
-          <article key={article.slug} className="group flex gap-4 py-4 first:pt-0">
+          <article key={article.slug} className="group flex gap-3 sm:gap-4 py-3 sm:py-4 first:pt-0 items-center sm:items-start">
             {/* Thumbnail */}
             {article.featuredImage && (
               <Link href={`/berita/${article.slug}`} className="shrink-0">
-                <div className="relative h-[80px] w-[120px] sm:h-[90px] sm:w-[140px] overflow-hidden rounded-lg">
+                <div className="relative h-[64px] w-[96px] sm:h-[90px] sm:w-[140px] overflow-hidden rounded-lg">
                   <Image
                     src={article.featuredImage}
                     alt={article.title}
@@ -117,7 +117,7 @@ export default function SearchableArticleList({ articles, categoryName }: Search
             {/* Content */}
             <div className="flex-1 min-w-0">
               <Link href={`/berita/${article.slug}`}>
-                <h3 className="text-sm sm:text-base font-bold text-txt-primary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                <h3 className="font-serif text-[13px] sm:text-base font-bold text-txt-primary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                   {article.title}
                 </h3>
               </Link>
@@ -126,7 +126,7 @@ export default function SearchableArticleList({ articles, categoryName }: Search
                   {article.excerpt}
                 </p>
               )}
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-txt-muted">
+              <div className="mt-1 sm:mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] sm:text-[11px] text-txt-muted">
                 <span className="text-primary font-semibold">{article.category.name}</span>
                 <span className="h-2.5 w-px bg-border" />
                 <span>{article.author.name}</span>

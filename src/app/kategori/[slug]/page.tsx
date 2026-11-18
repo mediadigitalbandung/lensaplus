@@ -253,22 +253,22 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
                 Polling {category.name}
               </h2>
             </div>
-            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+            <div className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2">
               {categoryPolling[params.slug].map((poll, idx) => (
-                <div key={idx} className="shrink-0 w-[300px] sm:w-[340px] rounded-lg border border-border bg-surface-secondary overflow-hidden">
+                <div key={idx} className="snap-start shrink-0 w-[260px] sm:w-[320px] rounded-lg border border-border bg-surface-secondary overflow-hidden">
                   {poll.image && (
                     <div className="relative w-full aspect-[2/1]">
                       <Image src={poll.image} alt={poll.question} fill className="object-cover" />
                     </div>
                   )}
-                  <div className="p-5">
-                  <p className="text-sm font-semibold text-txt-primary mb-4">{poll.question}</p>
-                  <div className="space-y-2.5">
+                  <div className="p-3.5 sm:p-5">
+                  <p className="text-xs sm:text-sm font-semibold text-txt-primary mb-3 sm:mb-4">{poll.question}</p>
+                  <div className="space-y-1.5 sm:space-y-2.5">
                     {poll.options.map((opt) => (
                       <div key={opt.label}>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-txt-primary text-xs">{opt.label}</span>
-                          <span className="font-bold text-txt-primary text-xs">{opt.percentage}%</span>
+                        <div className="flex items-center justify-between text-xs sm:text-sm mb-1">
+                          <span className="text-txt-primary text-[11px] sm:text-xs">{opt.label}</span>
+                          <span className="font-bold text-txt-primary text-[11px] sm:text-xs">{opt.percentage}%</span>
                         </div>
                         <div className="h-1.5 rounded-full bg-border">
                           <div className="h-1.5 rounded-full bg-primary" style={{ width: `${opt.percentage}%` }} />
@@ -276,7 +276,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
                       </div>
                     ))}
                   </div>
-                  <p className="text-[11px] text-txt-muted mt-3">{poll.totalVotes.toLocaleString("id-ID")} suara</p>
+                  <p className="text-[10px] sm:text-[11px] text-txt-muted mt-2.5 sm:mt-3">{poll.totalVotes.toLocaleString("id-ID")} suara</p>
                   </div>
                 </div>
               ))}
@@ -304,7 +304,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
             {/* Section header */}
             <div className="mb-5">

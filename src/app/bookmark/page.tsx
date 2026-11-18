@@ -82,15 +82,17 @@ export default function BookmarkPage() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="animate-pulse rounded-lg border border-border bg-surface-secondary p-4"
+                className="animate-pulse flex sm:block gap-3 rounded-lg border border-border bg-surface-secondary p-3 sm:p-4"
               >
-                <div className="aspect-[16/9] rounded-lg bg-surface-tertiary" />
-                <div className="mt-3 h-5 w-3/4 rounded-lg bg-surface-tertiary" />
-                <div className="mt-2 h-4 w-full rounded-lg bg-surface-secondary" />
+                <div className="w-28 h-20 sm:w-full sm:h-auto sm:aspect-[16/9] shrink-0 rounded-lg bg-surface-tertiary" />
+                <div className="flex-1 min-w-0 sm:mt-3 space-y-2">
+                  <div className="h-4 sm:h-5 w-3/4 rounded-lg bg-surface-tertiary" />
+                  <div className="h-3 sm:h-4 w-full rounded-lg bg-surface-tertiary/70" />
+                </div>
               </div>
             ))}
           </div>
@@ -111,16 +113,16 @@ export default function BookmarkPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {articles.map((article) => (
               <div
                 key={article.slug}
-                className="group relative rounded-lg border border-border bg-surface overflow-hidden shadow-card transition-all hover:shadow-lg"
+                className="group relative flex flex-row sm:flex-col rounded-xl border border-border bg-surface overflow-hidden shadow-card transition-all hover:shadow-lg"
               >
                 {/* Featured image */}
                 {article.featuredImage ? (
-                  <Link href={`/berita/${article.slug}`}>
-                    <div className="relative aspect-[16/9] overflow-hidden">
+                  <Link href={`/berita/${article.slug}`} className="w-28 sm:w-full shrink-0">
+                    <div className="relative h-full min-h-[92px] sm:h-auto sm:aspect-[16/9] overflow-hidden">
                       <Image
                         src={article.featuredImage}
                         alt={article.title}
@@ -130,54 +132,56 @@ export default function BookmarkPage() {
                     </div>
                   </Link>
                 ) : (
-                  <Link href={`/berita/${article.slug}`}>
-                    <div className="flex aspect-[16/9] items-center justify-center bg-surface-secondary">
-                      <span className="font-serif text-sm font-bold uppercase tracking-widest text-txt-muted/40">Lensaplus</span>
+                  <Link href={`/berita/${article.slug}`} className="w-28 sm:w-full shrink-0">
+                    <div className="flex h-full min-h-[92px] sm:h-auto sm:aspect-[16/9] items-center justify-center bg-surface-secondary">
+                      <span className="font-serif text-[10px] sm:text-sm font-bold uppercase tracking-widest text-txt-muted/40">Lensaplus</span>
                     </div>
                   </Link>
                 )}
 
-                <div className="p-4">
-                  {/* Category */}
-                  {article.category && (
-                    <Link
-                      href={`/kategori/${article.category.slug}`}
-                      className="text-xs font-bold uppercase tracking-wide text-primary hover:underline"
-                    >
-                      {article.category.name}
+                <div className="flex-1 min-w-0 p-3 sm:p-4 flex flex-col justify-between">
+                  <div>
+                    {/* Category */}
+                    {article.category && (
+                      <Link
+                        href={`/kategori/${article.category.slug}`}
+                        className="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-primary hover:underline"
+                      >
+                        {article.category.name}
+                      </Link>
+                    )}
+
+                    {/* Title */}
+                    <Link href={`/berita/${article.slug}`}>
+                      <h2 className="mt-0.5 sm:mt-1 font-serif text-sm sm:text-base font-bold leading-snug text-txt-primary line-clamp-2 hover:text-primary transition-colors">
+                        {article.title}
+                      </h2>
                     </Link>
-                  )}
 
-                  {/* Title */}
-                  <Link href={`/berita/${article.slug}`}>
-                    <h2 className="mt-1 text-base font-bold leading-snug text-txt-primary line-clamp-2 hover:text-primary transition-colors">
-                      {article.title}
-                    </h2>
-                  </Link>
-
-                  {/* Excerpt */}
-                  {article.excerpt && (
-                    <p className="mt-1 text-xs text-txt-secondary line-clamp-2">
-                      {article.excerpt}
-                    </p>
-                  )}
+                    {/* Excerpt */}
+                    {article.excerpt && (
+                      <p className="mt-1 hidden sm:line-clamp-2 text-xs text-txt-secondary">
+                        {article.excerpt}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Meta + remove */}
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="text-xs text-txt-muted">
+                  <div className="mt-2 sm:mt-3 flex items-center justify-between gap-2">
+                    <div className="text-[10px] sm:text-xs text-txt-muted truncate">
                       {article.author?.name}
                       {article.publishedAt && (
-                        <span className="ml-2">
+                        <span className="ml-1.5 sm:ml-2">
                           {formatDate(article.publishedAt)}
                         </span>
                       )}
                     </div>
                     <button
                       onClick={() => removeBookmark(article.slug)}
-                      className="rounded-lg p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      className="shrink-0 rounded-lg p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                       title="Hapus bookmark"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>

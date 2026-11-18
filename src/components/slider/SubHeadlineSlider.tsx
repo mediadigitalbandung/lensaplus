@@ -68,7 +68,7 @@ export default function SubHeadlineSlider({ items }: SubHeadlineSliderProps) {
   return (
     <div className="relative group">
       {/* Stacked pages — crossfade like headline slider */}
-      <div className="relative aspect-[2/1] sm:aspect-[32/9]">
+      <div className="relative aspect-[16/9] sm:aspect-[32/9] min-h-[140px]">
         {pages.map((pageItems, pageIdx) => {
           const isActive = pageIdx === currentPage;
           const isLeaving = pageIdx === previousPage;
@@ -111,14 +111,14 @@ export default function SubHeadlineSlider({ items }: SubHeadlineSliderProps) {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
                   {/* Content overlay */}
-                  <Link href={`/berita/${article.slug}`} className="absolute inset-0 flex flex-col justify-end p-4">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-white/60">
+                  <Link href={`/berita/${article.slug}`} className="absolute inset-0 flex flex-col justify-end p-2.5 sm:p-4">
+                    <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-white/70 truncate">
                       {article.category.name}
                     </span>
-                    <h3 className="mt-1 text-sm font-bold leading-snug text-white line-clamp-2">
+                    <h3 className="mt-0.5 sm:mt-1 text-xs sm:text-sm font-bold leading-snug text-white line-clamp-2">
                       {article.title}
                     </h3>
-                    <span className="mt-1.5 text-[10px] text-white/40">
+                    <span className="mt-1 sm:mt-1.5 text-[9px] sm:text-[10px] text-white/55">
                       <ClientDate date={article.publishedAt} format="long" />
                     </span>
                   </Link>

@@ -73,34 +73,36 @@ function LiveCard({ blog }: { blog: LiveBlogCard }) {
   });
 
   return (
-    <Link href={`/live/${blog.slug}`} className="card group block p-4 hover:shadow-card-hover transition-all">
+    <Link href={`/live/${blog.slug}`} className="card group flex gap-3 sm:block p-3 sm:p-4 hover:shadow-card-hover transition-all">
       {blog.coverImage && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={blog.coverImage}
           alt={blog.title}
-          className="mb-3 h-40 w-full rounded-sm object-cover"
+          className="h-20 w-24 sm:h-40 sm:w-full shrink-0 rounded-md sm:rounded-sm sm:mb-3 object-cover"
           loading="lazy"
         />
       )}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <StatusBadge status={blog.status} />
-        {blog.category && (
-          <span className="text-label-sm text-txt-muted">{blog.category}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2 mb-1 sm:mb-2">
+          <StatusBadge status={blog.status} />
+          {blog.category && (
+            <span className="text-[10px] sm:text-label-sm text-txt-muted truncate">{blog.category}</span>
+          )}
+        </div>
+        <h3 className="font-serif text-sm sm:text-title-md font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-2 mb-1">
+          {blog.title}
+        </h3>
+        {blog.description && (
+          <p className="text-xs sm:text-body-sm text-txt-secondary line-clamp-1 sm:line-clamp-2 mb-1.5 sm:mb-3">
+            {blog.description}
+          </p>
         )}
-      </div>
-      <h3 className="font-serif text-title-md font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-2 mb-1">
-        {blog.title}
-      </h3>
-      {blog.description && (
-        <p className="text-body-sm text-txt-secondary line-clamp-2 mb-3">
-          {blog.description}
-        </p>
-      )}
-      <div className="flex items-center gap-3 text-label-sm text-txt-muted">
-        <span>{dateStr}</span>
-        <span>·</span>
-        <span>{blog._count.entries} update</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] sm:text-label-sm text-txt-muted">
+          <span>{dateStr}</span>
+          <span>·</span>
+          <span>{blog._count.entries} update</span>
+        </div>
       </div>
     </Link>
   );

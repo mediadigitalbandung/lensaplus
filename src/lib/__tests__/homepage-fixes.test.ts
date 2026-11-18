@@ -59,4 +59,56 @@ describe("Homepage stability, layout & widget fixes", () => {
     expect(clientDate).toContain("Number.isNaN");
     expect(header).toContain('<ClientDate format="weekday-long" live={false} />');
   });
+
+  it("includes thumbnails in Terhangat, removes Jelajahi Kategori Berita, keeps Header height stable on scroll, and aligns NewsletterBox with DESIGN_SOP", () => {
+    const home = readProjectFile("src/app/page.tsx");
+    const header = readProjectFile("src/components/layout/Header.tsx");
+    const newsletter = readProjectFile("src/components/common/NewsletterBox.tsx");
+    const layout = readProjectFile("src/app/layout.tsx");
+
+    // Terhangat column has thumbnails & Category Grid Footer is removed
+    const terhangatSection = home.slice(home.indexOf("Column 3: Fresh News / Terhangat"));
+    expect(terhangatSection).toContain("resolveArticleImage");
+    expect(home).not.toContain("Jelajahi Kategori Berita");
+    expect(home).not.toContain("home:categories");
+
+    // Header must not collapse height on scroll
+    expect(header).not.toContain("h-0 overflow-hidden");
+    expect(layout).toContain("overflow-x-clip");
+    expect(layout).not.toContain("overflow-x-hidden");
+
+    // NewsletterBox obeys DESIGN_SOP (semantic tokens, no hardcoded #002a5c, no amber, no blur orbs)
+    expect(newsletter).not.toContain("#002a5c");
+    expect(newsletter).not.toContain("amber-");
+    expect(newsletter).not.toContain("blur-3xl");
+    expect(newsletter).toContain("border-l-4 border-secondary");
+  });
+
+  it("keeps news placements compact on mobile and narrow viewports without single-story oversized blocks", () => {
+    const home = readProjectFile("src/app/page.tsx");
+    const untukAnda = readProjectFile("src/app/untuk-anda/UntukAndaClient.tsx");
+    const bookmark = readProjectFile("src/app/bookmark/page.tsx");
+    const rangkuman = readProjectFile("src/app/rangkuman/page.tsx");
+    const rangkumanHarianDetail = readProjectFile("src/app/rangkuman/harian/[slug]/page.tsx");
+    const live = readProjectFile("src/app/live/page.tsx");
+    const kategori = readProjectFile("src/app/kategori/[slug]/page.tsx");
+
+    // Pilihan Redaksi & Terhangat use compact horizontal split rows on mobile and 3-col grids on sm..md
+    expect(home).toContain("sm:grid sm:grid-cols-3 sm:gap-4 lg:flex lg:flex-col");
+    expect(home).toContain("flex-row-reverse sm:flex-col");
+    expect(home).toContain("flex-row sm:flex-col");
+    // Trending, Sorotan, Rangkuman Pintar, and odd Category sections use horizontal snap strips or multi-up sizing on mobile
+    expect(home).toContain("w-[46vw] min-w-[162px]");
+    expect(home).toContain("snap-x snap-mandatory");
+    // Berita Terkini + Sidebar split moves to lg: so md tablet columns aren't crushed
+    expect(home).toContain("grid-cols-1 lg:grid-cols-12");
+
+    // Listing pages use horizontal compact rows or 2-up grids on mobile instead of giant full-width single cards
+    expect(untukAnda).toContain("flex-row sm:flex-col");
+    expect(bookmark).toContain("flex-row sm:flex-col");
+    expect(rangkuman).toContain("flex-row sm:flex-col");
+    expect(rangkumanHarianDetail).toContain("grid-cols-2 gap-3");
+    expect(live).toContain("flex gap-3 sm:block");
+    expect(kategori).toContain("grid-cols-1 gap-8 lg:grid-cols-3");
+  });
 });

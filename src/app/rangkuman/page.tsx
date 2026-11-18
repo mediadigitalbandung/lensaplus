@@ -158,14 +158,14 @@ export default async function RangkumanIndexPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card) => (
             <Link
               key={card.slug}
               href={card.href}
-              className="card group flex h-full flex-col overflow-hidden"
+              className="card group flex flex-row sm:flex-col h-full overflow-hidden"
             >
-              <div className="relative aspect-[16/9] w-full overflow-hidden bg-surface-container">
+              <div className="relative w-28 sm:w-full min-h-[100px] sm:min-h-0 sm:aspect-[16/9] shrink-0 overflow-hidden bg-surface-container">
                 {card.image ? (
                   <Image
                     src={card.image}
@@ -175,21 +175,21 @@ export default async function RangkumanIndexPage() {
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-surface-container-low">
-                    <span className="font-serif text-lg font-bold tracking-widest text-txt-muted/40 uppercase">Lensaplus</span>
+                    <span className="font-serif text-[11px] sm:text-lg font-bold tracking-widest text-txt-muted/40 uppercase">Lensaplus</span>
                   </div>
                 )}
               </div>
-              <div className="flex flex-1 flex-col p-5">
-                <div className="mb-2 text-label-sm uppercase tracking-wider text-primary">
+              <div className="flex flex-1 min-w-0 flex-col justify-center sm:justify-start p-3 sm:p-5">
+                <div className="mb-1 sm:mb-2 text-[10px] sm:text-label-sm uppercase tracking-wider text-primary">
                   <span className="font-semibold">{card.dateRange}</span>
                 </div>
-                <h2 className="font-serif text-title-lg leading-snug text-on-surface group-hover:text-primary transition-colors">
+                <h2 className="font-serif text-sm sm:text-title-lg leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-2">
                   {card.title}
                 </h2>
-                <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant">
+                <p className="mt-1 sm:mt-2 line-clamp-1 sm:line-clamp-2 text-xs sm:text-sm text-on-surface-variant">
                   {card.description}
                 </p>
-                <div className="mt-auto pt-4 text-xs uppercase tracking-wider text-on-surface-variant">
+                <div className="mt-1.5 sm:mt-auto sm:pt-4 text-[10px] sm:text-xs uppercase tracking-wider text-on-surface-variant">
                   {card.count.toLocaleString("id-ID")} artikel terkait
                 </div>
               </div>

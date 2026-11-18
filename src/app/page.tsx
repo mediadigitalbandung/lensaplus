@@ -29,13 +29,6 @@ interface HomeArticle {
   category: { id: string; name: string; slug: string } | null;
 }
 
-interface HomeCategory {
-  id: string;
-  name: string;
-  slug: string;
-  _count: { articles: number };
-}
-
 interface HomeSorotan {
   id: string;
   slug: string;
@@ -135,24 +128,17 @@ export default async function HomePage() {
   } as const;
 
   let articles: HomeArticle[] = [];
-  let categories: HomeCategory[] = [];
   let trendingArticles: HomeArticle[] = [];
   let sorotanList: HomeSorotan[] = [];
 
   try {
-    [articles, categories, trendingArticles, sorotanList] = await Promise.all([
+    [articles, trendingArticles, sorotanList] = await Promise.all([
       getCached("home:articles:30", 30_000, () =>
         prisma.article.findMany({
           where: { status: "PUBLISHED" },
           select: articleSelect,
           orderBy: { publishedAt: "desc" },
           take: 60,
-        }),
-      ),
-      getCached("home:categories", 300_000, () =>
-        prisma.category.findMany({
-          include: { _count: { select: { articles: true } } },
-          orderBy: { order: "asc" },
         }),
       ),
       getCached("home:trending:10", 60_000, async () => {
@@ -213,7 +199,6 @@ export default async function HomePage() {
     ]);
   } catch {
     articles = [];
-    categories = [];
     trendingArticles = [];
     sorotanList = [];
   }
@@ -438,53 +423,54 @@ export default async function HomePage() {
       <BannerAd size="leaderboard" slot="HEADER" className="bg-surface" />
 
       {/* ── HERO EDITORIAL GRID ── */}
-      <section className="bg-surface py-6 sm:py-10">
+      <section className="bg-surface py-4 sm:py-8 lg:py-10">
         <div className="container-main">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10">
             {/* Column 1: Main Spotlight (6/12) */}
             {heroSpotlight && (
               <div className="lg:col-span-6 flex flex-col">
                 <article className="group flex-1 flex flex-col">
-                  <Link href={`/berita/${heroSpotlight.slug}`} className="block overflow-hidden rounded-2xl relative aspect-[16/10] bg-stone-200/70 shadow-sm group-hover:shadow-md transition-all duration-300">
+                  <Link href={`/berita/${heroSpotlight.slug}`} className="block overflow-hidden rounded-xl sm:rounded-2xl relative aspect-[16/9] sm:aspect-[16/10] bg-stone-200/70 shadow-sm group-hover:shadow-md transition-all duration-300">
                     <Image
                       src={resolveArticleImage(heroSpotlight.featuredImage, heroSpotlight.category?.slug, 0)}
                       alt={heroSpotlight.title}
                       fill
                       priority
+                      loading="eager"
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       sizes="(max-width: 1024px) 100vw, 50vw"
                     />
                   </Link>
-                  <div className="mt-4 flex-1 flex flex-col justify-between">
+                  <div className="mt-3 sm:mt-4 flex-1 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-2 mb-1.5">
+                      <div className="flex items-center gap-2 mb-1 sm:mb-1.5">
                         <Link
                           href={`/kategori/${heroSpotlight.category?.slug || "umum"}`}
-                          className="text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors"
+                          className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors"
                         >
                           {heroSpotlight.category?.name || "Berita"}
                         </Link>
                         {heroSpotlight.verificationLabel === "VERIFIED" && (
                           <>
                             <span className="text-stone-300">·</span>
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700">
+                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-emerald-700">
                               Terverifikasi
                             </span>
                           </>
                         )}
                       </div>
                       <Link href={`/berita/${heroSpotlight.slug}`}>
-                        <h2 className="mt-1 font-serif text-headline-sm sm:text-headline-md lg:text-headline-lg leading-tight text-on-surface group-hover:text-primary transition-colors">
+                        <h2 className="mt-0.5 sm:mt-1 font-serif text-title-lg sm:text-headline-md lg:text-headline-lg leading-tight text-on-surface group-hover:text-primary transition-colors">
                           {heroSpotlight.title}
                         </h2>
                       </Link>
                       {heroSpotlight.excerpt && (
-                        <p className="mt-2.5 text-body-md text-stone-600 line-clamp-3 leading-relaxed">
+                        <p className="mt-1.5 sm:mt-2.5 text-body-sm sm:text-body-md text-stone-600 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                           {heroSpotlight.excerpt}
                         </p>
                       )}
                     </div>
-                    <p className="mt-4 flex items-center gap-2 text-label-sm uppercase tracking-wider text-stone-500 border-t border-stone-200/50 pt-3">
+                    <p className="mt-2.5 sm:mt-4 flex items-center gap-2 text-[10px] sm:text-label-sm uppercase tracking-wider text-stone-500 border-t border-stone-200/50 pt-2 sm:pt-3">
                       <span className="font-bold text-stone-700">{heroSpotlight.author?.name || "Redaksi Lensaplus"}</span>
                       <span className="text-stone-300">/</span>
                       <span>{timeAgo(heroSpotlight.publishedAt)}</span>
@@ -494,66 +480,95 @@ export default async function HomePage() {
               </div>
             )}
 
-            {/* Column 2: Top Stories / Pilihan Redaksi (3/12) */}
-            <div className="lg:col-span-3 flex flex-col gap-5 border-t lg:border-t-0 lg:border-x border-stone-200/60 pt-6 lg:pt-0 lg:px-6">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+            {/* Column 2: Top Stories / Pilihan Redaksi (3/12)
+                Mobile (<sm): horizontal split rows (~84px/item)
+                Tablet / Narrow (sm..md): 3-column compact grid
+                Desktop (lg+): 3/12 vertical editorial stack */}
+            <div className="lg:col-span-3 flex flex-col gap-3.5 sm:gap-4 lg:gap-5 border-t lg:border-t-0 lg:border-x border-stone-200/60 pt-4 sm:pt-5 lg:pt-0 lg:px-6">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                 <span className="text-xs font-bold uppercase tracking-widest text-primary">
                   Pilihan Redaksi
                 </span>
               </div>
-              <div className="flex flex-col gap-5">
+              <div className="divide-y divide-stone-200/60 sm:divide-y-0 sm:grid sm:grid-cols-3 sm:gap-4 lg:flex lg:flex-col lg:gap-5">
                 {heroMiddle.map((a, i) => (
-                  <article key={a.slug} className={`group flex flex-col ${i > 0 ? "pt-4 border-t border-stone-100" : ""}`}>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
-                      {a.category?.name || "Berita"}
-                    </span>
-                    <Link href={`/berita/${a.slug}`}>
-                      <h3 className="mt-1 text-title-md font-serif leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-2">
-                        {a.title}
-                      </h3>
-                    </Link>
-                    <Link href={`/berita/${a.slug}`} className="mt-2.5 block">
-                      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
+                  <article
+                    key={a.slug}
+                    className={`group flex flex-row-reverse sm:flex-col items-center sm:items-stretch gap-3 sm:gap-0 py-3 first:pt-0 last:pb-0 sm:py-0 ${
+                      i > 0 ? "lg:pt-4 lg:border-t lg:border-stone-100" : ""
+                    }`}
+                  >
+                    <Link href={`/berita/${a.slug}`} className="shrink-0 sm:order-2 sm:mt-2 block">
+                      <div className="relative h-[66px] w-24 sm:h-auto sm:w-full sm:aspect-[16/10] overflow-hidden rounded-lg sm:rounded-xl bg-stone-200/70 shadow-sm">
                         <Image
                           src={resolveArticleImage(a.featuredImage, a.category?.slug, i + 1)}
                           alt={a.title}
                           fill
                           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                          sizes="(max-width: 1024px) 100vw, 25vw"
+                          sizes="(max-width: 640px) 96px, (max-width: 1024px) 33vw, 25vw"
                         />
                       </div>
                     </Link>
-                    <p className="mt-2.5 text-[10px] text-stone-500 uppercase tracking-wider">
-                      {timeAgo(a.publishedAt)}
-                    </p>
+                    <div className="flex-1 min-w-0 sm:contents">
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-secondary sm:order-1">
+                        {a.category?.name || "Berita"}
+                      </span>
+                      <Link href={`/berita/${a.slug}`} className="sm:order-1">
+                        <h3 className="mt-0.5 sm:mt-1 text-sm sm:text-title-sm lg:text-title-md font-serif leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-2">
+                          {a.title}
+                        </h3>
+                      </Link>
+                      <p className="mt-1 sm:mt-2 text-[10px] text-stone-500 uppercase tracking-wider sm:order-3">
+                        {timeAgo(a.publishedAt)}
+                      </p>
+                    </div>
                   </article>
                 ))}
               </div>
             </div>
 
-            {/* Column 3: Fresh News / Terhangat (3/12) */}
-            <div className="lg:col-span-3 flex flex-col gap-5 border-t lg:border-t-0 border-stone-200/60 pt-6 lg:pt-0">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+            {/* Column 3: Fresh News / Terhangat (3/12)
+                Mobile (<sm): horizontal split rows (thumbnail left, text right for creative contrast)
+                Tablet / Narrow (sm..md): 3-column compact grid
+                Desktop (lg+): 3/12 vertical editorial stack */}
+            <div className="lg:col-span-3 flex flex-col gap-3.5 sm:gap-4 lg:gap-5 border-t lg:border-t-0 border-stone-200/60 pt-4 sm:pt-5 lg:pt-0">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                 <span className="text-xs font-bold uppercase tracking-widest text-secondary">
                   Terhangat
                 </span>
               </div>
-              <div className="flex flex-col gap-5">
+              <div className="divide-y divide-stone-200/60 sm:divide-y-0 sm:grid sm:grid-cols-3 sm:gap-4 lg:flex lg:flex-col lg:gap-5">
                 {heroRight.map((a, i) => (
-                  <article key={a.slug} className={`group flex flex-col ${i > 0 ? "pt-4 border-t border-stone-100" : ""}`}>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-tertiary">
+                  <article
+                    key={a.slug}
+                    className={`group flex flex-row sm:flex-col items-center sm:items-stretch gap-3 sm:gap-0 py-3 first:pt-0 last:pb-0 sm:py-0 ${
+                      i > 0 ? "lg:pt-4 lg:border-t lg:border-stone-100" : ""
+                    }`}
+                  >
+                    <Link href={`/berita/${a.slug}`} className="shrink-0 sm:order-2 sm:mt-2 block">
+                      <div className="relative h-[66px] w-24 sm:h-auto sm:w-full sm:aspect-[16/10] overflow-hidden rounded-lg sm:rounded-xl bg-stone-200/70 shadow-sm">
+                        <Image
+                          src={resolveArticleImage(a.featuredImage, a.category?.slug, i + 4)}
+                          alt={a.title}
+                          fill
+                          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                          sizes="(max-width: 640px) 96px, (max-width: 1024px) 33vw, 25vw"
+                        />
+                      </div>
+                    </Link>
+                    <div className="flex-1 min-w-0 sm:contents">
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-tertiary sm:order-1">
                         {a.category?.name || "Berita"}
                       </span>
-                      <Link href={`/berita/${a.slug}`}>
-                        <h3 className="mt-1.5 text-title-md font-serif leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-3">
+                      <Link href={`/berita/${a.slug}`} className="sm:order-1">
+                        <h3 className="mt-0.5 sm:mt-1 text-sm sm:text-title-sm lg:text-title-md font-serif leading-snug text-on-surface group-hover:text-primary transition-colors line-clamp-2">
                           {a.title}
                         </h3>
                       </Link>
+                      <p className="mt-1 sm:mt-2 text-[10px] text-stone-500 uppercase tracking-wider sm:order-3">
+                        {timeAgo(a.publishedAt)}
+                      </p>
                     </div>
-                    <p className="mt-3 text-[10px] text-stone-500 uppercase tracking-wider">
-                      {timeAgo(a.publishedAt)}
-                    </p>
                   </article>
                 ))}
               </div>
@@ -563,17 +578,17 @@ export default async function HomePage() {
       </section>
 
       {/* ── TRENDING STRIP (Big Numbers) ── */}
-      <section className="bg-white border-y border-stone-200/60 py-6 sm:py-8">
+      <section className="bg-white border-y border-stone-200/60 py-5 sm:py-8">
         <div className="container-main">
-          <div className="flex items-center gap-2 mb-5">
+          <div className="flex items-center gap-2 mb-3.5 sm:mb-5">
             <span className="flex h-2 w-2 rounded-full bg-secondary animate-pulse" aria-hidden="true" />
             <span className="text-xs font-bold uppercase tracking-widest text-stone-600">Trending Topik Hari Ini</span>
           </div>
-          <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide lg:grid lg:grid-cols-5 lg:gap-6 lg:overflow-visible lg:pb-0">
+          <div className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide lg:grid lg:grid-cols-5 lg:gap-6 lg:overflow-visible lg:pb-0">
             {activeTrending.slice(0, 5).map((a, i) => (
-              <article key={a.slug} className="flex flex-col justify-between w-64 sm:w-72 shrink-0 lg:w-auto lg:shrink group">
-                <div className="flex gap-3 items-start min-w-0">
-                  <span className="shrink-0 font-serif text-3xl sm:text-4xl font-extrabold text-primary/20 group-hover:text-secondary transition-colors select-none leading-none" aria-hidden="true">
+              <article key={a.slug} className="flex flex-col justify-between w-[46vw] min-w-[162px] max-w-[205px] sm:w-[205px] md:w-[215px] shrink-0 snap-start lg:w-auto lg:shrink group">
+                <div className="flex gap-2 lg:gap-3 items-start min-w-0">
+                  <span className="shrink-0 font-serif text-xl sm:text-2xl lg:text-3xl font-extrabold text-primary/20 group-hover:text-secondary transition-colors select-none leading-none" aria-hidden="true">
                     0{i + 1}
                   </span>
                   <div className="flex flex-col min-w-0">
@@ -581,28 +596,28 @@ export default async function HomePage() {
                       {a.category?.name || "Berita"}
                     </span>
                     <Link href={`/berita/${a.slug}`}>
-                      <h3 className="mt-1 text-title-sm font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
+                      <h3 className="mt-0.5 sm:mt-1 text-[13px] sm:text-title-sm font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
                         {a.title}
                       </h3>
                     </Link>
                   </div>
                 </div>
-                <div className="mt-3">
+                <div className="mt-2 sm:mt-3">
                   <Link href={`/berita/${a.slug}`} className="block">
-                    <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
+                    <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg sm:rounded-xl bg-stone-200/70 shadow-sm">
                       <Image
                         src={resolveArticleImage(a.featuredImage, a.category?.slug, i)}
                         alt={a.title}
                         fill
                         className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                        sizes="(max-width: 640px) 256px, (max-width: 1024px) 288px, 20vw"
+                        sizes="(max-width: 640px) 46vw, (max-width: 1024px) 215px, 20vw"
                       />
                     </div>
                   </Link>
-                  <p className="mt-2 text-[10px] text-stone-600 uppercase tracking-wider flex items-center gap-2">
+                  <p className="mt-1.5 sm:mt-2 text-[10px] text-stone-600 uppercase tracking-wider flex items-center gap-1.5 truncate">
                     <span>{timeAgo(a.publishedAt)}</span>
                     {a.viewCount > 0 && (
-                      <span>
+                      <span className="truncate">
                         · {a.viewCount.toLocaleString("id-ID")} dilihat
                       </span>
                     )}
@@ -615,36 +630,36 @@ export default async function HomePage() {
       </section>
 
       {/* ── SOROTAN & ANALISIS SUDUT PANDANG (EDITORIAL AUTHORITY DESIGN SYSTEM) ── */}
-      <section className="bg-primary text-white py-10 sm:py-14 border-y border-stone-800/40">
+      <section className="bg-primary text-white py-7 sm:py-12 border-y border-stone-800/40">
         <div className="container-main">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-white/15 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-5 sm:mb-8 border-b border-white/15 pb-3.5 sm:pb-5">
             <div>
-              <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-secondary mb-1">
+              <div className="inline-flex items-center gap-2 text-[11px] sm:text-xs font-bold uppercase tracking-widest text-secondary mb-0.5 sm:mb-1">
                 <span>Desk Sorotan & Bedah Isu</span>
               </div>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">
+              <h2 className="font-serif text-xl sm:text-3xl font-bold text-white">
                 Analisis Sudut Pandang & Bedah Isu Nasional
               </h2>
             </div>
             <Link
               href="/sorotan"
-              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white/85 hover:text-secondary transition-colors shrink-0"
+              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white/85 hover:text-secondary transition-colors shrink-0 self-start sm:self-auto"
             >
               Jelajahi Semua Sorotan <ChevronRight size={14} aria-hidden="true" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0">
             {sorotanList.length > 0 ? (
               sorotanList.slice(0, 3).map((item) => {
                 const badge = getAngleBadge(item.angle);
                 return (
                   <article
                     key={item.id}
-                    className="group flex flex-col justify-between rounded-2xl bg-white/5 p-6 border border-white/10 hover:border-secondary/60 hover:bg-white/10 transition-all duration-300 shadow-lg"
+                    className="w-[74vw] min-w-[244px] max-w-[300px] sm:w-[46%] md:w-auto shrink-0 snap-start group flex flex-col justify-between rounded-xl sm:rounded-2xl bg-white/5 p-4 sm:p-5 md:p-6 border border-white/10 hover:border-secondary/60 hover:bg-white/10 transition-all duration-300 shadow-lg"
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
                         <span className={`text-[10px] font-bold uppercase tracking-widest ${badge.color}`}>
                           {badge.label}
                         </span>
@@ -653,17 +668,17 @@ export default async function HomePage() {
                         </span>
                       </div>
                       <Link href={`/sorotan/${item.slug}`}>
-                        <h3 className="font-serif text-lg font-bold leading-snug text-white group-hover:text-stone-200 transition-colors line-clamp-2">
+                        <h3 className="font-serif text-base sm:text-lg font-bold leading-snug text-white group-hover:text-stone-200 transition-colors line-clamp-2">
                           {item.title}
                         </h3>
                       </Link>
-                      <p className="mt-2.5 text-xs text-stone-300 line-clamp-3 leading-relaxed">
+                      <p className="mt-2 text-xs text-stone-300 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                         {item.content}
                       </p>
                     </div>
 
-                    <div className="mt-5 border-t border-white/10 pt-3 flex items-center justify-between gap-3">
-                      <span className="text-[11px] text-stone-300 truncate max-w-[200px]">
+                    <div className="mt-3.5 sm:mt-5 border-t border-white/10 pt-2.5 sm:pt-3 flex items-center justify-between gap-3">
+                      <span className="text-[11px] text-stone-300 truncate max-w-[165px] sm:max-w-[200px]">
                         {item.article?.title ? `Berita Terkait: ${item.article.title}` : "Bedah Isu Lensaplus"}
                       </span>
                       <Link
@@ -687,24 +702,24 @@ export default async function HomePage() {
                 return (
                   <article
                     key={idx}
-                    className="group flex flex-col justify-between rounded-2xl bg-white/5 p-6 border border-white/10 hover:border-secondary/60 hover:bg-white/10 transition-all duration-300 shadow-lg"
+                    className="w-[74vw] min-w-[244px] max-w-[300px] sm:w-[46%] md:w-auto shrink-0 snap-start group flex flex-col justify-between rounded-xl sm:rounded-2xl bg-white/5 p-4 sm:p-5 md:p-6 border border-white/10 hover:border-secondary/60 hover:bg-white/10 transition-all duration-300 shadow-lg"
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
                         <span className={`text-[10px] font-bold uppercase tracking-widest ${badge.color}`}>
                           {badge.label}
                         </span>
                       </div>
                       <Link href="/sorotan">
-                        <h3 className="font-serif text-lg font-bold leading-snug text-white group-hover:text-stone-200 transition-colors line-clamp-2">
+                        <h3 className="font-serif text-base sm:text-lg font-bold leading-snug text-white group-hover:text-stone-200 transition-colors line-clamp-2">
                           {item.title}
                         </h3>
                       </Link>
-                      <p className="mt-2.5 text-xs text-stone-300 line-clamp-3 leading-relaxed">
+                      <p className="mt-2 text-xs text-stone-300 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                         {item.desc}
                       </p>
                     </div>
-                    <div className="mt-5 border-t border-white/10 pt-3 flex items-center justify-end">
+                    <div className="mt-3.5 sm:mt-5 border-t border-white/10 pt-2.5 sm:pt-3 flex items-center justify-end">
                       <Link href="/sorotan" className="text-xs font-bold text-white group-hover:text-secondary inline-flex items-center gap-1">
                         Jelajahi <ChevronRight size={14} />
                       </Link>
@@ -718,12 +733,12 @@ export default async function HomePage() {
       </section>
 
       {/* ── TERKINI + SIDEBAR POLLING & WIDGETS ── */}
-      <section className="bg-surface-secondary py-8 sm:py-12 md:py-16">
+      <section className="bg-surface-secondary py-6 sm:py-10 lg:py-14">
         <div className="container-main">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 lg:gap-10">
             {/* Left: Berita Terkini (7 cols) */}
-            <div className="md:col-span-7">
-              <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
+            <div className="lg:col-span-7">
+              <div className="flex items-center justify-between gap-3 mb-4 sm:mb-7">
                 <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface border-l-4 border-primary pl-3 truncate">
                   Berita Terkini
                 </h2>
@@ -736,29 +751,29 @@ export default async function HomePage() {
 
               {/* Lead article */}
               {terkiniArticles[0] && (
-                <article className="group mb-8">
+                <article className="group mb-4 sm:mb-7">
                   <Link href={`/berita/${terkiniArticles[0].slug}`} className="block">
-                    <div className="relative aspect-[2/1] overflow-hidden rounded-2xl bg-stone-200/70 shadow-sm">
+                    <div className="relative aspect-[16/9] sm:aspect-[2/1] overflow-hidden rounded-xl sm:rounded-2xl bg-stone-200/70 shadow-sm">
                       <Image
                         src={resolveArticleImage(terkiniArticles[0].featuredImage, terkiniArticles[0].category?.slug, 1)}
                         alt={terkiniArticles[0].title}
                         fill
-                        sizes="(max-width: 768px) 100vw, 58vw"
+                        sizes="(max-width: 1024px) 100vw, 58vw"
                         className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       />
                     </div>
                   </Link>
-                  <div className="mt-4">
-                    <span className="inline-block text-[11px] font-bold uppercase tracking-widest text-secondary">
+                  <div className="mt-2.5 sm:mt-4">
+                    <span className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-secondary">
                       {terkiniArticles[0].category?.name || "Berita"}
                     </span>
                     <Link href={`/berita/${terkiniArticles[0].slug}`}>
-                      <h3 className="mt-2.5 font-serif text-title-lg sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
+                      <h3 className="mt-1 sm:mt-2 font-serif text-title-md sm:text-headline-sm lg:text-headline-md leading-tight text-on-surface group-hover:text-primary transition-colors">
                         {terkiniArticles[0].title}
                       </h3>
                     </Link>
                     {terkiniArticles[0].excerpt && (
-                      <p className="mt-2 text-body-md text-stone-600 line-clamp-2 leading-relaxed">
+                      <p className="mt-1.5 sm:mt-2 text-body-sm sm:text-body-md text-stone-600 line-clamp-2 leading-relaxed">
                         {terkiniArticles[0].excerpt}
                       </p>
                     )}
@@ -767,27 +782,30 @@ export default async function HomePage() {
               )}
 
               {/* Rest as compact list grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 sm:gap-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-stone-200/60 sm:divide-y-0 gap-x-6 sm:gap-y-5">
                 {terkiniArticles.slice(1).map((a, idx) => (
-                  <article key={a.slug} className="group flex gap-3.5 sm:gap-4">
+                  <article key={a.slug} className="group flex gap-3 sm:gap-3.5 py-2.5 first:pt-0 last:pb-0 sm:py-0 items-center sm:items-start">
                     <Link href={`/berita/${a.slug}`} className="shrink-0">
-                      <div className="relative h-16 w-24 sm:h-20 sm:w-28 overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
+                      <div className="relative h-[60px] w-[88px] sm:h-20 sm:w-28 overflow-hidden rounded-lg sm:rounded-xl bg-stone-200/70 shadow-sm">
                         <Image
                           src={resolveArticleImage(a.featuredImage, a.category?.slug, idx + 2)}
                           alt={a.title}
                           fill
-                          sizes="(max-width: 640px) 96px, 112px"
+                          sizes="(max-width: 640px) 88px, 112px"
                           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                         />
                       </div>
                     </Link>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-secondary mb-0.5 sm:hidden truncate">
+                        {a.category?.name || "Berita"}
+                      </span>
                       <Link href={`/berita/${a.slug}`}>
-                        <h3 className="text-title-sm font-serif leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
+                        <h3 className="text-[13px] sm:text-title-sm font-serif leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
                           {a.title}
                         </h3>
                       </Link>
-                      <p className="mt-1.5 text-[10px] text-stone-500 uppercase tracking-wider">
+                      <p className="mt-1 text-[10px] text-stone-500 uppercase tracking-wider">
                         {timeAgo(a.publishedAt)}
                       </p>
                     </div>
@@ -796,73 +814,75 @@ export default async function HomePage() {
               </div>
 
               {/* "Lihat Lainnya" CTA */}
-              <div className="mt-10 border-t border-stone-200/60 pt-6 flex justify-center">
+              <div className="mt-6 sm:mt-10 border-t border-stone-200/60 pt-4 sm:pt-6 flex justify-center">
                 <Link
                   href="/berita"
-                  className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-label-md font-bold uppercase tracking-wider text-white transition-all hover:bg-primary-dark hover:gap-3 shadow-md shadow-primary/20"
+                  className="group inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 sm:px-6 sm:py-3 text-xs sm:text-label-md font-bold uppercase tracking-wider text-white transition-all hover:bg-primary-dark hover:gap-3 shadow-md shadow-primary/20"
                 >
                   Lihat Berita Lainnya
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                  <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                 </Link>
               </div>
             </div>
 
             {/* Right Sidebar — 5 cols: Polling + Legal Agenda + Ads */}
-            <aside className="md:col-span-5 flex flex-col gap-8">
-              {/* Interactive Polling Card */}
-              <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm">
-                <div className="mb-5 border-b border-stone-100 pb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-secondary block">Suara Pembaca</span>
-                  <h3 className="font-serif text-title-md text-on-surface font-semibold mt-0.5">Polling</h3>
-                </div>
-                <PollingCarousel />
-              </div>
-
-              {/* Legal Agenda & Public Services Widget */}
-              <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm">
-                <div className="mb-4 border-b border-stone-100 pb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary block">Layanan &amp; Informasi</span>
-                  <h3 className="font-serif text-title-md text-on-surface font-semibold mt-0.5">Agenda &amp; Layanan Hukum</h3>
+            <aside className="lg:col-span-5 flex flex-col gap-5 sm:gap-6 lg:gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-5 sm:gap-6">
+                {/* Interactive Polling Card */}
+                <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200/60 shadow-sm">
+                  <div className="mb-4 sm:mb-5 border-b border-stone-100 pb-2.5 sm:pb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-secondary block">Suara Pembaca</span>
+                    <h3 className="font-serif text-title-md text-on-surface font-semibold mt-0.5">Polling</h3>
+                  </div>
+                  <PollingCarousel />
                 </div>
 
-                <div className="divide-y divide-stone-100">
-                  <Link
-                    href="/live"
-                    className="group flex items-center justify-between py-3 transition-colors"
-                  >
-                    <div>
-                      <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Liputan Langsung Persidangan</h4>
-                      <p className="text-[10px] text-stone-500 mt-0.5">Laporan real-time sidang &amp; konferensi pers</p>
-                    </div>
-                    <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" aria-hidden="true" />
-                  </Link>
+                {/* Legal Agenda & Public Services Widget */}
+                <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200/60 shadow-sm">
+                  <div className="mb-3 sm:mb-4 border-b border-stone-100 pb-2.5 sm:pb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary block">Layanan &amp; Informasi</span>
+                    <h3 className="font-serif text-title-md text-on-surface font-semibold mt-0.5">Agenda &amp; Layanan Hukum</h3>
+                  </div>
 
-                  <Link
-                    href="/lokasi"
-                    className="group flex items-center justify-between py-3 transition-colors"
-                  >
-                    <div>
-                      <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Direktori Pengadilan Bandung</h4>
-                      <p className="text-[10px] text-stone-500 mt-0.5">Lokasi &amp; info 8 lembaga peradilan</p>
-                    </div>
-                    <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-                  </Link>
+                  <div className="divide-y divide-stone-100">
+                    <Link
+                      href="/live"
+                      className="group flex items-center justify-between py-2.5 sm:py-3 transition-colors"
+                    >
+                      <div>
+                        <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Liputan Langsung Persidangan</h4>
+                        <p className="text-[10px] text-stone-500 mt-0.5">Laporan real-time sidang &amp; konferensi pers</p>
+                      </div>
+                      <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" aria-hidden="true" />
+                    </Link>
 
-                  <Link
-                    href="/regulasi"
-                    className="group flex items-center justify-between pt-3 pb-1 transition-colors"
-                  >
-                    <div>
-                      <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Database Regulasi &amp; Perda</h4>
-                      <p className="text-[10px] text-stone-500 mt-0.5">Peraturan daerah &amp; UU terbaru</p>
-                    </div>
-                    <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-                  </Link>
+                    <Link
+                      href="/lokasi"
+                      className="group flex items-center justify-between py-2.5 sm:py-3 transition-colors"
+                    >
+                      <div>
+                        <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Direktori Pengadilan Bandung</h4>
+                        <p className="text-[10px] text-stone-500 mt-0.5">Lokasi &amp; info 8 lembaga peradilan</p>
+                      </div>
+                      <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </Link>
+
+                    <Link
+                      href="/regulasi"
+                      className="group flex items-center justify-between pt-2.5 sm:pt-3 pb-1 transition-colors"
+                    >
+                      <div>
+                        <h4 className="text-xs font-bold text-stone-800 group-hover:text-primary transition-colors">Database Regulasi &amp; Perda</h4>
+                        <p className="text-[10px] text-stone-500 mt-0.5">Peraturan daerah &amp; UU terbaru</p>
+                      </div>
+                      <ChevronRight size={15} className="text-stone-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </Link>
+                  </div>
                 </div>
               </div>
 
               {/* Sidebar Ads */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 lg:gap-6">
                 <SidebarAd index={0} />
                 <div className="hidden sm:block">
                   <SidebarAd index={1} />
@@ -875,9 +895,9 @@ export default async function HomePage() {
 
       {/* ── EDITOR'S PICK — 4 CARDS HORIZONTAL ── */}
       {editorsPickArticles.length > 0 && (
-        <section className="bg-surface py-8 sm:py-12 border-t border-stone-200/60">
+        <section className="bg-surface py-6 sm:py-10 border-t border-stone-200/60">
           <div className="container-main">
-            <div className="flex items-end justify-between gap-3 mb-6 sm:mb-8">
+            <div className="flex items-end justify-between gap-3 mb-4 sm:mb-7">
               <div className="min-w-0 border-l-4 border-secondary pl-3">
                 <span className="text-label-sm sm:text-label-md uppercase tracking-widest text-secondary font-bold block">Pilihan Editor</span>
                 <h2 className="font-serif text-headline-sm sm:text-headline-md text-on-surface mt-0.5">
@@ -888,12 +908,12 @@ export default async function HomePage() {
                 Semua Berita <ArrowRight size={14} />
               </Link>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
               {editorsPickArticles.map((a, idx) => (
                 <article key={a.slug} className="group flex flex-col justify-between">
                   <div>
                     <Link href={`/berita/${a.slug}`} className="block">
-                      <div className="relative aspect-[3/2] overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
+                      <div className="relative aspect-[16/10] sm:aspect-[3/2] overflow-hidden rounded-lg sm:rounded-xl bg-stone-200/70 shadow-sm">
                         <Image
                           src={resolveArticleImage(a.featuredImage, a.category?.slug, idx)}
                           alt={a.title}
@@ -903,19 +923,19 @@ export default async function HomePage() {
                         />
                       </div>
                     </Link>
-                    <div className="mt-3">
-                      <span className="text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-primary">{a.category?.name || "Berita"}</span>
+                    <div className="mt-2 sm:mt-3">
+                      <span className="text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-primary truncate block">{a.category?.name || "Berita"}</span>
                       <Link href={`/berita/${a.slug}`}>
-                        <h3 className="mt-1 font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-primary transition-colors">
+                        <h3 className="mt-0.5 sm:mt-1 font-serif text-[13px] sm:text-title-md lg:text-title-lg leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
                           {a.title}
                         </h3>
                       </Link>
                     </div>
                   </div>
-                  <p className="mt-3 flex items-center gap-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-stone-500 border-t border-stone-100 pt-2 truncate">
+                  <p className="mt-2 sm:mt-3 flex items-center gap-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-stone-500 border-t border-stone-100 pt-1.5 sm:pt-2 truncate">
                     <span className="truncate">{a.author?.name || "Redaksi Lensaplus"}</span>
                     <span className="text-stone-300">/</span>
-                    <span>{timeAgo(a.publishedAt)}</span>
+                    <span className="shrink-0">{timeAgo(a.publishedAt)}</span>
                   </p>
                 </article>
               ))}
@@ -925,40 +945,42 @@ export default async function HomePage() {
       )}
 
       {/* ── RANGKUMAN BERITA PINTAR ── */}
-      <section className="bg-gradient-to-b from-stone-100 to-stone-50 py-10 sm:py-14 border-t border-stone-200/60">
+      <section className="bg-gradient-to-b from-stone-100 to-stone-50 py-7 sm:py-12 border-t border-stone-200/60">
         <div className="container-main">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-4 mb-5 sm:mb-8">
             <div className="border-l-4 border-primary pl-3">
-              <span className="text-xs font-bold uppercase tracking-widest text-primary block">
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-primary block">
                 Rangkuman Pintar
               </span>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-on-surface mt-0.5">
+              <h2 className="font-serif text-xl sm:text-3xl font-bold text-on-surface mt-0.5">
                 Kilas Berita &amp; Rekap Penting
               </h2>
             </div>
             <Link
               href="/rangkuman"
-              className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-primary hover:text-primary-dark transition-colors shrink-0"
+              className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-primary hover:text-primary-dark transition-colors shrink-0 self-start sm:self-auto"
             >
               Lihat Semua Rangkuman <ChevronRight size={14} />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0">
             <Link
               href="/rangkuman/harian"
-              className="group rounded-2xl bg-white p-6 border border-stone-200/70 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300"
+              className="w-[72vw] min-w-[232px] max-w-[275px] sm:w-[46%] md:w-auto shrink-0 snap-start group rounded-xl sm:rounded-2xl bg-white p-4 sm:p-5 md:p-6 border border-stone-200/70 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 flex flex-col justify-between"
             >
-              <span className="text-[11px] font-bold uppercase tracking-widest text-primary block mb-2">
-                Harian
-              </span>
-              <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-primary transition-colors">
-                Rangkuman Harian
-              </h3>
-              <p className="mt-2 text-xs text-stone-600 leading-relaxed">
-                Ringkasan peristiwa dan berita paling krusial hari ini di Indonesia dan daerah.
-              </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-primary">
+              <div>
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-primary block mb-1.5 sm:mb-2">
+                  Harian
+                </span>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-stone-900 group-hover:text-primary transition-colors">
+                  Rangkuman Harian
+                </h3>
+                <p className="mt-1.5 sm:mt-2 text-xs text-stone-600 leading-relaxed line-clamp-2 sm:line-clamp-none">
+                  Ringkasan peristiwa dan berita paling krusial hari ini di Indonesia dan daerah.
+                </p>
+              </div>
+              <div className="mt-3 sm:mt-4 flex items-center gap-1 text-xs font-bold text-primary">
                 <span>Buka Arsip Harian</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
               </div>
@@ -966,18 +988,20 @@ export default async function HomePage() {
 
             <Link
               href="/rangkuman/pekan-ini"
-              className="group rounded-2xl bg-white p-6 border border-stone-200/70 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300"
+              className="w-[72vw] min-w-[232px] max-w-[275px] sm:w-[46%] md:w-auto shrink-0 snap-start group rounded-xl sm:rounded-2xl bg-white p-4 sm:p-5 md:p-6 border border-stone-200/70 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 flex flex-col justify-between"
             >
-              <span className="text-[11px] font-bold uppercase tracking-widest text-secondary block mb-2">
-                Mingguan
-              </span>
-              <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-primary transition-colors">
-                Kilas Pekan Ini
-              </h3>
-              <p className="mt-2 text-xs text-stone-600 leading-relaxed">
-                Evaluasi mingguan kebijakan publik, dinamika pasar, dan isu hangat sepekan terakhir.
-              </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-secondary">
+              <div>
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-secondary block mb-1.5 sm:mb-2">
+                  Mingguan
+                </span>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-stone-900 group-hover:text-primary transition-colors">
+                  Kilas Pekan Ini
+                </h3>
+                <p className="mt-1.5 sm:mt-2 text-xs text-stone-600 leading-relaxed line-clamp-2 sm:line-clamp-none">
+                  Evaluasi mingguan kebijakan publik, dinamika pasar, dan isu hangat sepekan terakhir.
+                </p>
+              </div>
+              <div className="mt-3 sm:mt-4 flex items-center gap-1 text-xs font-bold text-secondary">
                 <span>Baca Kilas Mingguan</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
               </div>
@@ -985,18 +1009,20 @@ export default async function HomePage() {
 
             <Link
               href="/rangkuman/bulan-ini"
-              className="group rounded-2xl bg-white p-6 border border-stone-200/70 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300"
+              className="w-[72vw] min-w-[232px] max-w-[275px] sm:w-[46%] md:w-auto shrink-0 snap-start group rounded-xl sm:rounded-2xl bg-white p-4 sm:p-5 md:p-6 border border-stone-200/70 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 flex flex-col justify-between"
             >
-              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 block mb-2">
-                Bulanan
-              </span>
-              <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-primary transition-colors">
-                Kaleidoskop Bulanan
-              </h3>
-              <p className="mt-2 text-xs text-stone-600 leading-relaxed">
-                Rangkuman komprehensif perkembangan ekonomi, proyek daerah, dan regulasi bulan ini.
-              </p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-700">
+              <div>
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-emerald-700 block mb-1.5 sm:mb-2">
+                  Bulanan
+                </span>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-stone-900 group-hover:text-primary transition-colors">
+                  Kaleidoskop Bulanan
+                </h3>
+                <p className="mt-1.5 sm:mt-2 text-xs text-stone-600 leading-relaxed line-clamp-2 sm:line-clamp-none">
+                  Rangkuman komprehensif perkembangan ekonomi, proyek daerah, dan regulasi bulan ini.
+                </p>
+              </div>
+              <div className="mt-3 sm:mt-4 flex items-center gap-1 text-xs font-bold text-emerald-700">
                 <span>Lihat Kaleidoskop</span>
                 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
               </div>
@@ -1017,10 +1043,10 @@ export default async function HomePage() {
 
         return (
           <div key={catSlug}>
-            <section className={`py-8 sm:py-12 ${isEven ? "bg-surface" : "bg-stone-50"}`}>
+            <section className={`py-6 sm:py-10 ${isEven ? "bg-surface" : "bg-stone-50"}`}>
               <div className="container-main">
                 {/* Header */}
-                <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
+                <div className="flex items-center justify-between gap-3 mb-4 sm:mb-7">
                   <Link href={`/kategori/${catSlug}`} className="group min-w-0">
                     <h2 className="font-serif text-title-lg sm:text-headline-sm text-on-surface border-l-4 border-primary pl-3 group-hover:text-primary transition-colors truncate">
                       {catName}
@@ -1035,7 +1061,7 @@ export default async function HomePage() {
 
                 {isEven ? (
                   <>
-                    {/* Mobile: 2 cards berdampingan */}
+                    {/* Mobile: 2 cards berdampingan + compact divided rows */}
                     <div className="md:hidden">
                       {(() => {
                         const top2 = catArticles.slice(0, 2);
@@ -1043,11 +1069,11 @@ export default async function HomePage() {
                         return (
                           <>
                             {top2.length > 0 && (
-                              <div className="grid grid-cols-2 gap-3 mb-5">
+                              <div className="grid grid-cols-2 gap-3 mb-4">
                                 {top2.map((a, subIdx) => (
                                   <article key={a.slug} className="group">
                                     <Link href={`/berita/${a.slug}`} className="block">
-                                      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-stone-200/70">
+                                      <div className="relative aspect-[16/10] overflow-hidden rounded-lg sm:rounded-xl bg-stone-200/70">
                                         <Image
                                           src={resolveArticleImage(a.featuredImage, a.category?.slug, subIdx)}
                                           alt={a.title}
@@ -1057,13 +1083,13 @@ export default async function HomePage() {
                                         />
                                       </div>
                                     </Link>
-                                    <div className="mt-2.5">
+                                    <div className="mt-2">
                                       <Link href={`/berita/${a.slug}`}>
-                                        <h3 className="font-serif text-title-sm leading-snug text-on-surface line-clamp-3 group-hover:text-primary transition-colors">
+                                        <h3 className="font-serif text-[13px] leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">
                                           {a.title}
                                         </h3>
                                       </Link>
-                                      <p className="mt-1.5 text-[10px] uppercase tracking-wider text-stone-500">
+                                      <p className="mt-1 text-[10px] uppercase tracking-wider text-stone-500">
                                         {timeAgo(a.publishedAt)}
                                       </p>
                                     </div>
@@ -1072,23 +1098,23 @@ export default async function HomePage() {
                               </div>
                             )}
                             {rest.length > 0 && (
-                              <div className="flex flex-col gap-3 border-t border-stone-200/60 pt-4">
+                              <div className="flex flex-col divide-y divide-stone-200/60 border-t border-stone-200/60 pt-2.5">
                                 {rest.map((a, subIdx) => (
-                                  <article key={a.slug} className="group flex gap-3">
+                                  <article key={a.slug} className="group flex gap-3 py-2.5 first:pt-0 last:pb-0 items-center">
                                     <Link href={`/berita/${a.slug}`} className="shrink-0">
-                                      <div className="relative h-16 w-24 overflow-hidden rounded-lg bg-stone-200/70">
+                                      <div className="relative h-14 w-20 overflow-hidden rounded-lg bg-stone-200/70">
                                         <Image
                                           src={resolveArticleImage(a.featuredImage, a.category?.slug, subIdx + 2)}
                                           alt={a.title}
                                           fill
                                           className="object-cover"
-                                          sizes="96px"
+                                          sizes="80px"
                                         />
                                       </div>
                                     </Link>
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                       <Link href={`/berita/${a.slug}`}>
-                                        <h3 className="text-title-sm leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
+                                        <h3 className="text-[13px] font-serif leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
                                       </Link>
                                       <p className="mt-1 text-[10px] uppercase tracking-wider text-stone-500">{timeAgo(a.publishedAt)}</p>
                                     </div>
@@ -1157,26 +1183,26 @@ export default async function HomePage() {
                     </div>
                   </>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+                  <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0">
                     {catArticles.slice(0, 3).map((a, subIdx) => (
-                      <article key={a.slug} className="group">
+                      <article key={a.slug} className="w-[46vw] min-w-[162px] max-w-[235px] sm:w-[38vw] md:w-auto shrink-0 snap-start group">
                         <Link href={`/berita/${a.slug}`} className="block">
-                          <div className="relative aspect-[3/2] overflow-hidden rounded-xl bg-stone-200/70 shadow-sm">
+                          <div className="relative aspect-[16/10] sm:aspect-[3/2] overflow-hidden rounded-lg sm:rounded-xl bg-stone-200/70 shadow-sm">
                             <Image
                               src={resolveArticleImage(a.featuredImage, a.category?.slug, subIdx)}
                               alt={a.title}
                               fill
-                              sizes="(max-width: 768px) 50vw, 33vw"
+                              sizes="(max-width: 640px) 46vw, (max-width: 768px) 38vw, 33vw"
                               className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                             />
                           </div>
                         </Link>
-                        <div className="mt-2.5 sm:mt-3">
+                        <div className="mt-2 sm:mt-3">
                           <Link href={`/berita/${a.slug}`}>
-                            <h3 className="font-serif text-title-sm sm:text-title-lg leading-snug text-on-surface line-clamp-3 sm:line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
+                            <h3 className="font-serif text-[13px] sm:text-title-md lg:text-title-lg leading-snug text-on-surface line-clamp-2 group-hover:text-primary transition-colors">{a.title}</h3>
                           </Link>
-                          <p className="mt-1.5 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-stone-500 truncate">
-                            <span className="truncate">{a.author?.name || "Redaksi Lensaplus"}</span> <span className="mx-0.5 text-stone-300 shrink-0">/</span> {timeAgo(a.publishedAt)}
+                          <p className="mt-1 sm:mt-1.5 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-label-sm uppercase tracking-wider text-stone-500 truncate">
+                            <span className="truncate">{a.author?.name || "Redaksi Lensaplus"}</span> <span className="mx-0.5 text-stone-300 shrink-0">/</span> <span className="shrink-0">{timeAgo(a.publishedAt)}</span>
                           </p>
                         </div>
                       </article>
@@ -1185,7 +1211,7 @@ export default async function HomePage() {
                 )}
               </div>
 
-              {idx === 1 && <div className="container-main mt-8"><NativeAd /></div>}
+              {idx === 1 && <div className="container-main mt-6 sm:mt-8"><NativeAd /></div>}
             </section>
 
             {idx > 0 && idx % 3 === 2 && (
@@ -1196,7 +1222,7 @@ export default async function HomePage() {
       })}
 
       {/* ── NEWSLETTER SUBSCRIPTION BOX ── */}
-      <section className="bg-surface py-10 sm:py-14 border-t border-stone-200/60">
+      <section className="bg-surface py-7 sm:py-12 border-t border-stone-200/60">
         <div className="container-main">
           <NewsletterBox />
         </div>
@@ -1204,50 +1230,6 @@ export default async function HomePage() {
 
       {/* AD: Footer */}
       <BannerAd size="leaderboard" slot="FOOTER" className="bg-surface" />
-
-      {/* ── CATEGORY GRID FOOTER ── */}
-      {(() => {
-        const sortedCategories = [...categories].sort(
-          (a, b) => b._count.articles - a._count.articles,
-        );
-
-        return (
-          <section className="bg-primary py-10 sm:py-14">
-            <div className="container-main">
-              <div className="mb-6 sm:mb-8 flex items-end justify-between gap-4 border-b border-white/15 pb-4 sm:pb-5">
-                <div className="min-w-0">
-                  <span className="text-label-sm sm:text-label-md font-bold uppercase tracking-widest text-white/60">Topik</span>
-                  <h2 className="mt-1 font-serif text-headline-sm sm:text-headline-md lg:text-headline-lg leading-tight text-white">Jelajahi Kategori Berita</h2>
-                </div>
-                <p className="hidden max-w-sm text-body-sm text-white/55 sm:block shrink-0">
-                  Temukan berita berdasarkan topik pilihan Anda.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-                {sortedCategories.map((cat) => {
-                  const isEmpty = cat._count.articles === 0;
-                  return (
-                    <Link
-                      key={cat.slug}
-                      href={`/kategori/${cat.slug}`}
-                      className="group flex flex-col justify-between gap-4 sm:gap-5 border border-white/10 bg-primary p-4 sm:p-5 transition-all duration-300 hover:bg-secondary"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className={`font-serif text-title-sm sm:text-title-md leading-tight ${isEmpty ? "text-white/75 group-hover:text-white" : "text-white"}`}>{cat.name}</h3>
-                        <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-white/45 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-white mt-0.5" />
-                      </div>
-                      <p className={`text-label-sm uppercase tracking-wider ${isEmpty ? "text-white/55 group-hover:text-white/85" : "text-white/75 group-hover:text-white"}`}>
-                        {cat._count.articles} artikel
-                      </p>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        );
-      })()}
     </>
   );
 }

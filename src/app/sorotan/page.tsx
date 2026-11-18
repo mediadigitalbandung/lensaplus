@@ -194,33 +194,33 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
 
         {/* List */}
         {sorotan.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {sorotan.map((s) => (
               <Link
                 key={s.id}
                 href={`/sorotan/${s.slug}`}
-                className="group flex h-full flex-col rounded-lg border border-border bg-surface p-5 shadow-card transition-all hover:border-primary"
+                className="group flex h-full flex-col rounded-lg border border-border bg-surface p-3.5 sm:p-5 shadow-card transition-all hover:border-primary"
               >
-                <div className="mb-3 flex items-center gap-2">
+                <div className="mb-1.5 sm:mb-3 flex items-center gap-2">
                   <span
-                    className={`text-[11px] font-bold uppercase tracking-wider ${
+                    className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ${
                       ANGLE_COLOR[s.angle] ?? "text-txt-secondary"
                     }`}
                   >
                     {ANGLE_LABEL[s.angle] ?? s.angle}
                   </span>
                   <span className="text-txt-muted/50">·</span>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-txt-muted">
+                  <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-txt-muted truncate">
                     {s.article.category.name}
                   </span>
                 </div>
-                <h2 className="line-clamp-3 text-base font-bold leading-snug text-txt-primary transition-colors group-hover:text-primary">
+                <h2 className="line-clamp-2 sm:line-clamp-3 font-serif text-sm sm:text-base font-bold leading-snug text-txt-primary transition-colors group-hover:text-primary">
                   {s.title}
                 </h2>
-                <p className="mt-2 line-clamp-3 text-sm text-txt-secondary">
+                <p className="mt-1.5 sm:mt-2 line-clamp-2 sm:line-clamp-3 text-xs sm:text-sm text-txt-secondary">
                   {s.content.slice(0, 200).replace(/\s+/g, " ").trim()}…
                 </p>
-                <div className="mt-auto pt-4 text-xs text-txt-muted">
+                <div className="mt-auto pt-2.5 sm:pt-4 text-[11px] sm:text-xs text-txt-muted truncate">
                   <span>{s.article.author.name}</span>
                   <span className="mx-1">·</span>
                   <span>

@@ -88,11 +88,11 @@ export default function UntukAndaClient() {
       </header>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="card animate-pulse h-72 bg-surface-tertiary rounded-lg"
+              className="card animate-pulse h-24 sm:h-72 bg-surface-tertiary rounded-xl"
             />
           ))}
         </div>
@@ -109,27 +109,27 @@ export default function UntukAndaClient() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {articles.map((a) => (
-            <Link key={a.id} href={`/berita/${a.slug}`} className="card group">
+            <Link key={a.id} href={`/berita/${a.slug}`} className="card group flex flex-row sm:flex-col overflow-hidden">
               {a.featuredImage && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={a.featuredImage}
                   alt={a.title}
-                  className="h-40 w-full object-cover rounded-t-lg"
+                  className="h-24 w-28 sm:h-40 sm:w-full shrink-0 object-cover"
                   loading="lazy"
                 />
               )}
-              <div className="p-4 sm:p-5">
-                <p className="text-[10px] uppercase tracking-wider text-primary font-bold mb-2">
+              <div className="flex flex-1 min-w-0 flex-col justify-center sm:justify-start p-3 sm:p-5">
+                <p className="text-[10px] uppercase tracking-wider text-primary font-bold mb-1 sm:mb-2">
                   {a.category.name}
                 </p>
-                <h3 className="font-serif text-base sm:text-lg font-bold text-on-surface line-clamp-3 group-hover:text-primary transition-colors">
+                <h3 className="font-serif text-sm sm:text-lg font-bold leading-snug text-on-surface line-clamp-2 sm:line-clamp-3 group-hover:text-primary transition-colors">
                   {a.title}
                 </h3>
                 {a.excerpt && (
-                  <p className="mt-2 text-xs sm:text-sm text-on-surface-variant line-clamp-2">
+                  <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-on-surface-variant line-clamp-1 sm:line-clamp-2">
                     {a.excerpt}
                   </p>
                 )}

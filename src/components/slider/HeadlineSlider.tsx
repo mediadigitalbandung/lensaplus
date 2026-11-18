@@ -65,7 +65,7 @@ export default function HeadlineSlider({ items }: HeadlineSliderProps) {
   return (
     <div className="group relative overflow-hidden rounded-lg bg-surface-dark">
       {/* All slides stacked — crossfade + ken burns */}
-      <div className="relative aspect-[2/1] sm:aspect-[1.8/1] w-full min-h-[140px] sm:min-h-[200px] lg:min-h-[270px]">
+      <div className="relative aspect-[16/10] sm:aspect-[1.8/1] w-full min-h-[190px] sm:min-h-[220px] lg:min-h-[270px]">
         {items.map((article, i) => {
           const isActive = i === current;
           const isLeaving = i === previous;
@@ -112,7 +112,7 @@ export default function HeadlineSlider({ items }: HeadlineSliderProps) {
 
               {/* Content — slides up on enter */}
               <div
-                className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-8 sm:px-8 md:px-12 lg:px-16 sm:pb-10 lg:pb-12"
+                className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-10 sm:px-8 md:px-12 lg:px-16 sm:pb-10 lg:pb-12"
                 style={{
                   transform: isActive && transitioning ? "translateY(0)" : isActive ? "translateY(0)" : "translateY(20px)",
                   opacity: isActive ? 1 : 0,
@@ -121,12 +121,12 @@ export default function HeadlineSlider({ items }: HeadlineSliderProps) {
                     : "transform 0.4s ease, opacity 0.3s ease",
                 }}
               >
-                <span className="text-[11px] font-semibold uppercase tracking-widest text-white/60">
+                <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-white/70">
                   {article.category.name}
                 </span>
 
                 <Link href={`/berita/${article.slug}`}>
-                  <h2 className="mt-2 text-base font-extrabold leading-[1.2] text-white sm:text-lg md:text-xl lg:text-2xl">
+                  <h2 className="mt-1 sm:mt-2 text-sm font-extrabold leading-[1.25] text-white sm:text-lg md:text-xl lg:text-2xl line-clamp-2">
                     {article.title}
                   </h2>
                 </Link>
@@ -137,7 +137,7 @@ export default function HeadlineSlider({ items }: HeadlineSliderProps) {
                   </p>
                 )}
 
-                <div className="mt-3 flex items-center gap-2 text-[11px] text-white/35">
+                <div className="mt-1.5 sm:mt-3 flex items-center gap-2 text-[10px] sm:text-[11px] text-white/55">
                   <span>{article.author.name}</span>
                   <span className="h-2.5 w-px bg-white/15" />
                   <span><ClientDate date={article.publishedAt} format="long" /></span>
@@ -187,20 +187,20 @@ export default function HeadlineSlider({ items }: HeadlineSliderProps) {
         </>
       )}
 
-      {/* Dots — positioned above content, centered */}
+      {/* Dots — centered along the bottom edge */}
       {total > 1 && (
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 sm:gap-1.5">
           {items.map((_, i) => (
             <button
               key={i}
               onClick={() => goToSlide(i)}
-              className="rounded-full transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="rounded-full transition-all duration-300 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center"
               aria-label={`Slide ${i + 1}`}
             >
               <span className={`block rounded-full transition-all duration-300 ${
                 i === current
-                  ? "h-2.5 w-2.5 bg-white shadow-[0_0_6px_rgba(255,255,255,0.4)]"
-                  : "h-2 w-2 bg-white/30 hover:bg-white/60"
+                  ? "h-2 w-2 sm:h-2.5 sm:w-2.5 bg-white shadow-[0_0_6px_rgba(255,255,255,0.4)]"
+                  : "h-1.5 w-1.5 sm:h-2 sm:w-2 bg-white/30 hover:bg-white/60"
               }`} />
             </button>
           ))}

@@ -803,8 +803,8 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                       {articleSorotan.length} sudut
                     </span>
                   </div>
-                  {/* Angle grid — thin dividers between cells for an editorial look */}
-                  <div className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+                  {/* Angle grid — horizontal snap strip on mobile, editorial grid on sm+ */}
+                  <div className="flex overflow-x-auto snap-x snap-mandatory gap-px bg-border scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3">
                     {articleSorotan.map((s) => {
                       const angleLabel: Record<string, string> = {
                         KRONOLOGI: "Kronologi", ANALISIS: "Analisis", DAMPAK: "Dampak",
@@ -816,7 +816,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                         <Link
                           key={s.slug}
                           href={`/sorotan/${s.slug}`}
-                          className="group flex min-h-[112px] flex-col bg-surface p-4 transition-colors duration-200 hover:bg-surface-container-low sm:p-5"
+                          className="group flex w-[68vw] min-w-[210px] sm:w-auto shrink-0 snap-start min-h-[100px] sm:min-h-[112px] flex-col bg-surface p-3.5 transition-colors duration-200 hover:bg-surface-container-low sm:p-5"
                         >
                           <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-secondary">
                             {angleLabel[s.angle] || s.angle.replace(/_/g, " ")}

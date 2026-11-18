@@ -408,7 +408,7 @@ function SearchContent() {
           {paginated.map((article) => (
             <article key={article.slug} className="group">
               <Link href={`/berita/${article.slug}`} className="block">
-                <div className="relative aspect-[16/9] w-full overflow-hidden rounded-sm">
+                <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full overflow-hidden rounded-lg">
                   {article.featuredImage ? (
                     <Image
                       src={article.featuredImage}
@@ -424,16 +424,16 @@ function SearchContent() {
               <div className="mt-2">
                 <Link
                   href={`/kategori/${article.category.slug}`}
-                  className="text-xs font-bold uppercase tracking-wide text-primary"
+                  className="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-primary"
                 >
                   {article.category.name}
                 </Link>
                 <Link href={`/berita/${article.slug}`}>
-                  <h3 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-txt-primary hover:underline">
+                  <h3 className="mt-0.5 sm:mt-1 line-clamp-2 font-serif text-[13px] sm:text-base font-bold leading-snug text-txt-primary hover:underline">
                     {searched && query ? highlightText(article.title, query) : article.title}
                   </h3>
                 </Link>
-                <p className="mt-2 text-xs text-txt-muted">
+                <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-txt-muted truncate">
                   {new Date(article.publishedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                   <span className="mx-1">&middot;</span>
                   {article.author.name}

@@ -1,21 +1,61 @@
 /**
- * GET /api/seo/sorotan-by-article?page=&limit=&search=&onlyWithSorotan=
+ * GET /api/seo/sorotan-by-article?page=&limit=&search=&filter=&articleStatus=&indexStatus=&scope=
  *
  * Article-centric Sorotan listing for the panel: non-archived articles, each
- * with the list of its Sorotan angle-pages (slug + angle + title) so the panel
- * can show the source article and let the user jump to any of its Sorotan pages.
+ * with the list of its Sorotan angle-pages (slug + angle + title + indexStatus)
+ * so the panel can display a status table showing which articles already have
+ * Sorotan vs. which do not yet, and let editors inspect or generate them.
  *
- *   onlyWithSorotan=true (default) → only articles that already have ≥1 Sorotan
- *   onlyWithSorotan=false          → all non-archived articles (to generate for)
+ *   filter=all                      → all non-archived articles
+ *   filter=with                     → only articles that already have ≥1 Sorotan
+ *   filter=without                  → only articles without any Sorotan yet
+ *   onlyWithSorotan=true|false      → legacy fallback when `filter` is omitted
  *
  * Auth: SUPER_ADMIN | CHIEF_EDITOR | EDITOR
  */
 
 import { NextRequest } from "next/server";
+import { ArticleStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireRole, successResponse, errorResponse, parsePositiveInt } from "@/lib/api-utils";
+import {
+  requireRole,
+  successResponse,
+  errorResponse,
+  parsePositiveInt,
+} from "@/lib/api-utils";
+import { SOROTAN_ANGLE_COUNT } from "@/lib/seo/sorotan-constants";
 
 export const dynamic = "force-dynamic";
+
+type SorotanFilter = "all" | "with" | "without";
+
+const VALID_ARTICLE_STATUSES = new Set<ArticleStatus>([
+  "PUBLISHED",
+  "IN_REVIEW",
+  "APPROVED",
+  "DRAFT",
+  "REJECTED",
+]);
+
+const VALID_INDEX_STATUSES = new Set([
+  "failed",
+  "pending",
+  "submitted",
+  "indexed",
+]);
+
+function resolveSorotanFilter(searchParams: URLSearchParams): SorotanFilter {
+  const filterParam = (searchParams.get("filter") || "").toLowerCase();
+  if (
+    filterParam === "all" ||
+    filterParam === "with" ||
+    filterParam === "without"
+  ) {
+    return filterParam;
+  }
+  // Legacy fallback: default to "with" when `onlyWithSorotan` is omitted or !== "false"
+  return searchParams.get("onlyWithSorotan") === "false" ? "all" : "with";
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,17 +65,64 @@ export async function GET(req: NextRequest) {
     const page = parsePositiveInt(searchParams.get("page"), 1);
     const limit = parsePositiveInt(searchParams.get("limit"), 15, 50);
     const search = (searchParams.get("search") || "").trim();
-    // Default: only show articles that already have Sorotan (the browse case).
-    const onlyWithSorotan = searchParams.get("onlyWithSorotan") !== "false";
-    // scope=me → only articles the requester authored ("Sorotan Saya" tab).
-    const scope = searchParams.get("scope");
+    const scope = searchParams.get("scope") === "me" ? "me" : "all";
+    const sorotanFilter = resolveSorotanFilter(searchParams);
 
-    const where: Record<string, unknown> = { status: { not: "ARCHIVED" } };
-    if (scope === "me") where.authorId = session.user.id;
-    if (onlyWithSorotan) where.sorotan = { some: {} };
-    if (search) where.title = { contains: search, mode: "insensitive" };
+    const rawArticleStatus = (searchParams.get("articleStatus") || "").toUpperCase();
+    const validArticleStatus = VALID_ARTICLE_STATUSES.has(
+      rawArticleStatus as ArticleStatus,
+    )
+      ? (rawArticleStatus as ArticleStatus)
+      : null;
 
-    const [articles, total, totalSorotan] = await Promise.all([
+    const rawIndexStatus = (searchParams.get("indexStatus") || "").toLowerCase();
+    const validIndexStatus = VALID_INDEX_STATUSES.has(rawIndexStatus)
+      ? rawIndexStatus
+      : null;
+
+    const baseScopeWhere: Prisma.ArticleWhereInput = {
+      status: { not: "ARCHIVED" },
+      ...(scope === "me" ? { authorId: session.user.id } : {}),
+    };
+
+    const filterBaseWhere: Prisma.ArticleWhereInput = {
+      ...baseScopeWhere,
+      ...(validArticleStatus ? { status: validArticleStatus } : {}),
+      ...(search
+        ? {
+            OR: [
+              { title: { contains: search, mode: "insensitive" } },
+              { slug: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+      ...(validIndexStatus
+        ? { sorotan: { some: { indexStatus: validIndexStatus } } }
+        : {}),
+    };
+
+    let where: Prisma.ArticleWhereInput = filterBaseWhere;
+    if (sorotanFilter === "with" && !validIndexStatus) {
+      where = { ...filterBaseWhere, sorotan: { some: {} } };
+    } else if (sorotanFilter === "without") {
+      where = validIndexStatus
+        ? { AND: [filterBaseWhere, { sorotan: { none: {} } }] }
+        : { ...filterBaseWhere, sorotan: { none: {} } };
+    }
+
+    const hasExtraFilters = Boolean(
+      validArticleStatus || search || validIndexStatus,
+    );
+
+    const [
+      articles,
+      total,
+      summaryTotalArticles,
+      summaryWithSorotan,
+      totalSorotan,
+      tabAllRaw,
+      tabWithRaw,
+    ] = await Promise.all([
       prisma.article.findMany({
         where,
         select: {
@@ -45,8 +132,16 @@ export async function GET(req: NextRequest) {
           status: true,
           createdAt: true,
           publishedAt: true,
+          category: { select: { name: true, slug: true } },
+          author: { select: { id: true, name: true } },
           sorotan: {
-            select: { slug: true, angle: true, title: true },
+            select: {
+              slug: true,
+              angle: true,
+              title: true,
+              indexStatus: true,
+              createdAt: true,
+            },
             orderBy: { angle: "asc" },
           },
         },
@@ -55,20 +150,54 @@ export async function GET(req: NextRequest) {
         take: limit,
       }),
       prisma.article.count({ where }),
-      prisma.sorotan.count({
-        where: {
-          article: {
-            status: { not: "ARCHIVED" },
-            ...(scope === "me" ? { authorId: session.user.id } : {}),
-          },
-        },
+      prisma.article.count({ where: baseScopeWhere }),
+      prisma.article.count({
+        where: { ...baseScopeWhere, sorotan: { some: {} } },
       }),
+      prisma.sorotan.count({
+        where: { article: baseScopeWhere },
+      }),
+      hasExtraFilters
+        ? prisma.article.count({ where: filterBaseWhere })
+        : Promise.resolve(null),
+      hasExtraFilters && !validIndexStatus
+        ? prisma.article.count({
+            where: { ...filterBaseWhere, sorotan: { some: {} } },
+          })
+        : Promise.resolve(null),
     ]);
+
+    const summaryWithoutSorotan = Math.max(
+      0,
+      summaryTotalArticles - summaryWithSorotan,
+    );
+    const tabAll = tabAllRaw ?? summaryTotalArticles;
+    const tabWith = validIndexStatus
+      ? tabAll
+      : (tabWithRaw ?? summaryWithSorotan);
+    const tabWithout = validIndexStatus ? 0 : Math.max(0, tabAll - tabWith);
 
     return successResponse({
       articles,
       totalSorotan,
-      pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+      summary: {
+        totalArticles: summaryTotalArticles,
+        withSorotanCount: summaryWithSorotan,
+        withoutSorotanCount: summaryWithoutSorotan,
+        totalSorotan,
+        targetAngles: SOROTAN_ANGLE_COUNT,
+      },
+      tabCounts: {
+        all: tabAll,
+        with: tabWith,
+        without: tabWithout,
+      },
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
     });
   } catch (err) {
     return errorResponse(err);

@@ -30,12 +30,12 @@
      (160px × 600px each, fixed left-4 / right-4 from 2xl up). Bumping the
      container at 2xl: would crash into those rails — see SideRailAds.tsx. */
   .container-main {
-    @apply mx-auto max-w-6xl px-5 sm:px-8 lg:px-8;
+    @apply mx-auto max-w-6xl px-4 sm:px-6 lg:px-8;
   }
 
   /* ── Section headers ── */
   .section-header {
-    @apply flex items-center justify-between mb-6 sm:mb-8 lg:mb-10;
+    @apply flex items-center justify-between mb-4 sm:mb-7 lg:mb-10;
   }
   .section-title {
     @apply font-serif text-headline-md text-on-surface tracking-tight border-l-4 border-primary pl-3;

@@ -107,16 +107,16 @@ export default function Header() {
   }, [mobileMenuOpen]);
 
   useEffect(() => {
-    let lastY = 0;
     const onScroll = () => {
       const y = window.scrollY;
-      if (y > 150 && y > lastY) {
+      if (y > 150) {
         setScrolled(true);
+        setMoreOpen(false);
       } else if (y < 100) {
         setScrolled(false);
       }
-      lastY = y;
     };
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -124,9 +124,10 @@ export default function Header() {
   return (
     <>
       {/* ── 1. Editorial Newspaper Masthead (Unscrolled Mode) ── */}
-      <header className={`bg-white border-b border-stone-200/70 transition-all duration-300 ${scrolled ? "opacity-0 -translate-y-full h-0 overflow-hidden pointer-events-none" : "opacity-100 translate-y-0"}`} role="banner" aria-label="Header utama">
-        {/* Top level masthead: Left (Date & Location), Center (Black Circle Logo), Right (Actions) */}
-        <div className="container-main py-4 sm:py-5 flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* Keep natural flow height when scrolled so the page never jumps 129-169px around y=150 */}
+      <header className="bg-white border-b border-stone-200/70" role="banner" aria-label="Header utama">
+        {/* Top level masthead: Left (Date & Location), Center (Logo), Right (Actions) */}
+        <div className="container-main py-2.5 sm:py-3.5 md:py-5 flex flex-row items-center justify-between gap-2 md:gap-4">
           {/* Left: Date & Edition */}
           <div className="hidden md:flex items-center gap-3 text-stone-500 text-label-sm font-semibold tracking-wide">
             <span className="font-bold uppercase tracking-widest text-stone-800">
@@ -136,13 +137,25 @@ export default function Header() {
             <ClientDate format="weekday-long" live={false} />
           </div>
 
-          {/* Center: Black Circle Logo & Brand Name */}
-          <div className="text-center">
-            <Logo size="lg" />
+          {/* Center on desktop / Left on mobile: Black Circle Logo & Brand Name */}
+          <div className="text-left md:text-center">
+            <Logo size="sm" className="sm:hidden" />
+            <Logo size="md" className="hidden sm:inline-flex md:hidden" />
+            <Logo size="lg" className="hidden md:inline-flex" />
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-1.5 sm:gap-3 md:gap-3.5">
+            {/* Mobile quick search link */}
+            <Link
+              href="/search"
+              className="inline-flex md:hidden items-center justify-center p-2 text-stone-600 hover:text-primary transition-colors"
+              title="Cari berita"
+              aria-label="Cari berita"
+            >
+              <Search size={18} aria-hidden="true" />
+            </Link>
+
             {/* Search Form */}
             <form action="/search" className="relative hidden md:block md:w-48 lg:w-64" role="search" aria-label="Pencarian artikel">
               <Search
@@ -243,9 +256,9 @@ export default function Header() {
                   <li key={item.href} className="shrink-0">
                     <Link
                       href={item.href}
-                      className={`relative inline-block px-3 py-3 text-label-md font-bold transition-all duration-200 whitespace-nowrap ${
+                      className={`relative inline-block px-2.5 sm:px-3 py-2.5 sm:py-3 text-label-md font-bold transition-all duration-200 whitespace-nowrap ${
                         isActive
-                          ? "text-primary after:absolute after:bottom-0 after:left-3 after:right-3 after:h-[2px] after:bg-primary"
+                          ? "text-primary after:absolute after:bottom-0 after:left-2.5 sm:after:left-3 after:right-2.5 sm:after:right-3 after:h-[2px] after:bg-primary"
                           : "text-stone-600 hover:text-primary"
                       }`}
                     >
@@ -262,7 +275,7 @@ export default function Header() {
                     onClick={() => setMoreOpen((o) => !o)}
                     aria-expanded={moreOpen}
                     aria-haspopup="menu"
-                    className="inline-flex items-center gap-1 px-3 py-3 text-label-md font-bold text-stone-600 hover:text-primary whitespace-nowrap"
+                    className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-2.5 sm:py-3 text-label-md font-bold text-stone-600 hover:text-primary whitespace-nowrap"
                   >
                     Lainnya
                     <ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`} />
@@ -297,7 +310,7 @@ export default function Header() {
       </header>
 
       {/* ── 2. Floating Island Capsule (Scrolled Mode) ── */}
-      <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-5xl rounded-full bg-white/90 backdrop-blur-md border border-stone-200/60 shadow-ambient px-6 py-2.5 flex items-center justify-between transition-all duration-300 ${scrolled ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}>
+      <div className={`fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-50 w-[94%] sm:w-[92%] max-w-5xl rounded-full bg-white/90 backdrop-blur-md border border-stone-200/60 shadow-ambient px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between transition-all duration-300 ${scrolled ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}>
         {/* Left: Compact Logo */}
         <Logo size="sm" />
 
@@ -318,7 +331,7 @@ export default function Header() {
         </nav>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Simple Search Toggle/Link */}
           <Link
             href="/search"
@@ -398,7 +411,7 @@ export default function Header() {
       {/* Mobile slide-in panel */}
       <div
         className={`fixed inset-0 z-[60] lg:hidden transition-all duration-300 ${
-          mobileMenuOpen ? "visible" : "invisible"
+          mobileMenuOpen ? "visible" : "invisible pointer-events-none"
         }`}
       >
         <div
