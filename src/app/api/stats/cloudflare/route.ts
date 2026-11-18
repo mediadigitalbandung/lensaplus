@@ -7,7 +7,8 @@
  * `{ success: false, error, data: <empty struct> }` so the UI doesn't crash.
  */
 
-import { errorResponse, requireRole, successResponse } from "@/lib/api-utils";
+import { NextResponse } from "next/server";
+import { errorResponse, requireRole } from "@/lib/api-utils";
 import { getCloudflareAnalytics } from "@/lib/stats/cloudflare";
 
 export const dynamic = "force-dynamic";
@@ -28,26 +29,50 @@ export async function GET(req: Request) {
     await requireRole(["SUPER_ADMIN"]);
 
     const url = new URL(req.url);
-    const from =
+    const rawFrom =
       parseDateParam(url.searchParams.get("from")) ??
       ymd(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-    const to = parseDateParam(url.searchParams.get("to")) ?? ymd(new Date());
+    const rawTo = parseDateParam(url.searchParams.get("to")) ?? ymd(new Date());
+    const from = rawFrom <= rawTo ? rawFrom : rawTo;
+    const to = rawFrom <= rawTo ? rawTo : rawFrom;
+    const refresh = url.searchParams.get("refresh") === "1";
 
-    const data = await getCloudflareAnalytics({ from, to });
+    const data = await getCloudflareAnalytics({ from, to, refresh });
     const meta = {
       from,
       to,
-      cacheHit: !data._error,
+      cacheHit: !data._error && !refresh,
       provider: "cloudflare" as const,
     };
 
     if (data._error) {
-      // Return 200 with success:false so the UI can still render empty state
-      // (credentials missing or API unreachable is non-fatal for the dashboard).
-      return successResponse({ _partialError: data._error, data, meta });
+      return NextResponse.json(
+        {
+          success: false,
+          error: data._error,
+          _partialError: data._error,
+          data: {
+            ...data,
+            _partialError: data._error,
+            _meta: meta,
+          },
+          meta,
+        },
+        { status: 200 },
+      );
     }
 
-    return successResponse({ data, meta });
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          ...data,
+          _meta: meta,
+        },
+        meta,
+      },
+      { status: 200 },
+    );
   } catch (err) {
     return errorResponse(err);
   }

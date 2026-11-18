@@ -91,12 +91,41 @@ export async function getIndexNowKey(): Promise<string | null> {
 }
 
 /**
+ * Order URLs so main articles (`/berita/*`) are always prioritized first,
+ * followed by general pages, and `/sorotan/*` last.
+ */
+export function orderUrlsArticleFirst(urls: string[]): string[] {
+  const seen = new Set<string>();
+  const articles: string[] = [];
+  const others: string[] = [];
+  const sorotan: string[] = [];
+
+  for (const raw of urls) {
+    const trimmed = raw.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    const lower = trimmed.toLowerCase();
+    if (lower.includes("/berita/") || lower.endsWith("/berita")) {
+      articles.push(trimmed);
+    } else if (lower.includes("/sorotan/") || lower.endsWith("/sorotan")) {
+      sorotan.push(trimmed);
+    } else {
+      others.push(trimmed);
+    }
+  }
+
+  return [...articles, ...others, ...sorotan];
+}
+
+/**
  * Ping IndexNow with a batch of URLs (max 10,000 per request per spec).
+ * Main article URLs (`/berita/*`) are ordered before `/sorotan/*` URLs.
  * Returns `{ success: false, error }` on missing key / network failure —
  * never throws.
  */
 export async function pingIndexNow(urls: string[]): Promise<IndexNowResult> {
-  if (urls.length === 0) {
+  const orderedUrls = orderUrlsArticleFirst(urls);
+  if (orderedUrls.length === 0) {
     return { success: true, statusCode: 200 };
   }
 
@@ -140,7 +169,7 @@ export async function pingIndexNow(urls: string[]): Promise<IndexNowResult> {
         host,
         key,
         keyLocation,
-        urlList: urls,
+        urlList: orderedUrls,
       }),
       signal: controller.signal,
     });

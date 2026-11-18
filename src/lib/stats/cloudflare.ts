@@ -13,7 +13,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { decryptSecret, isSensitiveKey } from "@/lib/crypto-secrets";
+import { decryptSecret, isEncrypted, isSensitiveKey } from "@/lib/crypto-secrets";
 
 const CF_GRAPHQL_URL = "https://api.cloudflare.com/client/v4/graphql";
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -38,6 +38,7 @@ export interface CloudflareStats {
 export interface CloudflareOptions {
   from: string; // YYYY-MM-DD
   to: string; // YYYY-MM-DD
+  refresh?: boolean;
 }
 
 // ---------- Cache ----------
@@ -48,7 +49,7 @@ interface CacheEntry {
 }
 const cache = new Map<string, CacheEntry>();
 
-function cacheKey(opts: CloudflareOptions) {
+function cacheKey(opts: { from: string; to: string }) {
   return `cf:${opts.from}:${opts.to}`;
 }
 
@@ -66,17 +67,42 @@ function setCached(key: string, data: CloudflareStats) {
   cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
 }
 
+export function clearCloudflareCache(): void {
+  cache.clear();
+}
+
 // ---------- Credentials ----------
+
+function isMaskedPlaceholder(val: string): boolean {
+  const trimmed = val.trim();
+  return (
+    trimmed.startsWith("••••") ||
+    trimmed.startsWith("····") ||
+    trimmed === "(tidak berubah)"
+  );
+}
+
+function cleanSecretValue(val: string): string {
+  return val
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .replace(/^Bearer\s+/i, "")
+    .trim();
+}
 
 async function getSetting(key: string): Promise<string | null> {
   try {
     const row = await prisma.systemSetting.findUnique({ where: { key } });
     if (row?.value && row.value.trim().length > 0) {
       const raw = row.value.trim();
-      return isSensitiveKey(key) ? decryptSecret(raw) : raw;
+      if (isMaskedPlaceholder(raw)) return null;
+      const decrypted =
+        isSensitiveKey(key) || isEncrypted(raw) ? decryptSecret(raw) : raw;
+      const cleaned = cleanSecretValue(decrypted);
+      return cleaned.length > 0 && !isMaskedPlaceholder(cleaned) ? cleaned : null;
     }
   } catch {
-    // ignore
+    // ignore decryption or DB error and fall through to env
   }
   return null;
 }
@@ -85,16 +111,20 @@ async function getCredentials(): Promise<{
   token: string;
   zoneId: string;
 } | null> {
-  const token =
-    (await getSetting("cloudflare_api_token")) ??
-    process.env.CLOUDFLARE_API_TOKEN ??
-    null;
-  const zoneId =
-    (await getSetting("cloudflare_zone_id")) ??
-    process.env.CLOUDFLARE_ZONE_ID ??
-    null;
+  const dbToken = await getSetting("cloudflare_api_token");
+  const envToken = process.env.CLOUDFLARE_API_TOKEN
+    ? cleanSecretValue(process.env.CLOUDFLARE_API_TOKEN)
+    : null;
+  const token = dbToken || envToken || null;
+
+  const dbZone = await getSetting("cloudflare_zone_id");
+  const envZone = process.env.CLOUDFLARE_ZONE_ID
+    ? cleanSecretValue(process.env.CLOUDFLARE_ZONE_ID)
+    : null;
+  const zoneId = dbZone || envZone || null;
+
   if (!token || !zoneId) return null;
-  return { token: token.trim(), zoneId: zoneId.trim() };
+  return { token, zoneId };
 }
 
 // ---------- Fallback ----------
@@ -138,7 +168,7 @@ const QUERY = `
     viewer {
       zones(filter: { zoneTag: $zoneTag }) {
         httpRequests1dGroups(
-          limit: 90
+          limit: 366
           filter: { date_geq: $start, date_leq: $end }
           orderBy: [date_ASC]
         ) {
@@ -156,14 +186,70 @@ const QUERY = `
   }
 `;
 
+function clampStartDate(start: string, end: string, maxDays: number): string {
+  const startMs = Date.parse(start);
+  const endMs = Date.parse(end);
+  if (isNaN(startMs) || isNaN(endMs)) return start;
+  const minStartMs = endMs - maxDays * 24 * 60 * 60 * 1000;
+  if (startMs < minStartMs) {
+    return new Date(minStartMs).toISOString().slice(0, 10);
+  }
+  return start;
+}
+
+function isRangeLimitError(errMsg: string): boolean {
+  const lower = errMsg.toLowerCase();
+  return (
+    lower.includes("range") ||
+    lower.includes("time") ||
+    lower.includes("exceed") ||
+    lower.includes("retention") ||
+    lower.includes("older than") ||
+    lower.includes("not entitled") ||
+    lower.includes("limit")
+  );
+}
+
+async function queryCloudflareGraphql(
+  creds: { token: string; zoneId: string },
+  start: string,
+  end: string,
+  signal: AbortSignal,
+): Promise<{ ok: boolean; status: number; json: CfGraphqlResponse | null }> {
+  const res = await fetch(CF_GRAPHQL_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${creds.token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: QUERY,
+      variables: {
+        zoneTag: creds.zoneId,
+        start,
+        end,
+      },
+    }),
+    signal,
+  });
+
+  const json = (await res.json().catch(() => null)) as CfGraphqlResponse | null;
+  return { ok: res.ok, status: res.status, json };
+}
+
 // ---------- Main ----------
 
 export async function getCloudflareAnalytics(
   opts: CloudflareOptions,
 ): Promise<CloudflareStats> {
-  const key = cacheKey(opts);
-  const cached = getCached(key);
-  if (cached) return cached;
+  const from = opts.from <= opts.to ? opts.from : opts.to;
+  const to = opts.from <= opts.to ? opts.to : opts.from;
+
+  const key = cacheKey({ from, to });
+  if (!opts.refresh) {
+    const cached = getCached(key);
+    if (cached) return cached;
+  }
 
   const creds = await getCredentials();
   if (!creds) {
@@ -175,34 +261,55 @@ export async function getCloudflareAnalytics(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const res = await fetch(CF_GRAPHQL_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${creds.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: QUERY,
-        variables: {
-          zoneTag: creds.zoneId,
-          start: opts.from,
-          end: opts.to,
-        },
-      }),
-      signal: controller.signal,
-    });
+    const initial = await queryCloudflareGraphql(
+      creds,
+      from,
+      to,
+      controller.signal,
+    );
+    const { ok, status } = initial;
+    let { json } = initial;
 
-    if (!res.ok) {
-      return emptyStats(`Cloudflare API HTTP ${res.status}`);
+    if (!ok) {
+      const detail = json?.errors?.map((e) => e.message).join("; ");
+      return emptyStats(
+        detail
+          ? `Cloudflare API HTTP ${status}: ${detail}`
+          : `Cloudflare API HTTP ${status}`,
+      );
     }
 
-    const json = (await res.json()) as CfGraphqlResponse;
-    if (json.errors && json.errors.length > 0) {
-      return emptyStats(json.errors.map((e) => e.message).join("; "));
+    // Cloudflare Free plan restricts httpRequests1dGroups to a max 30-day window
+    // (inclusive of start & end, so 30 days ago -> today = 31 days can be rejected).
+    // Automatically retry with a clamped 28-day window if a range error occurs.
+    if (json?.errors && json.errors.length > 0) {
+      const combinedErr = json.errors.map((e) => e.message).join("; ");
+      const clampedStart = clampStartDate(from, to, 28);
+      if (clampedStart !== from && isRangeLimitError(combinedErr)) {
+        const retry = await queryCloudflareGraphql(
+          creds,
+          clampedStart,
+          to,
+          controller.signal,
+        );
+        if (retry.ok && retry.json && (!retry.json.errors || retry.json.errors.length === 0)) {
+          json = retry.json;
+        } else {
+          return emptyStats(combinedErr);
+        }
+      } else {
+        return emptyStats(combinedErr);
+      }
     }
 
-    const groups =
-      json.data?.viewer?.zones?.[0]?.httpRequests1dGroups ?? [];
+    const zones = json?.data?.viewer?.zones;
+    if (!zones || zones.length === 0) {
+      return emptyStats(
+        "Cloudflare Zone tidak ditemukan atau API Token belum memiliki izin Zone.Analytics:Read",
+      );
+    }
+
+    const groups = zones[0]?.httpRequests1dGroups ?? [];
 
     let requests = 0;
     let bandwidth = 0;
@@ -211,15 +318,20 @@ export async function getCloudflareAnalytics(
 
     const dailyTrend = groups.map((g) => {
       const s = g.sum;
-      requests += s.requests;
-      bandwidth += s.bytes;
-      cachedRequests += s.cachedRequests;
-      threats += s.threats;
+      const reqs = Number(s?.requests ?? 0) || 0;
+      const bytes = Number(s?.bytes ?? 0) || 0;
+      const cached = Number(s?.cachedRequests ?? 0) || 0;
+      const thr = Number(s?.threats ?? 0) || 0;
+
+      requests += reqs;
+      bandwidth += bytes;
+      cachedRequests += cached;
+      threats += thr;
       return {
-        date: g.dimensions.date,
-        requests: s.requests,
-        bandwidth: s.bytes,
-        cachedRequests: s.cachedRequests,
+        date: g.dimensions?.date ?? "",
+        requests: reqs,
+        bandwidth: bytes,
+        cachedRequests: cached,
       };
     });
 

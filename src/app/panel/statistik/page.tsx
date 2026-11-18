@@ -2,27 +2,17 @@
 
 /**
  * Statistik Dashboard — EDITOR+
- * 4 tabs: Internal | Google Analytics | Google Search Console | Cloudflare
+ * Tabs: Internal | Editor | AI / Token | Google Analytics | Search Console | Cloudflare
  */
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
-  TrendingUp,
-  Eye,
-  Users,
-  FileText,
-  Search as SearchIcon,
-  Cloud,
-  BarChart3,
   RefreshCw,
   Loader2,
   AlertCircle,
   ExternalLink,
-  Activity,
-  Shield,
-  Bot,
 } from "lucide-react";
 import {
   LineChart,
@@ -162,35 +152,71 @@ function ymd(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function formatNumber(n: number) {
-  return n.toLocaleString("id-ID");
+function formatNumber(n: number | null | undefined) {
+  const safe = typeof n === "number" && Number.isFinite(n) ? n : 0;
+  return safe.toLocaleString("id-ID");
 }
 
-function formatBytes(n: number) {
-  if (n === 0) return "0 B";
+function formatBytes(n: number | null | undefined) {
+  const safe = typeof n === "number" && Number.isFinite(n) ? n : 0;
+  if (safe === 0) return "0 B";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.min(
     sizes.length - 1,
-    Math.floor(Math.log(Math.abs(n)) / Math.log(k)),
+    Math.floor(Math.log(Math.abs(safe)) / Math.log(k)),
   );
-  return `${(n / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+  return `${(safe / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+}
+
+function extractStatsPayload<T extends { _error?: string }>(
+  resOk: boolean,
+  status: number,
+  json: unknown,
+): { data: T | null; error: string | null } {
+  if (!json || typeof json !== "object") {
+    return {
+      data: null,
+      error: resOk ? "Respons server tidak valid" : `HTTP ${status}`,
+    };
+  }
+  const obj = json as Record<string, unknown>;
+  const rawData = obj.data as Record<string, unknown> | undefined;
+  const unwrapped =
+    rawData &&
+    typeof rawData === "object" &&
+    rawData.data &&
+    typeof rawData.data === "object" &&
+    !Array.isArray(rawData.data)
+      ? (rawData.data as T)
+      : ((rawData ?? null) as T | null);
+
+  const errMsg =
+    (typeof obj.error === "string" && obj.error.trim()) ||
+    (typeof obj._partialError === "string" && obj._partialError.trim()) ||
+    (rawData &&
+      typeof rawData._partialError === "string" &&
+      rawData._partialError.trim()) ||
+    (unwrapped &&
+      typeof unwrapped._error === "string" &&
+      unwrapped._error.trim()) ||
+    (!resOk
+      ? `HTTP ${status}`
+      : obj.success === false
+        ? "Gagal memuat data statistik"
+        : null);
+
+  return { data: unwrapped, error: errMsg || null };
 }
 
 // --- Stat Card ---
 function StatCard({
   label,
   value,
-  icon: _icon,
-  color: _color = "text-primary",
 }: {
   label: string;
   value: string;
-  icon?: React.ElementType;
-  color?: string;
 }) {
-  void _icon;
-  void _color;
   return (
     <div className="rounded-xl border border-border border-t-2 border-t-primary bg-surface p-4 shadow-card">
       <p className="text-xs font-medium text-txt-secondary">{label}</p>
@@ -202,28 +228,54 @@ function StatCard({
 function NotConfiguredBanner({
   message,
   settingKey,
+  settingsHref = "/panel/pengaturan",
+  hint,
+  onRetry,
 }: {
   message: string;
   settingKey?: string;
+  settingsHref?: string;
+  hint?: string;
+  onRetry?: () => void;
 }) {
+  const lower = message.toLowerCase();
+  const isMissingConfig =
+    lower.includes("not configured") || lower.includes("missing");
+
   return (
     <div className="rounded-xl border border-border border-l-4 border-l-amber-500 bg-surface p-5">
       <div className="flex items-start gap-3">
         <AlertCircle size={18} className="mt-0.5 text-amber-600 shrink-0" />
         <div className="flex-1">
-          <h3 className="text-sm font-bold text-txt-primary">
-            Belum terkonfigurasi
-          </h3>
-          <p className="mt-1 text-xs text-txt-secondary">{message}</p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-txt-primary">
+              {isMissingConfig
+                ? "Belum terkonfigurasi"
+                : "Kendala Koneksi / Izin Integrasi"}
+            </h3>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="btn-ghost inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-primary"
+              >
+                <RefreshCw size={12} /> Coba Lagi
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-txt-secondary break-words">{message}</p>
+          {hint && (
+            <p className="mt-1.5 text-xs text-txt-muted">{hint}</p>
+          )}
           {settingKey && (
             <p className="mt-2 text-xs text-txt-secondary">
-              Set SystemSetting{" "}
+              Periksa pengaturan{" "}
               <code className="font-mono text-primary font-semibold">
                 {settingKey}
               </code>{" "}
               di{" "}
               <Link
-                href="/panel/pengaturan"
+                href={settingsHref}
                 className="underline font-semibold text-primary"
               >
                 Pengaturan
@@ -260,16 +312,16 @@ function ScopedInternalView({
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <StatCard label="Artikel Terbit (Periode)" value={formatNumber(data.articles.publishedInRange)} icon={FileText} color="text-blue-500 bg-blue-50" />
-        <StatCard label="Views (Periode)" value={formatNumber(data.views.inRange)} icon={Eye} color="text-primary bg-primary-light" />
-        <StatCard label="Komentar (Periode)" value={formatNumber(data.comments.inRange)} icon={Activity} color="text-yellow-500 bg-yellow-50" />
+        <StatCard label="Artikel Terbit (Periode)" value={formatNumber(data.articles.publishedInRange)} />
+        <StatCard label="Views (Periode)" value={formatNumber(data.views.inRange)} />
+        <StatCard label="Komentar (Periode)" value={formatNumber(data.comments.inRange)} />
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Total Artikel Saya" value={formatNumber(data.articles.total)} icon={FileText} color="text-blue-500 bg-blue-50" />
-        <StatCard label="Terbit" value={formatNumber(data.articles.published)} icon={FileText} color="text-green-600 bg-green-50" />
-        <StatCard label="Draf" value={formatNumber(data.articles.draft)} icon={FileText} color="text-txt-secondary bg-surface-tertiary" />
-        <StatCard label="Total Views Saya" value={formatNumber(data.views.total)} icon={Eye} color="text-primary bg-primary-light" />
+        <StatCard label="Total Artikel Saya" value={formatNumber(data.articles.total)} />
+        <StatCard label="Terbit" value={formatNumber(data.articles.published)} />
+        <StatCard label="Draf" value={formatNumber(data.articles.draft)} />
+        <StatCard label="Total Views Saya" value={formatNumber(data.views.total)} />
       </div>
 
       {/* Personal AI usage — how much AI the viewer has used in this range. */}
@@ -277,8 +329,8 @@ function ScopedInternalView({
         <h3 className="text-base font-bold text-txt-primary mb-1">Pemakaian AI Anda (Periode)</h3>
         <p className="text-xs text-txt-muted mb-4">Token &amp; permintaan AI yang Anda gunakan di rentang dipilih.</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <StatCard label="Token AI (Periode)" value={formatNumber(data.ai.rangeTokens)} icon={Bot} color="text-indigo-500 bg-indigo-50" />
-          <StatCard label="Permintaan AI (Periode)" value={formatNumber(data.ai.rangeCalls)} icon={Activity} color="text-violet-500 bg-violet-50" />
+          <StatCard label="Token AI (Periode)" value={formatNumber(data.ai.rangeTokens)} />
+          <StatCard label="Permintaan AI (Periode)" value={formatNumber(data.ai.rangeCalls)} />
         </div>
         {data.ai.topFeatures.length > 0 ? (
           <div className="mt-4 space-y-1.5">
@@ -418,28 +470,20 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
       {/* Summary cards — IN-RANGE first (paling relevan untuk filter), lifetime ditarik ke kartu Total Artikel/Pengguna */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard
-          label={`Artikel Terbit (Periode)`}
+          label="Artikel Terbit (Periode)"
           value={formatNumber(data.articles.publishedInRange)}
-          icon={FileText}
-          color="text-blue-500 bg-blue-50"
         />
         <StatCard
           label="Views (Periode)"
           value={formatNumber(data.views.inRange)}
-          icon={Eye}
-          color="text-primary bg-primary-light"
         />
         <StatCard
           label="Komentar (Periode)"
           value={formatNumber(data.comments.inRange)}
-          icon={Activity}
-          color="text-yellow-500 bg-yellow-50"
         />
         <StatCard
           label="Vote Polling (Periode)"
           value={formatNumber(data.polls.votesInRange)}
-          icon={TrendingUp}
-          color="text-green-600 bg-green-50"
         />
       </div>
 
@@ -448,26 +492,18 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
         <StatCard
           label="Total Artikel (Lifetime)"
           value={formatNumber(data.articles.total)}
-          icon={FileText}
-          color="text-blue-500 bg-blue-50"
         />
         <StatCard
           label="Total Pengguna"
           value={formatNumber(data.users.total)}
-          icon={Users}
-          color="text-purple-500 bg-purple-50"
         />
         <StatCard
           label="Total Views (Lifetime)"
           value={formatNumber(data.views.total)}
-          icon={Eye}
-          color="text-primary bg-primary-light"
         />
         <StatCard
           label="Total Komentar (Lifetime)"
           value={formatNumber(data.comments.total)}
-          icon={Activity}
-          color="text-yellow-500 bg-yellow-50"
         />
       </div>
 
@@ -803,31 +839,43 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
 }
 
 // --- GA4 Tab ---
-function GA4Tab({ from, to }: { from: string; to: string }) {
+function GA4Tab({
+  from,
+  to,
+  forceRefresh = false,
+}: {
+  from: string;
+  to: string;
+  forceRefresh?: boolean;
+}) {
   const [data, setData] = useState<GA4Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(
-        `/api/stats/google-analytics?from=${from}&to=${to}`,
-      );
-      const json = await res.json();
-      setData(json.data);
-      if (!json.success) setError(json.error || null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat");
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to]);
+  const fetchData = useCallback(
+    async (bypassCache = forceRefresh) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const qs = new URLSearchParams({ from, to });
+        if (bypassCache) qs.set("refresh", "1");
+        const res = await fetch(`/api/stats/google-analytics?${qs.toString()}`);
+        const json = await res.json().catch(() => null);
+        const parsed = extractStatsPayload<GA4Stats>(res.ok, res.status, json);
+        setData(parsed.data);
+        setError(parsed.error);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Gagal memuat data GA4");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [from, to, forceRefresh],
+  );
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData(forceRefresh);
+  }, [fetchData, forceRefresh]);
 
   if (loading) {
     return (
@@ -842,37 +890,27 @@ function GA4Tab({ from, to }: { from: string; to: string }) {
       <NotConfiguredBanner
         message={`GA4: ${error}`}
         settingKey="google_credentials_json & ga4_property_id"
+        settingsHref="/panel/pengaturan?tab=google"
+        hint="Pastikan email Service Account ditambahkan sebagai Viewer di GA4 → Admin → Property Access Management, dan GA4 Property ID berupa angka (contoh: 123456789)."
+        onRetry={() => fetchData(true)}
       />
     );
   }
 
   if (!data) return null;
 
+  const dailyTrend = Array.isArray(data.dailyTrend) ? data.dailyTrend : [];
+  const topPages = Array.isArray(data.topPages) ? data.topPages : [];
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          label="Pageviews"
-          value={formatNumber(data.pageviews)}
-          icon={Eye}
-        />
-        <StatCard
-          label="Users"
-          value={formatNumber(data.users)}
-          icon={Users}
-          color="text-purple-500 bg-purple-50"
-        />
-        <StatCard
-          label="Sessions"
-          value={formatNumber(data.sessions)}
-          icon={Activity}
-          color="text-blue-500 bg-blue-50"
-        />
+        <StatCard label="Pageviews" value={formatNumber(data.pageviews)} />
+        <StatCard label="Users" value={formatNumber(data.users)} />
+        <StatCard label="Sessions" value={formatNumber(data.sessions)} />
         <StatCard
           label="Avg Duration"
-          value={`${Math.round(data.avgSessionDurationSec)}s`}
-          icon={TrendingUp}
-          color="text-yellow-500 bg-yellow-50"
+          value={`${Math.round(Number(data.avgSessionDurationSec ?? 0) || 0)}s`}
         />
       </div>
 
@@ -882,7 +920,7 @@ function GA4Tab({ from, to }: { from: string; to: string }) {
         </h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.dailyTrend}>
+            <LineChart data={dailyTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e8eaeb" />
               <XAxis dataKey="date" fontSize={10} />
               <YAxis fontSize={11} />
@@ -927,8 +965,8 @@ function GA4Tab({ from, to }: { from: string; to: string }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {data.topPages.map((p) => (
-                <tr key={p.path} className="hover:bg-surface-secondary/50">
+              {topPages.map((p, idx) => (
+                <tr key={p.path || idx} className="hover:bg-surface-secondary/50">
                   <td className="px-5 py-3 font-mono text-xs text-txt-primary max-w-[400px] truncate">
                     {p.path}
                   </td>
@@ -940,7 +978,7 @@ function GA4Tab({ from, to }: { from: string; to: string }) {
                   </td>
                 </tr>
               ))}
-              {data.topPages.length === 0 && (
+              {topPages.length === 0 && (
                 <tr>
                   <td
                     colSpan={3}
@@ -959,31 +997,45 @@ function GA4Tab({ from, to }: { from: string; to: string }) {
 }
 
 // --- GSC Tab ---
-function GSCTab({ from, to }: { from: string; to: string }) {
+function GSCTab({
+  from,
+  to,
+  forceRefresh = false,
+}: {
+  from: string;
+  to: string;
+  forceRefresh?: boolean;
+}) {
   const [data, setData] = useState<GSCStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(
-        `/api/stats/google-search?from=${from}&to=${to}`,
-      );
-      const json = await res.json();
-      setData(json.data);
-      if (!json.success) setError(json.error || null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat");
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to]);
+  const fetchData = useCallback(
+    async (bypassCache = forceRefresh) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const qs = new URLSearchParams({ from, to });
+        if (bypassCache) qs.set("refresh", "1");
+        const res = await fetch(`/api/stats/google-search?${qs.toString()}`);
+        const json = await res.json().catch(() => null);
+        const parsed = extractStatsPayload<GSCStats>(res.ok, res.status, json);
+        setData(parsed.data);
+        setError(parsed.error);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Gagal memuat data Search Console",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [from, to, forceRefresh],
+  );
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData(forceRefresh);
+  }, [fetchData, forceRefresh]);
 
   if (loading) {
     return (
@@ -998,38 +1050,28 @@ function GSCTab({ from, to }: { from: string; to: string }) {
       <NotConfiguredBanner
         message={`GSC: ${error}`}
         settingKey="google_credentials_json & gsc_site_url"
+        settingsHref="/panel/pengaturan?tab=google"
+        hint="Pastikan email Service Account ditambahkan sebagai Owner/Full User di Google Search Console dan GSC Site URL sesuai (sc-domain:lensaplus.com atau https://lensaplus.com/)."
+        onRetry={() => fetchData(true)}
       />
     );
   }
 
   if (!data) return null;
 
+  const dailyTrend = Array.isArray(data.dailyTrend) ? data.dailyTrend : [];
+  const topQueries = Array.isArray(data.topQueries) ? data.topQueries : [];
+  const topPages = Array.isArray(data.topPages) ? data.topPages : [];
+  const ctrPct = ((Number(data.ctr ?? 0) || 0) * 100).toFixed(2);
+  const avgPos = (Number(data.avgPosition ?? 0) || 0).toFixed(1);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          label="Impressions"
-          value={formatNumber(data.impressions)}
-          icon={Eye}
-        />
-        <StatCard
-          label="Clicks"
-          value={formatNumber(data.clicks)}
-          icon={ExternalLink}
-          color="text-primary bg-primary-light"
-        />
-        <StatCard
-          label="CTR"
-          value={`${(data.ctr * 100).toFixed(2)}%`}
-          icon={TrendingUp}
-          color="text-yellow-500 bg-yellow-50"
-        />
-        <StatCard
-          label="Avg Position"
-          value={data.avgPosition.toFixed(1)}
-          icon={BarChart3}
-          color="text-purple-500 bg-purple-50"
-        />
+        <StatCard label="Impressions" value={formatNumber(data.impressions)} />
+        <StatCard label="Clicks" value={formatNumber(data.clicks)} />
+        <StatCard label="CTR" value={`${ctrPct}%`} />
+        <StatCard label="Avg Position" value={avgPos} />
       </div>
 
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
@@ -1038,7 +1080,7 @@ function GSCTab({ from, to }: { from: string; to: string }) {
         </h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.dailyTrend}>
+            <LineChart data={dailyTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e8eaeb" />
               <XAxis dataKey="date" fontSize={10} />
               <YAxis fontSize={11} />
@@ -1086,7 +1128,7 @@ function GSCTab({ from, to }: { from: string; to: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {data.topQueries.map((q, i) => (
+                {topQueries.map((q, i) => (
                   <tr key={i} className="hover:bg-surface-secondary/50">
                     <td className="px-5 py-3 text-xs text-txt-primary">
                       {q.query}
@@ -1099,7 +1141,7 @@ function GSCTab({ from, to }: { from: string; to: string }) {
                     </td>
                   </tr>
                 ))}
-                {data.topQueries.length === 0 && (
+                {topQueries.length === 0 && (
                   <tr>
                     <td
                       colSpan={3}
@@ -1134,7 +1176,7 @@ function GSCTab({ from, to }: { from: string; to: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {data.topPages.map((p, i) => (
+                {topPages.map((p, i) => (
                   <tr key={i} className="hover:bg-surface-secondary/50">
                     <td className="px-5 py-3 font-mono text-xs text-txt-primary max-w-[220px] truncate">
                       {p.page}
@@ -1147,7 +1189,7 @@ function GSCTab({ from, to }: { from: string; to: string }) {
                     </td>
                   </tr>
                 ))}
-                {data.topPages.length === 0 && (
+                {topPages.length === 0 && (
                   <tr>
                     <td
                       colSpan={3}
@@ -1167,31 +1209,45 @@ function GSCTab({ from, to }: { from: string; to: string }) {
 }
 
 // --- Cloudflare Tab ---
-function CloudflareTab({ from, to }: { from: string; to: string }) {
+function CloudflareTab({
+  from,
+  to,
+  forceRefresh = false,
+}: {
+  from: string;
+  to: string;
+  forceRefresh?: boolean;
+}) {
   const [data, setData] = useState<CFStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(
-        `/api/stats/cloudflare?from=${from}&to=${to}`,
-      );
-      const json = await res.json();
-      setData(json.data);
-      if (!json.success) setError(json.error || null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat");
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to]);
+  const fetchData = useCallback(
+    async (bypassCache = forceRefresh) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const qs = new URLSearchParams({ from, to });
+        if (bypassCache) qs.set("refresh", "1");
+        const res = await fetch(`/api/stats/cloudflare?${qs.toString()}`);
+        const json = await res.json().catch(() => null);
+        const parsed = extractStatsPayload<CFStats>(res.ok, res.status, json);
+        setData(parsed.data);
+        setError(parsed.error);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Gagal memuat data Cloudflare",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [from, to, forceRefresh],
+  );
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData(forceRefresh);
+  }, [fetchData, forceRefresh]);
 
   if (loading) {
     return (
@@ -1206,38 +1262,25 @@ function CloudflareTab({ from, to }: { from: string; to: string }) {
       <NotConfiguredBanner
         message={`Cloudflare: ${error}`}
         settingKey="cloudflare_api_token & cloudflare_zone_id"
+        settingsHref="/panel/pengaturan?tab=sistem"
+        hint="Pastikan API Token Cloudflare memiliki permission Zone → Analytics → Read (selain Zone → Cache Purge) dan Zone ID sesuai domain."
+        onRetry={() => fetchData(true)}
       />
     );
   }
 
   if (!data) return null;
 
+  const dailyTrend = Array.isArray(data.dailyTrend) ? data.dailyTrend : [];
+  const hitRatePct = ((Number(data.cacheHitRate ?? 0) || 0) * 100).toFixed(1);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          label="Requests"
-          value={formatNumber(data.requests)}
-          icon={Activity}
-        />
-        <StatCard
-          label="Bandwidth"
-          value={formatBytes(data.bandwidth)}
-          icon={Cloud}
-          color="text-blue-500 bg-blue-50"
-        />
-        <StatCard
-          label="Cache Hit Rate"
-          value={`${(data.cacheHitRate * 100).toFixed(1)}%`}
-          icon={TrendingUp}
-          color="text-primary bg-primary-light"
-        />
-        <StatCard
-          label="Threats Blocked"
-          value={formatNumber(data.threats)}
-          icon={Shield}
-          color="text-red-500 bg-red-50"
-        />
+        <StatCard label="Requests" value={formatNumber(data.requests)} />
+        <StatCard label="Bandwidth" value={formatBytes(data.bandwidth)} />
+        <StatCard label="Cache Hit Rate" value={`${hitRatePct}%`} />
+        <StatCard label="Threats Blocked" value={formatNumber(data.threats)} />
       </div>
 
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
@@ -1246,7 +1289,7 @@ function CloudflareTab({ from, to }: { from: string; to: string }) {
         </h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.dailyTrend}>
+            <LineChart data={dailyTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e8eaeb" />
               <XAxis dataKey="date" fontSize={10} />
               <YAxis fontSize={11} />
@@ -1309,12 +1352,9 @@ export default function StatistikPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <TrendingUp size={24} className="text-primary" />
-            <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
-              Statistik
-            </h1>
-          </div>
+          <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
+            Statistik
+          </h1>
           <p className="mt-1 text-sm text-txt-secondary">
             {isSuperAdmin
               ? "Dashboard terpusat — Internal, GA4, GSC, dan Cloudflare."
@@ -1382,39 +1422,45 @@ export default function StatistikPage() {
           "Editor" tab; the GA4/GSC/Cloudflare tabs stay SUPER_ADMIN-only.
           Creators see no tab bar — just their own Internal stats. */}
       {isEditorTier && (
-      <div className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
-        {[
-          { key: "internal", label: "Internal", icon: BarChart3 },
-          { key: "editor", label: "Editor", icon: Users },
-          ...(isSuperAdmin
-            ? [
-                { key: "ai", label: "AI / Token", icon: Bot },
-                { key: "ga4", label: "Google Analytics", icon: TrendingUp },
-                { key: "gsc", label: "Search Console", icon: SearchIcon },
-                { key: "cf", label: "Cloudflare", icon: Cloud },
-              ]
-            : []),
-        ].map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() =>
-                setTab(t.key as "internal" | "editor" | "ai" | "ga4" | "gsc" | "cf")
-              }
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap flex items-center gap-1.5 transition-colors ${
-                active
-                  ? "border-primary text-primary"
-                  : "border-transparent text-txt-secondary hover:text-txt-primary"
-              }`}
-            >
-              <Icon size={14} />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
+        <div className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
+          {[
+            { key: "internal", label: "Internal" },
+            { key: "editor", label: "Editor" },
+            ...(isSuperAdmin
+              ? [
+                  { key: "ai", label: "AI / Token" },
+                  { key: "ga4", label: "Google Analytics" },
+                  { key: "gsc", label: "Search Console" },
+                  { key: "cf", label: "Cloudflare" },
+                ]
+              : []),
+          ].map((t) => {
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() =>
+                  setTab(
+                    t.key as
+                      | "internal"
+                      | "editor"
+                      | "ai"
+                      | "ga4"
+                      | "gsc"
+                      | "cf",
+                  )
+                }
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                  active
+                    ? "border-primary text-primary font-bold"
+                    : "border-transparent text-txt-secondary hover:text-txt-primary"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
       )}
 
       {tab === "internal" && (
@@ -1432,13 +1478,28 @@ export default function StatistikPage() {
         <AiUsageTab key={`ai-${refreshKey}`} />
       )}
       {isSuperAdmin && tab === "ga4" && (
-        <GA4Tab key={`ga4-${refreshKey}`} from={from} to={to} />
+        <GA4Tab
+          key={`ga4-${refreshKey}`}
+          from={from}
+          to={to}
+          forceRefresh={refreshKey > 0}
+        />
       )}
       {isSuperAdmin && tab === "gsc" && (
-        <GSCTab key={`gsc-${refreshKey}`} from={from} to={to} />
+        <GSCTab
+          key={`gsc-${refreshKey}`}
+          from={from}
+          to={to}
+          forceRefresh={refreshKey > 0}
+        />
       )}
       {isSuperAdmin && tab === "cf" && (
-        <CloudflareTab key={`cf-${refreshKey}`} from={from} to={to} />
+        <CloudflareTab
+          key={`cf-${refreshKey}`}
+          from={from}
+          to={to}
+          forceRefresh={refreshKey > 0}
+        />
       )}
     </div>
   );

@@ -1,24 +1,27 @@
 /**
  * POST /api/seo/batch-index
- * Bulk-submit an array of article IDs to Google Indexing + IndexNow.
+ * Bulk-submit articles and/or sorotan to Google Indexing + IndexNow with strict priority:
+ *   1. Main articles (`/berita/*`) are ALWAYS indexed first within the 200/day quota.
+ *   2. Sorotan (`/sorotan/*`) are ONLY indexed after all pending main articles
+ *      are completed and daily quota still has remaining capacity.
  *
- * Body: { articleIds: string[] }
+ * Body: {
+ *   articleIds?: string[],
+ *   sorotanIds?: string[],
+ *   fillRemainingWithSorotan?: boolean
+ * }
  * Auth: EDITOR+
- *
- * Respects Google's ~200/day quota — caller should chunk large batches.
  */
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
 import {
   errorResponse,
   requireRole,
   successResponse,
   logAudit,
 } from "@/lib/api-utils";
-import { submitUrlToGoogle } from "@/lib/seo/google-indexing";
-import { pingIndexNow } from "@/lib/seo/indexnow";
+import { runPrioritizedIndexingBatch } from "@/lib/seo/indexing-priority";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -26,63 +29,102 @@ export const maxDuration = 300;
 const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
-const bodySchema = z.object({
-  articleIds: z.array(z.string().min(1)).min(1).max(200),
-});
+const bodySchema = z
+  .object({
+    articleIds: z.array(z.string().min(1)).max(200).optional(),
+    sorotanIds: z.array(z.string().min(1)).max(200).optional(),
+    fillRemainingWithSorotan: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      (data.articleIds && data.articleIds.length > 0) ||
+      (data.sorotanIds && data.sorotanIds.length > 0) ||
+      data.fillRemainingWithSorotan === true,
+    {
+      message:
+        "Minimal satu dari articleIds, sorotanIds, atau fillRemainingWithSorotan diperlukan",
+    },
+  );
 
 export async function POST(req: NextRequest) {
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
     const body = await req.json();
-    const { articleIds } = bodySchema.parse(body);
+    const { articleIds, sorotanIds, fillRemainingWithSorotan } =
+      bodySchema.parse(body);
 
-    const articles = await prisma.article.findMany({
-      where: { id: { in: articleIds }, status: "PUBLISHED" },
-      select: { id: true, slug: true },
+    const hasExplicitArticles = Boolean(articleIds && articleIds.length > 0);
+    const hasExplicitSorotan = Boolean(sorotanIds && sorotanIds.length > 0);
+
+    const batch = await runPrioritizedIndexingBatch({
+      articleIds: hasExplicitArticles ? articleIds : undefined,
+      sorotanIds: hasExplicitSorotan ? sorotanIds : undefined,
+      includePendingArticles: !hasExplicitArticles && Boolean(fillRemainingWithSorotan),
+      includePendingSorotan:
+        !hasExplicitSorotan && Boolean(fillRemainingWithSorotan),
+      includeFailedRetries: Boolean(fillRemainingWithSorotan),
+      maxArticleBatch: 200,
+      maxSorotanBatch: 200,
+      maxTotalBatch: 200,
+      siteUrl: SITE_URL,
     });
 
-    const results: Array<{
-      articleId: string;
-      url: string;
-      success: boolean;
-      error?: string;
-    }> = [];
+    const formattedResults = batch.results.map((r) => ({
+      id: r.id,
+      ...(r.kind === "article" ? { articleId: r.id } : { sorotanId: r.id }),
+      kind: r.kind,
+      url: r.url,
+      success: r.success,
+      skippedQuota: r.skippedQuota,
+      error: r.error,
+    }));
 
-    for (const a of articles) {
-      const url = `${SITE_URL}/berita/${a.slug}`;
-      const r = await submitUrlToGoogle(url, "URL_UPDATED");
-      await prisma.article.update({
-        where: { id: a.id },
-        data: {
-          indexStatus: r.success ? "submitted" : "failed",
-          lastIndexedAt: new Date(),
-        },
-      });
-      results.push({
-        articleId: a.id,
-        url,
-        success: r.success,
-        error: r.error,
-      });
+    const requested =
+      (articleIds?.length ?? batch.articles.requested) +
+      (sorotanIds?.length ?? batch.sorotan.requested);
+    const processed = batch.articles.processed + batch.sorotan.processed;
+    const succeeded = batch.articles.succeeded + batch.sorotan.succeeded;
+    const failed = batch.articles.failed + batch.sorotan.failed;
+
+    let note = `${batch.articles.succeeded} artikel utama berhasil dikirim ke Google Indexing API.`;
+    if (batch.sorotan.succeeded > 0) {
+      note = `${batch.articles.succeeded} artikel utama dan ${batch.sorotan.succeeded} sorotan (sisa kuota) berhasil dikirim ke Google Indexing API.`;
+    } else if (batch.sorotan.deferredByPriority > 0) {
+      note =
+        batch.sorotan.deferReason === "ARTICLES_PRIORITIZED"
+          ? `${batch.articles.succeeded} artikel utama dikirim. ${batch.sorotan.deferredByPriority} sorotan ditunda karena kuota diprioritaskan untuk artikel utama terlebih dahulu.`
+          : `${batch.articles.succeeded} artikel utama dikirim. ${batch.sorotan.deferredByPriority} sorotan menunggu sisa kuota harian (batas ${batch.quota.limit}/hari).`;
     }
 
-    // Single IndexNow batch ping for the full URL list.
-    const urls = results.map((r) => r.url);
-    const indexNow = urls.length > 0 ? await pingIndexNow(urls) : { success: true };
-
-    const succeeded = results.filter((r) => r.success).length;
-    const failed = results.length - succeeded;
-
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
-    await logAudit(session.user.id, "SEO_BATCH_INDEX", "Article", "batch", JSON.stringify({ requested: articleIds.length, succeeded, failed }), ip);
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(
+      session.user.id,
+      "SEO_BATCH_INDEX",
+      "Article",
+      "batch",
+      JSON.stringify({
+        requested,
+        succeeded,
+        failed,
+        articlesSucceeded: batch.articles.succeeded,
+        sorotanSucceeded: batch.sorotan.succeeded,
+        quotaRemaining: batch.quota.remaining,
+      }),
+      ip,
+    );
 
     return successResponse({
-      requested: articleIds.length,
-      processed: results.length,
+      requested,
+      processed,
       succeeded,
       failed,
-      indexNow,
-      results,
+      articles: batch.articles,
+      sorotan: batch.sorotan,
+      quota: batch.quota,
+      indexNow: batch.indexNow,
+      results: formattedResults,
+      note,
     });
   } catch (err) {
     return errorResponse(err);

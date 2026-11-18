@@ -1,14 +1,23 @@
 /**
  * POST /api/seo/bulk-reindex
- * Mark ALL published articles as "pending", clear stale Sorotan/Article error
- * states from prior credentials, and immediately submit an initial batch to
- * Google Indexing API + IndexNow (remaining items stay "pending" for cron).
  *
- * Body: {} (no body required)
- * Auth: SUPER_ADMIN
+ * Priority-aware bulk re-indexing for Google Indexing API (200/day limit) + IndexNow:
+ *   1. Main articles (`Article`, `/berita/*`) are ALWAYS prioritized first.
+ *   2. Sorotan (`Sorotan`, `/sorotan/*`) are ONLY submitted after all pending
+ *      main articles have been submitted and daily quota still has remaining slots.
+ *
+ * Body (optional): { mode?: "priority_all" | "articles_only" | "sorotan_remaining" }
+ *   - "priority_all" (default): mark all published Articles + Sorotan as "pending",
+ *     submit main articles first, then Sorotan if all main articles finish and quota remains.
+ *   - "articles_only": mark all published Articles as "pending" and submit main articles only.
+ *   - "sorotan_remaining": keep existing Article submission states, finish any pending
+ *     main articles first, then use remaining daily quota (out of 200/day) for Sorotan.
+ *
+ * Auth: SUPER_ADMIN | CHIEF_EDITOR | EDITOR
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import {
   errorResponse,
   requireRole,
@@ -16,90 +25,112 @@ import {
   logAudit,
 } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-import { submitUrlToGoogle } from "@/lib/seo/google-indexing";
-import { pingIndexNow } from "@/lib/seo/indexnow";
+import { runPrioritizedIndexingBatch } from "@/lib/seo/indexing-priority";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 const IMMEDIATE_SUBMIT_CAP = 80;
-const CHUNK_SIZE = 5;
+
+const bodySchema = z
+  .object({
+    mode: z
+      .enum(["priority_all", "articles_only", "sorotan_remaining"])
+      .optional(),
+  })
+  .optional();
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireRole(["SUPER_ADMIN"]);
-
-    const [updatedArticles] = await Promise.all([
-      prisma.article.updateMany({
-        where: { status: "PUBLISHED" },
-        data: { indexStatus: "pending", indexLastError: null },
-      }),
-      // Clear stale Sorotan failures (e.g. from prior credentials); Sorotan
-      // pages are `noindex` so they aren't re-submitted to Google Indexing API.
-      prisma.sorotan.updateMany({
-        where: { indexStatus: "failed" },
-        data: { indexStatus: "pending", indexLastError: null },
-      }),
+    const session = await requireRole([
+      "SUPER_ADMIN",
+      "CHIEF_EDITOR",
+      "EDITOR",
     ]);
 
-    const targets = await prisma.article.findMany({
-      where: { status: "PUBLISHED", indexStatus: "pending" },
-      orderBy: { publishedAt: "desc" },
-      take: IMMEDIATE_SUBMIT_CAP,
-      select: { id: true, slug: true },
-    });
-
-    let submittedNow = 0;
-    let failedNow = 0;
-    let quotaHit = false;
-    const pingedUrls: string[] = [];
-
-    for (let i = 0; i < targets.length; i += CHUNK_SIZE) {
-      if (quotaHit) break;
-      const chunk = targets.slice(i, i + CHUNK_SIZE);
-      const chunkResults = await Promise.all(
-        chunk.map(async (a) => {
-          const url = `${SITE_URL}/berita/${a.slug}`;
-          const r = await submitUrlToGoogle(url, "URL_UPDATED");
-          return { id: a.id, url, result: r };
-        }),
-      );
-
-      await Promise.all(
-        chunkResults.map(async ({ id, url, result }) => {
-          pingedUrls.push(url);
-          if (result.success) {
-            submittedNow++;
-          } else {
-            failedNow++;
-            if (result.error === "QUOTA_EXCEEDED_DAILY") {
-              quotaHit = true;
-            }
-          }
-          await prisma.article
-            .update({
-              where: { id },
-              data: {
-                indexStatus: result.success ? "submitted" : "failed",
-                indexLastError: result.success
-                  ? null
-                  : (result.error ?? "Unknown error").slice(0, 500),
-                lastIndexedAt: new Date(),
-              },
-            })
-            .catch(() => {});
-        }),
-      );
+    let mode: "priority_all" | "articles_only" | "sorotan_remaining" =
+      "priority_all";
+    try {
+      const rawBody = await req.json();
+      const parsed = bodySchema.parse(rawBody);
+      if (parsed?.mode) {
+        mode = parsed.mode;
+      }
+    } catch {
+      // Empty body is valid and defaults to "priority_all"
     }
 
-    const indexNow =
-      pingedUrls.length > 0 ? await pingIndexNow(pingedUrls) : { success: true };
+    let markedArticles = 0;
+    let markedSorotan = 0;
 
-    const remainingPending = Math.max(
-      0,
-      updatedArticles.count - submittedNow - failedNow,
-    );
+    if (mode === "priority_all") {
+      const [updatedArticles, updatedSorotan] = await Promise.all([
+        prisma.article.updateMany({
+          where: { status: "PUBLISHED" },
+          data: { indexStatus: "pending", indexLastError: null },
+        }),
+        prisma.sorotan.updateMany({
+          where: { article: { status: "PUBLISHED" } },
+          data: { indexStatus: "pending", indexLastError: null },
+        }),
+      ]);
+      markedArticles = updatedArticles.count;
+      markedSorotan = updatedSorotan.count;
+    } else if (mode === "articles_only") {
+      const updatedArticles = await prisma.article.updateMany({
+        where: { status: "PUBLISHED" },
+        data: { indexStatus: "pending", indexLastError: null },
+      });
+      markedArticles = updatedArticles.count;
+    } else {
+      // mode === "sorotan_remaining": clear failed sorotan so they can retry with remaining quota
+      const updatedSorotan = await prisma.sorotan.updateMany({
+        where: {
+          article: { status: "PUBLISHED" },
+          indexStatus: "failed",
+        },
+        data: { indexStatus: "pending", indexLastError: null },
+      });
+      markedSorotan = updatedSorotan.count;
+    }
+
+    const batch = await runPrioritizedIndexingBatch({
+      includePendingArticles: true,
+      includePendingSorotan: mode !== "articles_only",
+      includeFailedRetries: mode === "sorotan_remaining",
+      maxArticleBatch: IMMEDIATE_SUBMIT_CAP,
+      maxSorotanBatch: IMMEDIATE_SUBMIT_CAP,
+      maxTotalBatch: IMMEDIATE_SUBMIT_CAP,
+      siteUrl: SITE_URL,
+    });
+
+    const submittedNow = batch.articles.succeeded;
+    const sorotanSubmittedNow = batch.sorotan.succeeded;
+    const failedNow = batch.articles.failed;
+    const remainingPending = batch.articles.remainingPending;
+
+    let note = "";
+    if (mode === "sorotan_remaining") {
+      if (sorotanSubmittedNow > 0) {
+        note =
+          submittedNow > 0
+            ? `${submittedNow} artikel utama diselesaikan lebih dulu, lalu ${sorotanSubmittedNow} sorotan dikirim menggunakan sisa kuota (${batch.quota.remaining} kuota tersisa hari ini).`
+            : `${sorotanSubmittedNow} sorotan berhasil dikirim menggunakan sisa kuota Google Indexing (${batch.quota.remaining} kuota tersisa hari ini).`;
+      } else if (remainingPending > 0) {
+        note = `${submittedNow} artikel utama dikirim. Sorotan belum dikirim karena masih ada ${remainingPending} artikel utama dalam antrean prioritas.`;
+      } else if (batch.quota.remaining <= 0) {
+        note = `Kuota harian Google Indexing (${batch.quota.limit}/hari) sudah habis terpakai. Sorotan tetap dalam antrean untuk kuota esok hari.`;
+      } else {
+        note = "Tidak ada antrean sorotan pending untuk dikirim.";
+      }
+    } else if (remainingPending > 0) {
+      note = `${submittedNow} artikel utama langsung dikirim; ${remainingPending} artikel utama dan seluruh sorotan menunggu giliran sesuai prioritas kuota 200/hari.`;
+    } else if (sorotanSubmittedNow > 0) {
+      note = `Seluruh ${submittedNow} artikel utama selesai dikirim lebih dulu, dilanjutkan ${sorotanSubmittedNow} sorotan menggunakan sisa kuota harian.`;
+    } else {
+      note = `${submittedNow} artikel utama langsung dikirim ke Google Indexing & IndexNow.`;
+    }
 
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
@@ -107,26 +138,33 @@ export async function POST(req: NextRequest) {
       session.user.id,
       "SEO_BULK_REINDEX",
       "Article",
-      "bulk",
+      mode,
       JSON.stringify({
-        marked: updatedArticles.count,
+        mode,
+        marked: markedArticles,
+        markedSorotan,
         submittedNow,
+        sorotanSubmittedNow,
         failedNow,
         remainingPending,
+        quotaRemaining: batch.quota.remaining,
       }),
       ip,
     );
 
     return successResponse({
-      marked: updatedArticles.count,
+      mode,
+      marked: markedArticles,
+      markedSorotan,
       submittedNow,
+      sorotanSubmittedNow,
       failedNow,
       remainingPending,
-      indexNow,
-      note:
-        remainingPending > 0
-          ? `${submittedNow} artikel langsung dikirim; ${remainingPending} sisanya menunggu giliran cron.`
-          : `${submittedNow} artikel langsung dikirim ke Google Indexing & IndexNow.`,
+      articles: batch.articles,
+      sorotan: batch.sorotan,
+      quota: batch.quota,
+      indexNow: batch.indexNow,
+      note,
     });
   } catch (err) {
     return errorResponse(err);

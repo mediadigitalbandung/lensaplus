@@ -72,8 +72,42 @@ async function readOrResetDailyCountTx(tx: QuotaTx): Promise<number> {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-async function getDailyCount(): Promise<number> {
-  return withQuotaLock(readOrResetDailyCountTx);
+export async function getDailyCount(): Promise<number> {
+  try {
+    return await withQuotaLock(readOrResetDailyCountTx);
+  } catch {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const [dateRow, countRow] = await Promise.all([
+        prisma.systemSetting.findUnique({ where: { key: QUOTA_DATE_KEY } }),
+        prisma.systemSetting.findUnique({ where: { key: QUOTA_KEY } }),
+      ]);
+      if (dateRow?.value !== today) return 0;
+      const parsed = Number.parseInt(countRow?.value || "0", 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    } catch {
+      return 0;
+    }
+  }
+}
+
+export interface GoogleQuotaStatus {
+  used: number;
+  limit: number;
+  remaining: number;
+  percentUsed: number;
+  date: string;
+}
+
+export async function getQuotaStatus(): Promise<GoogleQuotaStatus> {
+  const date = new Date().toISOString().slice(0, 10);
+  const [limit, used] = await Promise.all([
+    getQuotaLimit(),
+    getDailyCount().catch(() => 0),
+  ]);
+  const remaining = Math.max(0, limit - used);
+  const percentUsed = limit > 0 ? Math.round((used / limit) * 100) : 100;
+  return { used, limit, remaining, percentUsed, date };
 }
 
 async function incrementDailyCount(): Promise<void> {

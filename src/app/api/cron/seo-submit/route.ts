@@ -2,8 +2,11 @@
  * POST/GET /api/cron/seo-submit
  *
  * Alias of `/api/seo/ping` — retries Articles + Sorotan with
- * `indexStatus IN ('failed', 'pending', NULL)` by re-submitting to
- * Google Indexing API + IndexNow.
+ * `indexStatus IN ('failed', 'pending', NULL)` by submitting to
+ * Google Indexing API + IndexNow with strict priority:
+ *   1. Main articles (`/berita/*`) are always indexed first within the 200/day quota.
+ *   2. Sorotan (`/sorotan/*`) are only indexed after all pending main articles
+ *      are completed and daily quota remains.
  *
  * Protected by `Authorization: Bearer ${CRON_SECRET}`.
  *

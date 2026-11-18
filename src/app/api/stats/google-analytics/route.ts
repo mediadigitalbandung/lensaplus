@@ -7,7 +7,8 @@
  * `{ success: false, error, data: <empty struct> }` so the UI doesn't crash.
  */
 
-import { errorResponse, requireRole, successResponse } from "@/lib/api-utils";
+import { NextResponse } from "next/server";
+import { errorResponse, requireRole } from "@/lib/api-utils";
 import { getGA4Data } from "@/lib/stats/google-analytics";
 
 export const dynamic = "force-dynamic";
@@ -28,21 +29,46 @@ export async function GET(req: Request) {
     await requireRole(["SUPER_ADMIN"]);
 
     const url = new URL(req.url);
-    const from =
+    const rawFrom =
       parseDateParam(url.searchParams.get("from")) ??
       ymd(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-    const to = parseDateParam(url.searchParams.get("to")) ?? ymd(new Date());
+    const rawTo = parseDateParam(url.searchParams.get("to")) ?? ymd(new Date());
+    const from = rawFrom <= rawTo ? rawFrom : rawTo;
+    const to = rawFrom <= rawTo ? rawTo : rawFrom;
+    const refresh = url.searchParams.get("refresh") === "1";
 
-    const data = await getGA4Data({ from, to });
-    const cacheHit = !data._error && !("fresh" in data);
+    const data = await getGA4Data({ from, to, refresh });
+    const cacheHit = !data._error && !refresh;
     const meta = { from, to, cacheHit, provider: "ga4" as const };
 
     if (data._error) {
-      // Return 200 with partial error so the UI can still render empty state.
-      return successResponse({ _partialError: data._error, data, meta });
+      return NextResponse.json(
+        {
+          success: false,
+          error: data._error,
+          _partialError: data._error,
+          data: {
+            ...data,
+            _partialError: data._error,
+            _meta: meta,
+          },
+          meta,
+        },
+        { status: 200 },
+      );
     }
 
-    return successResponse({ data, meta });
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          ...data,
+          _meta: meta,
+        },
+        meta,
+      },
+      { status: 200 },
+    );
   } catch (err) {
     return errorResponse(err);
   }

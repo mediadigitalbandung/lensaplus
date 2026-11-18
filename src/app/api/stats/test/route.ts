@@ -1,8 +1,8 @@
 /**
  * GET /api/stats/test
  *
- * Lightweight health-check for the GA4 + GSC integrations. Hits both
- * services with a 1-day window so SUPER_ADMIN can verify credentials are
+ * Lightweight health-check for the GA4 + GSC + Cloudflare integrations.
+ * Hits services with a 1-day window so SUPER_ADMIN can verify credentials are
  * configured & working without leaving the panel.
  *
  * Auth: SUPER_ADMIN only (returns service-account / property-ID hints).
@@ -15,6 +15,7 @@ import { NextResponse } from "next/server";
 import { errorResponse, requireRole } from "@/lib/api-utils";
 import { getGA4Data } from "@/lib/stats/google-analytics";
 import { getGSCData } from "@/lib/stats/google-search";
+import { getCloudflareAnalytics } from "@/lib/stats/cloudflare";
 
 export const dynamic = "force-dynamic";
 
@@ -32,12 +33,10 @@ interface ServiceProbe {
 async function probeGA4(from: string, to: string): Promise<ServiceProbe> {
   const start = Date.now();
   try {
-    const data = await getGA4Data({ from, to });
+    const data = await getGA4Data({ from, to, refresh: true });
     if (data._error) {
       return { ok: false, error: data._error, durationMs: Date.now() - start };
     }
-    // Treat any successful response as healthy. dailyTrend may be empty for
-    // brand-new properties; that still proves credentials work.
     return {
       ok: true,
       rowCount: data.dailyTrend?.length ?? 0,
@@ -52,7 +51,25 @@ async function probeGA4(from: string, to: string): Promise<ServiceProbe> {
 async function probeGSC(from: string, to: string): Promise<ServiceProbe> {
   const start = Date.now();
   try {
-    const data = await getGSCData({ from, to });
+    const data = await getGSCData({ from, to, refresh: true });
+    if (data._error) {
+      return { ok: false, error: data._error, durationMs: Date.now() - start };
+    }
+    return {
+      ok: true,
+      rowCount: data.dailyTrend?.length ?? 0,
+      durationMs: Date.now() - start,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: msg, durationMs: Date.now() - start };
+  }
+}
+
+async function probeCloudflare(from: string, to: string): Promise<ServiceProbe> {
+  const start = Date.now();
+  try {
+    const data = await getCloudflareAnalytics({ from, to, refresh: true });
     if (data._error) {
       return { ok: false, error: data._error, durationMs: Date.now() - start };
     }
@@ -77,16 +94,17 @@ export async function GET() {
     const from = ymd(yesterday);
     const to = ymd(today);
 
-    const [ga4, gsc] = await Promise.all([
+    const [ga4, gsc, cloudflare] = await Promise.all([
       probeGA4(from, to),
       probeGSC(from, to),
+      probeCloudflare(from, to),
     ]);
 
     return NextResponse.json(
       {
-        success: ga4.ok && gsc.ok,
+        success: ga4.ok && gsc.ok && cloudflare.ok,
         window: { from, to },
-        services: { ga4, gsc },
+        services: { ga4, gsc, cloudflare },
       },
       { status: 200 },
     );
