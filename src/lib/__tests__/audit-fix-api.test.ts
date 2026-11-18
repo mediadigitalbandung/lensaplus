@@ -46,6 +46,10 @@ vi.mock("next-auth", () => ({
 
 vi.mock("@/lib/auth", () => ({
   authOptions: {},
+  canApproveArticles: (role: string) =>
+    ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"].includes(role),
+  canViewAllArticles: (role: string) =>
+    ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"].includes(role),
 }));
 
 vi.mock("@/lib/api-utils", async (importOriginal) => {
