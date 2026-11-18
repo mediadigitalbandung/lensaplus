@@ -20,6 +20,11 @@ const W = 1012;
 const H = 638;
 const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
+const EXTRA_IMG_HOSTS = (process.env.CARD_EXTRA_IMAGE_HOSTS || process.env.SOCIAL_EXTRA_IMAGE_HOSTS || "")
+  .split(",")
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
 const ALLOWED_IMG_HOSTS = new Set([
   (() => {
     try {
@@ -31,7 +36,7 @@ const ALLOWED_IMG_HOSTS = new Set([
   "lensaplus.com",
   "www.lensaplus.com",
   "images.unsplash.com",
-  "145.79.15.99",
+  ...EXTRA_IMG_HOSTS,
 ]);
 
 function isAllowedHost(rawUrl: string): boolean {
@@ -159,7 +164,12 @@ async function loadImage(src: string | null | undefined, w: number, h: number, f
 
 function fmtDate(d: Date | null): string {
   if (!d) return "-";
-  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "long", year: "numeric" }).format(d);
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Jakarta",
+  }).format(d);
 }
 
 export interface CardRenderInput {

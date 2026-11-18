@@ -10,7 +10,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { decryptSecret } from "@/lib/crypto-secrets";
+import { decryptSecret, isEncrypted } from "@/lib/crypto-secrets";
 import { recordAiUsage } from "@/lib/ai-usage";
 
 const ENDPOINT = "https://api.perplexity.ai/chat/completions";
@@ -157,10 +157,15 @@ async function getApiKey(): Promise<string | null> {
   try {
     const row = await prisma.systemSetting.findUnique({ where: { key: "perplexity_api_key" } });
     if (row?.value && row.value.trim().length > 0) {
+      const raw = row.value.trim();
       try {
-        return decryptSecret(row.value.trim());
-      } catch {
-        return row.value.trim();
+        return decryptSecret(raw);
+      } catch (err) {
+        console.warn(
+          "[perplexity] Failed to decrypt perplexity_api_key:",
+          err instanceof Error ? err.message : String(err),
+        );
+        if (!isEncrypted(raw)) return raw;
       }
     }
   } catch {
@@ -256,6 +261,9 @@ async function runPerplexity(p: {
 
     const data = (await res.json()) as PplxResponse;
     const text = data.choices?.[0]?.message?.content?.trim() ?? "";
+    if (!text) {
+      throw new Error(`Perplexity (${p.model}) returned empty response`);
+    }
 
     // Prefer the current `search_results`; fall back to the legacy `citations`.
     const sources: PerplexitySource[] =

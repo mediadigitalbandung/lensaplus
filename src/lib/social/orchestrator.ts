@@ -297,6 +297,8 @@ async function runPlatform(
     }
   }
 
+  const mediaKind = isStory ? "STORY" : "IMAGE";
+
   // 4. Draft mode → just persist a DRAFT row and bail.
   if (global.draftMode) {
     const post = await prisma.socialPost.create({
@@ -304,6 +306,7 @@ async function runPlatform(
         articleId: article.id,
         platform,
         status: "DRAFT",
+        mediaKind,
         imageUrl: publicUrl,
         caption,
       },
@@ -317,6 +320,7 @@ async function runPlatform(
       articleId: article.id,
       platform,
       status: "PENDING",
+      mediaKind,
       imageUrl: publicUrl,
       caption,
     },
@@ -558,99 +562,127 @@ async function loadPostWithArticle(postId: string): Promise<
   return row as unknown as SocialPost & { article: ArticleForPublish };
 }
 
+const activeApprovals = new Set<string>();
+const STALE_REEL_PROCESSING_MS = 15 * 60 * 1000;
+
 /**
  * Approve a DRAFT post — runs the actual publisher using the stored imageUrl
  * + caption and updates the row.
  */
-export async function approveDraft(postId: string): Promise<PublishResult> {
-  const post = await loadPostWithArticle(postId);
-  if (!post) return { success: false, error: "SocialPost not found" };
-  // PENDING is allowed because startApproveDraft pre-sets it for async (Reel)
-  // publishes before handing off to this function in the background.
-  if (post.status !== "DRAFT" && post.status !== "REJECTED" && post.status !== "PENDING") {
-    return { success: false, error: `SocialPost is not in DRAFT or REJECTED state (is ${post.status})` };
+export async function approveDraft(
+  postId: string,
+  opts?: { preclaimedPending?: boolean },
+): Promise<PublishResult> {
+  if (activeApprovals.has(postId)) {
+    return { success: false, error: "SocialPost approval already in progress" };
   }
-  const isReel = post.mediaKind === "REELS";
-  if (isReel) {
-    if (!post.videoUrl) {
-      return { success: false, error: "Reel post is missing videoUrl" };
-    }
-  } else if (!post.imageUrl || !post.caption) {
-    return { success: false, error: "SocialPost is missing imageUrl or caption" };
-  }
-
-  // Canonicalize every Meta-facing URL (Meta fetches these server-side, so a
-  // bare IP / nip.io host would fail; sanitize rewrites them to lensaplus.com).
-  const sanitizedImageUrl = post.imageUrl ? sanitizeSocialImageUrl(post.imageUrl) : post.imageUrl;
-  const sanitizedVideoUrl = post.videoUrl ? sanitizeSocialImageUrl(post.videoUrl) : post.videoUrl;
-  const sanitizedThumbUrl = post.thumbnailUrl ? sanitizeSocialImageUrl(post.thumbnailUrl) : post.thumbnailUrl;
-  if (
-    sanitizedImageUrl !== post.imageUrl ||
-    sanitizedVideoUrl !== post.videoUrl ||
-    sanitizedThumbUrl !== post.thumbnailUrl
-  ) {
-    await prisma.socialPost.update({
-      where: { id: postId },
-      data: {
-        imageUrl: sanitizedImageUrl,
-        videoUrl: sanitizedVideoUrl,
-        thumbnailUrl: sanitizedThumbUrl,
-      },
-    });
-    post.imageUrl = sanitizedImageUrl ?? null;
-    post.videoUrl = sanitizedVideoUrl ?? null;
-    post.thumbnailUrl = sanitizedThumbUrl ?? null;
-  }
-
-  const { instagram: ig, facebook: fb, threads } = await getAllSocialSettings();
-
-  // Mark pending first so observers see the state transition.
-  await prisma.socialPost.update({
-    where: { id: postId },
-    data: { status: "PENDING", errorMessage: null },
-  });
-
-  const isStory =
-    !isReel && (post.mediaKind === "STORY" || (post.imageUrl?.includes("/api/og/story") ?? false));
-
-  let result: PublishResult;
+  activeApprovals.add(postId);
   try {
-    result = await runPublisher(
-      post.platform as Platform,
-      post.article,
-      post.imageUrl ?? "",
-      post.caption ?? "",
-      ig,
-      fb,
-      threads,
-      isStory,
-      isReel ? { videoUrl: post.videoUrl as string, coverUrl: post.thumbnailUrl ?? undefined } : undefined,
-    );
-  } catch (err) {
-    result = { success: false, error: err instanceof Error ? err.message : String(err) };
-  }
+    const post = await loadPostWithArticle(postId);
+    if (!post) return { success: false, error: "SocialPost not found" };
+    // PENDING is allowed for handoffs from startApproveDraft (which atomically
+    // pre-claims DRAFT/REJECTED -> PENDING for async Reel publishes).
+    const allowPending = opts?.preclaimedPending ? post.status === "PENDING" : false;
+    const isClaimable = post.status === "DRAFT" || post.status === "REJECTED";
+    if (!isClaimable && !allowPending && post.status !== "PENDING") {
+      return { success: false, error: `SocialPost is not in DRAFT or REJECTED state (is ${post.status})` };
+    }
+    if (!isClaimable && !opts?.preclaimedPending) {
+      // Compatibility: if a caller explicitly handed off a PENDING Reel row via
+      // startApproveDraft without passing opts (or in tests), allow only if
+      // not already actively approving; otherwise require DRAFT/REJECTED atomic claim.
+      if (post.status !== "PENDING" || post.mediaKind !== "REELS") {
+        return { success: false, error: `SocialPost is not in DRAFT or REJECTED state (is ${post.status})` };
+      }
+    }
+    const isReel = post.mediaKind === "REELS";
+    if (isReel) {
+      if (!post.videoUrl) {
+        return { success: false, error: "Reel post is missing videoUrl" };
+      }
+    } else if (!post.imageUrl || !post.caption) {
+      return { success: false, error: "SocialPost is missing imageUrl or caption" };
+    }
 
-  if (result.success && result.externalId) {
-    await prisma.socialPost.update({
-      where: { id: postId },
-      data: {
-        status: "PUBLISHED",
-        externalId: result.externalId,
-        publishedAt: new Date(),
-        errorMessage: null,
-      },
-    });
-  } else {
-    await prisma.socialPost.update({
-      where: { id: postId },
-      data: {
-        status: "REJECTED",
-        errorMessage: result.error || "Unknown publisher error",
-      },
-    });
-  }
+    if (isClaimable) {
+      const claim = await prisma.socialPost.updateMany({
+        where: { id: postId, status: { in: ["DRAFT", "REJECTED"] } },
+        data: { status: "PENDING", errorMessage: null },
+      });
+      if (claim.count === 0) {
+        return { success: false, error: "SocialPost is already being processed or published" };
+      }
+    }
 
-  return result;
+    // Canonicalize every Meta-facing URL (Meta fetches these server-side, so a
+    // bare IP / nip.io host would fail; sanitize rewrites them to lensaplus.com).
+    const sanitizedImageUrl = post.imageUrl ? sanitizeSocialImageUrl(post.imageUrl) : post.imageUrl;
+    const sanitizedVideoUrl = post.videoUrl ? sanitizeSocialImageUrl(post.videoUrl) : post.videoUrl;
+    const sanitizedThumbUrl = post.thumbnailUrl ? sanitizeSocialImageUrl(post.thumbnailUrl) : post.thumbnailUrl;
+    if (
+      sanitizedImageUrl !== post.imageUrl ||
+      sanitizedVideoUrl !== post.videoUrl ||
+      sanitizedThumbUrl !== post.thumbnailUrl
+    ) {
+      await prisma.socialPost.update({
+        where: { id: postId },
+        data: {
+          imageUrl: sanitizedImageUrl,
+          videoUrl: sanitizedVideoUrl,
+          thumbnailUrl: sanitizedThumbUrl,
+        },
+      });
+      post.imageUrl = sanitizedImageUrl ?? null;
+      post.videoUrl = sanitizedVideoUrl ?? null;
+      post.thumbnailUrl = sanitizedThumbUrl ?? null;
+    }
+
+    const { instagram: ig, facebook: fb, threads } = await getAllSocialSettings();
+
+    const isStory =
+      !isReel && (post.mediaKind === "STORY" || (post.imageUrl?.includes("/api/og/story") ?? false));
+
+    let result: PublishResult;
+    try {
+      result = await runPublisher(
+        post.platform as Platform,
+        post.article,
+        post.imageUrl ?? "",
+        post.caption ?? "",
+        ig,
+        fb,
+        threads,
+        isStory,
+        isReel ? { videoUrl: post.videoUrl as string, coverUrl: post.thumbnailUrl ?? undefined } : undefined,
+      );
+    } catch (err) {
+      result = { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+
+    if (result.success && result.externalId) {
+      await prisma.socialPost.update({
+        where: { id: postId },
+        data: {
+          status: "PUBLISHED",
+          externalId: result.externalId,
+          publishedAt: new Date(),
+          errorMessage: null,
+        },
+      });
+    } else {
+      await prisma.socialPost.update({
+        where: { id: postId },
+        data: {
+          status: "REJECTED",
+          errorMessage: result.error || "Unknown publisher error",
+        },
+      });
+    }
+
+    return result;
+  } finally {
+    activeApprovals.delete(postId);
+  }
 }
 
 /**
@@ -674,13 +706,16 @@ export async function startApproveDraft(
 
   if (post.mediaKind === "REELS") {
     if (!post.videoUrl) return { success: false, error: "Reel post is missing videoUrl" };
-    // Flip to PENDING synchronously so the panel shows it immediately, then
-    // publish detached (Meta video processing can take minutes).
-    await prisma.socialPost.update({
-      where: { id: postId },
+    // Atomically flip to PENDING so concurrent approvals cannot double-publish,
+    // then publish detached (Meta video processing can take minutes).
+    const claimed = await prisma.socialPost.updateMany({
+      where: { id: postId, status: { in: ["DRAFT", "REJECTED"] } },
       data: { status: "PENDING", errorMessage: null },
     });
-    void approveDraft(postId).catch((err) => {
+    if (claimed.count === 0) {
+      return { success: false, error: "SocialPost is already being processed or published" };
+    }
+    void approveDraft(postId, { preclaimedPending: true }).catch((err) => {
       console.error("[reel] background publish failed", err);
     });
     return { success: true, async: true, status: "PENDING" };
@@ -830,6 +865,45 @@ export async function renderReelForArticle(
   // Auto-on-publish path only renders when explicitly enabled + IG is ready.
   if (input.auto && (!global.autoPublishReels || !ig.enabled)) {
     return { platform, status: "SKIPPED", note: "auto reels disabled or IG not enabled" };
+  }
+
+  // Reclaim stale PROCESSING Reel rows (crashed/restarted worker) & dedup active renders.
+  const staleBefore = new Date(Date.now() - STALE_REEL_PROCESSING_MS);
+  await prisma.socialPost
+    .updateMany({
+      where: {
+        articleId: article.id,
+        platform,
+        mediaKind: "REELS",
+        status: "PROCESSING",
+        updatedAt: { lt: staleBefore },
+      },
+      data: {
+        status: "REJECTED",
+        errorMessage: "Reel render timed out (stale PROCESSING reclaimed)",
+      },
+    })
+    .catch(() => {});
+
+  const existingActive = await prisma.socialPost
+    .findFirst({
+      where: {
+        articleId: article.id,
+        platform,
+        mediaKind: "REELS",
+        status: "PROCESSING",
+      },
+      select: { id: true },
+    })
+    .catch(() => null);
+  if (existingActive) {
+    return {
+      platform,
+      postId: existingActive.id,
+      status: "PROCESSING",
+      isStory: false,
+      note: "Reel render already in progress",
+    };
   }
 
   // Create the PROCESSING row up-front so the panel shows "merender…" instantly.

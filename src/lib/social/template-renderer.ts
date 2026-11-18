@@ -38,7 +38,7 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** Format a Date to id-ID date string. */
+/** Format a Date to id-ID date string (pinned to Asia/Jakarta to avoid UTC drift). */
 function formatDate(d: Date | null | undefined): string {
   if (!d) return "";
   try {
@@ -46,6 +46,7 @@ function formatDate(d: Date | null | undefined): string {
       day: "numeric",
       month: "long",
       year: "numeric",
+      timeZone: "Asia/Jakarta",
     }).format(d);
   } catch {
     return d.toISOString().slice(0, 10);
@@ -166,9 +167,15 @@ export function wrapText(
   const lines: string[] = [];
   let current = "";
   let currentWidth = 0;
+  let truncated = false;
   const spaceWidth = estimateWordWidth(" ", fontSize, fontFamily, weight);
 
-  for (const word of words) {
+  for (let wi = 0; wi < words.length; wi++) {
+    if (maxLines && lines.length >= maxLines) {
+      truncated = true;
+      break;
+    }
+    const word = words[wi];
     const wordWidth = estimateWordWidth(word, fontSize, fontFamily, weight);
     const nextWidth = current ? currentWidth + spaceWidth + wordWidth : wordWidth;
 
@@ -177,7 +184,12 @@ export function wrapText(
       currentWidth = nextWidth;
     } else {
       if (current) lines.push(current);
-      
+      if (maxLines && lines.length >= maxLines) {
+        truncated = true;
+        current = "";
+        break;
+      }
+
       // If a single word is wider than the allowed width, we have to hard-break it
       if (wordWidth > width) {
         let w = word;
@@ -185,6 +197,10 @@ export function wrapText(
           w.length > 0 &&
           estimateWordWidth(w, fontSize, fontFamily, weight) > width
         ) {
+          if (maxLines && lines.length >= maxLines) {
+            truncated = true;
+            break;
+          }
           // Consume at least 1 character per iteration so wide glyphs never loop infinitely
           let take = 1;
           while (
@@ -196,6 +212,11 @@ export function wrapText(
           lines.push(w.slice(0, take));
           w = w.slice(take);
         }
+        if (truncated || (maxLines && lines.length >= maxLines)) {
+          if (w.length > 0) truncated = true;
+          current = "";
+          break;
+        }
         current = w;
         currentWidth = estimateWordWidth(w, fontSize, fontFamily, weight);
       } else {
@@ -203,16 +224,28 @@ export function wrapText(
         currentWidth = wordWidth;
       }
     }
-    if (maxLines && lines.length >= maxLines) break;
+    if (maxLines && lines.length >= maxLines) {
+      if (wi < words.length - 1 || current) truncated = true;
+      break;
+    }
   }
-  if (current && (!maxLines || lines.length < maxLines)) {
-    lines.push(current);
+  if (current) {
+    if (!maxLines || lines.length < maxLines) {
+      lines.push(current);
+    } else {
+      truncated = true;
+    }
   }
   if (maxLines && lines.length > maxLines) {
     lines.length = maxLines;
-    // Append ellipsis to last line
+    truncated = true;
+  }
+  if (truncated && maxLines && lines.length > 0) {
     const last = lines[maxLines - 1];
-    const trimmed = last.length > 3 ? last.slice(0, last.length - 3) : last;
+    const trimmed =
+      last.length > 3
+        ? last.slice(0, last.length - 3).replace(/[\s.,;:]+$/, "")
+        : last;
     lines[maxLines - 1] = `${trimmed}...`;
   }
   return lines;
@@ -288,13 +321,20 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
   return `<text x="${anchorX}" y="${baseY}" fill="${escapeXml(color)}" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}" font-weight="${weight}" text-anchor="${isJustify ? "start" : textAnchor}">${tspans}</text>`;
 }
 
+const EXTRA_TPL_BG_HOSTS = (process.env.SOCIAL_EXTRA_IMAGE_HOSTS || "")
+  .split(",")
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
+const MAX_REMOTE_IMAGE_BYTES = 12 * 1024 * 1024;
+
 // SSRF guard for template background fetches
 const ALLOWED_TPL_BG_HOSTS = new Set([
   (() => { try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname; } catch { return "lensaplus.com"; } })(),
   "lensaplus.com",
   "www.lensaplus.com",
   "images.unsplash.com",
-  "145.79.15.99",
+  ...EXTRA_TPL_BG_HOSTS,
 ]);
 
 function isAllowedTemplateHost(rawUrl: string): boolean {
@@ -311,14 +351,47 @@ async function loadBackground(urlOrPath: string): Promise<Buffer> {
     if (!isAllowedTemplateHost(urlOrPath)) {
       throw new Error(`Template background host not in allowlist: ${urlOrPath}`);
     }
-    const res = await fetch(urlOrPath, { signal: AbortSignal.timeout(10000) });
+    const res = await fetch(urlOrPath, { signal: AbortSignal.timeout(10000), redirect: "error" });
     if (!res.ok) {
+      await res.body?.cancel?.().catch(() => {});
       throw new Error(
         `Template background fetch failed: HTTP ${res.status} for ${urlOrPath}`,
       );
     }
-    const ab = await res.arrayBuffer();
-    return Buffer.from(ab);
+    const contentType = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+    if (contentType && !contentType.startsWith("image/")) {
+      await res.body?.cancel?.().catch(() => {});
+      throw new Error(`Unexpected template background content-type: ${contentType}`);
+    }
+    const len = Number(res.headers.get("content-length") || 0);
+    if (Number.isFinite(len) && len > MAX_REMOTE_IMAGE_BYTES) {
+      await res.body?.cancel?.().catch(() => {});
+      throw new Error(`Template background too large: ${len} bytes`);
+    }
+    const reader = res.body?.getReader?.();
+    if (!reader) {
+      const ab = await res.arrayBuffer();
+      if (ab.byteLength === 0 || ab.byteLength > MAX_REMOTE_IMAGE_BYTES) {
+        throw new Error(`Template background exceeded byte cap (${ab.byteLength})`);
+      }
+      return Buffer.from(ab);
+    }
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) {
+        total += value.length;
+        if (total > MAX_REMOTE_IMAGE_BYTES) {
+          await reader.cancel().catch(() => {});
+          throw new Error(`Template background exceeded ${MAX_REMOTE_IMAGE_BYTES} bytes`);
+        }
+        chunks.push(value);
+      }
+    }
+    if (total === 0) throw new Error(`Empty template background body for ${urlOrPath}`);
+    return Buffer.concat(chunks, total);
   }
 
   // Local path — must stay strictly inside public/

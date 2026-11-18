@@ -236,7 +236,8 @@ describe("Auto-Sorotan end-to-end wiring", () => {
     // Public Sorotan pages and ping endpoint must never leak unpublished drafts
     expect(read("src/app/sorotan/page.tsx")).toContain('article: { status: "PUBLISHED"');
     expect(read("src/app/sorotan/[slug]/page.tsx")).toContain('sorotan.article.status === "PUBLISHED"');
-    expect(read("src/app/api/seo/ping/route.ts")).toContain('article: { status: "PUBLISHED" }');
+    expect(read("src/app/api/seo/ping/route.ts")).toContain("runPrioritizedIndexingBatch");
+    expect(read("src/lib/seo/indexing-priority.ts")).toContain('article: { status: "PUBLISHED" }');
 
     // Batch generator uses active angle count (9), not legacy hardcoded 3
     expect(read("src/app/api/seo/generate-sorotan/route.ts")).toContain("SOROTAN_ANGLE_COUNT");

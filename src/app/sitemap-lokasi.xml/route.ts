@@ -22,7 +22,7 @@ function esc(input: string): string {
 
 export async function GET() {
   const urls: string[] = [
-    `<url><loc>${SITE_URL}/lokasi</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`,
+    `<url><loc>${esc(`${SITE_URL}/lokasi`)}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`,
   ];
 
   for (const loc of courtLocations) {

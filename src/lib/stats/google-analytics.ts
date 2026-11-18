@@ -19,14 +19,16 @@ import { decryptSecret, isEncrypted } from "@/lib/crypto-secrets";
 
 const GA4_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 100;
 
 function withTimeout<T>(p: Promise<T>, ms = 15000, label = "TIMEOUT"): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<T>((_, rej) =>
-      setTimeout(() => rej(new Error(`GA_${label}`)), ms),
-    ),
-  ]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<T>((_, rej) => {
+    timer = setTimeout(() => rej(new Error(`GA_${label}`)), ms);
+  });
+  return Promise.race([p, timeoutPromise]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 // ---------- Types ----------
@@ -77,7 +79,16 @@ function getCached(key: string): GA4Stats | null {
 }
 
 function setCached(key: string, data: GA4Stats) {
-  cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+  const now = Date.now();
+  for (const [k, v] of cache.entries()) {
+    if (now > v.expiresAt) cache.delete(k);
+  }
+  while (cache.size >= MAX_CACHE_ENTRIES) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+  cache.set(key, { data, expiresAt: now + CACHE_TTL_MS });
 }
 
 export function clearGA4Cache(): void {

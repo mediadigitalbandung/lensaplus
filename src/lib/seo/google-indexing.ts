@@ -180,8 +180,11 @@ async function getCredentials(): Promise<ServiceAccountCredentials | null> {
     if (cred?.value && cred.value.trim().length > 0) {
       raw = decryptSecret(cred.value.trim());
     }
-  } catch {
-    // DB unavailable — fall through to env fallback.
+  } catch (err) {
+    console.warn(
+      "[google-indexing] Failed to load/decrypt google_credentials_json:",
+      err instanceof Error ? err.message : String(err),
+    );
   }
 
   if (!raw) {

@@ -157,7 +157,7 @@ export class InstagramPublisher {
         } catch (pollErr) {
           const errMsg = pollErr instanceof Error ? pollErr.message : String(pollErr);
           // If we hit a terminal error from our graphRequest helper (like permission or expired), throw immediately
-          if (errMsg.includes("code 190") || errMsg.includes("code 10") || errMsg.includes("code 200")) {
+          if (/\bcode (?:190|10|200)\b/.test(errMsg)) {
             throw pollErr;
           }
           console.warn(`[instagram] Polling container status attempt failed, retrying...`, pollErr);

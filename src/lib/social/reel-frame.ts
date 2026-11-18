@@ -22,6 +22,11 @@ const HEIGHT = 1920;
 const IMG_H = 1080; // featured image occupies the top square
 const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
+const EXTRA_ALLOWED_HOSTS = (process.env.SOCIAL_EXTRA_IMAGE_HOSTS || "")
+  .split(",")
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
 // SSRF guard — same allowlist spirit as /api/og/story.
 const ALLOWED_IMG_HOSTS = new Set([
   (() => {
@@ -36,8 +41,10 @@ const ALLOWED_IMG_HOSTS = new Set([
   "images.unsplash.com",
   "graph.facebook.com",
   "scontent.cdninstagram.com",
-  "145.79.15.99",
+  ...EXTRA_ALLOWED_HOSTS,
 ]);
+
+const MAX_REMOTE_IMAGE_BYTES = 12 * 1024 * 1024;
 
 function isAllowedImageHost(rawUrl: string): boolean {
   try {
@@ -63,32 +70,104 @@ function wrapText(text: string, maxChars: number, maxLines: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
-  for (const word of words) {
+  let truncated = false;
+
+  for (let wi = 0; wi < words.length; wi++) {
+    if (lines.length >= maxLines) {
+      truncated = true;
+      break;
+    }
+    const word = words[wi];
     const next = current ? `${current} ${word}` : word;
     if (next.length <= maxChars) {
       current = next;
     } else {
       if (current) lines.push(current);
+      if (lines.length >= maxLines) {
+        truncated = true;
+        current = "";
+        break;
+      }
       if (word.length > maxChars) {
         let w = word;
         while (w.length > maxChars) {
+          if (lines.length >= maxLines) {
+            truncated = true;
+            break;
+          }
           lines.push(w.slice(0, maxChars));
           w = w.slice(maxChars);
+        }
+        if (truncated || lines.length >= maxLines) {
+          if (w.length > 0) truncated = true;
+          current = "";
+          break;
         }
         current = w;
       } else {
         current = word;
       }
     }
-    if (lines.length >= maxLines) break;
+    if (lines.length >= maxLines) {
+      if (wi < words.length - 1 || current) truncated = true;
+      break;
+    }
   }
-  if (current && lines.length < maxLines) lines.push(current);
+  if (current) {
+    if (lines.length < maxLines) {
+      lines.push(current);
+    } else {
+      truncated = true;
+    }
+  }
   if (lines.length > maxLines) {
     lines.length = maxLines;
-    const last = lines[maxLines - 1];
-    lines[maxLines - 1] = last.length > 1 ? `${last.replace(/[\s.,;:]+$/, "")}…` : last;
+    truncated = true;
+  }
+  if (truncated && lines.length > 0) {
+    const last = lines[lines.length - 1];
+    lines[lines.length - 1] =
+      last.length > 1 ? `${last.replace(/[\s.,;:]+$/, "")}…` : "…";
   }
   return lines;
+}
+
+async function readImageWithCap(res: Response, maxBytes: number): Promise<Buffer | null> {
+  const contentType = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (contentType && !contentType.startsWith("image/")) {
+    await res.body?.cancel?.().catch(() => {});
+    return null;
+  }
+  const len = Number(res.headers.get("content-length") || 0);
+  if (Number.isFinite(len) && len > maxBytes) {
+    await res.body?.cancel?.().catch(() => {});
+    return null;
+  }
+  const reader = res.body?.getReader?.();
+  if (!reader) {
+    const buf = Buffer.from(await res.arrayBuffer());
+    return buf.length > 0 && buf.length <= maxBytes ? buf : null;
+  }
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) {
+        total += value.length;
+        if (total > maxBytes) {
+          await reader.cancel().catch(() => {});
+          return null;
+        }
+        chunks.push(value);
+      }
+    }
+  } catch {
+    await reader.cancel().catch(() => {});
+    return null;
+  }
+  return total > 0 ? Buffer.concat(chunks, total) : null;
 }
 
 async function loadFeaturedImage(featuredImage: string | null | undefined): Promise<Buffer | null> {
@@ -99,10 +178,14 @@ async function loadFeaturedImage(featuredImage: string | null | undefined): Prom
 
     if (/^https?:\/\//i.test(absoluteUrl)) {
       if (!isAllowedImageHost(absoluteUrl)) return null;
-      const res = await fetch(absoluteUrl, { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) return null;
-      const ab = await res.arrayBuffer();
-      return await sharp(Buffer.from(ab))
+      const res = await fetch(absoluteUrl, { signal: AbortSignal.timeout(10000), redirect: "error" });
+      if (!res.ok) {
+        await res.body?.cancel?.().catch(() => {});
+        return null;
+      }
+      const buf = await readImageWithCap(res, MAX_REMOTE_IMAGE_BYTES);
+      if (!buf) return null;
+      return await sharp(buf, { limitInputPixels: 50_000_000 })
         .resize(WIDTH, IMG_H, { fit: "cover", position: "centre" })
         .toBuffer();
     }
@@ -257,7 +340,7 @@ function buildOpeningSvg(category: string, hasImage: boolean): string {
   <text x="${cx}" y="1300" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="30" font-weight="700" fill="#b7102a" letter-spacing="6">${escapeXml(cat)}</text>
   <text x="${cx}" y="1432" text-anchor="middle" font-family="'Newsreader','Georgia',serif" font-size="104" font-weight="800" fill="#ffffff" letter-spacing="2">LENSAPLUS</text>
   <rect x="${cx - 170}" y="1474" width="340" height="5" fill="#b7102a" />
-  <text x="${cx}" y="1548" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="31" font-weight="500" fill="#ffffff" fill-opacity="0.88" letter-spacing="4">MEDIA BERITA DIGITAL BANDUNG</text>
+  <text x="${cx}" y="1548" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="31" font-weight="500" fill="#ffffff" fill-opacity="0.88" letter-spacing="4">MEDIA BERITA DIGITAL INDONESIA</text>
 </svg>`;
 }
 
@@ -269,7 +352,7 @@ function buildClosingSvg(): string {
   <text x="${cx}" y="900" text-anchor="middle" font-family="'Newsreader','Georgia',serif" font-size="110" font-weight="800" fill="#ffffff" letter-spacing="2">LENSAPLUS</text>
   <rect x="${cx - 180}" y="946" width="360" height="5" fill="#b7102a" />
   <text x="${cx}" y="1028" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="40" font-weight="700" fill="#ffffff" letter-spacing="1">lensaplus.com</text>
-  <text x="${cx}" y="1108" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="30" font-weight="400" fill="#ffffff" fill-opacity="0.82">Ikuti untuk berita terkini Bandung</text>
+  <text x="${cx}" y="1108" text-anchor="middle" font-family="'Work Sans','Helvetica',sans-serif" font-size="30" font-weight="400" fill="#ffffff" fill-opacity="0.82">Ikuti untuk berita terkini Indonesia</text>
 </svg>`;
 }
 
@@ -384,18 +467,23 @@ export async function renderReelKineticFrames(input: ReelKineticInput): Promise<
   for (let si = 0; si < segments.length; si++) {
     const words = segments[si].split(/\s+/).filter(Boolean);
     if (words.length === 0) continue;
-    // Sync to the narration when available, else fall back to reading speed.
+    // Sync total word-reveal duration to narration length when present (no
+    // artificial floor that stretches fast speech out of A/V sync).
     const segDur = input.segmentDurations?.[si];
-    const wordDur = segDur && segDur > 0 ? Math.max(0.12, segDur / words.length) : baseWordDur;
-    const fadeDur = Math.min(0.09, wordDur * 0.45);
+    const wordDur = segDur && segDur > 0 ? segDur / words.length : baseWordDur;
+    const fadeDur = wordDur >= 0.06 ? Math.min(0.09, wordDur * 0.45) : 0;
     for (let k = 1; k <= words.length; k++) {
       const fullText = words.slice(0, k).join(" ");
       const newWord = words[k - 1];
-      // 1) brief frame with the new word dimmed (the fade-in)…
-      frames.push({ buffer: await composeDesc(fullText, newWord, FADE_OPACITY), durationSec: fadeDur });
-      // 2) …then the settled frame at full opacity (last word lingers extra).
-      const settled = wordDur - fadeDur + (k === words.length ? holdSec : 0);
-      frames.push({ buffer: await composeDesc(fullText), durationSec: Math.max(0.05, settled) });
+      const extraHold = k === words.length ? holdSec : 0;
+      if (fadeDur > 0) {
+        // 1) brief frame with the new word dimmed (the fade-in)…
+        frames.push({ buffer: await composeDesc(fullText, newWord, FADE_OPACITY), durationSec: fadeDur });
+        // 2) …then the settled frame at full opacity (last word lingers extra).
+        frames.push({ buffer: await composeDesc(fullText), durationSec: wordDur - fadeDur + extraHold });
+      } else {
+        frames.push({ buffer: await composeDesc(fullText), durationSec: wordDur + extraHold });
+      }
     }
   }
 

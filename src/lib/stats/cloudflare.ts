@@ -17,6 +17,7 @@ import { decryptSecret, isEncrypted, isSensitiveKey } from "@/lib/crypto-secrets
 
 const CF_GRAPHQL_URL = "https://api.cloudflare.com/client/v4/graphql";
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 100;
 
 // ---------- Types ----------
 
@@ -64,7 +65,16 @@ function getCached(key: string): CloudflareStats | null {
 }
 
 function setCached(key: string, data: CloudflareStats) {
-  cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+  const now = Date.now();
+  for (const [k, v] of cache.entries()) {
+    if (now > v.expiresAt) cache.delete(k);
+  }
+  while (cache.size >= MAX_CACHE_ENTRIES) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+  cache.set(key, { data, expiresAt: now + CACHE_TTL_MS });
 }
 
 export function clearCloudflareCache(): void {

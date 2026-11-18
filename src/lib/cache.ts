@@ -13,7 +13,21 @@ interface Entry<T> {
   expiresAt: number;
 }
 
+const MAX_CACHE_ENTRIES = 500;
 const store = new Map<string, Entry<unknown>>();
+
+function setBounded(key: string, value: unknown, expiresAt: number, now: number): void {
+  for (const [k, entry] of store.entries()) {
+    if (entry.expiresAt <= now) store.delete(k);
+  }
+  if (store.has(key)) store.delete(key);
+  while (store.size >= MAX_CACHE_ENTRIES) {
+    const oldest = store.keys().next().value;
+    if (oldest === undefined) break;
+    store.delete(oldest);
+  }
+  store.set(key, { value, expiresAt });
+}
 
 /**
  * Get a value from cache, or fetch fresh if expired/missing.
@@ -36,7 +50,7 @@ export async function getCached<T>(
     return entry.value as T;
   }
   const value = await fetcher();
-  store.set(key, { value, expiresAt: now + ttlMs });
+  setBounded(key, value, now + ttlMs, now);
   return value;
 }
 

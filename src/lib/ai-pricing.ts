@@ -25,7 +25,9 @@ const PPLX_TOKEN: Record<string, TokenRate> = {
 const PPLX_REQUEST: Record<string, { low: number; medium: number; high: number }> = {
   sonar: { low: 5, medium: 8, high: 12 },
   "sonar-pro": { low: 6, medium: 10, high: 14 },
+  "sonar-reasoning": { low: 5, medium: 8, high: 12 },
   "sonar-reasoning-pro": { low: 6, medium: 10, high: 14 },
+  "sonar-deep-research": { low: 6, medium: 10, high: 14 },
 };
 
 // Anthropic + DeepSeek token rates (USD / 1M tokens) — approximate (2026-06).
@@ -39,17 +41,22 @@ const OTHER_TOKEN: Record<string, TokenRate> = {
   "deepseek-reasoner": { input: 0.55, output: 2.19 },
 };
 
+function lookupByPrefix<T>(table: Record<string, T>, model: string): T | null {
+  if (table[model]) return table[model];
+  const stripped = model.replace(/-\d{8}$/, "");
+  if (table[stripped]) return table[stripped];
+  const sortedKeys = Object.keys(table).sort((a, b) => b.length - a.length);
+  const matchedKey = sortedKeys.find((key) => stripped.startsWith(key));
+  return matchedKey ? table[matchedKey] : null;
+}
+
 function lookupTokenRate(
   table: Record<string, TokenRate>,
   model: string,
 ): TokenRate | null {
-  if (table[model]) return table[model];
+  const direct = lookupByPrefix(table, model);
+  if (direct) return direct;
   const stripped = model.replace(/-\d{8}$/, "");
-  if (table[stripped]) return table[stripped];
-  const prefixMatch = Object.entries(table).find(([key]) =>
-    stripped.startsWith(key),
-  );
-  if (prefixMatch) return prefixMatch[1];
   if (stripped.startsWith("claude-haiku")) return table["claude-haiku-4-5"];
   if (stripped.startsWith("claude-sonnet")) return table["claude-sonnet-4-6"];
   if (stripped.startsWith("claude-opus")) return table["claude-opus-4-6"];
@@ -72,11 +79,9 @@ export function computeCostUsd(p: {
   let cost = (p.inputTokens / 1e6) * rate.input + (p.outputTokens / 1e6) * rate.output;
 
   if (isPplx) {
-    const req = PPLX_REQUEST[p.model];
-    if (req) {
-      const ctx = p.searchContext === "low" || p.searchContext === "medium" || p.searchContext === "high" ? p.searchContext : "high";
-      cost += req[ctx] / 1000; // flat per-request search fee
-    }
+    const req = lookupByPrefix(PPLX_REQUEST, p.model) ?? PPLX_REQUEST.sonar;
+    const ctx = p.searchContext === "low" || p.searchContext === "medium" || p.searchContext === "high" ? p.searchContext : "high";
+    cost += req[ctx] / 1000; // flat per-request search fee
   }
   return cost;
 }

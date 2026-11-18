@@ -183,8 +183,12 @@ function findSubListings(
     if (linkPath === currentPath) return;
     if (looksLikeArticle(linkPath)) return;
 
-    // Path must share at least the parent path with the root.
-    if (!(linkPath === rootParent || linkPath.startsWith(rootParent + "/"))) {
+    // Path must share at least the parent path with the root (avoid "//" when rootParent === "/").
+    const prefixOk =
+      rootParent === "/"
+        ? linkPath.startsWith("/")
+        : linkPath === rootParent || linkPath.startsWith(rootParent + "/");
+    if (!prefixOk) {
       return;
     }
     // Cap depth at parent-depth + 2.
@@ -235,6 +239,8 @@ export async function crawlListings(
   let firstHtmlLang: string | undefined;
   let succeededRoots = 0;
   let firstRootError: Error | null = null;
+  let cachedRootHtml: string | undefined;
+  let cachedRootFinalUrl: string | undefined;
 
   // 1. Build the paginated listing URL set (e.g. ?page=1, ?page=2, …).
   //    If paginationMax = 1 this is just [rootUrl].
@@ -257,6 +263,10 @@ export async function crawlListings(
       succeededRoots++;
       if (!firstSelectorUsed) firstSelectorUsed = r.selectorUsed;
       if (!firstHtmlLang && r.htmlLang) firstHtmlLang = r.htmlLang;
+      if (cachedRootHtml === undefined && r.rawHtml) {
+        cachedRootHtml = r.rawHtml;
+        cachedRootFinalUrl = r.finalUrl || pageUrl;
+      }
     } catch (err) {
       pagesVisited.push(pageUrl);
       if (!firstRootError) {
@@ -266,10 +276,14 @@ export async function crawlListings(
   }
 
   // 3. Only when sub-category crawling is enabled: discover sub-listing URLs
-  //    from the root page and BFS through them up to maxPages.
+  //    from the root page (reusing step 2's fetched HTML when available) and
+  //    BFS through them up to maxPages.
   if (followSubcategories && pagesVisited.length < maxPages) {
     try {
-      const { html: rootHtml, finalUrl } = await getRawHtml(rootUrl, options);
+      const { html: rootHtml, finalUrl } =
+        cachedRootHtml !== undefined
+          ? { html: cachedRootHtml, finalUrl: cachedRootFinalUrl || rootUrl }
+          : await getRawHtml(rootUrl, options);
       for (const sub of findSubListings(rootHtml, finalUrl, finalUrl)) {
         if (!visited.has(sub) && visited.size < maxPages) {
           visited.add(sub);

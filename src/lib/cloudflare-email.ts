@@ -71,7 +71,7 @@ export interface EmailRule {
 export async function listEmailRules(): Promise<EmailRule[]> {
   const { zoneId } = getConfig();
   const res = await cfEmailFetch<EmailRule[]>(
-    `/zones/${zoneId}/email/routing/rules`,
+    `/zones/${encodeURIComponent(zoneId)}/email/routing/rules`,
     {},
     "Failed to list rules",
   );
@@ -87,7 +87,7 @@ export async function createEmailForward(
   const address = `${localPart}@lensaplus.com`;
 
   return cfEmailFetch<EmailRule>(
-    `/zones/${zoneId}/email/routing/rules`,
+    `/zones/${encodeURIComponent(zoneId)}/email/routing/rules`,
     {
       method: "POST",
       body: JSON.stringify({
@@ -105,7 +105,7 @@ export async function createEmailForward(
 export async function deleteEmailRule(ruleId: string): Promise<void> {
   const { zoneId } = getConfig();
   await cfEmailFetch<unknown>(
-    `/zones/${zoneId}/email/routing/rules/${ruleId}`,
+    `/zones/${encodeURIComponent(zoneId)}/email/routing/rules/${encodeURIComponent(ruleId)}`,
     { method: "DELETE" },
     "Failed to delete rule",
   );
@@ -117,14 +117,15 @@ export async function toggleEmailRule(
   enabled: boolean,
 ): Promise<void> {
   const { zoneId } = getConfig();
+  const safeRulePath = `/zones/${encodeURIComponent(zoneId)}/email/routing/rules/${encodeURIComponent(ruleId)}`;
   const rule = await cfEmailFetch<EmailRule>(
-    `/zones/${zoneId}/email/routing/rules/${ruleId}`,
+    safeRulePath,
     {},
     "Failed to get rule",
   );
 
   await cfEmailFetch<unknown>(
-    `/zones/${zoneId}/email/routing/rules/${ruleId}`,
+    safeRulePath,
     {
       method: "PUT",
       body: JSON.stringify({
@@ -144,19 +145,26 @@ export async function addDestinationAddress(
 ): Promise<{ id: string; email: string; verified: string }> {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!accountId) throw new Error("CLOUDFLARE_ACCOUNT_ID not set");
+  const safeAccount = encodeURIComponent(accountId);
 
   const list = await cfEmailFetch<
     { id: string; email: string; verified: string }[]
   >(
-    `/accounts/${accountId}/email/routing/addresses`,
+    `/accounts/${safeAccount}/email/routing/addresses`,
     {},
     "Failed to list destinations",
-  ).catch(() => []);
+  ).catch((err) => {
+    console.warn(
+      "[cloudflare-email] Failed to list destination addresses:",
+      err instanceof Error ? err.message : String(err),
+    );
+    return [];
+  });
   const existing = list.find((a) => a.email === email);
   if (existing) return existing;
 
   return cfEmailFetch<{ id: string; email: string; verified: string }>(
-    `/accounts/${accountId}/email/routing/addresses`,
+    `/accounts/${safeAccount}/email/routing/addresses`,
     {
       method: "POST",
       body: JSON.stringify({ email }),
@@ -172,8 +180,8 @@ export async function listDestinationAddresses(): Promise<
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!accountId) return [];
   return cfEmailFetch<{ id: string; email: string; verified: string }[]>(
-    `/accounts/${accountId}/email/routing/addresses`,
+    `/accounts/${encodeURIComponent(accountId)}/email/routing/addresses`,
     {},
     "Failed to list destinations",
-  ).catch(() => []);
+  );
 }

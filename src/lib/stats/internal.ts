@@ -142,6 +142,9 @@ interface CacheEntry {
   expiresAt: number;
 }
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_ENTRIES = 100;
+const MAX_RANGE_DAYS = 366;
+const MAX_RANGE_MS = MAX_RANGE_DAYS * 24 * 60 * 60 * 1000;
 const cache = new Map<string, CacheEntry>();
 
 function cacheKey(from: Date, to: Date, authorId?: string) {
@@ -159,7 +162,16 @@ function getCached(key: string): InternalStats | null {
 }
 
 function setCached(key: string, data: InternalStats) {
-  cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+  const now = Date.now();
+  for (const [k, v] of cache.entries()) {
+    if (now > v.expiresAt) cache.delete(k);
+  }
+  while (cache.size >= MAX_CACHE_ENTRIES) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+  cache.set(key, { data, expiresAt: now + CACHE_TTL_MS });
 }
 
 /** Invalidate every cached internal-stats range. Called by `onArticlePublished` so
@@ -181,10 +193,89 @@ function ymd(d: Date) {
 }
 
 function defaultRange(opts?: InternalStatsOptions): { from: Date; to: Date } {
-  const to = opts?.to ?? new Date();
+  let to = opts?.to ?? new Date();
   // Default window: last 30 days
-  const from = opts?.from ?? new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+  let from = opts?.from ?? new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+  if (Number.isNaN(to.getTime())) to = new Date();
+  if (Number.isNaN(from.getTime())) from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+  if (from > to) {
+    const tmp = from;
+    from = to;
+    to = tmp;
+  }
+  if (to.getTime() - from.getTime() > MAX_RANGE_MS) {
+    from = new Date(to.getTime() - MAX_RANGE_MS);
+  }
   return { from, to };
+}
+
+type TrendAggRow = {
+  day: string;
+  publishedCount: bigint | number;
+  viewCount: bigint | number;
+};
+
+/**
+ * Aggregate daily published counts and view totals directly in PostgreSQL
+ * (WIB / UTC+7 calendar day) so large article histories never load into Node RAM.
+ */
+async function queryDailyTrendAgg(
+  from: Date,
+  to: Date,
+  authorId?: string,
+): Promise<TrendAggRow[]> {
+  if (typeof prisma.$queryRaw === "function") {
+    if (authorId) {
+      return prisma.$queryRaw<TrendAggRow[]>`
+        SELECT
+          TO_CHAR(DATE_TRUNC('day', "publishedAt" + INTERVAL '7 hours'), 'YYYY-MM-DD') AS day,
+          COUNT(*)::bigint AS "publishedCount",
+          COALESCE(SUM("viewCount"), 0)::bigint AS "viewCount"
+        FROM "articles"
+        WHERE "status" = 'PUBLISHED'
+          AND "authorId" = ${authorId}
+          AND "publishedAt" >= ${from}
+          AND "publishedAt" <= ${to}
+        GROUP BY 1
+        ORDER BY 1 ASC
+      `;
+    }
+    return prisma.$queryRaw<TrendAggRow[]>`
+      SELECT
+        TO_CHAR(DATE_TRUNC('day', "publishedAt" + INTERVAL '7 hours'), 'YYYY-MM-DD') AS day,
+        COUNT(*)::bigint AS "publishedCount",
+        COALESCE(SUM("viewCount"), 0)::bigint AS "viewCount"
+      FROM "articles"
+      WHERE "status" = 'PUBLISHED'
+        AND "publishedAt" >= ${from}
+        AND "publishedAt" <= ${to}
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `;
+  }
+  const rows = await prisma.article.findMany({
+    where: {
+      ...(authorId ? { authorId } : {}),
+      status: "PUBLISHED",
+      publishedAt: { gte: from, lte: to },
+    },
+    take: 10_000,
+    select: { publishedAt: true, viewCount: true },
+  });
+  const map = new Map<string, { publishedCount: number; viewCount: number }>();
+  for (const r of rows) {
+    if (!r.publishedAt) continue;
+    const k = ymd(r.publishedAt);
+    const cur = map.get(k) ?? { publishedCount: 0, viewCount: 0 };
+    cur.publishedCount += 1;
+    cur.viewCount += r.viewCount ?? 0;
+    map.set(k, cur);
+  }
+  return Array.from(map.entries()).map(([day, v]) => ({
+    day,
+    publishedCount: v.publishedCount,
+    viewCount: v.viewCount,
+  }));
 }
 
 /** Build an array of { date, publishedCount, viewCount } covering every day
@@ -193,24 +284,19 @@ function defaultRange(opts?: InternalStatsOptions): { from: Date; to: Date } {
 function buildTrendBuckets(
   from: Date,
   to: Date,
-  rows: Array<{ publishedAt: Date | null; viewCount: number }>,
+  rows: TrendAggRow[],
 ): Array<{ date: string; publishedCount: number; viewCount: number }> {
   const trendMap = new Map<string, { publishedCount: number; viewCount: number }>();
-  // Walk WIB calendar days from→to inclusive. Keys are WIB date strings, which
-  // match the per-row WIB key below, so a post made in the early WIB hours
-  // (before 07:00 = UTC midnight) lands on the correct Jakarta day.
   const cur = new Date(`${ymd(from)}T00:00:00Z`);
   const end = new Date(`${ymd(to)}T00:00:00Z`);
-  for (; cur <= end; cur.setUTCDate(cur.getUTCDate() + 1)) {
+  for (let i = 0; cur <= end && i <= MAX_RANGE_DAYS; cur.setUTCDate(cur.getUTCDate() + 1), i++) {
     trendMap.set(cur.toISOString().slice(0, 10), { publishedCount: 0, viewCount: 0 });
   }
   for (const r of rows) {
-    if (!r.publishedAt) continue;
-    const k = ymd(r.publishedAt);
-    const existing = trendMap.get(k);
+    const existing = trendMap.get(r.day);
     if (existing) {
-      existing.publishedCount += 1;
-      existing.viewCount += r.viewCount ?? 0;
+      existing.publishedCount += Number(r.publishedCount ?? 0);
+      existing.viewCount += Number(r.viewCount ?? 0);
     }
   }
   return Array.from(trendMap.entries()).map(([date, v]) => ({
@@ -251,7 +337,7 @@ async function buildAuthorScopedStats(
     prisma.article.findMany({ where: { authorId, status: "PUBLISHED" }, orderBy: { viewCount: "desc" }, take: 10, select: { slug: true, title: true, viewCount: true } }),
     prisma.article.aggregate({ _sum: { viewCount: true }, where: { authorId, status: "PUBLISHED", publishedAt: { gte: from, lte: to } } }),
     prisma.article.findMany({ where: { authorId, status: "PUBLISHED", publishedAt: { gte: from, lte: to } }, orderBy: { viewCount: "desc" }, take: 10, select: { slug: true, title: true, viewCount: true, publishedAt: true } }),
-    prisma.article.findMany({ where: { authorId, status: "PUBLISHED", publishedAt: { gte: from, lte: to } }, select: { publishedAt: true, viewCount: true } }),
+    queryDailyTrendAgg(from, to, authorId),
     prisma.comment.count({ where: { article: { authorId } } }),
     prisma.comment.count({ where: { article: { authorId }, isApproved: false } }),
     prisma.comment.count({ where: { article: { authorId }, isApproved: true } }),
@@ -425,13 +511,7 @@ export async function getInternalStats(
   ]);
 
   // ─────────────────── TREND ───────────────────
-  const trendRows = await prisma.article.findMany({
-    where: {
-      status: "PUBLISHED",
-      publishedAt: { gte: from, lte: to },
-    },
-    select: { publishedAt: true, viewCount: true },
-  });
+  const trendRows = await queryDailyTrendAgg(from, to);
   const trend = buildTrendBuckets(from, to, trendRows);
 
   // ─────────────────── COMMENTS ───────────────────
@@ -551,7 +631,7 @@ export async function getInternalStats(
   // ─────────────────── NEWSLETTER ───────────────────
   const [newsletterTotal, newsletterConfirmed, newsletterInRange] = await Promise.all([
     prisma.newsletterSubscriber.count(),
-    prisma.newsletterSubscriber.count({ where: { confirmedAt: { not: null } } }),
+    prisma.newsletterSubscriber.count({ where: { confirmedAt: { not: null }, unsubscribedAt: null } }),
     prisma.newsletterSubscriber.count({
       where: { createdAt: { gte: from, lte: to } },
     }),

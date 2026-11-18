@@ -124,7 +124,7 @@ export function pcmToWav(pcm: Buffer, sampleRate = TTS_SAMPLE_RATE, channels = 1
 }
 
 /** Decode any audio buffer (e.g. ElevenLabs MP3) to PCM s16le/24k/mono via ffmpeg. */
-function decodeToPcm(input: Buffer): Promise<Buffer> {
+function decodeToPcm(input: Buffer, timeoutMs = TIMEOUT_MS): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const bin = ffmpegStatic as unknown as string;
     if (!bin) return reject(new Error("ffmpeg binary not found"));
@@ -135,13 +135,33 @@ function decodeToPcm(input: Buffer): Promise<Buffer> {
     );
     const out: Buffer[] = [];
     let err = "";
+    let settled = false;
+
+    const finish = (e?: Error, data?: Buffer) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (e) reject(e);
+      else resolve(data ?? Buffer.alloc(0));
+    };
+
+    const timer = setTimeout(() => {
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* ignore */
+      }
+      finish(new Error(`ffmpeg decode timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
     proc.stdout.on("data", (d) => out.push(d as Buffer));
     proc.stderr.on("data", (d) => {
       err += d.toString();
+      if (err.length > 4000) err = err.slice(-4000);
     });
-    proc.on("error", reject);
+    proc.on("error", (e) => finish(e));
     proc.on("close", (code) =>
-      code === 0 ? resolve(Buffer.concat(out)) : reject(new Error(`ffmpeg decode exit ${code}: ${err.slice(-300)}`)),
+      code === 0 ? finish(undefined, Buffer.concat(out)) : finish(new Error(`ffmpeg decode exit ${code}: ${err.slice(-300)}`)),
     );
     proc.stdin.on("error", () => {}); // ignore EPIPE if ffmpeg exits early
     proc.stdin.write(input);
@@ -175,16 +195,32 @@ async function synthGemini(
       });
       if (!res.ok) {
         if ((res.status === 429 || res.status >= 500) && attempt === 0) {
+          await res.body?.cancel?.().catch(() => {});
           await new Promise((r) => setTimeout(r, 1500));
           continue;
         }
         console.warn(`[tts:gemini] HTTP ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
         return null;
       }
-      const json = (await res.json()) as { candidates?: { content?: { parts?: { inlineData?: { data?: string } }[] } }[] };
-      const b64 = (json?.candidates?.[0]?.content?.parts || []).find((p) => p?.inlineData?.data)?.inlineData?.data;
+      const json = (await res.json()) as {
+        candidates?: {
+          content?: {
+            parts?: { inlineData?: { data?: string; mimeType?: string } }[];
+          };
+        }[];
+      };
+      const inlineData = (json?.candidates?.[0]?.content?.parts || []).find((p) => p?.inlineData?.data)?.inlineData;
+      const b64 = inlineData?.data;
       if (!b64) return null;
-      const pcm = Buffer.from(b64, "base64");
+      const rawBuf = Buffer.from(b64, "base64");
+      if (rawBuf.length === 0) return null;
+
+      const mime = (inlineData?.mimeType || "").toLowerCase();
+      const isRaw24kPcm =
+        !mime ||
+        ((mime.includes("pcm") || mime.includes("l16")) &&
+          (!/rate=\d+/i.test(mime) || /rate=24000\b/i.test(mime)));
+      const pcm = isRaw24kPcm ? rawBuf : await decodeToPcm(rawBuf);
       if (pcm.length === 0) return null;
       return { pcm, durationSec: pcm.length / 2 / TTS_SAMPLE_RATE };
     } catch (err) {
@@ -227,6 +263,7 @@ async function synthElevenLabs(
       });
       if (!res.ok) {
         if ((res.status === 429 || res.status >= 500) && attempt === 0) {
+          await res.body?.cancel?.().catch(() => {});
           await new Promise((r) => setTimeout(r, 1500));
           continue;
         }

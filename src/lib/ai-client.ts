@@ -73,7 +73,7 @@ const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 const DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions";
 const DEFAULT_SYSTEM_PROMPT =
-  "Kamu adalah asisten AI untuk Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, pendidikan, kesehatan, lingkungan). Jawab dalam Bahasa Indonesia.";
+  "Kamu adalah asisten AI untuk Lensaplus — media berita digital nasional Indonesia dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, pendidikan, kesehatan, lingkungan). Jawab dalam Bahasa Indonesia.";
 
 const DEEPSEEK_STAGE1_SYSTEM =
   "Anda analis editorial redaksi Lensaplus. Dari instruksi/bahan berikut, susun kerangka analisis singkat dalam poin-poin padat: sudut pandang berita utama, fakta/angka/kutipan kunci yang harus dipertahankan, dan struktur alur penulisan. Jangan menulis draf lengkap, cukup kerangka padat dan akurat.";
@@ -260,8 +260,11 @@ async function getApiKey(provider: Provider): Promise<string | null> {
     if (setting?.value && setting.value.trim().length > 0) {
       return decryptSecret(setting.value.trim());
     }
-  } catch {
-    // DB unavailable — fall through to env fallback.
+  } catch (err) {
+    console.warn(
+      `[ai-client] Failed to read/decrypt ${settingKey}:`,
+      err instanceof Error ? err.message : String(err),
+    );
   }
 
   const envValue = process.env[envKey];
@@ -314,11 +317,16 @@ async function callAnthropic(
       }
     }
 
+    const trimmedText = text.trim();
+    if (!trimmedText) {
+      throw new Error(`Anthropic (${cfg.model}) returned empty response`);
+    }
+
     const inputTokens = response.usage?.input_tokens ?? 0;
     const outputTokens = response.usage?.output_tokens ?? 0;
 
     return {
-      text: text.trim(),
+      text: trimmedText,
       provider: "anthropic",
       model: cfg.model,
       inputTokens,
@@ -388,6 +396,9 @@ async function runDeepSeekOnce(p: {
     };
 
     const text = data.choices?.[0]?.message?.content?.trim() ?? "";
+    if (!text) {
+      throw new Error(`DeepSeek (${p.model}) returned empty response`);
+    }
     const inputTokens = data.usage?.prompt_tokens ?? 0;
     const outputTokens = data.usage?.completion_tokens ?? 0;
 
@@ -429,7 +440,7 @@ async function callDeepSeek(
     Boolean(opts.allowCombo) && cfg.comboEnabled && !skipMeta;
 
   if (shouldCombo) {
-    const stage1Max = cfg.researchModel === "deepseek-reasoner" ? 1600 : 700;
+    const stage1Max = cfg.researchModel === "deepseek-reasoner" ? 4000 : 700;
     const stage1 = await runDeepSeekOnce({
       apiKey,
       model: cfg.researchModel,

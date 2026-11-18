@@ -23,14 +23,16 @@ import {
 
 const GSC_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 100;
 
 function withTimeout<T>(p: Promise<T>, ms = 15000, label = "GSC_TIMEOUT"): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<T>((_, rej) =>
-      setTimeout(() => rej(new Error(`GA_${label}`)), ms),
-    ),
-  ]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<T>((_, rej) => {
+    timer = setTimeout(() => rej(new Error(`GA_${label}`)), ms);
+  });
+  return Promise.race([p, timeoutPromise]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 // ---------- Types ----------
@@ -88,7 +90,16 @@ function getCached(key: string): GSCStats | null {
 }
 
 function setCached(key: string, data: GSCStats) {
-  cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+  const now = Date.now();
+  for (const [k, v] of cache.entries()) {
+    if (now > v.expiresAt) cache.delete(k);
+  }
+  while (cache.size >= MAX_CACHE_ENTRIES) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+  cache.set(key, { data, expiresAt: now + CACHE_TTL_MS });
 }
 
 export function clearGSCCache(): void {

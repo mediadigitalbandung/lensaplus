@@ -25,6 +25,7 @@ export function formatDate(date: Date | string): string {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "Asia/Jakarta",
   });
 }
 
@@ -34,6 +35,7 @@ export function formatDateShort(date: Date | string): string {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Jakarta",
   });
 }
 

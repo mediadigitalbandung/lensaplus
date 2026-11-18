@@ -12,6 +12,14 @@ const escapeXml = (str: string) =>
 
 const safeCdata = (str: string) => str.replace(/\]\]>/g, "]]]]><![CDATA[>");
 
+function inferImageMimeType(url: string): string {
+  const clean = url.split(/[?#]/)[0].toLowerCase();
+  if (clean.endsWith(".png")) return "image/png";
+  if (clean.endsWith(".webp")) return "image/webp";
+  if (clean.endsWith(".gif")) return "image/gif";
+  return "image/jpeg";
+}
+
 export async function GET() {
   const siteUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
@@ -65,13 +73,15 @@ export async function GET() {
         ? new Date(a.publishedAt).toUTCString()
         : new Date().toUTCString();
       const contentEncoded = a.content || a.excerpt || "";
-      const imageAbs = a.featuredImage
-        ? a.featuredImage.startsWith("http")
-          ? a.featuredImage
-          : `${siteUrl}${a.featuredImage.startsWith("/") ? "" : "/"}${a.featuredImage}`
-        : null;
+      const rawImg = a.featuredImage?.trim();
+      const imageAbs =
+        rawImg && !/^data:/i.test(rawImg)
+          ? rawImg.startsWith("http")
+            ? rawImg
+            : `${siteUrl}${rawImg.startsWith("/") ? "" : "/"}${rawImg}`
+          : null;
       const enclosure = imageAbs
-        ? `\n      <enclosure url="${escapeXml(imageAbs)}" type="image/jpeg" />`
+        ? `\n      <enclosure url="${escapeXml(imageAbs)}" length="0" type="${inferImageMimeType(imageAbs)}" />`
         : "";
       return `    <item>
       <title>${escapeXml(a.title)}</title>
@@ -91,7 +101,7 @@ export async function GET() {
   <channel>
     <title>Lensaplus</title>
     <link>${escapeXml(siteUrl)}</link>
-    <description>Portal berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal Indonesia.</description>
+    <description>Portal berita digital nasional Indonesia — bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa Nusantara.</description>
     <language>id-ID</language>
     <copyright>Copyright ${new Date().getFullYear()} Lensaplus</copyright>
     <pubDate>${lastBuildDate}</pubDate>

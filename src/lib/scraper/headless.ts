@@ -12,7 +12,7 @@
  * unless headless mode is actually triggered.
  */
 
-import type { Browser, BrowserContext } from "playwright";
+import type { Browser, BrowserContext, Page } from "playwright";
 import { assertSafePublicUrl, userAgent as defaultUserAgent } from "./fetch";
 
 const NAV_TIMEOUT_MS = 30_000;
@@ -105,51 +105,55 @@ export async function fetchHtmlHeadless(
 
   const browser = await getBrowser();
   _activePages++;
-  const ctx: BrowserContext = await browser.newContext({
-    userAgent: options.userAgent ?? defaultUserAgent(),
-    locale: "id-ID",
-    viewport: { width: 1366, height: 900 },
-    javaScriptEnabled: true,
-    bypassCSP: true,
-  });
+  let ctx: BrowserContext | null = null;
+  let page: Page | null = null;
 
-  const verifiedHosts = new Set<string>();
-
-  // Block heavy / tracking / private-network / non-http requests
-  await ctx.route("**/*", async (route) => {
-    const req = route.request();
-    const t = req.resourceType();
-    if (t === "font" || t === "media" || t === "websocket") {
-      return route.abort();
-    }
-    const reqUrl = req.url();
-    if (/^(data|blob):/i.test(reqUrl)) {
-      return req.isNavigationRequest() ? route.abort() : route.continue();
-    }
-    if (!/^https?:\/\//i.test(reqUrl)) {
-      return route.abort();
-    }
-    if (
-      /google-analytics|googletagmanager|facebook\.net|doubleclick|hotjar|segment|matomo/i.test(
-        reqUrl,
-      )
-    ) {
-      return route.abort();
-    }
-    try {
-      const host = new URL(reqUrl).host;
-      if (!verifiedHosts.has(host)) {
-        await assertSafePublicUrl(reqUrl);
-        verifiedHosts.add(host);
-      }
-    } catch {
-      return route.abort();
-    }
-    return route.continue();
-  });
-
-  const page = await ctx.newPage();
   try {
+    ctx = await browser.newContext({
+      userAgent: options.userAgent ?? defaultUserAgent(),
+      locale: "id-ID",
+      viewport: { width: 1366, height: 900 },
+      javaScriptEnabled: true,
+      bypassCSP: true,
+    });
+
+    const verifiedHosts = new Set<string>();
+
+    // Block heavy / tracking / private-network / non-http requests
+    await ctx.route("**/*", async (route) => {
+      const req = route.request();
+      const t = req.resourceType();
+      if (t === "font" || t === "media" || t === "websocket") {
+        return route.abort().catch(() => {});
+      }
+      const reqUrl = req.url();
+      if (/^(data|blob):/i.test(reqUrl)) {
+        return (req.isNavigationRequest() ? route.abort() : route.continue()).catch(() => {});
+      }
+      if (!/^https?:\/\//i.test(reqUrl)) {
+        return route.abort().catch(() => {});
+      }
+      if (
+        /google-analytics|googletagmanager|facebook\.net|doubleclick|hotjar|segment|matomo/i.test(
+          reqUrl,
+        )
+      ) {
+        return route.abort().catch(() => {});
+      }
+      try {
+        const host = new URL(reqUrl).host;
+        if (!verifiedHosts.has(host)) {
+          await assertSafePublicUrl(reqUrl);
+          verifiedHosts.add(host);
+        }
+      } catch {
+        return route.abort().catch(() => {});
+      }
+      return route.continue().catch(() => {});
+    });
+
+    page = await ctx.newPage();
+
     // Use domcontentloaded first so sites with persistent analytics/beacons
     // never hang for 30s waiting for networkidle.
     await page.goto(url, {
@@ -174,8 +178,8 @@ export async function fetchHtmlHeadless(
     const finalUrl = page.url();
     return { html, finalUrl };
   } finally {
-    await page.close().catch(() => {});
-    await ctx.close().catch(() => {});
+    if (page) await page.close().catch(() => {});
+    if (ctx) await ctx.close().catch(() => {});
     _activePages = Math.max(0, _activePages - 1);
     scheduleIdleClose();
   }

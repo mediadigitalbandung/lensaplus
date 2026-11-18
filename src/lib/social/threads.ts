@@ -237,9 +237,15 @@ export class ThreadsPublisher {
   }
 
   /**
-   * Delete a post (Threads API does not support programmatic deletion currently; returns local deletion flag).
+   * Delete a post — Threads Graph API does not support programmatic deletion.
+   * Callers should treat this as unsupported and instruct operators to remove
+   * the post manually in the Threads app rather than assuming remote deletion succeeded.
    */
   async deletePost(externalId: string): Promise<{ success: boolean; error?: string }> {
-    return { success: true };
+    void externalId;
+    return {
+      success: false,
+      error: "Threads API does not support programmatic post deletion",
+    };
   }
 }

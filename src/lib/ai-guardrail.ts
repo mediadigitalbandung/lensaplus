@@ -133,13 +133,23 @@ function extractQuotes(text: string): string[] {
 // Presence check
 // ─────────────────────────────────────────────────────────────────
 
+function stripHtmlTags(s: string): string {
+  return s
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /**
  * Normalise a string for comparison: lowercase, collapse whitespace,
- * strip common punctuation.
+ * normalize Indonesian currency spacing (`rp 10.000` -> `rp10 000`),
+ * and strip common punctuation.
  */
 function normalise(s: string): string {
   return s
     .toLowerCase()
+    .replace(/\brp\s+(?=\d)/g, "rp")
     .replace(/[.,;:!?()\[\]{}'"]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -180,11 +190,13 @@ function quoteAppearsInSource(quote: string, source: string): boolean {
  */
 export function checkArticle(generated: string, source: string): GuardrailResult {
   const warnings: GuardrailWarning[] = [];
+  const cleanGen = stripHtmlTags(generated);
+  const cleanSrc = stripHtmlTags(source);
 
   // ── 1. Number coherence ──────────────────────────────────────
-  const genNumbers = extractNumbers(generated);
+  const genNumbers = extractNumbers(cleanGen);
   for (const num of genNumbers) {
-    if (!presentInSource(num, source)) {
+    if (!presentInSource(num, cleanSrc)) {
       warnings.push({
         type: "fabricated-number",
         detail: `Angka "${num}" di teks generated tidak ditemukan di sumber.`,
@@ -194,11 +206,11 @@ export function checkArticle(generated: string, source: string): GuardrailResult
   }
 
   // ── 2. Proper noun coherence ─────────────────────────────────
-  const genNames = extractProperNouns(generated);
+  const genNames = extractProperNouns(cleanGen);
   for (const name of genNames) {
     // Skip very common generic proper nouns that appear in boilerplate
     if (["Indonesia", "Bandung", "Jakarta", "Lensaplus"].includes(name)) continue;
-    if (!presentInSource(name, source)) {
+    if (!presentInSource(name, cleanSrc)) {
       warnings.push({
         type: "fabricated-name",
         detail: `Nama "${name}" di teks generated tidak ditemukan di sumber.`,
@@ -208,9 +220,9 @@ export function checkArticle(generated: string, source: string): GuardrailResult
   }
 
   // ── 3. Date coherence ───────────────────────────────────────
-  const genDates = extractDates(generated);
+  const genDates = extractDates(cleanGen);
   for (const date of genDates) {
-    if (!presentInSource(date, source)) {
+    if (!presentInSource(date, cleanSrc)) {
       warnings.push({
         type: "fabricated-date",
         detail: `Tanggal/periode "${date}" di teks generated tidak ditemukan di sumber.`,
@@ -220,9 +232,9 @@ export function checkArticle(generated: string, source: string): GuardrailResult
   }
 
   // ── 4. Quote check (CRITICAL) ────────────────────────────────
-  const genQuotes = extractQuotes(generated);
+  const genQuotes = extractQuotes(cleanGen);
   for (const quote of genQuotes) {
-    if (!quoteAppearsInSource(quote, source)) {
+    if (!quoteAppearsInSource(quote, cleanSrc)) {
       warnings.push({
         type: "fabricated-quote",
         detail: `Kutipan langsung "${quote.slice(0, 80)}${quote.length > 80 ? "..." : ""}" tidak ditemukan di sumber.`,

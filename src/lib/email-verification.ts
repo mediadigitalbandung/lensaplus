@@ -10,9 +10,13 @@
  * "unverified" status. (Hard-gating would lock out every pre-existing account.)
  */
 
-import { randomBytes } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
+
+function hashConsumedToken(token: string): string {
+  return `verified:${createHash("sha256").update(token).digest("hex")}`;
+}
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -51,11 +55,24 @@ export async function confirmVerificationToken(
 ): Promise<{ status: "verified" | "already" | "invalid" | "expired"; email?: string }> {
   if (!token || typeof token !== "string" || token.length < 16) return { status: "invalid" };
 
+  const consumedMarker = hashConsumedToken(token);
   const user = await prisma.user.findFirst({
-    where: { emailVerifyToken: token },
-    select: { id: true, email: true, emailVerifyExpires: true },
+    where: {
+      OR: [{ emailVerifyToken: token }, { emailVerifyToken: consumedMarker }],
+    },
+    select: {
+      id: true,
+      email: true,
+      emailVerified: true,
+      emailVerifyToken: true,
+      emailVerifyExpires: true,
+    },
   });
   if (!user) return { status: "invalid" };
+
+  if (user.emailVerified || user.emailVerifyToken === consumedMarker) {
+    return { status: "already", email: user.email };
+  }
 
   if (!user.emailVerifyExpires || user.emailVerifyExpires.getTime() < Date.now()) {
     return { status: "expired" };
@@ -63,7 +80,11 @@ export async function confirmVerificationToken(
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { emailVerified: new Date(), emailVerifyToken: null, emailVerifyExpires: null },
+    data: {
+      emailVerified: new Date(),
+      emailVerifyToken: consumedMarker,
+      emailVerifyExpires: null,
+    },
   });
   return { status: "verified", email: user.email };
 }

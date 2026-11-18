@@ -164,15 +164,15 @@ export async function exportArticlePdf(opts: ExportPdfOptions) {
   }
 
   // ═══════════════════════════════════════════
-  // PAGE HEADER — Green accent bar
+  // PAGE HEADER — Editorial Authority Navy (#002045) + Crimson (#b7102a)
   // ═══════════════════════════════════════════
-  doc.setFillColor(0, 170, 19);
+  doc.setFillColor(0, 32, 69);
   doc.rect(0, 0, pageW, 3, "F");
 
   y = 14;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(0, 170, 19);
+  doc.setTextColor(0, 32, 69);
   doc.text("LENSAPLUS", marginL, y);
 
   y += 3;
@@ -196,7 +196,7 @@ export async function exportArticlePdf(opts: ExportPdfOptions) {
   doc.text(`${opts.author}  •  ${opts.category}  •  ${opts.date}`, marginL, y);
 
   y += 5;
-  doc.setDrawColor(0, 170, 19);
+  doc.setDrawColor(183, 16, 42);
   doc.setLineWidth(0.5);
   doc.line(marginL, y, marginL + 40, y);
 
@@ -216,7 +216,7 @@ export async function exportArticlePdf(opts: ExportPdfOptions) {
     const excerptLines = doc.splitTextToSize(opts.excerpt, contentW - 10);
     const excerptH = excerptLines.length * 4.5 + 8;
     checkPage(excerptH);
-    doc.setFillColor(240, 255, 241);
+    doc.setFillColor(245, 247, 250);
     doc.roundedRect(marginL, y - 2, contentW, excerptH, 2, 2, "F");
     y += 4;
     doc.setFont("helvetica", "italic");
@@ -266,7 +266,7 @@ export async function exportArticlePdf(opts: ExportPdfOptions) {
     doc.setDrawColor(230, 230, 230);
     doc.line(marginL, y, pageW - marginR, y);
     y += 6;
-    drawText("SUMBER & NARASUMBER", marginL, contentW, 9, "bold", [0, 170, 19]);
+    drawText("SUMBER & NARASUMBER", marginL, contentW, 9, "bold", [0, 32, 69]);
     y += 2;
 
     for (const src of opts.sources) {
@@ -287,7 +287,7 @@ export async function exportArticlePdf(opts: ExportPdfOptions) {
     checkPage(10);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(0, 170, 19);
+    doc.setTextColor(0, 32, 69);
     const tagsStr = opts.tags.map((t) => `#${t}`).join("   ");
     doc.text(tagsStr, marginL, y);
     y += 4;
@@ -300,7 +300,7 @@ export async function exportArticlePdf(opts: ExportPdfOptions) {
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFillColor(0, 170, 19);
+    doc.setFillColor(0, 32, 69);
     doc.rect(0, pageH - 3, pageW, 3, "F");
   }
 

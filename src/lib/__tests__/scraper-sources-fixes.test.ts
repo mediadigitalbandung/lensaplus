@@ -685,11 +685,15 @@ describe("multi-language detection, translation & concept paraphrasing", () => {
     expect(parsedUpdate.autoScrape).toBe(true);
     expect(parsedUpdate.autoPublish).toBe(false);
 
+    const longUmkmParagraph = Array.from(
+      { length: 35 },
+      () => "Pemerintah meluncurkan program digitalisasi UMKM nasional untuk memperluas akses pasar pelaku usaha."
+    ).join(" ");
     mockCallAI.mockResolvedValueOnce({
       text: JSON.stringify({
         title: "Pemerintah Luncurkan Program Digitalisasi UMKM Nasional",
         excerpt: "Program digitalisasi UMKM resmi diluncurkan untuk memperluas akses pasar.",
-        content: "<p>Pemerintah meluncurkan program digitalisasi UMKM nasional pada pekan ini.</p>",
+        content: `<p>${longUmkmParagraph}</p>`,
         suggestedTags: ["umkm", "digitalisasi"],
       }),
       provider: "deepseek",
@@ -712,6 +716,7 @@ describe("multi-language detection, translation & concept paraphrasing", () => {
         contentHtml: "<p>Isi berita UMKM.</p>",
         wordCount: 90,
         lang: "id",
+        heroImageUrl: "https://cdn.example.id/umkm-hero.jpg",
       },
       sourceName: "Example",
       authorId: "u1",

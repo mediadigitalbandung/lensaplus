@@ -45,7 +45,7 @@ export async function GET() {
       where: {
         status: "PUBLISHED",
         publishedAt: { gte: since },
-        featuredImage: { not: null },
+        AND: [{ featuredImage: { not: null } }, { featuredImage: { not: "" } }],
       },
       select: {
         slug: true,
@@ -63,13 +63,18 @@ export async function GET() {
   }
 
   const urls = articles
-    .filter((a) => a.publishedAt)
+    .filter((a) => {
+      if (!a.publishedAt) return false;
+      const img = a.featuredImage?.trim();
+      return Boolean(img && !/^data:/i.test(img));
+    })
     .map((a) => {
       const loc = `${SITE_URL}/berita/${a.slug}`;
       const keywords = a.tags.map((t) => t.name).join(", ");
-      const img = a.featuredImage!.startsWith("http")
-        ? a.featuredImage!
-        : `${SITE_URL}${a.featuredImage!.startsWith("/") ? "" : "/"}${a.featuredImage}`;
+      const rawImg = a.featuredImage!.trim();
+      const img = rawImg.startsWith("http")
+        ? rawImg
+        : `${SITE_URL}${rawImg.startsWith("/") ? "" : "/"}${rawImg}`;
       return `  <url>
     <loc>${escapeXml(loc)}</loc>
     <news:news>

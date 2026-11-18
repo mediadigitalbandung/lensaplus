@@ -139,7 +139,7 @@ export async function sendArticleApprovedEmail(to: string, articleTitle: string,
       <a href="${escapeHtml(APP_URL)}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Lihat di Panel</a>
     </div>
   `);
-  await sendEmail(to, `Artikel Disetujui: ${articleTitle}`, html);
+  return sendEmail(to, `Artikel Disetujui: ${articleTitle}`, html);
 }
 
 export async function sendArticleRejectedEmail(to: string, articleTitle: string, reviewNote?: string) {
@@ -153,7 +153,7 @@ export async function sendArticleRejectedEmail(to: string, articleTitle: string,
       <a href="${escapeHtml(APP_URL)}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Revisi Artikel</a>
     </div>
   `);
-  await sendEmail(to, `Artikel Ditolak: ${articleTitle}`, html);
+  return sendEmail(to, `Artikel Ditolak: ${articleTitle}`, html);
 }
 
 export async function sendArticlePublishedEmail(to: string, articleTitle: string, articleSlug: string) {
@@ -165,7 +165,7 @@ export async function sendArticlePublishedEmail(to: string, articleTitle: string
       <a href="${escapeHtml(APP_URL)}/berita/${safeSlug}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Baca Artikel</a>
     </div>
   `);
-  await sendEmail(to, `Artikel Dipublikasikan: ${articleTitle}`, html);
+  return sendEmail(to, `Artikel Dipublikasikan: ${articleTitle}`, html);
 }
 
 export async function sendNewReviewEmail(to: string, articleTitle: string, authorName: string) {
@@ -177,5 +177,5 @@ export async function sendNewReviewEmail(to: string, articleTitle: string, autho
       <a href="${escapeHtml(APP_URL)}/panel/artikel" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">Review Sekarang</a>
     </div>
   `);
-  await sendEmail(to, `Review Baru: ${articleTitle}`, html);
+  return sendEmail(to, `Review Baru: ${articleTitle}`, html);
 }

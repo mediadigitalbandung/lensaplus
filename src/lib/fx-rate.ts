@@ -23,6 +23,16 @@ const AUTO_KEY = "usd_idr_rate_auto";
 const AUTO_AT_KEY = "usd_idr_rate_auto_at";
 
 let mem: { rate: number; at: number } | null = null;
+let inFlightRefresh: Promise<number | null> | null = null;
+
+function triggerRefresh(): Promise<number | null> {
+  if (!inFlightRefresh) {
+    inFlightRefresh = refresh().finally(() => {
+      inFlightRefresh = null;
+    });
+  }
+  return inFlightRefresh;
+}
 
 async function readSetting(key: string): Promise<string | null> {
   try {
@@ -77,12 +87,12 @@ export async function getUsdIdrRate(): Promise<number> {
 
   // 4) Have a value (maybe stale) → return it, refresh in background if stale.
   if (mem) {
-    if (Date.now() - mem.at >= TTL_MS) void refresh();
+    if (Date.now() - mem.at >= TTL_MS) void triggerRefresh();
     return mem.rate;
   }
 
-  // 5) Nothing yet → fetch once now.
-  return (await refresh()) ?? DEFAULT_RATE;
+  // 5) Nothing yet → fetch once now (coalesced across concurrent callers).
+  return (await triggerRefresh()) ?? DEFAULT_RATE;
 }
 
 /** True if the rate is pinned by a manual `usd_idr_rate` setting (for UI labels). */

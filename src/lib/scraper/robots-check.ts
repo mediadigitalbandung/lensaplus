@@ -28,6 +28,20 @@ interface RobotsParsed {
 
 const cache = new Map<string, { parsed: RobotsParsed | null; expires: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const MAX_ROBOTS_CACHE_ENTRIES = 500;
+
+function setRobotsCache(origin: string, parsed: RobotsParsed | null, now: number): void {
+  for (const [k, v] of cache.entries()) {
+    if (v.expires <= now) cache.delete(k);
+  }
+  if (cache.has(origin)) cache.delete(origin);
+  while (cache.size >= MAX_ROBOTS_CACHE_ENTRIES) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+  cache.set(origin, { parsed, expires: now + CACHE_TTL_MS });
+}
 
 async function fetchRobots(origin: string): Promise<RobotsParsed | null> {
   const robotsUrl = `${origin}/robots.txt`;
@@ -38,7 +52,10 @@ async function fetchRobots(origin: string): Promise<RobotsParsed | null> {
       signal: controller.signal,
       headers: { "User-Agent": userAgent() },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      await res.body?.cancel?.().catch(() => {});
+      return null;
+    }
     const text = await res.text();
     return parseRobots(text);
   } catch {
@@ -160,8 +177,9 @@ export async function isAllowedByRobots(url: string): Promise<boolean> {
   if (cached && cached.expires > Date.now()) {
     robots = cached.parsed;
   } else {
+    const now = Date.now();
     robots = await fetchRobots(origin);
-    cache.set(origin, { parsed: robots, expires: Date.now() + CACHE_TTL_MS });
+    setRobotsCache(origin, robots, now);
   }
   if (!robots) return true; // robots unreachable / malformed → allow
 

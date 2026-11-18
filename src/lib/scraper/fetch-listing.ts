@@ -401,7 +401,13 @@ function extractFromCard(
 export async function fetchListing(
   listingUrl: string,
   options: ScraperOptions = {},
-): Promise<{ items: ListingItem[]; selectorUsed: string; htmlLang?: string }> {
+): Promise<{
+  items: ListingItem[];
+  selectorUsed: string;
+  htmlLang?: string;
+  rawHtml?: string;
+  finalUrl?: string;
+}> {
   const { html, finalUrl } = options.useHeadless
     ? await fetchHtmlHeadless(listingUrl, {
         timeoutMs: options.timeoutMs,
@@ -454,7 +460,13 @@ export async function fetchListing(
     });
 
     if (rssItems.length > 0) {
-      return { items: rssItems, selectorUsed: "rss-feed", htmlLang: rssLang };
+      return {
+        items: rssItems,
+        selectorUsed: "rss-feed",
+        htmlLang: rssLang,
+        rawHtml: html,
+        finalUrl,
+      };
     }
   }
 
@@ -467,7 +479,7 @@ export async function fetchListing(
       );
     }
     const items = extractCardsFromSet($, cards, finalUrl, options);
-    return { items, selectorUsed, htmlLang };
+    return { items, selectorUsed, htmlLang, rawHtml: html, finalUrl };
   }
 
   const detected = detectCardsAndExtract($, finalUrl, options);
@@ -478,5 +490,11 @@ export async function fetchListing(
     );
   }
 
-  return { items: detected.items, selectorUsed: detected.selector, htmlLang };
+  return {
+    items: detected.items,
+    selectorUsed: detected.selector,
+    htmlLang,
+    rawHtml: html,
+    finalUrl,
+  };
 }

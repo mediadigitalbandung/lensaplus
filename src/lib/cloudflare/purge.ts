@@ -20,8 +20,11 @@ async function getCredentials(): Promise<{ token: string; zoneId: string } | nul
   if (tokenRow?.value) {
     try {
       token = decryptSecret(tokenRow.value);
-    } catch {
-      // Decryption failure — fall back to env var if set
+    } catch (err) {
+      console.warn(
+        "[cloudflare/purge] Failed to decrypt cloudflare_api_token:",
+        err instanceof Error ? err.message : String(err),
+      );
     }
   }
   const zoneId = zoneRow?.value || process.env.CLOUDFLARE_ZONE_ID;
@@ -109,20 +112,23 @@ export async function purgeEverything(): Promise<PurgeResult> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
-
-    const res = await fetch(`${CF_API}/zones/${creds.zoneId}/purge_cache`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${creds.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ purge_everything: true }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+    let res: Response;
+    try {
+      res = await fetch(`${CF_API}/zones/${creds.zoneId}/purge_cache`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${creds.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ purge_everything: true }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const json = (await res.json().catch(() => null)) as { success?: boolean; errors?: Array<{ message: string }> } | null;
-    if (!json?.success) {
+    if (!res.ok || !json?.success) {
       return { success: false, purgedCount: 0, error: json?.errors?.[0]?.message || `HTTP ${res.status}` };
     }
     return { success: true, purgedCount: -1 };
@@ -139,9 +145,11 @@ export async function purgeArticleCache(slug: string, categorySlug?: string): Pr
   const urls = [
     `${baseUrl}/`,
     `${baseUrl}/berita/${slug}`,
+    `${baseUrl}/api/og?slug=${encodeURIComponent(slug)}`,
     `${baseUrl}/berita`,
     `${baseUrl}/sitemap.xml`,
     `${baseUrl}/sitemap-news.xml`,
+    `${baseUrl}/feed.xml`,
   ];
   if (categorySlug) {
     urls.push(`${baseUrl}/kategori/${categorySlug}`);

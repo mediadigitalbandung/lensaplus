@@ -20,18 +20,27 @@ const SITE_URL =
 const SITE_NAME = "Lensaplus";
 const LOGO_URL = `${SITE_URL}/lensaplus-icon.png`;
 
-// Sister media properties under the same publisher. Listed in `sameAs` of
-// the NewsMediaOrganization so Google understands these belong to the same
-// brand entity (knowledge-graph signal, not a backlink).
-const SISTER_BRANDS: string[] = [
-  "https://jurnalishukumbandung.com",
-];
+// Sister media properties under the same publisher (configurable via env
+// `LENSAPLUS_SISTER_BRANDS`). Listed in `sameAs` of the NewsMediaOrganization
+// as a knowledge-graph entity signal.
+const SISTER_BRANDS: string[] = (() => {
+  const raw = process.env.LENSAPLUS_SISTER_BRANDS;
+  if (raw !== undefined) {
+    return raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => /^https?:\/\//i.test(s));
+  }
+  return ["https://jurnalishukumbandung.com"];
+})();
 
 // Publisher identity/contact for Organization structured data.
 // City/region/country/email are already public on the site, so they're inlined.
 // Sensitive specifics (legal entity, street, postal code, phone, founding year)
 // come from env and render ONLY when the operator sets them — never fabricated.
 const PUBLISHER_EMAIL = "redaksi@lensaplus.com";
+const PUBLISHER_LOCALITY = process.env.NEXT_PUBLIC_PUBLISHER_LOCALITY || "Bandung";
+const PUBLISHER_REGION = process.env.NEXT_PUBLIC_PUBLISHER_REGION || "Jawa Barat";
 const PUBLISHER_PHONE = process.env.NEXT_PUBLIC_PUBLISHER_PHONE || "";
 const PUBLISHER_STREET = process.env.NEXT_PUBLIC_PUBLISHER_STREET || "";
 const PUBLISHER_POSTAL = process.env.NEXT_PUBLIC_PUBLISHER_POSTAL || "";
@@ -42,8 +51,8 @@ function publisherAddress(): Record<string, unknown> {
   return {
     "@type": "PostalAddress",
     ...(PUBLISHER_STREET && { streetAddress: PUBLISHER_STREET }),
-    addressLocality: "Bandung",
-    addressRegion: "Jawa Barat",
+    addressLocality: PUBLISHER_LOCALITY,
+    addressRegion: PUBLISHER_REGION,
     ...(PUBLISHER_POSTAL && { postalCode: PUBLISHER_POSTAL }),
     addressCountry: "ID",
   };
@@ -113,14 +122,19 @@ function clampHeadline(title: string): string {
 
 function iso(value: Date | string | null | undefined): string | undefined {
   if (!value) return undefined;
-  if (value instanceof Date) return value.toISOString();
-  return new Date(value).toISOString();
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
 }
 
 function absoluteUrl(pathOrUrl: string | null | undefined): string | undefined {
   if (!pathOrUrl) return undefined;
-  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-  return `${SITE_URL}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
+  const trimmed = pathOrUrl.trim();
+  if (!trimmed) return undefined;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return undefined;
+  return `${SITE_URL}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
 }
 
 function countWords(text: string | undefined): number | undefined {

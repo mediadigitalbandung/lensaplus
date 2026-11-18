@@ -4,10 +4,39 @@
  * is properly formatted (PEM with real newlines), then attempt one
  * publish to capture the verbatim error.
  */
+const crypto = require("crypto");
 const { PrismaClient } = require("@prisma/client");
 const { google } = require("googleapis");
 
 const prisma = new PrismaClient();
+
+function decryptStoredSecret(stored) {
+  if (!stored || !stored.startsWith("v1:")) return stored;
+  const rawKey = process.env.SETTINGS_ENCRYPTION_KEY;
+  if (!rawKey) {
+    throw new Error("SETTINGS_ENCRYPTION_KEY is required to decrypt v1: SystemSetting values");
+  }
+  const key = Buffer.from(rawKey, "base64");
+  if (key.length !== 32) {
+    throw new Error(`SETTINGS_ENCRYPTION_KEY must decode to 32 bytes (got ${key.length})`);
+  }
+  const parts = stored.split(":");
+  if (parts.length !== 4) {
+    throw new Error("Malformed encrypted v1: value (expected 4 segments)");
+  }
+  const [, ivB64, ctB64, tagB64] = parts;
+  const decipher = crypto.createDecipheriv(
+    "aes-256-gcm",
+    key,
+    Buffer.from(ivB64, "base64"),
+    { authTagLength: 16 },
+  );
+  decipher.setAuthTag(Buffer.from(tagB64, "base64"));
+  return Buffer.concat([
+    decipher.update(Buffer.from(ctB64, "base64")),
+    decipher.final(),
+  ]).toString("utf8");
+}
 
 (async () => {
   const cred = await prisma.systemSetting.findUnique({
@@ -20,9 +49,10 @@ const prisma = new PrismaClient();
 
   let json;
   try {
-    json = JSON.parse(cred.value);
+    const raw = decryptStoredSecret(cred.value.trim());
+    json = JSON.parse(raw);
   } catch (e) {
-    console.log("CREDENTIALS NOT VALID JSON:", e.message);
+    console.log("CREDENTIALS DECRYPT/PARSE ERROR:", e.message);
     process.exit(1);
   }
 

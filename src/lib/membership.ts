@@ -41,16 +41,27 @@ export function checkCompleteness(user: UserLike): CompletenessResult {
 }
 
 /**
- * Generate a unique press-card number: KW-YYYY-NNNN (per-year sequence).
- * Retries on the rare unique collision under concurrency.
+ * Generate a unique press-card number: LP-YYYY-NNNN (per-year sequence).
+ * Reads existing max 4-digit suffix to avoid collisions when rows have gaps,
+ * and retries on unique clashes under concurrency.
  */
 export async function generateCardNumber(year = new Date().getFullYear()): Promise<string> {
-  const prefix = `KW-${year}-`;
+  const prefix = `LP-${year}-`;
+  const existing = await prisma.membershipCard.findMany({
+    where: { number: { startsWith: prefix } },
+    select: { number: true },
+  });
+  let maxSeq = 0;
+  const seqRe = new RegExp(`^LP-${year}-(\\d{4})$`);
+  for (const row of existing) {
+    const m = row.number.match(seqRe);
+    if (m) {
+      const n = Number.parseInt(m[1], 10);
+      if (n > maxSeq) maxSeq = n;
+    }
+  }
   for (let attempt = 0; attempt < 5; attempt++) {
-    const count = await prisma.membershipCard.count({
-      where: { number: { startsWith: prefix } },
-    });
-    const candidate = `${prefix}${String(count + 1 + attempt).padStart(4, "0")}`;
+    const candidate = `${prefix}${String(maxSeq + 1 + attempt).padStart(4, "0")}`;
     const clash = await prisma.membershipCard.findUnique({ where: { number: candidate } });
     if (!clash) return candidate;
   }
@@ -58,9 +69,14 @@ export async function generateCardNumber(year = new Date().getFullYear()): Promi
   return `${prefix}${Date.now().toString().slice(-5)}`;
 }
 
+function isUniqueConstraintError(err: unknown): boolean {
+  return Boolean(err && typeof err === "object" && (err as { code?: string }).code === "P2002");
+}
+
 /**
  * Ensure a user has a membership card row. Creates a DRAFT card (with a fresh
  * number) if none exists. Idempotent + safe to call on every user create.
+ * Retries on P2002 card-number collisions under concurrency.
  * Never throws — returns null on failure so user creation isn't blocked.
  */
 export async function ensureMembershipCard(userId: string): Promise<{ id: string; number: string } | null> {
@@ -70,12 +86,26 @@ export async function ensureMembershipCard(userId: string): Promise<{ id: string
       select: { id: true, number: true },
     });
     if (existing) return existing;
-    const number = await generateCardNumber();
-    const card = await prisma.membershipCard.create({
-      data: { userId, number, status: "DRAFT" },
-      select: { id: true, number: true },
-    });
-    return card;
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const number = await generateCardNumber();
+      try {
+        const card = await prisma.membershipCard.create({
+          data: { userId, number, status: "DRAFT" },
+          select: { id: true, number: true },
+        });
+        return card;
+      } catch (err) {
+        if (!isUniqueConstraintError(err)) throw err;
+        // Another concurrent call may have created the card for this userId.
+        const nowExisting = await prisma.membershipCard.findUnique({
+          where: { userId },
+          select: { id: true, number: true },
+        });
+        if (nowExisting) return nowExisting;
+      }
+    }
+    return null;
   } catch (err) {
     console.error("[membership] ensureMembershipCard failed", err);
     return null;

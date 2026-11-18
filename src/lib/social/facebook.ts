@@ -88,6 +88,7 @@ async function graphRequest<T>(url: string, init: RequestInit): Promise<T> {
 
 export interface PreparedFacebookPost extends PreparedPost {
   linkUrl?: string;
+  articleSlug?: string;
 }
 
 export class FacebookPublisher {
@@ -220,23 +221,29 @@ export class FacebookPublisher {
       return this.publishStory(post);
     }
 
+    const resolvedLinkUrl =
+      post.linkUrl ||
+      (post.articleSlug
+        ? `${SITE_URL.replace(/\/+$/, "")}/berita/${post.articleSlug}`
+        : undefined);
+
     if (this.config.postMode === "link") {
-      const linkUrl =
-        post.linkUrl ||
-        `${SITE_URL.replace(/\/+$/, "")}/berita/${post.articleId}`;
-      return this.publishLinkShare({ ...post, linkUrl });
+      if (!resolvedLinkUrl) {
+        return { success: false, error: "Facebook link post requires linkUrl or articleSlug" };
+      }
+      return this.publishLinkShare({ ...post, linkUrl: resolvedLinkUrl });
     }
     if (this.config.postMode === "photo") {
       return this.publishPhoto(post);
     }
 
     // both mode: Publish both a link share and a photo post
-    const linkUrl =
-      post.linkUrl ||
-      `${SITE_URL.replace(/\/+$/, "")}/berita/${post.articleId}`;
+    if (!resolvedLinkUrl) {
+      return this.publishPhoto(post);
+    }
 
     const [resLink, resPhoto] = await Promise.allSettled([
-      this.publishLinkShare({ ...post, linkUrl }),
+      this.publishLinkShare({ ...post, linkUrl: resolvedLinkUrl }),
       this.publishPhoto(post),
     ]);
 

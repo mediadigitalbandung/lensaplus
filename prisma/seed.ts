@@ -26,7 +26,7 @@ async function main() {
   ];
 
   for (const cat of categories) {
-    await prisma.categories.upsert({
+    await prisma.category.upsert({
       where: { slug: cat.slug },
       update: {},
       create: { id: genId(), ...cat },
@@ -34,8 +34,9 @@ async function main() {
   }
 
   // Create super admin
-  const hashedPassword = await bcrypt.hash("admin1234", 12);
-  await prisma.users.upsert({
+  const adminRawPass = process.env.SEED_ADMIN_PASSWORD || "admin1234";
+  const hashedPassword = await bcrypt.hash(adminRawPass, 12);
+  await prisma.user.upsert({
     where: { email: "admin@lensaplus.com" },
     update: {},
     create: {
@@ -49,8 +50,9 @@ async function main() {
   });
 
   // Create demo editor
-  const editorPassword = await bcrypt.hash("Editor@2026!", 12);
-  await prisma.users.upsert({
+  const editorRawPass = process.env.SEED_EDITOR_PASSWORD || "Editor@2026!";
+  const editorPassword = await bcrypt.hash(editorRawPass, 12);
+  await prisma.user.upsert({
     where: { email: "editor@lensaplus.com" },
     update: {},
     create: {

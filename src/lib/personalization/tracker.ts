@@ -1,6 +1,7 @@
 "use client";
 
-const COOKIE_NAME = "kw_reading";
+const COOKIE_NAME = "lp_reading";
+const LEGACY_COOKIE_NAME = "kw_reading";
 const MAX_ENTRIES = 30;
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
 
@@ -10,15 +11,27 @@ export interface ReadEntry {
   t: number; // timestamp (ms epoch)
 }
 
+function readCookieValue(name: string): string | null {
+  const parts = document.cookie.split(";");
+  for (const part of parts) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() === name) {
+      return part.slice(eq + 1).trim();
+    }
+  }
+  return null;
+}
+
 /**
  * Read history dari cookie. Empty array kalau belum ada.
  */
 export function getReadHistory(): ReadEntry[] {
   if (typeof document === "undefined") return [];
-  const match = document.cookie.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
-  if (!match) return [];
+  const raw = readCookieValue(COOKIE_NAME) ?? readCookieValue(LEGACY_COOKIE_NAME);
+  if (!raw) return [];
   try {
-    const decoded = decodeURIComponent(match[1]);
+    const decoded = decodeURIComponent(raw);
     const parsed = JSON.parse(decoded);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -39,9 +52,12 @@ export function trackRead(slug: string, categorySlug: string): void {
   filtered.unshift({ s: slug, c: categorySlug, t: Date.now() });
   // Cap
   const capped = filtered.slice(0, MAX_ENTRIES);
-  // Save back to cookie
+  // Save back to cookie and clear legacy cookie if present
   const encoded = encodeURIComponent(JSON.stringify(capped));
   document.cookie = `${COOKIE_NAME}=${encoded}; max-age=${COOKIE_MAX_AGE}; path=/; samesite=lax`;
+  if (readCookieValue(LEGACY_COOKIE_NAME) !== null) {
+    document.cookie = `${LEGACY_COOKIE_NAME}=; max-age=0; path=/; samesite=lax`;
+  }
 }
 
 /**

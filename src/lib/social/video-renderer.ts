@@ -84,21 +84,42 @@ function withRenderLock<T>(fn: () => Promise<T>): Promise<T> {
   return result;
 }
 
-function runFfmpeg(args: string[]): Promise<void> {
+const FFMPEG_TIMEOUT_MS = 180_000;
+
+function runFfmpeg(args: string[], timeoutMs = FFMPEG_TIMEOUT_MS): Promise<void> {
   const bin = resolveFfmpegPath();
   return new Promise((resolve, reject) => {
     const proc = spawn(bin, args, { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
+    let settled = false;
+
+    const finish = (err?: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (err) reject(err);
+      else resolve();
+    };
+
+    const timer = setTimeout(() => {
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* ignore */
+      }
+      finish(new Error(`ffmpeg timed out after ${timeoutMs}ms: ${stderr.slice(-500)}`));
+    }, timeoutMs);
+
     proc.stderr.on("data", (d) => {
       stderr += d.toString();
       if (stderr.length > 8000) stderr = stderr.slice(-8000);
     });
     proc.on("error", (err) =>
-      reject(new Error(`Failed to spawn ffmpeg: ${err instanceof Error ? err.message : String(err)}`)),
+      finish(new Error(`Failed to spawn ffmpeg: ${err instanceof Error ? err.message : String(err)}`)),
     );
     proc.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`ffmpeg exited with code ${code}: ${stderr.slice(-1500)}`));
+      if (code === 0) finish();
+      else finish(new Error(`ffmpeg exited with code ${code}: ${stderr.slice(-1500)}`));
     });
   });
 }
@@ -154,30 +175,6 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   const mp4Path = path.join(SOCIAL_REELS_DIR, mp4Filename);
   const coverPath = path.join(SOCIAL_REELS_DIR, coverFilename);
   const workDir = path.join(os.tmpdir(), `reel-${id}`);
-  await fs.mkdir(workDir, { recursive: true });
-
-  // Cover = the first frame.
-  await sharp(frames[0].buffer).jpeg({ quality: 88 }).toFile(coverPath);
-
-  // Write each frame + a concat list with per-frame durations. The concat
-  // demuxer ignores the LAST entry's duration unless the file is repeated, so
-  // we append the final frame once more.
-  const listLines: string[] = [];
-  let lastPath = "";
-  for (let i = 0; i < frames.length; i++) {
-    const fp = path.join(workDir, `f${String(i).padStart(4, "0")}.jpg`);
-    await fs.writeFile(fp, frames[i].buffer);
-    lastPath = fp.replace(/\\/g, "/");
-    listLines.push(`file '${lastPath}'`);
-    listLines.push(`duration ${Math.max(0.05, frames[i].durationSec || 0).toFixed(3)}`);
-  }
-  listLines.push(`file '${lastPath}'`);
-  const listPath = path.join(workDir, "list.txt");
-  await fs.writeFile(listPath, listLines.join("\n"));
-
-  const voicePath = opts.voiceWav && opts.voiceWav.length > 44 ? path.join(workDir, "voice.wav") : null;
-  if (voicePath) await fs.writeFile(voicePath, opts.voiceWav as Buffer);
-  const hasBgm = !!(opts.bgmPath && existsSync(opts.bgmPath));
 
   // Video fades: ONE fade-in at the very start (over the opening) and ONE
   // fade-out at the very end (over the closing). NOTE: `fade=t=in:st=X` forces
@@ -196,34 +193,59 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
   const bgmFadeOutDur = Math.min(2.5, Math.max(0.6, C || 1.5));
   const bgmFadeOutStart = Math.max(0, totalSec - bgmFadeOutDur).toFixed(2);
 
-  // Audio inputs follow the concat video (input 0). Four cases: voice + BGM
-  // (BGM ducked under the narration & mixed), voice only, BGM only, or silent.
-  const audioInputs: string[] = [];
-  let audioFilter = "";
-  let audioMap = "";
-  if (voicePath && hasBgm) {
-    // Voice at full volume; BGM ducked LOW under it, with fade in/out. normalize=0
-    // sums without auto-attenuating the voice (safe since BGM is quiet).
-    const duckVol = Math.min(bgmVolume, 0.1);
-    audioInputs.push("-i", voicePath, "-stream_loop", "-1", "-i", opts.bgmPath as string);
-    audioFilter =
-      `;[1:a]aresample=44100,volume=1[av]` +
-      `;[2:a]aresample=44100,volume=${duckVol},afade=t=in:st=0:d=${bgmFadeIn.toFixed(2)},afade=t=out:st=${bgmFadeOutStart}:d=${bgmFadeOutDur.toFixed(2)}[ab]` +
-      `;[av][ab]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]`;
-    audioMap = "[a]";
-  } else if (voicePath) {
-    audioInputs.push("-i", voicePath);
-    audioMap = "1:a";
-  } else if (hasBgm) {
-    audioInputs.push("-stream_loop", "-1", "-i", opts.bgmPath as string);
-    audioFilter = `;[1:a]volume=${bgmVolume},afade=t=in:st=0:d=${bgmFadeIn.toFixed(2)},afade=t=out:st=${bgmFadeOutStart}:d=${bgmFadeOutDur.toFixed(2)}[a]`;
-    audioMap = "[a]";
-  } else {
-    audioInputs.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100");
-    audioMap = "1:a";
-  }
-
   try {
+    await fs.mkdir(workDir, { recursive: true });
+
+    // Cover = the first frame.
+    await sharp(frames[0].buffer).jpeg({ quality: 88 }).toFile(coverPath);
+
+    // Write each frame + a concat list with per-frame durations. The concat
+    // demuxer ignores the LAST entry's duration unless the file is repeated, so
+    // we append the final frame once more.
+    const listLines: string[] = [];
+    let lastPath = "";
+    for (let i = 0; i < frames.length; i++) {
+      const fp = path.join(workDir, `f${String(i).padStart(4, "0")}.jpg`);
+      await fs.writeFile(fp, frames[i].buffer);
+      lastPath = fp.replace(/\\/g, "/");
+      listLines.push(`file '${lastPath}'`);
+      listLines.push(`duration ${Math.max(0.05, frames[i].durationSec || 0).toFixed(3)}`);
+    }
+    listLines.push(`file '${lastPath}'`);
+    const listPath = path.join(workDir, "list.txt");
+    await fs.writeFile(listPath, listLines.join("\n"));
+
+    const voicePath = opts.voiceWav && opts.voiceWav.length > 44 ? path.join(workDir, "voice.wav") : null;
+    if (voicePath) await fs.writeFile(voicePath, opts.voiceWav as Buffer);
+    const hasBgm = !!(opts.bgmPath && existsSync(opts.bgmPath));
+
+    // Audio inputs follow the concat video (input 0). Four cases: voice + BGM
+    // (BGM ducked under the narration & mixed), voice only, BGM only, or silent.
+    const audioInputs: string[] = [];
+    let audioFilter = "";
+    let audioMap = "";
+    if (voicePath && hasBgm) {
+      // Voice at full volume; BGM ducked LOW under it, with fade in/out. normalize=0
+      // sums without auto-attenuating the voice (safe since BGM is quiet).
+      const duckVol = Math.min(bgmVolume, 0.1);
+      audioInputs.push("-i", voicePath, "-stream_loop", "-1", "-i", opts.bgmPath as string);
+      audioFilter =
+        `;[1:a]aresample=44100,volume=1[av]` +
+        `;[2:a]aresample=44100,volume=${duckVol},afade=t=in:st=0:d=${bgmFadeIn.toFixed(2)},afade=t=out:st=${bgmFadeOutStart}:d=${bgmFadeOutDur.toFixed(2)}[ab]` +
+        `;[av][ab]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]`;
+      audioMap = "[a]";
+    } else if (voicePath) {
+      audioInputs.push("-i", voicePath);
+      audioMap = "1:a";
+    } else if (hasBgm) {
+      audioInputs.push("-stream_loop", "-1", "-i", opts.bgmPath as string);
+      audioFilter = `;[1:a]volume=${bgmVolume},afade=t=in:st=0:d=${bgmFadeIn.toFixed(2)},afade=t=out:st=${bgmFadeOutStart}:d=${bgmFadeOutDur.toFixed(2)}[a]`;
+      audioMap = "[a]";
+    } else {
+      audioInputs.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100");
+      audioMap = "1:a";
+    }
+
     await withRenderLock(async () => {
       const args = [
         "-y",
@@ -236,6 +258,10 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
       ];
       await runFfmpeg(args);
     });
+  } catch (err) {
+    await fs.unlink(coverPath).catch(() => {});
+    await fs.unlink(mp4Path).catch(() => {});
+    throw err;
   } finally {
     await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
   }

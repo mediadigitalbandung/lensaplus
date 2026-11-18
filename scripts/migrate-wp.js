@@ -9,17 +9,17 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const SQL_FILE = path.join(__dirname, "..", "db", "afhntwic_wp317.sql");
 
-// Map WP categories to our Prisma categories
+// Map WP categories to active Prisma categories (seeded in prisma/seed.ts & seed.sql)
 const WP_CATEGORY_MAP = {
-  1: "berita-bandung",     // Mancanegara → mapped to closest
-  6: "berita-bandung",     // Daerah
-  7: "hukum-tata-negara",  // Nasional
-  8: "hukum-pidana",       // Hukrim
-  9: "opini",              // Opini
-  10: "berita-bandung",    // Peristiwa
-  11: "berita-bandung",    // Olahraga
-  12: "hukum-bisnis",      // Tekno
-  13: "berita-bandung",    // Otomotif
+  1: "politik",        // Mancanegara → mapped to closest
+  6: "politik",        // Daerah
+  7: "politik",        // Nasional
+  8: "hukum",          // Hukrim
+  9: "opini",          // Opini
+  10: "hukum",         // Peristiwa
+  11: "olahraga",      // Olahraga
+  12: "teknologi",     // Tekno
+  13: "bisnis-ekonomi",// Otomotif
 };
 
 function cleanWpContent(content) {
@@ -237,7 +237,8 @@ async function main() {
   console.log(`  Found ${existingCats.length} categories in DB`);
 
   // Default category fallback
-  const defaultCatId = categoryMap["berita-bandung"] || existingCats[0]?.id;
+  const defaultCatId =
+    categoryMap["hukum"] || categoryMap["politik"] || existingCats[0]?.id;
 
   // Delete existing sample article
   await prisma.article.deleteMany({

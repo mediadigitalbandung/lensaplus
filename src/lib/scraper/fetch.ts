@@ -15,6 +15,7 @@ const DEFAULT_USER_AGENT =
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 const MAX_REDIRECTS = 5;
+const MAX_HTML_BYTES = 5 * 1024 * 1024; // 5MB cap for scraped HTML/XML documents
 
 function stripHostDecorations(host: string): string {
   let clean = host.trim().toLowerCase();
@@ -163,7 +164,15 @@ export async function assertSafePublicUrl(url: string): Promise<URL> {
   const cleanHost = stripHostDecorations(parsed.hostname);
   if (net.isIP(cleanHost) === 0) {
     // Resolve hostname to detect DNS records pointing at loopback/RFC1918/metadata IPs
-    const records = await dns.lookup(cleanHost, { all: true }).catch(() => []);
+    let records: Array<{ address: string }>;
+    try {
+      records = await dns.lookup(cleanHost, { all: true });
+    } catch {
+      throw new Error(`SSRF_BLOCKED: DNS lookup failed for ${cleanHost}`);
+    }
+    if (records.length === 0) {
+      throw new Error(`SSRF_BLOCKED: host ${cleanHost} resolved to no addresses`);
+    }
     for (const r of records) {
       if (isPrivateIp(r.address)) {
         throw new Error(`SSRF_BLOCKED: host ${cleanHost} resolved to private IP ${r.address}`);
@@ -193,12 +202,54 @@ export async function safePublicFetch(
     if (response.status >= 300 && response.status < 400) {
       const loc = response.headers?.get?.("location");
       if (!loc) return { response, finalUrl: currentUrl };
+      await response.body?.cancel?.().catch(() => {});
       currentUrl = new URL(loc, currentUrl).toString();
       continue;
     }
     return { response, finalUrl: response.url || currentUrl };
   }
   throw new Error("SSRF_BLOCKED: too many redirects");
+}
+
+async function readHtmlBodyWithCap(response: Response, maxBytes: number): Promise<string> {
+  const lenHeader = response.headers.get("content-length");
+  if (lenHeader) {
+    const declared = Number.parseInt(lenHeader, 10);
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      await response.body?.cancel?.().catch(() => {});
+      throw new Error(`Response body too large: ${declared} bytes (cap ${maxBytes})`);
+    }
+  }
+
+  const reader = response.body?.getReader?.();
+  if (!reader) {
+    const text = await response.text();
+    if (Buffer.byteLength(text, "utf8") > maxBytes) {
+      throw new Error(`Response body exceeded ${maxBytes} bytes`);
+    }
+    return text;
+  }
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) {
+        total += value.length;
+        if (total > maxBytes) {
+          await reader.cancel().catch(() => {});
+          throw new Error(`Response body exceeded ${maxBytes} bytes`);
+        }
+        chunks.push(value);
+      }
+    }
+  } catch (err) {
+    await reader.cancel().catch(() => {});
+    throw err;
+  }
+  return Buffer.concat(chunks, total).toString("utf8");
 }
 
 export interface FetchHtmlOptions {
@@ -231,13 +282,15 @@ export async function fetchHtml(
       },
     });
     if (!response.ok) {
+      await response.body?.cancel?.().catch(() => {});
       throw new Error(`HTTP ${response.status} ${response.statusText}`);
     }
     const contentType = response.headers.get("content-type") || "";
     if (contentType && !/html|xml|xhtml|text\/plain/i.test(contentType)) {
+      await response.body?.cancel?.().catch(() => {});
       throw new Error(`Unexpected content-type: ${contentType}`);
     }
-    const html = await response.text();
+    const html = await readHtmlBodyWithCap(response, MAX_HTML_BYTES);
     return {
       html,
       finalUrl,

@@ -105,21 +105,23 @@ export async function GET() {
     tagUrls = tags.map((t) =>
       url(`${SITE_URL}/tag/${t.slug}`, now, "daily", 0.5),
     );
-    authorUrls = authors.map((u) =>
-      url(`${SITE_URL}/penulis/${slugify(u.name)}`, now, "weekly", 0.4),
+    const authorSlugs = Array.from(
+      new Set(authors.map((u) => slugify(u.name)).filter(Boolean)),
+    );
+    authorUrls = authorSlugs.map((slug) =>
+      url(`${SITE_URL}/penulis/${slug}`, now, "weekly", 0.4),
     );
 
     try {
-      // biome-ignore lint: prisma cast until Topic model is in generated client
-      const topics = await (prisma as any).topic.findMany({
+      const topics = await prisma.topic.findMany({
         where: { isPublished: true },
         select: { slug: true, updatedAt: true },
-      }) as { slug: string; updatedAt: Date }[];
+      });
       topicUrls = topics.map((t) =>
         url(`${SITE_URL}/topik/${t.slug}`, t.updatedAt, "weekly", 0.7),
       );
     } catch {
-      // Topic model may not be available — skip silently
+      // Topic query unavailable — skip gracefully
     }
   } catch (err) {
     dbFailed = true;

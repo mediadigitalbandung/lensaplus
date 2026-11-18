@@ -213,13 +213,15 @@ export async function onArticlePublished(
     ...(categorySlug ? [`${SITE_URL}/kategori/${categorySlug}`] : []),
   ];
 
-  // URLs to purge from Cloudflare — article, homepage, berita list, sitemaps, category
+  // URLs to purge from Cloudflare — article, OG card, homepage, berita list, sitemaps, category
   const purgeUrls = [
     url,
+    `${SITE_URL}/api/og?slug=${encodeURIComponent(slug)}`,
     `${SITE_URL}/`,
     `${SITE_URL}/berita`,
     `${SITE_URL}/sitemap.xml`,
     `${SITE_URL}/sitemap-news.xml`,
+    `${SITE_URL}/feed.xml`,
     ...(categorySlug ? [`${SITE_URL}/kategori/${categorySlug}`] : []),
   ];
 
@@ -361,6 +363,7 @@ export async function onArticleUnpublished(params: {
   try {
     invalidateCachePrefix("home:");
     invalidateCachePrefix("trending:");
+    invalidateInternalStatsCache();
   } catch {
     /* swallow */
   }
@@ -368,10 +371,12 @@ export async function onArticleUnpublished(params: {
   // URLs to purge from Cloudflare
   const purgeUrls = [
     url,
+    `${SITE_URL}/api/og?slug=${encodeURIComponent(slug)}`,
     `${SITE_URL}/`,
     `${SITE_URL}/berita`,
     `${SITE_URL}/sitemap.xml`,
     `${SITE_URL}/sitemap-news.xml`,
+    `${SITE_URL}/feed.xml`,
     ...(categorySlug ? [`${SITE_URL}/kategori/${categorySlug}`] : []),
   ];
 
