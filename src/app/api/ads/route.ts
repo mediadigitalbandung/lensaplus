@@ -3,9 +3,20 @@ export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { successResponse, errorResponse, requireRole, logAudit, getSession, isSafeHttpUrl } from "@/lib/api-utils";
+import { ApiError, successResponse, errorResponse, requireRole, logAudit, getSession, isSafeHttpUrl } from "@/lib/api-utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { isSafeImageRef } from "@/lib/safe-path";
+import { guardPublicRead } from "@/lib/rate-limit";
+
+const VALID_AD_SLOTS = new Set([
+  "HEADER",
+  "SIDEBAR",
+  "IN_ARTICLE",
+  "FOOTER",
+  "BETWEEN_SECTIONS",
+  "POPUP",
+  "FLOATING_BOTTOM",
+]);
 
 // GET /api/ads — public: get active ads; admin: get all
 export async function GET(request: NextRequest) {
@@ -15,8 +26,14 @@ export async function GET(request: NextRequest) {
     const slot = searchParams.get("slot");
 
     const isAdmin =
-      session?.user?.role === "SUPER_ADMIN" ||
-      session?.user?.role === "CHIEF_EDITOR";
+      !session?.sessionInvalid &&
+      (session?.user?.role === "SUPER_ADMIN" ||
+        session?.user?.role === "CHIEF_EDITOR");
+
+    if (!isAdmin) {
+      const blocked = guardPublicRead(request);
+      if (blocked) return blocked;
+    }
 
     const now = new Date();
 
@@ -29,6 +46,9 @@ export async function GET(request: NextRequest) {
         };
 
     if (slot) {
+      if (!VALID_AD_SLOTS.has(slot)) {
+        throw new ApiError("Slot iklan tidak valid", 400);
+      }
       where.slot = slot;
     }
 

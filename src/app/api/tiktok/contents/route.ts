@@ -14,7 +14,20 @@ import {
   TIKTOK_TITLE_MAX,
   canManageTiktok,
   normalizeHashtags,
+  ownsTiktok,
 } from "@/lib/tiktok/specs";
+
+const VALID_TIKTOK_STATUSES = new Set([
+  "DRAFT",
+  "READY",
+  "RENDERING",
+  "RENDER_FAILED",
+  "SCHEDULED",
+  "PUBLISHING",
+  "PUBLISHED",
+  "PUBLISH_FAILED",
+  "ARCHIVED",
+]);
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +57,12 @@ export async function GET(request: NextRequest) {
     const limit = parsePositiveInt(searchParams.get("limit"), 20, 100);
 
     const where: Record<string, unknown> = {};
-    if (status) where.status = status;
+    if (status) {
+      if (!VALID_TIKTOK_STATUSES.has(status)) {
+        throw new ApiError("Status konten TikTok tidak valid", 400);
+      }
+      where.status = status;
+    }
     if (accountId) where.accountId = accountId;
     if (search) {
       where.OR = [
@@ -92,7 +110,19 @@ export async function POST(request: NextRequest) {
 
     if (data.accountId) {
       const acct = await prisma.tiktokAccount.findUnique({ where: { id: data.accountId } });
-      if (!acct) throw new ApiError("Akun TikTok tidak ditemukan", 404);
+      if (!acct || !ownsTiktok(session.user.role, acct.ownerId, session.user.id)) {
+        throw new ApiError("Akun TikTok tidak ditemukan", 404);
+      }
+    }
+
+    if (data.sourceArticleId) {
+      const srcArt = await prisma.article.findUnique({
+        where: { id: data.sourceArticleId },
+        select: { id: true },
+      });
+      if (!srcArt) {
+        throw new ApiError("Artikel sumber tidak ditemukan", 404);
+      }
     }
 
     const created = await prisma.tiktokContent.create({

@@ -22,6 +22,7 @@ import {
   successResponse,
 } from "@/lib/api-utils";
 import { renderReelForArticle } from "@/lib/social/orchestrator";
+import { isSafeOptionalBgmUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,7 +33,11 @@ export const maxDuration = 300;
 const bodySchema = z.object({
   articleId: z.string().optional(),
   durationSec: z.number().int().min(3).max(60).optional(),
-  bgmUrl: z.string().optional(),
+  bgmUrl: z
+    .string()
+    .max(2000)
+    .refine(isSafeOptionalBgmUrl, "URL BGM tidak valid")
+    .optional(),
 });
 
 export async function POST(req: NextRequest) {

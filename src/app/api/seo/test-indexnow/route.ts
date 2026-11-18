@@ -10,8 +10,7 @@
  * Returns: { ok, status, keyConfigured, error?, durationMs }
  */
 
-import { NextResponse } from "next/server";
-import { requireRole, errorResponse } from "@/lib/api-utils";
+import { requireRole, errorResponse, successResponse } from "@/lib/api-utils";
 import { getIndexNowKey } from "@/lib/seo/indexnow";
 
 export const dynamic = "force-dynamic";
@@ -43,15 +42,13 @@ async function probeIndexNow(): Promise<TestResult> {
   const keyLocation = `${SITE_URL.replace(/\/$/, "")}/indexnow-key.txt`;
   const pingUrl = `${INDEXNOW_ENDPOINT}?url=${encodeURIComponent(SITE_URL)}&key=${encodeURIComponent(key)}&keyLocation=${encodeURIComponent(keyLocation)}`;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
     const res = await fetch(pingUrl, {
       method: "GET",
       signal: controller.signal,
     });
-    clearTimeout(timeout);
 
     // IndexNow returns 200 (accepted) or 202 (accepted, deferred). Both are OK.
     const ok = res.status === 200 || res.status === 202;
@@ -70,6 +67,8 @@ async function probeIndexNow(): Promise<TestResult> {
       error: e instanceof Error ? e.message : String(e),
       durationMs: Date.now() - started,
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -77,7 +76,7 @@ export async function GET() {
   try {
     await requireRole(["SUPER_ADMIN"]);
     const result = await probeIndexNow();
-    return NextResponse.json(result, { status: 200 });
+    return successResponse(result);
   } catch (err) {
     return errorResponse(err);
   }

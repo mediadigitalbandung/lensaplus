@@ -15,19 +15,20 @@ import {
   canManageTiktok,
   ownsTiktok,
 } from "@/lib/tiktok/specs";
+import { isSafeMediaUrl } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
 const createSlotSchema = z.object({
   kind: z.enum(["IMAGE", "VIDEO"]),
-  url: z.string().min(1),
-  filename: z.string().optional(),
-  mimeType: z.string().optional(),
+  url: z.string().min(1).max(2000).refine(isSafeMediaUrl, "URL media slot tidak valid"),
+  filename: z.string().max(255).optional(),
+  mimeType: z.string().max(100).optional(),
   size: z.number().int().min(0).optional(),
   durationMs: z.number().int().min(TIKTOK_SLOT_DURATION_MIN_MS).max(TIKTOK_SLOT_DURATION_MAX_MS).optional(),
   trimStartMs: z.number().int().min(0).optional(),
   trimEndMs: z.number().int().nullable().optional(),
-  caption: z.string().optional().nullable(),
+  caption: z.string().max(500).optional().nullable(),
   width: z.number().int().optional(),
   height: z.number().int().optional(),
 });
@@ -41,35 +42,48 @@ export async function POST(request: NextRequest, { params: paramsPromise }: { pa
 
     const content = await prisma.tiktokContent.findUnique({
       where: { id: params.id },
-      include: { _count: { select: { slots: true } } },
+      select: { id: true, createdById: true },
     });
     if (!content) throw new ApiError("Konten tidak ditemukan", 404);
     if (!ownsTiktok(session.user.role, content.createdById, session.user.id)) {
       throw new ApiError("Konten tidak ditemukan", 404);
     }
-    if (content._count.slots >= TIKTOK_SLOT_MAX) {
-      throw new ApiError(`Maksimal ${TIKTOK_SLOT_MAX} slot per konten`, 400);
-    }
 
     const body = await request.json();
     const data = createSlotSchema.parse(body);
 
-    const slot = await prisma.tiktokMediaSlot.create({
-      data: {
-        contentId: params.id,
-        order: content._count.slots,
-        kind: data.kind,
-        url: data.url,
-        filename: data.filename || null,
-        mimeType: data.mimeType || null,
-        size: data.size ?? null,
-        durationMs: data.durationMs ?? 3000,
-        trimStartMs: data.trimStartMs ?? 0,
-        trimEndMs: data.trimEndMs ?? null,
-        caption: data.caption?.trim() || null,
-        width: data.width ?? null,
-        height: data.height ?? null,
-      },
+    const slot = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`tiktok_slot:${params.id}`}))`;
+
+      const slotCount = await tx.tiktokMediaSlot.count({ where: { contentId: params.id } });
+      if (slotCount >= TIKTOK_SLOT_MAX) {
+        throw new ApiError(`Maksimal ${TIKTOK_SLOT_MAX} slot per konten`, 400);
+      }
+
+      const lastSlot = await tx.tiktokMediaSlot.findFirst({
+        where: { contentId: params.id },
+        orderBy: { order: "desc" },
+        select: { order: true },
+      });
+      const nextOrder = lastSlot ? lastSlot.order + 1 : 0;
+
+      return tx.tiktokMediaSlot.create({
+        data: {
+          contentId: params.id,
+          order: nextOrder,
+          kind: data.kind,
+          url: data.url.trim(),
+          filename: data.filename || null,
+          mimeType: data.mimeType || null,
+          size: data.size ?? null,
+          durationMs: data.durationMs ?? 3000,
+          trimStartMs: data.trimStartMs ?? 0,
+          trimEndMs: data.trimEndMs ?? null,
+          caption: data.caption?.trim() || null,
+          width: data.width ?? null,
+          height: data.height ?? null,
+        },
+      });
     });
 
     await logAudit(session.user.id, "TIKTOK_SLOT_ADD", "tiktok_content", params.id, `Added ${data.kind} slot`);

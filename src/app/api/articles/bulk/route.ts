@@ -9,8 +9,10 @@ import {
   logAudit,
   ApiError,
 } from "@/lib/api-utils";
-import { onArticlePublished } from "@/lib/seo-auto";
+import { onArticlePublished, onArticleUnpublished } from "@/lib/seo-auto";
 import { markScrapedUrlsDeleted } from "@/lib/scraper/claim";
+import { checkArticleQuality } from "@/lib/article-quality";
+import { invalidateCachePrefix } from "@/lib/cache";
 
 const bulkActionSchema = z.object({
   action: z.enum(["archive", "delete", "publish"]),
@@ -25,59 +27,138 @@ export async function POST(request: NextRequest) {
     const { action, ids } = bulkActionSchema.parse(body);
 
     if (action === "archive") {
-      await prisma.article.updateMany({
-        where: { id: { in: ids } },
-        data: { status: "ARCHIVED" },
+      const publishedToUnpublish = await prisma.article.findMany({
+        where: { id: { in: ids }, status: "PUBLISHED" },
+        select: { id: true, slug: true, category: { select: { slug: true } } },
       });
+
+      const archivedRes = await prisma.article.updateMany({
+        where: { id: { in: ids } },
+        data: { status: "ARCHIVED", publishedAt: null, scheduledAt: null },
+      });
+
+      await prisma.report
+        .updateMany({
+          where: { articleId: { in: ids }, status: "PENDING" },
+          data: { status: "RESOLVED" },
+        })
+        .catch(() => {});
 
       await logAudit(
         session.user.id,
         "UPDATE",
         "article",
         ids.join(","),
-        `Bulk archive ${ids.length} artikel`
+        `Bulk archive ${archivedRes.count} artikel`,
       );
 
       try {
         revalidatePath("/");
         revalidatePath("/berita");
+        invalidateCachePrefix("home:");
+        invalidateCachePrefix("trending:");
       } catch {
         /* harmless */
       }
 
-      return successResponse({ count: ids.length, action: "archive" });
+      if (publishedToUnpublish.length > 0) {
+        void (async () => {
+          const queue = [...publishedToUnpublish];
+          const CONCURRENCY = 3;
+          const workers: Promise<void>[] = [];
+          for (let i = 0; i < CONCURRENCY; i++) {
+            workers.push(
+              (async () => {
+                while (queue.length > 0) {
+                  const a = queue.shift();
+                  if (!a) break;
+                  await onArticleUnpublished({
+                    articleId: a.id,
+                    slug: a.slug,
+                    categorySlug: a.category?.slug ?? "",
+                    permanent: false,
+                  }).catch(() => {});
+                }
+              })(),
+            );
+          }
+          await Promise.all(workers);
+        })();
+      }
+
+      return successResponse({ count: archivedRes.count, action: "archive" });
     }
 
     if (action === "publish") {
-      // Mass-publish path: status=PUBLISHED, publishedAt=now, label=VERIFIED.
-      // Skips the per-article publish-chain (Indexing API, Sorotan, social,
-      // Cloudflare purge) — a 200-article fan-out would be too slow inline.
-      // The next ISR refresh + nightly indexing cron picks them up.
+      const candidates = await prisma.article.findMany({
+        where: {
+          id: { in: ids },
+          status: { in: ["APPROVED", "DRAFT", "IN_REVIEW", "REJECTED"] },
+        },
+        select: {
+          id: true,
+          status: true,
+          title: true,
+          content: true,
+          featuredImage: true,
+        },
+      });
+
+      const passingApprovedIds: string[] = [];
+      const passingDraftIds: string[] = [];
+      const skipped: Array<{ id: string; title: string; reason: string }> = [];
+
+      for (const a of candidates) {
+        const q = checkArticleQuality(a.content, a.featuredImage);
+        if (!q.ok) {
+          skipped.push({
+            id: a.id,
+            title: a.title,
+            reason: q.reason || "Tidak memenuhi syarat kualitas publikasi",
+          });
+          continue;
+        }
+        if (a.status === "APPROVED") passingApprovedIds.push(a.id);
+        else passingDraftIds.push(a.id);
+      }
+
+      const publishableIds = [...passingApprovedIds, ...passingDraftIds];
+      if (publishableIds.length === 0) {
+        throw new ApiError(
+          skipped[0]?.reason || "Tidak ada artikel yang memenuhi syarat kualitas untuk diterbitkan",
+          400,
+        );
+      }
+
       const now = new Date();
       // VERIFIED only for APPROVED articles (editor-reviewed).
       // DRAFT/IN_REVIEW/REJECTED → UNVERIFIED (skipped editor review).
       const [approvedResult, draftResult] = await Promise.all([
-        prisma.article.updateMany({
-          where: { id: { in: ids }, status: "APPROVED" },
-          data: {
-            status: "PUBLISHED",
-            publishedAt: now,
-            verificationLabel: "VERIFIED",
-            scheduledAt: null,
-          },
-        }),
-        prisma.article.updateMany({
-          where: {
-            id: { in: ids },
-            status: { in: ["DRAFT", "IN_REVIEW", "REJECTED"] },
-          },
-          data: {
-            status: "PUBLISHED",
-            publishedAt: now,
-            verificationLabel: "UNVERIFIED",
-            scheduledAt: null,
-          },
-        }),
+        passingApprovedIds.length > 0
+          ? prisma.article.updateMany({
+              where: { id: { in: passingApprovedIds }, status: "APPROVED" },
+              data: {
+                status: "PUBLISHED",
+                publishedAt: now,
+                verificationLabel: "VERIFIED",
+                scheduledAt: null,
+              },
+            })
+          : Promise.resolve({ count: 0 }),
+        passingDraftIds.length > 0
+          ? prisma.article.updateMany({
+              where: {
+                id: { in: passingDraftIds },
+                status: { in: ["DRAFT", "IN_REVIEW", "REJECTED"] },
+              },
+              data: {
+                status: "PUBLISHED",
+                publishedAt: now,
+                verificationLabel: "UNVERIFIED",
+                scheduledAt: null,
+              },
+            })
+          : Promise.resolve({ count: 0 }),
       ]);
       const result = { count: approvedResult.count + draftResult.count };
 
@@ -85,8 +166,8 @@ export async function POST(request: NextRequest) {
         session.user.id,
         "STATUS_CHANGE",
         "article",
-        ids.join(","),
-        `Bulk publish ${result.count} dari ${ids.length} artikel`,
+        publishableIds.join(","),
+        `Bulk publish ${result.count} dari ${ids.length} artikel${skipped.length > 0 ? ` (${skipped.length} ditahan quality gate)` : ""}`,
       );
 
       // ISR cache invalidation — essential so homepage/listings reflect new articles.
@@ -105,7 +186,7 @@ export async function POST(request: NextRequest) {
       void (async () => {
         try {
           const publishedArticles = await prisma.article.findMany({
-            where: { id: { in: ids }, status: "PUBLISHED" },
+            where: { id: { in: publishableIds }, status: "PUBLISHED" },
             select: { id: true, slug: true },
           });
           const queue = [...publishedArticles];
@@ -135,6 +216,8 @@ export async function POST(request: NextRequest) {
       return successResponse({
         count: result.count,
         requested: ids.length,
+        skippedCount: skipped.length,
+        skipped,
         action: "publish",
         seoChain: "queued-background",
       });

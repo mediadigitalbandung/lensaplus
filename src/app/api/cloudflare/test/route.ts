@@ -9,8 +9,7 @@
  * Returns: { ok, zone?: { name, status }, error?, durationMs }
  */
 
-import { NextResponse } from "next/server";
-import { requireRole, errorResponse } from "@/lib/api-utils";
+import { requireRole, errorResponse, successResponse } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
 
@@ -50,18 +49,16 @@ async function probeCloudflare(): Promise<TestResult> {
     };
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}`, {
+    const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${encodeURIComponent(zoneId)}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       signal: controller.signal,
     });
-    clearTimeout(timeout);
 
     const json = (await res.json().catch(() => null)) as {
       success?: boolean;
@@ -88,6 +85,8 @@ async function probeCloudflare(): Promise<TestResult> {
       error: e instanceof Error ? e.message : String(e),
       durationMs: Date.now() - started,
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -95,7 +94,7 @@ export async function GET() {
   try {
     await requireRole(["SUPER_ADMIN"]);
     const result = await probeCloudflare();
-    return NextResponse.json(result, { status: 200 });
+    return successResponse(result);
   } catch (err) {
     return errorResponse(err);
   }

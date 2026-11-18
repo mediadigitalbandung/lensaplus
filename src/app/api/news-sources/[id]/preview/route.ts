@@ -19,6 +19,7 @@ import { getClaimsForUrls } from "@/lib/scraper/claim";
 import { detectLanguage, isForeignLanguage, languageLabelId } from "@/lib/scraper/lang";
 import { translatePreviewItems } from "@/lib/scraper/preview-translate";
 import { SCRAPER_ROLES } from "@/lib/roles";
+import { aiRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -128,6 +129,10 @@ export async function POST(
     let visibleItems = visibleItemsRaw;
     let translatedPreview = false;
     if (foreign && detectedLang && visibleItemsRaw.length > 0) {
+      const rl = aiRateLimit(session.user.id);
+      if (!rl.success) {
+        throw new ApiError("Batas penggunaan AI tercapai (20 request/jam). Coba lagi nanti.", 429);
+      }
       const tr = await translatePreviewItems(visibleItemsRaw, detectedLang, {
         userId: session.user.id,
         userName: session.user.name || session.user.email || "user",

@@ -25,6 +25,8 @@ function parseDate(raw: string | null): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
+const MAX_RANGE_MS = 366 * 24 * 60 * 60 * 1000;
+
 export async function GET(req: Request) {
   try {
     // Open to every writer role. Editors+ see site-wide ("general") numbers;
@@ -37,10 +39,17 @@ export async function GET(req: Request) {
     const personal = !canSeeAll || url.searchParams.get("scope") === "me";
     const authorId = personal ? session.user.id : undefined;
 
-    const from =
+    let to = parseDate(url.searchParams.get("to")) ?? new Date();
+    let from =
       parseDate(url.searchParams.get("from")) ??
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const to = parseDate(url.searchParams.get("to")) ?? new Date();
+      new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    if (from.getTime() > to.getTime()) {
+      [from, to] = [to, from];
+    }
+    if (to.getTime() - from.getTime() > MAX_RANGE_MS) {
+      from = new Date(to.getTime() - MAX_RANGE_MS);
+    }
 
     const data = await getInternalStats({ from, to, authorId });
 

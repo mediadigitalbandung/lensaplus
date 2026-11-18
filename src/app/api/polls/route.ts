@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
 import { isSafeImageRef } from "@/lib/safe-path";
+import { rethrowMappedPrismaError } from "@/lib/security";
 
 // GET /api/polls — public: active polls; admin: all
 export async function GET(request: NextRequest) {
@@ -62,7 +63,7 @@ const createSchema = z.object({
   categoryId: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
   order: z.number().int().min(0).optional(),
-  options: z.array(z.string().min(1)).min(2).max(10),
+  options: z.array(z.string().trim().min(1).max(200)).min(2).max(10),
 });
 
 // POST /api/polls — admin only
@@ -72,19 +73,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createSchema.parse(body);
 
-    const poll = await prisma.poll.create({
-      data: {
-        question: data.question,
-        image: data.image || null,
-        categoryId: data.categoryId || null,
-        isActive: data.isActive ?? true,
-        order: data.order ?? 0,
-        options: {
-          create: data.options.map((label) => ({ label })),
+    const poll = await prisma.poll
+      .create({
+        data: {
+          question: data.question,
+          image: data.image || null,
+          categoryId: data.categoryId || null,
+          isActive: data.isActive ?? true,
+          order: data.order ?? 0,
+          options: {
+            create: data.options.map((label) => ({ label })),
+          },
         },
-      },
-      include: { options: true },
-    });
+        include: { options: true },
+      })
+      .catch((err) => rethrowMappedPrismaError(err, { foreignKey: "Kategori tidak ditemukan" }));
 
     await logAudit(session.user.id, "CREATE", "poll", poll.id, `Membuat polling: ${data.question}`);
     return successResponse(poll, 201);

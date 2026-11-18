@@ -18,6 +18,7 @@ import {
   successResponse,
 } from "@/lib/api-utils";
 import { decryptSecret, encryptSecret } from "@/lib/crypto-secrets";
+import { isSafeOptionalBgmUrl } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -150,7 +151,12 @@ const globalSchema = z.object({
   autoPublishThreads: z.boolean().optional(),
   autoPublishReels: z.boolean().optional(),
   reelDurationSec: z.number().int().min(3).max(60).optional(),
-  reelDefaultBgmUrl: z.string().nullable().optional(),
+  reelDefaultBgmUrl: z
+    .string()
+    .max(2000)
+    .refine(isSafeOptionalBgmUrl, "URL BGM tidak valid")
+    .nullable()
+    .optional(),
   defaultHashtags: z.string().nullable().optional(),
   defaultCTA: z.string().nullable().optional(),
   captionTemplate: z.string().nullable().optional(),

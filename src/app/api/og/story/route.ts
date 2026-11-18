@@ -27,10 +27,15 @@ const HEIGHT = 1920;
 const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 // SSRF guard — mirror allowlist from /api/og
+const EXTRA_ALLOWED_OG_HOSTS = (process.env.ALLOWED_OG_IMAGE_HOSTS || "")
+  .split(",")
+  .map((h) => h.trim().toLowerCase())
+  .filter(Boolean);
+
 const ALLOWED_IMG_HOSTS = new Set([
   (() => {
     try {
-      return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname;
+      return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname.toLowerCase();
     } catch {
       return "lensaplus.com";
     }
@@ -40,7 +45,7 @@ const ALLOWED_IMG_HOSTS = new Set([
   "images.unsplash.com",
   "graph.facebook.com",
   "scontent.cdninstagram.com",
-  "145.79.15.99",
+  ...EXTRA_ALLOWED_OG_HOSTS,
 ]);
 
 function isAllowedImageHost(rawUrl: string): boolean {
@@ -62,34 +67,83 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
+const MAX_OG_REMOTE_BYTES = 10 * 1024 * 1024;
+
+async function readBoundedImageBuffer(res: Response): Promise<Buffer | null> {
+  const contentType = (res.headers.get("content-type") || "").toLowerCase();
+  if (!contentType.startsWith("image/")) return null;
+  const contentLength = Number(res.headers.get("content-length") || "0");
+  if (Number.isFinite(contentLength) && contentLength > MAX_OG_REMOTE_BYTES) return null;
+  if (!res.body) {
+    const ab = await res.arrayBuffer();
+    return ab.byteLength <= MAX_OG_REMOTE_BYTES ? Buffer.from(ab) : null;
+  }
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        total += value.byteLength;
+        if (total > MAX_OG_REMOTE_BYTES) return null;
+        chunks.push(value);
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks, total);
+}
+
 function wrapText(text: string, maxChars: number, maxLines: number): string[] {
+  if (maxLines <= 0) return [];
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
-  for (const word of words) {
+  let truncated = false;
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     const next = current ? `${current} ${word}` : word;
     if (next.length <= maxChars) {
       current = next;
     } else {
       if (current) lines.push(current);
+      if (lines.length >= maxLines) {
+        truncated = true;
+        current = "";
+        break;
+      }
       if (word.length > maxChars) {
         let w = word;
-        while (w.length > maxChars) {
+        while (w.length > maxChars && lines.length < maxLines) {
           lines.push(w.slice(0, maxChars));
           w = w.slice(maxChars);
+        }
+        if (lines.length >= maxLines) {
+          truncated = Boolean(w) || i < words.length - 1;
+          current = "";
+          break;
         }
         current = w;
       } else {
         current = word;
       }
     }
-    if (lines.length >= maxLines) break;
   }
-  if (current && lines.length < maxLines) lines.push(current);
-  if (lines.length > maxLines) {
-    lines.length = maxLines;
-    const last = lines[maxLines - 1];
-    lines[maxLines - 1] = last.length > 3 ? `${last.slice(0, last.length - 3)}...` : last;
+  if (current) {
+    if (lines.length < maxLines) {
+      lines.push(current);
+    } else {
+      truncated = true;
+    }
+  }
+  if (truncated && lines.length > 0) {
+    const lastIdx = lines.length - 1;
+    const last = lines[lastIdx];
+    const trimmed = last.length + 3 > maxChars ? last.slice(0, Math.max(0, maxChars - 3)).trimEnd() : last;
+    lines[lastIdx] = `${trimmed}...`;
   }
   return lines;
 }
@@ -107,8 +161,9 @@ async function loadFeaturedImage(featuredImage: string | null | undefined): Prom
       if (!isAllowedImageHost(absoluteUrl)) return null;
       const res = await fetch(absoluteUrl, { signal: AbortSignal.timeout(10000) });
       if (!res.ok) return null;
-      const ab = await res.arrayBuffer();
-      return await sharp(Buffer.from(ab))
+      const imgBuf = await readBoundedImageBuffer(res);
+      if (!imgBuf) return null;
+      return await sharp(imgBuf)
         .resize(WIDTH, 1080, { fit: "cover", position: "centre" })
         .toBuffer();
     }
@@ -155,11 +210,18 @@ function buildSvgOverlay({
     })
     .join("");
 
-  // Excerpt / Summary block
-  const excerptLines = excerpt ? wrapText(excerpt, 50, 3) : [];
+  // Divider position (raised significantly to avoid Snapgram comment box overlay)
+  const dividerY = HEIGHT - 460;
+
+  // Excerpt / Summary block — cap lines dynamically so excerpt never collides with dividerY
   const titleHeight = (titleLines.length - 1) * lineHeight;
   const titleEndY = titleY + titleHeight;
   const excerptY = titleEndY + 90; // Expanded baseline gap: 90px gap after title for spacing
+  const availableExcerptHeight = dividerY - 30 - excerptY;
+  const maxExcerptLines = availableExcerptHeight >= 0
+    ? Math.min(3, Math.floor(availableExcerptHeight / 48) + 1)
+    : 0;
+  const excerptLines = excerpt && maxExcerptLines > 0 ? wrapText(excerpt, 50, maxExcerptLines) : [];
 
   const excerptTspans = excerptLines
     .map((line, i) => {
@@ -187,8 +249,7 @@ function buildSvgOverlay({
   const badgeWidth = Math.max(120, category.length * 18 + 32);
   const badgeY = titleY - 120; // Expanded gap: 120px above title (was 100px)
 
-  // Divider and footer positions (raised significantly to avoid Snapgram comment box overlay)
-  const dividerY = HEIGHT - 460;
+  // Footer positions (raised significantly to avoid Snapgram comment box overlay)
   const readMoreLabelY = HEIGHT - 410;
   const urlY = HEIGHT - 350;
   const brandBarY = HEIGHT - 260; // Raised from 110 to 260

@@ -1,8 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, ApiError, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
 import { listEmailRules, createEmailForward, deleteEmailRule, toggleEmailRule, addDestinationAddress } from "@/lib/cloudflare-email";
+import { getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
+
+const createEmailSchema = z.object({
+  localPart: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, "localPart wajib diisi")
+    .max(64)
+    .regex(
+      /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/,
+      "Format email tidak valid. Gunakan huruf kecil, angka, titik, atau strip.",
+    ),
+  destinationEmail: z.string().trim().email("Format email tujuan tidak valid").max(254),
+});
+
+const patchEmailSchema = z.object({
+  id: z.string().min(1).max(128),
+  enabled: z.boolean(),
+});
 
 /** GET: List all email routing rules */
 export async function GET(request: NextRequest) {
@@ -30,7 +51,8 @@ export async function GET(request: NextRequest) {
               host: process.env.BREVO_SMTP_HOST || "smtp-relay.brevo.com",
               port: process.env.BREVO_SMTP_PORT || "587",
               user: process.env.BREVO_SMTP_USER || null,
-              password: process.env.BREVO_SMTP_PASS || null,
+              password: null,
+              passwordConfigured: Boolean(process.env.BREVO_SMTP_PASS),
             },
           },
         },
@@ -54,16 +76,7 @@ export async function POST(request: NextRequest) {
     if (session.user.role !== "SUPER_ADMIN") throw new ApiError("Forbidden", 403);
 
     const body = await request.json();
-    const { localPart, destinationEmail } = body;
-
-    if (!localPart || !destinationEmail) {
-      throw new ApiError("localPart dan destinationEmail wajib diisi", 400);
-    }
-
-    // Validate localPart (only lowercase letters, numbers, dots, hyphens)
-    if (!/^[a-z0-9][a-z0-9._-]*[a-z0-9]$/.test(localPart) && localPart.length > 1) {
-      throw new ApiError("Format email tidak valid. Gunakan huruf kecil, angka, titik, atau strip.", 400);
-    }
+    const { localPart, destinationEmail } = createEmailSchema.parse(body);
 
     // Add destination address (will send verification email if new)
     await addDestinationAddress(destinationEmail);
@@ -84,7 +97,7 @@ export async function POST(request: NextRequest) {
       throw err;
     }
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(session.user.id, "EMAIL_ROUTING_CREATE", "EmailRouting", rule.id ?? localPart, JSON.stringify({ localPart, destinationEmail }), ip);
 
     return successResponse({
@@ -110,7 +123,7 @@ export async function DELETE(request: NextRequest) {
 
     await deleteEmailRule(ruleId);
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(session.user.id, "EMAIL_ROUTING_DELETE", "EmailRouting", ruleId, undefined, ip);
 
     return successResponse({ message: "Email berhasil dihapus" });
@@ -126,8 +139,7 @@ export async function PATCH(request: NextRequest) {
     if (session.user.role !== "SUPER_ADMIN") throw new ApiError("Forbidden", 403);
 
     const body = await request.json();
-    const { id, enabled } = body;
-    if (!id || typeof enabled !== "boolean") throw new ApiError("id dan enabled wajib", 400);
+    const { id, enabled } = patchEmailSchema.parse(body);
 
     await toggleEmailRule(id, enabled);
     return successResponse({ message: enabled ? "Email diaktifkan" : "Email dinonaktifkan" });

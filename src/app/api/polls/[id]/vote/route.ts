@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
 import { pollVoteRateLimit, getClientIp } from "@/lib/rate-limit";
+import { readJsonBody } from "@/lib/security";
 
 const voteSchema = z.object({
-  optionId: z.string().min(1),
-  fingerprint: z.string().optional(),
+  optionId: z.string().min(1).max(100),
+  fingerprint: z.string().max(128).optional(),
 });
 
 // POST /api/polls/:id/vote — public, 1 vote per IP per poll
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest, { params: paramsPromise }: { pa
       throw new ApiError("Terlalu banyak percobaan vote. Coba lagi dalam satu menit.", 429);
     }
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const data = voteSchema.parse(body);
 
     // Check if poll exists and is active

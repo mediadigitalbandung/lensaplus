@@ -42,47 +42,109 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
+const MAX_OG_REMOTE_BYTES = 10 * 1024 * 1024;
+
+async function readBoundedImageBuffer(res: Response): Promise<Buffer> {
+  const contentType = (res.headers.get("content-type") || "").toLowerCase();
+  if (!contentType.startsWith("image/")) {
+    throw new Error("Remote resource is not an image");
+  }
+  const contentLength = Number(res.headers.get("content-length") || "0");
+  if (Number.isFinite(contentLength) && contentLength > MAX_OG_REMOTE_BYTES) {
+    throw new Error("Remote image exceeds max allowed size");
+  }
+  if (!res.body) {
+    const ab = await res.arrayBuffer();
+    if (ab.byteLength > MAX_OG_REMOTE_BYTES) {
+      throw new Error("Remote image exceeds max allowed size");
+    }
+    return Buffer.from(ab);
+  }
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        total += value.byteLength;
+        if (total > MAX_OG_REMOTE_BYTES) {
+          throw new Error("Remote image exceeds max allowed size");
+        }
+        chunks.push(value);
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks, total);
+}
+
 function wrapText(text: string, maxChars: number, maxLines: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
-  for (const word of words) {
+  let truncated = false;
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     const next = current ? `${current} ${word}` : word;
     if (next.length <= maxChars) {
       current = next;
     } else {
       if (current) lines.push(current);
+      if (lines.length >= maxLines) {
+        truncated = true;
+        current = "";
+        break;
+      }
       if (word.length > maxChars) {
         let w = word;
-        while (w.length > maxChars) {
+        while (w.length > maxChars && lines.length < maxLines) {
           lines.push(w.slice(0, maxChars));
           w = w.slice(maxChars);
+        }
+        if (lines.length >= maxLines) {
+          truncated = Boolean(w) || i < words.length - 1;
+          current = "";
+          break;
         }
         current = w;
       } else {
         current = word;
       }
     }
-    if (lines.length >= maxLines) break;
   }
-  if (current && lines.length < maxLines) lines.push(current);
-  if (lines.length > maxLines) {
-    lines.length = maxLines;
-    const last = lines[maxLines - 1];
-    lines[maxLines - 1] = last.length > 3 ? `${last.slice(0, last.length - 3)}...` : last;
+  if (current) {
+    if (lines.length < maxLines) {
+      lines.push(current);
+    } else {
+      truncated = true;
+    }
+  }
+  if (truncated && lines.length > 0) {
+    const lastIdx = lines.length - 1;
+    const last = lines[lastIdx];
+    const trimmed = last.length + 3 > maxChars ? last.slice(0, Math.max(0, maxChars - 3)).trimEnd() : last;
+    lines[lastIdx] = `${trimmed}...`;
   }
   return lines;
 }
 
 // SSRF guard — only fetch images from explicit allowlist of trusted hosts.
+const EXTRA_ALLOWED_OG_HOSTS = (process.env.ALLOWED_OG_IMAGE_HOSTS || "")
+  .split(",")
+  .map((h) => h.trim().toLowerCase())
+  .filter(Boolean);
+
 const ALLOWED_IMG_HOSTS = new Set([
-  (() => { try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname; } catch { return "lensaplus.com"; } })(),
+  (() => { try { return new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com").hostname.toLowerCase(); } catch { return "lensaplus.com"; } })(),
   "lensaplus.com",
   "www.lensaplus.com",
   "images.unsplash.com",
   "graph.facebook.com",
   "scontent.cdninstagram.com",
-  "145.79.15.99",
+  ...EXTRA_ALLOWED_OG_HOSTS,
 ]);
 
 function isAllowedImageHost(rawUrl: string): boolean {
@@ -105,8 +167,8 @@ async function loadBackground(featuredImage: string | null | undefined): Promise
         }
         const res = await fetch(featuredImage, { signal: AbortSignal.timeout(10000) });
         if (res.ok) {
-          const ab = await res.arrayBuffer();
-          return await sharp(Buffer.from(ab))
+          const imgBuf = await readBoundedImageBuffer(res);
+          return await sharp(imgBuf)
             .resize(WIDTH, HEIGHT, { fit: "cover", position: "centre" })
             .toBuffer();
         }
@@ -206,7 +268,7 @@ function buildSvgOverlay({
 async function renderFallbackImage(): Promise<Buffer> {
   const bg = await loadBackground(null);
   const svg = buildSvgOverlay({
-    title: "Media Berita Digital Bandung",
+    title: "Media Berita Digital Nasional Indonesia",
     category: "Lensaplus",
     hasImage: false,
   });
@@ -223,8 +285,10 @@ export async function GET(req: NextRequest) {
     const slug = req.nextUrl.searchParams.get("slug");
 
     let buffer: Buffer;
+    let isFallback = false;
 
     if (!slug) {
+      isFallback = true;
       buffer = await renderFallbackImage();
     } else {
       const article = await prisma.article.findUnique({
@@ -233,6 +297,7 @@ export async function GET(req: NextRequest) {
       });
 
       if (!article || article.status !== "PUBLISHED") {
+        isFallback = true;
         buffer = await renderFallbackImage();
       } else {
         const bg = await loadBackground(article.featuredImage);
@@ -251,7 +316,8 @@ export async function GET(req: NextRequest) {
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "image/jpeg",
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": isFallback ? "no-store" : "public, max-age=31536000, immutable",
+        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch (err) {

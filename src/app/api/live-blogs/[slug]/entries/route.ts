@@ -14,6 +14,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { errorResponse, successResponse, ApiError } from "@/lib/api-utils";
+import { guardPublicRead } from "@/lib/rate-limit";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,8 @@ export async function GET(
   req: NextRequest,
   { params: paramsPromise }: { params: Promise<{ slug: string }> }
 ) {
+  const blocked = guardPublicRead(req);
+  if (blocked) return blocked;
   const params = await paramsPromise;
   try {
     const blog = await prisma.liveBlog.findUnique({
@@ -57,8 +60,8 @@ export async function GET(
         }
       } else {
         // It's an entryId — find that entry's postedAt and return entries newer than it
-        const anchor = await prisma.liveBlogEntry.findUnique({
-          where: { id: since },
+        const anchor = await prisma.liveBlogEntry.findFirst({
+          where: { id: since, liveBlogId: blog.id },
           select: { postedAt: true },
         });
         if (anchor) {

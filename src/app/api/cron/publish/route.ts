@@ -6,6 +6,7 @@ import { successResponse, errorResponse, verifyCronSecret, logAudit } from "@/li
 import { onArticlePublished, generateSeoTitle, generateSeoDescription } from "@/lib/seo-auto";
 import { checkArticleQuality } from "@/lib/article-quality";
 import { recordCronRun } from "@/lib/cron-tracker";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import * as Sentry from "@sentry/nextjs";
 
 export const dynamic = "force-dynamic";
@@ -30,176 +31,195 @@ async function handler(request: NextRequest) {
   try {
     verifyCronSecret(request);
 
-    const now = new Date();
-    const candidates = await prisma.article.findMany({
-      where: {
-        status: "APPROVED",
-        scheduledAt: { lte: now },
-      },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        authorId: true,
-        scheduledAt: true,
-        excerpt: true,
-        content: true,
-        featuredImage: true,
-        seoTitle: true,
-        seoDescription: true,
-      },
-    });
-
-    // AdSense thin-content gate: never auto-publish a low-substance article.
-    // Failing ones stay APPROVED (not lost) and are reported as `skipped` so an
-    // editor can beef them up; they simply won't go live automatically.
-    const skipped: string[] = [];
-    const articles = candidates.filter((a) => {
-      const q = checkArticleQuality(a.content, a.featuredImage);
-      if (!q.ok) {
-        skipped.push(`${a.title} (±${q.words} kata)`);
-        return false;
-      }
-      return true;
-    });
-
-    if (articles.length === 0) {
-      await recordCronRun("publish", { ok: true, durationMs: Date.now() - started });
-      return successResponse({
-        processed: 0,
-        published: 0,
-        titles: [],
-        skipped,
-        errors: [],
-        durationMs: Date.now() - started,
-      });
+    const LOCK_KEY = "cron:publish";
+    const lockToken = await acquireCronLock(LOCK_KEY, 6 * 60_000);
+    if (!lockToken) {
+      return Response.json(
+        {
+          success: true,
+          skipped: true,
+          reason: "ANOTHER_RUN_IN_PROGRESS",
+          durationMs: Date.now() - started,
+        },
+        { status: 200 },
+      );
     }
 
-    // Batch fetch all authors in one query (avoid N+1)
-    const authorIds = Array.from(new Set(articles.map((a) => a.authorId)));
-    const authors = await prisma.user.findMany({
-      where: { id: { in: authorIds } },
-      select: { id: true, email: true },
-    });
-    const authorMap = new Map(authors.map((u) => [u.id, u]));
-
-    const published: string[] = [];
-    const errors: string[] = [];
-
-    // Collapse status update + SEO auto-fill into ONE update per article,
-    // then run all DB updates in parallel (Promise.allSettled) to eliminate
-    // the sequential round-trips that caused N+1 on large batches.
-    const dbUpdates = articles.map((article) =>
-      prisma.article.update({
-        where: { id: article.id },
-        data: {
-          status: "PUBLISHED",
-          publishedAt: article.scheduledAt || now,
-          scheduledAt: null,
-          // Auto-fill SEO fields in the same UPDATE if empty
-          ...(!article.seoTitle && {
-            seoTitle: generateSeoTitle(article.title),
-          }),
-          ...(!article.seoDescription && {
-            seoDescription: generateSeoDescription(
-              article.excerpt,
-              article.content,
-            ),
-          }),
+    try {
+      const now = new Date();
+      const candidates = await prisma.article.findMany({
+        where: {
+          status: "APPROVED",
+          scheduledAt: { lte: now },
         },
-      })
-    );
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          authorId: true,
+          scheduledAt: true,
+          excerpt: true,
+          content: true,
+          featuredImage: true,
+          seoTitle: true,
+          seoDescription: true,
+        },
+      });
 
-    const dbResults = await Promise.allSettled(dbUpdates);
+      // AdSense thin-content gate: never auto-publish a low-substance article.
+      // Failing ones stay APPROVED (not lost) and are reported as `skipped` so an
+      // editor can beef them up; they simply won't go live automatically.
+      const skipped: string[] = [];
+      const articles = candidates.filter((a) => {
+        const q = checkArticleQuality(a.content, a.featuredImage);
+        if (!q.ok) {
+          skipped.push(`${a.title} (±${q.words} kata)`);
+          return false;
+        }
+        return true;
+      });
 
-    // Collect which articles were persisted and which failed
-    const succeededArticles: typeof articles = [];
-    dbResults.forEach((result, i) => {
-      const article = articles[i];
-      if (result.status === "fulfilled") {
-        succeededArticles.push(article);
-      } else {
-        const msg = result.reason instanceof Error
-          ? result.reason.message
-          : String(result.reason);
-        errors.push(`publish[${article.id}]: ${msg}`);
-        Sentry.captureException(result.reason, {
-          tags: { cron: "publish", articleId: article.id },
+      if (articles.length === 0) {
+        await recordCronRun("publish", { ok: true, durationMs: Date.now() - started });
+        return successResponse({
+          processed: 0,
+          published: 0,
+          titles: [],
+          skipped,
+          errors: [],
+          durationMs: Date.now() - started,
         });
       }
-    });
 
-    // Side-effects run sequentially per article to preserve ordering guarantees
-    // (notify → email → SEO/Social/CF chain).
-    for (const article of succeededArticles) {
-      try {
-        await notifyArticleStatusChange(
-          article.id,
-          article.title,
-          "PUBLISHED",
-          article.authorId,
-        );
-      } catch (e) {
-        errors.push(
-          `notify[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
-        );
-      }
-      const author = authorMap.get(article.authorId);
-      if (author) {
+      // Batch fetch all authors in one query (avoid N+1)
+      const authorIds = Array.from(new Set(articles.map((a) => a.authorId)));
+      const authors = await prisma.user.findMany({
+        where: { id: { in: authorIds } },
+        select: { id: true, email: true },
+      });
+      const authorMap = new Map(authors.map((u) => [u.id, u]));
+
+      const published: string[] = [];
+      const errors: string[] = [];
+
+      // Atomic status claim: updateMany with status="APPROVED" prevents double-publishing
+      // if an editor simultaneously publishes or returns the article to review.
+      const dbUpdates = articles.map((article) =>
+        prisma.article.updateMany({
+          where: { id: article.id, status: "APPROVED" },
+          data: {
+            status: "PUBLISHED",
+            publishedAt: article.scheduledAt || now,
+            scheduledAt: null,
+            // Auto-fill SEO fields in the same UPDATE if empty
+            ...(!article.seoTitle && {
+              seoTitle: generateSeoTitle(article.title),
+            }),
+            ...(!article.seoDescription && {
+              seoDescription: generateSeoDescription(
+                article.excerpt,
+                article.content,
+              ),
+            }),
+          },
+        })
+      );
+
+      const dbResults = await Promise.allSettled(dbUpdates);
+
+      // Collect which articles were actually claimed & persisted
+      const succeededArticles: typeof articles = [];
+      dbResults.forEach((result, i) => {
+        const article = articles[i];
+        if (result.status === "fulfilled") {
+          if (result.value.count > 0) {
+            succeededArticles.push(article);
+          }
+        } else {
+          const msg = result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason);
+          errors.push(`publish[${article.id}]: ${msg}`);
+          Sentry.captureException(result.reason, {
+            tags: { cron: "publish", articleId: article.id },
+          });
+        }
+      });
+
+      // Side-effects run sequentially per article to preserve ordering guarantees
+      // (notify → email → SEO/Social/CF chain).
+      for (const article of succeededArticles) {
         try {
-          await sendArticlePublishedEmail(
-            author.email,
+          await notifyArticleStatusChange(
+            article.id,
             article.title,
-            article.slug,
+            "PUBLISHED",
+            article.authorId,
           );
         } catch (e) {
           errors.push(
-            `email[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
+            `notify[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
           );
         }
+        const author = authorMap.get(article.authorId);
+        if (author) {
+          try {
+            await sendArticlePublishedEmail(
+              author.email,
+              article.title,
+              article.slug,
+            );
+          } catch (e) {
+            errors.push(
+              `email[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
+            );
+          }
+        }
+        // AWAITED: cron needs final SEO/Social/CF result
+        try {
+          await onArticlePublished(article.slug, article.id);
+        } catch (e) {
+          errors.push(
+            `onPublished[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+        published.push(article.title);
       }
-      // AWAITED: cron needs final SEO/Social/CF result
+
+      // Audit log batch publish (best-effort — cron actor uses null userId)
       try {
-        await onArticlePublished(article.slug, article.id);
-      } catch (e) {
-        errors.push(
-          `onPublished[${article.id}]: ${e instanceof Error ? e.message : String(e)}`,
+        await logAudit(
+          null,
+          "CRON_BATCH_PUBLISH",
+          "article",
+          "system",
+          JSON.stringify({
+            published: published.length,
+            errors: errors.length,
+            titles: published.slice(0, 5),
+            durationMs: Date.now() - started,
+          }),
         );
+      } catch {
+        // swallow
       }
-      published.push(article.title);
-    }
 
-    // Audit log batch publish (best-effort — cron actor uses null userId)
-    try {
-      await logAudit(
-        null,
-        "CRON_BATCH_PUBLISH",
-        "article",
-        "system",
-        JSON.stringify({
-          published: published.length,
-          errors: errors.length,
-          titles: published.slice(0, 5),
-          durationMs: Date.now() - started,
-        }),
-      );
-    } catch {
-      // swallow
+      await recordCronRun("publish", {
+        ok: errors.length === 0,
+        durationMs: Date.now() - started,
+        error: errors.length > 0 ? errors.slice(0, 3).join(" | ") : undefined,
+      });
+      return successResponse({
+        processed: candidates.length,
+        published: published.length,
+        titles: published,
+        skipped,
+        errors,
+        durationMs: Date.now() - started,
+      });
+    } finally {
+      await releaseCronLock(LOCK_KEY, lockToken);
     }
-
-    await recordCronRun("publish", {
-      ok: errors.length === 0,
-      durationMs: Date.now() - started,
-      error: errors.length > 0 ? errors.slice(0, 3).join(" | ") : undefined,
-    });
-    return successResponse({
-      processed: candidates.length,
-      published: published.length,
-      titles: published,
-      skipped,
-      errors,
-      durationMs: Date.now() - started,
-    });
   } catch (error) {
     Sentry.captureException(error, { tags: { cron: "publish" } });
     await recordCronRun("publish", {

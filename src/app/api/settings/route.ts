@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { requireRole, successResponse, errorResponse, logAudit, ApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { getClientIp } from "@/lib/rate-limit";
 import {
   encryptSecret,
   decryptSecret,
@@ -143,7 +144,7 @@ export async function GET() {
         // "which key is stored" without exposing the credential.
         try {
           const plaintext = decryptSecret(s.value);
-          keyValue[s.key] = maskSecret(plaintext);
+          keyValue[s.key] = plaintext ? maskSecret(plaintext) : "";
         } catch {
           // If decrypt fails (e.g. corrupted), return a fixed mask.
           keyValue[s.key] = "••••••••????";
@@ -209,10 +210,10 @@ export async function PUT(req: NextRequest) {
 
     // Never return the plaintext back to the client.
     const responseValue = sensitive
-      ? maskSecret(data.value)
+      ? (data.value ? maskSecret(data.value) : "")
       : data.value;
 
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(req);
     await logAudit(session.user.id, "SETTING_UPDATE", "SystemSetting", data.key, JSON.stringify({ key: data.key }), ip);
 
     return successResponse({ key: data.key, value: responseValue });

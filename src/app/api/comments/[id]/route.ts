@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
   successResponse,
@@ -7,8 +8,13 @@ import {
   ApiError,
   logAudit,
 } from "@/lib/api-utils";
+import { getClientIp } from "@/lib/rate-limit";
+import { readJsonBody } from "@/lib/security";
 
 const ALLOWED_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"] as const;
+const updateCommentSchema = z.object({
+  isApproved: z.boolean(),
+});
 
 // PUT /api/comments/:id — approve/reject (admin/editor only)
 export async function PUT(
@@ -19,8 +25,8 @@ export async function PUT(
   try {
     const session = await requireRole([...ALLOWED_ROLES]);
 
-    const body = await request.json();
-    const isApproved = body.isApproved === true;
+    const body = await readJsonBody(request);
+    const { isApproved } = updateCommentSchema.parse(body);
 
     const comment = await prisma.comment.findUnique({
       where: { id: params.id },
@@ -34,7 +40,7 @@ export async function PUT(
       data: { isApproved },
     });
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(session.user.id, isApproved ? "COMMENT_APPROVE" : "COMMENT_REJECT", "Comment", params.id, undefined, ip);
 
     return successResponse(updated);

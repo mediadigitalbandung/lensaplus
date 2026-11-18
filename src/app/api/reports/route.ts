@@ -43,7 +43,14 @@ export async function GET(request: NextRequest) {
     const [reports, total, pendingCount] = await Promise.all([
       prisma.report.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          reason: true,
+          detail: true,
+          email: isEditor,
+          status: true,
+          articleId: true,
+          createdAt: true,
           article: {
             select: { id: true, title: true, slug: true, author: { select: { name: true } } },
           },
@@ -111,8 +118,11 @@ export async function POST(request: NextRequest) {
       data.detail = sanitizeText(data.detail);
     }
 
-    const article = await prisma.article.findUnique({ where: { id: data.articleId } });
-    if (!article) {
+    const article = await prisma.article.findUnique({
+      where: { id: data.articleId },
+      select: { id: true, status: true },
+    });
+    if (!article || article.status !== "PUBLISHED") {
       throw new ApiError("Artikel tidak ditemukan", 404);
     }
 

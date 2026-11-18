@@ -15,6 +15,7 @@ import {
   normalizeHashtags,
   ownsTiktok,
 } from "@/lib/tiktok/specs";
+import { isSafeOptionalBgmUrl } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,12 @@ const updateSchema = z.object({
   accountId: z.string().nullable().optional(),
   templateKey: z.string().nullable().optional(),
   aspectRatio: z.enum(["PORTRAIT_9_16", "SQUARE_1_1"]).optional(),
-  bgmUrl: z.string().nullable().optional(),
+  bgmUrl: z
+    .string()
+    .max(2000)
+    .refine(isSafeOptionalBgmUrl, "URL BGM tidak valid")
+    .nullable()
+    .optional(),
   bgmVolume: z.number().min(0).max(1).optional(),
   overlayJson: z.unknown().optional(),
   status: z
@@ -90,7 +96,17 @@ export async function PUT(request: NextRequest, { params: paramsPromise }: { par
     if (data.title !== undefined) updateData.title = data.title;
     if (data.caption !== undefined) updateData.caption = data.caption?.trim() || null;
     if (data.hashtags !== undefined) updateData.hashtags = normalizeHashtags(data.hashtags);
-    if (data.accountId !== undefined) updateData.accountId = data.accountId;
+    if (data.accountId !== undefined) {
+      if (data.accountId) {
+        const acct = await prisma.tiktokAccount.findUnique({ where: { id: data.accountId } });
+        if (!acct || !ownsTiktok(session.user.role, acct.ownerId, session.user.id)) {
+          throw new ApiError("Akun TikTok tidak ditemukan", 404);
+        }
+        updateData.accountId = data.accountId;
+      } else {
+        updateData.accountId = null;
+      }
+    }
     if (data.templateKey !== undefined) updateData.templateKey = data.templateKey;
     if (data.aspectRatio !== undefined) updateData.aspectRatio = data.aspectRatio;
     if (data.bgmUrl !== undefined) updateData.bgmUrl = data.bgmUrl;

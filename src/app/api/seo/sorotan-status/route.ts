@@ -13,6 +13,7 @@ import {
   requireRole,
   successResponse,
 } from "@/lib/api-utils";
+import { rethrowMappedPrismaError } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -82,22 +83,24 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { sorotanId, status } = postSchema.parse(body);
 
-    const updated = await prisma.sorotan.update({
-      where: { id: sorotanId },
-      data: {
-        indexStatus: status,
-        // Clear stale error message when manually marking as success state.
-        ...(status === "submitted" || status === "indexed"
-          ? { lastIndexedAt: new Date(), indexLastError: null }
-          : {}),
-      },
-      select: {
-        id: true,
-        slug: true,
-        indexStatus: true,
-        lastIndexedAt: true,
-      },
-    });
+    const updated = await prisma.sorotan
+      .update({
+        where: { id: sorotanId },
+        data: {
+          indexStatus: status,
+          // Clear stale error message when manually marking as success state.
+          ...(status === "submitted" || status === "indexed"
+            ? { lastIndexedAt: new Date(), indexLastError: null }
+            : {}),
+        },
+        select: {
+          id: true,
+          slug: true,
+          indexStatus: true,
+          lastIndexedAt: true,
+        },
+      })
+      .catch((err) => rethrowMappedPrismaError(err, { notFound: "Sorotan tidak ditemukan" }));
 
     return successResponse(updated);
   } catch (err) {

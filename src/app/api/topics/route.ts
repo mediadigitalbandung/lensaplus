@@ -15,6 +15,7 @@ import {
 } from "@/lib/api-utils";
 import { Role } from "@prisma/client";
 import { isSafeImageRef } from "@/lib/safe-path";
+import { rethrowMappedPrismaError } from "@/lib/security";
 
 // Topic model added via schema migration — cast needed until Prisma client regenerates.
 const db = prisma as any; // biome-ignore lint: prisma cast
@@ -43,16 +44,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const adminMode = searchParams.get("admin") === "true";
 
-    // Admin mode: requires auth — caller must be MANAGEMENT_ROLES.
+    // Admin mode: requires auth — caller must be MANAGEMENT_ROLES (never swallow 401/403).
     // Public mode: only published topics.
     let isAdminSession = false;
     if (adminMode) {
-      try {
-        await requireRole(MANAGEMENT_ROLES);
-        isAdminSession = true;
-      } catch {
-        // Fall through to public mode if not authorised.
-      }
+      await requireRole(MANAGEMENT_ROLES);
+      isAdminSession = true;
     }
 
     const topics = await db.topic.findMany({
@@ -85,22 +82,34 @@ export async function POST(request: NextRequest) {
       throw new ApiError("Slug sudah digunakan", 409);
     }
 
-    // Resolve tag IDs from slugs
+    // Resolve tag slugs & verify every requested tag exists
     let tagConnect: { slug: string }[] = [];
     if (tagSlugs && tagSlugs.length > 0) {
-      tagConnect = tagSlugs.map((s) => ({ slug: s }));
+      const uniqueSlugs = Array.from(new Set(tagSlugs));
+      const foundTags = await prisma.tag.findMany({
+        where: { slug: { in: uniqueSlugs } },
+        select: { slug: true },
+      });
+      const foundSet = new Set(foundTags.map((t) => t.slug));
+      const missing = uniqueSlugs.filter((s) => !foundSet.has(s));
+      if (missing.length > 0) {
+        throw new ApiError(`Tag tidak ditemukan: ${missing.join(", ")}`, 400);
+      }
+      tagConnect = uniqueSlugs.map((s) => ({ slug: s }));
     }
 
-    const topic = await db.topic.create({
-      data: {
-        ...topicData,
-        isPublished: topicData.isPublished ?? true,
-        tags: tagConnect.length > 0 ? { connect: tagConnect } : undefined,
-      },
-      include: {
-        tags: { select: { id: true, name: true, slug: true } },
-      },
-    });
+    const topic = await db.topic
+      .create({
+        data: {
+          ...topicData,
+          isPublished: topicData.isPublished ?? true,
+          tags: tagConnect.length > 0 ? { connect: tagConnect } : undefined,
+        },
+        include: {
+          tags: { select: { id: true, name: true, slug: true } },
+        },
+      })
+      .catch((err: unknown) => rethrowMappedPrismaError(err, { unique: "Slug topik sudah digunakan" }));
 
     await logAudit(
       session.user.id,

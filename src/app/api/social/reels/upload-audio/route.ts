@@ -14,6 +14,7 @@ import { join } from "path";
 import { randomBytes } from "crypto";
 import { ApiError, errorResponse, requireRole, successResponse } from "@/lib/api-utils";
 import { addBgmTrack } from "@/lib/social/bgm-library";
+import { sniffAudioMime } from "@/lib/upload-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,12 +36,17 @@ export async function POST(request: NextRequest) {
       throw new ApiError("Ukuran audio maksimal 25MB", 400);
     }
 
-    const safeExt = (file.type.split("/")[1] || "mp3").replace(/[^a-z0-9]/gi, "").slice(0, 8) || "mp3";
-    const filename = `${Date.now()}-${randomBytes(6).toString("hex")}.${safeExt}`;
+    const rawBytes = Buffer.from(await file.arrayBuffer());
+    const sniffed = sniffAudioMime(new Uint8Array(rawBytes));
+    if (!sniffed) {
+      throw new ApiError("Isi file audio tidak valid. Gunakan MP3, M4A, AAC, WAV, atau OGG.", 400);
+    }
+
+    const filename = `${Date.now()}-${randomBytes(6).toString("hex")}.${sniffed.ext}`;
     const bucket = "social-reels-bgm";
     const uploadDir = join(process.cwd(), "public", "uploads", bucket);
     await mkdir(uploadDir, { recursive: true });
-    await writeFile(join(uploadDir, filename), Buffer.from(await file.arrayBuffer()));
+    await writeFile(join(uploadDir, filename), rawBytes);
 
     const url = `/uploads/${bucket}/${filename}`;
     // Auto-save to the reusable library so it can be picked again later.
@@ -49,8 +55,8 @@ export async function POST(request: NextRequest) {
 
     return successResponse({
       url,
-      mimeType: file.type,
-      size: file.size,
+      mimeType: sniffed.mime,
+      size: rawBytes.length,
       filename: file.name,
       tracks,
     });

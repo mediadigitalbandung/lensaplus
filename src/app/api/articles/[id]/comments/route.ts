@@ -104,6 +104,16 @@ export async function POST(
     const body = await request.json();
     const data = createCommentSchema.parse(body);
 
+    if (data.parentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where: { id: data.parentId },
+        select: { id: true, articleId: true },
+      });
+      if (!parentComment || parentComment.articleId !== params.id) {
+        throw new ApiError("Komentar induk tidak ditemukan pada artikel ini", 400);
+      }
+    }
+
     const sanitizedAuthor = sanitizeText(data.authorName);
     const sanitizedEmail = sanitizeEmail(data.authorEmail);
     const sanitizedContent = sanitizeText(data.content);

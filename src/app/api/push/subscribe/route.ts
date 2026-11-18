@@ -1,47 +1,69 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
-import { getClientIp } from "@/lib/rate-limit";
+import { getClientIp, pushSubscribeRateLimit } from "@/lib/rate-limit";
+import { assertSafePublicUrl } from "@/lib/scraper/fetch";
+import { readJsonBody } from "@/lib/security";
 
-function getIp(req: NextRequest): string {
-  return getClientIp(req);
+const subscribeSchema = z.object({
+  subscription: z.object({
+    endpoint: z.string().trim().min(1).max(2000),
+    keys: z.object({
+      p256dh: z.string().trim().min(16).max(512),
+      auth: z.string().trim().min(8).max(256),
+    }),
+  }),
+  categorySlugs: z
+    .array(z.string().trim().regex(/^[a-z0-9-]+$/).max(100))
+    .max(30)
+    .optional()
+    .default([]),
+});
+
+const unsubscribeSchema = z.object({
+  endpoint: z.string().trim().min(1).max(2000),
+});
+
+async function assertValidPushEndpoint(endpoint: string): Promise<string> {
+  let parsed: URL;
+  try {
+    parsed = await assertSafePublicUrl(endpoint);
+  } catch {
+    throw new ApiError("Endpoint push tidak valid atau tidak aman", 400);
+  }
+  if (parsed.protocol !== "https:") {
+    throw new ApiError("Endpoint push harus menggunakan HTTPS", 400);
+  }
+  return parsed.toString();
 }
 
 // POST /api/push/subscribe
 // Body: { subscription: PushSubscriptionJSON, categorySlugs?: string[] }
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const subscription = body.subscription as {
-      endpoint?: string;
-      keys?: { p256dh?: string; auth?: string };
-    } | undefined;
-    const categorySlugs: string[] = Array.isArray(body.categorySlugs)
-      ? body.categorySlugs
-      : [];
-
-    if (
-      !subscription?.endpoint ||
-      !subscription?.keys?.p256dh ||
-      !subscription?.keys?.auth
-    ) {
-      throw new ApiError("Invalid subscription payload", 400);
+    const ip = getClientIp(req);
+    if (!pushSubscribeRateLimit(ip).success) {
+      throw new ApiError("Terlalu banyak permintaan subscribe. Coba lagi nanti.", 429);
     }
 
-    const ip = getIp(req);
-    const userAgent = req.headers.get("user-agent") || undefined;
+    const body = await readJsonBody(req);
+    const { subscription, categorySlugs } = subscribeSchema.parse(body);
+    const safeEndpoint = await assertValidPushEndpoint(subscription.endpoint);
+
+    const userAgent = (req.headers.get("user-agent") || "").slice(0, 500) || undefined;
+    const categoryCsv = categorySlugs.length > 0 ? Array.from(new Set(categorySlugs)).join(",") : null;
 
     // Upsert by endpoint — replaces existing if user re-subscribes same browser
     const sub = await prisma.pushSubscription.upsert({
-      where: { endpoint: subscription.endpoint },
+      where: { endpoint: safeEndpoint },
       create: {
-        endpoint: subscription.endpoint,
+        endpoint: safeEndpoint,
         p256dh: subscription.keys.p256dh,
         auth: subscription.keys.auth,
         ip,
         userAgent,
-        categorySlugs:
-          categorySlugs.length > 0 ? categorySlugs.join(",") : null,
+        categorySlugs: categoryCsv,
         isActive: true,
         failureCount: 0,
       },
@@ -50,8 +72,7 @@ export async function POST(req: NextRequest) {
         auth: subscription.keys.auth,
         userAgent,
         ip,
-        categorySlugs:
-          categorySlugs.length > 0 ? categorySlugs.join(",") : null,
+        categorySlugs: categoryCsv,
         isActive: true,
         failureCount: 0,
       },
@@ -70,9 +91,23 @@ export async function POST(req: NextRequest) {
 // Body: { endpoint: string }
 export async function DELETE(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const endpoint = body.endpoint as string | undefined;
-    if (!endpoint) throw new ApiError("Missing endpoint", 400);
+    const ip = getClientIp(req);
+    if (!pushSubscribeRateLimit(ip).success) {
+      throw new ApiError("Terlalu banyak permintaan. Coba lagi nanti.", 429);
+    }
+
+    const body = await readJsonBody(req);
+    const { endpoint } = unsubscribeSchema.parse(body);
+
+    let parsed: URL;
+    try {
+      parsed = new URL(endpoint);
+    } catch {
+      throw new ApiError("Endpoint push tidak valid", 400);
+    }
+    if (parsed.protocol !== "https:") {
+      throw new ApiError("Endpoint push tidak valid", 400);
+    }
 
     await prisma.pushSubscription.updateMany({
       where: { endpoint },

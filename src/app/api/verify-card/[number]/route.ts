@@ -9,10 +9,13 @@ import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-utils";
 import { roleLabelsMap } from "@/lib/roles";
 import { effectiveStatus, STATUS_LABELS } from "@/lib/membership";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params: p }: { params: Promise<{ number: string }> }) {
+export async function GET(req: NextRequest, { params: p }: { params: Promise<{ number: string }> }) {
+  const blocked = guardPublicRead(req);
+  if (blocked) return blocked;
   try {
     const { number } = await p;
     const card = await prisma.membershipCard.findUnique({
@@ -37,7 +40,7 @@ export async function GET(_req: NextRequest, { params: p }: { params: Promise<{ 
       statusLabel: STATUS_LABELS[status] || status,
       issuedAt: card.issuedAt,
       expiresAt: card.expiresAt,
-      organization: "Lensaplus — Media Berita Digital Bandung",
+      organization: "Lensaplus — Media Berita Digital Nasional Indonesia",
     });
   } catch (error) {
     return errorResponse(error);

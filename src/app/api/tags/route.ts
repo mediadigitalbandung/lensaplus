@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { ApiError, successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
 import { slugify } from "@/lib/utils";
+import { rethrowMappedPrismaError } from "@/lib/security";
 
 // GET /api/tags
 export async function GET() {
@@ -29,12 +30,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createTagSchema.parse(body);
 
-    const tag = await prisma.tag.create({
-      data: {
-        name: data.name,
-        slug: data.slug || slugify(data.name),
-      },
-    });
+    const slug = data.slug || slugify(data.name);
+    if (!slug) {
+      throw new ApiError("Slug tag tidak valid", 400);
+    }
+
+    const tag = await prisma.tag
+      .create({
+        data: {
+          name: data.name,
+          slug,
+        },
+      })
+      .catch((err) =>
+        rethrowMappedPrismaError(err, { unique: "Nama atau slug tag sudah digunakan" }),
+      );
 
     await logAudit(session.user.id, "CREATE", "tag", tag.id, `Membuat tag: ${tag.name}`);
 
@@ -63,6 +73,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const nextSlug = data.slug || slugify(data.name);
+    if (!nextSlug) {
+      throw new ApiError("Slug tag tidak valid", 400);
+    }
     const conflict = await prisma.tag.findFirst({
       where: {
         id: { not: data.id },
@@ -73,10 +86,17 @@ export async function PUT(request: NextRequest) {
       return errorResponse(new ApiError("Nama atau slug tag sudah digunakan", 409));
     }
 
-    const updated = await prisma.tag.update({
-      where: { id: data.id },
-      data: { name: data.name, slug: nextSlug },
-    });
+    const updated = await prisma.tag
+      .update({
+        where: { id: data.id },
+        data: { name: data.name, slug: nextSlug },
+      })
+      .catch((err) =>
+        rethrowMappedPrismaError(err, {
+          unique: "Nama atau slug tag sudah digunakan",
+          notFound: "Tag tidak ditemukan",
+        }),
+      );
 
     await logAudit(session.user.id, "UPDATE", "tag", updated.id, `Memperbarui tag: ${updated.name}`);
 

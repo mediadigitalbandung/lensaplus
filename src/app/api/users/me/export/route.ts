@@ -13,7 +13,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, errorResponse, logAudit } from "@/lib/api-utils";
+import { ApiError, requireAuth, errorResponse, logAudit } from "@/lib/api-utils";
+import { getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
+      throw new ApiError("User tidak ditemukan", 404);
     }
 
     const [articles, comments] = await Promise.all([
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
       comments,
     };
 
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(req);
     await logAudit(userId, "DSR_EXPORT", "User", userId, undefined, ip);
 
     return new NextResponse(JSON.stringify(exportData, null, 2), {

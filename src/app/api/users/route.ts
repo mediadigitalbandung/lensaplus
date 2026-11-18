@@ -69,13 +69,20 @@ export async function GET(request: NextRequest) {
 }
 
 const createUserSchema = z.object({
-  email: z.string().email("Email tidak valid"),
-  password: z.string().min(8, "Password minimal 8 karakter"),
+  email: z.string().email("Email tidak valid").max(254),
+  password: z.string().min(8, "Password minimal 8 karakter").max(200),
   name: z.string().min(2).max(100),
   role: z.enum(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR", "SENIOR_JOURNALIST", "JOURNALIST", "CONTRIBUTOR"]),
-  specialization: z.string().optional(),
-  bio: z.string().optional(),
-  phone: z.string().optional(),
+  specialization: z.string().max(200).optional(),
+  bio: z.string().max(1000).optional(),
+  phone: z.string().max(20).optional(),
+  lensaplusEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/, "Format local-part email tidak valid")
+    .optional()
+    .or(z.literal("")),
 });
 
 // POST /api/users
@@ -83,19 +90,19 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireRole(["SUPER_ADMIN"]);
     const body = await request.json();
-    const data = createUserSchema.parse(body);
-    data.email = data.email.toLowerCase();
+    const { lensaplusEmail, ...userData } = createUserSchema.parse(body);
+    userData.email = userData.email.toLowerCase();
 
-    const existing = await prisma.user.findUnique({ where: { email: data.email } });
+    const existing = await prisma.user.findUnique({ where: { email: userData.email } });
     if (existing) {
       throw new ApiError("Email sudah terdaftar", 409);
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 12);
+    const hashedPassword = await bcrypt.hash(userData.password, 12);
 
     const user = await prisma.user.create({
       data: {
-        ...data,
+        ...userData,
         password: hashedPassword,
       },
       select: {
@@ -119,11 +126,10 @@ export async function POST(request: NextRequest) {
 
     // Create email@lensaplus.com if requested
     let emailCreated = false;
-    const lensaplusEmail = body.lensaplusEmail as string | undefined;
     if (lensaplusEmail && lensaplusEmail.length >= 2) {
       try {
-        await addDestinationAddress(data.email);
-        await createEmailForward(lensaplusEmail, data.email);
+        await addDestinationAddress(userData.email);
+        await createEmailForward(lensaplusEmail, userData.email);
         emailCreated = true;
       } catch {
         // Non-critical — email routing might not be active yet

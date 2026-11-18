@@ -9,7 +9,7 @@ import {
   requireAuth,
   successResponse,
 } from "@/lib/api-utils";
-import { canManageTiktok } from "@/lib/tiktok/specs";
+import { canManageTiktok, ownsTiktok } from "@/lib/tiktok/specs";
 import { youtubeImportRateLimit } from "@/lib/rate-limit";
 import { extractYouTubeId, canonicalYouTubeUrl } from "@/lib/youtube/video-url";
 
@@ -60,7 +60,9 @@ export async function POST(request: NextRequest) {
 
     if (data.accountId) {
       const acct = await prisma.tiktokAccount.findUnique({ where: { id: data.accountId } });
-      if (!acct) throw new ApiError("Akun TikTok tidak ditemukan", 404);
+      if (!acct || !ownsTiktok(session.user.role, acct.ownerId, session.user.id)) {
+        throw new ApiError("Akun TikTok tidak ditemukan", 404);
+      }
     }
 
     // Claim the video id. `sourceVideoId @unique` is the dedup lock: a second

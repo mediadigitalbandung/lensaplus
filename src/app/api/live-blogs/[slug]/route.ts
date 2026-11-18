@@ -7,13 +7,16 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { errorResponse, successResponse, ApiError } from "@/lib/api-utils";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params: paramsPromise }: { params: Promise<{ slug: string }> }
 ) {
+  const blocked = guardPublicRead(req);
+  if (blocked) return blocked;
   const params = await paramsPromise;
   try {
     const blog = await prisma.liveBlog.findUnique({

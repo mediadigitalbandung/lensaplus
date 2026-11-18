@@ -13,7 +13,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { errorResponse, successResponse, parsePositiveInt } from "@/lib/api-utils";
+import { ApiError, errorResponse, successResponse, parsePositiveInt } from "@/lib/api-utils";
 import { guardPublicRead } from "@/lib/rate-limit";
 import type { Prisma } from "@prisma/client";
 
@@ -41,12 +41,21 @@ export async function GET(req: NextRequest) {
     const toParam = searchParams.get("to");
     const limit = parsePositiveInt(searchParams.get("limit"), 50, 200);
 
-    const fromDate = fromParam
-      ? new Date(fromParam)
-      : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const toDate = toParam
-      ? new Date(toParam)
-      : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+    let fromDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    if (fromParam) {
+      fromDate = new Date(fromParam);
+      if (Number.isNaN(fromDate.getTime())) {
+        throw new ApiError("Parameter tanggal 'from' tidak valid", 400);
+      }
+    }
+
+    let toDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+    if (toParam) {
+      toDate = new Date(toParam);
+      if (Number.isNaN(toDate.getTime())) {
+        throw new ApiError("Parameter tanggal 'to' tidak valid", 400);
+      }
+    }
 
     const where: Prisma.MarketEventWhereInput = {
       isPublished: true,

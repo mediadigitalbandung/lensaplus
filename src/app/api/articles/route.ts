@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { sanitizeHtml, cleanAIShortText } from "@/lib/sanitize";
+import { sanitizeHtml, cleanAIShortText, buildSanitizedSourcesCreate } from "@/lib/sanitize";
 import { extractFirstImageUrl } from "@/lib/image-extract";
 import {
   successResponse,
@@ -39,12 +39,13 @@ const createArticleSchema = z.object({
   sources: z
     .array(
       z.object({
-        name: z.string().min(1),
-        title: z.string().optional(),
-        institution: z.string().optional(),
-        url: z.string().optional(),
+        name: z.string().min(1).max(200),
+        title: z.string().max(200).optional().nullable(),
+        institution: z.string().max(200).optional().nullable(),
+        url: z.string().max(500).optional().nullable(),
       })
     )
+    .max(50)
     .optional(),
   scheduledAt: z.string().datetime().optional().nullable(),
   isAutosave: z.boolean().optional(),
@@ -107,13 +108,17 @@ export async function GET(request: NextRequest) {
       // No status filter — return all (subject to scoping below)
     } else if (status === "PUBLISHED") {
       where.status = "PUBLISHED";
-    } else {
+    } else if (
+      ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"].includes(status)
+    ) {
       // Non-public statuses require auth
       const session = await requireAuth();
       if (!canViewAllArticles(session.user.role)) {
         scopedViewerId = session.user.id;
       }
       where.status = status;
+    } else {
+      throw new ApiError("Status artikel tidak valid", 400);
     }
 
     const limit = parsePositiveInt(rawLimit, 12, status === "PUBLISHED" ? 100 : 500);
@@ -266,7 +271,17 @@ export async function POST(request: NextRequest) {
       : [];
 
     // Determine the actual author
-    const effectiveAuthorId = (canApproveArticles(session.user.role) && data.authorId) ? data.authorId : session.user.id;
+    let effectiveAuthorId = session.user.id;
+    if (canApproveArticles(session.user.role) && data.authorId && data.authorId !== session.user.id) {
+      const targetAuthor = await prisma.user.findUnique({
+        where: { id: data.authorId },
+        select: { id: true },
+      });
+      if (!targetAuthor) {
+        throw new ApiError("Penulis tidak ditemukan", 400);
+      }
+      effectiveAuthorId = data.authorId;
+    }
 
     // Reject a bogus / non-editor assignedEditorId (the form only offers
     // editors, but the API is the trust boundary).
@@ -313,9 +328,12 @@ export async function POST(request: NextRequest) {
         publishedAt: null,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
         tags: { connect: tagConnections },
-        sources: data.sources
-          ? { create: data.sources }
-          : undefined,
+        sources: (() => {
+          const sanitizedSources = buildSanitizedSourcesCreate(data.sources);
+          return sanitizedSources && sanitizedSources.length > 0
+            ? { create: sanitizedSources }
+            : undefined;
+        })(),
         reviewedBy: assignedReviewerId,
         assignedEditorId: data.assignedEditorId || null,
       },

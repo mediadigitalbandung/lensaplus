@@ -1,5 +1,6 @@
 // Input sanitization utilities
 import sanitize from "sanitize-html";
+import { isSafeHttpUrl } from "./safe-path";
 
 const ALLOWED_TAGS = [
   "h1", "h2", "h3", "h4", "h5", "h6",
@@ -197,3 +198,42 @@ export function escapeHtml(raw: string | null | undefined): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+export interface SanitizedSourceInput {
+  name: string;
+  title?: string | null;
+  institution?: string | null;
+  url?: string | null;
+}
+
+/**
+ * Sanitize and bound article `sources` payload before writing to Prisma.
+ * Enforces `sanitizeText`, length caps, and `isSafeHttpUrl` on `url` (unsafe
+ * schemes like `javascript:` or `data:` are stripped to `null`).
+ */
+export function buildSanitizedSourcesCreate(sourcesData: unknown) {
+  if (!Array.isArray(sourcesData)) return undefined;
+  return sourcesData
+    .filter((s): s is SanitizedSourceInput => {
+      if (!s || typeof s !== "object") return false;
+      const name = (s as SanitizedSourceInput).name;
+      return typeof name === "string" && sanitizeText(name).length > 0;
+    })
+    .slice(0, 50)
+    .map((s) => ({
+      name: sanitizeText(s.name).slice(0, 200),
+      title:
+        typeof s.title === "string" && sanitizeText(s.title)
+          ? sanitizeText(s.title).slice(0, 200)
+          : null,
+      institution:
+        typeof s.institution === "string" && sanitizeText(s.institution)
+          ? sanitizeText(s.institution).slice(0, 200)
+          : null,
+      url:
+        typeof s.url === "string" && isSafeHttpUrl(s.url)
+          ? s.url.trim().slice(0, 500)
+          : null,
+    }));
+}
+

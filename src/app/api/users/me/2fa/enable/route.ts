@@ -8,12 +8,17 @@ import { requireAuth, successResponse, errorResponse, ApiError } from "@/lib/api
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
 import { verifyTotp, generateBackupCodes, hashBackupCodes } from "@/lib/totp";
+import { twoFactorRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await requireAuth();
+    const rl = twoFactorRateLimit(session.user.id);
+    if (!rl.success) {
+      throw new ApiError("Terlalu banyak percobaan verifikasi 2FA. Coba lagi dalam 15 menit.", 429);
+    }
     const { code } = await req.json().catch(() => ({ code: "" }));
 
     const user = await prisma.user.findUnique({

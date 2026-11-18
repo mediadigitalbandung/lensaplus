@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApiError, successResponse, errorResponse } from "@/lib/api-utils";
+import { adTrackRateLimit, getClientIp } from "@/lib/rate-limit";
 
 // POST /api/ads/:id/track?type=impression|click
 export async function POST(
@@ -11,6 +12,10 @@ export async function POST(
 ) {
   const params = await paramsPromise;
   try {
+    const ip = getClientIp(request);
+    if (!adTrackRateLimit(ip).success) {
+      throw new ApiError("Terlalu banyak permintaan pelacakan iklan.", 429);
+    }
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "impression";
     if (type !== "impression" && type !== "click") {

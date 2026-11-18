@@ -14,6 +14,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { errorResponse, successResponse, parsePositiveInt } from "@/lib/api-utils";
+import { guardPublicRead } from "@/lib/rate-limit";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +45,8 @@ const VALID_STATUSES = new Set([
 ]);
 
 export async function GET(req: NextRequest) {
+  const blocked = guardPublicRead(req);
+  if (blocked) return blocked;
   try {
     const { searchParams } = new URL(req.url);
 

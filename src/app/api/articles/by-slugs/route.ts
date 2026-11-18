@@ -1,17 +1,23 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-utils";
 import { guardPublicRead } from "@/lib/rate-limit";
+import { readJsonBody } from "@/lib/security";
+
+const bySlugsSchema = z.object({
+  slugs: z.array(z.string().trim().min(1).max(200)).optional().default([]),
+});
 
 // POST /api/articles/by-slugs — fetch articles by slugs array (for bookmarks)
 export async function POST(request: NextRequest) {
   const blocked = guardPublicRead(request);
   if (blocked) return blocked;
   try {
-    const body = await request.json();
-    const slugs: string[] = body.slugs || [];
+    const body = await readJsonBody(request);
+    const { slugs } = bySlugsSchema.parse(body);
 
-    if (!Array.isArray(slugs) || slugs.length === 0) {
+    if (slugs.length === 0) {
       return successResponse([]);
     }
 

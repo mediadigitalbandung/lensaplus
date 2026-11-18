@@ -5,13 +5,16 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApiError, errorResponse, successResponse } from "@/lib/api-utils";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = guardPublicRead(req);
+  if (blocked) return blocked;
   const params = await paramsPromise;
   try {
     const regulation = await prisma.regulation.findFirst({

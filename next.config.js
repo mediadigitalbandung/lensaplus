@@ -58,16 +58,39 @@ const nextConfig = {
     ],
   },
   async headers() {
+    const isProd = process.env.NODE_ENV === "production";
+    const scriptSrc = [
+      "'self'",
+      "'unsafe-inline'",
+      ...(!isProd ? ["'unsafe-eval'"] : []),
+      "https://challenges.cloudflare.com",
+      "https://static.cloudflareinsights.com",
+      "https://pagead2.googlesyndication.com",
+      "https://adservice.google.com",
+      "https://partner.googleadservices.com",
+      "https://fundingchoicesmessages.google.com",
+      "https://*.adtrafficquality.google",
+      "https://www.googletagmanager.com",
+      "https://www.google-analytics.com",
+    ].join(" ");
+    const imgSrc = isProd
+      ? "img-src 'self' data: blob: https:"
+      : "img-src 'self' data: blob: https: http:";
+
     return [
       {
         source: "/(.*)",
         headers: [
           // HSTS — force HTTPS, preload-eligible (max-age 1 year + includeSubDomains)
           // Production-only; reverse proxy / dev environment doesn't get HSTS.
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains; preload",
-          },
+          ...(isProd
+            ? [
+                {
+                  key: "Strict-Transport-Security",
+                  value: "max-age=31536000; includeSubDomains; preload",
+                },
+              ]
+            : []),
           // Prevent clickjacking
           { key: "X-Frame-Options", value: "DENY" },
           // Prevent MIME type sniffing
@@ -86,18 +109,19 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
+              "object-src 'none'",
               // Cloudflare auto-injects analytics beacon (`static.cloudflareinsights.com/beacon.min.js`)
               // at the edge for any site behind Cloudflare. Whitelist it alongside Turnstile
               // (challenges.cloudflare.com) so the console doesn't log CSP violations on every page.
               // Whitelist Google AdSense + Funding Choices CMP + Google Tag Manager / GA4
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://adservice.google.com https://partner.googleadservices.com https://fundingchoicesmessages.google.com https://*.adtrafficquality.google https://www.googletagmanager.com https://www.google-analytics.com",
+              `script-src ${scriptSrc}`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https: http:",
+              imgSrc,
               // Whitelist Google AdSense + Funding Choices + Google Tag Manager / GA4 connections
               "connect-src 'self' https://api.deepseek.com https://api.anthropic.com https://trends.google.com https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://cloudflareinsights.com https://pagead2.googlesyndication.com https://adservice.google.com https://*.doubleclick.net https://*.googlesyndication.com https://fundingchoicesmessages.google.com https://*.adtrafficquality.google https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com",
-              // Whitelist Google AdSense + Funding Choices + Google Tag Manager frames
-              "frame-src 'self' https://challenges.cloudflare.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.safeframe.googlesyndication.com https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com https://*.adtrafficquality.google https://www.googletagmanager.com",
+              // Whitelist YouTube embeds + Cloudflare Turnstile + Google AdSense + Funding Choices + GTM frames
+              "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://challenges.cloudflare.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.safeframe.googlesyndication.com https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com https://*.adtrafficquality.google https://www.googletagmanager.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
@@ -139,11 +163,17 @@ if (SENTRY_DSN) {
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
     authToken: process.env.SENTRY_AUTH_TOKEN,
-    // Source map upload — disabled if no auth token
-    sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+    // Source map upload — disabled if no auth token; delete maps after upload in v10
+    sourcemaps: {
+      disable: !process.env.SENTRY_AUTH_TOKEN,
+      deleteSourcemapsAfterUpload: true,
+    },
     widenClientFileUpload: true,
-    hideSourceMaps: true,
-    disableLogger: true,
+    webpack: {
+      treeshake: {
+        removeDebugLogging: true,
+      },
+    },
   });
 } else {
   module.exports = nextConfig;

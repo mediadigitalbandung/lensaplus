@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
+import { ApiError, successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
 import { slugify } from "@/lib/utils";
+import { rethrowMappedPrismaError } from "@/lib/security";
 
 // GET /api/categories
 export async function GET() {
@@ -32,15 +33,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createCategorySchema.parse(body);
 
-    const category = await prisma.category.create({
-      data: {
-        name: data.name,
-        slug: data.slug || slugify(data.name),
-        description: data.description,
-        icon: data.icon,
-        order: data.order ?? 0,
-      },
-    });
+    const slug = data.slug || slugify(data.name);
+    if (!slug) {
+      throw new ApiError("Slug kategori tidak valid", 400);
+    }
+
+    const category = await prisma.category
+      .create({
+        data: {
+          name: data.name,
+          slug,
+          description: data.description,
+          icon: data.icon,
+          order: data.order ?? 0,
+        },
+      })
+      .catch((err) =>
+        rethrowMappedPrismaError(err, { unique: "Nama atau slug kategori sudah digunakan" }),
+      );
 
     await logAudit(session.user.id, "CREATE", "category", category.id, `Membuat kategori: ${category.name}`);
 

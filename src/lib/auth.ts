@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { Role } from "@prisma/client";
-import { isLoginBlocked, registerLoginFailure } from "./rate-limit";
+import { isLoginBlocked, registerLoginFailure, getClientIpFromHeaders } from "./rate-limit";
 import { decryptSecret } from "./crypto-secrets";
 import { verifyTotp, consumeBackupCode } from "./totp";
 
@@ -116,8 +116,10 @@ export const authOptions: NextAuthOptions = {
         // Behind Cloudflare, cf-connecting-ip is the TRUE visitor IP; x-forwarded-for
         // can be a CF-edge chain. Match getClientIp()'s precedence so the guard
         // buckets per real visitor, not per CF edge node.
-        const h = (req?.headers || {}) as Record<string, string | undefined>;
-        const ip = (h["cf-connecting-ip"] || (h["x-forwarded-for"] || "").split(",")[0] || h["x-real-ip"] || "").trim();
+        const rawIp = getClientIpFromHeaders(
+          (req?.headers || {}) as Record<string, string | string[] | undefined>
+        );
+        const ip = rawIp === "unknown" ? "" : rawIp;
         if (ip && isLoginBlocked(ip)) {
           console.warn(`[auth] login blocked (brute-force guard): ${ip}`);
           throw new Error("Terlalu banyak percobaan login gagal. Coba lagi dalam 15 menit.");

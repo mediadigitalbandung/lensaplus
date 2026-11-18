@@ -3,9 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, logAudit, parsePositiveInt } from "@/lib/api-utils";
 import { isSafeImageRef } from "@/lib/safe-path";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 // GET /api/redaksi — public
 export async function GET(request: NextRequest) {
+  const blocked = guardPublicRead(request);
+  if (blocked) return blocked;
   try {
     const { searchParams } = new URL(request.url);
     const limit = parsePositiveInt(searchParams.get("limit"), 50, 100);

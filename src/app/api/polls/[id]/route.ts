@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, logAudit, ApiError } from "@/lib/api-utils";
 import { isSafeImageRef } from "@/lib/safe-path";
+import { rethrowMappedPrismaError } from "@/lib/security";
 
 const updateSchema = z.object({
   question: z.string().min(5).max(300).optional(),
@@ -23,7 +24,14 @@ export async function PUT(request: NextRequest, { params: paramsPromise }: { par
     const body = await request.json();
     const data = updateSchema.parse(body);
 
-    const updated = await prisma.poll.update({ where: { id: params.id }, data });
+    const updated = await prisma.poll
+      .update({ where: { id: params.id }, data })
+      .catch((err) =>
+        rethrowMappedPrismaError(err, {
+          notFound: "Polling tidak ditemukan",
+          foreignKey: "Kategori tidak ditemukan",
+        }),
+      );
     await logAudit(session.user.id, "UPDATE", "poll", params.id, `Mengupdate polling: ${updated.question}`);
     return successResponse(updated);
   } catch (error) {

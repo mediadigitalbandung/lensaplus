@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole, ApiError, logAudit } from "@/lib/api-utils";
+import { z } from "zod";
+import { requireRole, ApiError, logAudit, errorResponse } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { cleanAIShortText } from "@/lib/sanitize";
 import { callAI } from "@/lib/ai-client";
+import { getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
+
+const bulkSeoSchema = z
+  .object({
+    articleIds: z.array(z.string().min(1)).max(20).optional(),
+  })
+  .optional()
+  .default({});
 
 const SEO_SYSTEM_PROMPT =
   "Kamu adalah asisten SEO untuk media berita Indonesia. Jawab singkat dan langsung tanpa tanda kutip.";
@@ -13,8 +22,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
 
-    const body = await req.json();
-    const { articleIds } = body as { articleIds?: string[] };
+    const rawBody = await req.json().catch(() => {
+      throw new ApiError("Payload JSON tidak valid", 400);
+    });
+    const { articleIds } = bulkSeoSchema.parse(rawBody ?? {});
 
     // Find articles missing SEO fields
     const where: Record<string, unknown> = {
@@ -98,7 +109,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(req);
     await logAudit(session.user.id, "AI_BULK_SEO", "Article", "batch", JSON.stringify({ processed, total: articles.length }), ip);
 
     return NextResponse.json({
@@ -106,9 +117,6 @@ export async function POST(req: NextRequest) {
       data: { processed, total: articles.length, results, message: `${processed} artikel berhasil di-generate dengan AI` },
     });
   } catch (error) {
-    if (error instanceof ApiError) {
-      return NextResponse.json({ success: false, error: error.message }, { status: error.statusCode });
-    }
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+    return errorResponse(error);
   }
 }

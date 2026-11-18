@@ -50,6 +50,7 @@ import { resolveTagIds } from "@/lib/resolve-tags";
 import { getScraperAuthor } from "@/lib/scraper/author";
 import { checkArticle } from "@/lib/ai-guardrail";
 import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
+import { sanitizeRasterImageBuffer } from "@/lib/upload-security";
 import * as Sentry from "@sentry/nextjs";
 
 export const dynamic = "force-dynamic";
@@ -334,7 +335,9 @@ function tryParseAi(raw: string, numArticles: number): GeneratedSlot[] | null {
       if (
         !a ||
         typeof a.title !== "string" ||
-        typeof a.content !== "string"
+        typeof a.content !== "string" ||
+        !a.title.trim() ||
+        !a.content.trim()
       ) {
         continue;
       }
@@ -522,20 +525,14 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Save photo to storage + register Media row with AI-generated
-        // caption / title / credit.
-        const ext =
-          entry.file.type === "image/png"
-            ? "png"
-            : entry.file.type === "image/webp"
-              ? "webp"
-              : "jpg";
-        const photoFilename = `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
-        const photoBytes = Buffer.from(await entry.file.arrayBuffer());
+        // Save photo to storage (magic-byte sniffed + re-encoded via sharp to strip EXIF)
+        const rawPhotoBytes = Buffer.from(await entry.file.arrayBuffer());
+        const sanitizedImage = await sanitizeRasterImageBuffer(rawPhotoBytes);
+        const photoFilename = `${Date.now()}-${randomBytes(6).toString("hex")}.${sanitizedImage.ext}`;
         const { url: photoUrl } = await driver.put({
           key: photoFilename,
-          contentType: entry.file.type,
-          bytes: photoBytes,
+          contentType: sanitizedImage.contentType,
+          bytes: sanitizedImage.bytes,
         });
 
         await prisma.media
@@ -543,8 +540,8 @@ export async function POST(request: NextRequest) {
             data: {
               filename: photoFilename,
               url: photoUrl,
-              type: entry.file.type,
-              size: entry.file.size,
+              type: sanitizedImage.contentType,
+              size: sanitizedImage.bytes.length,
               title: slotData.title.slice(0, 200),
               caption: slotData.photoCaption.slice(0, 1000),
               credit: slotData.photoCredit || "Lensaplus",

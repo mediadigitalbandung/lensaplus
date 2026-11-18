@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
 import { requireAuth, ApiError, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { randomBytes } from "crypto";
 import sharp from "sharp";
 import { getStorageDriver } from "@/lib/storage";
+import { sniffRasterImageType } from "@/lib/upload-security";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +92,10 @@ export async function POST(request: NextRequest) {
     // Browsers fetch AVIF/WebP via Next.js <Image> auto-negotiation when
     // available — falls back to the primary format on older browsers.
     const original = Buffer.from(await file.arrayBuffer());
+    const sniffedMime = sniffRasterImageType(new Uint8Array(original));
+    if (!sniffedMime) {
+      throw new ApiError("Isi file tidak sesuai format gambar yang valid (JPEG, PNG, atau WebP).", 400);
+    }
     const pipeline = sharp(original, { failOn: "error" })
       .rotate() // honor EXIF orientation, then strip on .toBuffer()
       .resize({
@@ -100,7 +105,7 @@ export async function POST(request: NextRequest) {
         withoutEnlargement: true,
       });
 
-    const isPng = file.type === "image/png";
+    const isPng = sniffedMime === "image/png";
     const primaryExt = isPng ? "png" : "jpg";
     const primaryContentType = isPng ? "image/png" : "image/jpeg";
     const primaryBuffer = isPng
@@ -140,7 +145,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(session.user.id, "FILE_UPLOAD", "Media", media.id, JSON.stringify({ filename: media.filename, size: media.size }), ip);
 
     return successResponse({ url: primary.url, media });

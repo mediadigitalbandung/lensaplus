@@ -14,6 +14,11 @@ import {
   canManageTiktok,
   classifyMimeAsSlot,
 } from "@/lib/tiktok/specs";
+import {
+  sanitizeRasterImageBuffer,
+  sniffAudioMime,
+  sniffVideoMime,
+} from "@/lib/upload-security";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +48,11 @@ export async function POST(request: NextRequest) {
     const target = (formData.get("target")?.toString() || "slot").trim();
     if (!file) throw new ApiError("File tidak ditemukan", 400);
 
+    const rawBytes = Buffer.from(await file.arrayBuffer());
+    let finalBytes: Buffer = rawBytes;
+    let safeExt: string;
+    let finalMime = file.type;
+
     if (target === "bgm") {
       if (!TIKTOK_BGM_MIME.includes(file.type)) {
         throw new ApiError("Format audio tidak didukung. Gunakan MP3, M4A, AAC, atau WAV.", 400);
@@ -50,6 +60,12 @@ export async function POST(request: NextRequest) {
       if (file.size > TIKTOK_BGM_MAX_BYTES) {
         throw new ApiError("Ukuran audio maksimal 25MB", 400);
       }
+      const sniffed = sniffAudioMime(new Uint8Array(rawBytes));
+      if (!sniffed || !["mp3", "m4a", "aac", "wav"].includes(sniffed.ext)) {
+        throw new ApiError("Isi file audio tidak valid. Gunakan MP3, M4A, AAC, atau WAV.", 400);
+      }
+      safeExt = sniffed.ext;
+      finalMime = sniffed.mime;
     } else {
       // slot — accepts image or video
       const isImage = TIKTOK_IMAGE_MIME.includes(file.type);
@@ -66,28 +82,37 @@ export async function POST(request: NextRequest) {
       if (isImage && file.size > TIKTOK_IMAGE_MAX_BYTES) {
         throw new ApiError("Ukuran gambar maksimal 8MB", 400);
       }
+
+      if (isImage) {
+        const sanitized = await sanitizeRasterImageBuffer(rawBytes);
+        finalBytes = sanitized.bytes;
+        safeExt = sanitized.ext;
+        finalMime = sanitized.contentType;
+      } else {
+        const sniffed = sniffVideoMime(new Uint8Array(rawBytes));
+        if (!sniffed) {
+          throw new ApiError("Isi file video tidak valid. Gunakan MP4, MOV, atau WebM.", 400);
+        }
+        safeExt = sniffed.ext;
+        finalMime = sniffed.mime;
+      }
     }
 
-    const safeExt = (() => {
-      const sub = file.type.split("/")[1] || "bin";
-      return sub.replace(/[^a-z0-9]/gi, "").slice(0, 8) || "bin";
-    })();
     const filename = `${Date.now()}-${randomBytes(6).toString("hex")}.${safeExt}`;
 
     const bucket = target === "bgm" ? "tiktok-bgm" : "tiktok-media";
     const uploadDir = join(process.cwd(), "public", "uploads", bucket);
     await mkdir(uploadDir, { recursive: true });
-    const bytes = await file.arrayBuffer();
-    await writeFile(join(uploadDir, filename), Buffer.from(bytes));
+    await writeFile(join(uploadDir, filename), finalBytes);
 
     const url = `/uploads/${bucket}/${filename}`;
-    const kind = target === "bgm" ? "AUDIO" : classifyMimeAsSlot(file.type);
+    const kind = target === "bgm" ? "AUDIO" : classifyMimeAsSlot(finalMime);
 
     return successResponse({
       url,
       kind,
-      mimeType: file.type,
-      size: file.size,
+      mimeType: finalMime,
+      size: finalBytes.length,
       filename: file.name,
     });
   } catch (error) {

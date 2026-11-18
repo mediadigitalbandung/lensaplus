@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { ApiError, successResponse, errorResponse, requireRole, logAudit } from "@/lib/api-utils";
 import { slugify } from "@/lib/utils";
+import { rethrowMappedPrismaError } from "@/lib/security";
 
 const updateCategorySchema = z.object({
   name: z.string().min(2).max(50).optional(),
@@ -29,17 +30,27 @@ export async function PUT(
     }
 
     const slug = data.name ? (data.slug || slugify(data.name)) : data.slug;
+    if (slug !== undefined && !slug) {
+      throw new ApiError("Slug kategori tidak valid", 400);
+    }
 
-    const category = await prisma.category.update({
-      where: { id: params.id },
-      data: {
-        ...(data.name && { name: data.name }),
-        ...(slug && { slug }),
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.icon && { icon: data.icon }),
-        ...(data.order !== undefined && { order: data.order }),
-      },
-    });
+    const category = await prisma.category
+      .update({
+        where: { id: params.id },
+        data: {
+          ...(data.name && { name: data.name }),
+          ...(slug && { slug }),
+          ...(data.description !== undefined && { description: data.description }),
+          ...(data.icon && { icon: data.icon }),
+          ...(data.order !== undefined && { order: data.order }),
+        },
+      })
+      .catch((err) =>
+        rethrowMappedPrismaError(err, {
+          unique: "Nama atau slug kategori sudah digunakan",
+          notFound: "Kategori tidak ditemukan",
+        }),
+      );
 
     await logAudit(session.user.id, "UPDATE", "category", category.id, `Mengubah kategori: ${category.name}`);
 

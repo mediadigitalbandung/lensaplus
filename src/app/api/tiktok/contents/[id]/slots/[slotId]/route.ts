@@ -21,7 +21,7 @@ const patchSchema = z.object({
   durationMs: z.number().int().min(TIKTOK_SLOT_DURATION_MIN_MS).max(TIKTOK_SLOT_DURATION_MAX_MS).optional(),
   trimStartMs: z.number().int().min(0).optional(),
   trimEndMs: z.number().int().nullable().optional(),
-  caption: z.string().nullable().optional(),
+  caption: z.string().max(500).nullable().optional(),
 });
 
 // PATCH /api/tiktok/contents/:id/slots/:slotId — edit slot timing/caption

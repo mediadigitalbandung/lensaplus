@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { getPrismaErrorCode } from "@/lib/security";
 import { ReactionType } from "@prisma/client";
 
 const VALID_TYPES = Object.values(ReactionType) as ReactionType[];
@@ -93,11 +94,15 @@ export async function POST(
     });
 
     if (existing) {
-      await prisma.articleReaction.delete({ where: { id: existing.id } });
+      await prisma.articleReaction.deleteMany({ where: { id: existing.id } });
     } else {
-      await prisma.articleReaction.create({
-        data: { articleId, type, ip },
-      });
+      try {
+        await prisma.articleReaction.create({
+          data: { articleId, type, ip },
+        });
+      } catch (err) {
+        if (getPrismaErrorCode(err) !== "P2002") throw err;
+      }
     }
 
     const groups = await prisma.articleReaction.groupBy({

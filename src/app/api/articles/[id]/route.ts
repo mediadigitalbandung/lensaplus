@@ -8,11 +8,15 @@ import {
   logAudit,
   ApiError,
   assertValidEditorAssignment,
-  isSafeHttpUrl,
 } from "@/lib/api-utils";
 import { calculateReadTime } from "@/lib/utils";
 import { canApproveArticles, canViewAllArticles } from "@/lib/auth";
-import { sanitizeHtml, sanitizeText, cleanAIShortText } from "@/lib/sanitize";
+import { EDITOR_ROLES } from "@/lib/roles";
+import {
+  sanitizeHtml,
+  cleanAIShortText,
+  buildSanitizedSourcesCreate,
+} from "@/lib/sanitize";
 import { resolveTagIds } from "@/lib/resolve-tags";
 import { notifyArticleStatusChange } from "@/lib/notifications";
 import {
@@ -120,15 +124,7 @@ export async function GET(
     }
     const approvedAt = article.approvedAt || (approverId ? article.reviewedAt : null);
 
-    // MED-DB2: fire-and-forget — don't block GET response on a write.
-    // Non-critical counter; swallow errors silently.
-    if (article.status === "PUBLISHED") {
-      prisma.article.update({
-        where: { id: params.id },
-        data: { viewCount: { increment: 1 } },
-      }).catch(() => {/* non-critical */});
-    }
-
+    // Panel-only read: do not increment public viewCount on editorial/panel views.
     return successResponse({ ...article, reviewerName, approverName, approvedAt });
   } catch (error) {
     return errorResponse(error);
@@ -143,33 +139,6 @@ const ARTICLE_FULL_INCLUDE = {
   tags: true,
   sources: true,
 } as const;
-
-type SourceDraftInput = {
-  name: string;
-  title?: string;
-  institution?: string;
-  url?: string;
-};
-
-function buildSanitizedSourcesCreate(sourcesData: unknown) {
-  if (!Array.isArray(sourcesData)) return undefined;
-  return sourcesData
-    .filter(
-      (s): s is SourceDraftInput =>
-        Boolean(
-          s &&
-            typeof s === "object" &&
-            typeof (s as SourceDraftInput).name === "string" &&
-            (s as SourceDraftInput).name.trim(),
-        ),
-    )
-    .map((s) => ({
-      name: sanitizeText(s.name).slice(0, 200),
-      title: s.title ? sanitizeText(s.title).slice(0, 200) : null,
-      institution: s.institution ? sanitizeText(s.institution).slice(0, 200) : null,
-      url: s.url && isSafeHttpUrl(s.url) ? s.url.trim().slice(0, 500) : null,
-    }));
-}
 
 async function cleanupReplacedFeaturedImage(
   prevImage: string | null,
@@ -192,7 +161,7 @@ async function buildAdminFieldUpdates(opts: {
   data: UpdateArticlePayload;
   rawTags: string[] | undefined;
   sourcesData: unknown;
-  article: { id: string; status: string; title: string; content: string };
+  article: { id: string; status: string; title: string; content: string; authorId: string };
   actorLabel: string;
   alwaysCreateRevisionOnContentChange: boolean;
 }): Promise<{ updateData: Record<string, unknown>; revisionCreated: boolean }> {
@@ -231,7 +200,18 @@ async function buildAdminFieldUpdates(opts: {
   if (adminEditData.seoDescription !== undefined) {
     updateData.seoDescription = adminEditData.seoDescription || null;
   }
-  if (adminEditData.authorId) updateData.authorId = adminEditData.authorId;
+  if (adminEditData.authorId) {
+    if (adminEditData.authorId !== article.authorId) {
+      const targetAuthor = await prisma.user.findUnique({
+        where: { id: adminEditData.authorId },
+        select: { id: true },
+      });
+      if (!targetAuthor) {
+        throw new ApiError("Penulis tidak ditemukan", 400);
+      }
+    }
+    updateData.authorId = adminEditData.authorId;
+  }
   if (adminEditData.assignedEditorId !== undefined) {
     updateData.assignedEditorId = adminEditData.assignedEditorId;
     if (adminEditData.assignedEditorId) {
@@ -329,6 +309,11 @@ export async function PUT(
 
     // --- JURNALIS (article author, non-editor) ---
     if (isOwner && !isEditor) {
+      // P0 Mass-assignment guard: non-editors cannot reassign article authorship
+      if (data.authorId !== undefined && data.authorId !== article.authorId) {
+        throw new ApiError("Anda tidak memiliki izin untuk mengubah penulis artikel", 403);
+      }
+
       // Jurnalis "Batalkan Review": IN_REVIEW -> DRAFT (only by author)
       if (data.status === "DRAFT" && article.status === "IN_REVIEW") {
         const updated = await prisma.article.update({
@@ -412,9 +397,10 @@ export async function PUT(
       const resolvedTagIds = rawTags ? await resolveTagIds(rawTags) : null;
       const sanitizedSources = buildSanitizedSourcesCreate(sourcesData);
 
-      // Strip verificationLabel and request-only flags — system-controlled
-      const { reviewNote: _rn, isAutosave, ...cleanData } = data;
+      // Strip verificationLabel, authorId, and request-only flags — system-controlled
+      const { reviewNote: _rn, isAutosave, authorId: _aid, ...cleanData } = data;
       void _rn;
+      void _aid;
 
       const updated = await prisma.article.update({
         where: { id: params.id },
@@ -733,19 +719,16 @@ export async function PUT(
         return successResponse(updated);
       }
 
-      // Admin takedown: PUBLISHED -> DRAFT (or ARCHIVED with note).
+      // Admin takedown: PUBLISHED -> DRAFT.
       // Strips publishedAt so the article disappears from the public site
       // and from the news sitemap. The article body and metadata remain
       // intact so it can be re-published after edits.
-      if (
-        article.status === "PUBLISHED" &&
-        (data.status === "DRAFT" || data.status === "ARCHIVED")
-      ) {
+      if (article.status === "PUBLISHED" && data.status === "DRAFT") {
         const updated = await prisma.article.update({
           where: { id: params.id },
           data: {
-            status: data.status,
-            ...(data.status === "DRAFT" ? { verificationLabel: "UNVERIFIED" as const } : {}),
+            status: "DRAFT",
+            verificationLabel: "UNVERIFIED" as const,
             publishedAt: null,
             scheduledAt: null,
             reviewNote: data.reviewNote || null,
@@ -758,7 +741,7 @@ export async function PUT(
           "STATUS_CHANGE",
           "article",
           article.id,
-          `Admin takedown artikel ke ${data.status}: ${article.title}${data.reviewNote ? ` — Catatan: ${data.reviewNote}` : ""}`
+          `Admin takedown artikel ke DRAFT: ${article.title}${data.reviewNote ? ` — Catatan: ${data.reviewNote}` : ""}`
         );
 
         onArticleUnpublished({
@@ -771,11 +754,16 @@ export async function PUT(
         return successResponse(updated);
       }
 
-      // Admin "Arsipkan": any status -> ARCHIVED (hide from public, lock edits)
+      // Admin "Arsipkan": any status -> ARCHIVED (hide from public, lock edits, auto-resolve reports)
       if (data.status === "ARCHIVED" && article.status !== "ARCHIVED") {
         const updated = await prisma.article.update({
           where: { id: params.id },
-          data: { status: "ARCHIVED" },
+          data: {
+            status: "ARCHIVED",
+            publishedAt: null,
+            scheduledAt: null,
+            ...(data.reviewNote !== undefined ? { reviewNote: data.reviewNote || null } : {}),
+          },
           include: ARTICLE_FULL_INCLUDE,
         });
 
@@ -800,7 +788,7 @@ export async function PUT(
           "STATUS_CHANGE",
           "article",
           article.id,
-          `Admin arsipkan artikel (${article.status} → ARCHIVED): ${article.title}`
+          `Admin arsipkan artikel (${article.status} → ARCHIVED): ${article.title}${data.reviewNote ? ` — Catatan: ${data.reviewNote}` : ""}`
         );
 
         return successResponse(updated);
@@ -885,8 +873,11 @@ export async function PATCH(
       throw new ApiError("Hanya admin/chief editor yang dapat menugaskan editor", 403);
     }
 
+    const patchSchema = z.object({
+      assignedEditorId: z.string().nullable().optional(),
+    });
     const body = await request.json();
-    const { assignedEditorId } = body;
+    const { assignedEditorId } = patchSchema.parse(body);
 
     const article = await prisma.article.findUnique({
       where: { id: params.id },
@@ -896,19 +887,19 @@ export async function PATCH(
       throw new ApiError("Artikel tidak ditemukan", 404);
     }
 
-    // Validate that the assigned user exists and has editor role
+    // Validate that the assigned user exists, is active, and has an editor role (incl. SUPER_ADMIN)
     if (assignedEditorId) {
       const editor = await prisma.user.findUnique({
         where: { id: assignedEditorId },
-        select: { id: true, role: true, name: true },
+        select: { id: true, role: true, name: true, isActive: true },
       });
 
       if (!editor) {
         throw new ApiError("User tidak ditemukan", 404);
       }
 
-      if (!["EDITOR", "CHIEF_EDITOR"].includes(editor.role)) {
-        throw new ApiError("User yang ditugaskan harus memiliki role Editor atau Chief Editor", 400);
+      if (!editor.isActive || !EDITOR_ROLES.includes(editor.role)) {
+        throw new ApiError("User yang ditugaskan harus aktif dan memiliki role Editor/Admin", 400);
       }
 
       const updated = await prisma.article.update({

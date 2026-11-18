@@ -17,6 +17,7 @@ import {
 } from "@/lib/api-utils";
 import { Role } from "@prisma/client";
 import { isSafeImageRef } from "@/lib/safe-path";
+import { rethrowMappedPrismaError } from "@/lib/security";
 
 // Topic model added via schema migration — cast needed until Prisma client regenerates.
 const db = prisma as any; // biome-ignore lint: prisma cast
@@ -104,21 +105,44 @@ export async function PUT(
       }
     }
 
-    const updated = await db.topic.update({
-      where: { id: params.id },
-      data: {
-        ...topicData,
-        ...(tagSlugs !== undefined && {
-          tags: {
-            set: [],
-            connect: tagSlugs.map((s) => ({ slug: s })),
-          },
+    let uniqueTagSlugs: string[] | undefined;
+    if (tagSlugs !== undefined) {
+      uniqueTagSlugs = Array.from(new Set(tagSlugs));
+      if (uniqueTagSlugs.length > 0) {
+        const foundTags = await prisma.tag.findMany({
+          where: { slug: { in: uniqueTagSlugs } },
+          select: { slug: true },
+        });
+        const foundSet = new Set(foundTags.map((t) => t.slug));
+        const missing = uniqueTagSlugs.filter((s) => !foundSet.has(s));
+        if (missing.length > 0) {
+          throw new ApiError(`Tag tidak ditemukan: ${missing.join(", ")}`, 400);
+        }
+      }
+    }
+
+    const updated = await db.topic
+      .update({
+        where: { id: params.id },
+        data: {
+          ...topicData,
+          ...(uniqueTagSlugs !== undefined && {
+            tags: {
+              set: [],
+              connect: uniqueTagSlugs.map((s) => ({ slug: s })),
+            },
+          }),
+        },
+        include: {
+          tags: { select: { id: true, name: true, slug: true } },
+        },
+      })
+      .catch((err: unknown) =>
+        rethrowMappedPrismaError(err, {
+          unique: "Slug topik sudah digunakan",
+          notFound: "Topic tidak ditemukan",
         }),
-      },
-      include: {
-        tags: { select: { id: true, name: true, slug: true } },
-      },
-    });
+      );
 
     await logAudit(
       session.user.id,

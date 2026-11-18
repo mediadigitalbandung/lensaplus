@@ -7,11 +7,19 @@ import {
   errorResponse,
   requireAuth,
   logAudit,
+  isSafeHttpUrl,
 } from "@/lib/api-utils";
+import { isSafeImageRef } from "@/lib/safe-path";
+import { getClientIp } from "@/lib/rate-limit";
 
 const updateProfileSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter").max(100).optional(),
-  avatar: z.string().optional().nullable(),
+  avatar: z
+    .string()
+    .max(1000)
+    .refine(isSafeImageRef, "URL atau path avatar tidak valid")
+    .optional()
+    .nullable(),
   bio: z.string().max(500).optional().nullable(),
   specialization: z.string().max(200).optional().nullable(),
   phone: z.string().max(20).optional().nullable(),
@@ -20,7 +28,12 @@ const updateProfileSchema = z.object({
   pendidikan: z.string().max(200).optional().nullable(),
   pengalaman: z.string().max(2000).optional().nullable(),
   keahlian: z.string().max(500).optional().nullable(),
-  portofolio: z.string().max(300).optional().nullable(),
+  portofolio: z
+    .string()
+    .max(300)
+    .refine((v) => !v || isSafeHttpUrl(v), "URL portofolio harus http/https")
+    .optional()
+    .nullable(),
   mediaSosial: z.string().max(200).optional().nullable(),
   alamat: z.string().max(500).optional().nullable(),
 });
@@ -66,7 +79,7 @@ export async function PUT(request: NextRequest) {
       select: profileFields,
     });
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(session.user.id, "PROFILE_UPDATE", "User", session.user.id, undefined, ip);
 
     return successResponse(updated);
@@ -107,10 +120,16 @@ export async function DELETE(request: NextRequest) {
         alamat: null,
         specialization: null,
         activeSessionId: null,
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        twoFactorBackupCodes: null,
+        emailVerified: null,
+        emailVerifyToken: null,
+        emailVerifyExpires: null,
       },
     });
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(userId, "ACCOUNT_DELETE", "User", userId, "Self-requested account deletion (soft)", ip);
 
     return NextResponse.json({ success: true, message: "Akun telah dihapus." }, { status: 200 });
