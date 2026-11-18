@@ -10,9 +10,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
-  Radio,
-  Send,
-  AtSign,
   Save,
   Loader2,
   ArrowLeft,
@@ -27,7 +24,7 @@ interface GlobalToggles {
 }
 
 export default function LiveSyndicationSettingsPage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
   const { success: showSuccess, error: showError } = useToast();
 
@@ -75,8 +72,13 @@ export default function LiveSyndicationSettingsPage() {
   }, [showError]);
 
   useEffect(() => {
+    if (sessionStatus === "loading") return;
+    if (!isSuperAdmin) {
+      setLoading(false);
+      return;
+    }
     load();
-  }, [load]);
+  }, [sessionStatus, isSuperAdmin, load]);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,7 +125,7 @@ export default function LiveSyndicationSettingsPage() {
     }
   };
 
-  if (loading) {
+  if (sessionStatus === "loading" || loading) {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 size={28} className="animate-spin text-primary" />
@@ -145,13 +147,10 @@ export default function LiveSyndicationSettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/panel/live-blogs" className="text-txt-muted hover:text-primary transition-colors">
+        <Link href="/panel/live-blogs" className="text-txt-muted hover:text-primary transition-colors" aria-label="Kembali ke Live Blog">
           <ArrowLeft size={18} />
         </Link>
-        <div className="flex items-center gap-2">
-          <Radio size={20} className="text-secondary" />
-          <h1 className="text-xl font-bold text-on-surface">Kanal Sosmed Live</h1>
-        </div>
+        <h1 className="text-xl font-bold text-on-surface">Kanal Sosmed Live</h1>
       </div>
 
       <p className="text-body-sm text-txt-muted">
@@ -163,10 +162,7 @@ export default function LiveSyndicationSettingsPage() {
       <form onSubmit={save} className="space-y-6">
         {/* Telegram */}
         <div className="card p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <Send size={16} className="text-primary" />
-            <h2 className="text-label-md font-semibold text-on-surface">Telegram</h2>
-          </div>
+          <h2 className="text-label-md font-semibold text-on-surface">Telegram</h2>
 
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -199,8 +195,8 @@ export default function LiveSyndicationSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-label-sm text-txt-muted mb-1 flex items-center gap-1">
-              <AtSign size={11} /> Channel / Chat ID
+            <label className="block text-label-sm text-txt-muted mb-1">
+              Channel / Chat ID
             </label>
             <input
               type="text"

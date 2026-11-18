@@ -24,12 +24,12 @@ interface CardResponse {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  ACTIVE: "bg-green-50 text-green-700 ring-green-600/20",
-  PENDING: "bg-yellow-50 text-yellow-700 ring-yellow-600/20",
-  DRAFT: "bg-surface-tertiary text-txt-secondary ring-border",
-  SUSPENDED: "bg-red-50 text-red-700 ring-red-600/20",
-  REVOKED: "bg-red-50 text-red-700 ring-red-600/20",
-  EXPIRED: "bg-red-50 text-red-700 ring-red-600/20",
+  ACTIVE: "bg-surface text-green-700 ring-green-600/40",
+  PENDING: "bg-surface text-yellow-700 ring-yellow-600/40",
+  DRAFT: "bg-surface text-txt-secondary ring-border",
+  SUSPENDED: "bg-surface text-red-700 ring-red-600/40",
+  REVOKED: "bg-surface text-red-700 ring-red-600/40",
+  EXPIRED: "bg-surface text-red-700 ring-red-600/40",
 };
 
 function fmt(d: string | null) {

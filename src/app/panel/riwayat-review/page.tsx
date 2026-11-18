@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ClipboardCheck,
   Filter,
   Search,
   Eye,
@@ -30,40 +29,48 @@ function formatDate(dateStr: string): string {
 }
 
 export default function RiwayatReviewPage() {
+  const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
   const userId = session?.user?.id || "";
+  const authorized = EDITOR_ROLES.includes(userRole);
 
   const [articles, setArticles] = useState<ReviewedArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Redirect non-editors
-  if (sessionStatus !== "loading" && session && !EDITOR_ROLES.includes(userRole)) {
-    redirect("/panel/dashboard");
-  }
+  useEffect(() => {
+    if (sessionStatus !== "loading" && session && !authorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, session, authorized, router]);
 
   const fetchReviews = useCallback(async () => {
     if (!userId) return;
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/articles?limit=100&status=ALL&reviewedBy=${userId}`);
+      const res = await fetch(`/api/articles?page=${page}&limit=20&status=ALL&reviewedBy=${userId}`);
       if (!res.ok) throw new Error("Gagal memuat data");
       const json = await res.json();
       setArticles(json.data?.articles || []);
+      setTotalPages(json.data?.pagination?.totalPages || 1);
     } catch {
       setError("Gagal memuat riwayat review.");
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, page]);
 
   useEffect(() => {
-    if (userId) fetchReviews();
-  }, [userId, fetchReviews]);
+    if (sessionStatus !== "loading" && authorized && userId) {
+      fetchReviews();
+    }
+  }, [sessionStatus, authorized, userId, fetchReviews]);
 
   const filtered = articles.filter((a) => {
     const matchStatus =
@@ -74,7 +81,7 @@ export default function RiwayatReviewPage() {
     return matchStatus && matchSearch;
   });
 
-  if (sessionStatus === "loading" || (session && !EDITOR_ROLES.includes(userRole))) {
+  if (sessionStatus === "loading" || (session && !authorized)) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -85,10 +92,7 @@ export default function RiwayatReviewPage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="flex items-center gap-2">
-          <ClipboardCheck size={24} className="text-primary" />
-          <h1 className="text-lg sm:text-2xl font-bold text-txt-primary">Riwayat Review</h1>
-        </div>
+        <h1 className="text-lg sm:text-2xl font-bold text-txt-primary">Riwayat Review</h1>
         <p className="text-sm text-txt-secondary mt-1">
           Artikel yang telah Anda review
         </p>
@@ -225,6 +229,28 @@ export default function RiwayatReviewPage() {
                 : "Tidak ada artikel ditemukan dengan filter ini."}
             </div>
           )}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-sm text-txt-secondary">Halaman {page} dari {totalPages}</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="btn-secondary px-4 py-2 text-sm disabled:opacity-40"
+            >
+              Sebelumnya
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="btn-secondary px-4 py-2 text-sm disabled:opacity-40"
+            >
+              Selanjutnya
+            </button>
+          </div>
         </div>
       )}
     </div>

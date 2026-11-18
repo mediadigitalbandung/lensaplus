@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { RefreshCw } from "lucide-react";
+
+const MANAGEMENT_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR"];
 
 interface AnalyticsData {
   overview: {
@@ -45,7 +49,7 @@ function BarChart({ data }: { data: { date: string; count: number }[] }) {
             style={{ height: `${(d.count / max) * 100}%` }}
             title={`${d.date}: ${d.count} artikel`}
           />
-          <span className="text-[8px] text-txt-muted truncate w-full text-center">{d.date.replace(" ", "\n")}</span>
+          <span className="text-[8px] text-txt-muted whitespace-pre-line leading-tight w-full text-center">{d.date.replace(" ", "\n")}</span>
         </div>
       ))}
     </div>
@@ -66,25 +70,45 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function AnalyticsDashboardPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const router = useRouter();
+  const userRole = (session?.user?.role as string) || "";
+  const isAuthorized = MANAGEMENT_ROLES.includes(userRole);
+
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (sessionStatus !== "loading" && !isAuthorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, isAuthorized, router]);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch("/api/panel/analytics");
-      if (res.ok) {
-        const json = await res.json();
-        setData(json.data);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || `Gagal memuat data analytics (HTTP ${res.status})`);
       }
-    } catch { /* */ } finally {
+      setData(json.data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal memuat data analytics.");
+    } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && isAuthorized) {
+      fetchData();
+    }
+  }, [sessionStatus, isAuthorized, fetchData]);
 
-  if (loading) {
+  if (sessionStatus === "loading" || !isAuthorized || loading) {
     return (
       <div className="animate-pulse space-y-6">
         <div className="h-8 w-48 rounded-lg bg-surface-tertiary" />
@@ -96,7 +120,16 @@ export default function AnalyticsDashboardPage() {
     );
   }
 
-  if (!data) return <p className="text-txt-muted">Gagal memuat data analytics.</p>;
+  if (error || !data) {
+    return (
+      <div className="rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-5 text-sm text-red-700 flex items-center justify-between gap-3">
+        <span>{error || "Gagal memuat data analytics."}</span>
+        <button type="button" onClick={fetchData} className="btn-ghost text-xs font-semibold text-primary">
+          Coba Lagi
+        </button>
+      </div>
+    );
+  }
 
   const { overview, topArticles, categoryStats, recentActivity, dailyChart } = data;
 

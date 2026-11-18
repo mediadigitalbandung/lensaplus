@@ -104,11 +104,6 @@ export default function KomentarPage() {
     fetchComments();
   }, [fetchComments]);
 
-  // Reset page when filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [filter]);
-
   async function handleApprove(id: string) {
     try {
       setUpdating(id);
@@ -173,8 +168,7 @@ export default function KomentarPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl sm:text-3xl font-bold text-txt-primary flex items-center gap-2">
-          <MessageCircle size={24} />
+        <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
           Komentar
         </h1>
         <p className="text-base text-txt-secondary">
@@ -240,7 +234,7 @@ export default function KomentarPage() {
             ).map((f) => (
               <button
                 key={f.key}
-                onClick={() => setFilter(f.key)}
+                onClick={() => { setFilter(f.key); setPage(1); }}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   filter === f.key
                     ? "bg-primary text-white"

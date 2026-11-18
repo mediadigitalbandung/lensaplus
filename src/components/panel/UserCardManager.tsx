@@ -24,12 +24,12 @@ interface CardInfo {
 type Action = "issue" | "renew" | "suspend" | "reactivate" | "revoke";
 
 const STATUS_STYLE: Record<string, string> = {
-  ACTIVE: "bg-green-50 text-green-700",
-  PENDING: "bg-yellow-50 text-yellow-700",
-  DRAFT: "bg-surface-tertiary text-txt-secondary",
-  SUSPENDED: "bg-red-50 text-red-700",
-  REVOKED: "bg-red-50 text-red-700",
-  EXPIRED: "bg-red-50 text-red-700",
+  ACTIVE: "text-green-700 font-semibold",
+  PENDING: "text-yellow-700 font-semibold",
+  DRAFT: "text-txt-secondary font-semibold",
+  SUSPENDED: "text-red-700 font-semibold",
+  REVOKED: "text-red-700 font-semibold",
+  EXPIRED: "text-red-700 font-semibold",
 };
 
 function fmt(d: string | null) {
@@ -189,7 +189,7 @@ export default function UserCardManager({
                   <button
                     onClick={() => run("suspend", { label: "Tangguhkan", danger: true, needNote: true })}
                     disabled={busy !== null}
-                    className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-yellow-700 hover:bg-yellow-50 disabled:opacity-50"
+                    className="flex items-center justify-center gap-1.5 rounded-md border border-yellow-400 px-3 py-2 text-xs font-semibold text-yellow-800 hover:border-yellow-600 disabled:opacity-50"
                   >
                     {busy === "suspend" ? <Loader2 size={13} className="animate-spin" /> : <Ban size={13} />}
                     Tangguhkan
@@ -197,7 +197,7 @@ export default function UserCardManager({
                   <button
                     onClick={() => run("revoke", { label: "Cabut", danger: true, needNote: true })}
                     disabled={busy !== null}
-                    className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    className="flex items-center justify-center gap-1.5 rounded-md border border-red-300 px-3 py-2 text-xs font-semibold text-red-600 hover:border-red-500 disabled:opacity-50"
                   >
                     {busy === "revoke" ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                     Cabut
@@ -205,7 +205,7 @@ export default function UserCardManager({
                   <button
                     onClick={() => run("renew", { label: "Perpanjang" })}
                     disabled={busy !== null}
-                    className="col-span-2 flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 disabled:opacity-50"
+                    className="col-span-2 flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-primary hover:border-primary disabled:opacity-50"
                   >
                     {busy === "renew" ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                     Perpanjang 5 tahun

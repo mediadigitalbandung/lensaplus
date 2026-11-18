@@ -54,6 +54,27 @@ function clampToMax(val: string, max: number): string {
   return val.slice(0, max - 1).trimEnd() + "…";
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function isSafeHttpOrRelativeUrl(raw: string): boolean {
+  const trimmed = (raw || "").trim();
+  if (!trimmed) return false;
+  if (/^\/(?!\/)/.test(trimmed)) return true;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 const RECENCY_OPTIONS = [
   { v: "week", l: "1 minggu" },
   { v: "month", l: "1 bulan" },
@@ -142,27 +163,30 @@ export default function PerplexityResearchPanel({
 
       // Optional web images (2-3). First fills the featured image (if empty); the
       // rest are appended into the body as captioned figures (with source credit).
-      const imgs: { url: string; origin: string | null; title: string | null }[] = d.images || [];
+      const rawImgs: { url: string; origin: string | null; title: string | null }[] = d.images || [];
+      const imgs = rawImgs.filter((im) => im && typeof im.url === "string" && isSafeHttpOrRelativeUrl(im.url));
       let imgHtml = "";
       if (imgs.length > 0) {
-        if (!featuredImage.trim()) setFeaturedImage(imgs[0].url);
+        if (!featuredImage.trim()) setFeaturedImage(imgs[0].url.trim());
         const extra = featuredImage.trim() ? imgs : imgs.slice(1);
         imgHtml = extra
           .map((im) => {
-            const cap = im.title ? im.title.replace(/[<>]/g, "") : "";
+            const safeUrl = escapeHtml(im.url.trim());
+            const cap = im.title ? escapeHtml(im.title) : "";
             let host = "";
             try {
               host = im.origin ? new URL(im.origin).hostname.replace(/^www\./, "") : "";
             } catch {
               /* ignore */
             }
-            const creditLabel = im.origin
+            const rawCreditLabel = im.origin
               ? formatSourceWithWebsite(sourceLabelFromUrl(im.origin) || host, im.origin)
               : host;
+            const creditLabel = rawCreditLabel ? escapeHtml(rawCreditLabel) : "";
             const credit = creditLabel ? `<em>Sumber: ${creditLabel}</em>` : "";
             const sep = cap && credit ? " — " : "";
             const figcap = cap || credit ? `<figcaption>${cap}${sep}${credit}</figcaption>` : "";
-            return `<figure><img src="${im.url}" alt="${cap}" />${figcap}</figure>`;
+            return `<figure><img src="${safeUrl}" alt="${cap}" />${figcap}</figure>`;
           })
           .join("");
       }
@@ -171,23 +195,25 @@ export default function PerplexityResearchPanel({
 
       // Cited sources — only when the editor opted to include them, capped at the
       // chosen count (999 = all). Hidden entirely when the toggle is off.
-      const cited: { title: string | null; url: string }[] = d.sources || [];
+      const rawCited: { title: string | null; url: string }[] = d.sources || [];
+      const cited = rawCited.filter((s) => s && typeof s.url === "string" && /^https?:\/\//i.test(s.url.trim()));
       let addedSources = 0;
       if (includeSources && cited.length > 0) {
         const limit = maxSources >= 999 ? cited.length : maxSources;
         const newSources: ResearchSource[] = cited.slice(0, limit).map((s) => {
+          const cleanUrl = s.url.trim();
           let host = "";
           try {
-            host = new URL(s.url).hostname.replace(/^www\./, "");
+            host = new URL(cleanUrl).hostname.replace(/^www\./, "");
           } catch {
             /* keep blank */
           }
-          const rawLabel = s.title || sourceLabelFromUrl(s.url) || host || "Sumber";
+          const rawLabel = s.title || sourceLabelFromUrl(cleanUrl) || host || "Sumber";
           return {
-            name: formatSourceWithWebsite(rawLabel, s.url),
+            name: formatSourceWithWebsite(rawLabel, cleanUrl),
             title: "",
             institution: host,
-            url: s.url,
+            url: cleanUrl,
           };
         });
         addedSources = newSources.length;

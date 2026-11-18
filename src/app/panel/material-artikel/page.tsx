@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sparkles,
@@ -64,8 +64,10 @@ function isValidDocFile(file: File): boolean {
 }
 
 export default function MaterialArtikelPage() {
+  const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
+  const authorized = EDITOR_ROLES.includes(userRole);
   const { success: showSuccess, error: showError } = useToast();
   const photoInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -77,13 +79,11 @@ export default function MaterialArtikelPage() {
   const [batchName, setBatchName] = useState<string>("");
   const [generating, setGenerating] = useState<boolean>(false);
 
-  if (
-    sessionStatus !== "loading" &&
-    session &&
-    !EDITOR_ROLES.includes(userRole)
-  ) {
-    redirect("/panel/dashboard");
-  }
+  useEffect(() => {
+    if (sessionStatus !== "loading" && session && !authorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, session, authorized, router]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -98,8 +98,10 @@ export default function MaterialArtikelPage() {
   }, []);
 
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    if (sessionStatus !== "loading" && authorized) {
+      fetchCategories();
+    }
+  }, [sessionStatus, authorized, fetchCategories]);
 
   useEffect(() => {
     return () => {

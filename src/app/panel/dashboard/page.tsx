@@ -517,19 +517,21 @@ function MyArticleStats({ articles }: { articles: Article[] }) {
 // Publication rate ring
 function WeeklyArticleTrend({ articles }: { articles: Article[] }) {
   const weekData = useMemo(() => {
+    const wibYmd = (date: Date) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(date);
     const now = new Date();
     const days: { label: string; count: number }[] = [];
 
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dayStr = d.toISOString().split("T")[0];
-      const label = d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric" });
+      const d = new Date(now.getTime() - i * 86_400_000);
+      const dayStr = wibYmd(d);
+      const label = d.toLocaleDateString("id-ID", {
+        weekday: "short",
+        day: "numeric",
+        timeZone: "Asia/Jakarta",
+      });
 
-      const count = articles.filter((a) => {
-        const created = new Date(a.createdAt).toISOString().split("T")[0];
-        return created === dayStr;
-      }).length;
+      const count = articles.filter((a) => wibYmd(new Date(a.createdAt)) === dayStr).length;
 
       days.push({ label, count });
     }
@@ -824,10 +826,11 @@ export default function DashboardPage() {
         let reportsPending = 0;
         let dashStats: any = null;
 
-        if (results[0].ok) {
-          const articlesJson = await results[0].json();
-          fetchedArticles = articlesJson.data?.articles || [];
+        if (!results[0].ok) {
+          throw new Error(`HTTP ${results[0].status}`);
         }
+        const articlesJson = await results[0].json();
+        fetchedArticles = articlesJson.data?.articles || [];
 
         if (!isCreator && results[1]?.ok) {
           const reportsJson = await results[1].json();

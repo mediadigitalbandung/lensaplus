@@ -401,8 +401,10 @@ export default function PengaturanPage() {
   }, []);
 
   useEffect(() => {
-    loadSocial();
-  }, [loadSocial]);
+    if (settingsLoaded) {
+      loadSocial();
+    }
+  }, [settingsLoaded, loadSocial]);
 
   // Upload an image (signature/logo) for the KTA section → returns its URL.
   async function uploadKtaImage(slot: string, file: File, setter: (url: string) => void) {

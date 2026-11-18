@@ -59,6 +59,7 @@ export default function NewsletterSubscribersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,28 +99,59 @@ export default function NewsletterSubscribersPage() {
     );
   }, [items, search]);
 
-  function exportCsv() {
-    const header = ["email", "status", "source", "createdAt", "confirmedAt", "unsubscribedAt", "lastSentAt"];
-    const rows = filtered.map((s) => {
-      const status = s.unsubscribedAt ? "unsubscribed" : s.confirmedAt ? "confirmed" : "pending";
-      return [
-        s.email,
-        status,
-        s.source || "",
-        s.createdAt,
-        s.confirmedAt || "",
-        s.unsubscribedAt || "",
-        s.lastSentAt || "",
-      ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
-    });
-    const csv = [header.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `lensaplus-newsletter-${filter}-${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const allItems: Subscriber[] = [];
+      let p = 1;
+      let pages = 1;
+      do {
+        const res = await fetch(
+          `/api/panel/newsletter-subscribers?page=${p}&limit=100&filter=${filter}`,
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const chunk: Subscriber[] = json.data?.items || [];
+        allItems.push(...chunk);
+        pages = Math.min(50, Number(json.data?.totalPages || 1));
+        p++;
+      } while (p <= pages);
+
+      const q = search.trim().toLowerCase();
+      const exportRows = q
+        ? allItems.filter(
+            (s) =>
+              s.email.toLowerCase().includes(q) ||
+              (s.source || "").toLowerCase().includes(q),
+          )
+        : allItems;
+
+      const header = ["email", "status", "source", "createdAt", "confirmedAt", "unsubscribedAt", "lastSentAt"];
+      const rows = exportRows.map((s) => {
+        const status = s.unsubscribedAt ? "unsubscribed" : s.confirmedAt ? "confirmed" : "pending";
+        return [
+          s.email,
+          status,
+          s.source || "",
+          s.createdAt,
+          s.confirmedAt || "",
+          s.unsubscribedAt || "",
+          s.lastSentAt || "",
+        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
+      });
+      const csv = [header.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `lensaplus-newsletter-${filter}-${Date.now()}.csv`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal mengekspor CSV");
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -133,10 +165,10 @@ export default function NewsletterSubscribersPage() {
         </div>
         <button
           onClick={exportCsv}
-          disabled={filtered.length === 0}
+          disabled={filtered.length === 0 || exporting}
           className="btn-ghost inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
         >
-          <Download size={14} /> Export CSV
+          <Download size={14} /> {exporting ? "Mengekspor..." : "Export CSV"}
         </button>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, Node as TiptapNode, mergeAttributes } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import ImageExtension from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
@@ -37,10 +37,81 @@ import {
   Sparkles,
   Loader2,
   ChevronDown,
+  X,
+  Copy,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ImagePickerModal, { type PickedImage } from "./ImagePickerModal";
+
+const Figcaption = TiptapNode.create({
+  name: "figcaption",
+  group: "block",
+  content: "inline*",
+  selectable: false,
+  draggable: false,
+  defining: true,
+  parseHTML() {
+    return [{ tag: "figcaption" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["figcaption", mergeAttributes(HTMLAttributes), 0];
+  },
+  addKeyboardShortcuts() {
+    return {
+      Enter: () => {
+        const { state } = this.editor;
+        const { $from } = state.selection;
+        if ($from.parent.type.name !== "figcaption") return false;
+        const figureDepth = $from.depth - 1;
+        if (figureDepth < 0 || $from.node(figureDepth).type.name !== "figure") {
+          return false;
+        }
+        const afterPos = $from.after(figureDepth);
+        return this.editor
+          .chain()
+          .insertContentAt(afterPos, { type: "paragraph" })
+          .setTextSelection(afterPos + 1)
+          .run();
+      },
+    };
+  },
+});
+
+const Figure = TiptapNode.create({
+  name: "figure",
+  group: "block",
+  content: "image figcaption?",
+  draggable: true,
+  isolating: true,
+  defining: true,
+  parseHTML() {
+    return [{ tag: "figure" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["figure", mergeAttributes(HTMLAttributes), 0];
+  },
+});
+
+function isSafeMediaUrl(raw: string): boolean {
+  const s = raw.trim();
+  return /^https?:\/\//i.test(s) || /^\/(?!\/)/.test(s);
+}
+
+function isSafeHrefUrl(raw: string): boolean {
+  const s = raw.trim();
+  return /^https?:\/\//i.test(s) || /^\/(?!\/)/.test(s) || /^mailto:/i.test(s);
+}
+
+function computeEditorCounts(text: string): { words: number; chars: number } {
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  if (!cleaned) return { words: 0, chars: 0 };
+  return {
+    words: cleaned.split(" ").filter(Boolean).length,
+    chars: cleaned.length,
+  };
+}
 
 interface RichTextEditorProps {
   content: string;
@@ -103,6 +174,32 @@ type AiFeature =
   | "high_ctr_meta"
   | "expand_article";
 
+type AutomationAiFeature = "content_ideas" | "write_article" | "high_ctr_meta";
+
+const AI_MODAL_META: Record<
+  AutomationAiFeature,
+  { title: string; label: string; placeholder: string; notesPlaceholder: string }
+> = {
+  content_ideas: {
+    title: "Buat Ide Konten",
+    label: "Topik atau Kata Kunci",
+    placeholder: "Contoh: Kebijakan Ekonomi Digital Indonesia 2026",
+    notesPlaceholder: "Sudut pandang, target pembaca, atau fokus tambahan (opsional)",
+  },
+  write_article: {
+    title: "Tulis Draf Artikel Lengkap",
+    label: "Topik atau Judul Artikel",
+    placeholder: "Contoh: Dampak Penyesuaian Tarif Pajak terhadap UMKM",
+    notesPlaceholder: "Arahan fokus, poin penting, atau konteks berita (opsional)",
+  },
+  high_ctr_meta: {
+    title: "Variasi Judul & Meta (High CTR)",
+    label: "Topik atau Judul Dasar",
+    placeholder: "Masukkan judul dasar atau topik artikel...",
+    notesPlaceholder: "Konteks tambahan untuk variasi judul & deskripsi (opsional)",
+  },
+};
+
 export default function RichTextEditor({
   content,
   onChange,
@@ -116,6 +213,21 @@ export default function RichTextEditor({
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const [aiMenuOpen, setAiMenuOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState<AiFeature | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [counts, setCounts] = useState<{ words: number; chars: number }>({ words: 0, chars: 0 });
+  const [aiPromptModal, setAiPromptModal] = useState<{
+    feature: AutomationAiFeature;
+    topic: string;
+    notes: string;
+    error: string;
+  } | null>(null);
+  const [urlModal, setUrlModal] = useState<{
+    kind: "link" | "youtube";
+    url: string;
+    error: string;
+  } | null>(null);
+  const [aiResultModal, setAiResultModal] = useState<{ title: string; text: string } | null>(null);
+  const [copiedResult, setCopiedResult] = useState(false);
   const tableMenuRef = useRef<HTMLDivElement>(null);
   const aiMenuRef = useRef<HTMLDivElement>(null);
 
@@ -128,6 +240,8 @@ export default function RichTextEditor({
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Link.configure({ openOnClick: false }),
       ImageExtension.configure({ inline: false }),
+      Figure,
+      Figcaption,
       Youtube.configure({ width: 640, height: 360 }),
       Placeholder.configure({ placeholder }),
       Table.configure({ resizable: true, HTMLAttributes: { class: "tiptap-table" } }),
@@ -136,8 +250,12 @@ export default function RichTextEditor({
       TableCell,
     ],
     content,
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+    onCreate: ({ editor: ed }) => {
+      setCounts(computeEditorCounts(ed.getText({ blockSeparator: " " })));
+    },
+    onUpdate: ({ editor: ed }) => {
+      setCounts(computeEditorCounts(ed.getText({ blockSeparator: " " })));
+      onChange(ed.getHTML());
     },
     editorProps: {
       attributes: {
@@ -152,7 +270,7 @@ export default function RichTextEditor({
       if (!editor) return;
       const picked: PickedImage =
         typeof input === "string" ? { url: input } : input;
-      if (!picked.url) return;
+      if (!picked.url || !isSafeMediaUrl(picked.url)) return;
 
       const escapeHtml = (s: string) =>
         s
@@ -163,7 +281,7 @@ export default function RichTextEditor({
           .replace(/'/g, "&#39;");
 
       const alt = escapeHtml(picked.title || "");
-      const url = escapeHtml(picked.url);
+      const url = escapeHtml(picked.url.trim());
       const caption = picked.caption?.trim();
       const credit = picked.credit?.trim();
 
@@ -178,25 +296,42 @@ export default function RichTextEditor({
         const figureHtml = `<figure><img src="${url}" alt="${alt}" /><figcaption>${captionHtml}${separator}${creditHtml}</figcaption></figure><p></p>`;
         editor.chain().focus().insertContent(figureHtml).run();
       } else {
-        editor.chain().focus().setImage({ src: picked.url, alt: picked.title || undefined }).run();
+        editor.chain().focus().setImage({ src: picked.url.trim(), alt: picked.title || undefined }).run();
       }
     },
     [editor]
   );
 
   const addLink = useCallback(() => {
-    const url = window.prompt("Masukkan URL link:");
-    if (url && editor) {
-      editor.chain().focus().setLink({ href: url }).run();
-    }
-  }, [editor]);
+    setUrlModal({ kind: "link", url: "", error: "" });
+  }, []);
 
   const addYoutube = useCallback(() => {
-    const url = window.prompt("Masukkan URL video YouTube:");
-    if (url && editor) {
-      editor.chain().focus().setYoutubeVideo({ src: url }).run();
+    setUrlModal({ kind: "youtube", url: "", error: "" });
+  }, []);
+
+  const submitUrlModal = useCallback(() => {
+    if (!urlModal || !editor) return;
+    const raw = urlModal.url.trim();
+    if (!raw) {
+      setUrlModal({ ...urlModal, error: "URL wajib diisi." });
+      return;
     }
-  }, [editor]);
+    if (urlModal.kind === "link") {
+      if (!isSafeHrefUrl(raw)) {
+        setUrlModal({ ...urlModal, error: "Gunakan URL http://, https://, mailto:, atau path /..." });
+        return;
+      }
+      editor.chain().focus().setLink({ href: raw }).run();
+    } else {
+      if (!/^https?:\/\//i.test(raw)) {
+        setUrlModal({ ...urlModal, error: "Masukkan URL YouTube yang diawali http:// atau https://." });
+        return;
+      }
+      editor.chain().focus().setYoutubeVideo({ src: raw }).run();
+    }
+    setUrlModal(null);
+  }, [urlModal, editor]);
 
   // Close popovers on outside click
   useEffect(() => {
@@ -212,6 +347,19 @@ export default function RichTextEditor({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Close active modals on Escape
+  useEffect(() => {
+    if (!aiPromptModal && !urlModal && !aiResultModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (aiPromptModal && !aiLoading) setAiPromptModal(null);
+      if (urlModal) setUrlModal(null);
+      if (aiResultModal) setAiResultModal(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [aiPromptModal, urlModal, aiResultModal, aiLoading]);
+
   // Sync external content changes into the editor. TipTap's `useEditor` only reads
   // `content` once at init, so programmatic updates from the parent (e.g. the
   // Perplexity "Riset & Tulis" feature filling the body) would otherwise never
@@ -222,58 +370,54 @@ export default function RichTextEditor({
     const incoming = content || "";
     if (incoming !== editor.getHTML()) {
       editor.commands.setContent(incoming, { emitUpdate: false });
+      setCounts(computeEditorCounts(editor.getText({ blockSeparator: " " })));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content, editor]);
 
   // ─── AI Tools ───
-  const callAi = useCallback(
-    async (feature: AiFeature) => {
+  const executeAi = useCallback(
+    async (feature: AiFeature, topic?: string, extraNotes?: string) => {
       if (!editor) return;
-      
-      const isAutomation = ["content_ideas", "write_article", "high_ctr_meta"].includes(feature);
-      const needsExistingContent = ["seo_title", "meta_description", "social_caption", "expand_article"].includes(feature);
-      
+      setAiError(null);
+
+      const isAutomation =
+        feature === "content_ideas" ||
+        feature === "write_article" ||
+        feature === "high_ctr_meta";
       const html = editor.getHTML();
       const plain = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-      
-      if (needsExistingContent && plain.length < 30) {
-        window.alert("Tulis konten artikel terlebih dahulu (minimal 30 karakter).");
+
+      if (!isAutomation && plain.length < 30) {
+        setAiError("Tulis konten artikel terlebih dahulu (minimal 30 karakter).");
         return;
       }
 
-      let topic = "";
-      if (feature === "content_ideas") {
-        const input = window.prompt("bantu saya membuat beberapa ide artikel untuk lensaplus.com. terkait topik [[SPMB Jabar 2026]]...\n\nMasukkan topik/keyword untuk ide konten (contoh: SPMB Jabar 2026):");
-        if (!input?.trim()) return;
-        topic = input.trim();
-      } else if (feature === "write_article") {
-        const input = window.prompt("buat draft artikel lengkap siap tayang ramah google discover...\n\nMasukkan topik atau arahan lengkap untuk draf artikel:");
-        if (!input?.trim()) return;
-        topic = input.trim();
-      } else if (feature === "high_ctr_meta") {
-        const input = window.prompt("Masukkan judul dasar, topik, atau ide untuk variasi CTR tinggi:");
-        if (!input?.trim()) return;
-        topic = input.trim();
+      const cleanTopic = (topic || "").trim();
+      if (isAutomation && !cleanTopic) {
+        setAiError("Topik/judul untuk AI wajib diisi.");
+        return;
       }
 
-      // Derive a title-ish hint
       const hint = isAutomation
-        ? topic
-        : (articleTitle?.trim() ||
+        ? cleanTopic
+        : articleTitle?.trim() ||
           (() => {
             const m = html.match(/<h[1-3][^>]*>([^<]+)<\/h[1-3]>/i);
             return m ? m[1].trim() : plain.slice(0, 80);
-          })());
+          })();
 
-      // Map the editor's AI feature to the /api/ai/generate route's feature param
+      const contextContent = isAutomation
+        ? plain.slice(0, 3000) || (extraNotes || "").trim() || cleanTopic
+        : plain.slice(0, 3000);
+
       const apiFeature =
         feature === "seo_title"
           ? "seo_title"
           : feature === "meta_description"
           ? "meta_description"
           : feature === "social_caption"
-          ? "summary" // social caption uses summary path
+          ? "summary"
           : feature;
 
       setAiLoading(feature);
@@ -287,17 +431,16 @@ export default function RichTextEditor({
               feature === "social_caption"
                 ? `[Caption Sosmed Instagram/Twitter, gaya engaging, ≤220 karakter, sertakan 3 hashtag relevan] ${hint}`
                 : hint,
-            content: plain.slice(0, 3000),
+            content: contextContent,
           }),
         });
-        const data = await res.json();
-        if (!data.success || !data.data?.result) {
-          window.alert(data.error || "Gagal generate AI");
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success || !data.data?.result) {
+          setAiError(data.error || "Gagal generate AI");
           return;
         }
         const suggestion = String(data.data.result).trim();
 
-        // Dispatch via callback if provided, else insert directly in editor
         if (feature === "seo_title" && onAiTitle) {
           onAiTitle(suggestion);
         } else if (feature === "meta_description" && onAiMeta) {
@@ -306,21 +449,52 @@ export default function RichTextEditor({
           onAiCaption(suggestion);
         } else if (feature === "expand_article") {
           editor.chain().focus("end").insertContent(suggestion).run();
-        } else if (["content_ideas", "write_article", "high_ctr_meta"].includes(feature)) {
-          // Insert the generated HTML directly into the TipTap editor at cursor
+        } else if (isAutomation) {
           editor.chain().focus().insertContent(suggestion).run();
         } else {
-          // Fallback: show & let user copy
-          window.prompt("Hasil AI (Ctrl+C untuk salin):", suggestion);
+          setCopiedResult(false);
+          setAiResultModal({
+            title:
+              feature === "seo_title"
+                ? "Saran Judul SEO"
+                : feature === "meta_description"
+                ? "Saran Meta Description"
+                : "Saran Caption Sosmed",
+            text: suggestion,
+          });
         }
+        setAiPromptModal(null);
       } catch {
-        window.alert("Gagal menghubungi AI service. Coba lagi.");
+        setAiError("Gagal menghubungi AI service. Coba lagi.");
       } finally {
         setAiLoading(null);
         setAiMenuOpen(false);
       }
     },
     [editor, articleTitle, onAiTitle, onAiMeta, onAiCaption]
+  );
+
+  const callAi = useCallback(
+    (feature: AiFeature) => {
+      if (!editor) return;
+      setAiError(null);
+      if (
+        feature === "content_ideas" ||
+        feature === "write_article" ||
+        feature === "high_ctr_meta"
+      ) {
+        setAiMenuOpen(false);
+        setAiPromptModal({
+          feature,
+          topic: articleTitle?.trim() || "",
+          notes: "",
+          error: "",
+        });
+        return;
+      }
+      void executeAi(feature);
+    },
+    [editor, articleTitle, executeAi]
   );
 
   if (!editor) return null;
@@ -713,14 +887,31 @@ export default function RichTextEditor({
         </ToolbarButton>
       </div>
 
+      {aiError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-2 border-b border-border border-l-4 border-l-red-600 bg-surface px-4 py-2 text-xs text-red-700"
+        >
+          <span>{aiError}</span>
+          <button
+            type="button"
+            onClick={() => setAiError(null)}
+            className="rounded p-0.5 text-txt-muted hover:text-txt-primary"
+            aria-label="Tutup pesan error"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Editor content */}
       <EditorContent editor={editor} />
 
       {/* Word count */}
       <div className="border-t border-border px-4 py-2 text-xs text-txt-muted">
-        {editor.storage.characterCount?.words?.() ?? 0} kata &middot;{" "}
-        {editor.storage.characterCount?.characters?.() ?? 0} karakter &middot;{" "}
-        ~{Math.max(1, Math.ceil((editor.storage.characterCount?.words?.() ?? 0) / 200))} menit baca
+        {counts.words.toLocaleString("id-ID")} kata &middot;{" "}
+        {counts.chars.toLocaleString("id-ID")} karakter &middot;{" "}
+        ~{Math.max(1, Math.ceil(counts.words / 200))} menit baca
       </div>
 
       <ImagePickerModal
@@ -728,6 +919,229 @@ export default function RichTextEditor({
         onClose={() => setImagePickerOpen(false)}
         onSelect={handleImageSelect}
       />
+
+      {aiPromptModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rte-ai-prompt-title"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        >
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => !aiLoading && setAiPromptModal(null)}
+            aria-hidden="true"
+          />
+          <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 id="rte-ai-prompt-title" className="text-base font-bold text-txt-primary">
+                {AI_MODAL_META[aiPromptModal.feature].title}
+              </h3>
+              <button
+                type="button"
+                onClick={() => !aiLoading && setAiPromptModal(null)}
+                className="rounded-md p-1 text-txt-muted hover:text-txt-primary"
+                aria-label="Tutup"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-txt-secondary">
+                  {AI_MODAL_META[aiPromptModal.feature].label}
+                </label>
+                <input
+                  type="text"
+                  value={aiPromptModal.topic}
+                  onChange={(e) =>
+                    setAiPromptModal((prev) =>
+                      prev ? { ...prev, topic: e.target.value, error: "" } : null
+                    )
+                  }
+                  placeholder={AI_MODAL_META[aiPromptModal.feature].placeholder}
+                  className="input w-full text-sm"
+                  autoFocus
+                  disabled={aiLoading !== null}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-txt-secondary">
+                  Konteks / Arahan Tambahan <span className="font-normal text-txt-muted">(opsional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={aiPromptModal.notes}
+                  onChange={(e) =>
+                    setAiPromptModal((prev) =>
+                      prev ? { ...prev, notes: e.target.value } : null
+                    )
+                  }
+                  placeholder={AI_MODAL_META[aiPromptModal.feature].notesPlaceholder}
+                  className="input w-full resize-none text-sm"
+                  disabled={aiLoading !== null}
+                />
+              </div>
+              {aiPromptModal.error && (
+                <p role="alert" className="text-xs text-red-700">
+                  {aiPromptModal.error}
+                </p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAiPromptModal(null)}
+                  disabled={aiLoading !== null}
+                  className="btn-ghost text-xs disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={aiLoading !== null}
+                  onClick={() => {
+                    if (!aiPromptModal.topic.trim()) {
+                      setAiPromptModal((prev) =>
+                        prev ? { ...prev, error: "Topik atau judul wajib diisi." } : null
+                      );
+                      return;
+                    }
+                    void executeAi(
+                      aiPromptModal.feature,
+                      aiPromptModal.topic,
+                      aiPromptModal.notes
+                    );
+                  }}
+                  className="btn-primary inline-flex items-center gap-1.5 text-xs disabled:opacity-50"
+                >
+                  {aiLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                  {aiLoading ? "Memproses..." : "Generate"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {urlModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rte-url-modal-title"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        >
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setUrlModal(null)}
+            aria-hidden="true"
+          />
+          <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 id="rte-url-modal-title" className="text-base font-bold text-txt-primary">
+                {urlModal.kind === "link" ? "Sisipkan Link" : "Sisipkan Video YouTube"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setUrlModal(null)}
+                className="rounded-md p-1 text-txt-muted hover:text-txt-primary"
+                aria-label="Tutup"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <input
+              type="url"
+              value={urlModal.url}
+              onChange={(e) =>
+                setUrlModal((prev) => (prev ? { ...prev, url: e.target.value, error: "" } : null))
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitUrlModal();
+                }
+              }}
+              placeholder={
+                urlModal.kind === "link"
+                  ? "https://contoh.com/referensi"
+                  : "https://www.youtube.com/watch?v=..."
+              }
+              className="input w-full text-sm"
+              autoFocus
+            />
+            {urlModal.error && (
+              <p role="alert" className="mt-2 text-xs text-red-700">
+                {urlModal.error}
+              </p>
+            )}
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" onClick={() => setUrlModal(null)} className="btn-ghost text-xs">
+                Batal
+              </button>
+              <button type="button" onClick={submitUrlModal} className="btn-primary text-xs">
+                Sisipkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {aiResultModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rte-ai-result-title"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        >
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setAiResultModal(null)}
+            aria-hidden="true"
+          />
+          <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 id="rte-ai-result-title" className="text-base font-bold text-txt-primary">
+                {aiResultModal.title}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setAiResultModal(null)}
+                className="rounded-md p-1 text-txt-muted hover:text-txt-primary"
+                aria-label="Tutup"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <textarea
+              readOnly
+              rows={4}
+              value={aiResultModal.text}
+              className="input w-full resize-none text-sm"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setAiResultModal(null)}
+                className="btn-ghost text-xs"
+              >
+                Tutup
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard?.writeText(aiResultModal.text).then(() => {
+                    setCopiedResult(true);
+                  }).catch(() => {});
+                }}
+                className="btn-primary inline-flex items-center gap-1.5 text-xs"
+              >
+                {copiedResult ? <Check size={13} /> : <Copy size={13} />}
+                {copiedResult ? "Tersalin" : "Salin"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -134,10 +134,7 @@ export default function LiveBlogsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <Radio size={22} className="text-secondary" />
-          <h1 className="text-xl font-bold text-on-surface">Live Blog</h1>
-        </div>
+        <h1 className="text-xl font-bold text-on-surface">Live Blog</h1>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -254,7 +251,7 @@ export default function LiveBlogsPage() {
                       {canDelete && (
                         <button
                           onClick={() => handleDelete(blog)}
-                          className="rounded-lg p-1.5 text-txt-muted hover:text-secondary hover:bg-secondary-light transition-colors"
+                          className="rounded-lg p-1.5 text-txt-muted hover:text-secondary transition-colors"
                           title="Hapus"
                         >
                           <Trash2 size={15} />

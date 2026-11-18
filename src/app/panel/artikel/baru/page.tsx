@@ -20,11 +20,14 @@ import {
   Loader2,
   Sparkles,
   TrendingUp,
+  ImageIcon,
 } from "lucide-react";
 const RichTextEditor = dynamic(
   () => import("@/components/editor/RichTextEditor"),
   { ssr: false, loading: () => <div className="h-[500px] animate-pulse rounded-lg bg-surface-secondary" /> }
 );
+import ImageUploader from "@/components/editor/ImageUploader";
+import ImagePickerModal, { type PickedImage } from "@/components/editor/ImagePickerModal";
 
 interface Category {
   id: string;
@@ -97,6 +100,7 @@ export default function NewArticlePage() {
   const [error, setError] = useState("");
   const [showSeo, setShowSeo] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [showAutosaveBanner, setShowAutosaveBanner] = useState(false);
   // Schedule-publish (editors/chief editors only)
   const [showSchedule, setShowSchedule] = useState(false);
@@ -608,7 +612,7 @@ export default function NewArticlePage() {
               <button
                 onClick={() => setShowSchedule((v) => !v)}
                 disabled={saving}
-                className="flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50"
+                className="btn-secondary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 <CalendarClock size={16} />
                 Jadwalkan
@@ -620,8 +624,8 @@ export default function NewArticlePage() {
 
       {/* Schedule-publish panel — editors/chief editors only */}
       {EDITOR_ROLES.includes(userRole) && showSchedule && (
-        <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-4 shadow-sm">
-          <label className="mb-2 block text-sm font-medium text-blue-800">
+        <div className="mb-4 rounded-lg border border-border border-l-4 border-l-primary bg-surface p-4 shadow-sm">
+          <label className="mb-2 block text-sm font-medium text-txt-primary">
             Pilih tanggal &amp; waktu publikasi artikel ini
           </label>
           <input
@@ -781,7 +785,7 @@ export default function NewArticlePage() {
                   type="button"
                   onClick={handleExpandArticle}
                   disabled={aiLoading.expand_article}
-                  className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-surface px-2.5 py-1 text-xs font-semibold text-primary hover:bg-surface-secondary disabled:opacity-50"
                 >
                   {aiLoading.expand_article ? (
                     <Loader2 size={12} className="animate-spin" />
@@ -844,7 +848,8 @@ export default function NewArticlePage() {
                       <button
                         type="button"
                         onClick={() => removeSource(i)}
-                        className="rounded-lg p-1.5 text-red-400 hover:bg-red-50"
+                        aria-label="Hapus sumber"
+                        className="rounded-lg p-1.5 text-red-500 hover:text-red-700"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -904,6 +909,27 @@ export default function NewArticlePage() {
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Gambar Utama (Cover) */}
+          <div className="rounded-lg border border-border bg-surface p-6">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <label className="text-sm font-medium text-txt-primary">
+                Gambar Utama
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowCoverPicker(true)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              >
+                <ImageIcon size={13} aria-hidden="true" />
+                Pilih dari Galeri
+              </button>
+            </div>
+            <ImageUploader
+              currentImage={featuredImage}
+              onUpload={(url) => setFeaturedImage(url)}
+            />
+          </div>
+
           {/* Category */}
           <div className="rounded-lg border border-border bg-surface p-6">
             <label htmlFor="artikel-kategori" className="mb-2 block text-sm font-medium text-txt-primary">
@@ -1007,7 +1033,7 @@ export default function NewArticlePage() {
           </div>
 
           {/* Journalism Checklist */}
-          <div className="rounded-lg border border-primary/20 bg-primary-50 p-4">
+          <div className="rounded-lg border border-border border-l-4 border-l-primary bg-surface p-4">
             <button
               type="button"
               onClick={() => setShowChecklist(!showChecklist)}
@@ -1050,6 +1076,15 @@ export default function NewArticlePage() {
           </div>
         </div>
       </div>
+
+      <ImagePickerModal
+        open={showCoverPicker}
+        onClose={() => setShowCoverPicker(false)}
+        onSelect={(picked: string | PickedImage) => {
+          const url = typeof picked === "string" ? picked : picked.url;
+          setFeaturedImage(url);
+        }}
+      />
     </div>
   );
 }

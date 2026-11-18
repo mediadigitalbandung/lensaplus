@@ -155,6 +155,7 @@ export default function SeoDashboardPage() {
   const [indexStatus, setIndexStatus] = useState<IndexStatusData | null>(null);
   const [sorotanStatus, setSorotanStatus] = useState<IndexStatusData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [reindexing, setReindexing] = useState(false);
   const [indexingSorotan, setIndexingSorotan] = useState(false);
@@ -272,12 +273,20 @@ export default function SeoDashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const [panelRes, idxRes, sorRes] = await Promise.all([
         fetch("/api/panel/seo").catch(() => null),
         fetch("/api/seo/status").catch(() => null),
         fetch("/api/seo/sorotan-status").catch(() => null),
       ]);
-      if (panelRes?.ok) {
+      if (!panelRes) {
+        setFetchError("Gagal menghubungi server SEO.");
+        return;
+      }
+      if (!panelRes.ok) {
+        const errJson = await panelRes.json().catch(() => ({}));
+        setFetchError(errJson.error || `Gagal memuat data SEO (HTTP ${panelRes.status})`);
+      } else {
         const json = await panelRes.json();
         setData(json.data);
       }
@@ -290,7 +299,7 @@ export default function SeoDashboardPage() {
         setSorotanStatus(json.data);
       }
     } catch {
-      /* ignore */
+      setFetchError("Terjadi kesalahan saat memuat data SEO.");
     } finally {
       setLoading(false);
     }
@@ -313,7 +322,16 @@ export default function SeoDashboardPage() {
     );
   }
 
-  if (!data) return <p className="text-txt-muted">Gagal memuat data SEO.</p>;
+  if (!data) {
+    return (
+      <div className="rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-5 text-sm text-red-700 flex items-center justify-between gap-3">
+        <span>{fetchError || "Gagal memuat data SEO."}</span>
+        <button type="button" onClick={fetchData} className="btn-ghost text-xs font-semibold text-primary">
+          Coba Lagi
+        </button>
+      </div>
+    );
+  }
 
   const { overview, coverage, urls, indexing, articleAudit } = data;
 
@@ -596,7 +614,7 @@ export default function SeoDashboardPage() {
             <div className="mt-4 pt-3 border-t border-border space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-txt-primary">
-                  1. Prioritas Utama — Artikel (`/berita/*`)
+                  1. Prioritas Utama — Artikel (<code className="font-mono">/berita/*</code>)
                 </span>
                 <span className="font-mono font-bold text-primary">
                   {articlePendingCount} antre · alokasi {articleAllocatedQuota} kuota
@@ -604,7 +622,7 @@ export default function SeoDashboardPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-txt-secondary">
-                  2. Prioritas Kedua — Sorotan (`/sorotan/*`)
+                  2. Prioritas Kedua — Sorotan (<code className="font-mono">/sorotan/*</code>)
                 </span>
                 <span className="font-mono text-txt-secondary">
                   {sorotanPendingCount} antre · sisa {sorotanEligibleQuota} kuota
@@ -766,8 +784,8 @@ export default function SeoDashboardPage() {
               Monitor Index & Antrean Prioritas (Batas 200/Hari)
             </h3>
             <p className="text-xs text-txt-secondary mt-1 pl-3">
-              Prioritas #1: Artikel Utama (`/berita/*`) didahulukan penuh ·
-              Prioritas #2: Sorotan (`/sorotan/*`) dikirim menggunakan sisa kuota
+              Prioritas #1: Artikel Utama (<code className="font-mono">/berita/*</code>) didahulukan penuh ·
+              Prioritas #2: Sorotan (<code className="font-mono">/sorotan/*</code>) dikirim menggunakan sisa kuota
               harian
             </p>
           </div>
@@ -958,7 +976,7 @@ export default function SeoDashboardPage() {
                     >
                       Pengaturan
                     </Link>{" "}
-                    (`google_credentials_json` → field `client_email`) →
+                    (<code className="font-mono">google_credentials_json</code> → field <code className="font-mono">client_email</code>) →
                     permission <strong>Owner</strong>. Setelah itu klik{" "}
                     <strong>Re-index Semua (Prioritas Artikel)</strong> di atas.
                   </p>
@@ -969,7 +987,7 @@ export default function SeoDashboardPage() {
 
         <div className="mb-2 flex items-center justify-between">
           <p className="text-xs font-bold uppercase tracking-wider text-primary">
-            Prioritas #1 — Artikel Utama (`/berita/*`)
+            Prioritas #1 — Artikel Utama (<code className="font-mono">/berita/*</code>)
           </p>
           <span className="text-[11px] text-txt-muted">
             Diutamakan pertama kali dari kuota 200/hari
@@ -1020,7 +1038,7 @@ export default function SeoDashboardPage() {
           <div className="mt-4 pt-4 border-t border-border">
             <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
               <p className="text-xs font-bold uppercase tracking-wider text-txt-secondary">
-                Prioritas #2 — Sorotan (`/sorotan/*`)
+                Prioritas #2 — Sorotan (<code className="font-mono">/sorotan/*</code>)
               </p>
               <p className="text-[11px] text-txt-muted">
                 Dikirim ke Google Indexing API hanya setelah seluruh Artikel

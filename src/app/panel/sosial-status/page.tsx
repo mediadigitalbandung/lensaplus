@@ -72,10 +72,10 @@ interface StaffUser {
 }
 
 const PLATFORMS = [
-  { value: "INSTAGRAM", label: "Instagram", icon: Instagram, color: "text-pink-600", bg: "bg-pink-50" },
-  { value: "FACEBOOK", label: "Facebook", icon: Facebook, color: "text-blue-600", bg: "bg-blue-50" },
-  { value: "THREADS", label: "Threads", icon: AtSign, color: "text-zinc-800", bg: "bg-zinc-100" },
-  { value: "TWITTER", label: "X / Twitter", icon: Twitter, color: "text-sky-600", bg: "bg-sky-50" },
+  { value: "INSTAGRAM", label: "Instagram", icon: Instagram, color: "text-pink-600", bg: "bg-surface/95 border border-border" },
+  { value: "FACEBOOK", label: "Facebook", icon: Facebook, color: "text-blue-600", bg: "bg-surface/95 border border-border" },
+  { value: "THREADS", label: "Threads", icon: AtSign, color: "text-zinc-800", bg: "bg-surface/95 border border-border" },
+  { value: "TWITTER", label: "X / Twitter", icon: Twitter, color: "text-sky-600", bg: "bg-surface/95 border border-border" },
 ] as const;
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {

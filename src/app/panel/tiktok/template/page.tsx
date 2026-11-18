@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Layers, AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { ArrowLeft, Layers, AlertCircle, Loader2 } from "lucide-react";
+import type { Role } from "@prisma/client";
+import { canManageTiktok } from "@/lib/tiktok/specs";
 
 interface Template {
   id: string;
@@ -17,15 +21,51 @@ interface Template {
 }
 
 export default function TiktokTemplatesPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const router = useRouter();
+  const userRole = session?.user?.role as Role | undefined;
+  const isAuthorized = Boolean(userRole && canManageTiktok(userRole));
+
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/tiktok/templates")
-      .then((r) => r.json())
-      .then((j) => setTemplates(j.data || []))
-      .finally(() => setLoading(false));
+    if (sessionStatus !== "loading" && !isAuthorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, isAuthorized, router]);
+
+  const fetchTemplates = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/tiktok/templates");
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || `Gagal memuat template (HTTP ${res.status})`);
+      }
+      setTemplates(json.data || []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal memuat template");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && isAuthorized) {
+      fetchTemplates();
+    }
+  }, [sessionStatus, isAuthorized, fetchTemplates]);
+
+  if (sessionStatus === "loading" || !isAuthorized) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={24} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -38,8 +78,7 @@ export default function TiktokTemplatesPage() {
       </Link>
 
       <div className="mb-5">
-        <h1 className="flex items-center gap-2 text-xl sm:text-3xl font-bold text-txt-primary">
-          <Layers size={24} className="text-primary" />
+        <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
           Template TikTok
         </h1>
         <p className="text-sm text-txt-secondary">
@@ -47,7 +86,7 @@ export default function TiktokTemplatesPage() {
         </p>
       </div>
 
-      <div className="mb-5 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+      <div className="mb-5 flex items-start gap-3 rounded-lg border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-4">
         <AlertCircle size={18} className="mt-0.5 shrink-0 text-yellow-700" />
         <div className="text-sm text-yellow-800">
           <p className="font-semibold">Template hanya aktif di Fase 2</p>
@@ -59,6 +98,15 @@ export default function TiktokTemplatesPage() {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-4 text-sm text-red-700">
+          <span>{error}</span>
+          <button type="button" onClick={fetchTemplates} className="btn-ghost text-xs font-semibold text-primary">
+            Coba Lagi
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="rounded-lg border border-border bg-surface p-10 text-center text-sm text-txt-secondary">

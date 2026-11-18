@@ -1007,14 +1007,26 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
     }
   }, [editingSlot, isOpen]);
 
-  // Cleanup timers on unmount or close
+  // Cleanup timers and pause video on unmount or close
   useEffect(() => {
+    if (!isOpen) {
+      if (previewTimerRef.current) {
+        window.clearInterval(previewTimerRef.current);
+        previewTimerRef.current = null;
+      }
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      setIsPlaying(false);
+      setPreviewing(false);
+    }
     return () => {
       if (previewTimerRef.current) {
         window.clearInterval(previewTimerRef.current);
+        previewTimerRef.current = null;
       }
     };
-  }, []);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -1047,9 +1059,14 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
     if (videoRef.current) {
       const dur = videoRef.current.duration || 0;
       setVideoDuration(dur);
-      // only set trimEnd to full duration if we are NOT editing
-      if (!editingSlot) {
-        setTrimEnd(Math.min(dur, 10)); // default to 10s or full duration
+      if (dur > 0) {
+        if (!editingSlot) {
+          setTrimStart(0);
+          setTrimEnd(Math.min(dur, 10));
+        } else {
+          setTrimEnd((prev) => Math.min(Math.max(prev, 0.5), dur));
+          setTrimStart((prev) => Math.min(Math.max(prev, 0), dur));
+        }
       }
     }
   };
@@ -1383,10 +1400,13 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                       type="number"
                       step={0.1}
                       min={trimStart}
-                      max={videoDuration}
+                      max={videoDuration > 0 ? videoDuration : undefined}
                       value={parseFloat(trimEnd.toFixed(1))}
                       onChange={(e) => {
-                        const val = Math.max(trimStart, Math.min(parseFloat(e.target.value) || 0, videoDuration));
+                        const raw = parseFloat(e.target.value);
+                        if (Number.isNaN(raw)) return;
+                        const maxBound = videoDuration > 0 ? videoDuration : 30;
+                        const val = Math.max(trimStart, Math.min(raw, maxBound));
                         setTrimEnd(val);
                         if (videoRef.current) videoRef.current.currentTime = val;
                       }}
@@ -1396,7 +1416,8 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                       type="button"
                       onClick={() => {
                         if (videoRef.current) {
-                          const val = Math.max(videoRef.current.currentTime, trimStart);
+                          const maxBound = videoDuration > 0 ? videoDuration : 30;
+                          const val = Math.min(maxBound, Math.max(videoRef.current.currentTime, trimStart));
                           setTrimEnd(val);
                         }
                       }}
@@ -1420,7 +1441,8 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
                     <button
                       type="button"
                       onClick={() => {
-                        const val = Math.min(trimEnd + 1, videoDuration);
+                        const maxBound = videoDuration > 0 ? videoDuration : 30;
+                        const val = Math.min(trimEnd + 1, maxBound);
                         setTrimEnd(val);
                         if (videoRef.current) videoRef.current.currentTime = val;
                       }}

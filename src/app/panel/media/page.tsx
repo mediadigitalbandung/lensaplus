@@ -81,6 +81,7 @@ export default function MediaPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterUser, setFilterUser] = useState<string>("");
+  const [knownUploaders, setKnownUploaders] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [editing, setEditing] = useState<MediaItem | null>(null);
@@ -102,8 +103,18 @@ export default function MediaPage() {
       const res = await fetch(`/api/media?${params}`);
       if (!res.ok) throw new Error("Gagal memuat media");
       const json = await res.json();
-      setMedia(json.data?.media || []);
+      const items: MediaItem[] = json.data?.media || [];
+      setMedia(items);
       setTotalPages(json.data?.pagination?.totalPages || 1);
+      setKnownUploaders((prev) => {
+        const map = new Map(prev.map((u) => [u.id, u]));
+        for (const m of items) {
+          if (m.uploadedBy && m.uploaderName) {
+            map.set(m.uploadedBy, { id: m.uploadedBy, name: m.uploaderName });
+          }
+        }
+        return Array.from(map.values());
+      });
     } catch (err) {
       setError("Gagal memuat media library. Silakan coba lagi.");
       // Error handled by state
@@ -199,19 +210,13 @@ export default function MediaPage() {
     fetchMedia();
   }
 
-  // Get unique uploaders for filter
-  const uniqueUploaders = Array.from(
-    new Map(
-      media.map((m) => [m.uploadedBy, { id: m.uploadedBy, name: m.uploaderName }])
-    ).values()
-  );
+  const uniqueUploaders = knownUploaders;
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-3xl font-bold text-txt-primary flex items-center gap-2">
-            <ImageIcon size={24} />
+          <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
             Media Library
           </h1>
           <p className="text-base text-txt-secondary">
@@ -242,7 +247,7 @@ export default function MediaPage() {
 
       {/* Upload area */}
       {showUpload && (
-        <div className="mb-6 rounded-lg border-2 border-dashed border-primary/30 bg-primary-50 p-6">
+        <div className="mb-6 rounded-lg border-2 border-dashed border-primary/30 bg-surface p-6">
           <h3 className="mb-3 text-base font-bold text-txt-primary">
             Upload Gambar Baru
           </h3>
@@ -272,8 +277,8 @@ export default function MediaPage() {
       )}
 
       {/* Filter by user */}
-      {uniqueUploaders.length > 1 && (
-        <div className="mb-4 flex items-center gap-2">
+      {(uniqueUploaders.length > 1 || Boolean(filterUser)) && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <Filter size={16} className="text-txt-muted" />
           <button
             onClick={() => { setFilterUser(""); setPage(1); }}
@@ -331,11 +336,12 @@ export default function MediaPage() {
                     }}
                   />
                   {/* Overlay actions */}
-                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-100 sm:opacity-0 transition-opacity sm:group-hover:opacity-100 group-focus-within:opacity-100">
                     <button
                       onClick={() => handleCopyUrl(item.url, item.id)}
                       className="rounded-lg bg-white/90 p-2 text-txt-primary hover:bg-white"
                       title="Salin URL"
+                      aria-label="Salin URL media"
                     >
                       {copied === item.id ? (
                         <CheckCircle size={18} className="text-primary" />
@@ -349,6 +355,7 @@ export default function MediaPage() {
                           onClick={() => openEdit(item)}
                           className="rounded-lg bg-white/90 p-2 text-txt-primary hover:bg-white"
                           title="Edit judul / caption / sumber"
+                          aria-label="Edit metadata media"
                         >
                           <Pencil size={18} />
                         </button>
@@ -357,6 +364,7 @@ export default function MediaPage() {
                           disabled={deleting === item.id}
                           className="rounded-lg bg-red-500/90 p-2 text-white hover:bg-red-600 disabled:opacity-50"
                           title="Hapus"
+                          aria-label="Hapus media"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -516,6 +524,7 @@ export default function MediaPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
+                aria-label="Halaman sebelumnya"
                 className="rounded-lg border border-border bg-surface p-2 text-txt-secondary hover:bg-surface-secondary disabled:opacity-30"
               >
                 <ChevronLeft size={16} />
@@ -526,6 +535,7 @@ export default function MediaPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
+                aria-label="Halaman berikutnya"
                 className="rounded-lg border border-border bg-surface p-2 text-txt-secondary hover:bg-surface-secondary disabled:opacity-30"
               >
                 <ChevronRight size={16} />

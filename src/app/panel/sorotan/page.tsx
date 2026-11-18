@@ -12,7 +12,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { redirect, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Sparkles,
@@ -230,13 +230,13 @@ function SorotanPageContent() {
     singleProcessing !== null ||
     activeJob?.status === "running";
 
-  if (
-    sessionStatus !== "loading" &&
-    session &&
-    !EDITOR_ROLES.includes(userRole)
-  ) {
-    redirect("/panel/dashboard");
-  }
+  const isAuthorized = EDITOR_ROLES.includes(userRole);
+
+  useEffect(() => {
+    if (sessionStatus !== "loading" && session && !isAuthorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, session, isAuthorized, router]);
 
   const fetchData = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -332,12 +332,16 @@ function SorotanPageContent() {
   }, [isAdmin]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (sessionStatus !== "loading" && isAuthorized) {
+      fetchData();
+    }
+  }, [sessionStatus, isAuthorized, fetchData]);
 
   useEffect(() => {
-    fetchAutoSettings();
-  }, [fetchAutoSettings]);
+    if (sessionStatus !== "loading" && isAuthorized) {
+      fetchAutoSettings();
+    }
+  }, [sessionStatus, isAuthorized, fetchAutoSettings]);
 
   // Poll background Sorotan generation job until completion.
   useEffect(() => {

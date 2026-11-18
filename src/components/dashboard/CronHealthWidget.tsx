@@ -76,7 +76,13 @@ export default function CronHealthWidget() {
     };
   }, []);
 
-  if (error) return null;
+  if (error) {
+    return (
+      <div className="rounded-xl border border-border border-l-4 border-l-red-500 bg-surface px-4 py-3 text-sm text-txt-secondary shadow-card">
+        <span className="font-semibold text-red-700">Kesehatan cron gagal dimuat:</span> {error}
+      </div>
+    );
+  }
   if (!jobs) {
     return (
       <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden animate-pulse">

@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Hash,
   Plus,
@@ -29,8 +29,10 @@ interface Tag {
 }
 
 export default function TagsPage() {
+  const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
+  const isAuthorized = EDITOR_ROLES.includes(userRole);
   // Deleting a tag is SA|CE only (matches DELETE /api/tags) — EDITOR can view
   // and create tags but must not see a delete button that just 403s.
   const isManagement = userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR";
@@ -51,13 +53,11 @@ export default function TagsPage() {
   const [aiProvider, setAiProvider] = useState<string>("");
   const [aiError, setAiError] = useState<string>("");
 
-  if (
-    sessionStatus !== "loading" &&
-    session &&
-    !EDITOR_ROLES.includes(userRole)
-  ) {
-    redirect("/panel/dashboard");
-  }
+  useEffect(() => {
+    if (sessionStatus !== "loading" && session && !isAuthorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, session, isAuthorized, router]);
 
   const fetchTags = useCallback(async () => {
     try {
@@ -76,8 +76,10 @@ export default function TagsPage() {
   }, []);
 
   useEffect(() => {
-    fetchTags();
-  }, [fetchTags]);
+    if (sessionStatus !== "loading" && isAuthorized) {
+      fetchTags();
+    }
+  }, [sessionStatus, isAuthorized, fetchTags]);
 
   async function handleCreate() {
     if (!newName.trim() || newName.trim().length < 2) {
@@ -170,8 +172,15 @@ export default function TagsPage() {
       const res = await fetch(`/api/tags?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Gagal menghapus");
+      if (res.status === 204) {
+        showSuccess("Tag dihapus.");
+        fetchTags();
+        return;
+      }
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || "Gagal menghapus");
+      }
       showSuccess("Tag dihapus.");
       fetchTags();
     } catch (err) {
@@ -190,7 +199,7 @@ export default function TagsPage() {
       return a.name.localeCompare(b.name, "id");
     });
 
-  if (sessionStatus === "loading") {
+  if (sessionStatus === "loading" || (session && !isAuthorized)) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -202,12 +211,9 @@ export default function TagsPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <Hash size={24} className="text-primary" />
-            <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
-              Tags
-            </h1>
-          </div>
+          <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
+            Tags
+          </h1>
           <p className="mt-1 text-sm text-txt-secondary">
             Kelola tag artikel. Total {tags.length} tag.
           </p>
@@ -222,8 +228,8 @@ export default function TagsPage() {
 
       {/* Create form */}
       <div className="mb-6 rounded-xl border border-border bg-surface p-4 shadow-card">
-        <h2 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
-          <Plus size={14} className="text-primary" /> Tambah Tag
+        <h2 className="text-sm font-bold text-txt-primary mb-3">
+          Tambah Tag
         </h2>
         <div className="flex gap-2">
           <input
@@ -253,8 +259,8 @@ export default function TagsPage() {
 
       {/* AI Research */}
       <div className="mb-6 rounded-xl border border-border bg-surface p-5 shadow-card">
-        <h2 className="text-sm font-bold text-txt-primary mb-3 flex items-center gap-1.5">
-          <Sparkles size={14} className="text-primary" /> AI Riset Keyword
+        <h2 className="text-sm font-bold text-txt-primary mb-3">
+          AI Riset Keyword
         </h2>
         <p className="text-xs text-txt-secondary mb-3">
           Masukkan topik artikel — AI akan menyarankan 8–12 keyword SEO Bahasa Indonesia.

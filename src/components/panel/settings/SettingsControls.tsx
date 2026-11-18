@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Save,
   Eye,
@@ -254,8 +254,10 @@ export function TestStatusInline({ result }: { result?: TestResult }) {
  * dedicated /panel/pengaturan/ai/* pages.
  */
 export function useSystemSettings() {
+  const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
   const { success: showSuccess, error: showError } = useToast();
 
   const [loaded, setLoaded] = useState(false);
@@ -264,9 +266,11 @@ export function useSystemSettings() {
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
-  if (sessionStatus !== "loading" && session && userRole !== "SUPER_ADMIN") {
-    redirect("/panel/dashboard");
-  }
+  useEffect(() => {
+    if (sessionStatus !== "loading" && session && !isSuperAdmin) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, session, isSuperAdmin, router]);
 
   const reload = useCallback(async () => {
     try {
@@ -286,8 +290,10 @@ export function useSystemSettings() {
   }, []);
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    if (sessionStatus !== "loading" && isSuperAdmin) {
+      reload();
+    }
+  }, [sessionStatus, isSuperAdmin, reload]);
 
   function markDirty(section: string) {
     setDirty((prev) => ({ ...prev, [section]: true }));

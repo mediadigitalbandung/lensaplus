@@ -73,16 +73,17 @@ export default function AdPreviewOverlay({ slot, imageUrl, htmlCode, type, targe
   }, []);
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70"
-      onClick={onClose}
-      aria-hidden="true"
-    >
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/70"
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="ad-preview-modal-title"
-        className="relative max-w-[95vw] max-h-[90vh] overflow-auto bg-surface rounded-xl shadow-xl"
+        className="relative z-10 max-w-[95vw] max-h-[90vh] overflow-auto bg-surface rounded-xl shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between bg-surface border-b border-border px-5 py-3 rounded-t-xl">

@@ -94,7 +94,7 @@ function LoadingSkeleton() {
 /* ── Main Page ─────────────────────────────────────────────────────── */
 
 export default function AktivitasPage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,12 +121,13 @@ export default function AktivitasPage() {
       do {
         params.set("page", String(currentPage));
         const res = await fetch(`/api/audit-logs?${params.toString()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (json.success) {
           allLogs.push(...json.data.logs);
-          totalPages = json.data.pagination.totalPages;
+          totalPages = Math.min(100, json.data.pagination.totalPages);
         } else {
-          break;
+          throw new Error(json.error || "Gagal mengekspor log aktivitas");
         }
         currentPage++;
       } while (currentPage <= totalPages);
@@ -143,8 +144,8 @@ export default function AktivitasPage() {
       ]);
 
       exportToCsv("audit-logs-lensaplus.csv", headers, rows);
-    } catch {
-      console.error("Failed to export CSV");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal mengekspor log aktivitas");
     } finally {
       setExporting(false);
     }
@@ -176,6 +177,14 @@ export default function AktivitasPage() {
   }, [fetchLogs, isSuperAdmin]);
 
   /* ── Guard ── */
+  if (sessionStatus === "loading") {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   if (!isSuperAdmin) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -255,7 +264,7 @@ export default function AktivitasPage() {
                 {logs.map((log) => {
                   const actionInfo = actionLabels[log.action] || {
                     label: log.action,
-                    color: "bg-surface-tertiary text-txt-secondary",
+                    color: "text-txt-secondary",
                   };
                   return (
                     <tr key={log.id} className="border-b border-border last:border-0 hover:bg-surface-secondary/50 transition-colors">

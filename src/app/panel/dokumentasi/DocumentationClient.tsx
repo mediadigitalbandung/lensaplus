@@ -105,13 +105,12 @@ export default function DocumentationClient({
   if (errorMessage) {
     return (
       <div>
-        <div className="mb-6 flex items-center gap-2">
-          <BookOpen size={24} className="text-primary" />
+        <div className="mb-6">
           <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
             Dokumentasi
           </h1>
         </div>
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+        <div className="rounded-xl border border-red-300 border-l-4 border-l-red-600 bg-surface p-5">
           <p className="text-sm text-red-700">Gagal memuat: {errorMessage}</p>
         </div>
       </div>

@@ -121,7 +121,13 @@ export default function PowerWidgets({ isAdmin }: { isAdmin: boolean }) {
     };
   }, []);
 
-  if (error) return null;
+  if (error) {
+    return (
+      <div className="rounded-xl border border-border border-l-4 border-l-red-500 bg-surface px-4 py-3 text-sm text-txt-secondary shadow-card">
+        <span className="font-semibold text-red-700">Ringkasan dashboard gagal dimuat:</span> {error}
+      </div>
+    );
+  }
   if (!data) return null;
 
   return (

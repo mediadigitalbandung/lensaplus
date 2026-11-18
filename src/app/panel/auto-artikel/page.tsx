@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Bot,
   FileText,
@@ -91,8 +91,10 @@ function formatDate(dateStr: string): string {
 }
 
 export default function AutoArtikelPage() {
+  const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
   const { success: showSuccess, error: showError } = useToast();
   const { confirm } = useConfirm();
 
@@ -124,9 +126,11 @@ export default function AutoArtikelPage() {
   const [newPriority, setNewPriority] = useState<number>(0);
   const [creatingKw, setCreatingKw] = useState<boolean>(false);
 
-  if (sessionStatus !== "loading" && session && userRole !== "SUPER_ADMIN") {
-    redirect("/panel/dashboard");
-  }
+  useEffect(() => {
+    if (sessionStatus !== "loading" && session && !isSuperAdmin) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, session, isSuperAdmin, router]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -246,11 +250,12 @@ export default function AutoArtikelPage() {
   }, []);
 
   useEffect(() => {
+    if (sessionStatus === "loading" || !isSuperAdmin) return;
     fetchSettings();
     fetchArticles();
     fetchKeywords();
     fetchCategories();
-  }, [fetchSettings, fetchArticles, fetchKeywords, fetchCategories]);
+  }, [sessionStatus, isSuperAdmin, fetchSettings, fetchArticles, fetchKeywords, fetchCategories]);
 
   // Snap pagination back when the keyword count drops (e.g. last item on
   // current page deleted) so we never render an empty page.

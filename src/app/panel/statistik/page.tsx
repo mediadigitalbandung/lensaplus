@@ -149,7 +149,12 @@ interface CFStats {
 }
 
 function ymd(d: Date) {
-  return d.toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
 }
 
 function formatNumber(n: number | null | undefined) {
@@ -407,19 +412,22 @@ function ScopedInternalView({
 function InternalTab({ from, to, scope }: { from: string; to: string; scope: "all" | "me" }) {
   const [data, setData] = useState<InternalStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch(
         `/api/stats/internal?from=${from}&to=${to}&scope=${scope}`,
       );
-      if (res.ok) {
-        const json = await res.json();
-        setData(json.data);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || `Gagal memuat data statistik internal (HTTP ${res.status})`);
       }
-    } catch {
-      /* */
+      setData(json.data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal memuat data.");
     } finally {
       setLoading(false);
     }
@@ -436,11 +444,14 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
       </div>
     );
   }
-  if (!data) {
+  if (error || !data) {
     return (
-      <p className="text-sm text-txt-muted py-8 text-center">
-        Gagal memuat data.
-      </p>
+      <div className="rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-5 text-sm text-red-700 flex items-center justify-between gap-3">
+        <span>{error || "Gagal memuat data."}</span>
+        <button type="button" onClick={fetchData} className="btn-ghost text-xs font-semibold text-primary">
+          Coba Lagi
+        </button>
+      </div>
     );
   }
 

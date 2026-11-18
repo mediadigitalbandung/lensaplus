@@ -51,6 +51,7 @@ export default function ImageCropModal({
   const [dragging, setDragging] = useState<DragHandle>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, crop: crop });
   const [processing, setProcessing] = useState(false);
+  const [cropError, setCropError] = useState("");
 
   // Lock body scroll
   useEffect(() => {
@@ -117,6 +118,35 @@ export default function ImageCropModal({
     if (imgLoaded) initCrop(imgDims.w, imgDims.h, aspect);
   }, [aspect, imgLoaded, imgDims.w, imgDims.h, initCrop]);
 
+  // Recalculate image dims on window resize so crop scale stays accurate
+  useEffect(() => {
+    if (!imgLoaded) return;
+    const onResize = () => {
+      const img = imgRef.current;
+      if (!img) return;
+      const rect = img.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      setImgDims((prev) => {
+        if (prev.w === rect.width && prev.h === rect.height) return prev;
+        const rx = prev.w > 0 ? rect.width / prev.w : 1;
+        const ry = prev.h > 0 ? rect.height / prev.h : 1;
+        setCrop((c) => ({
+          x: Math.max(0, Math.min(rect.width - c.width * rx, c.x * rx)),
+          y: Math.max(0, Math.min(rect.height - c.height * ry, c.y * ry)),
+          width: Math.min(rect.width, c.width * rx),
+          height: Math.min(rect.height, c.height * ry),
+        }));
+        return {
+          ...prev,
+          w: rect.width,
+          h: rect.height,
+        };
+      });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [imgLoaded]);
+
   // ─── Drag handlers ───
   const onPointerDown = (handle: DragHandle) => (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -142,68 +172,52 @@ export default function ImageCropModal({
         next.x = clamp(dragStart.crop.x + dx, 0, maxW - dragStart.crop.width);
         next.y = clamp(dragStart.crop.y + dy, 0, maxH - dragStart.crop.height);
       } else {
-        // Resize handles
-        let newX = dragStart.crop.x;
-        let newY = dragStart.crop.y;
-        let newW = dragStart.crop.width;
-        let newH = dragStart.crop.height;
-
-        if (dragging === "tl") {
-          newX = dragStart.crop.x + dx;
-          newY = dragStart.crop.y + dy;
-          newW = dragStart.crop.width - dx;
-          newH = dragStart.crop.height - dy;
-        } else if (dragging === "tr") {
-          newY = dragStart.crop.y + dy;
-          newW = dragStart.crop.width + dx;
-          newH = dragStart.crop.height - dy;
-        } else if (dragging === "bl") {
-          newX = dragStart.crop.x + dx;
-          newW = dragStart.crop.width - dx;
-          newH = dragStart.crop.height + dy;
-        } else if (dragging === "br") {
-          newW = dragStart.crop.width + dx;
-          newH = dragStart.crop.height + dy;
-        }
-
-        // Enforce aspect ratio if locked
-        if (aspect > 0) {
-          // Use width as primary
-          newH = newW / aspect;
-          if (dragging === "tl" || dragging === "tr") {
-            newY = dragStart.crop.y + (dragStart.crop.height - newH);
-          }
-        }
-
-        // Min size
         const MIN = 30;
-        if (newW < MIN || newH < MIN) return;
+        const anchorRight = dragStart.crop.x + dragStart.crop.width;
+        const anchorBottom = dragStart.crop.y + dragStart.crop.height;
+        const anchorLeft = dragStart.crop.x;
+        const anchorTop = dragStart.crop.y;
 
-        // Clamp to image bounds
-        if (newX < 0) {
-          newW += newX;
-          newX = 0;
-        }
-        if (newY < 0) {
-          newH += newY;
-          newY = 0;
-        }
-        if (newX + newW > maxW) newW = maxW - newX;
-        if (newY + newH > maxH) newH = maxH - newY;
-
-        // Final aspect re-correct after clamp (for locked aspect)
         if (aspect > 0) {
-          newH = newW / aspect;
-          if (newY + newH > maxH) {
-            newH = maxH - newY;
-            newW = newH * aspect;
+          // Locked aspect ratio: anchor the opposite corner so clamping never shifts it out of bounds
+          let rawW =
+            dragging === "tl" || dragging === "bl"
+              ? dragStart.crop.width - dx
+              : dragStart.crop.width + dx;
+          const maxAvailW =
+            dragging === "tl" || dragging === "bl" ? anchorRight : maxW - anchorLeft;
+          const maxAvailH =
+            dragging === "tl" || dragging === "tr" ? anchorBottom : maxH - anchorTop;
+          const maxLockedW = Math.min(maxAvailW, maxAvailH * aspect);
+          const minLockedW = Math.max(MIN, MIN * aspect);
+          rawW = clamp(rawW, minLockedW, Math.max(minLockedW, maxLockedW));
+          const lockedH = rawW / aspect;
+
+          next.width = rawW;
+          next.height = lockedH;
+          next.x =
+            dragging === "tl" || dragging === "bl" ? anchorRight - rawW : anchorLeft;
+          next.y =
+            dragging === "tl" || dragging === "tr" ? anchorBottom - lockedH : anchorTop;
+        } else {
+          // Free aspect ratio: clamp each edge against its opposite anchor and image bounds
+          if (dragging === "tl" || dragging === "bl") {
+            const newX = clamp(anchorLeft + dx, 0, Math.max(0, anchorRight - MIN));
+            next.x = newX;
+            next.width = anchorRight - newX;
+          } else {
+            next.x = anchorLeft;
+            next.width = clamp(dragStart.crop.width + dx, MIN, Math.max(MIN, maxW - anchorLeft));
+          }
+          if (dragging === "tl" || dragging === "tr") {
+            const newY = clamp(anchorTop + dy, 0, Math.max(0, anchorBottom - MIN));
+            next.y = newY;
+            next.height = anchorBottom - newY;
+          } else {
+            next.y = anchorTop;
+            next.height = clamp(dragStart.crop.height + dy, MIN, Math.max(MIN, maxH - anchorTop));
           }
         }
-
-        next.x = newX;
-        next.y = newY;
-        next.width = newW;
-        next.height = newH;
       }
 
       setCrop(next);
@@ -229,6 +243,7 @@ export default function ImageCropModal({
   const handleConfirm = async () => {
     if (!imgRef.current || !imgLoaded) return;
     setProcessing(true);
+    setCropError("");
     try {
       const img = imgRef.current;
       const scaleX = imgDims.naturalW / imgDims.w;
@@ -261,6 +276,8 @@ export default function ImageCropModal({
       );
       if (!blob) throw new Error("Failed to encode crop");
       onConfirm(blob);
+    } catch {
+      setCropError("Gagal memproses crop gambar. Silakan coba lagi.");
     } finally {
       setProcessing(false);
     }
@@ -355,8 +372,32 @@ export default function ImageCropModal({
                 />
                 {/* Crop rectangle */}
                 <div
+                  tabIndex={0}
+                  role="region"
+                  aria-label="Area crop gambar — gunakan tombol panah untuk menggeser"
                   onPointerDown={onPointerDown("move")}
-                  className="absolute cursor-move border-2 border-primary"
+                  onKeyDown={(e) => {
+                    const step = e.shiftKey ? 10 : 2;
+                    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
+                      e.preventDefault();
+                      setCrop((c) => ({
+                        ...c,
+                        x:
+                          e.key === "ArrowLeft"
+                            ? Math.max(0, c.x - step)
+                            : e.key === "ArrowRight"
+                              ? Math.min(imgDims.w - c.width, c.x + step)
+                              : c.x,
+                        y:
+                          e.key === "ArrowUp"
+                            ? Math.max(0, c.y - step)
+                            : e.key === "ArrowDown"
+                              ? Math.min(imgDims.h - c.height, c.y + step)
+                              : c.y,
+                      }));
+                    }
+                  }}
+                  className="absolute cursor-move touch-none border-2 border-primary focus:outline-none focus:ring-2 focus:ring-white"
                   style={{
                     left: crop.x,
                     top: crop.y,
@@ -384,7 +425,7 @@ export default function ImageCropModal({
                       <div
                         key={h}
                         onPointerDown={onPointerDown(h)}
-                        className={`absolute h-3.5 w-3.5 rounded-sm border-2 border-primary bg-white shadow-md ${pos[h]}`}
+                        className={`absolute h-3.5 w-3.5 touch-none rounded-sm border-2 border-primary bg-white shadow-md ${pos[h]}`}
                       />
                     );
                   })}
@@ -402,11 +443,14 @@ export default function ImageCropModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border bg-surface-container-low px-5 py-3">
-          <p className="text-xs text-on-surface-variant">
-            {imgLoaded
-              ? `Crop: ${Math.round(crop.width)} × ${Math.round(crop.height)} px (preview)`
-              : "Memuat gambar..."}
-          </p>
+          <div>
+            <p className="text-xs text-on-surface-variant">
+              {imgLoaded
+                ? `Crop: ${Math.round(crop.width)} × ${Math.round(crop.height)} px (preview)`
+                : "Memuat gambar..."}
+            </p>
+            {cropError && <p className="mt-0.5 text-xs text-red-600">{cropError}</p>}
+          </div>
           <div className="flex gap-2">
             <button
               type="button"

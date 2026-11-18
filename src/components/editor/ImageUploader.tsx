@@ -90,6 +90,11 @@ export default function ImageUploader({
   const [caption, setCaption] = useState("");
   const [credit, setCredit] = useState("");
 
+  // Sync preview when external currentImage prop changes (e.g. Perplexity fill or Gallery picker)
+  useEffect(() => {
+    setPreview(currentImage || "");
+  }, [currentImage]);
+
   // Cleanup any pending preview URL on unmount
   useEffect(() => {
     return () => {
@@ -105,11 +110,11 @@ export default function ImageUploader({
       try {
         const compressed = await compressImage(blob);
         const compressedSize = compressed.size;
+        const baseSize = srcSize > 0 ? srcSize : compressedSize;
+        const savedPct = baseSize > 0 ? Math.max(0, Math.round((1 - compressedSize / baseSize) * 100)) : 0;
 
         setSizeInfo(
-          `${formatSize(srcSize)} → ${formatSize(compressedSize)} (${Math.round(
-            (1 - compressedSize / srcSize) * 100
-          )}% lebih kecil)`
+          `${formatSize(baseSize)} → ${formatSize(compressedSize)} (${savedPct}% lebih kecil)`
         );
 
         if (compressedSize > 2 * 1024 * 1024) {
@@ -257,7 +262,7 @@ export default function ImageUploader({
   // PRIORITY 1: pendingBlob → show metadata form
   if (pendingBlob) {
     return (
-      <div className="space-y-3 rounded-lg border border-primary/30 bg-primary-light/30 p-4">
+      <div className="space-y-3 rounded-lg border border-border border-l-4 border-l-primary bg-surface p-4">
         <div className="flex items-start gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -375,9 +380,9 @@ export default function ImageUploader({
             type="button"
             onClick={removeImage}
             aria-label="Hapus gambar"
-            className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+            className="absolute right-2 top-2 p-1 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] transition-opacity hover:opacity-80"
           >
-            <X size={14} aria-hidden="true" />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
       ) : (

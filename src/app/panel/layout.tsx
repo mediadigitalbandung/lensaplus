@@ -80,6 +80,7 @@ const menuItems: MenuItem[] = [
   { name: "Statistik", href: "/panel/statistik", icon: TrendingUp },
   { name: "SEO", href: "/panel/seo", icon: Search, managementOnly: true },
   { name: "Email", href: "/panel/email", icon: Mail, adminOnly: true },
+  { name: "Buletin", href: "/panel/newsletter-subscribers", icon: Mail, managementOnly: true },
   { name: "Pengaturan", href: "/panel/pengaturan", icon: Settings, adminOnly: true },
   { name: "Dokumentasi", href: "/panel/dokumentasi", icon: BookOpen, adminOnly: true },
 ];
@@ -306,7 +307,11 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         </Link>
         <button
           onClick={async () => {
-            await fetch("/api/auth/logout", { method: "POST" });
+            try {
+              await fetch("/api/auth/logout", { method: "POST" });
+            } catch {
+              /* ignore logout tracking failure and still sign out */
+            }
             signOut({ callbackUrl: "/login" });
           }}
           className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-4 py-2.5 text-[13px] text-white/40 transition-all duration-150 hover:bg-white/5 hover:text-red-400"
@@ -442,7 +447,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                             key={notif.id}
                             href={notif.link || "/panel/dashboard"}
                             onClick={() => {
-                              markOneRead(notif.id);
+                              if (!notif.isRead) markOneRead(notif.id);
                               setNotifOpen(false);
                             }}
                             className={cn(

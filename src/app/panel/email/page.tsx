@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Link from "next/link";
@@ -28,6 +30,11 @@ interface SmtpConfig {
 }
 
 export default function EmailRoutingPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const router = useRouter();
+  const userRole = (session?.user?.role as string) || "";
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
+
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
   const [emails, setEmails] = useState<EmailRoute[]>([]);
@@ -47,11 +54,25 @@ export default function EmailRoutingPage() {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [expandedSetup, setExpandedSetup] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (sessionStatus !== "loading" && !isSuperAdmin) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, isSuperAdmin, router]);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   function copyText(text: string, label: string) {
     navigator.clipboard.writeText(text);
     setCopied(label);
-    setTimeout(() => setCopied(null), 2000);
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    copiedTimerRef.current = setTimeout(() => setCopied(null), 2000);
   }
 
   const fetchEmails = useCallback(async () => {
@@ -61,43 +82,49 @@ export default function EmailRoutingPage() {
         fetch("/api/email-routing?include=smtp"),
         fetch("/api/users?limit=100"),
       ]);
-      if (resEmails.ok) {
-        const json = await resEmails.json();
-        const payload = json.data;
-        if (Array.isArray(payload)) {
-          setEmails(payload);
-        } else {
-          setEmails(payload?.emails || []);
-          if (payload?.smtp) {
-            setSmtpConfig({
-              host: payload.smtp.host || "smtp-relay.brevo.com",
-              port: payload.smtp.port || "587",
-              user: payload.smtp.user || null,
-              password: payload.smtp.password || null,
-            });
-          }
+      if (!resEmails.ok) {
+        const errJson = await resEmails.json().catch(() => ({}));
+        throw new Error(errJson.error || `Gagal memuat data email (HTTP ${resEmails.status})`);
+      }
+      const json = await resEmails.json();
+      const payload = json.data;
+      if (Array.isArray(payload)) {
+        setEmails(payload);
+      } else {
+        setEmails(payload?.emails || []);
+        if (payload?.smtp) {
+          setSmtpConfig({
+            host: payload.smtp.host || "smtp-relay.brevo.com",
+            port: payload.smtp.port || "587",
+            user: payload.smtp.user || null,
+            password: payload.smtp.password || null,
+          });
         }
       }
       if (resUsers.ok) {
         // /api/users sejak Sprint 0 CRIT-03 return paginated shape:
         //   json.data = { users: [...], total, page, limit, totalPages }
         // Backward-compat fallback ke array kalau API berubah.
-        const json = await resUsers.json();
-        const list = Array.isArray(json.data?.users)
-          ? json.data.users
-          : Array.isArray(json.data)
-          ? json.data
+        const usersJson = await resUsers.json();
+        const list = Array.isArray(usersJson.data?.users)
+          ? usersJson.data.users
+          : Array.isArray(usersJson.data)
+          ? usersJson.data
           : [];
         setUsers(list.map((u: { id: string; name: string; email: string }) => ({ id: u.id, name: u.name, email: u.email })));
       }
-    } catch {
-      showError("Gagal memuat data");
+    } catch (e) {
+      showError(e instanceof Error ? e.message : "Gagal memuat data");
     } finally {
       setLoading(false);
     }
   }, [showError]);
 
-  useEffect(() => { fetchEmails(); }, [fetchEmails]);
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && isSuperAdmin) {
+      fetchEmails();
+    }
+  }, [sessionStatus, isSuperAdmin, fetchEmails]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -131,11 +158,14 @@ export default function EmailRoutingPage() {
     if (!ok) return;
     try {
       const res = await fetch(`/api/email-routing?id=${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || "Gagal menghapus email");
+      }
       success("Email berhasil dihapus");
       fetchEmails();
-    } catch {
-      showError("Gagal menghapus email");
+    } catch (e) {
+      showError(e instanceof Error ? e.message : "Gagal menghapus email");
     }
   }
 
@@ -146,12 +176,23 @@ export default function EmailRoutingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, enabled: !currentEnabled }),
       });
-      if (!res.ok) throw new Error();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || "Gagal mengubah status");
+      }
       success(currentEnabled ? "Email dinonaktifkan" : "Email diaktifkan");
       fetchEmails();
-    } catch {
-      showError("Gagal mengubah status");
+    } catch (e) {
+      showError(e instanceof Error ? e.message : "Gagal mengubah status");
     }
+  }
+
+  if (sessionStatus === "loading" || !isSuperAdmin) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={24} />
+      </div>
+    );
   }
 
   return (

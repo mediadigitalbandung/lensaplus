@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Share2,
   Instagram,
@@ -453,6 +453,7 @@ function PostsTab() {
           <option value="ALL">Semua Status</option>
           <option value="DRAFT">Draft</option>
           <option value="PENDING">Pending</option>
+          <option value="PROCESSING">Processing</option>
           <option value="PUBLISHED">Published</option>
           <option value="REJECTED">Rejected</option>
           <option value="DELETED">Deleted</option>
@@ -1089,7 +1090,7 @@ function TemplatesTab() {
       fd.append("file", file);
       fd.append("title", `Template Background ${Date.now()}`);
       fd.append("caption", "Social media template overlay cutout frame");
-      fd.append("credit", "Jurnalishukum Bandung");
+      fd.append("credit", "Lensaplus");
 
       showSuccess("Mengupload background...");
       const res = await fetch("/api/upload", {
@@ -1186,6 +1187,8 @@ function TemplatesTab() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Gagal menghapus");
       showSuccess("Template dihapus.");
+      setShowForm(false);
+      setEditing(null);
       fetchTemplates();
     } catch (err) {
       showError(err instanceof Error ? err.message : "Gagal menghapus");
@@ -1199,6 +1202,7 @@ function TemplatesTab() {
     }
     try {
       setPreviewLoading(true);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
       const res = await fetch("/api/social/templates/preview", {
         method: "POST",
@@ -1225,8 +1229,28 @@ function TemplatesTab() {
   function openPreview(template: SocialTemplate) {
     setPreviewTemplateId(template.id);
     setPreviewArticleId("");
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setPreviewOpen(true);
+  }
+
+  function resizeCanvas(nextW: number, nextH: number) {
+    if (nextW === canvasWidth && nextH === canvasHeight) return;
+    const rx = canvasWidth > 0 ? nextW / canvasWidth : 1;
+    const ry = canvasHeight > 0 ? nextH / canvasHeight : 1;
+    const scaleFont = Math.min(rx, ry);
+    setLayers((prev) =>
+      prev.map((l) => ({
+        ...l,
+        x: Math.round(l.x * rx),
+        y: Math.round(l.y * ry),
+        width: Math.max(20, Math.round(l.width * rx)),
+        height: Math.max(20, Math.round(l.height * ry)),
+        fontSize: l.fontSize ? Math.max(10, Math.round(l.fontSize * scaleFont)) : l.fontSize,
+      })),
+    );
+    setCanvasWidth(nextW);
+    setCanvasHeight(nextH);
   }
 
   function addTextLayer() {
@@ -1436,8 +1460,7 @@ function TemplatesTab() {
                           setForm({ ...form, platform: p });
                           const defaultRatio = PLATFORM_ASPECT_RATIOS[p]?.[0];
                           if (defaultRatio) {
-                            setCanvasWidth(defaultRatio.width);
-                            setCanvasHeight(defaultRatio.height);
+                            resizeCanvas(defaultRatio.width, defaultRatio.height);
                           }
                         }}
                       >
@@ -1456,8 +1479,7 @@ function TemplatesTab() {
                         value={`${canvasWidth}x${canvasHeight}`}
                         onChange={(e) => {
                           const [w, h] = e.target.value.split("x").map(Number);
-                          setCanvasWidth(w);
-                          setCanvasHeight(h);
+                          resizeCanvas(w, h);
                         }}
                       >
                         {PLATFORM_ASPECT_RATIOS[form.platform]?.map((ratio) => (
@@ -3246,15 +3268,19 @@ function SettingsTab() {
 
 // -------------------- Page --------------------
 export default function SocialPage() {
+  const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
+  const authorized = userRole === "SUPER_ADMIN";
   const [tab, setTab] = useState<"posts" | "templates" | "settings">("posts");
 
-  if (sessionStatus !== "loading" && session && userRole !== "SUPER_ADMIN") {
-    redirect("/panel/dashboard");
-  }
+  useEffect(() => {
+    if (sessionStatus !== "loading" && session && !authorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, session, authorized, router]);
 
-  if (sessionStatus === "loading") {
+  if (sessionStatus === "loading" || (session && !authorized)) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -3265,12 +3291,9 @@ export default function SocialPage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="flex items-center gap-2">
-          <Share2 size={24} className="text-primary" />
-          <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
-            Sosial Media
-          </h1>
-        </div>
+        <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
+          Sosial Media
+        </h1>
         <p className="mt-1 text-sm text-txt-secondary">
           Manajemen post, template, dan konfigurasi akun Instagram & Facebook.
         </p>

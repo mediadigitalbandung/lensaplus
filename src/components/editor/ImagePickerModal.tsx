@@ -82,10 +82,21 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
   // Upload step-2 state — file selected, awaiting metadata
   const [pendingBlob, setPendingBlob] = useState<Blob | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string>("");
+  const pendingPreviewRef = useRef<string>("");
   const [pendingFilename, setPendingFilename] = useState<string>("");
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadCaption, setUploadCaption] = useState("");
   const [uploadCredit, setUploadCredit] = useState("");
+
+  useEffect(() => {
+    pendingPreviewRef.current = pendingPreview;
+  }, [pendingPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingPreviewRef.current) URL.revokeObjectURL(pendingPreviewRef.current);
+    };
+  }, []);
 
   // Gallery state
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -451,7 +462,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
               </div>
             ) : (
               /* Step 1: drop / pilih file */
-              <div className="flex h-full min-h-[300px] items-center justify-center">
+              <div className="relative flex h-full min-h-[300px] flex-col items-center justify-center gap-3">
                 <div
                   onDrop={handleDrop}
                   onDragOver={(e) => {
@@ -488,7 +499,7 @@ export default function ImagePickerModal({ open, onClose, onSelect }: ImagePicke
                   />
                 </div>
                 {uploadError && (
-                  <p className="absolute bottom-6 text-sm text-red-600">{uploadError}</p>
+                  <p className="text-sm text-red-600">{uploadError}</p>
                 )}
               </div>
             )

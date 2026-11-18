@@ -130,8 +130,8 @@ export default function TwoFactorSection() {
         <ShieldCheck size={20} className="text-primary" />
         <h3 className="text-lg font-semibold text-txt-primary">Autentikasi Dua Faktor (2FA)</h3>
         <span
-          className={`ml-auto inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${
-            enabled ? "bg-green-50 text-green-700 ring-green-600/20" : "bg-surface-tertiary text-txt-secondary ring-border"
+          className={`ml-auto inline-flex items-center px-1 text-xs font-semibold ${
+            enabled ? "text-green-700" : "text-txt-secondary"
           }`}
         >
           {enabled ? "Aktif" : "Nonaktif"}
@@ -144,8 +144,8 @@ export default function TwoFactorSection() {
 
       {msg && (
         <div
-          className={`mb-4 rounded-lg border p-3 text-sm ${
-            msg.type === "ok" ? "border-primary/30 bg-primary/5 text-primary" : "border-red-300 bg-red-50 text-red-700"
+          className={`mb-4 rounded-lg border border-border border-l-4 bg-surface p-3 text-sm ${
+            msg.type === "ok" ? "border-l-primary text-primary" : "border-l-red-600 text-red-700"
           }`}
         >
           {msg.text}
@@ -228,7 +228,7 @@ export default function TwoFactorSection() {
           ) : !showDisable ? (
             <button
               onClick={() => setShowDisable(true)}
-              className="inline-flex items-center gap-2 rounded-md border border-border px-5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50"
+              className="inline-flex items-center gap-2 rounded-md border border-red-300 px-5 py-2.5 text-sm font-semibold text-red-600 hover:border-red-500"
             >
               <ShieldOff size={16} /> Nonaktifkan 2FA
             </button>

@@ -95,7 +95,7 @@ function Modal({
 /* ── Main page ──────────────────────────────────────────────────── */
 
 export default function PanelTopikPage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const { confirm } = useConfirm();
   const { success, error: showError } = useToast();
 
@@ -126,8 +126,10 @@ export default function PanelTopikPage() {
   }, [showError]);
 
   useEffect(() => {
-    fetchTopics();
-  }, [fetchTopics]);
+    if (sessionStatus !== "loading" && isAllowed) {
+      fetchTopics();
+    }
+  }, [sessionStatus, isAllowed, fetchTopics]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -235,6 +237,14 @@ export default function PanelTopikPage() {
     }
   };
 
+  if (sessionStatus === "loading") {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   if (!isAllowed) {
     return (
       <div className="container-main py-10 text-center">
@@ -248,10 +258,7 @@ export default function PanelTopikPage() {
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <Layers size={22} className="text-primary" />
-            <h1 className="text-xl font-bold text-txt-primary">Topic Cluster</h1>
-          </div>
+          <h1 className="text-xl font-bold text-txt-primary">Topic Cluster</h1>
           <p className="mt-1 text-sm text-txt-secondary">
             Kelola topic cluster SEO — kumpulan tag yang membentuk halaman tematik terpadu.
           </p>

@@ -87,7 +87,7 @@ function Modal({
 /* ── Main Page ─────────────────────────────────────────────────────── */
 
 export default function KategoriPage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const { confirm } = useConfirm();
   const [activeTab, setActiveTab] = useState<"kategori" | "tag">("kategori");
 
@@ -100,6 +100,7 @@ export default function KategoriPage() {
   const [catSubmitting, setCatSubmitting] = useState(false);
   const [catDeleting, setCatDeleting] = useState<string | null>(null);
   const [catForm, setCatForm] = useState({ name: "", slug: "", description: "", order: 0 });
+  const [catSlugManual, setCatSlugManual] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // ── Tag state ──
@@ -110,6 +111,7 @@ export default function KategoriPage() {
   const [tagSubmitting, setTagSubmitting] = useState(false);
   const [tagDeleting, setTagDeleting] = useState<string | null>(null);
   const [tagForm, setTagForm] = useState({ name: "", slug: "" });
+  const [tagSlugManual, setTagSlugManual] = useState(false);
 
   const isAllowed =
     session?.user?.role === "SUPER_ADMIN" ||
@@ -147,9 +149,10 @@ export default function KategoriPage() {
   }, []);
 
   useEffect(() => {
+    if (sessionStatus === "loading" || !isAllowed) return;
     fetchCategories();
     fetchTags();
-  }, [fetchCategories, fetchTags]);
+  }, [sessionStatus, isAllowed, fetchCategories, fetchTags]);
 
   /* ── Show feedback ── */
   function showFeedback(type: "success" | "error", message: string) {
@@ -161,9 +164,11 @@ export default function KategoriPage() {
   function openCatModal(cat?: Category) {
     if (cat) {
       setEditingCat(cat);
+      setCatSlugManual(true);
       setCatForm({ name: cat.name, slug: cat.slug, description: cat.description || "", order: cat.order });
     } else {
       setEditingCat(null);
+      setCatSlugManual(false);
       setCatForm({ name: "", slug: "", description: "", order: 0 });
     }
     setCatModalOpen(true);
@@ -226,9 +231,11 @@ export default function KategoriPage() {
   function openTagModal(tag?: TagItem) {
     if (tag) {
       setEditingTag(tag);
+      setTagSlugManual(true);
       setTagForm({ name: tag.name, slug: tag.slug });
     } else {
       setEditingTag(null);
+      setTagSlugManual(false);
       setTagForm({ name: "", slug: "" });
     }
     setTagModalOpen(true);
@@ -300,6 +307,13 @@ export default function KategoriPage() {
   }
 
   /* ── Guard ── */
+  if (sessionStatus === "loading") {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
   if (!isAllowed) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -422,7 +436,7 @@ export default function KategoriPage() {
                             <button
                               onClick={() => handleCatDelete(cat)}
                               disabled={catDeleting === cat.id}
-                              className="rounded-lg p-2 text-txt-secondary hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
+                              className="rounded-lg p-2 text-txt-secondary hover:text-red-600 transition-colors disabled:opacity-50"
                               title="Hapus"
                               aria-label="Hapus kategori"
                             >
@@ -452,7 +466,11 @@ export default function KategoriPage() {
                   value={catForm.name}
                   onChange={(e) => {
                     const name = e.target.value;
-                    setCatForm((f) => ({ ...f, name, slug: slugify(name) }));
+                    setCatForm((f) => ({
+                      ...f,
+                      name,
+                      slug: !editingCat && !catSlugManual ? slugify(name) : f.slug,
+                    }));
                   }}
                   className="w-full rounded-lg border border-border bg-surface-secondary px-3 py-2.5 text-base text-txt-primary placeholder:text-txt-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   placeholder="Nama kategori"
@@ -464,7 +482,10 @@ export default function KategoriPage() {
                 <input
                   type="text"
                   value={catForm.slug}
-                  onChange={(e) => setCatForm((f) => ({ ...f, slug: e.target.value }))}
+                  onChange={(e) => {
+                    setCatSlugManual(true);
+                    setCatForm((f) => ({ ...f, slug: e.target.value }));
+                  }}
                   className="w-full rounded-lg border border-border bg-surface-secondary px-3 py-2.5 text-base text-txt-primary placeholder:text-txt-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   placeholder="slug-kategori"
                 />
@@ -564,7 +585,7 @@ export default function KategoriPage() {
                             <button
                               onClick={() => handleTagDelete(tag)}
                               disabled={tagDeleting === tag.id}
-                              className="rounded-lg p-2 text-txt-secondary hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
+                              className="rounded-lg p-2 text-txt-secondary hover:text-red-600 transition-colors disabled:opacity-50"
                               title="Hapus"
                               aria-label="Hapus tag"
                             >
@@ -594,7 +615,11 @@ export default function KategoriPage() {
                   value={tagForm.name}
                   onChange={(e) => {
                     const name = e.target.value;
-                    setTagForm({ name, slug: slugify(name) });
+                    setTagForm((f) => ({
+                      ...f,
+                      name,
+                      slug: !editingTag && !tagSlugManual ? slugify(name) : f.slug,
+                    }));
                   }}
                   className="w-full rounded-lg border border-border bg-surface-secondary px-3 py-2.5 text-base text-txt-primary placeholder:text-txt-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   placeholder="Nama tag"
@@ -606,7 +631,10 @@ export default function KategoriPage() {
                 <input
                   type="text"
                   value={tagForm.slug}
-                  onChange={(e) => setTagForm((f) => ({ ...f, slug: e.target.value }))}
+                  onChange={(e) => {
+                    setTagSlugManual(true);
+                    setTagForm((f) => ({ ...f, slug: e.target.value }));
+                  }}
                   className="w-full rounded-lg border border-border bg-surface-secondary px-3 py-2.5 text-base text-txt-primary placeholder:text-txt-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   placeholder="slug-tag"
                 />

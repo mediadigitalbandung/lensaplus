@@ -77,7 +77,8 @@ function LoadingSkeleton() {
 }
 
 export default function PenggunaPage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
+  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
@@ -107,28 +108,30 @@ export default function PenggunaPage() {
       setLoading(true);
       setError(null);
 
-      const [resUsers, resEmails] = await Promise.all([
-        fetch("/api/users"),
-        fetch("/api/email-routing").catch(() => null),
-      ]);
+      const resEmails = await fetch("/api/email-routing").catch(() => null);
+      const allUsers: User[] = [];
+      let p = 1;
+      let totalPagesApi = 1;
+      do {
+        const resUsers = await fetch(`/api/users?page=${p}&limit=100`);
+        if (!resUsers.ok) throw new Error("Gagal memuat pengguna");
+        const json = await resUsers.json();
+        const payload = json.data;
+        const list: User[] = Array.isArray(payload)
+          ? (payload as User[])
+          : Array.isArray(payload?.users)
+          ? (payload.users as User[])
+          : Array.isArray(payload?.data)
+          ? (payload.data as User[])
+          : [];
+        allUsers.push(...list);
+        totalPagesApi = Array.isArray(payload)
+          ? 1
+          : Math.min(20, Number(payload?.pagination?.totalPages || 1));
+        p++;
+      } while (p <= totalPagesApi);
 
-      if (!resUsers.ok) throw new Error("Gagal memuat pengguna");
-      const json = await resUsers.json();
-      // /api/users returns three possible shapes depending on role + history:
-      //   - admin (current):  { data: { users: [...], pagination: {...} } }
-      //   - admin (legacy):   { data: { data: [...], total, page, limit } }
-      //   - non-admin:        { data: [...] }  (flat array)
-      // Defensive parse handles all three so a deploy window mismatch between
-      // server and client never blanks the user list.
-      const payload = json.data;
-      const list: User[] = Array.isArray(payload)
-        ? (payload as User[])
-        : Array.isArray(payload?.users)
-        ? (payload.users as User[])
-        : Array.isArray(payload?.data)
-        ? (payload.data as User[])
-        : [];
-      setUsers(list);
+      setUsers(allUsers);
 
       if (resEmails?.ok) {
         const emailJson = await resEmails.json();
@@ -143,8 +146,10 @@ export default function PenggunaPage() {
   }, []);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (sessionStatus !== "loading" && isSuperAdmin) {
+      fetchUsers();
+    }
+  }, [sessionStatus, isSuperAdmin, fetchUsers]);
 
   function resetForm() {
     setFormName("");
@@ -276,6 +281,14 @@ export default function PenggunaPage() {
   );
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedUsers = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  if (sessionStatus === "loading") {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   // User management is SUPER_ADMIN-only (matches /api/users + middleware
   // SUPER_ONLY). CHIEF_EDITOR has no user-management remit and was previously
@@ -533,6 +546,7 @@ export default function PenggunaPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-txt-muted hover:text-txt-primary transition-colors"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -578,7 +592,10 @@ export default function PenggunaPage() {
                   {formLensaplusEmail && formEmail && (
                     <p className="mt-1.5 flex items-center gap-1.5 text-xs text-txt-muted">
                       <AtSign size={10} className="text-primary shrink-0" />
-                      <span><strong className="text-primary">{formLensaplusEmail}@lensaplus.com</strong> akan forward ke <strong>{formEmail}</strong></span>
+                      <span>
+                        <strong className="text-primary">{formLensaplusEmail}@lensaplus.com</strong> akan forward ke{" "}
+                        <strong>{formEmail.includes("@") ? formEmail : `${formEmail}@gmail.com`}</strong>
+                      </span>
                     </p>
                   )}
                   <p className="mt-1 text-[10px] text-txt-muted">Kosongkan jika tidak perlu email @lensaplus.com</p>

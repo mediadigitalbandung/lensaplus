@@ -49,23 +49,6 @@ function diffStrings(oldText: string, newText: string): DiffSegment[] {
   const m = oldSlice.length;
   const n = newSlice.length;
 
-  // Use two rows instead of full matrix to save memory
-  let prev = new Array(n + 1).fill(0);
-  let curr = new Array(n + 1).fill(0);
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (oldSlice[i - 1] === newSlice[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-      } else {
-        curr[j] = Math.max(prev[j], curr[j - 1]);
-      }
-    }
-    prev = [...curr];
-    curr = new Array(n + 1).fill(0);
-  }
-
-  // We need the full table for backtracking, so rebuild it
   const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
@@ -142,7 +125,7 @@ function DiffView({
           return (
             <span
               key={i}
-              className="rounded-lg px-0.5 bg-red-900/40 text-red-400 line-through"
+              className="rounded px-0.5 bg-red-100 text-red-800 line-through"
             >
               {seg.text}{" "}
             </span>
@@ -152,7 +135,7 @@ function DiffView({
           return (
             <span
               key={i}
-              className="rounded-lg px-0.5 bg-emerald-900/40 text-emerald-400"
+              className="rounded px-0.5 bg-emerald-100 text-emerald-800"
             >
               {seg.text}{" "}
             </span>
@@ -240,12 +223,12 @@ function CompareModal({
               Perubahan Judul
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="rounded-[8px] bg-red-900/20 border border-red-900/30 px-3 py-2">
-                <p className="text-xs text-red-400 mb-1">{labelA}</p>
+              <div className="rounded-[8px] bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-xs font-medium text-red-700 mb-1">{labelA}</p>
                 <p className="text-sm text-txt-primary">{revisionA.title}</p>
               </div>
-              <div className="rounded-[8px] bg-emerald-900/20 border border-emerald-900/30 px-3 py-2">
-                <p className="text-xs text-emerald-400 mb-1">{labelB}</p>
+              <div className="rounded-[8px] bg-emerald-50 border border-emerald-200 px-3 py-2">
+                <p className="text-xs font-medium text-emerald-700 mb-1">{labelB}</p>
                 <p className="text-sm text-txt-primary">{revisionB.title}</p>
               </div>
             </div>
@@ -255,12 +238,12 @@ function CompareModal({
         {/* Column headers */}
         <div className="grid grid-cols-1 md:grid-cols-2 border-b border-border">
           <div className="px-5 py-2 border-b md:border-b-0 md:border-r border-border">
-            <p className="text-xs font-semibold text-red-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-red-700 uppercase tracking-wider">
               {labelA}
             </p>
           </div>
           <div className="px-5 py-2">
-            <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">
               {labelB}
             </p>
           </div>
@@ -287,15 +270,15 @@ function CompareModal({
         {/* Legend */}
         <div className="flex items-center gap-4 border-t border-border px-5 py-3">
           <span className="flex items-center gap-1.5 text-xs text-txt-muted">
-            <span className="inline-block h-3 w-3 rounded-lg bg-red-900/40 border border-red-800" />
+            <span className="inline-block h-3 w-3 rounded bg-red-100 border border-red-300" />
             Dihapus
           </span>
           <span className="flex items-center gap-1.5 text-xs text-txt-muted">
-            <span className="inline-block h-3 w-3 rounded-lg bg-emerald-900/40 border border-emerald-800" />
+            <span className="inline-block h-3 w-3 rounded bg-emerald-100 border border-emerald-300" />
             Ditambahkan
           </span>
           <span className="flex items-center gap-1.5 text-xs text-txt-muted">
-            <span className="inline-block h-3 w-3 rounded-lg bg-surface-secondary border border-border" />
+            <span className="inline-block h-3 w-3 rounded bg-surface-secondary border border-border" />
             Tidak berubah
           </span>
         </div>
@@ -423,8 +406,7 @@ export default function RevisionsPage() {
         >
           <ArrowLeft size={14} /> Kembali ke Editor
         </button>
-        <h1 className="flex items-center gap-2 text-lg sm:text-2xl font-bold text-txt-primary">
-          <History size={24} className="text-primary" />
+        <h1 className="text-lg sm:text-2xl font-bold text-txt-primary">
           Riwayat Revisi
         </h1>
         {articleTitle && (
@@ -477,12 +459,9 @@ export default function RevisionsPage() {
                         {rev.title}
                       </p>
                       <div className="flex flex-wrap items-center gap-3 text-xs text-txt-muted mt-0.5">
-                        <span className="flex items-center gap-1">
-                          <User size={11} />
-                          {rev.changedBy}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar size={11} />
+                        <span>{rev.changedBy}</span>
+                        <span>•</span>
+                        <span>
                           {revDate.toLocaleDateString("id-ID", {
                             day: "numeric",
                             month: "short",

@@ -37,10 +37,13 @@ import {
   Archive,
   ArrowDownToLine,
   TrendingUp,
+  ImageIcon,
 } from "lucide-react";
 import { stripHtml, downloadTextFile, exportArticlePdf } from "@/lib/export-utils";
 import { stripAttributionFooter } from "@/lib/scraper/source-label";
 import DOMPurify from "isomorphic-dompurify";
+import ImageUploader from "@/components/editor/ImageUploader";
+import ImagePickerModal, { type PickedImage } from "@/components/editor/ImagePickerModal";
 
 const RichTextEditor = dynamic(
   () => import("@/components/editor/RichTextEditor"),
@@ -60,7 +63,7 @@ interface Source {
   url: string;
 }
 
-import { EDITOR_ROLES, ADMIN_ROLES, CAN_SUBMIT_REVIEW, roleLabelsMap } from "@/lib/roles";
+import { EDITOR_ROLES, CAN_SUBMIT_REVIEW, roleLabelsMap } from "@/lib/roles";
 import PerplexityResearchPanel from "@/components/editor/PerplexityResearchPanel";
 
 function LoadingSkeleton() {
@@ -98,7 +101,7 @@ export default function EditArticlePage() {
   const router = useRouter();
   const params = useParams();
   const articleId = params.id as string;
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
   const userRole = session?.user?.role || "";
@@ -120,6 +123,8 @@ export default function EditArticlePage() {
   const [error, setError] = useState("");
   const [showSeo, setShowSeo] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const [showAutosaveBanner, setShowAutosaveBanner] = useState(false);
   // Perplexity research-and-draft
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentStatus, setCurrentStatus] = useState("");
@@ -166,6 +171,7 @@ export default function EditArticlePage() {
   // Research notes state
   const [researchNotes, setResearchNotes] = useState("");
   const [notesOpen, setNotesOpen] = useState(false);
+  const notesLoadedRef = useRef(false);
 
   // Trending Suggestions state
   const [trendingSuggestions, setTrendingSuggestions] = useState<{ label: string; hot: boolean }[]>([]);
@@ -227,10 +233,11 @@ export default function EditArticlePage() {
           excerpt: excerpt || undefined,
           categoryId: categoryId || undefined,
           tags: tagList,
-          featuredImage: featuredImage || undefined,
+          featuredImage: featuredImage || null,
           seoTitle: seoTitle || undefined,
           seoDescription: seoDescription || undefined,
           sources: validSources.length > 0 ? validSources : undefined,
+          ...(isAdmin ? { authorId: selectedAuthorId || undefined } : {}),
           assignedEditorId: selectedEditorId || null,
         };
         if (allowStatusWrite) body.status = "DRAFT";
@@ -269,6 +276,8 @@ export default function EditArticlePage() {
       currentStatus,
       excerpt,
       featuredImage,
+      isAdmin,
+      selectedAuthorId,
       seoDescription,
       seoTitle,
       sources,
@@ -281,6 +290,32 @@ export default function EditArticlePage() {
     ]
   );
 
+  // Latest-state ref so the 15s autosave timer does not reset on every keystroke
+  const latestEditRef = useRef({
+    title,
+    content,
+    categoryId,
+    excerpt,
+    tags,
+    featuredImage,
+    sources,
+    formDirty,
+    autoSaving,
+    saveDraft,
+  });
+  latestEditRef.current = {
+    title,
+    content,
+    categoryId,
+    excerpt,
+    tags,
+    featuredImage,
+    sources,
+    formDirty,
+    autoSaving,
+    saveDraft,
+  };
+
   // Auto-save every AUTOSAVE_INTERVAL ms (only DRAFT / REJECTED, owner)
   useEffect(() => {
     if (loading) return;
@@ -289,37 +324,63 @@ export default function EditArticlePage() {
     if (articleAuthorId && articleAuthorId !== userId) return; // only owner autosaves
 
     autosaveTimerRef.current = setInterval(() => {
-      if (formDirty && !autoSaving) {
-        // Local snapshot fallback — also saves to backend
+      const cur = latestEditRef.current;
+      if (cur.formDirty && !cur.autoSaving) {
         try {
-          const draft = { title, content, categoryId, excerpt, tags, featuredImage, sources };
+          const draft = {
+            title: cur.title,
+            content: cur.content,
+            categoryId: cur.categoryId,
+            excerpt: cur.excerpt,
+            tags: cur.tags,
+            featuredImage: cur.featuredImage,
+            sources: cur.sources,
+          };
           localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draft));
         } catch { /* ignore */ }
-        saveDraft({ silent: true });
+        cur.saveDraft({ silent: true });
       }
     }, AUTOSAVE_INTERVAL);
 
     return () => {
       if (autosaveTimerRef.current) clearInterval(autosaveTimerRef.current);
     };
-  }, [
-    loading,
-    currentStatus,
-    formDirty,
-    autoSaving,
-    articleAuthorId,
-    userId,
-    saveDraft,
-    title,
-    content,
-    categoryId,
-    excerpt,
-    tags,
-    featuredImage,
-    sources,
-    selectedEditorId,
-    AUTOSAVE_KEY,
-  ]);
+  }, [loading, currentStatus, articleAuthorId, userId, AUTOSAVE_KEY]);
+
+  // Offer local autosave recovery banner when an unsaved local copy exists for editable drafts
+  useEffect(() => {
+    if (loading) return;
+    const isDraftable = ["DRAFT", "REJECTED"].includes(currentStatus);
+    if (!isDraftable || (articleAuthorId && articleAuthorId !== userId)) return;
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (raw) setShowAutosaveBanner(true);
+    } catch { /* ignore */ }
+  }, [loading, currentStatus, articleAuthorId, userId, AUTOSAVE_KEY]);
+
+  const loadAutosaveDraft = () => {
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft.title) setTitle(draft.title);
+      if (draft.content) setContent(draft.content);
+      if (draft.categoryId) setCategoryId(draft.categoryId);
+      if (draft.excerpt !== undefined) setExcerpt(draft.excerpt);
+      if (draft.tags !== undefined) setTags(draft.tags);
+      if (draft.featuredImage !== undefined) setFeaturedImage(draft.featuredImage);
+      if (Array.isArray(draft.sources) && draft.sources.length > 0) setSources(draft.sources);
+      setShowAutosaveBanner(false);
+      success("Draf autosave lokal dipulihkan");
+    } catch {
+      setShowAutosaveBanner(false);
+    }
+  };
+
+  const discardAutosaveDraft = () => {
+    try { localStorage.removeItem(AUTOSAVE_KEY); } catch { /* ignore */ }
+    setShowAutosaveBanner(false);
+  };
 
   // beforeunload warning when form has unsaved changes
   useEffect(() => {
@@ -339,19 +400,28 @@ export default function EditArticlePage() {
     try { localStorage.removeItem(AUTOSAVE_KEY); } catch { /* ignore */ }
     lastSnapshotRef.current = buildSnapshot();
     setFormDirty(false);
+    setShowAutosaveBanner(false);
   }, [AUTOSAVE_KEY, buildSnapshot]);
 
   // Load research notes from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(`research_notes_${params.id}`);
-    if (saved) setResearchNotes(saved);
+    try {
+      const saved = localStorage.getItem(`research_notes_${params.id}`);
+      if (saved) setResearchNotes(saved);
+    } catch { /* ignore */ }
+    notesLoadedRef.current = true;
   }, [params.id]);
 
-  // Auto-save research notes on change
+  // Auto-save research notes on change (remove key when cleared)
   useEffect(() => {
-    if (researchNotes) {
-      localStorage.setItem(`research_notes_${params.id}`, researchNotes);
-    }
+    if (!notesLoadedRef.current) return;
+    try {
+      if (researchNotes) {
+        localStorage.setItem(`research_notes_${params.id}`, researchNotes);
+      } else {
+        localStorage.removeItem(`research_notes_${params.id}`);
+      }
+    } catch { /* ignore */ }
   }, [researchNotes, params.id]);
 
   const [checklist, setChecklist] = useState({
@@ -675,26 +745,23 @@ export default function EditArticlePage() {
   // The admin/editor review surface is reserved for reviewing somebody
   // else's work, or for admin action on an already-submitted/published
   // article (where the editorial workflow takes precedence over authoring).
-  const getViewMode = (): "journalist" | "editor" | "admin" | "unauthorized" => {
+  const getViewMode = (): "journalist" | "admin" | "unauthorized" => {
     if (isOwner && ["DRAFT", "REJECTED"].includes(currentStatus)) return "journalist";
-    // PUBLISHED articles get the full editor for owner OR admin so they can
-    // amend live content, see featured image / sources / SEO / AI helpers,
-    // and access the takedown / archive actions inline.
-    if ((isOwner || isAdmin) && currentStatus === "PUBLISHED") return "journalist";
+    // PUBLISHED articles get the full editable view only for editors/admins;
+    // non-editor owners stay in read-only journalist preview (matching PUT /api/articles/:id RBAC).
+    if (isAdmin && currentStatus === "PUBLISHED") return "journalist";
     if (isAdmin) return "admin";
-    if (isEditor && !isOwner) return "editor";
     if (isOwner) return "journalist";
-    if (isEditor) return "editor"; // editor viewing any article
     return "unauthorized";
   };
 
   const viewMode = getViewMode();
 
-  // Check if jurnalis can edit content. Owners can edit DRAFT/REJECTED;
-  // owners and admins can also edit PUBLISHED articles (post-publish update).
+  // Check if jurnalis/editor can edit content. Owners can edit DRAFT/REJECTED;
+  // only editors/admins (isAdmin) can edit PUBLISHED articles (post-publish update).
   const canJurnalisEdit =
     (isOwner && ["DRAFT", "REJECTED"].includes(currentStatus)) ||
-    ((isOwner || isAdmin) && currentStatus === "PUBLISHED");
+    (isAdmin && currentStatus === "PUBLISHED");
 
   // --- JURNALIS HANDLERS ---
   const handleJurnalisSubmit = async (status: "DRAFT" | "IN_REVIEW" | "PUBLISHED", schedTime?: string) => {
@@ -710,19 +777,19 @@ export default function EditArticlePage() {
       return setError("Semua checklist jurnalistik harus dipenuhi sebelum submit");
     }
 
-    if (status === "IN_REVIEW") {
-      const ok = await confirm({ message: "Artikel akan dikirim untuk review oleh editor. Lanjutkan?", variant: "warning", title: "Konfirmasi" });
-      if (!ok) return;
-    }
-
+    let scheduledIso: string | undefined;
     if (status === "PUBLISHED") {
       if (schedTime) {
         const scheduledTime = new Date(schedTime);
+        if (Number.isNaN(scheduledTime.getTime())) {
+          return setError("Format jadwal publikasi tidak valid");
+        }
         if (scheduledTime <= new Date()) {
           return setError("Jadwal publikasi harus di masa depan");
         }
         const ok = await confirm({ message: `Jadwalkan publikasi pada ${scheduledTime.toLocaleString("id-ID")}?`, variant: "warning", title: "Konfirmasi" });
         if (!ok) return;
+        scheduledIso = scheduledTime.toISOString();
       } else {
         const ok = await confirm({ message: "Publikasi artikel ini sekarang? Artikel akan tampil di halaman publik.", variant: "warning", title: "Konfirmasi" });
         if (!ok) return;
@@ -743,12 +810,13 @@ export default function EditArticlePage() {
           excerpt: excerpt || undefined,
           categoryId,
           tags: tagList,
-          featuredImage: featuredImage || undefined,
+          featuredImage: featuredImage || null,
           seoTitle: seoTitle || undefined,
           seoDescription: seoDescription || undefined,
           status,
-          scheduledAt: schedTime || undefined,
+          scheduledAt: scheduledIso,
           sources: validSources.length > 0 ? validSources : undefined,
+          ...(isAdmin ? { authorId: selectedAuthorId || undefined } : {}),
           assignedEditorId: selectedEditorId || null,
         }),
       });
@@ -762,7 +830,7 @@ export default function EditArticlePage() {
 
       clearAutosave();
       if (status === "PUBLISHED") {
-        success(schedTime ? `Publikasi dijadwalkan pada ${new Date(schedTime).toLocaleString("id-ID")}` : "Artikel berhasil dipublikasikan!");
+        success(scheduledIso ? `Publikasi dijadwalkan pada ${new Date(scheduledIso).toLocaleString("id-ID")}` : "Artikel berhasil dipublikasikan!");
       } else {
         success(status === "IN_REVIEW" ? "Artikel dikirim untuk review" : "Artikel disimpan sebagai draf");
       }
@@ -795,10 +863,16 @@ export default function EditArticlePage() {
           excerpt: excerpt || undefined,
           categoryId,
           tags: tagList,
-          featuredImage: featuredImage || undefined,
+          featuredImage: featuredImage || null,
           seoTitle: seoTitle || undefined,
           seoDescription: seoDescription || undefined,
           sources: validSources.length > 0 ? validSources : undefined,
+          ...(isAdmin
+            ? {
+                authorId: selectedAuthorId || undefined,
+                assignedEditorId: selectedEditorId || null,
+              }
+            : {}),
           // No status — admin edit branch keeps PUBLISHED as is.
         }),
       });
@@ -1126,7 +1200,7 @@ export default function EditArticlePage() {
           excerpt: excerpt || undefined,
           categoryId,
           tags: tagList,
-          featuredImage: featuredImage || undefined,
+          featuredImage: featuredImage || null,
           seoTitle: seoTitle || undefined,
           seoDescription: seoDescription || undefined,
           sources: validSources.length > 0 ? validSources : undefined,
@@ -1151,7 +1225,7 @@ export default function EditArticlePage() {
     }
   };
 
-  if (loading) {
+  if (loading || sessionStatus === "loading") {
     return <LoadingSkeleton />;
   }
 
@@ -1211,7 +1285,7 @@ export default function EditArticlePage() {
         </div>
 
         {error && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface px-4 py-3 text-sm text-red-700">
             <div className="flex items-center gap-2">
               <AlertCircle size={16} className="shrink-0" />
               <span>{error}</span>
@@ -1307,7 +1381,7 @@ export default function EditArticlePage() {
                 </button>
                 <button
                   onClick={() => { setShowSchedule(!showSchedule); setShowReturnNote(false); }}
-                  className="flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                  className="flex items-center gap-1.5 rounded-lg border border-blue-400 bg-surface px-5 py-2.5 text-sm font-semibold text-blue-700 hover:border-blue-600"
                 >
                   <CalendarClock size={16} />
                   Jadwalkan Publikasi
@@ -1316,7 +1390,7 @@ export default function EditArticlePage() {
 
               {/* Schedule picker */}
               {showSchedule && (
-                <div className="rounded-lg border border-blue-300 bg-blue-50 p-4 mt-3">
+                <div className="rounded-lg border border-blue-300 border-l-4 border-l-blue-600 bg-surface p-4 mt-3">
                   <label className="mb-2 block text-sm font-medium text-blue-800">
                     Pilih tanggal & waktu publikasi
                   </label>
@@ -1350,7 +1424,7 @@ export default function EditArticlePage() {
         )}
 
         {currentStatus === "APPROVED" && (
-          <div className="mb-6 rounded-lg border-2 border-primary/30 bg-primary-50 p-5">
+          <div className="mb-6 rounded-lg border border-primary/40 border-l-4 border-l-primary bg-surface p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
               <CheckCircle size={18} />
               Artikel Disetujui — Siap Dipublikasi
@@ -1376,14 +1450,14 @@ export default function EditArticlePage() {
                 </button>
                 <button
                   onClick={() => { setShowSchedule(!showSchedule); setShowReturnNote(false); }}
-                  className="flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                  className="flex items-center gap-1.5 rounded-lg border border-blue-400 bg-surface px-5 py-2.5 text-sm font-semibold text-blue-700 hover:border-blue-600"
                 >
                   <CalendarClock size={16} />
                   Jadwalkan Publikasi
                 </button>
                 <button
                   onClick={() => { setShowReturnNote(!showReturnNote); setShowSchedule(false); }}
-                  className="flex items-center gap-1.5 rounded-lg border border-yellow-300 bg-yellow-50 px-5 py-2.5 text-sm font-semibold text-yellow-700 hover:bg-yellow-100"
+                  className="flex items-center gap-1.5 rounded-lg border border-yellow-500 bg-surface px-5 py-2.5 text-sm font-semibold text-yellow-800 hover:border-yellow-600"
                 >
                   <Undo2 size={16} />
                   Kembalikan ke Editor
@@ -1392,7 +1466,7 @@ export default function EditArticlePage() {
 
               {/* Schedule picker */}
               {showSchedule && (
-                <div className="rounded-lg border border-blue-300 bg-blue-50 p-4 mt-3">
+                <div className="rounded-lg border border-blue-300 border-l-4 border-l-blue-600 bg-surface p-4 mt-3">
                   <label className="mb-2 block text-sm font-medium text-blue-800">
                     Pilih tanggal & waktu publikasi
                   </label>
@@ -1423,7 +1497,7 @@ export default function EditArticlePage() {
               )}
 
               {showReturnNote && (
-                <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 mt-3">
+                <div className="rounded-lg border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-4 mt-3">
                   <label className="mb-1 block text-sm font-medium text-yellow-800">
                     Catatan untuk editor
                   </label>
@@ -1458,7 +1532,7 @@ export default function EditArticlePage() {
         )}
 
         {currentStatus === "PUBLISHED" && (
-          <div className="mb-6 rounded-lg border border-primary/30 bg-primary-50 p-5">
+          <div className="mb-6 rounded-lg border border-primary/40 border-l-4 border-l-primary bg-surface p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
               <CheckCircle size={18} />
               Artikel Sudah Dipublikasikan
@@ -1467,12 +1541,12 @@ export default function EditArticlePage() {
         )}
 
         {currentStatus === "IN_REVIEW" && (
-          <div className="mb-6 rounded-lg border border-yellow-300 bg-yellow-50 p-5">
+          <div className="mb-6 rounded-lg border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-yellow-800">
               <MessageSquare size={18} />
               Artikel Sedang Direview oleh Editor
             </h3>
-            <p className="mt-1 text-sm text-yellow-600">
+            <p className="mt-1 text-sm text-yellow-700">
               Editor: {existingReviewerName || "Belum ditugaskan"}
             </p>
 
@@ -1512,7 +1586,7 @@ export default function EditArticlePage() {
                 </button>
                 <button
                   onClick={() => { setReviewChoice(reviewChoice === "reject" ? null : "reject"); }}
-                  className="flex items-center gap-1.5 rounded-lg border border-red-300 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100"
+                  className="flex items-center gap-1.5 rounded-lg border border-red-400 bg-surface px-5 py-2.5 text-sm font-semibold text-red-700 hover:border-red-600"
                 >
                   <XCircle size={16} />
                   Tolak
@@ -1520,7 +1594,7 @@ export default function EditArticlePage() {
               </div>
 
               {reviewChoice === "reject" && (
-                <div className="rounded-lg border border-red-300 bg-red-50 p-4 mt-3">
+                <div className="rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-4 mt-3">
                   <label className="mb-1 block text-sm font-medium text-red-800">
                     Alasan penolakan (wajib)
                   </label>
@@ -1604,7 +1678,7 @@ export default function EditArticlePage() {
                 onAiCaption={(s) => {
                   navigator.clipboard?.writeText(s).then(
                     () => success("Caption disalin ke clipboard"),
-                    () => window.prompt("Caption sosmed (Ctrl+C untuk salin):", s)
+                    () => setError("Clipboard diblokir browser. Silakan salin manual dari pratinjau caption.")
                   );
                 }}
               />
@@ -1638,6 +1712,23 @@ export default function EditArticlePage() {
           </div>
 
           <div className="space-y-4">
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <label className="text-xs font-medium text-txt-muted uppercase tracking-wider">Gambar Utama</label>
+                <button
+                  type="button"
+                  onClick={() => setShowCoverPicker(true)}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  <ImageIcon size={13} aria-hidden="true" />
+                  Pilih dari Galeri
+                </button>
+              </div>
+              <ImageUploader
+                currentImage={featuredImage}
+                onUpload={(url) => setFeaturedImage(url)}
+              />
+            </div>
             <div className="rounded-lg border border-border bg-surface p-4">
               <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Kategori</label>
               <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input w-full">
@@ -1699,411 +1790,36 @@ export default function EditArticlePage() {
             </div>
           </div>
         </div>
+
+        <ImagePickerModal
+          open={showCoverPicker}
+          onClose={() => setShowCoverPicker(false)}
+          onSelect={(picked: string | PickedImage) => {
+            const url = typeof picked === "string" ? picked : picked.url;
+            setFeaturedImage(url);
+          }}
+        />
       </div>
     );
   }
 
   // ============================================================
-  // RENDER: EDITOR VIEW
+  // RENDER: UNAUTHORIZED VIEW
   // ============================================================
-  if (viewMode === "editor") {
-    // Not assigned to this editor
-    if (currentStatus === "IN_REVIEW" && !isAssignedEditor && !isAdmin) {
-      return (
-        <div className="mx-auto max-w-5xl">
-          <button
-            onClick={() => router.push("/panel/artikel")}
-            className="mb-4 flex items-center gap-1 text-xs text-txt-secondary hover:text-txt-primary"
-          >
-            <ArrowLeft size={14} /> Kembali
-          </button>
-          <div className="flex min-h-[30vh] flex-col items-center justify-center text-center">
-            <Lock size={48} className="mb-4 text-yellow-400" />
-            <h1 className="text-xl font-bold text-txt-primary">Artikel ini tidak ditugaskan kepada Anda</h1>
-            <p className="mt-2 text-sm text-txt-secondary">
-              Artikel ini sedang direview oleh editor lain ({existingReviewerName || "tidak diketahui"}).
-            </p>
-          </div>
-        </div>
-      );
-    }
-
+  if (viewMode === "unauthorized") {
     return (
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-6">
-          <button
-            onClick={() => router.push("/panel/artikel")}
-            className="mb-1 flex items-center gap-1 text-xs text-txt-secondary hover:text-txt-primary"
-          >
-            <ArrowLeft size={14} /> Kembali ke Daftar Artikel
-          </button>
-          <h1 className="text-lg sm:text-2xl font-bold text-txt-primary">
-            Review Artikel
-          </h1>
-          <p className="text-sm text-txt-secondary">
-            Status: <span className="font-medium text-amber-700">{statusLabel[currentStatus] || currentStatus}</span>
-            {" | "}Penulis: <span className="font-medium">{articleAuthorName}</span>
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            <div className="flex items-center gap-2">
-              <AlertCircle size={16} className="shrink-0" />
-              <span>{error}</span>
-            </div>
-            {(error.toLowerCase().includes("terlalu pendek") || wordCount < 300) && (
-              <button
-                type="button"
-                onClick={handleExpandArticle}
-                disabled={aiLoading.expand_article}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
-              >
-                {aiLoading.expand_article ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Sparkles size={13} />
-                )}
-                {aiLoading.expand_article ? "Menambahkan Paragraf..." : "+ Perpanjang Isi Otomatis (AI)"}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Editor Review Panel - IN_REVIEW */}
-        {currentStatus === "IN_REVIEW" && isAssignedEditor && (
-          <div className="mb-6 rounded-lg border-2 border-yellow-300 bg-yellow-50 p-5">
-            <h3 className="flex items-center gap-2 text-base font-bold text-yellow-800">
-              <MessageSquare size={18} />
-              Panel Review Editor
-            </h3>
-            <p className="mt-1 text-sm text-yellow-600">
-              Periksa artikel di bawah, kemudian pilih salah satu aksi.
-            </p>
-
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Approve Card */}
-              <div
-                onClick={() => { setReviewChoice("approve"); setRejectNote(""); }}
-                className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                  reviewChoice === "approve"
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-white hover:border-primary/50"
-                } ${reviewChoice === "reject" ? "opacity-40 pointer-events-none" : ""}`}
-              >
-                <div className="flex items-center gap-2 text-primary font-bold">
-                  <CheckCircle size={20} />
-                  Setujui
-                </div>
-                <p className="mt-1 text-xs text-txt-secondary">Artikel memenuhi standar. Teruskan untuk publikasi.</p>
-                {reviewChoice === "approve" && (
-                  <div className="mt-3">
-                    <label className="mb-1 block text-xs font-medium text-txt-secondary">
-                      Catatan (opsional)
-                    </label>
-                    <textarea
-                      value={approveNote}
-                      onChange={(e) => setApproveNote(e.target.value)}
-                      rows={2}
-                      placeholder="Catatan untuk penulis..."
-                      className="input w-full text-sm"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Reject Card */}
-              <div
-                onClick={() => { setReviewChoice("reject"); setApproveNote(""); }}
-                className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                  reviewChoice === "reject"
-                    ? "border-red-500 bg-red-500/5"
-                    : "border-border bg-white hover:border-red-300"
-                } ${reviewChoice === "approve" ? "opacity-40 pointer-events-none" : ""}`}
-              >
-                <div className="flex items-center gap-2 text-red-600 font-bold">
-                  <XCircle size={20} />
-                  Tolak
-                </div>
-                <p className="mt-1 text-xs text-txt-secondary">Artikel perlu diperbaiki. Kembalikan ke penulis dengan catatan.</p>
-                {reviewChoice === "reject" && (
-                  <div className="mt-3">
-                    <label className="mb-1 block text-xs font-medium text-red-700">
-                      Alasan penolakan (wajib)
-                    </label>
-                    <textarea
-                      value={rejectNote}
-                      onChange={(e) => setRejectNote(e.target.value)}
-                      rows={2}
-                      placeholder="Jelaskan alasan penolakan..."
-                      className="input w-full text-sm border-red-200"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Reset choice */}
-            {reviewChoice && (
-              <button
-                onClick={() => { setReviewChoice(null); setApproveNote(""); setRejectNote(""); }}
-                className="mt-3 text-xs text-txt-muted hover:text-txt-secondary underline"
-              >
-                Reset pilihan
-              </button>
-            )}
-
-            {/* Submit button */}
-            {reviewChoice && (
-              <div className="mt-4">
-                <button
-                  onClick={reviewChoice === "approve" ? handleEditorApprove : handleEditorReject}
-                  disabled={saving || (reviewChoice === "reject" && !rejectNote.trim())}
-                  className={`flex items-center gap-1.5 rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${
-                    reviewChoice === "approve"
-                      ? "bg-primary hover:bg-primary-dark"
-                      : "bg-red-600 hover:bg-red-700"
-                  }`}
-                >
-                  {reviewChoice === "approve" ? (
-                    <>
-                      <CheckCircle size={16} />
-                      Konfirmasi Setujui
-                    </>
-                  ) : (
-                    <>
-                      <XCircle size={16} />
-                      Konfirmasi Tolak
-                    </>
-                  )}
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Editor APPROVED — Publish or Cancel */}
-        {currentStatus === "APPROVED" && isAssignedEditor && (
-          <div className="mb-6 rounded-lg border-2 border-primary/30 bg-primary-50 p-5">
-            <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
-              <CheckCircle size={18} />
-              Artikel Telah Disetujui — Siap Dipublikasi
-            </h3>
-            <p className="mt-1 text-sm text-primary">
-              Artikel siap dipublikasi.
-              {existingApproverName ? ` Disetujui oleh ${existingApproverName}.` : ""} Anda dapat
-              mempublikasi atau membatalkan persetujuan.
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button
-                onClick={handleEditorPublish}
-                disabled={saving}
-                className="flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
-              >
-                <Upload size={16} />
-                Publikasi Sekarang
-              </button>
-              <button
-                onClick={handleEditorCancelApproval}
-                disabled={saving}
-                className="flex items-center gap-1.5 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-2.5 text-sm font-semibold text-yellow-700 hover:bg-yellow-100 disabled:opacity-50"
-              >
-                <Undo2 size={16} />
-                Batalkan Persetujuan
-              </button>
-            </div>
-          </div>
-        )}
-
-        {currentStatus === "PUBLISHED" && (
-          <div className="mb-6 rounded-lg border border-primary/30 bg-primary-50 p-5">
-            <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
-              <CheckCircle size={18} />
-              Artikel Telah Dipublikasikan
-            </h3>
-          </div>
-        )}
-
-        {/* Riwayat Revisi link (editor view) */}
-        <div className="mb-6">
-          <Link
-            href={`/panel/artikel/${articleId}/revisions`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-txt-primary hover:bg-surface-secondary transition-colors"
-          >
-            <History size={16} className="text-primary" />
-            Riwayat Revisi
-          </Link>
-        </div>
-
-        {/* Editable article content — editor can edit like journalist */}
-        {currentStatus === "IN_REVIEW" && isAssignedEditor ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Main content — 2/3 */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="rounded-lg border border-border bg-surface p-5">
-                <label className="mb-2 block text-sm font-medium text-txt-primary">Judul</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="input w-full text-lg font-bold" />
-              </div>
-              {researchPanel}
-              <div className="rounded-lg border border-border bg-surface p-5">
-                <label className="mb-2 block text-sm font-medium text-txt-primary">Konten</label>
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <RichTextEditor
-                content={content}
-                onChange={setContent}
-                articleTitle={title}
-                onAiTitle={(s) => { setTitle(s); success("Judul AI disisipkan"); }}
-                onAiMeta={(s) => { setSeoDescription(s); success("Meta description AI disisipkan"); }}
-                onAiCaption={(s) => {
-                  navigator.clipboard?.writeText(s).then(
-                    () => success("Caption disalin ke clipboard"),
-                    () => window.prompt("Caption sosmed (Ctrl+C untuk salin):", s)
-                  );
-                }}
-              />
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-t border-border text-sm text-txt-muted">
-                    <div className="flex items-center gap-4">
-                      <span className={wordCount < 300 ? "font-semibold text-amber-600" : ""}>
-                        {wordCount} kata {wordCount < 300 ? "(minimal 300)" : ""}
-                      </span>
-                      <span className="text-border">|</span>
-                      <span>{charCount} karakter</span>
-                      <span className="text-border">|</span>
-                      <span>{readTime} menit baca</span>
-                    </div>
-                    {wordCount > 0 && wordCount < 300 && (
-                      <button
-                        type="button"
-                        onClick={handleExpandArticle}
-                        disabled={aiLoading.expand_article}
-                        className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50"
-                      >
-                        {aiLoading.expand_article ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          <Sparkles size={12} />
-                        )}
-                        {aiLoading.expand_article ? "Menambahkan Paragraf..." : "+ Tambah / Perpanjang Isi (AI)"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* Sidebar — 1/3 */}
-            <div className="space-y-4">
-              <div className="rounded-lg border border-border bg-surface p-5">
-                <label className="mb-2 block text-sm font-medium text-txt-primary">Kategori</label>
-                <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input w-full">
-                  <option value="">Pilih kategori</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="rounded-lg border border-border bg-surface p-5">
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-sm font-medium text-txt-primary">Tags</label>
-                  <button
-                    type="button"
-                    onClick={generateTagsAI}
-                    disabled={generatingTags || !title.trim() || !content.trim()}
-                    className="btn-secondary text-sm flex items-center gap-1.5"
-                  >
-                    {generatingTags ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                    Generate Tags AI
-                  </button>
-                </div>
-                <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} className="input w-full" placeholder="Tag1, Tag2, Tag3" />
-                <p className="mt-1 text-xs text-txt-muted">Pisahkan dengan koma</p>
-              </div>
-              <div className="rounded-lg border border-border bg-surface p-5">
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-sm font-medium text-txt-primary">Ringkasan</label>
-                  <AiButton feature="summary" setter={setExcerpt} />
-                </div>
-                <textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} className="input w-full" placeholder="Ringkasan singkat artikel" maxLength={500} />
-              </div>
-              <div className="rounded-lg border border-border bg-surface p-5">
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-sm font-medium text-txt-primary">SEO Title</label>
-                  <AiButton feature="seo_title" setter={setSeoTitle} />
-                </div>
-                <input type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} className="input w-full" placeholder="SEO Title (maks 60 karakter)" maxLength={60} />
-                <p className="mt-1 text-xs text-txt-muted">{seoTitle.length}/60</p>
-              </div>
-              <div className="rounded-lg border border-border bg-surface p-5">
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-sm font-medium text-txt-primary">Meta Description</label>
-                  <AiButton feature="meta_description" setter={setSeoDescription} />
-                </div>
-                <textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} rows={2} className="input w-full" placeholder="Meta description (maks 155 karakter)" maxLength={155} />
-                <p className="mt-1 text-xs text-txt-muted">{seoDescription.length}/155</p>
-              </div>
-              <button
-                onClick={async () => {
-                  setSaving(true);
-                  setError("");
-                  try {
-                    const res = await fetch(`/api/articles/${articleId}`, {
-                      method: "PUT",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        title,
-                        content,
-                        excerpt: excerpt || undefined,
-                        categoryId,
-                        featuredImage: featuredImage || undefined,
-                        seoTitle: seoTitle || undefined,
-                        seoDescription: seoDescription || undefined,
-                        tags: tags.split(",").map(t => t.trim()).filter(Boolean),
-                      }),
-                    });
-                    if (res.ok) {
-                      clearAutosave();
-                      success("Artikel berhasil disimpan");
-                    } else {
-                      const json = await res.json();
-                      setError(json.error || "Gagal menyimpan");
-                    }
-                  } catch { setError("Terjadi kesalahan"); }
-                  setSaving(false);
-                }}
-                disabled={saving}
-                className="btn-primary w-full flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                <Save size={16} />
-                Simpan Perubahan
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Read-only for non-assigned or non-IN_REVIEW status */
-          <div className="space-y-4">
-            <div className="rounded-lg border border-border bg-surface p-5">
-              <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Judul</label>
-              <p className="text-lg font-bold text-txt-primary">{title}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-surface p-5">
-              <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Kategori</label>
-              <p className="text-sm text-txt-primary">{categories.find(c => c.id === categoryId)?.name || categoryId}</p>
-            </div>
-            {excerpt && (
-              <div className="rounded-lg border border-border bg-surface p-5">
-                <label className="mb-1 block text-xs font-medium text-txt-muted uppercase tracking-wider">Ringkasan</label>
-                <p className="text-sm text-txt-primary">{excerpt}</p>
-              </div>
-            )}
-            <div className="rounded-lg border border-border bg-surface p-5">
-              <label className="mb-2 block text-xs font-medium text-txt-muted uppercase tracking-wider">Konten</label>
-              {/* Defense-in-depth: sanitize live editor state before preview render */}
-              <div className="prose prose-sm max-w-none text-txt-primary text-justify" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
-            </div>
-          </div>
-        )}
+      <div className="mx-auto max-w-2xl py-16 text-center">
+        <Lock size={48} className="mx-auto mb-4 text-txt-muted" />
+        <h1 className="text-xl font-bold text-txt-primary">Akses Ditolak</h1>
+        <p className="mt-2 text-sm text-txt-secondary">
+          Anda tidak memiliki izin untuk membuka atau menyunting artikel ini.
+        </p>
+        <button
+          onClick={() => router.push("/panel/artikel")}
+          className="btn-primary mt-5 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+        >
+          <ArrowLeft size={16} /> Kembali ke Daftar Artikel
+        </button>
       </div>
     );
   }
@@ -2138,7 +1854,7 @@ export default function EditArticlePage() {
                 Menyimpan otomatis...
               </span>
             ) : formDirty ? (
-              <span className="flex items-center gap-1.5 rounded-md bg-secondary-light px-2 py-1 text-xs font-medium text-secondary">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-secondary">
                 <AlertCircle size={12} />
                 Belum tersimpan
               </span>
@@ -2178,7 +1894,7 @@ export default function EditArticlePage() {
                     <button
                       onClick={handleTakedown}
                       disabled={saving}
-                      className="flex items-center gap-1.5 rounded-md border border-yellow-300 bg-yellow-50 px-4 py-2 text-sm font-semibold text-yellow-700 hover:bg-yellow-100 disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-md border border-yellow-500 bg-surface px-4 py-2 text-sm font-semibold text-yellow-800 hover:border-yellow-600 disabled:opacity-50"
                       title="Turunkan dari publik, kembali ke DRAFT"
                     >
                       <ArrowDownToLine size={16} />
@@ -2187,7 +1903,7 @@ export default function EditArticlePage() {
                     <button
                       onClick={handleArchive}
                       disabled={saving}
-                      className="flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-md border border-red-400 bg-surface px-4 py-2 text-sm font-semibold text-red-700 hover:border-red-600 disabled:opacity-50"
                       title="Arsipkan — sembunyikan dari publik permanen"
                     >
                       <Archive size={16} />
@@ -2218,7 +1934,7 @@ export default function EditArticlePage() {
                     </button>
                     <button
                       onClick={() => { setShowSchedule(!showSchedule); }}
-                      className="flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                      className="flex items-center gap-1.5 rounded-md border border-blue-400 bg-surface px-4 py-2 text-sm font-semibold text-blue-700 hover:border-blue-600"
                     >
                       <CalendarClock size={16} />
                       Jadwalkan Publikasi
@@ -2262,8 +1978,33 @@ export default function EditArticlePage() {
         </div>
       )}
 
+      {showAutosaveBanner && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-400 border-l-4 border-l-amber-500 bg-surface px-4 py-3 text-sm text-amber-800">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="shrink-0 text-amber-600" />
+            <span>Ditemukan draf tersimpan otomatis lokal yang lebih baru dari server. Pulihkan perubahan?</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={loadAutosaveDraft}
+              className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+            >
+              Pulihkan Draf
+            </button>
+            <button
+              type="button"
+              onClick={discardAutosaveDraft}
+              className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-txt-secondary hover:bg-surface-secondary"
+            >
+              Abaikan
+            </button>
+          </div>
+        </div>
+      )}
+
       {error && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface px-4 py-3 text-sm text-red-700">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="shrink-0" />
             <span>{error}</span>
@@ -2288,7 +2029,7 @@ export default function EditArticlePage() {
 
       {/* Journalist Direct Schedule Picker */}
       {viewMode === "journalist" && showSchedule && (
-        <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-4 shadow-sm">
+        <div className="mb-4 rounded-lg border border-blue-300 border-l-4 border-l-blue-600 bg-surface p-4 shadow-sm">
           <label className="mb-2 block text-sm font-medium text-blue-800">
             Pilih tanggal & waktu publikasi draf ini
           </label>
@@ -2356,7 +2097,7 @@ export default function EditArticlePage() {
 
       {/* REJECTED: Show editor's rejection note */}
       {(currentStatus === "REJECTED" || currentStatus === "DRAFT") && existingReviewNote && (
-        <div className="mb-4 rounded-lg border-2 border-red-300 bg-red-50 p-4">
+        <div className="mb-4 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-red-700">
             <XCircle size={16} />
             Artikel Ditolak oleh Editor
@@ -2384,7 +2125,7 @@ export default function EditArticlePage() {
 
       {/* IN_REVIEW: Article locked, show who is reviewing */}
       {currentStatus === "IN_REVIEW" && isOwner && (
-        <div className="mb-4 rounded-lg border-2 border-yellow-300 bg-yellow-50 p-4">
+        <div className="mb-4 rounded-lg border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-yellow-800">
             <Lock size={16} />
             Artikel Sedang Direview
@@ -2406,7 +2147,7 @@ export default function EditArticlePage() {
 
       {/* APPROVED: Article locked */}
       {currentStatus === "APPROVED" && isOwner && (
-        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <div className="mb-4 rounded-lg border border-blue-300 border-l-4 border-l-blue-600 bg-surface p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-blue-700">
             <CheckCircle size={16} />
             Artikel Telah Disetujui
@@ -2426,7 +2167,7 @@ export default function EditArticlePage() {
 
       {/* PUBLISHED: Article locked */}
       {currentStatus === "PUBLISHED" && isOwner && (
-        <div className="mb-4 rounded-lg border border-primary/30 bg-primary-50 p-4">
+        <div className="mb-4 rounded-lg border border-primary/40 border-l-4 border-l-primary bg-surface p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-primary-dark">
             <CheckCircle size={16} />
             Artikel Telah Dipublikasikan
@@ -2468,7 +2209,7 @@ export default function EditArticlePage() {
                 onAiCaption={(s) => {
                   navigator.clipboard?.writeText(s).then(
                     () => success("Caption disalin ke clipboard"),
-                    () => window.prompt("Caption sosmed (Ctrl+C untuk salin):", s)
+                    () => setError("Clipboard diblokir browser. Silakan salin manual dari pratinjau caption.")
                   );
                 }}
               />
@@ -2518,7 +2259,7 @@ export default function EditArticlePage() {
                     <div className="flex gap-2">
                       <input type="url" placeholder="URL referensi" value={source.url} onChange={(e) => updateSource(i, "url", e.target.value)} className="input flex-1 text-sm" />
                       {sources.length > 1 && (
-                        <button type="button" onClick={() => removeSource(i)} className="rounded-lg p-1.5 text-red-400 hover:bg-red-50">
+                        <button type="button" onClick={() => removeSource(i)} aria-label="Hapus narasumber" className="rounded-lg p-1.5 text-red-500 hover:text-red-700">
                           <Trash2 size={14} />
                         </button>
                       )}
@@ -2580,6 +2321,25 @@ export default function EditArticlePage() {
 
           {/* Sidebar */}
           <div className="space-y-4">
+            {/* Gambar Utama (Cover) */}
+            <div className="rounded-lg border border-border bg-surface p-6">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <label className="text-sm font-medium text-txt-primary">Gambar Utama</label>
+                <button
+                  type="button"
+                  onClick={() => setShowCoverPicker(true)}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  <ImageIcon size={13} aria-hidden="true" />
+                  Pilih dari Galeri
+                </button>
+              </div>
+              <ImageUploader
+                currentImage={featuredImage}
+                onUpload={(url) => setFeaturedImage(url)}
+              />
+            </div>
+
             <div className="rounded-lg border border-border bg-surface p-6">
               <label htmlFor="edit-kategori" className="mb-2 block text-sm font-medium text-txt-primary">Kategori *</label>
               <select id="edit-kategori" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input w-full">
@@ -2651,7 +2411,7 @@ export default function EditArticlePage() {
               <textarea id="edit-ringkasan" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} placeholder="Ringkasan singkat artikel" maxLength={500} className="input w-full" />
             </div>
             {/* Journalism Checklist */}
-            <div className="rounded-lg border border-primary/20 bg-primary-50 p-4">
+            <div className="rounded-lg border border-border border-l-4 border-l-primary bg-surface p-4">
               <button type="button" onClick={() => setShowChecklist(!showChecklist)} className="flex w-full items-center justify-between text-sm font-bold text-primary-dark">
                 <span className="flex items-center gap-1.5">
                   <CheckCircle size={16} />
@@ -2738,6 +2498,14 @@ export default function EditArticlePage() {
           </div>
         </div>
       )}
+      <ImagePickerModal
+        open={showCoverPicker}
+        onClose={() => setShowCoverPicker(false)}
+        onSelect={(picked: string | PickedImage) => {
+          const url = typeof picked === "string" ? picked : picked.url;
+          setFeaturedImage(url);
+        }}
+      />
     </div>
   );
 }

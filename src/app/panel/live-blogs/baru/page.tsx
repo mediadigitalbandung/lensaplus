@@ -4,12 +4,13 @@
  * Panel Live Blog — create new live blog
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Radio, Save, ArrowLeft, Loader2 } from "lucide-react";
+import { Save, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
+import { EDITOR_ROLES } from "@/lib/roles";
 
 function slugify(text: string): string {
   return text
@@ -31,7 +32,9 @@ function toLocalInput(iso?: string): string {
 
 export default function NewLiveBlogPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
+  const userRole = session?.user?.role || "";
+  const canWrite = EDITOR_ROLES.includes(userRole);
   const { success: showSuccess, error: showError } = useToast();
 
   const [form, setForm] = useState({
@@ -40,7 +43,7 @@ export default function NewLiveBlogPage() {
     description: "",
     category: "",
     status: "SCHEDULED" as "SCHEDULED" | "LIVE" | "ENDED" | "CANCELLED",
-    scheduledAt: toLocalInput(),
+    scheduledAt: "",
     coverImage: "",
     liveStreamUrl: "",
     isPublished: true,
@@ -49,7 +52,24 @@ export default function NewLiveBlogPage() {
   const [saving, setSaving] = useState(false);
   const [slugManual, setSlugManual] = useState(false);
 
-  if (!session) return null;
+  // Set default local datetime only on client to prevent SSR hydration mismatch
+  useEffect(() => {
+    setForm((f) => (f.scheduledAt ? f : { ...f, scheduledAt: toLocalInput() }));
+  }, []);
+
+  useEffect(() => {
+    if (sessionStatus !== "loading" && !canWrite) {
+      router.replace("/panel/live-blogs");
+    }
+  }, [sessionStatus, canWrite, router]);
+
+  if (sessionStatus === "loading" || !canWrite) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 size={28} className="animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const handleTitleChange = (value: string) => {
     setForm((f) => ({
@@ -96,13 +116,10 @@ export default function NewLiveBlogPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/panel/live-blogs" className="text-txt-muted hover:text-primary transition-colors">
+        <Link href="/panel/live-blogs" className="text-txt-muted hover:text-primary transition-colors" aria-label="Kembali ke daftar live blog">
           <ArrowLeft size={18} />
         </Link>
-        <div className="flex items-center gap-2">
-          <Radio size={20} className="text-secondary" />
-          <h1 className="text-xl font-bold text-on-surface">Buat Live Blog</h1>
-        </div>
+        <h1 className="text-xl font-bold text-on-surface">Buat Live Blog</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

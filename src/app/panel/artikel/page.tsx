@@ -152,13 +152,15 @@ const VALID_STATUS_FILTERS = new Set([
   "REJECTED",
   "ARCHIVED",
 ]);
-const VALID_ORIGIN_FILTERS = new Set(["all", "manual", "cron", "scraper"]);
+const VALID_ORIGIN_FILTERS = new Set(["all", "manual", "auto", "cron", "scraper"]);
+type OriginFilter = "all" | "manual" | "auto" | "cron" | "scraper";
 
 function ArtikelPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialStatusParam = (searchParams.get("status") || "").toUpperCase();
   const initialOriginParam = (searchParams.get("origin") || "").toLowerCase();
+  const initialFlagParam = (searchParams.get("flag") || "").toLowerCase();
   const { data: session } = useSession();
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
@@ -184,13 +186,15 @@ function ArtikelPageContent() {
   const [filterStatus, setFilterStatus] = useState(() =>
     VALID_STATUS_FILTERS.has(initialStatusParam) ? initialStatusParam : "ALL",
   );
-  // Origin filter: "all" | "manual" | "cron" | "scraper" — lets staff separate
-  // human articles from cron or external scraper drafts.
-  const [filterOrigin, setFilterOrigin] = useState<"all" | "manual" | "cron" | "scraper">(() =>
-    VALID_ORIGIN_FILTERS.has(initialOriginParam)
-      ? (initialOriginParam as "all" | "manual" | "cron" | "scraper")
-      : "all",
-  );
+  // Origin filter: "all" | "manual" | "auto" | "cron" | "scraper" — lets staff
+  // separate human articles from AI-generated / cron / scraper drafts (?flag=ai).
+  const [filterOrigin, setFilterOrigin] = useState<OriginFilter>(() => {
+    if (VALID_ORIGIN_FILTERS.has(initialOriginParam)) {
+      return initialOriginParam as OriginFilter;
+    }
+    if (initialFlagParam === "ai") return "auto";
+    return "all";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -599,9 +603,8 @@ function ArtikelPageContent() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-col gap-3">
-        <div className="flex items-center gap-2 flex-col sm:flex-row sm:justify-between">
-        <div className="flex items-center gap-2 w-full sm:max-w-xs">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-xs">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
             <input
               type="text"
@@ -612,42 +615,43 @@ function ArtikelPageContent() {
               aria-label="Cari artikel"
             />
           </div>
-          {userRole === "SUPER_ADMIN" && (
+          <div className="flex flex-wrap items-center gap-2">
+            {userRole === "SUPER_ADMIN" && (
+              <button
+                onClick={handleFixPhotoCredits}
+                disabled={fixingCredits}
+                className="btn-secondary flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold whitespace-nowrap disabled:opacity-60"
+                title="Perbaiki sumber foto artikel hasil scraper ke website asalnya"
+                aria-label="Perbaiki sumber foto artikel hasil scraper"
+              >
+                {fixingCredits ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Camera size={14} />
+                )}
+                Perbaiki Sumber Foto
+              </button>
+            )}
             <button
-              onClick={handleFixPhotoCredits}
-              disabled={fixingCredits}
-              className="btn-secondary flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold whitespace-nowrap disabled:opacity-60"
-              title="Perbaiki sumber foto artikel hasil scraper ke website asalnya"
-              aria-label="Perbaiki sumber foto artikel hasil scraper"
-            >
-              {fixingCredits ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Camera size={14} />
-              )}
-              Perbaiki Sumber Foto
-            </button>
-          )}
-          <button
-            onClick={handleExportCsv}
-            className="btn-secondary flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold whitespace-nowrap"
-            title="Export CSV"
-            aria-label="Export daftar artikel ke CSV"
-          >
-            <Download size={14} />
-            Export CSV
-          </button>
-          {(userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR") && (
-            <Link
-              href="/panel/artikel/duplikat"
+              onClick={handleExportCsv}
               className="btn-secondary flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold whitespace-nowrap"
-              title="Temukan & hapus artikel berjudul sama (duplikat)"
+              title="Export CSV"
+              aria-label="Export daftar artikel ke CSV"
             >
-              <Copy size={14} />
-              Cek Duplikat
-            </Link>
-          )}
-        </div>
+              <Download size={14} />
+              Export CSV
+            </button>
+            {(userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR") && (
+              <Link
+                href="/panel/artikel/duplikat"
+                className="btn-secondary flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold whitespace-nowrap"
+                title="Temukan & hapus artikel berjudul sama (duplikat)"
+              >
+                <Copy size={14} />
+                Cek Duplikat
+              </Link>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Filter size={14} className="text-txt-muted shrink-0" />
@@ -672,6 +676,7 @@ function ArtikelPageContent() {
             [
               { key: "all", label: "Semua", activeColor: "bg-primary text-white" },
               { key: "manual", label: "Tulisan Sendiri", activeColor: "bg-primary text-white" },
+              { key: "auto", label: "Semua AI", activeColor: "bg-primary text-white" },
               { key: "cron", label: "Paraphrase Internal", activeColor: "bg-secondary text-white" },
               { key: "scraper", label: "Hasil Scraper", activeColor: "bg-tertiary text-white" },
             ] as const
@@ -748,7 +753,7 @@ function ArtikelPageContent() {
                     const config = statusConfig[article.status] || statusConfig.DRAFT;
                     const StatusIcon = config.icon;
                     return (
-                      <tr key={article.id} className={`hover:bg-surface-secondary ${selectedIds.has(article.id) ? "bg-primary-50" : ""}`}>
+                      <tr key={article.id} className={`hover:bg-surface-secondary ${selectedIds.has(article.id) ? "bg-surface-secondary" : ""}`}>
                         <td className="w-10 px-3 py-4 text-center">
                           <input
                             type="checkbox"
@@ -890,7 +895,7 @@ function ArtikelPageContent() {
                                 <button
                                   onClick={() => handlePublish(article)}
                                   disabled={actioning === article.id}
-                                  className="btn-ghost rounded-lg p-2 text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
+                                  className="btn-ghost rounded-lg p-2 text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
                                   title="Publikasikan langsung"
                                   aria-label="Publikasikan artikel"
                                 >
@@ -902,7 +907,7 @@ function ArtikelPageContent() {
                               <button
                                 onClick={() => handleTakedown(article)}
                                 disabled={actioning === article.id}
-                                className="btn-ghost rounded-lg p-2 text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                                className="btn-ghost rounded-lg p-2 text-amber-600 hover:text-amber-700 disabled:opacity-50"
                                 title="Takedown — kembalikan ke draft"
                                 aria-label="Takedown artikel"
                               >
@@ -914,7 +919,7 @@ function ArtikelPageContent() {
                               <button
                                 onClick={() => handlePublishToSocial(article)}
                                 disabled={publishingSocial === article.id}
-                                className="btn-ghost rounded-lg p-2 text-pink-500 hover:bg-pink-50 disabled:opacity-50"
+                                className="btn-ghost rounded-lg p-2 text-pink-500 hover:text-pink-700 disabled:opacity-50"
                                 title="Bagikan ke Sosial Media"
                                 aria-label="Bagikan ke Sosial Media"
                               >

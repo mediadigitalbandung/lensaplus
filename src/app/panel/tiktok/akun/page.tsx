@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, AtSign, AlertCircle, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { ArrowLeft, Plus, Trash2, AlertCircle, Loader2 } from "lucide-react";
+import type { Role } from "@prisma/client";
+import { canManageTiktok } from "@/lib/tiktok/specs";
+import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 interface Account {
   id: string;
@@ -17,8 +23,16 @@ interface Account {
 }
 
 export default function TiktokAccountsPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const router = useRouter();
+  const { error: showError, success: showSuccess } = useToast();
+  const { confirm } = useConfirm();
+  const userRole = session?.user?.role as Role | undefined;
+  const isAuthorized = Boolean(userRole && canManageTiktok(userRole));
+
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -26,20 +40,34 @@ export default function TiktokAccountsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  useEffect(() => {
+    if (sessionStatus !== "loading" && !isAuthorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, isAuthorized, router]);
+
+  const load = useCallback(async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const res = await fetch("/api/tiktok/accounts");
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || `Gagal memuat daftar akun (HTTP ${res.status})`);
+      }
       setAccounts(json.data || []);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Gagal memuat daftar akun");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    load();
-  }, []);
+    if (sessionStatus === "authenticated" && isAuthorized) {
+      load();
+    }
+  }, [sessionStatus, isAuthorized, load]);
 
   const submit = async () => {
     setError("");
@@ -58,7 +86,7 @@ export default function TiktokAccountsPage() {
           avatarUrl: avatarUrl.trim() || null,
         }),
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.success) {
         setError(json.error || "Gagal menambah akun");
         return;
@@ -67,17 +95,43 @@ export default function TiktokAccountsPage() {
       setDisplayName("");
       setAvatarUrl("");
       setShowForm(false);
+      showSuccess("Akun TikTok berhasil ditambahkan");
       await load();
+    } catch {
+      setError("Terjadi kesalahan jaringan");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const remove = async (id: string, username: string) => {
-    if (!confirm(`Hapus akun @${username}? Konten yang terhubung tidak dihapus, hanya kehilangan referensi akun.`)) return;
-    await fetch(`/api/tiktok/accounts/${id}`, { method: "DELETE" });
-    await load();
+  const remove = async (id: string, targetUsername: string) => {
+    const ok = await confirm({
+      message: `Hapus akun @${targetUsername}? Konten yang terhubung tidak dihapus, hanya kehilangan referensi akun.`,
+      title: "Hapus Akun TikTok",
+      variant: "danger",
+    });
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/tiktok/accounts/${id}`, { method: "DELETE" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        showError(json.error || "Gagal menghapus akun");
+        return;
+      }
+      showSuccess(`Akun @${targetUsername} dihapus`);
+      await load();
+    } catch {
+      showError("Gagal menghubungi server saat menghapus akun");
+    }
   };
+
+  if (sessionStatus === "loading" || !isAuthorized) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={24} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -91,8 +145,7 @@ export default function TiktokAccountsPage() {
 
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-xl sm:text-3xl font-bold text-txt-primary">
-            <AtSign size={24} className="text-primary" />
+          <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
             Akun TikTok
           </h1>
           <p className="text-sm text-txt-secondary">
@@ -110,7 +163,7 @@ export default function TiktokAccountsPage() {
       </div>
 
       {/* Phase 3 disclaimer */}
-      <div className="mb-5 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+      <div className="mb-5 flex items-start gap-3 rounded-lg border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-4">
         <AlertCircle size={18} className="mt-0.5 shrink-0 text-yellow-700" />
         <div className="text-sm text-yellow-800">
           <p className="font-semibold">OAuth TikTok belum aktif (Fase 3)</p>
@@ -123,11 +176,20 @@ export default function TiktokAccountsPage() {
         </div>
       </div>
 
+      {loadError && (
+        <div className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-4 text-sm text-red-700">
+          <span>{loadError}</span>
+          <button type="button" onClick={load} className="btn-ghost text-xs font-semibold text-primary">
+            Coba Lagi
+          </button>
+        </div>
+      )}
+
       {showForm && (
-        <div className="mb-5 rounded-lg border border-primary/30 bg-primary-50 p-5">
+        <div className="mb-5 rounded-lg border border-primary/40 border-l-4 border-l-primary bg-surface p-5">
           <h2 className="mb-3 text-base font-bold text-txt-primary">Tambah Akun Manual</h2>
           {error && (
-            <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+            <div className="mb-3 rounded-md border border-red-300 border-l-4 border-l-red-600 bg-surface p-2 text-sm text-red-700">
               {error}
             </div>
           )}
@@ -225,7 +287,8 @@ export default function TiktokAccountsPage() {
               <button
                 type="button"
                 onClick={() => remove(a.id, a.username)}
-                className="rounded-md p-2 text-red-500 hover:bg-red-50"
+                aria-label={`Hapus akun @${a.username}`}
+                className="rounded-md p-2 text-red-500 hover:text-red-700"
                 title="Hapus"
               >
                 <Trash2 size={14} />

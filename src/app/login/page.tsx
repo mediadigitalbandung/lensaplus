@@ -30,7 +30,11 @@ function LoginContent() {
 
     // Clear existing session before new login
     if (session) {
-      await fetch("/api/auth/logout", { method: "POST" });
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {
+        // Ignore transient network errors when clearing old session
+      }
       await signOut({ redirect: false });
     }
 
@@ -119,6 +123,7 @@ function LoginContent() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-txt-muted transition-colors hover:text-txt-primary"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

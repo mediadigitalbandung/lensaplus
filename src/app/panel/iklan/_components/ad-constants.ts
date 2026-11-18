@@ -20,6 +20,5 @@ export const slotSpecs: Record<string, { width: number; height: number; ratio: s
 
 export const typeLabels: Record<string, string> = {
   IMAGE: "Gambar",
-  GIF: "GIF Animasi",
   HTML: "Kode HTML",
 };

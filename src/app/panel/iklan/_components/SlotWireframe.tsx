@@ -31,7 +31,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
           <span className="h-[5px] w-[5px] rounded-full bg-[#febc2e]" />
           <span className="h-[5px] w-[5px] rounded-full bg-[#28c840]" />
           <div className="flex-1 h-3 rounded-full bg-white ml-1.5 px-2 flex items-center">
-            <span className="text-[6px] text-[#aaa]">145.79.15.99.nip.io</span>
+            <span className="text-[6px] text-[#aaa]">lensaplus.com</span>
           </div>
         </div>
 
@@ -42,7 +42,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
           </div>
           <div className="ml-1.5 leading-none">
             <span className="text-[7px] font-bold text-white block">Lensaplus</span>
-            <span className="text-[5px] text-white/40">Bandung</span>
+            <span className="text-[5px] text-white/40">Berita Nasional</span>
           </div>
           <div className="flex-1" />
           <div className="h-[10px] w-[52px] rounded-full bg-white/10 mr-1.5 flex items-center px-1">
@@ -56,7 +56,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
 
         {/* ── Category Nav ── */}
         <div className="bg-white border-b border-[#e5e7eb] px-2.5 py-[3px] flex gap-[6px]">
-          {["Terkini", "H.Pidana", "H.Perdata", "Tata Negara", "HAM", "H.Bisnis", "Opini", "Daerah"].map((c, i) => (
+          {["Terkini", "Nasional", "Politik", "Ekonomi", "Hukum", "Teknologi", "Olahraga", "Opini"].map((c, i) => (
             <span key={c} className={`text-[5px] whitespace-nowrap ${i === 0 ? "text-primary font-bold border-b border-primary" : "text-[#6B7280] font-medium"}`}>{c}</span>
           ))}
         </div>
@@ -64,7 +64,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
         {/* ── Trending Ticker ── */}
         <div className="bg-white border-b border-[#e5e7eb] px-2.5 py-[2px] flex items-center gap-1 overflow-hidden">
           <span className="text-[4px] font-bold text-primary tracking-widest shrink-0">TRENDING</span>
-          {["Reformasi Intelijen", "Unhan", "HAM Operasi Intelijen"].map(t => (
+          {["Ekonomi Digital", "Kebijakan Fiskal", "Reformasi Hukum"].map(t => (
             <span key={t} className="flex items-center gap-[2px] text-[4px] text-[#6B7280] whitespace-nowrap shrink-0">
               <span className="h-[2px] w-[2px] rounded-full bg-primary" />{t}
             </span>
@@ -165,11 +165,11 @@ export default function SlotWireframe({ slot }: { slot: string }) {
           </div>
         </div>
 
-        {/* ── Jadwal Sidang — horizontal scroll cards ── */}
+        {/* ── Sorotan Utama — horizontal scroll cards ── */}
         <div className="px-2 mt-1.5">
           <div className="flex items-center gap-[2px] mb-[3px]">
             <div className="w-[2px] h-[8px] bg-primary rounded-full" />
-            <span className="text-[6px] font-bold text-[#1C1C1E]">Jadwal Sidang</span>
+            <span className="text-[6px] font-bold text-[#1C1C1E]">Sorotan Utama</span>
           </div>
           <div className="flex gap-1 overflow-hidden">
             {[1, 2, 3, 4].map(i => (
@@ -252,7 +252,7 @@ export default function SlotWireframe({ slot }: { slot: string }) {
         <div className="flex gap-3 text-[10px] text-txt-muted">
           <span>Lebar: {spec?.width}px</span>
           <span>Tinggi: {spec?.height}px</span>
-          <span>Format: JPG, PNG, GIF</span>
+          <span>Format: JPG, PNG, WebP</span>
         </div>
       </div>
     </div>

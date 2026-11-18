@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Role } from "@prisma/client";
-import { Copy, Trash2, ShieldCheck, ExternalLink, Loader2, ArrowLeft } from "lucide-react";
+import { Trash2, ShieldCheck, ExternalLink, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
@@ -58,7 +58,10 @@ function fmt(d: string | null): string {
 }
 
 export default function DuplikatPage() {
+  const router = useRouter();
   const { data: session, status } = useSession();
+  const role = session?.user?.role as Role | undefined;
+  const authorized = Boolean(session && (role === "SUPER_ADMIN" || role === "CHIEF_EDITOR"));
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
 
@@ -66,6 +69,12 @@ export default function DuplikatPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (status !== "loading" && !authorized) {
+      router.replace("/panel/artikel");
+    }
+  }, [status, authorized, router]);
 
   const fetchDups = useCallback(async () => {
     try {
@@ -87,20 +96,17 @@ export default function DuplikatPage() {
   }, [showError]);
 
   useEffect(() => {
-    fetchDups();
-  }, [fetchDups]);
+    if (status !== "loading" && authorized) {
+      fetchDups();
+    }
+  }, [status, authorized, fetchDups]);
 
-  // Role guard after hooks (rules-of-hooks).
-  if (status === "loading") {
+  if (status === "loading" || !authorized) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-  const role = session?.user?.role as Role | undefined;
-  if (!session || !(role === "SUPER_ADMIN" || role === "CHIEF_EDITOR")) {
-    redirect("/panel/artikel");
   }
 
   const selectedIds = Object.keys(selected).filter((id) => selected[id]);
@@ -143,8 +149,7 @@ export default function DuplikatPage() {
         >
           <ArrowLeft size={15} /> Kembali ke Daftar Artikel
         </Link>
-        <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary sm:text-3xl">
-          <Copy size={24} className="text-primary" />
+        <h1 className="text-xl font-bold text-txt-primary sm:text-3xl">
           Artikel Duplikat
         </h1>
         <p className="mt-1 text-sm text-txt-secondary">
@@ -173,7 +178,7 @@ export default function DuplikatPage() {
               <div key={g.key} className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
                 <div className="flex items-center justify-between gap-3 border-b border-border bg-surface-secondary px-4 py-3">
                   <h2 className="line-clamp-1 text-sm font-bold text-txt-primary">{g.title}</h2>
-                  <span className="shrink-0 rounded-full bg-secondary-light px-2.5 py-0.5 text-xs font-semibold text-secondary">
+                  <span className="shrink-0 text-xs font-semibold text-secondary">
                     {g.copies.length} salinan
                   </span>
                 </div>
@@ -182,7 +187,7 @@ export default function DuplikatPage() {
                     <div
                       key={c.id}
                       className={`flex flex-wrap items-center gap-3 px-4 py-3 ${
-                        c.recommendedKeep ? "bg-primary-50/40" : ""
+                        c.recommendedKeep ? "bg-surface-secondary/50" : ""
                       }`}
                     >
                       <div className="flex w-6 shrink-0 justify-center">

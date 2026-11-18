@@ -3,6 +3,9 @@
 import { useState, useEffect, FormEvent } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { canManageAds } from "@/lib/auth";
+import { Role } from "@prisma/client";
 import { useToast } from "@/components/ui/Toast";
 import {
   ArrowLeft,
@@ -40,9 +43,12 @@ export default function EditIklanPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const { data: session, status } = useSession();
+  const authorized = Boolean(session && canManageAds(session.user.role as Role));
   const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -61,16 +67,26 @@ export default function EditIklanPage() {
   const currentSpec = slotSpecs[formSlot];
 
   useEffect(() => {
+    if (status !== "loading" && !authorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [status, authorized, router]);
+
+  useEffect(() => {
+    if (status === "loading" || !authorized) return;
     async function fetchAd() {
       try {
         const res = await fetch(`/api/ads?all=true`);
         if (!res.ok) throw new Error("Gagal memuat data iklan");
         const json = await res.json();
         const ad = (json.data || []).find((a: Ad) => a.id === id);
-        if (!ad) throw new Error("Iklan tidak ditemukan");
+        if (!ad) {
+          setNotFound(true);
+          return;
+        }
 
         setFormName(ad.name);
-        setFormType(ad.type);
+        setFormType(ad.type === "GIF" ? "IMAGE" : ad.type);
         setFormSlot(ad.slot);
         setFormImageUrl(ad.imageUrl || "");
         setFormHtmlCode(ad.htmlCode || "");
@@ -86,9 +102,13 @@ export default function EditIklanPage() {
       }
     }
     fetchAd();
-  }, [id, showError]);
+  }, [id, status, authorized, showError]);
 
   async function handleUpload(file: File) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      showError("Format tidak didukung. Gunakan JPEG, PNG, atau WebP.");
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) { showError("Ukuran file maksimal 5MB"); return; }
     try {
       setUploading(true);
@@ -110,6 +130,10 @@ export default function EditIklanPage() {
     e.preventDefault();
     if (!formName || !formStartDate || !formEndDate) {
       showError("Nama, tanggal mulai, dan tanggal selesai wajib diisi.");
+      return;
+    }
+    if (new Date(formEndDate) < new Date(formStartDate)) {
+      showError("Tanggal selesai tidak boleh sebelum tanggal mulai.");
       return;
     }
 
@@ -144,10 +168,22 @@ export default function EditIklanPage() {
     }
   }
 
-  if (loading) {
+  if (status === "loading" || !authorized || loading) {
     return (
       <div className="max-w-5xl mx-auto flex items-center justify-center py-20">
         <Loader2 size={32} className="animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="max-w-xl mx-auto py-20 text-center space-y-4">
+        <h1 className="text-xl font-bold text-txt-primary">Iklan tidak ditemukan</h1>
+        <p className="text-sm text-txt-secondary">Data iklan dengan ID tersebut tidak tersedia atau sudah dihapus.</p>
+        <Link href="/panel/iklan" className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm">
+          <ArrowLeft size={16} /> Kembali ke Daftar Iklan
+        </Link>
       </div>
     );
   }
@@ -239,11 +275,11 @@ export default function EditIklanPage() {
                         <Upload size={24} className="text-txt-muted" />
                         <div className="text-center">
                           <p className="text-sm font-semibold text-txt-primary">{uploading ? "Mengupload..." : "Klik untuk upload gambar"}</p>
-                          <p className="text-xs text-txt-muted mt-0.5">JPEG, PNG, WebP, GIF — Maks 5MB</p>
+                          <p className="text-xs text-txt-muted mt-0.5">JPEG, PNG, WebP — Maks 5MB</p>
                           {currentSpec && <p className="text-xs font-medium text-primary mt-1">Rekomendasi: {currentSpec.ratio}</p>}
                         </div>
                       </div>
-                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={uploading}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading}
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ""; }}
                       />
                     </label>

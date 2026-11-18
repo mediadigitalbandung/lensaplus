@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Sparkles, Cpu, ChevronLeft, ChevronRight, Loader2, Tag } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 
@@ -55,8 +55,10 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 export default function AIPage() {
+  const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
+  const authorized = userRole === "SUPER_ADMIN";
   const { success, error: showError } = useToast();
 
   const [activeTab, setActiveTab] = useState<"generate" | "log">("generate");
@@ -72,13 +74,11 @@ export default function AIPage() {
   const [generating, setGenerating] = useState(false);
   const [bulkResult, setBulkResult] = useState<BulkResult | null>(null);
 
-  if (
-    sessionStatus !== "loading" &&
-    session &&
-    userRole !== "SUPER_ADMIN"
-  ) {
-    redirect("/panel/dashboard");
-  }
+  useEffect(() => {
+    if (sessionStatus !== "loading" && session && !authorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, session, authorized, router]);
 
   const fetchLogs = useCallback(
     async (page: number) => {
@@ -101,8 +101,10 @@ export default function AIPage() {
   );
 
   useEffect(() => {
-    fetchLogs(1);
-  }, [fetchLogs]);
+    if (sessionStatus !== "loading" && authorized) {
+      fetchLogs(1);
+    }
+  }, [sessionStatus, authorized, fetchLogs]);
 
   async function handleBulkGenerate() {
     setGenerating(true);
@@ -132,7 +134,7 @@ export default function AIPage() {
 
   const formatNumber = (n: number) => n.toLocaleString("id-ID");
 
-  if (sessionStatus === "loading") {
+  if (sessionStatus === "loading" || (session && !authorized)) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -144,8 +146,7 @@ export default function AIPage() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl sm:text-3xl font-bold text-txt-primary flex items-center gap-2">
-          <Sparkles size={24} className="text-primary" />
+        <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
           AI Tools
         </h1>
         <p className="text-base text-txt-secondary mt-1">Generate tag SEO otomatis dan monitor penggunaan AI</p>
@@ -353,10 +354,20 @@ export default function AIPage() {
                 Halaman {pagination.page} dari {pagination.totalPages}
               </p>
               <div className="flex items-center gap-2">
-                <button onClick={() => fetchLogs(pagination.page - 1)} disabled={pagination.page <= 1} className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-40">
+                <button
+                  onClick={() => fetchLogs(pagination.page - 1)}
+                  disabled={pagination.page <= 1}
+                  aria-label="Halaman sebelumnya"
+                  className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-40"
+                >
                   <ChevronLeft size={16} />
                 </button>
-                <button onClick={() => fetchLogs(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages} className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-40">
+                <button
+                  onClick={() => fetchLogs(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.totalPages}
+                  aria-label="Halaman berikutnya"
+                  className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-40"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>

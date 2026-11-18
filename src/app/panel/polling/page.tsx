@@ -10,7 +10,6 @@ import {
   Save,
   X,
   Vote,
-  BarChart3,
   Power,
   Upload,
   ImageIcon,
@@ -68,12 +67,12 @@ export default function PollingPanelPage() {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!res.ok) throw new Error();
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Gagal upload gambar");
       setFormImage(json.data?.url || "");
       success("Gambar berhasil diupload");
-    } catch {
-      showError("Gagal upload gambar");
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal upload gambar");
     } finally {
       setUploadingImage(false);
     }
@@ -87,16 +86,15 @@ export default function PollingPanelPage() {
         fetch("/api/polls?all=true"),
         fetch("/api/categories"),
       ]);
-      if (resPolls.ok) {
-        const json = await resPolls.json();
-        setPolls(json.data || []);
-      }
+      if (!resPolls.ok) throw new Error("Gagal memuat daftar polling");
+      const jsonPolls = await resPolls.json();
+      setPolls(jsonPolls.data || []);
       if (resCats.ok) {
         const json = await resCats.json();
         setCategories(json.data || []);
       }
-    } catch {
-      showError("Gagal memuat data");
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal memuat data");
     } finally {
       setLoading(false);
     }
@@ -204,25 +202,32 @@ export default function PollingPanelPage() {
     if (!ok) return;
     try {
       const res = await fetch(`/api/polls/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Gagal menghapus polling");
+      }
       success("Polling berhasil dihapus");
       fetchData();
-    } catch {
-      showError("Gagal menghapus polling");
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal menghapus polling");
     }
   }
 
   async function toggleActive(poll: Poll) {
     try {
-      await fetch(`/api/polls/${poll.id}`, {
+      const res = await fetch(`/api/polls/${poll.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !poll.isActive }),
       });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Gagal mengubah status");
+      }
       success(poll.isActive ? "Polling dinonaktifkan" : "Polling diaktifkan");
       fetchData();
-    } catch {
-      showError("Gagal mengubah status");
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal mengubah status");
     }
   }
 
@@ -268,7 +273,14 @@ export default function PollingPanelPage() {
                     <div className="relative group">
                       {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded poll image URL, cannot whitelist all origins */}
                       <img src={formImage} alt="" className="w-full h-24 object-cover rounded-lg border border-border" />
-                      <button type="button" onClick={() => setFormImage("")} className="absolute top-1.5 right-1.5 p-1 rounded-md bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"><X size={14} /></button>
+                      <button
+                        type="button"
+                        onClick={() => setFormImage("")}
+                        aria-label="Hapus gambar polling"
+                        className="absolute top-1.5 right-1.5 p-1 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                      >
+                        <X size={14} aria-hidden="true" />
+                      </button>
                     </div>
                   ) : (
                     <label className={`flex flex-col items-center justify-center w-full h-24 rounded-lg border-2 border-dashed border-border hover:border-primary/30 transition-colors cursor-pointer ${uploadingImage ? "pointer-events-none opacity-60" : ""}`}>
@@ -392,7 +404,7 @@ export default function PollingPanelPage() {
       ) : (
         <div className="space-y-3">
           {polls.map((poll) => (
-            <div key={poll.id} className={`rounded-lg border bg-surface p-5 shadow-card transition-all ${editingId === poll.id ? "border-primary bg-primary-light/10" : "border-border"}`}>
+            <div key={poll.id} className={`rounded-lg border bg-surface p-5 shadow-card transition-all ${editingId === poll.id ? "border-primary" : "border-border"}`}>
               <div className="flex items-start gap-4">
                 {poll.image && (
                   <div className="shrink-0 w-20 h-14 rounded-lg overflow-hidden bg-surface-tertiary">
@@ -431,7 +443,6 @@ export default function PollingPanelPage() {
                     ))}
                   </div>
                   <p className="text-xs text-txt-muted mt-2">
-                    <BarChart3 size={12} className="inline mr-1" />
                     {poll.totalVotes.toLocaleString("id-ID")} total suara
                   </p>
                 </div>

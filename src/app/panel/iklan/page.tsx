@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { canManageAds } from "@/lib/auth";
 import { Role } from "@prisma/client";
 import { useToast } from "@/components/ui/Toast";
@@ -44,7 +44,6 @@ const slotLabels: Record<string, string> = {
 
 const typeLabels: Record<string, string> = {
   IMAGE: "Gambar",
-  GIF: "GIF Animasi",
   HTML: "Kode HTML",
 };
 
@@ -111,7 +110,9 @@ function LoadingSkeleton() {
 }
 
 export default function IklanPage() {
+  const router = useRouter();
   const { data: session, status } = useSession();
+  const authorized = Boolean(session && canManageAds(session.user.role as Role));
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
   const [ads, setAds] = useState<Ad[]>([]);
@@ -120,6 +121,12 @@ export default function IklanPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
+
+  useEffect(() => {
+    if (status !== "loading" && !authorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [status, authorized, router]);
 
   const fetchAds = useCallback(async () => {
     try {
@@ -136,7 +143,11 @@ export default function IklanPage() {
     }
   }, []);
 
-  useEffect(() => { fetchAds(); }, [fetchAds]);
+  useEffect(() => {
+    if (status !== "loading" && authorized) {
+      fetchAds();
+    }
+  }, [status, authorized, fetchAds]);
 
   async function handleDelete(id: string) {
     const ok = await confirm({ message: "Apakah Anda yakin ingin menghapus iklan ini?", variant: "danger", title: "Konfirmasi" });
@@ -154,10 +165,7 @@ export default function IklanPage() {
   }
 
   // Role guard — must be after all hooks to satisfy rules-of-hooks
-  if (status === "loading") return <LoadingSkeleton />;
-  if (!session || !canManageAds(session.user.role as Role)) {
-    redirect("/panel/dashboard");
-  }
+  if (status === "loading" || !authorized) return <LoadingSkeleton />;
 
   const totalPages = Math.ceil(ads.length / ITEMS_PER_PAGE);
   const paginatedAds = ads.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);

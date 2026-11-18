@@ -7,12 +7,14 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 import Link from "next/link";
+import { EDITOR_ROLES } from "@/lib/roles";
 import {
   Radio,
   Save,
   ArrowLeft,
-  Plus,
   Trash2,
   Loader2,
   Pin,
@@ -61,7 +63,9 @@ const STATUS_LABELS: Record<LiveBlogStatus, string> = {
 };
 
 function toLocalInput(iso?: string | null): string {
-  const d = iso ? new Date(iso) : new Date();
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -79,7 +83,10 @@ function formatTime(iso: string): string {
 export default function LiveBlogEditorPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   // Client component pakai React.use() hook untuk unwrap params Promise.
   const { id } = use(paramsPromise);
-  const { data: session } = useSession();
+  const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
+  const userRole = session?.user?.role || "";
+  const canWrite = EDITOR_ROLES.includes(userRole);
   const { success: showSuccess, error: showError } = useToast();
   const { confirm } = useConfirm();
 
@@ -93,6 +100,12 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
   const [entryIsHighlight, setEntryIsHighlight] = useState(false);
   const [postingEntry, setPostingEntry] = useState(false);
   const [meta, setMeta] = useState<Partial<LiveBlog>>({});
+
+  useEffect(() => {
+    if (sessionStatus !== "loading" && !canWrite) {
+      router.replace("/panel/live-blogs");
+    }
+  }, [sessionStatus, canWrite, router]);
 
   const fetchBlog = useCallback(async () => {
     try {
@@ -127,13 +140,14 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
   }, [id]);
 
   useEffect(() => {
+    if (sessionStatus === "loading" || !canWrite) return;
     const load = async () => {
       setLoading(true);
       await Promise.all([fetchBlog(), fetchEntries()]);
       setLoading(false);
     };
     load();
-  }, [fetchBlog, fetchEntries]);
+  }, [sessionStatus, canWrite, fetchBlog, fetchEntries]);
 
   const saveMeta = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +157,14 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
       const payload: Record<string, unknown> = { ...meta };
       if (meta.scheduledAt) {
         payload.scheduledAt = new Date(meta.scheduledAt).toISOString();
+      } else {
+        delete payload.scheduledAt;
+      }
+      if (typeof meta.coverImage === "string" && !meta.coverImage.trim()) {
+        payload.coverImage = null;
+      }
+      if (typeof meta.liveStreamUrl === "string" && !meta.liveStreamUrl.trim()) {
+        payload.liveStreamUrl = null;
       }
       const res = await fetch(`/api/panel/live-blogs/${id}`, {
         method: "PUT",
@@ -258,7 +280,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
     } catch { /* noop */ }
   };
 
-  if (loading) {
+  if (sessionStatus === "loading" || !canWrite || loading) {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 size={28} className="animate-spin text-primary" />
@@ -277,7 +299,6 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
     );
   }
 
-  const userRole = session?.user?.role || "";
   const canDelete = ["SUPER_ADMIN", "CHIEF_EDITOR"].includes(userRole);
 
   return (
@@ -285,10 +306,9 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
       {/* Left: Metadata editor */}
       <div className="lg:col-span-2 space-y-5">
         <div className="flex items-center gap-2">
-          <Link href="/panel/live-blogs" className="text-txt-muted hover:text-primary">
+          <Link href="/panel/live-blogs" className="text-txt-muted hover:text-primary" aria-label="Kembali ke daftar live blog">
             <ArrowLeft size={18} />
           </Link>
-          <Radio size={18} className="text-secondary" />
           <h1 className="text-lg font-bold text-on-surface truncate">{blog.title}</h1>
         </div>
 
@@ -404,6 +424,17 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
           </div>
 
           <div>
+            <label className="block text-label-sm text-txt-muted mb-1">URL Gambar Cover</label>
+            <input
+              type="url"
+              value={meta.coverImage || ""}
+              onChange={(e) => setMeta((m) => ({ ...m, coverImage: e.target.value }))}
+              className="input w-full text-sm"
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
             <label className="block text-label-sm text-txt-muted mb-1">
               Video Live / Embed (YouTube Live)
             </label>
@@ -462,8 +493,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
       <div className="lg:col-span-3 space-y-5">
         {/* Post new entry */}
         <form onSubmit={postEntry} className="card p-4 space-y-3">
-          <h2 className="text-label-md font-semibold text-on-surface flex items-center gap-2">
-            <Plus size={16} />
+          <h2 className="text-label-md font-semibold text-on-surface">
             Posting Update Baru
           </h2>
           <textarea
@@ -575,7 +605,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
               </div>
               <div
                 className="text-sm text-on-surface prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: entry.content }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(entry.content) }}
               />
               {entry.imageUrl && (
                 <img

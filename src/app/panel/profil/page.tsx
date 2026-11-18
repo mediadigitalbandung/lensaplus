@@ -32,9 +32,10 @@ interface UserProfile {
 }
 
 export default function ProfilPage() {
-  const { data: session } = useSession();
+  const { data: session, status, update } = useSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const fetchedRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [verifyingEmail, setVerifyingEmail] = useState(false);
@@ -65,6 +66,13 @@ export default function ProfilPage() {
   const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
+    if (status === "loading") return;
+    if (status === "unauthenticated" || !session?.user) {
+      setLoading(false);
+      return;
+    }
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
     async function fetchProfile() {
       try {
         const res = await fetch("/api/users/me");
@@ -90,8 +98,8 @@ export default function ProfilPage() {
         setLoading(false);
       }
     }
-    if (session?.user) fetchProfile();
-  }, [session?.user]);
+    fetchProfile();
+  }, [status, session?.user]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -119,6 +127,7 @@ export default function ProfilPage() {
 
       const json = await res.json();
       setProfile((prev) => (prev ? { ...prev, ...json.data } : prev));
+      await update({ name: json.data?.name || name });
       setMessage({ type: "success", text: "Profil berhasil diperbarui" });
     } catch (err) {
       setMessage({
@@ -232,7 +241,9 @@ export default function ProfilPage() {
       if (!res.ok) throw new Error("Gagal menyimpan foto profil");
 
       const json = await res.json();
-      setProfile((prev) => (prev ? { ...prev, avatar: json.data?.avatar || avatarUrl } : prev));
+      const updatedAvatar = json.data?.avatar || avatarUrl;
+      setProfile((prev) => (prev ? { ...prev, avatar: updatedAvatar } : prev));
+      await update({ image: updatedAvatar });
       setMessage({ type: "success", text: "Foto profil berhasil diperbarui" });
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Gagal mengupload foto" });
@@ -259,10 +270,10 @@ export default function ProfilPage() {
 
       {message && (
         <div
-          className={`mb-4 rounded-lg border p-4 text-sm ${
+          className={`mb-4 rounded-lg border border-border border-l-4 bg-surface p-4 text-sm ${
             message.type === "success"
-              ? "border-primary/30 bg-primary/10 text-primary"
-              : "border-red-300 bg-red-50 text-red-700"
+              ? "border-l-primary text-primary"
+              : "border-l-red-600 text-red-700"
           }`}
         >
           {message.text}
@@ -494,10 +505,10 @@ export default function ProfilPage() {
 
         {pwMessage && (
           <div
-            className={`mb-4 rounded-lg border p-4 text-sm ${
+            className={`mb-4 rounded-lg border border-border border-l-4 bg-surface p-4 text-sm ${
               pwMessage.type === "success"
-                ? "border-primary/30 bg-primary/10 text-primary"
-                : "border-red-300 bg-red-50 text-red-700"
+                ? "border-l-primary text-primary"
+                : "border-l-red-600 text-red-700"
             }`}
           >
             {pwMessage.text}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, FormEvent } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
@@ -43,6 +45,10 @@ const roleLabels: Record<string, string> = {
 const emptyForm = { position: "", name: "", desc: "", photo: "", order: 0, isActive: true, userId: "" };
 
 export default function RedaksiPanelPage() {
+  const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
+  const userRole = session?.user?.role || "";
+  const authorized = userRole === "SUPER_ADMIN" || userRole === "CHIEF_EDITOR";
   const { success, error: showError } = useToast();
   const { confirm } = useConfirm();
   const [members, setMembers] = useState<RedaksiMember[]>([]);
@@ -112,7 +118,17 @@ export default function RedaksiPanelPage() {
     }
   }, [showError]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (sessionStatus !== "loading" && !authorized) {
+      router.replace("/panel/dashboard");
+    }
+  }, [sessionStatus, authorized, router]);
+
+  useEffect(() => {
+    if (sessionStatus !== "loading" && authorized) {
+      fetchData();
+    }
+  }, [sessionStatus, authorized, fetchData]);
 
   function openAdd() {
     setEditingId(null);
@@ -168,11 +184,14 @@ export default function RedaksiPanelPage() {
       if (form.userId && form.photo) {
         const selectedUser = users.find((u) => u.id === form.userId);
         if (selectedUser && selectedUser.avatar !== form.photo) {
-          await fetch(`/api/users/${form.userId}`, {
+          const avatarRes = await fetch(`/api/users/${form.userId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ avatar: form.photo }),
-          }).catch(() => {});
+          });
+          if (!avatarRes.ok) {
+            showError("Anggota redaksi tersimpan, tetapi gagal memperbarui avatar profil user.");
+          }
         }
       }
 
@@ -197,6 +216,14 @@ export default function RedaksiPanelPage() {
     } catch {
       showError("Gagal menghapus anggota redaksi");
     }
+  }
+
+  if (sessionStatus === "loading" || !authorized) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   return (
@@ -230,7 +257,12 @@ export default function RedaksiPanelPage() {
                   className="input w-full"
                   value={form.userId}
                   onChange={(e) => {
-                    const user = users.find((u) => u.id === e.target.value);
+                    const val = e.target.value;
+                    if (!val) {
+                      setForm((f) => ({ ...f, userId: "" }));
+                      return;
+                    }
+                    const user = users.find((u) => u.id === val);
                     if (user) selectUser(user);
                   }}
                 >
@@ -242,11 +274,11 @@ export default function RedaksiPanelPage() {
                   ))}
                 </select>
                 {form.userId && !form.photo && (
-                  <div className="mt-2 flex items-start gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3">
-                    <span className="text-yellow-500 text-base leading-none mt-0.5">!</span>
+                  <div className="mt-2 flex items-start gap-2 rounded-lg border border-border border-l-4 border-l-amber-500 bg-surface px-4 py-3">
+                    <span className="text-amber-600 text-base leading-none mt-0.5 font-bold">!</span>
                     <div className="text-sm">
-                      <p className="font-semibold text-yellow-800">Pengguna ini belum memiliki foto</p>
-                      <p className="text-yellow-700 mt-0.5">Upload foto di bawah, foto akan otomatis tersimpan di profil pengguna ini juga.</p>
+                      <p className="font-semibold text-txt-primary">Pengguna ini belum memiliki foto</p>
+                      <p className="text-txt-secondary mt-0.5">Upload foto di bawah, foto akan otomatis tersimpan di profil pengguna ini juga.</p>
                     </div>
                   </div>
                 )}
@@ -293,7 +325,7 @@ export default function RedaksiPanelPage() {
                   </div>
                 ) : (
                   <label className="block cursor-pointer">
-                    <div className={`flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-border py-6 hover:border-primary hover:bg-primary-light/20 transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+                    <div className={`flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-border py-6 hover:border-primary hover:bg-surface-secondary/50 transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
                       <Upload size={20} className="text-txt-muted" />
                       <span className="text-sm font-medium text-txt-primary">{uploading ? "Mengupload..." : "Upload foto anggota"}</span>
                       <span className="text-xs text-txt-muted">JPEG, PNG, WebP — Maks 2MB</span>
@@ -370,7 +402,7 @@ export default function RedaksiPanelPage() {
                       <div
                         key={m.id}
                         className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-colors ${
-                          editingId === m.id ? "bg-primary-light/50 border border-primary/30" : "bg-surface-secondary"
+                          editingId === m.id ? "border border-primary bg-surface" : "bg-surface-secondary"
                         }`}
                       >
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white overflow-hidden">
@@ -416,7 +448,7 @@ export default function RedaksiPanelPage() {
       ) : (
         <div className="space-y-3">
           {members.map((m) => (
-            <div key={m.id} className={`rounded-lg border bg-surface p-4 sm:p-5 shadow-card flex items-center gap-4 hover:shadow-card-hover transition-all ${editingId === m.id ? "border-primary bg-primary-light/10" : "border-border"}`}>
+            <div key={m.id} className={`rounded-lg border bg-surface p-4 sm:p-5 shadow-card flex items-center gap-4 hover:shadow-card-hover transition-all ${editingId === m.id ? "border-primary" : "border-border"}`}>
               <GripVertical size={16} className="text-txt-muted shrink-0 hidden sm:block" />
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-white overflow-hidden">
                 {m.photo ? (
