@@ -228,11 +228,25 @@ export default function SumberBeritaPage() {
         fetchSources();
         return;
       }
+      const previewData = json.data as PreviewResponse;
       setPreview({
         sourceId: s.id,
         sourceName: s.name,
-        data: json.data as PreviewResponse,
+        data: previewData,
       });
+      setSources((prev) =>
+        prev.map((item) =>
+          item.id === s.id
+            ? {
+                ...item,
+                lastError:
+                  previewData.total > 0
+                    ? null
+                    : "0 artikel terdeteksi saat preview. Coba aktifkan Render JS (headless) atau isi CSS Selector manual.",
+              }
+            : item,
+        ),
+      );
     } catch {
       const msg = "Gagal menghubungi server saat preview";
       showError(msg);
@@ -951,11 +965,11 @@ export default function SumberBeritaPage() {
             <p className="font-semibold text-txt-primary">Cron otomatis</p>
             <p className="mt-1">
               Endpoint <code className="rounded-lg bg-surface-tertiary px-1.5 py-0.5 text-xs font-mono">POST /api/cron/scrape-sources</code> sudah dilindungi <code className="text-xs font-mono">CRON_SECRET</code>.
-              Setting di crontab VPS (per jam):
+              Setting di crontab VPS (tiap 30 menit):
             </p>
-            <pre className="mt-2 overflow-x-auto rounded-md bg-primary px-3 py-2 text-[11px] text-white">{`0 * * * * curl -s -X POST https://lensaplus.com/api/cron/scrape-sources -H "Authorization: Bearer $CRON_SECRET" >> /var/log/lensaplus-scrape.log 2>&1`}</pre>
+            <pre className="mt-2 overflow-x-auto rounded-md bg-primary px-3 py-2 text-[11px] text-white">{`*/30 * * * * curl -sS -X POST https://lensaplus.com/api/cron/scrape-sources -H "Authorization: Bearer $CRON_SECRET" >> /var/log/lensaplus-cron.log 2>&1`}</pre>
             <p className="mt-2 text-xs">
-              Tiap jam cron akan walk semua sumber aktif yang sudah lewat <em>frequencyHours</em>-nya, ambil maks 2 artikel baru per sumber, dan stop setelah total 6 draft.
+              Tiap 30 menit cron memeriksa semua sumber aktif dengan <em>Auto-Scrape ON</em> yang sudah melewati jendela <em>frequencyHours</em>-nya, mengambil maks 2 artikel baru per sumber (dan otomatis mempublikasikan jika <em>Auto-Publish ON</em>), serta berhenti setelah total 6 artikel per siklus.
             </p>
           </div>
         </div>

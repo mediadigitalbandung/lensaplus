@@ -46,18 +46,19 @@ export async function POST(
       await prisma.newsSource
         .update({
           where: { id: source.id },
-          data: { lastCheckedAt: new Date(), lastError: msg.slice(0, 500) },
+          data: { lastError: msg.slice(0, 500) },
         })
         .catch(() => {});
       throw new ApiError(`Gagal preview listing: ${msg}`, 502);
     }
 
     const { items, selectorUsed, pagesVisited, htmlLang } = listing;
+    // Do NOT update `lastCheckedAt` during read-only Preview; otherwise opening
+    // Preview resets the cron's `frequencyHours` timer and delays auto-scrape.
     await prisma.newsSource
       .update({
         where: { id: source.id },
         data: {
-          lastCheckedAt: new Date(),
           ...(items.length > 0
             ? { lastError: null }
             : {

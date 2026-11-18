@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyCronSecret, errorResponse, logAudit } from "@/lib/api-utils";
 import { trackCron } from "@/lib/cron-tracker";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { fetchSourceListing } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
@@ -34,11 +35,22 @@ export const maxDuration = 300;
 const PER_SOURCE_LIMIT = 2; // be polite to upstream + don't burn tokens
 const TOTAL_RUN_LIMIT = 6; // safety: stop the whole cron after N drafts
 
-async function handler(req: NextRequest) {
+async function handler() {
   const started = Date.now();
-  try {
-    try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
+  const lockToken = await acquireCronLock("scrape-sources", 6 * 60_000);
+  if (!lockToken) {
+    return NextResponse.json(
+      {
+        success: true,
+        skipped: true,
+        reason: "ANOTHER_RUN_IN_PROGRESS",
+        durationMs: Date.now() - started,
+      },
+      { status: 200 },
+    );
+  }
 
+  try {
     // Pick eligible sources: active + autoScrape enabled + frequency window elapsed.
     const now = new Date();
     const sources = await prisma.newsSource.findMany({
@@ -137,8 +149,15 @@ async function handler(req: NextRequest) {
         const draftAuthorId = source.owner?.id ?? admin.id;
         const draftAuthorName = source.owner?.name ?? admin.name;
 
-        for (const candidate of newCandidates.slice(0, PER_SOURCE_LIMIT)) {
-          if (totalOk >= TOTAL_RUN_LIMIT) break;
+        const maxAttempts = Math.min(newCandidates.length, PER_SOURCE_LIMIT * 3);
+        for (const candidate of newCandidates) {
+          if (
+            sourceResult.ok >= PER_SOURCE_LIMIT ||
+            sourceResult.attempted >= maxAttempts ||
+            totalOk >= TOTAL_RUN_LIMIT
+          ) {
+            break;
+          }
           if (!categoryId) {
             sourceResult.drafts.push({
               sourceUrl: candidate.url,
@@ -198,6 +217,10 @@ async function handler(req: NextRequest) {
         }
 
         const firstFailure = sourceResult.drafts.find((d) => !d.ok && d.error)?.error;
+        const emptyListingError =
+          listing.items.length === 0
+            ? "0 artikel terdeteksi di halaman sumber. Aktifkan Render JS (headless) untuk situs SPA atau isi CSS Selector manual."
+            : null;
         await prisma.newsSource.update({
           where: { id: source.id },
           data: {
@@ -208,7 +231,9 @@ async function handler(req: NextRequest) {
               ? { lastSuccessAt: new Date(), lastError: null }
               : firstFailure
                 ? { lastError: firstFailure.slice(0, 500) }
-                : {}),
+                : emptyListingError
+                  ? { lastError: emptyListingError }
+                  : { lastError: null }),
           },
         });
       } catch (e) {
@@ -261,15 +286,17 @@ async function handler(req: NextRequest) {
       },
       { status: 200 },
     );
+  } finally {
+    await releaseCronLock("scrape-sources", lockToken);
   }
 }
 
 export async function GET(req: NextRequest) {
   try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
-  try { return await trackCron("scrape-sources", () => handler(req)); } catch (e) { return errorResponse(e); }
+  try { return await trackCron("scrape-sources", () => handler()); } catch (e) { return errorResponse(e); }
 }
 
 export async function POST(req: NextRequest) {
   try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
-  try { return await trackCron("scrape-sources", () => handler(req)); } catch (e) { return errorResponse(e); }
+  try { return await trackCron("scrape-sources", () => handler()); } catch (e) { return errorResponse(e); }
 }

@@ -144,7 +144,9 @@ export async function POST(
     }
     await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);
 
-    // Persist progress (avoid pushing duplicate URLs when regenerating)
+    // Persist progress (avoid pushing duplicate URLs when regenerating).
+    // Do NOT reset `lastCheckedAt` on single-article cherry-pick so the
+    // scheduled full-listing cron still runs on time.
     await prisma.newsSource.update({
       where: { id: source.id },
       data: {
@@ -152,7 +154,6 @@ export async function POST(
           ? {}
           : { scrapedUrls: { push: data.url } }),
         totalScraped: { increment: 1 },
-        lastCheckedAt: new Date(),
         lastSuccessAt: new Date(),
         lastError: null,
       },
