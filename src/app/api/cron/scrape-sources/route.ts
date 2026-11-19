@@ -22,6 +22,7 @@ import { fetchSourceListing } from "@/lib/scraper/crawl-listings";
 import { fetchArticle } from "@/lib/scraper/fetch-article";
 import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
 import { getScraperAuthor } from "@/lib/scraper/author";
+import { canPublishDirectly } from "@/lib/auth";
 import {
   claimUrl,
   finalizeClaim,
@@ -56,7 +57,7 @@ async function handler() {
     const sources = await prisma.newsSource.findMany({
       where: { isActive: true, autoScrape: true },
       orderBy: [{ priority: "desc" }, { lastCheckedAt: "asc" }],
-      include: { owner: { select: { id: true, name: true } } },
+      include: { owner: { select: { id: true, name: true, role: true, isActive: true } } },
     });
 
     const eligible = sources.filter((s) => {
@@ -102,6 +103,14 @@ async function handler() {
         { status: 200 },
       );
     }
+
+    const adminAccount = await prisma.user.findUnique({
+      where: { id: admin.id },
+      select: { role: true, isActive: true },
+    });
+    const fallbackCanAutoPublish = Boolean(
+      adminAccount?.isActive && canPublishDirectly(adminAccount.role),
+    );
 
     type SourceResult = {
       sourceId: string;
@@ -152,9 +161,14 @@ async function handler() {
 
         // Auto-scraped drafts belong to the account that configured the
         // source; fall back to the default scraper byline for legacy/shared
-        // (ownerless) sources.
+        // (ownerless) sources. Only allow autoPublish when the owning account
+        // is active AND permitted to publish directly (EDITOR_ROLES).
         const draftAuthorId = source.owner?.id ?? admin.id;
         const draftAuthorName = source.owner?.name ?? admin.name;
+        const ownerCanAutoPublish = source.owner
+          ? Boolean(source.owner.isActive && canPublishDirectly(source.owner.role))
+          : fallbackCanAutoPublish;
+        const effectiveAutoPublish = Boolean(source.autoPublish && ownerCanAutoPublish);
 
         const maxAttempts = Math.min(newCandidates.length, PER_SOURCE_LIMIT * 3);
         let candidatesSeen = 0;
@@ -203,7 +217,7 @@ async function handler() {
               defaultTags: source.defaultTags,
               listingThumbnail: candidate.thumbnail,
               downloadImage: true,
-              autoPublish: source.autoPublish,
+              autoPublish: effectiveAutoPublish,
             });
             await finalizeClaim(claim.claimId, claim.claimToken, draft.articleId);
             sourceResult.drafts.push({

@@ -735,6 +735,57 @@ describe("multi-language detection, translation & concept paraphrasing", () => {
     expect(createData.sources.create[0].name).toBe("Example (example.id)");
     expect(createData.content).not.toContain("Disarikan dari rilis");
     expect(createData.content).not.toContain("dengan dukungan AI");
+    expect(createData.origin).toBe("SCRAPER");
+  });
+
+  it("downgrades autoPublish to DRAFT when checkArticle guardrail detects fabricated quote/number", async () => {
+    const longParagraph = Array.from(
+      { length: 35 },
+      () => "Pemerintah meluncurkan program digitalisasi UMKM nasional untuk memperluas akses pasar pelaku usaha.",
+    ).join(" ");
+    mockCallAI.mockResolvedValueOnce({
+      text: JSON.stringify({
+        title: "Program Digitalisasi UMKM Nasional",
+        excerpt: "Program digitalisasi UMKM resmi diluncurkan.",
+        content: `<p>${longParagraph} "Kutipan palsu yang tidak pernah ada di naskah sumber sama sekali," ujar pejabat.</p>`,
+        suggestedTags: ["umkm"],
+      }),
+      provider: "deepseek",
+      totalTokens: 280,
+    });
+    mockArticleFindUnique.mockResolvedValueOnce(null);
+    mockTagFindMany.mockResolvedValueOnce([]);
+    mockTagCreate.mockResolvedValue({ id: "t1" });
+    mockArticleCreate.mockResolvedValueOnce({
+      id: "art-guard-1",
+      slug: "program-digitalisasi-umkm-nasional",
+      title: "Program Digitalisasi UMKM Nasional",
+    });
+
+    const res = await paraphraseAndCreateDraft({
+      source: {
+        url: "https://example.id/berita/umkm-guardrail",
+        title: "Program Digitalisasi UMKM",
+        excerpt: "Ringkasan",
+        contentHtml: "<p>Isi berita UMKM tanpa kutipan.</p>",
+        wordCount: 90,
+        lang: "id",
+        heroImageUrl: "https://cdn.example.id/umkm-hero.jpg",
+      },
+      sourceName: "Example",
+      authorId: "u1",
+      authorName: "Editor",
+      categoryId: "c1",
+      downloadImage: false,
+      autoPublish: true,
+    });
+
+    expect(res.status).toBe("DRAFT");
+    const createData = mockArticleCreate.mock.calls[0][0].data;
+    expect(createData.status).toBe("DRAFT");
+    expect(createData.publishedAt).toBeNull();
+    expect(createData.origin).toBe("SCRAPER");
+    expect(createData.reviewNote).toContain("[Guardrail]");
   });
 
   it("automatically expands paraphrased drafts shorter than 320 words and records (websitenya) in sources without appending AI footer", async () => {

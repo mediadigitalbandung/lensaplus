@@ -5,7 +5,7 @@ import { aiRateLimit, getClientIp } from "@/lib/rate-limit";
 import { callAI, type AIFeature } from "@/lib/ai-client";
 import { callPerplexity, isPerplexityConfigured, getPerplexityInstructions } from "@/lib/perplexity";
 import { callLocalAI, getLocalAiConfig, isLocalAiReady } from "@/lib/local-ai";
-import { cleanAIShortText } from "@/lib/sanitize";
+import { cleanAIShortText, sanitizeHtml } from "@/lib/sanitize";
 import { prisma } from "@/lib/prisma";
 import { readJsonBody } from "@/lib/security";
 
@@ -245,8 +245,11 @@ export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
     await logAudit(session.user.id, "AI_GENERATE", "Article", "generate", JSON.stringify({ feature, tokensUsed, provider }), ip);
 
-    // Clean short-field outputs so callers get plain text ready for HTML <meta> tags.
-    const finalText = isShort ? cleanAIShortText(stripCitations(resultText)) : resultText;
+    // Clean short-field outputs for plain text, and sanitize HTML outputs from
+    // LLMs so malicious tags/event handlers never reach the panel editor.
+    const finalText = isShort
+      ? cleanAIShortText(stripCitations(resultText))
+      : sanitizeHtml(stripCitations(resultText));
 
     return successResponse({
       result: finalText,

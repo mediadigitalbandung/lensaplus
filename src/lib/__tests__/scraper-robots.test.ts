@@ -68,4 +68,20 @@ describe("isAllowedByRobots", () => {
     );
     expect(result).toBe(true);
   });
+
+  it("caps oversized robots.txt (>512 KB) and fails open without OOM", async () => {
+    const cancelSpy = vi.fn().mockResolvedValue(undefined);
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-length": String(2 * 1024 * 1024) }),
+      body: { cancel: cancelSpy },
+      text: async () => "User-agent: *\nDisallow: /\n",
+    });
+    const result = await isAllowedByRobots(
+      "https://robots-oversize.test/private/item",
+    );
+    expect(result).toBe(true);
+    expect(cancelSpy).toHaveBeenCalled();
+  });
 });

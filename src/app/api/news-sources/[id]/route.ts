@@ -20,6 +20,7 @@ import {
   assertCategoryExists,
 } from "@/lib/scraper/source-validation";
 import { SCRAPER_ROLES } from "@/lib/roles";
+import { canPublishDirectly } from "@/lib/auth";
 
 /** A source is manageable by its owner, or by any SUPER_ADMIN. */
 function canManageSource(
@@ -96,9 +97,13 @@ export async function PUT(
       if (dup) throw new ApiError("Sumber dengan URL ini sudah ada.", 409);
     }
 
+    const safeData = canPublishDirectly(session.user.role)
+      ? data
+      : { ...data, autoPublish: false };
+
     const updated = await prisma.newsSource.update({
       where: { id: params.id },
-      data,
+      data: safeData,
       include: { category: { select: { id: true, name: true, slug: true } } },
     });
 

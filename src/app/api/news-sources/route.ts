@@ -22,6 +22,7 @@ import {
   assertCategoryExists,
 } from "@/lib/scraper/source-validation";
 import { SCRAPER_ROLES } from "@/lib/roles";
+import { canPublishDirectly } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +89,9 @@ export async function POST(request: NextRequest) {
         description: data.description || null,
         isActive: data.isActive ?? true,
         autoScrape: data.autoScrape ?? true,
-        autoPublish: data.autoPublish ?? true,
+        autoPublish: canPublishDirectly(session.user.role)
+          ? (data.autoPublish ?? false)
+          : false,
         priority: data.priority ?? 0,
         frequencyHours: data.frequencyHours ?? 1,
         articleSelector: data.articleSelector || null,

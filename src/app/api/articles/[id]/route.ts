@@ -10,7 +10,7 @@ import {
   assertValidEditorAssignment,
 } from "@/lib/api-utils";
 import { calculateReadTime } from "@/lib/utils";
-import { canApproveArticles, canViewAllArticles } from "@/lib/auth";
+import { canApproveArticles, canPublishDirectly, canViewAllArticles } from "@/lib/auth";
 import { EDITOR_ROLES } from "@/lib/roles";
 import {
   sanitizeHtml,
@@ -33,8 +33,8 @@ import { checkArticleQuality } from "@/lib/article-quality";
 import { revalidatePath } from "next/cache";
 import { invalidateCachePrefix } from "@/lib/cache";
 import { purgeCache } from "@/lib/cloudflare/purge";
-import { getStorageDriver } from "@/lib/storage";
-import { extractSafeUploadKey, isSafeImageRef } from "@/lib/safe-path";
+import { isSafeImageRef } from "@/lib/safe-path";
+import { deleteUploadIfUnreferenced } from "@/lib/media-cleanup";
 
 const updateArticleSchema = z.object({
   title: z.string().min(5).max(255).optional(),
@@ -145,11 +145,7 @@ async function cleanupReplacedFeaturedImage(
   nextImage: string | null | undefined,
 ): Promise<void> {
   if (nextImage === undefined || prevImage === (nextImage || null)) return;
-  const key = extractSafeUploadKey(prevImage);
-  if (key) {
-    const storage = getStorageDriver();
-    await storage.delete(key).catch(() => {});
-  }
+  await deleteUploadIfUnreferenced(prevImage);
 }
 
 /**
@@ -428,6 +424,7 @@ export async function PUT(
         },
         include: ARTICLE_FULL_INCLUDE,
       });
+      await cleanupReplacedFeaturedImage(article.featuredImage, data.featuredImage);
 
       await logAudit(
         session.user.id,
@@ -977,6 +974,13 @@ export async function DELETE(
       throw new ApiError("Tidak memiliki akses untuk menghapus artikel ini", 403);
     }
 
+    if (article.status !== "DRAFT" && !canPublishDirectly(session.user.role)) {
+      throw new ApiError(
+        "Hanya draf yang dapat dihapus oleh penulis. Hubungi editor untuk menarik atau menghapus artikel ini.",
+        403,
+      );
+    }
+
     // Fire SEO/cache invalidation chain (with URL_DELETED to Google)
     if (article.status === "PUBLISHED") {
       await onArticleUnpublished({
@@ -987,15 +991,12 @@ export async function DELETE(
       }).catch(() => {});
     }
 
-    // Clean up featured image from local storage
-    const featuredKey = extractSafeUploadKey(article.featuredImage);
-    if (featuredKey) {
-      const storage = getStorageDriver();
-      await storage.delete(featuredKey).catch(() => {});
-    }
-
     await prisma.article.delete({ where: { id: params.id } });
     await markScrapedUrlsDeleted(params.id);
+
+    // Clean up featured image (and .webp/.avif siblings) only if unreferenced
+    // by any remaining Article.featuredImage, Article.content, or Media row.
+    await deleteUploadIfUnreferenced(article.featuredImage);
 
     await logAudit(
       session.user.id,

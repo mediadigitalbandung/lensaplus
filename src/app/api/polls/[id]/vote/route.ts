@@ -14,8 +14,8 @@ const voteSchema = z.object({
 export async function POST(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = await paramsPromise;
   try {
-    // Get IP from headers
-    const ip = getClientIp(request);
+    // Get IP from headers (guaranteed non-empty so it never matches null anonymized rows)
+    const ip = getClientIp(request) || "unknown";
 
     // Rate limit to defend against IP-spoofed flood attempts
     const { success: allowed } = pollVoteRateLimit(ip);
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest, { params: paramsPromise }: { pa
 export async function GET(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = await paramsPromise;
   try {
-    const ip = getClientIp(request);
+    const ip = getClientIp(request) || "unknown";
 
     const poll = await prisma.poll.findUnique({
       where: { id: params.id },

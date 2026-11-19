@@ -165,7 +165,10 @@ async function loadBackground(featuredImage: string | null | undefined): Promise
         if (!isAllowedImageHost(featuredImage)) {
           throw new Error("Image host not in allowlist");
         }
-        const res = await fetch(featuredImage, { signal: AbortSignal.timeout(10000) });
+        const res = await fetch(featuredImage, {
+          signal: AbortSignal.timeout(10000),
+          redirect: "error",
+        });
         if (res.ok) {
           const imgBuf = await readBoundedImageBuffer(res);
           return await sharp(imgBuf)

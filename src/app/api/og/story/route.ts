@@ -24,7 +24,6 @@ export const dynamic = "force-dynamic";
 
 const WIDTH = 1080;
 const HEIGHT = 1920;
-const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 // SSRF guard — mirror allowlist from /api/og
 const EXTRA_ALLOWED_OG_HOSTS = (process.env.ALLOWED_OG_IMAGE_HOSTS || "")
@@ -152,28 +151,34 @@ async function loadFeaturedImage(featuredImage: string | null | undefined): Prom
   if (!featuredImage) return null;
 
   try {
-    let absoluteUrl = featuredImage;
-    if (featuredImage.startsWith("/") && !featuredImage.startsWith("//")) {
-      absoluteUrl = SITE + featuredImage;
-    }
+    const trimmed = featuredImage.trim();
+    if (!trimmed || trimmed.startsWith("//")) return null;
 
-    if (/^https?:\/\//i.test(absoluteUrl)) {
-      if (!isAllowedImageHost(absoluteUrl)) return null;
-      const res = await fetch(absoluteUrl, { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) return null;
-      const imgBuf = await readBoundedImageBuffer(res);
-      if (!imgBuf) return null;
-      return await sharp(imgBuf)
+    // 1. Local public/ path (e.g. /uploads/...) — read directly from disk BEFORE
+    //    any HTTP conversion so we avoid self-fetch and redirect failures.
+    if (!/^https?:\/\//i.test(trimmed)) {
+      const localPath = resolvePublicSubpath(trimmed);
+      if (!localPath) return null;
+      const { default: fs } = await import("fs/promises");
+      const buf = await fs.readFile(localPath);
+      return await sharp(buf, { limitInputPixels: 50_000_000 })
         .resize(WIDTH, 1080, { fit: "cover", position: "centre" })
         .toBuffer();
     }
 
-    // Local file (relative path) — strictly scoped inside public/
-    const { default: fs } = await import("fs/promises");
-    const localPath = resolvePublicSubpath(featuredImage);
-    if (!localPath) return null;
-    const buf = await fs.readFile(localPath);
-    return await sharp(buf)
+    // 2. Remote http(s) URL — SSRF allowlist + redirect: "error"
+    if (!isAllowedImageHost(trimmed)) return null;
+    const res = await fetch(trimmed, {
+      signal: AbortSignal.timeout(10000),
+      redirect: "error",
+    });
+    if (!res.ok) {
+      await res.body?.cancel?.().catch(() => {});
+      return null;
+    }
+    const imgBuf = await readBoundedImageBuffer(res);
+    if (!imgBuf) return null;
+    return await sharp(imgBuf, { limitInputPixels: 50_000_000 })
       .resize(WIDTH, 1080, { fit: "cover", position: "centre" })
       .toBuffer();
   } catch {

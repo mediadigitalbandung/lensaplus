@@ -3,26 +3,74 @@
  * (Bank BJB, Persib, etc.) whose article cards are injected by
  * client-side JS and therefore invisible to cheerio.
  *
- * Designed to be expensive but reliable: ~5–15 seconds per page,
- * ~500 MB RAM peak. The single browser instance is reused across
- * requests and closed after 5 minutes of idle time; pages are isolated
- * in fresh BrowserContexts for safety.
+ * Security & resource hardening:
+ *  - Bounded concurrency semaphore (max 3 active Chromium pages at once) so
+ *    parallel scrapes cannot OOM the VPS.
+ *  - Every allowed HTTP(S) request (document navigations + subresources) is
+ *    fulfilled in Node via `safePublicFetch()` + `route.fulfill()`, never via
+ *    Chromium `route.continue()`, eliminating Chromium's independent second DNS
+ *    lookup (TOCTOU DNS rebinding SSRF) and enforcing strict response type and
+ *    byte limits.
  *
  * Lazy-loaded so the rest of the codebase never imports `playwright`
  * unless headless mode is actually triggered.
  */
 
 import type { Browser, BrowserContext, Page } from "playwright";
-import { assertSafePublicUrl, userAgent as defaultUserAgent } from "./fetch";
+import {
+  assertSafePublicUrl,
+  safePublicFetch,
+  userAgent as defaultUserAgent,
+} from "./fetch";
 
 const NAV_TIMEOUT_MS = 30_000;
+const REQUEST_TIMEOUT_MS = 15_000;
 const SETTLE_MS = 800;
 const IDLE_CLOSE_MS = 5 * 60 * 1000;
+
+export const MAX_CONCURRENT_HEADLESS_PAGES = 3;
+const MAX_QUEUED_PAGES = 12;
+const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024; // 5 MB max for HTML/document
+const MAX_SUBRESOURCE_BYTES = 2 * 1024 * 1024; // 2 MB max for script/xhr/css/etc.
+const MAX_PAGE_TOTAL_BYTES = 15 * 1024 * 1024; // 15 MB cumulative budget per page
+
+const BLOCKED_RESOURCE_TYPES = new Set([
+  "font",
+  "media",
+  "websocket",
+  "eventsource",
+  "beacon",
+  "manifest",
+]);
+
+const STRIPPED_RESPONSE_HEADERS = new Set([
+  "content-encoding",
+  "content-length",
+  "transfer-encoding",
+  "connection",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "te",
+  "trailer",
+  "upgrade",
+]);
+
+const FORWARDED_REQUEST_HEADERS = new Set([
+  "accept",
+  "accept-language",
+  "content-type",
+  "origin",
+  "referer",
+  "user-agent",
+  "x-requested-with",
+]);
 
 let _browser: Browser | null = null;
 let _starting: Promise<Browser> | null = null;
 let _activePages = 0;
 let _idleTimer: ReturnType<typeof setTimeout> | null = null;
+const _waitQueue: Array<() => void> = [];
 
 function clearIdleTimer(): void {
   if (_idleTimer) {
@@ -42,6 +90,107 @@ function scheduleIdleClose(): void {
   if (typeof _idleTimer.unref === "function") {
     _idleTimer.unref();
   }
+}
+
+async function acquirePageSlot(): Promise<void> {
+  if (_activePages < MAX_CONCURRENT_HEADLESS_PAGES) {
+    _activePages++;
+    return;
+  }
+  if (_waitQueue.length >= MAX_QUEUED_PAGES) {
+    throw new Error(
+      "Headless browser sedang sibuk (batas antrean halaman paralel tercapai). Coba lagi sebentar.",
+    );
+  }
+  await new Promise<void>((resolve) => {
+    _waitQueue.push(resolve);
+  });
+  // Active slot ownership is transferred directly by releasePageSlot().
+}
+
+function releasePageSlot(): void {
+  const next = _waitQueue.shift();
+  if (next) {
+    next();
+  } else {
+    _activePages = Math.max(0, _activePages - 1);
+    scheduleIdleClose();
+  }
+}
+
+async function readResponseBufferWithCap(
+  response: Response,
+  maxBytes: number,
+): Promise<Buffer> {
+  const lenHeader = response.headers.get("content-length");
+  if (lenHeader) {
+    const declared = Number.parseInt(lenHeader, 10);
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      await response.body?.cancel?.().catch(() => {});
+      throw new Error(`Headless response too large: ${declared} bytes (cap ${maxBytes})`);
+    }
+  }
+
+  const reader = response.body?.getReader?.();
+  if (!reader) {
+    const ab = await response.arrayBuffer();
+    if (ab.byteLength > maxBytes) {
+      throw new Error(`Headless response exceeded ${maxBytes} bytes`);
+    }
+    return Buffer.from(ab);
+  }
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) {
+        total += value.byteLength;
+        if (total > maxBytes) {
+          await reader.cancel().catch(() => {});
+          throw new Error(`Headless response exceeded ${maxBytes} bytes`);
+        }
+        chunks.push(value);
+      }
+    }
+  } catch (err) {
+    await reader.cancel().catch(() => {});
+    throw err;
+  }
+  return Buffer.concat(chunks, total);
+}
+
+function buildSafeForwardHeaders(
+  rawHeaders: Record<string, string>,
+  fallbackUserAgent: string,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, val] of Object.entries(rawHeaders)) {
+    const lower = key.toLowerCase();
+    if (FORWARDED_REQUEST_HEADERS.has(lower) && typeof val === "string") {
+      out[lower] = val;
+    }
+  }
+  if (!out["user-agent"]) {
+    out["user-agent"] = fallbackUserAgent;
+  }
+  if (!out["accept-language"]) {
+    out["accept-language"] = "id-ID,id;q=0.9,en;q=0.5";
+  }
+  return out;
+}
+
+function sanitizeResponseHeaders(headers: Headers): Record<string, string> {
+  const out: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    const lower = key.toLowerCase();
+    if (!STRIPPED_RESPONSE_HEADERS.has(lower)) {
+      out[key] = value;
+    }
+  });
+  return out;
 }
 
 async function startBrowser(): Promise<Browser> {
@@ -90,7 +239,8 @@ async function getBrowser(): Promise<Browser> {
 
 /**
  * Render `url` in headless Chromium and return the fully-hydrated
- * outer HTML. SSRF-guarded before launching and on every network request.
+ * outer HTML. SSRF-guarded before launching and proxied through
+ * `safePublicFetch()` + `route.fulfill()` on every HTTP(S) request.
  */
 export async function fetchHtmlHeadless(
   url: string,
@@ -100,32 +250,36 @@ export async function fetchHtmlHeadless(
     userAgent?: string;
   } = {},
 ): Promise<{ html: string; finalUrl: string }> {
-  // SSRF guard before starting Chromium or creating any context
+  // SSRF guard before acquiring a browser slot or launching Chromium
   await assertSafePublicUrl(url);
 
-  const browser = await getBrowser();
-  _activePages++;
+  await acquirePageSlot();
   let ctx: BrowserContext | null = null;
   let page: Page | null = null;
 
   try {
+    const browser = await getBrowser();
+    const resolvedUa = options.userAgent ?? defaultUserAgent();
+
     ctx = await browser.newContext({
-      userAgent: options.userAgent ?? defaultUserAgent(),
+      userAgent: resolvedUa,
       locale: "id-ID",
       viewport: { width: 1366, height: 900 },
       javaScriptEnabled: true,
-      bypassCSP: true,
     });
 
-    const verifiedHosts = new Set<string>();
+    let pageTotalBytes = 0;
+    let resolvedDocFinalUrl: string | null = null;
 
-    // Block heavy / tracking / private-network / non-http requests
+    // Intercept EVERY request so Chromium never performs direct DNS/socket I/O.
+    // All allowed HTTP(S) requests are fulfilled via Node's safePublicFetch().
     await ctx.route("**/*", async (route) => {
       const req = route.request();
-      const t = req.resourceType();
-      if (t === "font" || t === "media" || t === "websocket") {
+      const resourceType = req.resourceType();
+      if (BLOCKED_RESOURCE_TYPES.has(resourceType)) {
         return route.abort().catch(() => {});
       }
+
       const reqUrl = req.url();
       if (/^(data|blob):/i.test(reqUrl)) {
         return (req.isNavigationRequest() ? route.abort() : route.continue()).catch(() => {});
@@ -140,16 +294,54 @@ export async function fetchHtmlHeadless(
       ) {
         return route.abort().catch(() => {});
       }
-      try {
-        const host = new URL(reqUrl).host;
-        if (!verifiedHosts.has(host)) {
-          await assertSafePublicUrl(reqUrl);
-          verifiedHosts.add(host);
-        }
-      } catch {
-        return route.abort().catch(() => {});
+
+      const isDocument = resourceType === "document";
+      const remainingBudget = MAX_PAGE_TOTAL_BYTES - pageTotalBytes;
+      if (remainingBudget <= 0) {
+        return route.abort("blockedbyclient").catch(() => {});
       }
-      return route.continue().catch(() => {});
+      const perReqCap = Math.min(
+        isDocument ? MAX_DOCUMENT_BYTES : MAX_SUBRESOURCE_BYTES,
+        remainingBudget,
+      );
+
+      try {
+        const method = req.method().toUpperCase();
+        const postBuf = method !== "GET" && method !== "HEAD" ? req.postDataBuffer() : null;
+        const headers = buildSafeForwardHeaders(req.headers(), resolvedUa);
+
+        const { response, finalUrl } = await safePublicFetch(reqUrl, {
+          method,
+          headers,
+          body: postBuf ? new Uint8Array(postBuf) : undefined,
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        if (
+          isDocument &&
+          contentType &&
+          !/html|xml|xhtml|text\/plain/i.test(contentType)
+        ) {
+          await response.body?.cancel?.().catch(() => {});
+          return route.abort("blockedbyclient").catch(() => {});
+        }
+
+        const body = await readResponseBufferWithCap(response, perReqCap);
+        pageTotalBytes += body.byteLength;
+
+        if (isDocument && req.isNavigationRequest() && page && req.frame() === page.mainFrame()) {
+          resolvedDocFinalUrl = finalUrl;
+        }
+
+        return await route.fulfill({
+          status: response.status,
+          headers: sanitizeResponseHeaders(response.headers),
+          body,
+        });
+      } catch {
+        return route.abort("blockedbyclient").catch(() => {});
+      }
     });
 
     page = await ctx.newPage();
@@ -175,13 +367,12 @@ export async function fetchHtmlHeadless(
     }
     await page.waitForTimeout(SETTLE_MS);
     const html = await page.content();
-    const finalUrl = page.url();
+    const finalUrl = resolvedDocFinalUrl || page.url();
     return { html, finalUrl };
   } finally {
     if (page) await page.close().catch(() => {});
     if (ctx) await ctx.close().catch(() => {});
-    _activePages = Math.max(0, _activePages - 1);
-    scheduleIdleClose();
+    releasePageSlot();
   }
 }
 

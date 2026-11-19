@@ -31,6 +31,7 @@ import { paraphraseAndCreateDraft } from "@/lib/scraper/paraphrase";
 import { claimUrl, finalizeClaim, releaseClaim } from "@/lib/scraper/claim";
 import { isSafeHttpUrl } from "@/lib/api-utils";
 import { SCRAPER_ROLES } from "@/lib/roles";
+import { canPublishDirectly } from "@/lib/auth";
 
 const bodySchema = z.object({
   url: z.string().refine(isSafeHttpUrl, "URL artikel harus http/https"),
@@ -114,7 +115,10 @@ export async function POST(
       throw new ApiError("Tidak ada kategori untuk artikel", 500);
     }
 
-    const shouldAutoPublish = data.autoPublish ?? source.autoPublish;
+    const requestedAutoPublish = data.autoPublish ?? source.autoPublish;
+    const shouldAutoPublish = canPublishDirectly(session.user.role)
+      ? Boolean(requestedAutoPublish)
+      : false;
 
     // Fetch + paraphrase + create draft. Byline = the writer who clicked.
     let draft;

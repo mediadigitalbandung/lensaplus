@@ -1,13 +1,19 @@
+import { isSafeImageRef } from "./safe-path";
+
 /**
- * Extract the first <img src="..."> URL from an HTML string.
- * Returns null if no image found, or the source is empty / a data: URI
- * (data URIs are unsuitable for OG tags, news sitemap, social cards).
+ * Extract the first safe <img src="..."> URL from an HTML string.
+ * Validates each candidate strictly with `isSafeImageRef()` (blocking
+ * `javascript:`, case-insensitive `data:`, `file:`, protocol-relative `//`,
+ * path traversal, and control characters) and skips invalid/empty refs.
  */
 export function extractFirstImageUrl(html: string | null | undefined): string | null {
   if (!html) return null;
-  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-  if (!match) return null;
-  const url = match[1].trim();
-  if (!url || url.startsWith("data:")) return null;
-  return url;
+  const imgSrcRegex = /<img\b[^>]*\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+  for (const match of html.matchAll(imgSrcRegex)) {
+    const raw = (match[1] ?? match[2] ?? "").trim();
+    if (!raw || /[\u0000-\u001f\u007f]/.test(raw)) continue;
+    if (!isSafeImageRef(raw)) continue;
+    return raw;
+  }
+  return null;
 }

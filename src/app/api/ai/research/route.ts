@@ -17,6 +17,7 @@ import { callPerplexity, getPerplexityInstructions } from "@/lib/perplexity";
 import { shouldOffloadSmallFields, deriveSmallFieldsViaDeepSeek } from "@/lib/ai-small-fields";
 import { getPersonaInstruction } from "@/lib/perplexity-personas";
 import { localizePerplexityImages } from "@/lib/perplexity-images";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 // Indonesian outlets to bias sourcing toward (allowlist, not exclusive — Perplexity
 // still ranks within these first). Kept broad so niche topics aren't starved.
@@ -167,8 +168,10 @@ export async function POST(req: NextRequest) {
       const content = section("KONTEN");
       const hasMarkers = /===KONTEN===/i.test(cleaned) || /===JUDUL===/i.test(cleaned);
       // If the model ignored the format, treat the whole reply as the body so
-      // the user still gets the article (never lose the draft).
-      const finalContent = content || (hasMarkers ? "" : cleaned);
+      // the user still gets the article (never lose the draft). Sanitize HTML
+      // returned by the LLM before sending it to the panel editor.
+      const rawContent = content || (hasMarkers ? "" : cleaned);
+      const finalContent = rawContent ? sanitizeHtml(rawContent) : "";
 
       let excerpt = section("RINGKASAN");
       let tags = section("TAGS").replace(/^\[|\]$/g, "").replace(/"/g, "").trim();
@@ -197,10 +200,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Research mode → HTML briefing, content only.
+    // Research mode → sanitized HTML briefing, content only.
     return successResponse({
       mode: "research",
-      content: cleaned,
+      content: sanitizeHtml(cleaned),
       sources: result.sources,
       related: result.related,
       images,

@@ -20,7 +20,6 @@ import { resolvePublicSubpath } from "@/lib/safe-path";
 const WIDTH = 1080;
 const HEIGHT = 1920;
 const IMG_H = 1080; // featured image occupies the top square
-const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 
 const EXTRA_ALLOWED_HOSTS = (process.env.SOCIAL_EXTRA_IMAGE_HOSTS || "")
   .split(",")
@@ -173,29 +172,34 @@ async function readImageWithCap(res: Response, maxBytes: number): Promise<Buffer
 async function loadFeaturedImage(featuredImage: string | null | undefined): Promise<Buffer | null> {
   if (!featuredImage) return null;
   try {
-    let absoluteUrl = featuredImage;
-    if (featuredImage.startsWith("/")) absoluteUrl = SITE + featuredImage;
+    const trimmed = featuredImage.trim();
+    if (!trimmed || trimmed.startsWith("//")) return null;
 
-    if (/^https?:\/\//i.test(absoluteUrl)) {
-      if (!isAllowedImageHost(absoluteUrl)) return null;
-      const res = await fetch(absoluteUrl, { signal: AbortSignal.timeout(10000), redirect: "error" });
-      if (!res.ok) {
-        await res.body?.cancel?.().catch(() => {});
-        return null;
-      }
-      const buf = await readImageWithCap(res, MAX_REMOTE_IMAGE_BYTES);
-      if (!buf) return null;
+    // 1. Local public/ path (e.g. /uploads/...) — read directly from disk BEFORE
+    //    any HTTP conversion so canonical redirects or self-fetches never break renders.
+    if (!/^https?:\/\//i.test(trimmed)) {
+      const localPath = resolvePublicSubpath(trimmed);
+      if (!localPath) return null;
+      const { default: fs } = await import("fs/promises");
+      const buf = await fs.readFile(localPath);
       return await sharp(buf, { limitInputPixels: 50_000_000 })
         .resize(WIDTH, IMG_H, { fit: "cover", position: "centre" })
         .toBuffer();
     }
 
-    // Local public/ path
-    const { default: fs } = await import("fs/promises");
-    const localPath = resolvePublicSubpath(featuredImage);
-    if (!localPath) return null;
-    const buf = await fs.readFile(localPath);
-    return await sharp(buf)
+    // 2. Remote http(s) URL — SSRF allowlist + redirect: "error"
+    if (!isAllowedImageHost(trimmed)) return null;
+    const res = await fetch(trimmed, {
+      signal: AbortSignal.timeout(10000),
+      redirect: "error",
+    });
+    if (!res.ok) {
+      await res.body?.cancel?.().catch(() => {});
+      return null;
+    }
+    const buf = await readImageWithCap(res, MAX_REMOTE_IMAGE_BYTES);
+    if (!buf) return null;
+    return await sharp(buf, { limitInputPixels: 50_000_000 })
       .resize(WIDTH, IMG_H, { fit: "cover", position: "centre" })
       .toBuffer();
   } catch {

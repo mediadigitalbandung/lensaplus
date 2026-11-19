@@ -10,6 +10,7 @@ import {
   parsePositiveInt,
 } from "@/lib/api-utils";
 import { isSafeImageRef } from "@/lib/safe-path";
+import { deleteUploadIfUnreferenced } from "@/lib/media-cleanup";
 
 const createMediaSchema = z.object({
   filename: z.string().min(1),
@@ -121,10 +122,21 @@ export async function DELETE(request: NextRequest) {
 
     await prisma.media.delete({ where: { id } });
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
-    await logAudit(session.user.id, "MEDIA_DELETE", "Media", id, JSON.stringify({ filename: media.filename }), ip);
+    // Remove the physical file (and .webp/.avif variants) only if no Article
+    // or remaining Media row still references it.
+    const fileDeleted = await deleteUploadIfUnreferenced(media.url);
 
-    return successResponse({ deleted: true });
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    await logAudit(
+      session.user.id,
+      "MEDIA_DELETE",
+      "Media",
+      id,
+      JSON.stringify({ filename: media.filename, fileDeleted }),
+      ip,
+    );
+
+    return successResponse({ deleted: true, fileDeleted });
   } catch (error) {
     return errorResponse(error);
   }

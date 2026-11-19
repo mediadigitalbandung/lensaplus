@@ -13,6 +13,8 @@ import { onArticlePublished, onArticleUnpublished } from "@/lib/seo-auto";
 import { markScrapedUrlsDeleted } from "@/lib/scraper/claim";
 import { checkArticleQuality } from "@/lib/article-quality";
 import { invalidateCachePrefix } from "@/lib/cache";
+import { canPublishDirectly } from "@/lib/auth";
+import { deleteUploadIfUnreferenced } from "@/lib/media-cleanup";
 
 const bulkActionSchema = z.object({
   action: z.enum(["archive", "delete", "publish"]),
@@ -224,21 +226,35 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "delete") {
-      // Ownership scope: mirror the single-article DELETE (owner OR SUPER_ADMIN).
-      // A non-superadmin (EDITOR/CHIEF_EDITOR reach this route) may bulk-delete
-      // ONLY their own articles; other authors' ids are silently skipped.
+      // Ownership & status scope: mirror single-article DELETE (SUPER_ADMIN may
+      // delete any article; EDITOR/CHIEF_EDITOR with canPublishDirectly may
+      // bulk-delete only their own articles; lower roles would be limited to own DRAFT).
       const isSuper = session.user.role === "SUPER_ADMIN";
-      const { count, deletedIds } = await prisma.$transaction(async (tx) => {
-        const deletable = isSuper
-          ? ids
-          : (
-              await tx.article.findMany({
-                where: { id: { in: ids }, authorId: session.user.id },
-                select: { id: true },
-              })
-            ).map((a) => a.id);
+      const canDeleteNonDraft = canPublishDirectly(session.user.role);
+      const { count, deletedArticles } = await prisma.$transaction(async (tx) => {
+        const whereClause = isSuper
+          ? { id: { in: ids } }
+          : {
+              id: { in: ids },
+              authorId: session.user.id,
+              ...(canDeleteNonDraft ? {} : { status: "DRAFT" as const }),
+            };
 
-        if (deletable.length === 0) return { count: 0, deletedIds: [] as string[] };
+        const deletableArticles = await tx.article.findMany({
+          where: whereClause,
+          select: {
+            id: true,
+            slug: true,
+            status: true,
+            featuredImage: true,
+            category: { select: { slug: true } },
+          },
+        });
+
+        const deletable = deletableArticles.map((a) => a.id);
+        if (deletable.length === 0) {
+          return { count: 0, deletedArticles: [] as typeof deletableArticles };
+        }
 
         // Delete related records first, then the articles themselves.
         await tx.source.deleteMany({ where: { articleId: { in: deletable } } });
@@ -247,24 +263,62 @@ export async function POST(request: NextRequest) {
         await tx.comment.deleteMany({ where: { articleId: { in: deletable } } });
         await tx.report.deleteMany({ where: { articleId: { in: deletable } } });
         const res = await tx.article.deleteMany({ where: { id: { in: deletable } } });
-        return { count: res.count, deletedIds: deletable };
+        return { count: res.count, deletedArticles: deletableArticles };
       });
 
+      const deletedIds = deletedArticles.map((a) => a.id);
       await markScrapedUrlsDeleted(deletedIds);
+
+      // Clean up featured images (plus .webp/.avif variants) that are no longer
+      // referenced by any remaining article or Media record.
+      const uniqueImages = Array.from(
+        new Set(deletedArticles.map((a) => a.featuredImage).filter(Boolean) as string[]),
+      );
+      for (const imgUrl of uniqueImages) {
+        await deleteUploadIfUnreferenced(imgUrl).catch(() => {});
+      }
 
       await logAudit(
         session.user.id,
         "DELETE",
         "article",
-        ids.join(","),
-        `Bulk delete ${count} dari ${ids.length} artikel`
+        deletedIds.join(",") || ids.join(","),
+        `Bulk delete ${count} dari ${ids.length} artikel`,
       );
 
       try {
         revalidatePath("/");
         revalidatePath("/berita");
+        invalidateCachePrefix("home:");
+        invalidateCachePrefix("trending:");
       } catch {
         /* harmless */
+      }
+
+      // Fire SEO/cache invalidation + Google URL_DELETED for any PUBLISHED
+      // articles removed in this batch.
+      const publishedToUnpublish = deletedArticles.filter((a) => a.status === "PUBLISHED");
+      if (publishedToUnpublish.length > 0) {
+        const queue = [...publishedToUnpublish];
+        const CONCURRENCY = 5;
+        const workers: Promise<void>[] = [];
+        for (let i = 0; i < Math.min(CONCURRENCY, queue.length); i++) {
+          workers.push(
+            (async () => {
+              while (queue.length > 0) {
+                const a = queue.shift();
+                if (!a) break;
+                await onArticleUnpublished({
+                  articleId: a.id,
+                  slug: a.slug,
+                  categorySlug: a.category?.slug ?? "",
+                  permanent: true,
+                }).catch(() => {});
+              }
+            })(),
+          );
+        }
+        await Promise.all(workers);
       }
 
       return successResponse({ count, requested: ids.length, action: "delete" });

@@ -35,6 +35,7 @@ import {
   getClaimsForUrls,
 } from "@/lib/scraper/claim";
 import { SCRAPER_ROLES } from "@/lib/roles";
+import { canPublishDirectly } from "@/lib/auth";
 
 const bodySchema = z.object({
   limit: z.number().int().min(1).max(10).optional(),
@@ -66,7 +67,10 @@ export async function POST(
       .then((b) => bodySchema.parse(b))
       .catch(() => ({} as z.infer<typeof bodySchema>));
     const limit = parsedBody.limit ?? 3;
-    const shouldAutoPublish = parsedBody.autoPublish ?? source.autoPublish;
+    const requestedAutoPublish = parsedBody.autoPublish ?? source.autoPublish;
+    const shouldAutoPublish = canPublishDirectly(session.user.role)
+      ? Boolean(requestedAutoPublish)
+      : false;
 
     // Resolve category — prefer source's, else first category.
     let categoryId = source.categoryId;

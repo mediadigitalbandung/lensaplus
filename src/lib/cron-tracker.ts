@@ -23,7 +23,8 @@ export type CronJobName =
   | "seo-submit"
   | "backup"
   | "scrape-sources"
-  | "newsletter-digest";
+  | "newsletter-digest"
+  | "retention-purge";
 
 export interface CronRunResult {
   ok: boolean;
@@ -183,6 +184,7 @@ export async function readCronHealth(): Promise<
     "backup",
     "scrape-sources",
     "newsletter-digest",
+    "retention-purge",
   ];
   const keys = jobs.flatMap((j) => [
     `cron_${j}_last_run_at`,

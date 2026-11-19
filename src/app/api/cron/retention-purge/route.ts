@@ -1,26 +1,33 @@
 /**
- * POST /api/cron/retention-purge
+ * GET/POST /api/cron/retention-purge
  *
  * Data minimization / retention enforcement cron.
  * Should be invoked weekly (every Sunday at 03:00) via:
  *   0 3 * * 0 curl -sS https://lensaplus.com/api/cron/retention-purge \
  *     -H "Authorization: Bearer ${CRON_SECRET}" >> /var/log/lensaplus-cron.log 2>&1
  *
- * Actions:
+ * Actions (each step runs inside an independent try/catch so a single failure
+ * never aborts subsequent retention steps):
  *   1. AuditLog older than 12 months → delete
- *   2. PollVote IPs on inactive polls older than 30 days → anonymize (ip="", fingerprint=null)
+ *   2. PollVote IPs on inactive polls older than 30 days → anonymize (ip=null, fingerprint=null)
  *   3. ContactMessage (read + older than 180 days) → delete
  *   4. Report (RESOLVED/DISMISSED + older than 90 days) → delete
+ *   5. NewsletterSubscriber.signupIp (confirmed + older than 90 days) → anonymize
+ *   6. YoutubeClipJob (SUCCEEDED/FAILED + older than 30 days) → delete
+ *   7. Orphaned TikTok media files (>30 days) → unlink
+ *   8. Orphaned Instagram Reel files (>30 days) → unlink
+ *   9. Orphaned Perplexity images (>7 days) → unlink
  *
  * Auth: CRON_SECRET bearer token (verifyCronSecret).
- * Returns: { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged }
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { readdir, stat, unlink } from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { verifyCronSecret, successResponse, errorResponse, logAudit } from "@/lib/api-utils";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { trackCron } from "@/lib/cron-tracker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -35,76 +42,131 @@ function subDays(date: Date, days: number): Date {
   return new Date(date.getTime() - days * 24 * 60 * 60 * 1000);
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    verifyCronSecret(req);
+async function runRetentionPurge() {
+  const started = Date.now();
+  const lockToken = await acquireCronLock("retention-purge", 10 * 60_000);
+  if (!lockToken) {
+    return NextResponse.json(
+      {
+        success: true,
+        skipped: true,
+        reason: "ANOTHER_RUN_IN_PROGRESS",
+        durationMs: Date.now() - started,
+      },
+      { status: 200 },
+    );
+  }
 
+  try {
     const now = new Date();
+    const errors: Record<string, string> = {};
 
     // 1. Purge AuditLog rows older than 12 months
-    const auditLogResult = await prisma.auditLog.deleteMany({
-      where: { createdAt: { lt: subMonths(now, 12) } },
-    });
-    const auditLogPurged = auditLogResult.count;
+    let auditLogPurged = 0;
+    try {
+      const auditLogResult = await prisma.auditLog.deleteMany({
+        where: { createdAt: { lt: subMonths(now, 12) } },
+      });
+      auditLogPurged = auditLogResult.count;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.auditLog = msg;
+      console.error("[retention-purge] Step 1 (auditLog) failed:", err);
+    }
 
     // 2. Anonymize PollVote IPs for closed polls older than 30 days
-    // Find all option IDs belonging to inactive polls where votes are old enough.
-    const inactiveOldOptions = await prisma.pollOption.findMany({
-      where: {
-        poll: { isActive: false },
-      },
-      select: { id: true },
-    });
-    const optionIds = inactiveOldOptions.map((o) => o.id);
+    // PollVote.ip is nullable so setting ip=null satisfies @@unique([optionId, ip])
+    // in PostgreSQL (NULL != NULL) even when multiple votes share the same optionId.
     let pollVoteAnonymized = 0;
-    if (optionIds.length > 0) {
-      const pvResult = await prisma.pollVote.updateMany({
+    try {
+      const inactiveOldOptions = await prisma.pollOption.findMany({
         where: {
-          optionId: { in: optionIds },
-          createdAt: { lt: subDays(now, 30) },
-          ip: { not: "" },
+          poll: { isActive: false },
         },
-        data: { ip: "", fingerprint: null },
+        select: { id: true },
       });
-      pollVoteAnonymized = pvResult.count;
+      const optionIds = inactiveOldOptions.map((o) => o.id);
+      if (optionIds.length > 0) {
+        const pvResult = await prisma.pollVote.updateMany({
+          where: {
+            optionId: { in: optionIds },
+            createdAt: { lt: subDays(now, 30) },
+            ip: { not: null },
+          },
+          data: { ip: null, fingerprint: null },
+        });
+        pollVoteAnonymized = pvResult.count;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.pollVote = msg;
+      console.error("[retention-purge] Step 2 (pollVote) failed:", err);
     }
 
     // 3. Delete ContactMessage (read + older than 180 days)
-    const contactResult = await prisma.contactMessage.deleteMany({
-      where: {
-        isRead: true,
-        createdAt: { lt: subDays(now, 180) },
-      },
-    });
-    const contactPurged = contactResult.count;
+    let contactPurged = 0;
+    try {
+      const contactResult = await prisma.contactMessage.deleteMany({
+        where: {
+          isRead: true,
+          createdAt: { lt: subDays(now, 180) },
+        },
+      });
+      contactPurged = contactResult.count;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.contactMessage = msg;
+      console.error("[retention-purge] Step 3 (contactMessage) failed:", err);
+    }
 
     // 4. Delete resolved/dismissed Reports older than 90 days
-    const reportResult = await prisma.report.deleteMany({
-      where: {
-        status: { in: ["RESOLVED", "DISMISSED"] },
-        createdAt: { lt: subDays(now, 90) },
-      },
-    });
-    const reportPurged = reportResult.count;
+    let reportPurged = 0;
+    try {
+      const reportResult = await prisma.report.deleteMany({
+        where: {
+          status: { in: ["RESOLVED", "DISMISSED"] },
+          createdAt: { lt: subDays(now, 90) },
+        },
+      });
+      reportPurged = reportResult.count;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.report = msg;
+      console.error("[retention-purge] Step 4 (report) failed:", err);
+    }
 
     // 5. Anonymize NewsletterSubscriber.signupIp after 90 days for confirmed
     //    subscribers. IP is only needed for spam/fraud audit during sign-up;
     //    once confirmed, it no longer serves a retention purpose.
-    const subscriberIpResult = await prisma.newsletterSubscriber.updateMany({
-      where: {
-        confirmedAt: { not: null },
-        signupIp: { not: null },
-        createdAt: { lt: subDays(now, 90) },
-      },
-      data: { signupIp: null },
-    });
-    const subscriberIpAnonymized = subscriberIpResult.count;
+    let subscriberIpAnonymized = 0;
+    try {
+      const subscriberIpResult = await prisma.newsletterSubscriber.updateMany({
+        where: {
+          confirmedAt: { not: null },
+          signupIp: { not: null },
+          createdAt: { lt: subDays(now, 90) },
+        },
+        data: { signupIp: null },
+      });
+      subscriberIpAnonymized = subscriberIpResult.count;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.newsletterSubscriber = msg;
+      console.error("[retention-purge] Step 5 (newsletterSubscriber) failed:", err);
+    }
 
     // 6. YouTube clip jobs: purge finished rows older than 30 days.
-    const clipJobResult = await prisma.youtubeClipJob.deleteMany({
-      where: { status: { in: ["SUCCEEDED", "FAILED"] }, finishedAt: { lt: subDays(now, 30) } },
-    });
-    const clipJobsPurged = clipJobResult.count;
+    let clipJobsPurged = 0;
+    try {
+      const clipJobResult = await prisma.youtubeClipJob.deleteMany({
+        where: { status: { in: ["SUCCEEDED", "FAILED"] }, finishedAt: { lt: subDays(now, 30) } },
+      });
+      clipJobsPurged = clipJobResult.count;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.youtubeClipJob = msg;
+      console.error("[retention-purge] Step 6 (youtubeClipJob) failed:", err);
+    }
 
     // 7. Delete orphaned TikTok media files (not referenced by any slot) older
     //    than 30 days. The render/clip pipelines write MP4s here that leak once
@@ -128,8 +190,10 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-    } catch {
-      // best-effort — never fail the cron on filesystem cleanup
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.tiktokMedia = msg;
+      console.error("[retention-purge] Step 7 (tiktokMedia) failed:", err);
     }
 
     // 8. Delete orphaned Instagram Reel files (mp4 + cover) in
@@ -162,8 +226,10 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-    } catch {
-      // best-effort — never fail the cron on filesystem cleanup
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.socialReels = msg;
+      console.error("[retention-purge] Step 8 (socialReels) failed:", err);
     }
 
     // 9. Delete orphaned Perplexity-downloaded images (public/uploads/perplexity)
@@ -200,15 +266,27 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-    } catch {
-      // best-effort — never fail the cron on filesystem cleanup
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.perplexityImages = msg;
+      console.error("[retention-purge] Step 9 (perplexityImages) failed:", err);
     }
 
-    const summary = { auditLogPurged, pollVoteAnonymized, contactPurged, reportPurged, subscriberIpAnonymized, clipJobsPurged, orphanMediaDeleted, reelFilesDeleted, perplexityImagesDeleted };
+    const summary = {
+      auditLogPurged,
+      pollVoteAnonymized,
+      contactPurged,
+      reportPurged,
+      subscriberIpAnonymized,
+      clipJobsPurged,
+      orphanMediaDeleted,
+      reelFilesDeleted,
+      perplexityImagesDeleted,
+      ...(Object.keys(errors).length > 0 ? { errors } : {}),
+      durationMs: Date.now() - started,
+    };
 
-    // Audit the purge itself using a system sentinel. The logAudit helper requires
-    // a valid userId FK — find the first SUPER_ADMIN to attach it to. If none
-    // exists (impossible in normal ops) we skip the audit log silently.
+    // Audit the purge itself using a system sentinel.
     try {
       const admin = await prisma.user.findFirst({
         where: { role: "SUPER_ADMIN" },
@@ -229,7 +307,22 @@ export async function POST(req: NextRequest) {
     }
 
     return successResponse(summary);
+  } finally {
+    await releaseCronLock("retention-purge", lockToken);
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    verifyCronSecret(req);
+  } catch (error) {
+    return errorResponse(error);
+  }
+  try {
+    return await trackCron("retention-purge", () => runRetentionPurge());
   } catch (error) {
     return errorResponse(error);
   }
 }
+
+export const GET = POST;

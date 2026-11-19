@@ -29,6 +29,48 @@ interface RobotsParsed {
 const cache = new Map<string, { parsed: RobotsParsed | null; expires: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const MAX_ROBOTS_CACHE_ENTRIES = 500;
+const MAX_ROBOTS_BYTES = 512 * 1024; // 512 KB cap (RFC 9309)
+
+async function readRobotsTextWithCap(res: Response, maxBytes: number): Promise<string | null> {
+  const lenHeader = res.headers?.get?.("content-length");
+  if (lenHeader) {
+    const declared = Number.parseInt(lenHeader, 10);
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      await res.body?.cancel?.().catch(() => {});
+      return null;
+    }
+  }
+
+  const reader = res.body?.getReader?.();
+  if (!reader) {
+    const text = await res.text();
+    if (Buffer.byteLength(text, "utf8") > maxBytes) {
+      return null;
+    }
+    return text;
+  }
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) {
+        total += value.byteLength;
+        if (total > maxBytes) {
+          await reader.cancel().catch(() => {});
+          return null;
+        }
+        chunks.push(value);
+      }
+    }
+  } catch {
+    await reader.cancel().catch(() => {});
+    return null;
+  }
+  return Buffer.concat(chunks, total).toString("utf8");
+}
 
 function setRobotsCache(origin: string, parsed: RobotsParsed | null, now: number): void {
   for (const [k, v] of cache.entries()) {
@@ -56,7 +98,8 @@ async function fetchRobots(origin: string): Promise<RobotsParsed | null> {
       await res.body?.cancel?.().catch(() => {});
       return null;
     }
-    const text = await res.text();
+    const text = await readRobotsTextWithCap(res, MAX_ROBOTS_BYTES);
+    if (text === null) return null;
     return parseRobots(text);
   } catch {
     return null;
