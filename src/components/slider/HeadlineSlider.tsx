@@ -12,7 +12,7 @@ export interface HeadlineItem {
   excerpt?: string | null;
   featuredImage?: string | null;
   category: { name: string; slug: string } | null;
-  author?: { name: string } | null;
+  author?: { name: string; avatar?: string | null } | null;
   publishedAt: Date | string | null;
   readTime?: number | null;
 }

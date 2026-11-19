@@ -70,6 +70,13 @@ import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { getCached } from "@/lib/cache";
+import {
+  HOME_TRENDING_ARTICLE_SELECT,
+  HOME_TRENDING_CACHE_KEY,
+  PUBLIC_ARTICLE_CARD_SELECT,
+  serializePublicArticleCards,
+} from "@/lib/public-article-select";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 
 async function getCategory(slug: string) {
   return prisma.category.findUnique({ where: { slug } });
@@ -121,18 +128,18 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
   const [articles, trendingArticles] = await Promise.all([
     prisma.article.findMany({
       where: { status: "PUBLISHED", categoryId: category.id },
-      include: { author: true, category: true },
+      select: PUBLIC_ARTICLE_CARD_SELECT,
       orderBy: { publishedAt: "desc" },
       take: 20,
     }),
-    getCached("home:trending:10", 60_000, async () => {
+    getCached(HOME_TRENDING_CACHE_KEY, 60_000, async () => {
       const past24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
       let trending = await prisma.article.findMany({
         where: {
           status: "PUBLISHED",
           publishedAt: { gte: past24Hours },
         },
-        include: { category: true },
+        select: HOME_TRENDING_ARTICLE_SELECT,
         orderBy: { viewCount: "desc" },
         take: 10,
       });
@@ -144,7 +151,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
             status: "PUBLISHED",
             publishedAt: { gte: past7Days },
           },
-          include: { category: true },
+          select: HOME_TRENDING_ARTICLE_SELECT,
           orderBy: { viewCount: "desc" },
           take: 10,
         });
@@ -153,7 +160,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
       if (trending.length < 6) {
         trending = await prisma.article.findMany({
           where: { status: "PUBLISHED" },
-          include: { category: true },
+          select: HOME_TRENDING_ARTICLE_SELECT,
           orderBy: { viewCount: "desc" },
           take: 10,
         });
@@ -174,10 +181,11 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
     featuredImage: a.featuredImage,
   }));
 
-  const gridOffset = articles.length >= 7 ? 11 : articles.length >= 3 ? 5 : 0;
-  const remainingGridArticles = articles.slice(gridOffset);
+  const serializedArticles = serializePublicArticleCards(articles);
+  const gridOffset = serializedArticles.length >= 7 ? 11 : serializedArticles.length >= 3 ? 5 : 0;
+  const remainingGridArticles = serializedArticles.slice(gridOffset);
   const paginatedArticles =
-    remainingGridArticles.length > 0 ? remainingGridArticles : articles;
+    remainingGridArticles.length > 0 ? remainingGridArticles : serializedArticles;
 
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   // CollectionPage + ItemList so crawlers see what's in this category, plus a
@@ -211,8 +219,8 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
 
   return (
     <div className="bg-surface min-h-screen">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(categoryJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(categoryBreadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(categoryJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(categoryBreadcrumbJsonLd) }} />
       <div className="container-main py-6 sm:py-8 lg:py-10 2xl:py-14">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-1.5 text-sm text-txt-muted">
@@ -237,16 +245,16 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
         </div>
 
         {/* Headline slider */}
-        {articles.length >= 3 && (
+        {serializedArticles.length >= 3 && (
           <div className="mb-6">
-            <HeadlineSlider items={JSON.parse(JSON.stringify(articles.slice(0, 5)))} />
+            <HeadlineSlider items={serializedArticles.slice(0, 5)} />
           </div>
         )}
 
         {/* Sub-headline slider — crossfade like headline */}
-        {articles.length >= 7 && (
+        {serializedArticles.length >= 7 && (
           <div className="mb-6">
-            <SubHeadlineSlider items={JSON.parse(JSON.stringify(articles.slice(5, 11)))} />
+            <SubHeadlineSlider items={serializedArticles.slice(5, 11)} />
           </div>
         )}
 
@@ -319,7 +327,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
             </div>
             {/* Articles grid — paginated, 6 per page */}
             {paginatedArticles.length > 0 ? (
-              <PaginatedArticles articles={JSON.parse(JSON.stringify(paginatedArticles))} perPage={6} />
+              <PaginatedArticles articles={paginatedArticles} perPage={6} />
             ) : (
               <div className="rounded-lg border-2 border-dashed border-border py-16 text-center">
                 <p className="text-txt-muted">Belum ada artikel di kategori ini.</p>
@@ -348,7 +356,7 @@ export default async function CategoryPage({ params: paramsPromise }: { params: 
             </h2>
           </div>
           <SearchableArticleList
-            articles={JSON.parse(JSON.stringify(articles))}
+            articles={serializedArticles}
             categoryName={category.name.toLowerCase()}
           />
         </section>

@@ -3,6 +3,7 @@ export const revalidate = 120; // ISR: revalidate author page every 2 minutes
 import { Metadata } from "next";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { notFound } from "next/navigation";
 import { slugify } from "@/lib/utils";
 
@@ -95,7 +96,7 @@ export default async function PenulisPage({ params: paramsPromise }: { params: P
 
   return (
     <div className="bg-surface min-h-screen">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(authorJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(authorJsonLd) }} />
       <div className="container-main py-8">
         {/* Author profile */}
         <div className="rounded-lg border border-border bg-surface p-6">

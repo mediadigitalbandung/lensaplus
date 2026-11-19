@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { parsePositiveInt } from "@/lib/utils";
 import { safeHref } from "@/components/common/safeHref";
 import { ExternalLink, FileText, ChevronLeft, ChevronRight } from "lucide-react";
@@ -165,7 +166,7 @@ export default async function RegulasiPage({ searchParams: searchParamsPromise }
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
 
       <div className="container-main py-8 sm:py-12">

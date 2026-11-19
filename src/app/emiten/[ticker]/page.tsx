@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { safeHref } from "@/components/common/safeHref";
 type CompanySector =
   | "KEUANGAN" | "ENERGI" | "KONSUMER" | "PROPERTI" | "TELEKOMUNIKASI"
@@ -140,7 +141,7 @@ export default async function EmitenDetailPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
 
       <div className="container-main py-8 sm:py-12">

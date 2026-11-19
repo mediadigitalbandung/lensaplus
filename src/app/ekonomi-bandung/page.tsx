@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import {
   EKO_BANDUNG_INDICATORS,
   EKO_BANDUNG_SECTORS,
@@ -85,7 +86,7 @@ export default function EkonomiBandungPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
 
       <div className="container-main py-8 sm:py-12">

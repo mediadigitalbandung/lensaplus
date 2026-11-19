@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { ArrowLeft } from "lucide-react";
 import DOMPurify from "isomorphic-dompurify";
 
@@ -75,7 +76,7 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: safeJsonLdStringify({
             "@context": "https://schema.org",
             "@type": "DefinedTerm",
             name: item.istilah,
@@ -93,7 +94,7 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: safeJsonLdStringify({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [

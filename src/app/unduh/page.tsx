@@ -5,6 +5,7 @@ import Link from "next/link";
 import QRCode from "qrcode";
 import { Download } from "lucide-react";
 import ShareInstallButton from "./ShareInstallButton";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
 const INSTALL_URL = `${SITE_URL}/unduh`;
@@ -83,7 +84,7 @@ export default async function UnduhPage() {
     <div className="bg-surface min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
       />
       <div className="container-main py-10 sm:py-16">
         {/* Hero */}

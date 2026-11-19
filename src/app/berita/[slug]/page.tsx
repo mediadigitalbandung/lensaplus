@@ -27,13 +27,19 @@ import {
   formatSourceWithWebsite,
   stripAttributionFooter,
 } from "@/lib/scraper/source-label";
-import { faqJsonLd, newsArticleJsonLd } from "@/lib/seo/json-ld";
+import { faqJsonLd, newsArticleJsonLd, safeJsonLdStringify } from "@/lib/seo/json-ld";
+import {
+  HOME_TRENDING_ARTICLE_SELECT,
+  HOME_TRENDING_CACHE_KEY,
+  PUBLIC_ARTICLE_CARD_SELECT,
+  PUBLIC_ARTICLE_DETAIL_SELECT,
+} from "@/lib/public-article-select";
 import ReadTracker from "@/components/personalization/ReadTracker";
 
 async function getArticle(slug: string) {
   const article = await prisma.article.findUnique({
     where: { slug },
-    include: { author: true, category: true, sources: true, tags: true },
+    select: PUBLIC_ARTICLE_DETAIL_SELECT,
   });
   return article;
 }
@@ -99,13 +105,100 @@ function countWords(html: string): number {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
 }
 
+const TOP_LEVEL_BLOCK_TAGS = new Set([
+  "p",
+  "div",
+  "blockquote",
+  "ul",
+  "ol",
+  "figure",
+  "aside",
+  "table",
+  "section",
+  "article",
+  "pre",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+]);
+
+/**
+ * Splits article HTML into intact top-level block elements (`<p>...</p>`,
+ * `<h2>...</h2>`, `<blockquote>...</blockquote>`, `<aside>...</aside>`, etc.)
+ * without swallowing closing/opening tags so downstream injections or page
+ * splits never produce orphan `</p>`, empty `<p></p>`, or bare text nodes.
+ */
+function splitHtmlIntoBlocks(html: string): string[] {
+  if (!html) return [];
+
+  const blocks: string[] = [];
+  const stack: string[] = [];
+  const tagRe = /<\/?([a-z][a-z0-9]*)\b[^>]*\/?>/gi;
+  let blockStart = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = tagRe.exec(html)) !== null) {
+    const raw = match[0];
+    const tag = match[1].toLowerCase();
+    if (!TOP_LEVEL_BLOCK_TAGS.has(tag)) continue;
+
+    const isClosing = raw.startsWith("</");
+    const isSelfClosing = raw.endsWith("/>");
+
+    if (isClosing) {
+      const idx = stack.lastIndexOf(tag);
+      if (idx !== -1) {
+        stack.length = idx;
+        if (stack.length === 0) {
+          const end = match.index + raw.length;
+          blocks.push(html.slice(blockStart, end));
+          blockStart = end;
+        }
+      }
+    } else if (!isSelfClosing) {
+      // HTML5 implicitly closes an open <p> when another <p> opens.
+      if (tag === "p" && stack.length === 1 && stack[0] === "p") {
+        const piece = html.slice(blockStart, match.index);
+        if (piece.trim()) blocks.push(piece);
+        blockStart = match.index;
+      } else {
+        stack.push(tag);
+      }
+    }
+  }
+
+  if (blockStart < html.length) {
+    const tail = html.slice(blockStart);
+    if (tail.trim()) {
+      blocks.push(tail);
+    } else if (blocks.length > 0) {
+      blocks[blocks.length - 1] += tail;
+    }
+  }
+
+  // Fallback for legacy HTML that uses <br><br> breaks without <p> tags.
+  if (blocks.length <= 1 && !/<p\b/i.test(html)) {
+    const brChunks = html
+      .split(/(?<=<br\s*\/?>\s*<br\s*\/?>)/gi)
+      .filter((chunk) => chunk.length > 0);
+    if (brChunks.length > 1) return brChunks;
+  }
+
+  return blocks.length > 0 ? blocks : [html];
+}
+
 function injectInlineAds(html: string): string {
   if (!html) return html;
 
   const totalWords = countWords(html);
   if (totalWords < AD_INSERT_WORDS + AD_MIN_REMAINING) return html;
 
-  const blocks = html.split(/(<br\s*\/?>(?:<br\s*\/?>)*|<\/p>\s*<p[^>]*>|<\/h[2-6]>\s*<h[2-6][^>]*>)/gi);
+  const blocks = splitHtmlIntoBlocks(html);
+  if (blocks.length <= 1) return html;
+
   let result = "";
   let wordCount = 0;
 
@@ -116,8 +209,15 @@ function injectInlineAds(html: string): string {
     result += block;
     wordCount += blockWords;
 
-    if (wordCount >= AD_INSERT_WORDS) {
-      // Check remaining words after this point
+    const isHeadingBlock = /<\/h[1-6]>\s*$/i.test(block);
+    const isAsideBlock = /<\/aside>\s*$/i.test(block);
+
+    if (
+      wordCount >= AD_INSERT_WORDS &&
+      i < blocks.length - 1 &&
+      !isHeadingBlock &&
+      !isAsideBlock
+    ) {
       const remaining = blocks.slice(i + 1).join("");
       const remainingWords = countWords(remaining);
 
@@ -134,7 +234,7 @@ function injectInlineAds(html: string): string {
 // ── Inline "Baca Juga" block ───────────────────────────────────────────────
 // One single block in the middle of the article body (around the 1/3 mark)
 // that lists up to BACA_JUGA_LIST_MAX related articles vertically. Lands on
-// a paragraph boundary so we never break a sentence.
+// a complete paragraph boundary (`</p>`) so we never break a sentence or tag.
 const BACA_JUGA_TARGET_OFFSET_RATIO = 1 / 3; // place after ~1/3 of total words
 const BACA_JUGA_MIN_OFFSET_WORDS = 100;
 const BACA_JUGA_MIN_REMAINING = 80;
@@ -158,9 +258,11 @@ function injectBacaJuga(
     Math.floor(totalWords * BACA_JUGA_TARGET_OFFSET_RATIO),
   );
 
-  // Split on paragraph boundaries; inject ONCE at the first boundary past
-  // targetOffset that still leaves enough body afterwards.
-  const blocks = html.split(/(<\/p>\s*<p[^>]*>)/gi);
+  // Split into intact top-level blocks; inject ONCE right after a complete `</p>`
+  // block past targetOffset that still leaves enough body afterwards.
+  const blocks = splitHtmlIntoBlocks(html);
+  if (blocks.length <= 1) return html;
+
   let result = "";
   let cumulativeWords = 0;
   let injected = false;
@@ -170,10 +272,11 @@ function injectBacaJuga(
     result += block;
     cumulativeWords += countWords(block);
 
-    const isCapturedBoundary = i % 2 === 1; // captured groups land at odd indices
+    const endsParagraph = /<\/p>\s*$/i.test(block);
     if (
       !injected &&
-      isCapturedBoundary &&
+      i < blocks.length - 1 &&
+      endsParagraph &&
       cumulativeWords >= targetOffset
     ) {
       const remaining = blocks.slice(i + 1).join("");
@@ -200,12 +303,11 @@ function injectBacaJuga(
 function splitContentIntoPages(html: string): string[] {
   if (!html) return [html];
 
-  const textOnly = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  const totalWords = textOnly.split(" ").filter(Boolean).length;
-
+  const totalWords = countWords(html);
   if (totalWords <= WORDS_PER_PAGE + TOLERANCE) return [html];
 
-  const blocks = html.split(/(<br\s*\/?>(?:<br\s*\/?>)*|<\/p>\s*<p[^>]*>|<\/h[2-6]>\s*<h[2-6][^>]*>)/gi);
+  const blocks = splitHtmlIntoBlocks(html);
+  if (blocks.length <= 1) return [html];
 
   const pages: string[] = [];
   let currentPage = "";
@@ -213,16 +315,15 @@ function splitContentIntoPages(html: string): string[] {
 
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
-    const blockText = block.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-    const blockWords = blockText.split(" ").filter(Boolean).length;
+    const blockWords = countWords(block);
 
     currentPage += block;
     currentWordCount += blockWords;
 
-    if (currentWordCount >= WORDS_PER_PAGE && i < blocks.length - 1) {
+    const isHeadingBlock = /<\/h[1-6]>\s*$/i.test(block);
+    if (currentWordCount >= WORDS_PER_PAGE && i < blocks.length - 1 && !isHeadingBlock) {
       const remaining = blocks.slice(i + 1).join("");
-      const remainingText = remaining.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-      const remainingWords = remainingText.split(" ").filter(Boolean).length;
+      const remainingWords = countWords(remaining);
 
       if (remainingWords > TOLERANCE) {
         pages.push(currentPage.trim());
@@ -321,7 +422,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
       categoryId: article.categoryId,
       id: { not: article.id },
     },
-    include: { author: true, category: true },
+    select: PUBLIC_ARTICLE_CARD_SELECT,
     orderBy: { publishedAt: "desc" },
     take: 10,
   });
@@ -339,15 +440,15 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
     select: { slug: true, title: true, angle: true },
   });
 
-  // Fetch trending for sidebar
-  const trendingArticles = await getCached("home:trending:10", 60_000, async () => {
+  // Fetch trending for sidebar using the shared projection & cache key
+  const trendingArticles = await getCached(HOME_TRENDING_CACHE_KEY, 60_000, async () => {
     const past24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
     let trending = await prisma.article.findMany({
       where: {
         status: "PUBLISHED",
         publishedAt: { gte: past24Hours },
       },
-      include: { category: true },
+      select: HOME_TRENDING_ARTICLE_SELECT,
       orderBy: { viewCount: "desc" },
       take: 10,
     });
@@ -359,7 +460,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
           status: "PUBLISHED",
           publishedAt: { gte: past7Days },
         },
-        include: { category: true },
+        select: HOME_TRENDING_ARTICLE_SELECT,
         orderBy: { viewCount: "desc" },
         take: 10,
       });
@@ -368,7 +469,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
     if (trending.length < 6) {
       trending = await prisma.article.findMany({
         where: { status: "PUBLISHED" },
-        include: { category: true },
+        select: HOME_TRENDING_ARTICLE_SELECT,
         orderBy: { viewCount: "desc" },
         take: 10,
       });
@@ -416,8 +517,9 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
   const contentPages = splitContentIntoPages(contentWithBacaJuga);
   const totalPages = contentPages.length;
   const currentPage = Math.min(Math.max(1, parseInt(searchParams.page || "1") || 1), totalPages);
-  // Inject ads per page (after pagination) so every page gets an ad in the middle
-  const sanitizedContent = injectInlineAds(contentPages[currentPage - 1] || contentWithBacaJuga);
+  // Inject ads per page (after pagination) ONLY on published articles (never on draft previews)
+  const activePageHtml = contentPages[currentPage - 1] || contentWithBacaJuga;
+  const sanitizedContent = isPublished ? injectInlineAds(activePageHtml) : activePageHtml;
 
   // Use shared NewsArticle builder so publisher renders as NewsMediaOrganization
   // (Google News eligibility) and stays in sync with homepage organization JSON-LD.
@@ -481,7 +583,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(structuredData) }}
       />
       <ReadingProgress />
       {isPublished && (
@@ -606,10 +708,12 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
               {/* Divider */}
               <div className="mt-6 h-px bg-border" />
 
-              {/* Ad — below meta */}
-              <div className="mt-6">
-                <BannerAd slot="HEADER" noWrapper />
-              </div>
+              {/* Ad — below meta (only on published) */}
+              {isPublished && (
+                <div className="mt-6">
+                  <BannerAd slot="HEADER" noWrapper />
+                </div>
+              )}
 
               {/* Featured Image */}
               {article.featuredImage && (
@@ -650,14 +754,14 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
               {/* Article content with inline ads */}
               <ArticleImageFallback />
               <div className="mt-8 max-w-full overflow-hidden">
-                {sanitizedContent.includes(AD_PLACEHOLDER) ? (
+                {isPublished && sanitizedContent.includes(AD_PLACEHOLDER) ? (
                   sanitizedContent.split(AD_PLACEHOLDER).map((chunk, i, arr) => (
                     <div key={i}>
                       <div
                         className="article-content text-base sm:text-[17px] leading-[1.8] break-words text-justify"
                         dangerouslySetInnerHTML={{ __html: chunk }}
                       />
-                      {i < arr.length - 1 && (
+                      {isPublished && i < arr.length - 1 && (
                         <div className="my-6 overflow-hidden">
                           <BannerAd slot="IN_ARTICLE" noWrapper />
                         </div>
@@ -712,10 +816,12 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                 </div>
               )}
 
-              {/* Ad — after content */}
-              <div className="mt-8">
-                <BannerAd slot="IN_ARTICLE" noWrapper />
-              </div>
+              {/* Ad — after content (only on published) */}
+              {isPublished && (
+                <div className="mt-8">
+                  <BannerAd slot="IN_ARTICLE" noWrapper />
+                </div>
+              )}
 
               {/* Share bar + bookmark */}
               <div className="mt-8">
@@ -766,10 +872,12 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                 ))}
               </div>
 
-              {/* Ad — after tags */}
-              <div className="mt-6">
-                <BannerAd slot="BETWEEN_SECTIONS" />
-              </div>
+              {/* Ad — after tags (only on published) */}
+              {isPublished && (
+                <div className="mt-6">
+                  <BannerAd slot="BETWEEN_SECTIONS" />
+                </div>
+              )}
 
               {/* Report button */}
               <div className="mt-8 border-t border-border pt-5">
@@ -801,10 +909,12 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                 </div>
               </div>
 
-              {/* Ad — before related */}
-              <div className="mt-8">
-                <BannerAd slot="FOOTER" noWrapper />
-              </div>
+              {/* Ad — before related (only on published) */}
+              {isPublished && (
+                <div className="mt-8">
+                  <BannerAd slot="FOOTER" noWrapper />
+                </div>
+              )}
 
               {/* Sorotan — analytical angles for this article */}
               {articleSorotan.length > 0 && (
@@ -893,17 +1003,21 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
             {/* Sidebar */}
             <div className="hidden lg:block lg:col-span-1">
               <Sidebar trending={sidebarTrending} />
-              <div className="mt-5">
-                <SidebarAd />
-              </div>
+              {isPublished && (
+                <div className="mt-5">
+                  <SidebarAd />
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Ad — Bottom full width */}
-        <div className="py-8">
-          <BannerAd size="leaderboard" className="bg-surface-secondary" />
-        </div>
+        {/* Ad — Bottom full width (only on published) */}
+        {isPublished && (
+          <div className="py-8">
+            <BannerAd size="footer" slot="FOOTER" className="bg-surface-secondary" />
+          </div>
+        )}
       </div>
     </>
   );

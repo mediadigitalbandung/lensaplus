@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { safeHref } from "@/components/common/safeHref";
 import {
   ChevronLeft,
@@ -129,7 +130,7 @@ export default async function PejabatDetailPage({ params: paramsPromise }: PageP
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
 
       <div className="container-main py-8 sm:py-12">

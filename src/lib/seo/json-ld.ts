@@ -1,8 +1,8 @@
 /**
  * JSON-LD structured data builders.
  *
- * All functions are pure and return a plain object ready to `JSON.stringify`
- * into a `<script type="application/ld+json">` tag.
+ * All functions are pure and return a plain object ready to serialize via
+ * `safeJsonLdStringify(...)` into a `<script type="application/ld+json">` tag.
  *
  * Schema refs:
  *  - NewsArticle     https://schema.org/NewsArticle
@@ -14,6 +14,15 @@
  *  - NewsMediaOrganization https://schema.org/NewsMediaOrganization
  *  - WebSite         https://schema.org/WebSite
  */
+
+/**
+ * Safely serialize an object for embedding inside `<script type="application/ld+json">`.
+ * Escapes `<` to `\u003c` so literal `</script>` or `<!--` in dynamic CMS/article
+ * text can never prematurely terminate the script tag (Stored XSS prevention).
+ */
+export function safeJsonLdStringify(obj: unknown): string {
+  return JSON.stringify(obj).replace(/</g, "\\u003c");
+}
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";

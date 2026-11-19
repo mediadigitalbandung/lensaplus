@@ -7,6 +7,7 @@ import LiveBlogTimeline, {
 } from "@/components/live/LiveBlogTimeline";
 import { ArrowLeft, ExternalLink, Play } from "lucide-react";
 import { resolveLiveEmbed } from "@/lib/live-embed";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 
 export const revalidate = 30;
 
@@ -204,7 +205,7 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
 
       <main className="container-main py-6 sm:py-10">

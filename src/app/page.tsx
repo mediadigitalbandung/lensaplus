@@ -15,6 +15,11 @@ import NewsletterBox from "@/components/common/NewsletterBox";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCached } from "@/lib/cache";
+import {
+  HOME_TRENDING_ARTICLE_SELECT,
+  HOME_TRENDING_CACHE_KEY,
+} from "@/lib/public-article-select";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 
 interface HomeArticle {
   id: string;
@@ -27,8 +32,8 @@ interface HomeArticle {
   sourceArticleId?: string | null;
   verificationLabel: string | null;
   status?: string;
-  author: { id: string; name: string; avatar: string | null } | null;
-  category: { id: string; name: string; slug: string } | null;
+  author: { id?: string; name: string; avatar: string | null } | null;
+  category: { id?: string; name: string; slug: string } | null;
 }
 
 interface HomeSorotan {
@@ -169,14 +174,14 @@ export default async function HomePage() {
           take: 60,
         }),
       ),
-      getCached("home:trending:10", 60_000, async () => {
+      getCached(HOME_TRENDING_CACHE_KEY, 60_000, async () => {
         const past24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
         let trending = await prisma.article.findMany({
           where: {
             status: "PUBLISHED",
             publishedAt: { gte: past24Hours },
           },
-          select: articleSelect,
+          select: HOME_TRENDING_ARTICLE_SELECT,
           orderBy: { viewCount: "desc" },
           take: 10,
         });
@@ -188,7 +193,7 @@ export default async function HomePage() {
               status: "PUBLISHED",
               publishedAt: { gte: past7Days },
             },
-            select: articleSelect,
+            select: HOME_TRENDING_ARTICLE_SELECT,
             orderBy: { viewCount: "desc" },
             take: 10,
           });
@@ -197,7 +202,7 @@ export default async function HomePage() {
         if (trending.length < 6) {
           trending = await prisma.article.findMany({
             where: { status: "PUBLISHED" },
-            select: articleSelect,
+            select: HOME_TRENDING_ARTICLE_SELECT,
             orderBy: { viewCount: "desc" },
             take: 10,
           });
@@ -447,7 +452,7 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify([
+          __html: safeJsonLdStringify([
             {
               "@context": "https://schema.org",
               "@type": "NewsMediaOrganization",

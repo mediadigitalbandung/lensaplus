@@ -4,6 +4,7 @@ import MarketGrid from "@/components/pasar/MarketGrid";
 import MoversList from "@/components/pasar/MoversList";
 import type { MarketCardProps } from "@/components/pasar/MarketCard";
 import { getMarketData } from "./market-data";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 
 export const revalidate = 60;
 
@@ -110,7 +111,7 @@ function JsonLd({ updatedAt }: { updatedAt: string }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(schema) }}
     />
   );
 }

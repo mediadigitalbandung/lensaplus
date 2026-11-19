@@ -42,7 +42,12 @@ export default function CommentSection({ articleId }: { articleId: string }) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const onCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const resetCaptcha = useCallback(() => {
+    setCaptchaToken("");
+    setCaptchaResetKey((k) => k + 1);
+  }, []);
 
   const fetchComments = useCallback(async () => {
     try {
@@ -100,6 +105,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
+      resetCaptcha();
       setSubmitting(false);
     }
   }
@@ -241,7 +247,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
               {content.length}/2000
             </p>
           </div>
-          <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} />
+          <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} resetKey={captchaResetKey} />
           <p className="text-sm text-on-surface-variant">
             Dengan mengirim, Anda menyetujui pemrosesan data sesuai{" "}
             <Link href="/privasi" className="text-primary underline hover:text-primary-dark">

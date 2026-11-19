@@ -37,7 +37,12 @@ function KontakFormContent() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const onCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const resetCaptcha = useCallback(() => {
+    setCaptchaToken("");
+    setCaptchaResetKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     if (initialSubject) {
@@ -61,7 +66,6 @@ function KontakFormContent() {
 
       if (!data.success) {
         setError(data.error || "Gagal mengirim pesan");
-        setSending(false);
         return;
       }
 
@@ -69,6 +73,7 @@ function KontakFormContent() {
     } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
+      resetCaptcha();
       setSending(false);
     }
   };
@@ -128,7 +133,11 @@ function KontakFormContent() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => { setSent(false); setFormData({ name: "", email: "", subject: initialSubject, message: "" }); }}
+                      onClick={() => {
+                        setSent(false);
+                        setFormData({ name: "", email: "", subject: initialSubject, message: "" });
+                        resetCaptcha();
+                      }}
                       className="mt-4 text-sm text-primary hover:underline"
                     >
                       Kirim pesan lagi
@@ -162,7 +171,7 @@ function KontakFormContent() {
                       <label htmlFor="kontak-pesan" className="mb-1 block text-sm font-medium text-txt-primary">Pesan</label>
                       <textarea id="kontak-pesan" required aria-required="true" rows={5} value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} className="input w-full" />
                     </div>
-                    <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} />
+                    <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} resetKey={captchaResetKey} />
                     {error && (
                       <p role="alert" className="text-sm text-red-600">{error}</p>
                     )}

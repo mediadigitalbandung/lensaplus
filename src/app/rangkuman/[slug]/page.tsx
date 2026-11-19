@@ -6,6 +6,11 @@ import { Metadata } from "next";
 import { ChevronRight } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
+import {
+  PUBLIC_ARTICLE_CARD_SELECT,
+  type PublicArticleCardRecord,
+} from "@/lib/public-article-select";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { notFound } from "next/navigation";
 import { formatWibDate, wibStartOfMonth } from "@/components/common/wib-date";
 
@@ -93,18 +98,19 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
         publishedAt: { gte: digest.range.from, lte: digest.range.to },
       };
 
-  let articles: any[] = [];
-  let otherDigests: any[] = [];
+  let articles: PublicArticleCardRecord[] = [];
+  let otherDigests: { slug: string; name: string }[] = [];
   try {
     [articles, otherDigests] = await Promise.all([
       prisma.article.findMany({
         where,
-        include: { author: true, category: true },
+        select: PUBLIC_ARTICLE_CARD_SELECT,
         orderBy: { publishedAt: "desc" },
         take: 30,
       }),
       prisma.category.findMany({
         where: digest.category ? { NOT: { slug: digest.category.slug } } : undefined,
+        select: { slug: true, name: true },
         orderBy: { order: "asc" },
         take: 6,
       }),
@@ -145,7 +151,7 @@ export default async function RangkumanDetailPage({ params: paramsPromise }: Pag
     <div className="bg-surface min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
       <div className="container-main py-8">
         {/* Breadcrumb */}

@@ -5,7 +5,8 @@ import { Metadata } from "next";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
-import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { PUBLIC_ARTICLE_CARD_SELECT } from "@/lib/public-article-select";
+import { breadcrumbJsonLd, safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { parsePositiveInt } from "@/lib/utils";
 
 const PER_PAGE = 12;
@@ -94,7 +95,7 @@ export default async function BeritaPage({ searchParams: searchParamsPromise }: 
   const [articles, total] = await Promise.all([
     prisma.article.findMany({
       where: where as never,
-      include: { author: true, category: true },
+      select: PUBLIC_ARTICLE_CARD_SELECT,
       orderBy,
       skip: (page - 1) * PER_PAGE,
       take: PER_PAGE,
@@ -134,7 +135,7 @@ export default async function BeritaPage({ searchParams: searchParamsPromise }: 
     <div className="bg-surface min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(ld) }}
       />
       <div className="container-main py-6 sm:py-8 lg:py-10 2xl:py-14">
         {/* Header */}

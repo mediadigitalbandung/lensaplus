@@ -5,6 +5,8 @@ import { useEffect, useRef, useCallback, useState } from "react";
 interface TurnstileProps {
   onVerify: (token: string) => void;
   onExpire?: () => void;
+  /** Increment or change this value to reset the single-use Turnstile widget after submit/error. */
+  resetKey?: number | string;
 }
 
 declare global {
@@ -70,9 +72,10 @@ function loadTurnstileScript(onReady: () => void, onError: () => void): () => vo
   };
 }
 
-export default function Turnstile({ onVerify, onExpire }: TurnstileProps) {
+export default function Turnstile({ onVerify, onExpire, resetKey }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const prevResetKeyRef = useRef(resetKey);
   const onVerifyRef = useRef(onVerify);
   const onExpireRef = useRef(onExpire);
   onVerifyRef.current = onVerify;
@@ -122,6 +125,34 @@ export default function Turnstile({ onVerify, onExpire }: TurnstileProps) {
       }
     };
   }, [siteKey, renderWidget, attempt]);
+
+  useEffect(() => {
+    if (prevResetKeyRef.current === resetKey) return;
+    prevResetKeyRef.current = resetKey;
+
+    if (!siteKey) {
+      onVerifyRef.current("turnstile-disabled");
+      return;
+    }
+
+    if (widgetIdRef.current && window.turnstile) {
+      try {
+        setFailed(false);
+        window.turnstile.reset(widgetIdRef.current);
+        return;
+      } catch {
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+        } catch {
+          // ignore removal failure before re-render attempt
+        }
+        widgetIdRef.current = null;
+      }
+    }
+
+    setFailed(false);
+    setAttempt((n) => n + 1);
+  }, [resetKey, siteKey]);
 
   if (!siteKey) return null;
 

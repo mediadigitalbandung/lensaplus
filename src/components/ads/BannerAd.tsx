@@ -12,10 +12,13 @@ interface Ad {
 
 const sizeToSlot: Record<string, string> = {
   leaderboard: "HEADER",
+  slim: "HEADER",
   banner: "BETWEEN_SECTIONS",
   rectangle: "SIDEBAR",
   inline: "IN_ARTICLE",
   footer: "FOOTER",
+  popup: "POPUP",
+  floating: "FLOATING_BOTTOM",
 };
 
 interface BannerAdProps {
@@ -98,10 +101,15 @@ function handleClick(ad: Ad) {
 
 function AdContent({ ad }: { ad: Ad }) {
   useEffect(() => {
-    if (typeof window !== "undefined" && ad.type === "HTML") {
+    if (
+      typeof window !== "undefined" &&
+      ad.type === "HTML" &&
+      typeof ad.htmlCode === "string" &&
+      ad.htmlCode.includes("adsbygoogle")
+    ) {
       try {
-        const adsbygoogle = (window as any).adsbygoogle;
-        if (adsbygoogle) {
+        const adsbygoogle = (window as unknown as { adsbygoogle?: unknown[] }).adsbygoogle;
+        if (Array.isArray(adsbygoogle)) {
           adsbygoogle.push({});
         }
       } catch (err) {
@@ -188,10 +196,16 @@ export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: 
   const { ad, loaded, availableCount } = useAd(slot, index);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && ad && ad.type === "HTML") {
+    if (
+      typeof window !== "undefined" &&
+      ad &&
+      ad.type === "HTML" &&
+      typeof ad.htmlCode === "string" &&
+      ad.htmlCode.includes("adsbygoogle")
+    ) {
       try {
-        const adsbygoogle = (window as any).adsbygoogle;
-        if (adsbygoogle) {
+        const adsbygoogle = (window as unknown as { adsbygoogle?: unknown[] }).adsbygoogle;
+        if (Array.isArray(adsbygoogle)) {
           adsbygoogle.push({});
         }
       } catch (err) {

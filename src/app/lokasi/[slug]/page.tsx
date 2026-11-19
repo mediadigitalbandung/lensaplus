@@ -7,7 +7,11 @@ import { ChevronRight, ExternalLink } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { courtLocations, getCourtLocationBySlug } from "@/data/court-locations";
 import { prisma } from "@/lib/prisma";
-import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import {
+  PUBLIC_ARTICLE_CARD_SELECT,
+  type PublicArticleCardRecord,
+} from "@/lib/public-article-select";
+import { breadcrumbJsonLd, safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { safeHref } from "@/components/common/safeHref";
 
 interface PageProps {
@@ -59,7 +63,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
   if (!court) notFound();
 
   // Related articles whose title or content includes the court name
-  let relatedArticles: any[] = [];
+  let relatedArticles: PublicArticleCardRecord[] = [];
   try {
     relatedArticles = await prisma.article.findMany({
       where: {
@@ -70,7 +74,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
           { content: { contains: court.shortName, mode: "insensitive" } },
         ],
       },
-      include: { author: true, category: true },
+      select: PUBLIC_ARTICLE_CARD_SELECT,
       orderBy: { publishedAt: "desc" },
       take: 6,
     });
@@ -109,7 +113,7 @@ export default async function LokasiDetailPage({ params: paramsPromise }: PagePr
     <div className="bg-surface min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumb]) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify([jsonLd, breadcrumb]) }}
       />
       <div className="container-main py-8">
         {/* Breadcrumb */}

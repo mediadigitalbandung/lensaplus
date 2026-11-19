@@ -10,6 +10,7 @@ import {
   articleJsonLd,
   breadcrumbJsonLd,
   organizationJsonLd,
+  safeJsonLdStringify,
 } from "@/lib/seo/json-ld";
 
 const ANGLE_LABEL: Record<string, string> = {
@@ -45,9 +46,27 @@ async function getSorotan(slug: string) {
     where: { slug },
     include: {
       article: {
-        include: {
-          author: true,
-          category: true,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          featuredImage: true,
+          status: true,
+          authorId: true,
+          publishedAt: true,
+          viewCount: true,
+          author: {
+            select: {
+              name: true,
+              avatar: true,
+            },
+          },
+          category: {
+            select: {
+              name: true,
+              slug: true,
+            },
+          },
         },
       },
     },
@@ -189,7 +208,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify([articleLd, breadcrumbLd, orgLd]),
+          __html: safeJsonLdStringify([articleLd, breadcrumbLd, orgLd]),
         }}
       />
 

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { organizationJsonLd } from "@/lib/seo/json-ld";
+import { organizationJsonLd, safeJsonLdStringify } from "@/lib/seo/json-ld";
 
 export const metadata: Metadata = {
   title: "Hubungi Kami",
@@ -32,7 +32,7 @@ export default function KontakLayout({ children }: { children: React.ReactNode }
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(contactJsonLd) }}
       />
       {children}
     </>

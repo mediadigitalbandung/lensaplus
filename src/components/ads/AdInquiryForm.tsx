@@ -25,7 +25,12 @@ export default function AdInquiryForm() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const onCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const resetCaptcha = useCallback(() => {
+    setCaptchaToken("");
+    setCaptchaResetKey((k) => k + 1);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,13 +63,13 @@ export default function AdInquiryForm() {
       const data = await res.json();
       if (!data.success) {
         setError(data.error || "Gagal mengirim. Coba lagi.");
-        setSending(false);
         return;
       }
       setSent(true);
     } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
+      resetCaptcha();
       setSending(false);
     }
   };
@@ -179,7 +184,7 @@ export default function AdInquiryForm() {
             placeholder="Ceritakan kebutuhan kampanye Anda (durasi, target, anggaran perkiraan)."
           />
         </div>
-        <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} />
+        <Turnstile onVerify={onCaptchaVerify} onExpire={() => setCaptchaToken("")} resetKey={captchaResetKey} />
         {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <p className="text-xs text-txt-muted">
           Dengan mengirim, Anda menyetujui pemrosesan data sesuai{" "}

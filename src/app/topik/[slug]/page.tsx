@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { permanentRedirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { parsePositiveInt } from "@/lib/utils";
 
@@ -169,15 +170,15 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(collectionPageJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(itemListJsonLd) }}
       />
 
       <main className="container-main py-10">

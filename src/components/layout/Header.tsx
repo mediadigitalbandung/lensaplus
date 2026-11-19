@@ -121,6 +121,13 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const handleLogout = async () => {
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    await signOut();
+  };
+
   return (
     <>
       {/* ── 1. Editorial Newspaper Masthead (Unscrolled Mode) ── */}
@@ -208,7 +215,7 @@ export default function Header() {
                       <Link href="/panel/dashboard" className="flex items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>
                         <LayoutDashboard size={14} /> Panel
                       </Link>
-                      <button onClick={() => { setUserMenuOpen(false); signOut(); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary">
+                      <button type="button" onClick={handleLogout} className="flex w-full items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary">
                         <LogOut size={14} /> Keluar
                       </button>
                     </div>
@@ -381,7 +388,7 @@ export default function Header() {
                     <Link href="/panel/dashboard" className="flex items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>
                       <LayoutDashboard size={12} /> Panel
                     </Link>
-                    <button onClick={() => { setUserMenuOpen(false); signOut(); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary">
+                    <button type="button" onClick={handleLogout} className="flex w-full items-center gap-2 px-4 py-2.5 text-body-sm text-on-surface-variant hover:bg-stone-50 hover:text-primary">
                       <LogOut size={12} /> Keluar
                     </button>
                   </div>
@@ -522,10 +529,7 @@ export default function Header() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      signOut();
-                    }}
+                    onClick={handleLogout}
                     className="flex items-center gap-1 text-label-sm text-on-surface-variant transition-colors hover:text-secondary"
                   >
                     <LogOut size={12} />

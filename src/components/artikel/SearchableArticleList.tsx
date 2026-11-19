@@ -6,20 +6,20 @@ import Image from "next/image";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import ClientDate from "@/components/ClientDate";
 
-interface Article {
-  title: string;
-  slug: string;
+import type { PublicArticleCardDTO } from "@/lib/public-article-select";
+
+export type SearchableArticleItem = Omit<PublicArticleCardDTO, "id" | "excerpt" | "featuredImage" | "publishedAt" | "readTime" | "viewCount" | "verificationLabel" | "author"> & {
+  id?: string;
   excerpt?: string | null;
   featuredImage?: string | null;
-  category: { name: string; slug: string };
-  author: { name: string };
+  author: { name: string; avatar?: string | null };
   publishedAt: Date | string | null;
   readTime?: number | null;
   viewCount?: number;
-}
+};
 
 interface SearchableArticleListProps {
-  articles: Article[];
+  articles: SearchableArticleItem[];
   categoryName: string;
 }
 

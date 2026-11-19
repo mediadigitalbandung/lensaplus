@@ -4,21 +4,21 @@ import { useState } from "react";
 import ArticleCard from "./ArticleCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-interface Article {
-  title: string;
-  slug: string;
+import type { PublicArticleCardDTO } from "@/lib/public-article-select";
+
+export type PaginatedArticleItem = Omit<PublicArticleCardDTO, "id" | "excerpt" | "featuredImage" | "publishedAt" | "readTime" | "viewCount" | "verificationLabel" | "author"> & {
+  id?: string;
   excerpt?: string | null;
   featuredImage?: string | null;
-  category: { name: string; slug: string };
-  author: { name: string };
+  author: { name: string; avatar?: string | null };
   publishedAt: Date | string | null;
   readTime?: number | null;
   viewCount?: number;
   verificationLabel?: string;
-}
+};
 
 interface PaginatedArticlesProps {
-  articles: Article[];
+  articles: PaginatedArticleItem[];
   perPage?: number;
 }
 

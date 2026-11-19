@@ -6,6 +6,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import BannerAd from "@/components/ads/BannerAd";
 import { prisma } from "@/lib/prisma";
+import { PUBLIC_ARTICLE_CARD_SELECT } from "@/lib/public-article-select";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { notFound } from "next/navigation";
 import { parsePositiveInt } from "@/lib/utils";
 
@@ -80,7 +82,7 @@ export default async function TagPage({ params: paramsPromise, searchParams: sea
   const [articles, total] = await Promise.all([
     prisma.article.findMany({
       where,
-      include: { author: true, category: true },
+      select: PUBLIC_ARTICLE_CARD_SELECT,
       orderBy: { publishedAt: "desc" },
       skip: (page - 1) * PER_PAGE,
       take: PER_PAGE,
@@ -131,8 +133,8 @@ export default async function TagPage({ params: paramsPromise, searchParams: sea
 
   return (
     <div className="bg-surface min-h-screen">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(collectionJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbJsonLd) }} />
       <div className="container-main py-8">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-2 text-sm text-txt-secondary">

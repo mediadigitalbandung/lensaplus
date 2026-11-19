@@ -9,10 +9,12 @@ import PublicTicker from "@/components/layout/PublicTicker";
 import PublicFooter from "@/components/layout/PublicFooter";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import SideRailAds from "@/components/ads/SideRailAds";
+import PopupAd from "@/components/ads/PopupAd";
+import FloatingBottomAd from "@/components/ads/FloatingBottomAd";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import InstallTracker from "@/components/pwa/InstallTracker";
 import InstallTeaser from "@/components/pwa/InstallTeaser";
-import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
+import { organizationJsonLd, safeJsonLdStringify, websiteJsonLd } from "@/lib/seo/json-ld";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import { getDewanPersNumber } from "@/lib/public-settings";
 
@@ -159,7 +161,7 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify([organizationJsonLd(), websiteJsonLd()]),
+            __html: safeJsonLdStringify([organizationJsonLd(), websiteJsonLd()]),
           }}
         />
         {/* Google CMP — Funding Choices (GDPR/EEA + CCPA consent messaging).
@@ -206,6 +208,8 @@ export default async function RootLayout({
           <main id="main-content" className="flex-1 w-full overflow-x-clip">{children}</main>
           <PublicFooter dewanPersNumber={dewanPersNumber} />
           <SideRailAds />
+          <FloatingBottomAd />
+          <PopupAd />
           <ServiceWorkerRegistration />
           <InstallPrompt />
           <InstallTeaser />

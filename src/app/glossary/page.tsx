@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { breadcrumbJsonLd, safeJsonLdStringify } from "@/lib/seo/json-ld";
 
 export const revalidate = 300; // 5 min ISR
 
@@ -61,12 +61,12 @@ export default async function GlossaryPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbLd) }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: safeJsonLdStringify({
             "@context": "https://schema.org",
             "@type": "DefinedTermSet",
             name: "Glossary Hukum Lensaplus",

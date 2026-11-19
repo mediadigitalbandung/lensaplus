@@ -5,6 +5,8 @@ import { Metadata } from "next";
 import { ChevronRight } from "lucide-react";
 import ArticleCard from "@/components/artikel/ArticleCard";
 import { prisma } from "@/lib/prisma";
+import { PUBLIC_ARTICLE_CARD_SELECT } from "@/lib/public-article-select";
+import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { notFound } from "next/navigation";
 import {
   formatWibDate,
@@ -71,7 +73,7 @@ export default async function RangkumanHarianDetailPage({ params: paramsPromise 
       status: "PUBLISHED",
       publishedAt: { gte: range.from, lte: range.to },
     },
-    include: { author: true, category: true },
+    select: PUBLIC_ARTICLE_CARD_SELECT,
     orderBy: { publishedAt: "desc" },
   });
 
@@ -110,7 +112,7 @@ export default async function RangkumanHarianDetailPage({ params: paramsPromise 
     <div className="bg-surface min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
       <div className="container-main py-8">
         {/* Breadcrumb */}

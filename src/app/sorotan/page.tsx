@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import { Prisma, SorotanAngle } from "@prisma/client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { breadcrumbJsonLd, safeJsonLdStringify } from "@/lib/seo/json-ld";
 import { parsePositiveInt } from "@/lib/utils";
 
 // Pagination + angle filter canonical: page 1 tanpa filter → "/sorotan",
@@ -146,7 +146,7 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
     <div className="bg-surface min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbLd) }}
       />
       <div className="container-main py-8">
         <div className="mb-6">
