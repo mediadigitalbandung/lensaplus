@@ -63,7 +63,7 @@ export async function POST(req: NextRequest, { params: p }: { params: Promise<{ 
     await ensureMembershipCard(id);
     const card = await prisma.membershipCard.findUnique({
       where: { userId: id },
-      include: { user: { select: { name: true, avatar: true, phone: true, alamat: true } } },
+      include: { user: { select: { name: true, avatar: true, phone: true, alamat: true, isActive: true } } },
     });
     if (!card) throw new ApiError("Kartu tidak ditemukan", 404);
 
@@ -71,6 +71,12 @@ export async function POST(req: NextRequest, { params: p }: { params: Promise<{ 
     let data: Record<string, unknown> = {};
 
     if (action === "issue" || action === "reactivate" || action === "renew") {
+      if (!card.user.isActive) {
+        throw new ApiError(
+          "Tidak dapat menerbitkan atau mengaktifkan KTA untuk akun yang sedang nonaktif.",
+          400,
+        );
+      }
       const { complete, missing } = checkCompleteness(card.user);
       if (!complete) {
         throw new ApiError(

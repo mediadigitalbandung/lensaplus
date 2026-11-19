@@ -2,7 +2,7 @@
  * POST /api/social/templates/preview
  * Body: { templateId: string, articleId: string }
  * Returns: image/jpeg binary (the rendered template).
- * Auth: EDITOR+
+ * Auth: SUPER_ADMIN (aligned with /panel/social in src/proxy.ts)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -25,7 +25,7 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    await requireRole(["SUPER_ADMIN"]);
     const body = await req.json();
     const { templateId, articleId } = bodySchema.parse(body);
 

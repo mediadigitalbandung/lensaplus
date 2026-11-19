@@ -3,7 +3,7 @@
  * List SocialPost rows with optional filters.
  *
  * Query: ?platform=&status=&articleId=&page=&limit=
- * Auth:  EDITOR+
+ * Auth:  SUPER_ADMIN (aligned with /panel/social in src/proxy.ts)
  */
 
 import { NextRequest } from "next/server";
@@ -30,7 +30,7 @@ const ALLOWED_STATUSES = new Set([
 
 export async function GET(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    await requireRole(["SUPER_ADMIN"]);
 
     const { searchParams } = new URL(req.url);
     const platform = searchParams.get("platform");

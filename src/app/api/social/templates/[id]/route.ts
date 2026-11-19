@@ -2,7 +2,7 @@
  * GET    /api/social/templates/:id — detail
  * PUT    /api/social/templates/:id — update
  * DELETE /api/social/templates/:id — delete
- * Auth: EDITOR+
+ * Auth: SUPER_ADMIN (aligned with /panel/social in src/proxy.ts)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -24,20 +24,40 @@ function isValidTemplateBg(val: string): boolean {
 
 export const dynamic = "force-dynamic";
 
-const textLayerSchema = z.object({
-  text: z.string(),
-  x: z.number(),
-  y: z.number(),
-  width: z.number(),
-  height: z.number(),
-  fontSize: z.number(),
-  fontFamily: z.string().optional(),
-  weight: z.union([z.string(), z.number()]).optional(),
-  color: z.string().optional(),
-  lineHeight: z.number().optional(),
-  maxLines: z.number().int().optional(),
-  align: z.enum(["left", "center", "right", "justify"]).optional(),
-});
+const MAX_CANVAS_DIM = 4096;
+
+const textLayerSchema = z
+  .object({
+    text: z.string().max(1000),
+    x: z.number().finite().min(0).max(MAX_CANVAS_DIM),
+    y: z.number().finite().min(0).max(MAX_CANVAS_DIM),
+    width: z.number().finite().min(0).max(MAX_CANVAS_DIM),
+    height: z.number().finite().min(0).max(MAX_CANVAS_DIM),
+    fontSize: z.number().finite().min(0).max(500),
+    fontFamily: z.string().max(200).optional(),
+    weight: z.union([z.string().max(30), z.number().finite().min(100).max(1000)]).optional(),
+    color: z.string().max(50).optional(),
+    lineHeight: z.number().finite().min(0.5).max(5).optional(),
+    maxLines: z.number().int().min(1).max(50).optional(),
+    align: z.enum(["left", "center", "right", "justify"]).optional(),
+  })
+  .superRefine((layer, ctx) => {
+    if (layer.text === "{{canvas_metadata}}") {
+      if (layer.x < 1 || layer.y < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Dimensi kanvas (x, y) minimal 1px dan maksimal 4096px",
+          path: ["x"],
+        });
+      }
+    } else if (layer.width < 1 || layer.height < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Dimensi layer (width, height) minimal 1px dan maksimal 4096px",
+        path: ["width"],
+      });
+    }
+  });
 
 const updateSchema = z.object({
   name: z.string().min(1).max(120).optional(),
@@ -48,7 +68,7 @@ const updateSchema = z.object({
     .min(1)
     .refine(isValidTemplateBg, "URL atau path background template tidak valid")
     .optional(),
-  textLayers: z.array(textLayerSchema).optional(),
+  textLayers: z.array(textLayerSchema).max(50).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -58,7 +78,7 @@ export async function GET(
 ) {
   const params = await paramsPromise;
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    await requireRole(["SUPER_ADMIN"]);
     const tpl = await prisma.socialTemplate.findUnique({
       where: { id: params.id },
       include: { category: { select: { id: true, name: true, slug: true } } },
@@ -76,7 +96,7 @@ export async function PUT(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
     const existing = await prisma.socialTemplate.findUnique({ where: { id: params.id } });
     if (!existing) throw new ApiError("Template not found", 404);
 
@@ -122,7 +142,7 @@ export async function DELETE(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
     const existing = await prisma.socialTemplate.findUnique({ where: { id: params.id } });
     if (!existing) throw new ApiError("Template not found", 404);
 

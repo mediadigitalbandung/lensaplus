@@ -6,6 +6,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { roleLabelsMap } from "@/lib/roles";
@@ -31,15 +32,33 @@ function fmt(d: Date | null): string {
 
 export default async function VerifyCardPage({ params }: { params: Promise<{ number: string }> }) {
   const { number } = await params;
+
+  let decodedNumber: string;
+  try {
+    decodedNumber = decodeURIComponent(number).trim();
+  } catch {
+    notFound();
+  }
+  if (!decodedNumber || decodedNumber.length > 100) {
+    notFound();
+  }
+
   const card = await prisma.membershipCard
     .findUnique({
-      where: { number: decodeURIComponent(number) },
-      include: { user: { select: { name: true, role: true } } },
+      where: { number: decodedNumber },
+      include: { user: { select: { name: true, role: true, isActive: true } } },
     })
     .catch(() => null);
 
-  const status = card ? effectiveStatus(card) : null;
-  const valid = status === "ACTIVE";
+  const isUserActive = Boolean(card?.user?.isActive);
+  const rawStatus = card ? effectiveStatus(card) : null;
+  const status = card ? (isUserActive ? rawStatus : "REVOKED") : null;
+  const valid = Boolean(card && isUserActive && card.status === "ACTIVE" && rawStatus === "ACTIVE");
+  const displayName = card
+    ? isUserActive
+      ? card.holderName || card.user.name
+      : card.user.name
+    : "";
 
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-5 py-12">
@@ -54,7 +73,7 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
             <ShieldX size={56} className="text-red-500" />
             <h1 className="text-xl font-bold text-txt-primary">Kartu Tidak Ditemukan</h1>
             <p className="text-sm text-txt-secondary">
-              Nomor <span className="font-mono">{decodeURIComponent(number)}</span> tidak terdaftar di sistem Lensaplus.
+              Nomor <span className="font-mono">{decodedNumber}</span> tidak terdaftar di sistem Lensaplus.
               Kartu ini kemungkinan tidak sah.
             </p>
           </div>
@@ -75,7 +94,7 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
             )}
 
             <div className="mt-2 w-full space-y-2 rounded-lg border border-border bg-surface-secondary/50 p-4 text-left text-sm">
-              <Row label="Nama" value={card.holderName || card.user.name} />
+              <Row label="Nama" value={displayName} />
               <Row label="Jabatan" value={roleLabelsMap[card.user.role] || card.user.role} />
               <Row label="No. Anggota" value={card.number} mono />
               <Row label="Status" value={STATUS_LABELS[status || ""] || status || "-"} />
@@ -86,7 +105,7 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
         )}
 
         <div className="mt-6 border-t border-border pt-4 text-center">
-          <p className="text-xs text-txt-muted">Lensaplus — Media Berita Digital Bandung</p>
+          <p className="text-xs text-txt-muted">Lensaplus — Media Berita Digital Nasional Indonesia</p>
           <Link href="/" className="text-xs font-medium text-primary hover:underline">
             lensaplus.com
           </Link>

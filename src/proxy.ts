@@ -2,18 +2,19 @@ import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
 
   // Protect /panel/* routes — require valid session
-  if (pathname.startsWith("/panel")) {
+  if (pathname === "/panel" || pathname.startsWith("/panel/")) {
     const token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === "production",
     });
 
     if (!token) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
+      loginUrl.searchParams.set("callbackUrl", `${pathname}${search}`);
       return NextResponse.redirect(loginUrl);
     }
 
@@ -71,6 +72,7 @@ export async function proxy(request: NextRequest) {
         "/panel/ai-log",
         "/panel/auto-artikel",
         "/panel/dokumentasi",
+        "/panel/live-blogs/pengaturan",
       ];
       // SUPER_ADMIN | CHIEF_EDITOR.
       const MANAGEMENT = [
@@ -81,6 +83,7 @@ export async function proxy(request: NextRequest) {
         "/panel/polling",
         "/panel/topik",
         "/panel/newsletter-subscribers",
+        "/panel/artikel/duplikat",
       ];
       // SUPER_ADMIN | CHIEF_EDITOR | EDITOR.
       const EDITOR_PATHS = [
@@ -121,5 +124,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/panel/:path*"],
+  matcher: ["/panel", "/panel/:path*"],
 };

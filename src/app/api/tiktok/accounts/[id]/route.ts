@@ -13,6 +13,22 @@ import { isSafeImageRef } from "@/lib/safe-path";
 
 export const dynamic = "force-dynamic";
 
+// Explicit projection that NEVER exposes OAuth accessToken / refreshToken.
+const SAFE_TIKTOK_ACCOUNT_SELECT = {
+  id: true,
+  ownerId: true,
+  ownerName: true,
+  username: true,
+  displayName: true,
+  avatarUrl: true,
+  scopes: true,
+  status: true,
+  platformUserId: true,
+  expiresAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 const updateSchema = z.object({
   displayName: z.string().min(1).max(120).optional(),
   avatarUrl: z.string().refine(isSafeImageRef, "URL atau path avatar tidak valid").nullable().optional(),
@@ -25,7 +41,10 @@ export async function PATCH(request: NextRequest, { params: paramsPromise }: { p
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);
 
-    const acct = await prisma.tiktokAccount.findUnique({ where: { id: params.id } });
+    const acct = await prisma.tiktokAccount.findUnique({
+      where: { id: params.id },
+      select: { id: true, ownerId: true, displayName: true, avatarUrl: true },
+    });
     if (!acct) throw new ApiError("Akun tidak ditemukan", 404);
     if (!ownsTiktok(session.user.role, acct.ownerId, session.user.id)) {
       throw new ApiError("Akun tidak ditemukan", 404);
@@ -40,6 +59,7 @@ export async function PATCH(request: NextRequest, { params: paramsPromise }: { p
         displayName: data.displayName ?? acct.displayName,
         avatarUrl: data.avatarUrl === undefined ? acct.avatarUrl : data.avatarUrl,
       },
+      select: SAFE_TIKTOK_ACCOUNT_SELECT,
     });
 
     return successResponse(updated);
@@ -55,7 +75,10 @@ export async function DELETE(_req: NextRequest, { params: paramsPromise }: { par
     const session = await requireAuth();
     if (!canManageTiktok(session.user.role)) throw new ApiError("Forbidden", 403);
 
-    const acct = await prisma.tiktokAccount.findUnique({ where: { id: params.id } });
+    const acct = await prisma.tiktokAccount.findUnique({
+      where: { id: params.id },
+      select: { id: true, ownerId: true, username: true },
+    });
     if (!acct) throw new ApiError("Akun tidak ditemukan", 404);
     if (!ownsTiktok(session.user.role, acct.ownerId, session.user.id)) {
       throw new ApiError("Akun tidak ditemukan", 404);

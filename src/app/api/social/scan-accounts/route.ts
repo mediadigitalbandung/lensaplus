@@ -1,9 +1,17 @@
 import { NextRequest } from "next/server";
-import { requireRole, successResponse, errorResponse } from "@/lib/api-utils";
-import { prisma } from "@/lib/prisma";
-import { decryptSecret } from "@/lib/crypto-secrets";
+import { ApiError, requireRole, successResponse, errorResponse } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
+
+const META_FETCH_TIMEOUT_MS = 15_000;
+
+function isMaskedOrPlaceholderToken(raw: string): boolean {
+  if (!raw) return true;
+  if (raw === "(tidak berubah)") return true;
+  if (raw.includes("...")) return true;
+  if (raw.startsWith("••••••••") || /^\*+$/.test(raw)) return true;
+  return false;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,30 +19,26 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     let token = typeof body.accessToken === "string" ? body.accessToken.trim() : "";
 
-    // If no token is provided, or if it is empty/placeholder, read the saved token from DB
-    if (!token || token === "(tidak berubah)" || token.includes("...") || token.startsWith("••••••••")) {
-      const igSettings = await prisma.instagramSettings.findUnique({
-        where: { id: "global" },
-      });
-      token = igSettings?.accessToken ? decryptSecret(igSettings.accessToken) : "";
-    }
-
-    if (!token) {
-      return successResponse({
-        success: false,
-        error: "Access token tidak ditemukan. Harap masukkan Access Token terlebih dahulu.",
-      });
+    // Security (HIGH-02): NEVER decrypt or return previously stored DB tokens.
+    // The admin must explicitly paste a fresh Meta User Access Token to scan pages.
+    if (isMaskedOrPlaceholderToken(token)) {
+      throw new ApiError(
+        "Harap masukkan Access Token Meta baru secara eksplisit sebelum melakukan scan akun.",
+        400,
+      );
     }
 
     // Exchange short-lived token for long-lived token if App ID & Secret are available
     const appId = process.env.META_APP_ID;
     const appSecret = process.env.META_APP_SECRET;
 
-    if (appId && appSecret && token !== "(tidak berubah)" && !token.includes("...")) {
+    if (appId && appSecret) {
       try {
         console.log("[scan-accounts] Found META_APP_ID and META_APP_SECRET. Exchanging token for a long-lived one...");
-        const EXCHANGE_URL = `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${encodeURIComponent(token)}`;
-        const exchangeRes = await fetch(EXCHANGE_URL);
+        const EXCHANGE_URL = `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${encodeURIComponent(appId)}&client_secret=${encodeURIComponent(appSecret)}&fb_exchange_token=${encodeURIComponent(token)}`;
+        const exchangeRes = await fetch(EXCHANGE_URL, {
+          signal: AbortSignal.timeout(META_FETCH_TIMEOUT_MS),
+        });
         const exchangeData = await exchangeRes.json();
         if (exchangeData.access_token) {
           token = exchangeData.access_token;
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest) {
         } else if (exchangeData.error) {
           console.warn("[scan-accounts] Token exchange returned error from Meta:", exchangeData.error);
         } else {
-          console.warn("[scan-accounts] Token exchange response did not contain access_token:", exchangeData);
+          console.warn("[scan-accounts] Token exchange response did not contain access_token.");
         }
       } catch (exchangeErr) {
         console.error("[scan-accounts] Token exchange failed:", exchangeErr);
@@ -61,11 +65,14 @@ export async function POST(req: NextRequest) {
     // 1. Try traditional me/accounts
     try {
       const GRAPH_URL = `https://graph.facebook.com/v21.0/me/accounts?fields=instagram_business_account{id,username,name},name,access_token&access_token=${encodeURIComponent(token)}`;
-      const res = await fetch(GRAPH_URL);
+      const res = await fetch(GRAPH_URL, {
+        signal: AbortSignal.timeout(META_FETCH_TIMEOUT_MS),
+      });
       const data = await res.json();
-      
+
       if (data && Array.isArray(data.data)) {
         for (const page of data.data) {
+          if (typeof page?.id !== "string" || !page.id) continue;
           accountsMap.set(page.id, {
             pageId: page.id,
             pageName: page.name,
@@ -84,16 +91,20 @@ export async function POST(req: NextRequest) {
     // This is incredibly useful for custom apps in Development Mode where /me/accounts returns empty.
     try {
       const DEBUG_URL = `https://graph.facebook.com/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(token)}`;
-      const debugRes = await fetch(DEBUG_URL);
+      const debugRes = await fetch(DEBUG_URL, {
+        signal: AbortSignal.timeout(META_FETCH_TIMEOUT_MS),
+      });
       const debugData = await debugRes.json();
-      
+
       const granularScopes = debugData?.data?.granular_scopes || [];
       const pageIdsSet = new Set<string>();
 
       for (const gs of granularScopes) {
         if ((gs.scope === "pages_show_list" || gs.scope === "pages_read_engagement") && Array.isArray(gs.target_ids)) {
           for (const pid of gs.target_ids) {
-            pageIdsSet.add(pid);
+            if (typeof pid === "string" && /^\d+$/.test(pid)) {
+              pageIdsSet.add(pid);
+            }
           }
         }
       }
@@ -102,7 +113,9 @@ export async function POST(req: NextRequest) {
         if (!accountsMap.has(pid)) {
           // Fetch the page details directly
           const PAGE_URL = `https://graph.facebook.com/v21.0/${pid}?fields=instagram_business_account{id,username,name},name,access_token&access_token=${encodeURIComponent(token)}`;
-          const pageRes = await fetch(PAGE_URL);
+          const pageRes = await fetch(PAGE_URL, {
+            signal: AbortSignal.timeout(META_FETCH_TIMEOUT_MS),
+          });
           const page = await pageRes.json();
           if (page && page.id && !page.error) {
             accountsMap.set(pid, {
@@ -125,6 +138,7 @@ export async function POST(req: NextRequest) {
     if (accounts.length === 0) {
       return successResponse({
         success: false,
+        accounts: [],
         error: "Tidak ditemukan Facebook Page atau akun Instagram terhubung di bawah token ini.",
       });
     }

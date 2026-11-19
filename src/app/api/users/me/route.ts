@@ -100,33 +100,73 @@ export async function DELETE(request: NextRequest) {
     const session = await requireAuth();
     const userId = session.user.id;
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        isActive: false,
-        name: "[Dihapus]",
-        email: `deleted-${userId}@deleted.local`,
-        // PII fields — set to null
-        bio: null,
-        avatar: null,
-        phone: null,
-        nomorKartuPers: null,
-        organisasiPers: null,
-        pendidikan: null,
-        pengalaman: null,
-        keahlian: null,
-        portofolio: null,
-        mediaSosial: null,
-        alamat: null,
-        specialization: null,
-        activeSessionId: null,
-        twoFactorEnabled: false,
-        twoFactorSecret: null,
-        twoFactorBackupCodes: null,
-        emailVerified: null,
-        emailVerifyToken: null,
-        emailVerifyExpires: null,
-      },
+    await prisma.$transaction(async (tx) => {
+      const currentUser = await tx.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true, isActive: true },
+      });
+
+      if (!currentUser || !currentUser.isActive) {
+        throw new ApiError("Akun tidak ditemukan atau sudah dinonaktifkan.", 404);
+      }
+
+      // Guard: never allow the last active SUPER_ADMIN to deactivate themselves.
+      if (currentUser.role === "SUPER_ADMIN") {
+        const activeSuperAdmins = await tx.user.count({
+          where: { role: "SUPER_ADMIN", isActive: true },
+        });
+        if (activeSuperAdmins <= 1) {
+          throw new ApiError(
+            "Tidak dapat menonaktifkan akun Super Admin aktif terakhir. Tetapkan Super Admin aktif lain terlebih dahulu.",
+            409,
+          );
+        }
+      }
+
+      const now = new Date();
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          isActive: false,
+          name: "[Dihapus]",
+          email: `deleted-${userId}@deleted.local`,
+          // PII fields — set to null
+          bio: null,
+          avatar: null,
+          phone: null,
+          nomorKartuPers: null,
+          organisasiPers: null,
+          pendidikan: null,
+          pengalaman: null,
+          keahlian: null,
+          portofolio: null,
+          mediaSosial: null,
+          alamat: null,
+          specialization: null,
+          activeSessionId: null,
+          twoFactorEnabled: false,
+          twoFactorSecret: null,
+          twoFactorBackupCodes: null,
+          emailVerified: null,
+          emailVerifyToken: null,
+          emailVerifyExpires: null,
+        },
+      });
+
+      // Revoke and anonymize press membership card (KTA) so deleted accounts
+      // never show as active or expose holder PII on public verification.
+      await tx.membershipCard.updateMany({
+        where: { userId },
+        data: {
+          status: "REVOKED",
+          revokedAt: now,
+          holderName: null,
+          holderPhoto: null,
+          bloodType: null,
+          notes: "Dicabut otomatis karena akun dihapus oleh pengguna.",
+        },
+      });
     });
 
     const ip = getClientIp(request);

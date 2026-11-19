@@ -19,6 +19,22 @@ import { isSafeOptionalBgmUrl } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
+// Explicit projection that NEVER exposes OAuth accessToken / refreshToken.
+const SAFE_TIKTOK_ACCOUNT_SELECT = {
+  id: true,
+  ownerId: true,
+  ownerName: true,
+  username: true,
+  displayName: true,
+  avatarUrl: true,
+  scopes: true,
+  status: true,
+  platformUserId: true,
+  expiresAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 const updateSchema = z.object({
   title: z.string().min(1).max(TIKTOK_TITLE_MAX).optional(),
   caption: z.string().max(TIKTOK_CAPTION_MAX).nullable().optional(),
@@ -60,7 +76,7 @@ export async function GET(_req: NextRequest, { params: paramsPromise }: { params
     const content = await prisma.tiktokContent.findUnique({
       where: { id: params.id },
       include: {
-        account: true,
+        account: { select: SAFE_TIKTOK_ACCOUNT_SELECT },
         slots: { orderBy: { order: "asc" } },
         renderJobs: { orderBy: { createdAt: "desc" }, take: 5 },
       },
@@ -98,7 +114,10 @@ export async function PUT(request: NextRequest, { params: paramsPromise }: { par
     if (data.hashtags !== undefined) updateData.hashtags = normalizeHashtags(data.hashtags);
     if (data.accountId !== undefined) {
       if (data.accountId) {
-        const acct = await prisma.tiktokAccount.findUnique({ where: { id: data.accountId } });
+        const acct = await prisma.tiktokAccount.findUnique({
+          where: { id: data.accountId },
+          select: { id: true, ownerId: true },
+        });
         if (!acct || !ownsTiktok(session.user.role, acct.ownerId, session.user.id)) {
           throw new ApiError("Akun TikTok tidak ditemukan", 404);
         }
@@ -120,7 +139,10 @@ export async function PUT(request: NextRequest, { params: paramsPromise }: { par
     const updated = await prisma.tiktokContent.update({
       where: { id: params.id },
       data: updateData,
-      include: { account: true, slots: { orderBy: { order: "asc" } } },
+      include: {
+        account: { select: SAFE_TIKTOK_ACCOUNT_SELECT },
+        slots: { orderBy: { order: "asc" } },
+      },
     });
 
     await logAudit(

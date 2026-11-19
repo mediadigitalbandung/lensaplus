@@ -23,19 +23,31 @@ const PREFIX = "v1:";
 let _keyWarnFired = false;
 
 function getKey(): Buffer | null {
-  const raw = process.env.SETTINGS_ENCRYPTION_KEY;
+  const raw = process.env.SETTINGS_ENCRYPTION_KEY?.trim();
   if (!raw) {
     if (!_keyWarnFired) {
       _keyWarnFired = true;
-      console.warn(
-        "[crypto-secrets] SETTINGS_ENCRYPTION_KEY is not set. " +
-          "Sensitive settings will be stored UNENCRYPTED. " +
-          "Generate a key with: openssl rand -base64 32",
-      );
+      if (process.env.NODE_ENV === "production") {
+        console.error(
+          "[crypto-secrets] CRITICAL SECURITY ERROR: SETTINGS_ENCRYPTION_KEY is NOT set in production! " +
+            "API keys, OAuth tokens, and 2FA secrets will be stored UNENCRYPTED at rest in PostgreSQL. " +
+            "Set SETTINGS_ENCRYPTION_KEY in .env immediately (generate with: openssl rand -base64 32).",
+        );
+      } else {
+        console.warn(
+          "[crypto-secrets] SETTINGS_ENCRYPTION_KEY is not set. " +
+            "Sensitive settings will be stored UNENCRYPTED. " +
+            "Generate a key with: openssl rand -base64 32",
+        );
+      }
     }
     return null;
   }
-  const buf = Buffer.from(raw, "base64");
+  // Primary format is base64-encoded 32 bytes (`openssl rand -base64 32`);
+  // also accept 64-character hex (`openssl rand -hex 32`) as a safe fallback.
+  const buf = /^[0-9a-fA-F]{64}$/.test(raw)
+    ? Buffer.from(raw, "hex")
+    : Buffer.from(raw, "base64");
   if (buf.length !== 32) {
     throw new Error(
       `[crypto-secrets] SETTINGS_ENCRYPTION_KEY must decode to exactly 32 bytes (got ${buf.length}). ` +

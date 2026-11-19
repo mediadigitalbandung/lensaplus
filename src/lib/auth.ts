@@ -295,17 +295,34 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
 
-    // ── Open-redirect guard (MED-AUTH1 supplement) ────────────────────────
-    // NextAuth v4 does not validate the ?callbackUrl= parameter by default,
-    // which allows an attacker to craft a link like:
-    //   /login?callbackUrl=https://evil.com
-    // and steal credentials via phishing.  This callback enforces same-origin.
+    // ── Open-redirect guard (HIGH-01 / MED-AUTH1) ─────────────────────────
+    // NextAuth v4 does not validate ?callbackUrl= strictly by default.
+    // Resolve against baseUrl via WHATWG URL and require an EXACT origin match,
+    // explicitly rejecting protocol-relative URLs (//evil.com), backslash tricks
+    // (/\evil.com), and prefix-confusion hosts (https://lensaplus.com.evil.com).
     async redirect({ url, baseUrl }) {
-      // Same-origin absolute URL — allow.
-      if (url.startsWith(baseUrl)) return url;
-      // Relative path — resolve against baseUrl and allow.
-      if (url.startsWith("/")) return new URL(url, baseUrl).toString();
-      // Any other origin — silently fall back to home.
+      try {
+        const base = new URL(baseUrl);
+        const trimmed = (url || "").trim();
+        if (
+          !trimmed ||
+          /[\r\n\0]/.test(trimmed) ||
+          /^[/\\]{2}/.test(trimmed) ||
+          trimmed.startsWith("\\") ||
+          trimmed.includes("\\")
+        ) {
+          return baseUrl;
+        }
+        const resolved = new URL(trimmed, base);
+        if (
+          resolved.origin === base.origin &&
+          (resolved.protocol === "http:" || resolved.protocol === "https:")
+        ) {
+          return resolved.toString();
+        }
+      } catch {
+        // Malformed URL — fall back to baseUrl below.
+      }
       return baseUrl;
     },
   },

@@ -60,7 +60,10 @@ export async function POST(request: NextRequest) {
     const data = manualCreateSchema.parse(body);
 
     const handle = data.username.trim().replace(/^@+/, "").toLowerCase();
-    const existing = await prisma.tiktokAccount.findFirst({ where: { username: handle } });
+    const existing = await prisma.tiktokAccount.findFirst({
+      where: { username: handle },
+      select: { id: true },
+    });
     if (existing) throw new ApiError("Username sudah terdaftar", 409);
 
     const created = await prisma.tiktokAccount.create({
@@ -71,6 +74,20 @@ export async function POST(request: NextRequest) {
         displayName: data.displayName,
         avatarUrl: data.avatarUrl || null,
         status: "CONNECTED",
+      },
+      select: {
+        id: true,
+        ownerId: true,
+        ownerName: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+        scopes: true,
+        status: true,
+        platformUserId: true,
+        expiresAt: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 

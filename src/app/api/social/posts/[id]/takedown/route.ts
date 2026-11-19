@@ -2,7 +2,7 @@
  * POST /api/social/posts/:id/takedown
  * Attempt to delete the post from the platform (FB supported, IG flag-only)
  * then mark the row DELETED.
- * Auth: EDITOR+
+ * Auth: SUPER_ADMIN (aligned with /panel/social in src/proxy.ts)
  */
 
 import { NextRequest } from "next/server";
@@ -22,7 +22,7 @@ export async function POST(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
     const result = await takedownPost(params.id);
 
     await logAudit(

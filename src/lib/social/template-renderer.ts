@@ -251,34 +251,52 @@ export function wrapText(
   return lines;
 }
 
+const MAX_CANVAS_DIM = 4096;
+
+function clampDim(val: unknown, fallback: number, min = 1, max = MAX_CANVAS_DIM): number {
+  const n = typeof val === "number" ? Math.round(val) : Number.NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(n, min), max);
+}
+
 /** Build a single <text> group for a TextLayer. */
-function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
-  const fontSize = layer.fontSize || 48;
+export function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
+  const fontSize = clampDim(layer.fontSize, 48, 1, 500);
+  const layerWidth = clampDim(layer.width, 400, 1, MAX_CANVAS_DIM);
+  const layerX = clampDim(layer.x, 0, 0, MAX_CANVAS_DIM);
+  const layerY = clampDim(layer.y, 0, 0, MAX_CANVAS_DIM);
   const fontFamily = layer.fontFamily || "'Newsreader', 'Georgia', serif";
-  const weight = layer.weight || 700;
+  const weight = layer.weight ?? 700;
   const color = layer.color || "#ffffff";
-  const lineHeight = layer.lineHeight || 1.2;
+  const lineHeight =
+    typeof layer.lineHeight === "number" && Number.isFinite(layer.lineHeight)
+      ? Math.min(Math.max(layer.lineHeight, 0.5), 5)
+      : 1.2;
+  const maxLines =
+    typeof layer.maxLines === "number" && Number.isFinite(layer.maxLines)
+      ? Math.min(Math.max(Math.floor(layer.maxLines), 1), 50)
+      : undefined;
   const align = layer.align || "left";
 
-  const lines = wrapText(resolvedText, layer.width, fontSize, layer.maxLines, fontFamily, String(weight));
+  const lines = wrapText(resolvedText, layerWidth, fontSize, maxLines, fontFamily, String(weight));
 
   const lineStep = fontSize * lineHeight;
   // y in the input is the layer top-left. Baseline for first line = y + fontSize.
-  const baseY = layer.y + fontSize;
+  const baseY = layerY + fontSize;
 
   const isJustify = align === "justify";
 
   let anchorX: number;
   let textAnchor: "start" | "middle" | "end";
   if (align === "center") {
-    anchorX = layer.x + layer.width / 2;
+    anchorX = layerX + layerWidth / 2;
     textAnchor = "middle";
   } else if (align === "right") {
-    anchorX = layer.x + layer.width;
+    anchorX = layerX + layerWidth;
     textAnchor = "end";
   } else {
     // left and justify both anchor from start
-    anchorX = layer.x;
+    anchorX = layerX;
     textAnchor = "start";
   }
 
@@ -296,7 +314,7 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
         const wordWidths = words.map((w) => estimateWordWidth(w, fontSize, fontFamily, String(weight)));
         const totalTextWidth = wordWidths.reduce((sum, w) => sum + w, 0);
         
-        const remainingSpace = layer.width - totalTextWidth;
+        const remainingSpace = layerWidth - totalTextWidth;
         const gaps = words.length - 1;
         
         // Enforce a physical minimum gap of 0.28 * fontSize for bold/serif to absolutely prevent words from overlapping/merging
@@ -304,7 +322,7 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
         const minGap = fontSize * (isSerifOrBold ? 0.28 : 0.22);
         const spacePerGap = gaps > 0 ? Math.max(minGap, remainingSpace / gaps) : minGap;
 
-        let currentX = layer.x;
+        let currentX = layerX;
         const lineY = baseY + i * lineStep;
         const wordSpans = words.map((word, wi) => {
           const span = `<tspan x="${Math.round(currentX)}" y="${Math.round(lineY)}">${escapeXml(word)}</tspan>`;
@@ -318,7 +336,7 @@ function renderLayerSvg(layer: TextLayer, resolvedText: string): string {
     })
     .join("");
 
-  return `<text x="${anchorX}" y="${baseY}" fill="${escapeXml(color)}" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}" font-weight="${weight}" text-anchor="${isJustify ? "start" : textAnchor}">${tspans}</text>`;
+  return `<text x="${anchorX}" y="${baseY}" fill="${escapeXml(color)}" font-family="${escapeXml(fontFamily)}" font-size="${escapeXml(String(fontSize))}" font-weight="${escapeXml(String(weight))}" text-anchor="${escapeXml(isJustify ? "start" : textAnchor)}">${tspans}</text>`;
 }
 
 const EXTRA_TPL_BG_HOSTS = (process.env.SOCIAL_EXTRA_IMAGE_HOSTS || "")
@@ -429,11 +447,15 @@ export async function renderTemplate(
     layers = [];
   }
 
-  // Detect custom canvas dimensions if canvas_metadata layer is present
+  // Detect custom canvas dimensions if canvas_metadata layer is present (clamped to prevent OOM DoS)
   const canvasMetadataLayer = layers.find((l) => l.text === "{{canvas_metadata}}");
+  const defaultDims = PLATFORM_DIMENSIONS[platform] ?? PLATFORM_DIMENSIONS.INSTAGRAM;
   const dims = canvasMetadataLayer
-    ? { width: canvasMetadataLayer.x, height: canvasMetadataLayer.y }
-    : (PLATFORM_DIMENSIONS[platform] ?? PLATFORM_DIMENSIONS.INSTAGRAM);
+    ? {
+        width: clampDim(canvasMetadataLayer.x, defaultDims.width, 1, MAX_CANVAS_DIM),
+        height: clampDim(canvasMetadataLayer.y, defaultDims.height, 1, MAX_CANVAS_DIM),
+      }
+    : defaultDims;
 
   // 2. Load + normalise background.
   const bgBuffer = await loadBackground(template.backgroundUrl);
@@ -464,6 +486,11 @@ export async function renderTemplate(
   let compositeBase: Buffer;
 
   if (photoLayer) {
+    const photoWidth = clampDim(photoLayer.width, 400, 1, MAX_CANVAS_DIM);
+    const photoHeight = clampDim(photoLayer.height, 400, 1, MAX_CANVAS_DIM);
+    const photoLeft = clampDim(photoLayer.x, 0, 0, MAX_CANVAS_DIM);
+    const photoTop = clampDim(photoLayer.y, 0, 0, MAX_CANVAS_DIM);
+
     let photoBuffer: Buffer | null = null;
     if (article.featuredImage) {
       try {
@@ -477,8 +504,8 @@ export async function renderTemplate(
     if (!photoBuffer) {
       photoBuffer = await sharp({
         create: {
-          width: photoLayer.width || 400,
-          height: photoLayer.height || 400,
+          width: photoWidth,
+          height: photoHeight,
           channels: 4,
           background: { r: 229, g: 231, b: 235, alpha: 1 }, // solid grey
         },
@@ -489,7 +516,7 @@ export async function renderTemplate(
 
     // Crop & resize article photo to fit the layer exactly
     const resizedPhoto = await sharp(photoBuffer)
-      .resize(photoLayer.width, photoLayer.height, {
+      .resize(photoWidth, photoHeight, {
         fit: "cover",
         position: "centre",
       })
@@ -507,8 +534,8 @@ export async function renderTemplate(
       .composite([
         {
           input: resizedPhoto,
-          left: photoLayer.x,
-          top: photoLayer.y,
+          left: photoLeft,
+          top: photoTop,
         },
       ])
       .png()

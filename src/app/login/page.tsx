@@ -2,13 +2,42 @@
 
 import { useState, Suspense } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 import Logo from "@/components/common/Logo";
 
+const DEFAULT_CALLBACK_URL = "/panel/dashboard";
+
+function getSafeCallbackUrl(raw: string | null): string {
+  if (!raw) return DEFAULT_CALLBACK_URL;
+  const trimmed = raw.trim();
+  // Accept ONLY single-slash relative paths; reject protocol-relative (//),
+  // backslash tricks (/\), control chars, and redirect loops back to /login.
+  if (
+    !trimmed.startsWith("/") ||
+    trimmed.startsWith("//") ||
+    trimmed.includes("\\") ||
+    /[\r\n\0]/.test(trimmed)
+  ) {
+    return DEFAULT_CALLBACK_URL;
+  }
+  if (trimmed === "/login" || trimmed.startsWith("/login?") || trimmed.startsWith("/login/")) {
+    return DEFAULT_CALLBACK_URL;
+  }
+  try {
+    const dummyOrigin = "https://lensaplus.local";
+    const parsed = new URL(trimmed, dummyOrigin);
+    if (parsed.origin !== dummyOrigin) {
+      return DEFAULT_CALLBACK_URL;
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return DEFAULT_CALLBACK_URL;
+  }
+}
+
 function LoginContent() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +51,7 @@ function LoginContent() {
   // Accept both spellings — middleware writes "session-expired", legacy code uses underscore.
   const reason = searchParams.get("reason") || "";
   const sessionExpired = reason === "session_expired" || reason === "session-expired";
+  const safeCallbackUrl = getSafeCallbackUrl(searchParams.get("callbackUrl"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +73,7 @@ function LoginContent() {
       password,
       code: needs2fa ? code : undefined,
       redirect: false,
+      callbackUrl: safeCallbackUrl,
     });
 
     setLoading(false);
@@ -56,8 +87,8 @@ function LoginContent() {
       }
       setError(result.error === "CredentialsSignin" ? "Email atau password salah" : result.error);
     } else {
-      // Hard redirect to clear all cached state
-      window.location.href = "/panel/dashboard";
+      // Hard redirect to clear all cached state while honoring validated callbackUrl
+      window.location.href = safeCallbackUrl;
     }
   };
 

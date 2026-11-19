@@ -19,6 +19,16 @@ import { effectiveStatus } from "@/lib/membership";
 const W = 1012;
 const H = 638;
 const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
+const MAX_CARD_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB cap to prevent OOM
+const CARD_IMAGE_TIMEOUT_MS = 10_000;
+
+const SITE_ORIGIN = (() => {
+  try {
+    return new URL(SITE).origin;
+  } catch {
+    return "https://lensaplus.com";
+  }
+})();
 
 const EXTRA_IMG_HOSTS = (process.env.CARD_EXTRA_IMAGE_HOSTS || process.env.SOCIAL_EXTRA_IMAGE_HOSTS || "")
   .split(",")
@@ -28,7 +38,7 @@ const EXTRA_IMG_HOSTS = (process.env.CARD_EXTRA_IMAGE_HOSTS || process.env.SOCIA
 const ALLOWED_IMG_HOSTS = new Set([
   (() => {
     try {
-      return new URL(SITE).hostname;
+      return new URL(SITE).hostname.toLowerCase();
     } catch {
       return "lensaplus.com";
     }
@@ -39,13 +49,56 @@ const ALLOWED_IMG_HOSTS = new Set([
   ...EXTRA_IMG_HOSTS,
 ]);
 
-function isAllowedHost(rawUrl: string): boolean {
+function isAllowedRemoteImageUrl(rawUrl: string): boolean {
   try {
-    const h = new URL(rawUrl).hostname.toLowerCase();
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    // Reject embedded credentials (e.g. https://lensaplus.com@127.0.0.1/...)
+    if (parsed.username || parsed.password) return false;
+    // Exact origin match with SITE (fixes startsWith(SITE) SSRF bypass)
+    if (parsed.origin === SITE_ORIGIN) return true;
+    // External allowlisted hosts must be HTTPS
+    if (parsed.protocol !== "https:") return false;
+    const h = parsed.hostname.toLowerCase();
     return ALLOWED_IMG_HOSTS.has(h) || h.endsWith(".lensaplus.com");
   } catch {
     return false;
   }
+}
+
+async function readResponseWithByteCap(res: Response, maxBytes: number): Promise<Buffer | null> {
+  const contentType = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (contentType && !contentType.startsWith("image/")) {
+    await res.body?.cancel?.().catch(() => {});
+    return null;
+  }
+  const declaredLen = Number(res.headers.get("content-length") || 0);
+  if (Number.isFinite(declaredLen) && declaredLen > maxBytes) {
+    await res.body?.cancel?.().catch(() => {});
+    return null;
+  }
+  const reader = res.body?.getReader?.();
+  if (!reader) {
+    const ab = await res.arrayBuffer();
+    if (ab.byteLength === 0 || ab.byteLength > maxBytes) return null;
+    return Buffer.from(ab);
+  }
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (value) {
+      total += value.length;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(value);
+    }
+  }
+  if (total === 0) return null;
+  return Buffer.concat(chunks, total);
 }
 
 function escapeXml(s: string): string {
@@ -138,18 +191,23 @@ async function loadImage(src: string | null | undefined, w: number, h: number, f
   try {
     let buf: Buffer | null = null;
     if (/^https?:\/\//i.test(src)) {
-      if (!isAllowedHost(src)) {
-        // Still allow same-origin /uploads served via the canonical domain.
-        if (!src.startsWith(SITE)) return null;
+      if (!isAllowedRemoteImageUrl(src)) return null;
+      const res = await fetch(src, {
+        signal: AbortSignal.timeout(CARD_IMAGE_TIMEOUT_MS),
+        redirect: "error",
+      });
+      if (!res.ok) {
+        await res.body?.cancel?.().catch(() => {});
+        return null;
       }
-      const res = await fetch(src, { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) return null;
-      buf = Buffer.from(await res.arrayBuffer());
+      buf = await readResponseWithByteCap(res, MAX_CARD_IMAGE_BYTES);
     } else {
       const { default: fs } = await import("fs/promises");
       const { resolvePublicSubpath } = await import("@/lib/safe-path");
       const local = resolvePublicSubpath(src);
       if (!local) return null;
+      const stat = await fs.stat(local);
+      if (!stat.isFile() || stat.size === 0 || stat.size > MAX_CARD_IMAGE_BYTES) return null;
       buf = await fs.readFile(local);
     }
     if (!buf) return null;

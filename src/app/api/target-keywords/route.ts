@@ -3,11 +3,11 @@
  * Manage TargetKeyword rows used by `/api/cron/auto-article`.
  *
  * GET    — list. Filters: ?isActive=true|false, ?categoryId=, ?q=
- *          Auth: EDITOR+
+ *          Auth: SUPER_ADMIN (aligned with /panel/auto-artikel in src/proxy.ts)
  * POST   — create. Body: { keyword, categoryId?, priority? }
- *          Auth: EDITOR+
+ *          Auth: SUPER_ADMIN
  * PATCH  — toggle (or update fields). Body: { id, isActive?, priority?, categoryId?, keyword? }
- *          Auth: EDITOR+
+ *          Auth: SUPER_ADMIN
  * DELETE — ?id=...  Auth: SUPER_ADMIN
  */
 
@@ -39,11 +39,11 @@ const patchSchema = z.object({
   keyword: z.string().min(2).max(255).optional(),
 });
 
-const EDITOR_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"] as const;
+const ADMIN_ONLY_ROLES = ["SUPER_ADMIN"] as const;
 
 export async function GET(req: NextRequest) {
   try {
-    await requireRole([...EDITOR_ROLES]);
+    await requireRole([...ADMIN_ONLY_ROLES]);
     const { searchParams } = new URL(req.url);
     const isActiveParam = searchParams.get("isActive");
     const categoryId = searchParams.get("categoryId");
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireRole([...EDITOR_ROLES]);
+    const session = await requireRole([...ADMIN_ONLY_ROLES]);
     const body = await req.json();
     const data = createSchema.parse(body);
 
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await requireRole([...EDITOR_ROLES]);
+    const session = await requireRole([...ADMIN_ONLY_ROLES]);
     const body = await req.json();
     const data = patchSchema.parse(body);
 

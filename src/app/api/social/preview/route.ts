@@ -4,7 +4,7 @@
  * Full preview: render image + generate caption without persisting a SocialPost.
  * The rendered image IS written to disk under /uploads/social/ so the preview
  * URL works from the client.
- * Auth: EDITOR+
+ * Auth: SUPER_ADMIN (aligned with /panel/social in src/proxy.ts)
  */
 
 import { NextRequest } from "next/server";
@@ -42,7 +42,7 @@ function parseHashtags(raw: string | null | undefined): string[] {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    await requireRole(["SUPER_ADMIN"]);
     const body = await req.json();
     const { articleId, platform } = bodySchema.parse(body);
 

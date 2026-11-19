@@ -1,7 +1,7 @@
 /**
  * POST /api/social/posts/:id/reject
  * Delete a DRAFT post row + its rendered image.
- * Auth: EDITOR+
+ * Auth: SUPER_ADMIN (aligned with /panel/social in src/proxy.ts)
  */
 
 import { NextRequest } from "next/server";
@@ -21,7 +21,7 @@ export async function POST(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
     await rejectDraft(params.id);
 
     await logAudit(

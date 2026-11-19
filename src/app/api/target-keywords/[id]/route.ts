@@ -1,8 +1,8 @@
 /**
  * /api/target-keywords/[id]
  *
- * GET    — fetch a single target keyword. EDITOR+
- * PATCH  — update fields. EDITOR+
+ * GET    — fetch a single target keyword. SUPER_ADMIN
+ * PATCH  — update fields. SUPER_ADMIN
  * DELETE — remove. SUPER_ADMIN
  */
 
@@ -19,7 +19,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const EDITOR_ROLES = ["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"] as const;
+const ADMIN_ONLY_ROLES = ["SUPER_ADMIN"] as const;
 
 const patchSchema = z.object({
   isActive: z.boolean().optional(),
@@ -34,7 +34,7 @@ export async function GET(
 ) {
   const params = await paramsPromise;
   try {
-    await requireRole([...EDITOR_ROLES]);
+    await requireRole([...ADMIN_ONLY_ROLES]);
     const row = await prisma.targetKeyword.findUnique({
       where: { id: params.id },
       include: {
@@ -54,7 +54,7 @@ export async function PATCH(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole([...EDITOR_ROLES]);
+    const session = await requireRole([...ADMIN_ONLY_ROLES]);
     const body = await req.json();
     const data = patchSchema.parse(body);
 

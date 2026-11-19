@@ -60,6 +60,22 @@ export async function PUT(
       }
     }
 
+    // Prevent locking out the last active SUPER_ADMIN via deactivation or demotion.
+    const isDeactivating = data.isActive === false;
+    const isDemotingSuperAdmin =
+      user.role === "SUPER_ADMIN" && data.role !== undefined && data.role !== "SUPER_ADMIN";
+    if (user.role === "SUPER_ADMIN" && user.isActive && (isDeactivating || isDemotingSuperAdmin)) {
+      const activeSuperAdmins = await prisma.user.count({
+        where: { role: "SUPER_ADMIN", isActive: true },
+      });
+      if (activeSuperAdmins <= 1) {
+        throw new ApiError(
+          "Tidak dapat menonaktifkan atau menurunkan peran Super Admin aktif terakhir.",
+          409,
+        );
+      }
+    }
+
     // Hash password if provided; also invalidate active sessions when
     // password changes, account is deactivated, or role changes.
     const updateData: Record<string, unknown> = {
@@ -69,21 +85,38 @@ export async function PUT(
     if (data.password) {
       updateData.password = await bcrypt.hash(data.password, 12);
       updateData.activeSessionId = null;
-    } else if (data.isActive === false || (data.role && data.role !== user.role)) {
+    } else if (isDeactivating || (data.role && data.role !== user.role)) {
       updateData.activeSessionId = null;
     }
 
-    const updated = await prisma.user.update({
-      where: { id: params.id },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        specialization: true,
-        isActive: true,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const u = await tx.user.update({
+        where: { id: params.id },
+        data: updateData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          specialization: true,
+          isActive: true,
+        },
+      });
+
+      // Automatically revoke the user's press membership card (KTA) when deactivated
+      // so inactive accounts can never verify as active press members.
+      if (isDeactivating) {
+        await tx.membershipCard.updateMany({
+          where: { userId: params.id, status: { not: "REVOKED" } },
+          data: {
+            status: "REVOKED",
+            revokedAt: new Date(),
+            notes: "Dicabut otomatis saat akun dinonaktifkan oleh admin.",
+          },
+        });
+      }
+
+      return u;
     });
 
     await logAudit(
@@ -121,7 +154,60 @@ export async function DELETE(
       throw new ApiError("Tidak dapat menghapus akun sendiri", 400);
     }
 
-    await prisma.user.delete({ where: { id: params.id } });
+    // Check restricting FK relations (Article, LiveBlog) upfront to return a clear HTTP 409.
+    const [articleCount, liveBlogCount] = await Promise.all([
+      prisma.article.count({ where: { authorId: params.id } }),
+      prisma.liveBlog.count({ where: { authorId: params.id } }),
+    ]);
+
+    if (articleCount > 0 || liveBlogCount > 0) {
+      const parts: string[] = [];
+      if (articleCount > 0) parts.push(`${articleCount} artikel`);
+      if (liveBlogCount > 0) parts.push(`${liveBlogCount} live blog`);
+      throw new ApiError(
+        `Pengguna tidak dapat dihapus karena masih memiliki ${parts.join(" dan ")}. Alihkan kepemilikan konten tersebut terlebih dahulu atau nonaktifkan akun pengguna ini.`,
+        409,
+      );
+    }
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Revoke KTA card before deletion (MembershipCard also cascades with User).
+        await tx.membershipCard.updateMany({
+          where: { userId: params.id },
+          data: {
+            status: "REVOKED",
+            revokedAt: new Date(),
+            holderName: null,
+            holderPhoto: null,
+          },
+        });
+
+        // Clean up rows in tables that reference user IDs without a DB foreign key.
+        await tx.notification.deleteMany({ where: { userId: params.id } });
+        await tx.tiktokContent.deleteMany({ where: { createdById: params.id } });
+        await tx.tiktokAccount.deleteMany({ where: { ownerId: params.id } });
+        await tx.youtubeClipJob.deleteMany({ where: { requestedById: params.id } });
+        await tx.article.updateMany({
+          where: { assignedEditorId: params.id },
+          data: { assignedEditorId: null },
+        });
+        await tx.liveBlogEntry.updateMany({
+          where: { authorId: params.id },
+          data: { authorId: null },
+        });
+
+        await tx.user.delete({ where: { id: params.id } });
+      });
+    } catch (err) {
+      if (err && typeof err === "object" && (err as { code?: string }).code === "P2003") {
+        throw new ApiError(
+          "Pengguna tidak dapat dihapus karena masih memiliki artikel atau live blog terkait. Alihkan konten tersebut terlebih dahulu atau nonaktifkan akun pengguna ini.",
+          409,
+        );
+      }
+      throw err;
+    }
 
     // Auto-delete associated email routing rules
     try {

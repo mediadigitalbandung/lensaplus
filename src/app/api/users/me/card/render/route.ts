@@ -10,8 +10,9 @@
  */
 
 import { NextRequest } from "next/server";
-import { requireAuth, errorResponse } from "@/lib/api-utils";
-import { ensureMembershipCard } from "@/lib/membership";
+import { ApiError, requireAuth, errorResponse } from "@/lib/api-utils";
+import { prisma } from "@/lib/prisma";
+import { effectiveStatus } from "@/lib/membership";
 import {
   loadCardRenderInput,
   renderMembershipCard,
@@ -30,7 +31,32 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const session = await requireAuth();
-    await ensureMembershipCard(session.user.id);
+
+    // Enforce KTA integrity (HIGH-07): deny rendering official signed PNG/PDF
+    // unless both the user account and membership card are actively valid.
+    const cardRecord = await prisma.membershipCard.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        status: true,
+        expiresAt: true,
+        user: { select: { isActive: true } },
+      },
+    });
+
+    if (!cardRecord) {
+      throw new ApiError(
+        "Kartu Anggota Pers belum diterbitkan atau tidak ditemukan.",
+        403,
+      );
+    }
+
+    const effStatus = effectiveStatus(cardRecord);
+    if (!cardRecord.user?.isActive || cardRecord.status !== "ACTIVE" || effStatus !== "ACTIVE") {
+      throw new ApiError(
+        "Kartu Anggota Pers hanya dapat dirender atau diunduh ketika akun dan kartu berstatus Aktif.",
+        403,
+      );
+    }
 
     const input = await loadCardRenderInput(session.user.id);
     if (!input) return new Response("Kartu tidak ditemukan", { status: 404 });

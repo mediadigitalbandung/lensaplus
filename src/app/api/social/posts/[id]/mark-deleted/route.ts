@@ -3,7 +3,7 @@
  * Mark a SocialPost as DELETED without calling the platform API
  * (used when the operator has manually deleted the post on IG/FB and wants
  * the local row to reflect that).
- * Auth: EDITOR+
+ * Auth: SUPER_ADMIN (aligned with /panel/social in src/proxy.ts)
  */
 
 import { NextRequest } from "next/server";
@@ -24,7 +24,7 @@ export async function POST(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
     const existing = await prisma.socialPost.findUnique({ where: { id: params.id } });
     if (!existing) throw new ApiError("SocialPost not found", 404);
 

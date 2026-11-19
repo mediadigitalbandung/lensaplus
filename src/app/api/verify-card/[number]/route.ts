@@ -6,7 +6,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-utils";
+import { ApiError, successResponse, errorResponse } from "@/lib/api-utils";
 import { roleLabelsMap } from "@/lib/roles";
 import { effectiveStatus, STATUS_LABELS } from "@/lib/membership";
 import { guardPublicRead } from "@/lib/rate-limit";
@@ -18,23 +18,36 @@ export async function GET(req: NextRequest, { params: p }: { params: Promise<{ n
   if (blocked) return blocked;
   try {
     const { number } = await p;
+
+    let decodedNumber: string;
+    try {
+      decodedNumber = decodeURIComponent(number).trim();
+    } catch {
+      throw new ApiError("Format nomor kartu tidak valid", 400);
+    }
+    if (!decodedNumber || decodedNumber.length > 100) {
+      throw new ApiError("Format nomor kartu tidak valid", 400);
+    }
+
     const card = await prisma.membershipCard.findUnique({
-      where: { number },
-      include: { user: { select: { name: true, role: true } } },
+      where: { number: decodedNumber },
+      include: { user: { select: { name: true, role: true, isActive: true } } },
     });
 
     if (!card) {
       return successResponse({ found: false });
     }
 
-    const status = effectiveStatus(card);
-    const valid = status === "ACTIVE";
+    const isUserActive = Boolean(card.user?.isActive);
+    const rawStatus = effectiveStatus(card);
+    const status = isUserActive ? rawStatus : "REVOKED";
+    const valid = isUserActive && card.status === "ACTIVE" && rawStatus === "ACTIVE";
 
     return successResponse({
       found: true,
       valid,
       number: card.number,
-      name: card.holderName || card.user.name,
+      name: isUserActive ? (card.holderName || card.user.name) : card.user.name,
       role: roleLabelsMap[card.user.role] || card.user.role,
       status,
       statusLabel: STATUS_LABELS[status] || status,
