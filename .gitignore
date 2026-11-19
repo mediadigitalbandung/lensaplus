@@ -40,6 +40,9 @@ yarn-error.log*
 /mail/
 /access-logs/
 /public_html/
+# cPanel / LiteSpeed untracked server directories
+lscache/
+public_ftp/
 /scripts/add-cf-env.sh
 /scripts/add-cf-global-env.sh
 /scripts/add-turnstile-env.sh

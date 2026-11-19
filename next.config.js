@@ -1,17 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Skip TypeScript checking during Next.js build phase. Reason:
-  //   Next.js 16 runs `tsc --noEmit` in a forked worker that allocates ~1 GB
-  //   per file batch. On the VPS (16 GB RAM, ~10 GB free during build) the
-  //   kernel OOM-killer routinely hits the worker mid-typecheck → SIGKILL →
-  //   `required-server-files.json` never written → pm2 crash loop with
-  //   "Could not find a production build".
-  //   We already run `npx tsc --noEmit` locally in the pre-commit pipeline
-  //   plus in CI workflow .github/workflows/deploy.yml validate-job, so the
-  //   TS contract is verified BEFORE the VPS build kicks off. Skipping the
-  //   redundant in-build typecheck cuts peak memory roughly in half and
-  //   removes the OOM failure mode without sacrificing type safety.
-  typescript: { ignoreBuildErrors: true },
+  // Enforce TypeScript type safety during `next build` so type errors always
+  // block broken production bundles. Early `npx tsc --noEmit` gates also run
+  // in `deploy.ps1` and `scripts/deploy-vps.sh`.
+  typescript: { ignoreBuildErrors: false },
   // Exclude uploads directory from NFT file tracing to avoid bundling thousands of uploads in SSG builds
   outputFileTracingExcludes: {
     "*": [
@@ -154,19 +146,29 @@ const nextConfig = {
 
 // Wrap with Sentry only when SENTRY_DSN is configured.
 // When DSN is empty, return raw config — no source-map upload, no overhead.
+// Runtime initialization is handled via Next.js 16 instrumentation hooks:
+//   - src/instrumentation.ts (Node.js + Edge via sentry.server/edge.config.ts)
+//   - src/instrumentation-client.ts (Browser + onRouterTransitionStart)
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 if (SENTRY_DSN) {
   const { withSentryConfig } = require("@sentry/nextjs");
+  const hasSentryAuthToken = Boolean(process.env.SENTRY_AUTH_TOKEN);
   module.exports = withSentryConfig(nextConfig, {
     silent: true,
+    telemetry: false,
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
     authToken: process.env.SENTRY_AUTH_TOKEN,
-    // Source map upload — disabled if no auth token; delete maps after upload in v10
+    // Source map upload & release creation — enabled only when SENTRY_AUTH_TOKEN is set.
+    // On Next.js 16 Turbopack + @sentry/nextjs v10, uploads run via
+    // compiler.runAfterProductionCompile and clean up .map artifacts afterward.
     sourcemaps: {
-      disable: !process.env.SENTRY_AUTH_TOKEN,
-      deleteSourcemapsAfterUpload: true,
+      disable: !hasSentryAuthToken,
+      deleteSourcemapsAfterUpload: hasSentryAuthToken,
+    },
+    release: {
+      create: hasSentryAuthToken,
     },
     widenClientFileUpload: true,
     webpack: {

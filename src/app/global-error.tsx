@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
+
 export default function GlobalError({
   error,
   reset,
@@ -7,10 +10,21 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    console.error("[Global error]", error);
+    Sentry.captureException(error, {
+      tags: {
+        boundary: "global",
+        ...(error.digest ? { digest: error.digest } : {}),
+      },
+    });
+  }, [error]);
+
   return (
     <html lang="id">
       <body>
         <div
+          role="alert"
           style={{
             padding: 40,
             textAlign: "center",
@@ -29,11 +43,12 @@ export default function GlobalError({
             </p>
           )}
           <button
+            type="button"
             onClick={reset}
             style={{
               marginTop: 8,
               padding: "10px 24px",
-              background: "#002045",
+              background: "#2E1065",
               color: "#fff",
               border: "none",
               borderRadius: 6,
