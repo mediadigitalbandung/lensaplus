@@ -57,6 +57,7 @@ export interface ArticleForPublish
     | "publishToInstagram"
     | "publishToFacebook"
     | "publishToTwitter"
+    | "publishToThreads"
     | "categoryId"
   > {
   author: Pick<User, "id" | "name" | "avatar">;

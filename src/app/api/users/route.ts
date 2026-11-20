@@ -48,7 +48,15 @@ export async function GET(request: NextRequest) {
       // Now return the array directly under `.data` and put pagination meta in
       // a sibling `pagination` object on the same envelope, matching how every
       // other paginated endpoint in this app shapes its response.
-      return successResponse({ users, pagination: { total, page, limit } });
+      return successResponse({
+        users,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     } else {
       // Non-admin: return only id, name, role for active users (small set, no pagination needed)
       const users = await prisma.user.findMany({

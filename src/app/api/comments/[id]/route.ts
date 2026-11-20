@@ -67,7 +67,7 @@ export async function DELETE(
 
     await prisma.comment.delete({ where: { id: params.id } });
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(session.user.id, "COMMENT_DELETE", "Comment", params.id, undefined, ip);
 
     return successResponse({ deleted: true });

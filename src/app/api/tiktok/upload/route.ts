@@ -48,8 +48,7 @@ export async function POST(request: NextRequest) {
     const target = (formData.get("target")?.toString() || "slot").trim();
     if (!file) throw new ApiError("File tidak ditemukan", 400);
 
-    const rawBytes = Buffer.from(await file.arrayBuffer());
-    let finalBytes: Buffer = rawBytes;
+    let finalBytes: Buffer;
     let safeExt: string;
     let finalMime = file.type;
 
@@ -60,10 +59,12 @@ export async function POST(request: NextRequest) {
       if (file.size > TIKTOK_BGM_MAX_BYTES) {
         throw new ApiError("Ukuran audio maksimal 25MB", 400);
       }
+      const rawBytes = Buffer.from(await file.arrayBuffer());
       const sniffed = sniffAudioMime(new Uint8Array(rawBytes));
       if (!sniffed || !["mp3", "m4a", "aac", "wav"].includes(sniffed.ext)) {
         throw new ApiError("Isi file audio tidak valid. Gunakan MP3, M4A, AAC, atau WAV.", 400);
       }
+      finalBytes = rawBytes;
       safeExt = sniffed.ext;
       finalMime = sniffed.mime;
     } else {
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
         throw new ApiError("Ukuran gambar maksimal 8MB", 400);
       }
 
+      const rawBytes = Buffer.from(await file.arrayBuffer());
       if (isImage) {
         const sanitized = await sanitizeRasterImageBuffer(rawBytes);
         finalBytes = sanitized.bytes;
@@ -93,6 +95,7 @@ export async function POST(request: NextRequest) {
         if (!sniffed) {
           throw new ApiError("Isi file video tidak valid. Gunakan MP4, MOV, atau WebM.", 400);
         }
+        finalBytes = rawBytes;
         safeExt = sniffed.ext;
         finalMime = sniffed.mime;
       }

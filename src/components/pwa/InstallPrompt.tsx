@@ -65,11 +65,21 @@ export default function InstallPrompt() {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setVisible(true);
+      (window as unknown as { __lensaplusInstallPromptActive?: boolean }).__lensaplusInstallPromptActive = true;
+      window.dispatchEvent(new CustomEvent("lensaplus:install-prompt-active", { detail: { active: true } }));
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
   }, [isPanel]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    (window as unknown as { __lensaplusInstallPromptActive?: boolean }).__lensaplusInstallPromptActive = visible;
+    window.dispatchEvent(new CustomEvent("lensaplus:install-prompt-active", { detail: { active: visible } }));
+  }, [visible]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;

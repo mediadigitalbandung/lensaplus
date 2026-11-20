@@ -68,12 +68,18 @@ export async function generateMetadata({
   const ticker = params.ticker.toUpperCase();
   const company = (await prismaAny.publicCompany.findUnique({
     where: { ticker },
-    select: { name: true, sector: true, description: true },
-  })) as Pick<CompanyDetail, "name" | "sector" | "description"> | null;
-  if (!company) return { title: "Emiten tidak ditemukan | Lensaplus" };
+    select: { name: true, sector: true, description: true, isActive: true },
+  })) as Pick<CompanyDetail, "name" | "sector" | "description" | "isActive"> | null;
+  if (!company || !company.isActive) {
+    return {
+      title: "Emiten tidak ditemukan | Lensaplus",
+      robots: { index: false, follow: false },
+    };
+  }
   return {
     title: `${ticker} — ${company.name} | Lensaplus`,
     description: company.description?.slice(0, 160) ?? `Profil ${ticker} (${SECTOR_LABELS[company.sector]}) di Lensaplus.`,
+    alternates: { canonical: `/emiten/${ticker}` },
   };
 }
 

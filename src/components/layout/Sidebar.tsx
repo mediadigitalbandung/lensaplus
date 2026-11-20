@@ -62,7 +62,7 @@ export default function Sidebar({ trending = [], recent = [], popular = [] }: Si
         <section aria-labelledby="sidebar-trending-heading">
           <div className="flex items-center justify-between">
             <h3 id="sidebar-trending-heading" className="border-l-[3px] border-primary pl-3 text-sm font-bold uppercase tracking-wide text-txt-primary">Terpopuler 24 Jam</h3>
-            <Link href="/search?q=trending" className="text-xs font-medium text-primary hover:underline">
+            <Link href="/berita?sort=popular" className="text-xs font-medium text-primary hover:underline">
               Lihat Lainnya &rarr;
             </Link>
           </div>
@@ -163,14 +163,14 @@ export default function Sidebar({ trending = [], recent = [], popular = [] }: Si
                 </Link>
                 <div className="mt-1 flex items-center gap-2 text-xs text-txt-muted">
                   <span>{article.category}</span>
-                  {article.viewCount && (
+                  {(article.viewCount ?? 0) > 0 ? (
                     <>
                       <span className="h-3 w-px bg-border" />
                       <span>
-                        {article.viewCount.toLocaleString("id-ID")} views
+                        {article.viewCount!.toLocaleString("id-ID")} views
                       </span>
                     </>
-                  )}
+                  ) : null}
                 </div>
               </li>
             ))}

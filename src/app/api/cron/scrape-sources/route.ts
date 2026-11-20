@@ -249,10 +249,14 @@ async function handler() {
         // cron tick continues draining the remaining new articles without waiting `frequencyHours`.
         const hasRemainingNew =
           candidatesSeen < newCandidates.length && sourceResult.ok > 0;
+        const nextScrapedUrls =
+          newlyScrapedUrls.length > 0
+            ? Array.from(new Set([...source.scrapedUrls, ...newlyScrapedUrls])).slice(-200)
+            : undefined;
         await prisma.newsSource.update({
           where: { id: source.id },
           data: {
-            scrapedUrls: { push: newlyScrapedUrls },
+            ...(nextScrapedUrls ? { scrapedUrls: nextScrapedUrls } : {}),
             totalScraped: { increment: sourceResult.ok },
             ...(hasRemainingNew ? {} : { lastCheckedAt: new Date() }),
             ...(sourceResult.ok > 0

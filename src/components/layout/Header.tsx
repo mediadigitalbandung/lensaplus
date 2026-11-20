@@ -47,8 +47,15 @@ export default function Header() {
   // Category-bar overflow: measure how many fit and collapse rest into "Lainnya"
   const navUlRef = useRef<HTMLUListElement>(null);
   const rulerRef = useRef<HTMLUListElement>(null);
+  const capsuleRef = useRef<HTMLDivElement>(null);
   const [visibleCount, setVisibleCount] = useState(3);
   const [moreOpen, setMoreOpen] = useState(false);
+
+  useEffect(() => {
+    if (capsuleRef.current) {
+      capsuleRef.current.inert = !scrolled;
+    }
+  }, [scrolled]);
 
   useEffect(() => {
     const container = navUlRef.current;
@@ -320,7 +327,11 @@ export default function Header() {
       </header>
 
       {/* ── 2. Floating Island Capsule (Scrolled Mode) ── */}
-      <div className={`fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-50 w-[94%] sm:w-[92%] max-w-5xl rounded-full bg-white/90 backdrop-blur-md border border-stone-200/60 shadow-ambient px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between transition-all duration-300 ${scrolled ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}>
+      <div
+        ref={capsuleRef}
+        aria-hidden={!scrolled}
+        className={`fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-50 w-[94%] sm:w-[92%] max-w-5xl rounded-full bg-white/90 backdrop-blur-md border border-stone-200/60 shadow-ambient px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between transition-all duration-300 ${scrolled ? "translate-y-0 opacity-100 visible" : "-translate-y-16 opacity-0 invisible pointer-events-none"}`}
+      >
         {/* Left: Compact Logo */}
         <Logo size="sm" />
 

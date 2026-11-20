@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-utils";
+import { guardPublicRead } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,8 @@ export const dynamic = "force-dynamic";
  * No auth required — cookie-based, privacy-respecting.
  */
 export async function POST(req: NextRequest) {
+  const blocked = guardPublicRead(req);
+  if (blocked) return blocked;
   try {
     const body = await req.json().catch(() => ({}));
     const categorySlugs: string[] = Array.isArray(body.categorySlugs)
@@ -23,7 +26,11 @@ export async function POST(req: NextRequest) {
     const excludeSlugs: string[] = Array.isArray(body.excludeSlugs)
       ? body.excludeSlugs.slice(0, 30).filter((s: unknown) => typeof s === "string")
       : [];
-    const limit = Math.min(20, Math.max(1, Number(body.limit) || 12));
+    const rawLimit = Number(body.limit);
+    const limit =
+      Number.isFinite(rawLimit) && rawLimit > 0
+        ? Math.min(20, Math.max(1, Math.floor(rawLimit)))
+        : 12;
 
     let articles;
 

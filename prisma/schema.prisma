@@ -252,6 +252,7 @@ model Article {
   publishToInstagram Boolean?
   publishToFacebook  Boolean?
   publishToTwitter   Boolean?
+  publishToThreads   Boolean?
   socialCaptions     Json?
   faqData            String?           @db.Text
   indexStatus        String?           @default("pending")
@@ -269,6 +270,8 @@ model Article {
 
   @@index([authorId])
   @@index([categoryId])
+  @@index([categoryId, status, publishedAt])
+  @@index([reviewedAt])
   @@index([assignedEditorId])
   @@index([indexStatus])
   // Composite for homepage/category listing: WHERE status=PUBLISHED ORDER BY publishedAt DESC.
@@ -374,6 +377,7 @@ model Report {
   createdAt DateTime     @default(now())
 
   @@index([articleId])
+  @@index([status, createdAt])
   @@map("reports")
 }
 
@@ -411,6 +415,7 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([action])
   @@index([entity, entityId])
   @@index([createdAt])
   @@map("audit_logs")
@@ -454,6 +459,7 @@ model Comment {
   @@index([articleId])
   @@index([articleId, isApproved])
   @@index([isApproved])
+  @@index([authorEmail])
   @@index([createdAt])
   @@map("comments")
 }
@@ -473,6 +479,7 @@ model Media {
   updatedAt    DateTime @default(now()) @updatedAt
 
   @@index([uploadedBy])
+  @@index([url])
   @@map("media")
 }
 
@@ -1120,6 +1127,7 @@ model YoutubeClipJob {
   updatedAt        DateTime  @updatedAt // heartbeat for stale-RUNNING reclaim
 
   @@index([status])
+  @@index([status, updatedAt])
   @@index([requestedById])
   @@map("youtube_clip_jobs")
 }
@@ -1396,6 +1404,7 @@ model LiveBlogSocialPost {
   liveBlogId      String
   liveBlogEntryId String? // null for the root/opener post
   platform        LiveSyndicationPlatform
+  rootKey         String?                 @unique // "${liveBlogId}:${platform}" when isRoot=true; prevents duplicate root threads
   externalId      String? // Telegram message_id or Threads media id
   status          SocialPostStatus        @default(PENDING)
   isRoot          Boolean                 @default(false)

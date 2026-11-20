@@ -42,7 +42,10 @@ export async function GET() {
   try {
     const googleRes = await fetch(
       "https://trends.google.com/trending/rss?geo=ID",
-      { next: { revalidate: 7200 } }
+      {
+        signal: AbortSignal.timeout(10_000),
+        next: { revalidate: 7200 },
+      }
     );
 
     if (!googleRes.ok) return successResponse(getFallbackTags());

@@ -96,47 +96,52 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
         >
           {/* Main story — 8 cols on sm+, full width below sm. Crossfade. */}
           <div className="sm:col-span-8 relative overflow-hidden">
-            {main.map((a, i) => (
-              <Link
-                key={a.slug}
-                href={`/berita/${a.slug}`}
-                className={`block absolute inset-0 transition-opacity duration-700 ease-in-out group ${
-                  i === activeIndex ? "opacity-100 z-10" : "opacity-0 z-0"
-                }`}
-              >
-                {a.featuredImage ? (
-                  <Image
-                    src={a.featuredImage}
-                    alt={a.title}
-                    fill
-                    className="object-cover transition-transform duration-[6000ms] ease-linear group-hover:scale-[1.02]"
-                    style={{ transform: i === activeIndex ? "scale(1.05)" : "scale(1)" }}
-                    priority={i === 0}
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-primary" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 px-5 py-6 pb-12 sm:px-10 sm:py-10 lg:px-14 lg:py-12">
-                  <span className="mb-2 sm:mb-3 inline-block text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-white/80 transition-colors duration-300 group-hover:text-secondary">
-                    {a.category.name}
-                  </span>
-                  <h2 className="font-serif text-headline-sm sm:text-display-sm lg:text-display-md xl:text-display-lg text-white leading-[1.15] sm:leading-[1.1] max-w-2xl pr-4 line-clamp-3">
-                    {a.title}
-                  </h2>
-                  {a.excerpt && (
-                    <p className="mt-3 sm:mt-4 text-body-md text-white/60 max-w-xl line-clamp-2 max-sm:hidden">
-                      {a.excerpt}
-                    </p>
+            {main.map((a, i) => {
+              const isActive = i === activeIndex;
+              return (
+                <Link
+                  key={a.slug}
+                  href={`/berita/${a.slug}`}
+                  aria-hidden={!isActive}
+                  tabIndex={isActive ? 0 : -1}
+                  className={`block absolute inset-0 transition-opacity duration-700 ease-in-out group ${
+                    isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                  }`}
+                >
+                  {a.featuredImage ? (
+                    <Image
+                      src={a.featuredImage}
+                      alt={a.title}
+                      fill
+                      className="object-cover transition-transform duration-[6000ms] ease-linear group-hover:scale-[1.02]"
+                      style={{ transform: isActive ? "scale(1.05)" : "scale(1)" }}
+                      priority={i === 0}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-primary" />
                   )}
-                  <div className="mt-2 sm:mt-4 flex items-center gap-2 sm:gap-3 text-[10px] sm:text-label-sm uppercase tracking-wider text-white/40">
-                    <span className="text-white/60 font-semibold">{a.author.name}</span>
-                    <span>/</span>
-                    <span><ClientDate date={a.publishedAt} format="relative" /></span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 px-5 py-6 pb-12 sm:px-10 sm:py-10 lg:px-14 lg:py-12">
+                    <span className="mb-2 sm:mb-3 inline-block text-[10px] sm:text-label-sm font-bold uppercase tracking-widest text-white/80 transition-colors duration-300 group-hover:text-secondary">
+                      {a.category.name}
+                    </span>
+                    <h2 className="font-serif text-headline-sm sm:text-display-sm lg:text-display-md xl:text-display-lg text-white leading-[1.15] sm:leading-[1.1] max-w-2xl pr-4 line-clamp-3">
+                      {a.title}
+                    </h2>
+                    {a.excerpt && (
+                      <p className="mt-3 sm:mt-4 text-body-md text-white/60 max-w-xl line-clamp-2 max-sm:hidden">
+                        {a.excerpt}
+                      </p>
+                    )}
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 sm:gap-3 text-[10px] sm:text-label-sm uppercase tracking-wider text-white/40">
+                      <span className="text-white/60 font-semibold">{a.author.name}</span>
+                      <span>/</span>
+                      <span><ClientDate date={a.publishedAt} format="relative" /></span>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
 
             {/* First item static for layout height */}
             <div className="relative h-full min-h-[18rem] sm:min-h-full invisible">
@@ -173,55 +178,59 @@ export default function HeroCarousel({ main, side }: HeroCarouselProps) {
               Border separator: vertikal antar card di mobile, horizontal
               di desktop. */}
           <div className="sm:col-span-4 relative overflow-hidden min-h-[10rem] sm:min-h-full border-t border-white/10 sm:border-t-0 sm:border-l sm:border-white/10">
-            {sidePages.map((pageItems, pageIdx) => (
-              <div
-                key={pageIdx}
-                className={`absolute inset-0 grid grid-cols-3 gap-px sm:grid-cols-1 sm:flex sm:flex-col sm:gap-1.5 transition-opacity duration-700 ease-in-out ${
-                  pageIdx === sidePageIndex ? "opacity-100 z-10" : "opacity-0 z-0"
-                }`}
-              >
-                {pageItems.map((a) => (
-                  <Link
-                    key={a.slug}
-                    href={`/berita/${a.slug}`}
-                    className="group relative overflow-hidden sm:flex-1"
-                  >
-                    <div className="absolute inset-0">
-                      {a.featuredImage ? (
-                        <Image
-                          src={a.featuredImage}
-                          alt={a.title}
-                          fill
-                          className="object-cover transition-transform duration-[6000ms] ease-linear group-hover:scale-[1.02]"
-                          style={{
-                            transform:
-                              pageIdx === sidePageIndex ? "scale(1.05)" : "scale(1)",
-                          }}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-primary-container" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-transparent" />
-                    </div>
-                    {/* Konten side card: padding kecil + font ringkas di
-                        mobile (tiap card cuma 1/3 width) supaya teks tidak
-                        terpotong bingung. Skala naik di sm/lg ketika side
-                        panel kembali jadi vertikal stack di kanan hero. */}
-                    <div className="relative p-2 sm:p-4 lg:p-6 flex flex-col justify-end h-full min-h-[6rem] sm:min-h-[8rem]">
-                      <span className="mb-0.5 sm:mb-1 self-start text-[8px] sm:text-label-sm font-bold uppercase tracking-wider sm:tracking-widest text-white/85">
-                        {a.category.name}
-                      </span>
-                      <h2 className="font-serif text-[11px] leading-tight sm:text-title-md sm:leading-snug lg:text-title-lg text-white line-clamp-3 sm:line-clamp-2 group-hover:text-white/90 transition-colors">
-                        {a.title}
-                      </h2>
-                      <span className="mt-0.5 sm:mt-2 text-[8px] sm:text-label-sm text-white/50 uppercase tracking-wider">
-                        <ClientDate date={a.publishedAt} format="relative" />
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ))}
+            {sidePages.map((pageItems, pageIdx) => {
+              const isActive = pageIdx === sidePageIndex;
+              return (
+                <div
+                  key={pageIdx}
+                  aria-hidden={!isActive}
+                  className={`absolute inset-0 grid grid-cols-3 gap-px sm:grid-cols-1 sm:flex sm:flex-col sm:gap-1.5 transition-opacity duration-700 ease-in-out ${
+                    isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                  }`}
+                >
+                  {pageItems.map((a) => (
+                    <Link
+                      key={a.slug}
+                      href={`/berita/${a.slug}`}
+                      tabIndex={isActive ? 0 : -1}
+                      className="group relative overflow-hidden sm:flex-1"
+                    >
+                      <div className="absolute inset-0">
+                        {a.featuredImage ? (
+                          <Image
+                            src={a.featuredImage}
+                            alt={a.title}
+                            fill
+                            className="object-cover transition-transform duration-[6000ms] ease-linear group-hover:scale-[1.02]"
+                            style={{
+                              transform: isActive ? "scale(1.05)" : "scale(1)",
+                            }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-primary-container" />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-transparent" />
+                      </div>
+                      {/* Konten side card: padding kecil + font ringkas di
+                          mobile (tiap card cuma 1/3 width) supaya teks tidak
+                          terpotong bingung. Skala naik di sm/lg ketika side
+                          panel kembali jadi vertikal stack di kanan hero. */}
+                      <div className="relative p-2 sm:p-4 lg:p-6 flex flex-col justify-end h-full min-h-[6rem] sm:min-h-[8rem]">
+                        <span className="mb-0.5 sm:mb-1 self-start text-[8px] sm:text-label-sm font-bold uppercase tracking-wider sm:tracking-widest text-white/85">
+                          {a.category.name}
+                        </span>
+                        <h2 className="font-serif text-[11px] leading-tight sm:text-title-md sm:leading-snug lg:text-title-lg text-white line-clamp-3 sm:line-clamp-2 group-hover:text-white/90 transition-colors">
+                          {a.title}
+                        </h2>
+                        <span className="mt-0.5 sm:mt-2 text-[8px] sm:text-label-sm text-white/50 uppercase tracking-wider">
+                          <ClientDate date={a.publishedAt} format="relative" />
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              );
+            })}
 
             {/* Page dots — only when more than one page exists */}
             {totalSidePages > 1 && (

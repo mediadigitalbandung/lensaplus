@@ -25,6 +25,7 @@ const updateAdSchema = z.object({
   endDate: z.string().datetime().optional(),
   isActive: z.boolean().optional(),
   priority: z.number().int().optional(),
+  targetPages: z.array(z.string()).optional(),
 });
 
 // PUT /api/ads/:id

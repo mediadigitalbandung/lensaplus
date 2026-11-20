@@ -9,7 +9,12 @@ import {
   logAudit,
   ApiError,
 } from "@/lib/api-utils";
-import { onArticlePublished, onArticleUnpublished } from "@/lib/seo-auto";
+import {
+  onArticlePublished,
+  onArticleUnpublished,
+  generateSeoTitle,
+  generateSeoDescription,
+} from "@/lib/seo-auto";
 import { markScrapedUrlsDeleted } from "@/lib/scraper/claim";
 import { checkArticleQuality } from "@/lib/article-quality";
 import { invalidateCachePrefix } from "@/lib/cache";
@@ -101,13 +106,20 @@ export async function POST(request: NextRequest) {
           id: true,
           status: true,
           title: true,
+          excerpt: true,
           content: true,
           featuredImage: true,
+          seoTitle: true,
+          seoDescription: true,
+          approvedById: true,
+          approvedAt: true,
+          reviewedBy: true,
+          reviewedAt: true,
         },
       });
 
-      const passingApprovedIds: string[] = [];
-      const passingDraftIds: string[] = [];
+      const passingApproved: typeof candidates = [];
+      const passingDraft: typeof candidates = [];
       const skipped: Array<{ id: string; title: string; reason: string }> = [];
 
       for (const a of candidates) {
@@ -120,10 +132,12 @@ export async function POST(request: NextRequest) {
           });
           continue;
         }
-        if (a.status === "APPROVED") passingApprovedIds.push(a.id);
-        else passingDraftIds.push(a.id);
+        if (a.status === "APPROVED") passingApproved.push(a);
+        else passingDraft.push(a);
       }
 
+      const passingApprovedIds = passingApproved.map((a) => a.id);
+      const passingDraftIds = passingDraft.map((a) => a.id);
       const publishableIds = [...passingApprovedIds, ...passingDraftIds];
       if (publishableIds.length === 0) {
         throw new ApiError(
@@ -158,11 +172,63 @@ export async function POST(request: NextRequest) {
                 publishedAt: now,
                 verificationLabel: "UNVERIFIED",
                 scheduledAt: null,
+                approvedById: session.user.id,
+                approvedAt: now,
               },
             })
           : Promise.resolve({ count: 0 }),
       ]);
       const result = { count: approvedResult.count + draftResult.count };
+
+      // Backfill approver attribution for APPROVED articles lacking approvedById/approvedAt
+      // and auto-fill missing seoTitle/seoDescription to match single-article publish.
+      const passingAll = [...passingApproved, ...passingDraft];
+      const metadataPatches = passingAll
+        .map((a) => {
+          const patch: {
+            approvedById?: string;
+            approvedAt?: Date;
+            seoTitle?: string;
+            seoDescription?: string;
+          } = {};
+          if (a.status === "APPROVED") {
+            if (!a.approvedById) {
+              patch.approvedById = a.reviewedBy ?? session.user.id;
+            }
+            if (!a.approvedAt) {
+              patch.approvedAt = a.reviewedAt ?? now;
+            }
+          }
+          if (!a.seoTitle) {
+            patch.seoTitle = generateSeoTitle(a.title);
+          }
+          if (!a.seoDescription) {
+            patch.seoDescription = generateSeoDescription(a.excerpt, a.content);
+          }
+          return Object.keys(patch).length > 0 ? { id: a.id, patch } : null;
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null);
+
+      if (metadataPatches.length > 0) {
+        const CONCURRENCY = 5;
+        const queue = [...metadataPatches];
+        const workers: Promise<void>[] = [];
+        for (let i = 0; i < Math.min(CONCURRENCY, queue.length); i++) {
+          workers.push(
+            (async () => {
+              while (queue.length > 0) {
+                const item = queue.shift();
+                if (!item) break;
+                await prisma.article.update({
+                  where: { id: item.id },
+                  data: item.patch,
+                });
+              }
+            })(),
+          );
+        }
+        await Promise.all(workers);
+      }
 
       await logAudit(
         session.user.id,
@@ -172,10 +238,12 @@ export async function POST(request: NextRequest) {
         `Bulk publish ${result.count} dari ${ids.length} artikel${skipped.length > 0 ? ` (${skipped.length} ditahan quality gate)` : ""}`,
       );
 
-      // ISR cache invalidation — essential so homepage/listings reflect new articles.
+      // ISR + in-memory cache invalidation — essential so homepage/listings reflect new articles immediately.
       try {
         revalidatePath("/");
         revalidatePath("/berita");
+        invalidateCachePrefix("home:");
+        invalidateCachePrefix("trending:");
       } catch {
         /* revalidatePath may be a no-op outside a route handler — harmless */
       }

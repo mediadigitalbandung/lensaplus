@@ -643,7 +643,7 @@ export default async function ArticlePage({ params: paramsPromise, searchParams:
                 <Image src="/lensaplus-icon.png" alt="Lensaplus" width={40} height={40} />
                 <div>
                   <div className="print-title">Lensaplus</div>
-                  <div className="print-subtitle">Media Berita Digital Bandung — lensaplus.com</div>
+                  <div className="print-subtitle">Media Berita Digital Nasional Indonesia — lensaplus.com</div>
                 </div>
               </div>
 

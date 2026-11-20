@@ -3,6 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Kode Etik Jurnalistik",
   description: "Kode etik jurnalistik yang dianut oleh Lensaplus dalam menjalankan kegiatan pers.",
+  alternates: { canonical: "/kode-etik" },
 };
 
 const articles = [

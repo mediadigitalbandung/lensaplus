@@ -1310,8 +1310,7 @@ export default function EditArticlePage() {
 
         {/* Activity Info */}
         <div className="mb-6 rounded-lg border border-border bg-surface p-5 space-y-3">
-          <h3 className="text-sm font-bold text-txt-primary uppercase tracking-wider flex items-center gap-2">
-            <Eye size={16} />
+          <h3 className="text-sm font-bold text-txt-primary uppercase tracking-wider">
             Informasi Artikel
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -1361,8 +1360,7 @@ export default function EditArticlePage() {
         {/* Admin Actions */}
         {["DRAFT", "REJECTED"].includes(currentStatus) && (
           <div className="mb-6 rounded-lg border-2 border-border bg-surface p-5">
-            <h3 className="flex items-center gap-2 text-base font-bold text-txt-primary">
-              <FileText size={18} className="text-primary" />
+            <h3 className="text-base font-bold text-txt-primary">
               Artikel Masih Berupa Draf
             </h3>
             <p className="mt-1 text-sm text-txt-secondary">
@@ -1425,8 +1423,7 @@ export default function EditArticlePage() {
 
         {currentStatus === "APPROVED" && (
           <div className="mb-6 rounded-lg border border-primary/40 border-l-4 border-l-primary bg-surface p-5">
-            <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
-              <CheckCircle size={18} />
+            <h3 className="text-base font-bold text-primary-dark">
               Artikel Disetujui — Siap Dipublikasi
             </h3>
             <p className="mt-1 text-sm text-primary">
@@ -1533,8 +1530,7 @@ export default function EditArticlePage() {
 
         {currentStatus === "PUBLISHED" && (
           <div className="mb-6 rounded-lg border border-primary/40 border-l-4 border-l-primary bg-surface p-5">
-            <h3 className="flex items-center gap-2 text-base font-bold text-primary-dark">
-              <CheckCircle size={18} />
+            <h3 className="text-base font-bold text-primary-dark">
               Artikel Sudah Dipublikasikan
             </h3>
           </div>
@@ -1542,8 +1538,7 @@ export default function EditArticlePage() {
 
         {currentStatus === "IN_REVIEW" && (
           <div className="mb-6 rounded-lg border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-5">
-            <h3 className="flex items-center gap-2 text-base font-bold text-yellow-800">
-              <MessageSquare size={18} />
+            <h3 className="text-base font-bold text-yellow-800">
               Artikel Sedang Direview oleh Editor
             </h3>
             <p className="mt-1 text-sm text-yellow-700">
@@ -2098,8 +2093,7 @@ export default function EditArticlePage() {
       {/* REJECTED: Show editor's rejection note */}
       {(currentStatus === "REJECTED" || currentStatus === "DRAFT") && existingReviewNote && (
         <div className="mb-4 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-4">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-red-700">
-            <XCircle size={16} />
+          <h3 className="text-sm font-semibold text-red-700">
             Artikel Ditolak oleh Editor
           </h3>
           <p className="mt-2 text-sm text-red-600 font-medium">{existingReviewNote}</p>
@@ -2126,8 +2120,7 @@ export default function EditArticlePage() {
       {/* IN_REVIEW: Article locked, show who is reviewing */}
       {currentStatus === "IN_REVIEW" && isOwner && (
         <div className="mb-4 rounded-lg border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-4">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-yellow-800">
-            <Lock size={16} />
+          <h3 className="text-sm font-semibold text-yellow-800">
             Artikel Sedang Direview
           </h3>
           <p className="mt-1 text-sm text-yellow-600">
@@ -2148,8 +2141,7 @@ export default function EditArticlePage() {
       {/* APPROVED: Article locked */}
       {currentStatus === "APPROVED" && isOwner && (
         <div className="mb-4 rounded-lg border border-blue-300 border-l-4 border-l-blue-600 bg-surface p-4">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-blue-700">
-            <CheckCircle size={16} />
+          <h3 className="text-sm font-semibold text-blue-700">
             Artikel Telah Disetujui
           </h3>
           <p className="mt-1 text-sm text-blue-600">
@@ -2168,8 +2160,7 @@ export default function EditArticlePage() {
       {/* PUBLISHED: Article locked */}
       {currentStatus === "PUBLISHED" && isOwner && (
         <div className="mb-4 rounded-lg border border-primary/40 border-l-4 border-l-primary bg-surface p-4">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-primary-dark">
-            <CheckCircle size={16} />
+          <h3 className="text-sm font-semibold text-primary-dark">
             Artikel Telah Dipublikasikan
           </h3>
         </div>

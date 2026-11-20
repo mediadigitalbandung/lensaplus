@@ -111,14 +111,15 @@ export default function BookmarkPage() {
               </div>
             ))}
           </div>
-        ) : bookmarks.length === 0 ? (
+        ) : articles.length === 0 ? (
           <div className="rounded-lg border border-border bg-surface-secondary p-12 text-center">
             <p className="text-lg font-semibold text-txt-primary">
               Belum ada bookmark
             </p>
             <p className="mt-1 text-sm text-txt-secondary">
-              Simpan artikel favorit dengan menekan ikon bookmark pada halaman
-              berita.
+              {bookmarks.length > 0
+                ? "Artikel yang pernah Anda simpan sudah tidak tersedia."
+                : "Simpan artikel favorit dengan menekan ikon bookmark pada halaman berita."}
             </p>
             <Link
               href="/"

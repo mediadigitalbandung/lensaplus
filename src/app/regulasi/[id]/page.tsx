@@ -67,6 +67,7 @@ export async function generateMetadata({ params: paramsPromise }: PageProps): Pr
       title: pageTitle,
       description,
     },
+    alternates: { canonical: `/regulasi/${id}` },
   };
 }
 

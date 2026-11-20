@@ -417,7 +417,7 @@ export default function RevisionsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface px-4 py-3 text-sm text-red-700">
           <AlertCircle size={16} />
           {error}
         </div>

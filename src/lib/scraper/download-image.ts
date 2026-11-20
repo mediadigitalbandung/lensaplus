@@ -18,6 +18,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { sanitizeRasterImageBuffer } from "@/lib/upload-security";
 import { assertSafePublicUrl, safePublicFetch, userAgent } from "./fetch";
 
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -283,11 +284,25 @@ export async function downloadImageToUploads(
   }
 
   let ext = sniffed;
-  if (sniffed === "avif") {
-    // Convert AVIF to JPEG for universal CMS/social/OG compatibility.
+  let finalCt = "";
+  if (sniffed === "jpg" || sniffed === "png" || sniffed === "webp") {
+    // Re-encode via sharp to strip EXIF/GPS metadata and neutralize polyglots.
+    const sanitized = await sanitizeRasterImageBuffer(bytes);
+    bytes = sanitized.bytes;
+    ext = sanitized.ext;
+    finalCt = sanitized.contentType;
+  } else if (sniffed === "avif") {
+    // Convert AVIF to JPEG (sharp also strips EXIF by default when not calling withMetadata()).
     const { default: sharp } = await import("sharp");
-    bytes = await sharp(bytes).jpeg({ quality: 88 }).toBuffer();
+    bytes = await sharp(bytes, { failOn: "error" }).rotate().jpeg({ quality: 88 }).toBuffer();
     ext = "jpg";
+    finalCt = "image/jpeg";
+  } else {
+    // GIF: re-encode animated GIF via sharp to strip metadata/comments.
+    const { default: sharp } = await import("sharp");
+    bytes = await sharp(bytes, { animated: true, failOn: "error" }).gif().toBuffer();
+    ext = "gif";
+    finalCt = "image/gif";
   }
 
   const filename = buildFilename(ext);
@@ -296,13 +311,15 @@ export async function downloadImageToUploads(
   await writeFile(join(dir, filename), bytes);
 
   const localUrl = `/uploads/${filename}`;
-  const baseCt = contentType.split(";")[0].trim();
-  const finalCt =
-    ext === "jpg"
-      ? "image/jpeg"
-      : ALLOWED_TYPES.has(baseCt)
-        ? baseCt
-        : `image/${ext}`;
+  if (!finalCt) {
+    const baseCt = contentType.split(";")[0].trim();
+    finalCt =
+      ext === "jpg"
+        ? "image/jpeg"
+        : ALLOWED_TYPES.has(baseCt)
+          ? baseCt
+          : `image/${ext}`;
+  }
 
   // Register in Media library so it shows up in the picker.
   try {

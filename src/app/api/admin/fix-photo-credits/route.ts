@@ -86,14 +86,20 @@ async function buildContext(): Promise<RecoveryContext> {
     prisma.auditLog.findMany({
       where: { action: "NEWS_SOURCE_SCRAPE_ONE" },
       select: { detail: true },
+      orderBy: { createdAt: "desc" },
+      take: 5000,
     }),
     prisma.auditLog.findMany({
       where: { action: { in: ["CRON_AUTO_ARTICLE", "MATERIAL_GENERATE"] } },
       select: { entityId: true },
+      orderBy: { createdAt: "desc" },
+      take: 5000,
     }),
     prisma.scrapedUrl.findMany({
       where: { articleId: { not: null } },
       select: { articleId: true, url: true },
+      orderBy: { createdAt: "desc" },
+      take: 10000,
     }),
     prisma.category.findMany({ select: { id: true, name: true } }),
   ]);

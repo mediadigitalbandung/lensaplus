@@ -23,6 +23,7 @@ import {
 } from "@/lib/scraper/source-validation";
 import { SCRAPER_ROLES } from "@/lib/roles";
 import { canPublishDirectly } from "@/lib/auth";
+import { getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(session.user.id, "NEWS_SOURCE_CREATE", "NewsSource", created.id, JSON.stringify({ name: created.name, listingUrl: created.listingUrl }), ip);
 
     return successResponse(created, 201);

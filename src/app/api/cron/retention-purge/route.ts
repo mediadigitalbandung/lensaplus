@@ -249,18 +249,45 @@ async function runRetentionPurge() {
         }
         if (aged.length) {
           // A file is "referenced" if its /uploads/perplexity/<name> path appears
-          // in any article's content or featuredImage.
-          const arts = await prisma.article.findMany({
-            where: { content: { contains: "/uploads/perplexity/" } },
-            select: { content: true },
-          });
-          const featured = await prisma.article.findMany({
-            where: { featuredImage: { contains: "/uploads/perplexity/" } },
-            select: { featuredImage: true },
-          });
-          const haystack = arts.map((a) => a.content).join("\n") + "\n" + featured.map((a) => a.featuredImage).join("\n");
-          for (const f of aged) {
-            if (haystack.includes(`/uploads/perplexity/${f}`)) continue;
+          // in any article's content or featuredImage. Stream articles in bounded
+          // cursor batches to avoid loading all HTML bodies into memory at once.
+          const unreferenced = new Set(aged);
+          const BATCH_SIZE = 100;
+          let cursorId: string | undefined;
+
+          while (unreferenced.size > 0) {
+            const batch = await prisma.article.findMany({
+              where: {
+                OR: [
+                  { content: { contains: "/uploads/perplexity/" } },
+                  { featuredImage: { contains: "/uploads/perplexity/" } },
+                ],
+              },
+              select: { id: true, content: true, featuredImage: true },
+              orderBy: { id: "asc" },
+              take: BATCH_SIZE,
+              ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+            });
+            if (batch.length === 0) break;
+
+            for (const a of batch) {
+              for (const f of unreferenced) {
+                const needle = `/uploads/perplexity/${f}`;
+                if (
+                  a.content.includes(needle) ||
+                  (a.featuredImage != null && a.featuredImage.includes(needle))
+                ) {
+                  unreferenced.delete(f);
+                }
+              }
+              if (unreferenced.size === 0) break;
+            }
+
+            if (batch.length < BATCH_SIZE) break;
+            cursorId = batch[batch.length - 1].id;
+          }
+
+          for (const f of unreferenced) {
             await unlink(path.join(dir, f)).catch(() => {});
             perplexityImagesDeleted++;
           }

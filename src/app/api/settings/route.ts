@@ -109,6 +109,7 @@ const ALLOWED_KEYS = [
   "sorotan_interval_minutes",
   "sorotan_batch_size",
   // IndexNow
+  "indexnow_enabled",
   "indexnow_key",
   // Press membership card (KTA) — org officials & signatures (not secrets)
   "kta_director_name",

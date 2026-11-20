@@ -100,7 +100,7 @@ export const metadata: Metadata = {
   category: "news",
   icons: {
     icon: "/lensaplus-icon.png",
-    apple: "/lensaplus-icon.png",
+    apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",
   robots: {
@@ -128,15 +128,11 @@ export default async function RootLayout({
   return (
     <html lang="id" className={`${playfairDisplay.variable} ${plusJakartaSans.variable} ${inter.variable}`}>
       <head>
-        {/* Google Tag (GTM-N9S7N99M) */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtm.js?id=GTM-N9S7N99M"
-        />
+        {/* Google Tag Manager (GTM-N9S7N99M) */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());",
+              "(function(w,d,s,l){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id=GTM-N9S7N99M'+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer');",
           }}
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -149,7 +145,7 @@ export default async function RootLayout({
           title="Lensaplus — Feed RSS Berita"
           href="/feed.xml"
         />
-        <meta name="theme-color" content="#0F172A" />
+        <meta name="theme-color" content="#2E1065" />
         <meta name="google" content="notranslate" />
         {/* PWA / Add-to-Home-Screen */}
         <meta name="mobile-web-app-capable" content="yes" />
@@ -157,7 +153,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Lensaplus" />
         {/* Dedicated 180x180 with white background */}
-        <link rel="apple-touch-icon" sizes="180x180" href="/lensaplus-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -188,11 +184,11 @@ export default async function RootLayout({
         />
         {/* Google AdSense Meta Tag Verification */}
         <meta name="google-adsense-account" content={adsenseClientId} />
+      </head>
+      <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased overflow-x-clip">
         {/* Google Analytics 4 (gtag) — Measurement ID from Pengaturan → Google.
             Renders nothing until configured, so safe to mount unconditionally. */}
         <GoogleAnalytics />
-      </head>
-      <body className="flex min-h-screen flex-col font-sans bg-surface text-on-surface antialiased overflow-x-clip">
         <Providers>
           <a
             href="#main-content"

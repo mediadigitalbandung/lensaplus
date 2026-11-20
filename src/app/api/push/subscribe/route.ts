@@ -25,6 +25,24 @@ const unsubscribeSchema = z.object({
   endpoint: z.string().trim().min(1).max(2000),
 });
 
+function isAllowedPushHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (
+    h === "fcm.googleapis.com" ||
+    h === "android.googleapis.com" ||
+    h === "updates.push.services.mozilla.com"
+  ) {
+    return true;
+  }
+  if (h.endsWith(".notify.windows.com") && h.length > ".notify.windows.com".length) {
+    return true;
+  }
+  if (h.endsWith(".push.apple.com") && h.length > ".push.apple.com".length) {
+    return true;
+  }
+  return false;
+}
+
 async function assertValidPushEndpoint(endpoint: string): Promise<string> {
   let parsed: URL;
   try {
@@ -34,6 +52,12 @@ async function assertValidPushEndpoint(endpoint: string): Promise<string> {
   }
   if (parsed.protocol !== "https:") {
     throw new ApiError("Endpoint push harus menggunakan HTTPS", 400);
+  }
+  if (parsed.port && parsed.port !== "443") {
+    throw new ApiError("Port endpoint push tidak diizinkan", 400);
+  }
+  if (!isAllowedPushHost(parsed.hostname)) {
+    throw new ApiError("Host endpoint push tidak termasuk layanan push yang diizinkan", 400);
   }
   return parsed.toString();
 }
@@ -109,8 +133,11 @@ export async function DELETE(req: NextRequest) {
       throw new ApiError("Endpoint push tidak valid", 400);
     }
 
+    const normalizedEndpoint = parsed.toString();
     await prisma.pushSubscription.updateMany({
-      where: { endpoint },
+      where: {
+        endpoint: { in: Array.from(new Set([endpoint, normalizedEndpoint])) },
+      },
       data: { isActive: false },
     });
 

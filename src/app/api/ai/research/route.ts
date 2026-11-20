@@ -28,8 +28,8 @@ const ID_OUTLETS = [
 ];
 
 const SYSTEM_DRAFT =
-  "Anda jurnalis senior Lensaplus — media berita digital Bandung (fokus bisnis, ekonomi, " +
-  "pemerintahan, hukum, plus topik general). Riset topik dari sumber berita Indonesia yang " +
+  "Anda jurnalis senior Lensaplus — media berita digital nasional Indonesia (fokus politik, " +
+  "hukum, bisnis, ekonomi, olahraga, teknologi, dan peristiwa Nusantara). Riset topik dari sumber berita Indonesia yang " +
   "kredibel dan TERBARU, lalu hasilkan PAKET artikel lengkap berbahasa Indonesia yang faktual " +
   "dan SEO-friendly. JANGAN mengarang fakta — hanya yang didukung sumber. " +
   "Jawab PERSIS dengan format blok berpenanda di bawah ini (JANGAN pakai JSON, markdown, atau code fence). " +

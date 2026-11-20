@@ -46,7 +46,7 @@ export async function GET() {
       topicCount,
       sorotanTotal,
       sorotanIndexed,
-      articlesWithSorotanGroups,
+      articlesWithSorotan,
       indexStatusGroups,
       lastSubmittedRow,
       quotaCountRow,
@@ -68,12 +68,11 @@ export async function GET() {
       prisma.user.count({ where: { isActive: true } }),
       prisma.glossary.count(),
       prisma.topic.count(),
-      prisma.sorotan.count(),
-      prisma.sorotan.count({ where: { indexStatus: "indexed" } }),
-      // articles WITH at least one sorotan — distinct articleIds
-      prisma.sorotan.findMany({
-        select: { articleId: true },
-        distinct: ["articleId"],
+      prisma.sorotan.count({ where: { article: { status: "PUBLISHED" } } }),
+      prisma.sorotan.count({ where: { indexStatus: "indexed", article: { status: "PUBLISHED" } } }),
+      // articles WITH at least one sorotan (PUBLISHED only)
+      prisma.article.count({
+        where: { status: "PUBLISHED", sorotan: { some: {} } },
       }),
       prisma.article.groupBy({
         by: ["indexStatus"],
@@ -124,9 +123,8 @@ export async function GET() {
       ? Math.round(((articlesWithSeo + articlesWithImage + articlesWithExcerpt) / (publishedArticles * 3)) * 100)
       : 0;
 
-    const articlesWithSorotan = articlesWithSorotanGroups.length;
     const sorotanCoverage = publishedArticles > 0
-      ? Math.round((articlesWithSorotan / publishedArticles) * 100)
+      ? Math.min(100, Math.round((articlesWithSorotan / publishedArticles) * 100))
       : 0;
 
     // ─────────────────── Indexing health ───────────────────

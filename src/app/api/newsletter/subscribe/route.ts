@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
 import { sendEmail } from "@/lib/email";
 import { commentRateLimit, getClientIp } from "@/lib/rate-limit";
+import { readJsonBody } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     const { success: allowed } = commentRateLimit(ip);
     if (!allowed) throw new ApiError("Terlalu banyak permintaan. Coba lagi nanti.", 429);
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const data = subscribeSchema.parse(body);
 
     const existing = await prisma.newsletterSubscriber.findUnique({

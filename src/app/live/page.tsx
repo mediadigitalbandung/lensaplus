@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     title: "Siaran Langsung | Lensaplus",
     description: "Liputan langsung peristiwa terkini.",
   },
+  alternates: { canonical: "/live" },
 };
 
 type LiveBlogStatus = "SCHEDULED" | "LIVE" | "ENDED" | "CANCELLED";
@@ -193,7 +194,7 @@ export default async function LiveListPage() {
   const { liveNow, upcoming, recent } = await getLiveBlogs();
 
   return (
-    <main className="container-main py-8 sm:py-12">
+    <div className="container-main py-8 sm:py-12">
       {/* Page header */}
       <div className="mb-8 border-l-4 border-secondary pl-3">
         <h1 className="font-serif text-headline-sm font-bold text-on-surface">
@@ -258,6 +259,6 @@ export default async function LiveListPage() {
           <p className="text-body-md mt-1">Pantau halaman ini untuk update terbaru.</p>
         </div>
       )}
-    </main>
+    </div>
   );
 }

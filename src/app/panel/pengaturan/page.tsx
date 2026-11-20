@@ -1586,7 +1586,7 @@ export default function PengaturanPage() {
               }}
             />
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
+          <div className="flex items-center justify-between rounded-lg border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface px-4 py-3">
             <div>
               <p className="text-sm font-medium text-yellow-900">
                 Mode Maintenance

@@ -5,11 +5,11 @@
  */
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
-import { requireAuth, successResponse, errorResponse, ApiError } from "@/lib/api-utils";
+import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
 import { verifyTotp, consumeBackupCode } from "@/lib/totp";
-import { twoFactorRateLimit } from "@/lib/rate-limit";
+import { twoFactorRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +42,16 @@ export async function POST(req: NextRequest) {
       where: { id: session.user.id },
       data: { twoFactorEnabled: false, twoFactorSecret: null, twoFactorBackupCodes: null },
     });
+
+    await logAudit(
+      session.user.id,
+      "TWO_FACTOR_DISABLE",
+      "User",
+      session.user.id,
+      "User disabled 2FA",
+      getClientIp(req),
+    );
+
     return successResponse({ disabled: true });
   } catch (error) {
     return errorResponse(error);

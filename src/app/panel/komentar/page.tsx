@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  MessageCircle,
   CheckCircle,
   XCircle,
   Trash2,
-  Clock,
   Filter,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
@@ -179,7 +177,7 @@ export default function KomentarPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
+        <div className="mb-4 rounded-lg border border-border border-l-4 border-l-red-600 bg-surface p-4 text-center text-base text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchComments}
@@ -197,25 +195,19 @@ export default function KomentarPage() {
           {/* Stats */}
           <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-              <div className="flex items-center gap-2 text-sm text-txt-secondary">
-                <MessageCircle size={16} /> Total
-              </div>
+              <div className="text-sm text-txt-secondary">Total</div>
               <p className="mt-1 text-lg sm:text-2xl font-bold text-txt-primary">
                 {pendingCount + approvedCount}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-              <div className="flex items-center gap-2 text-sm text-yellow-600">
-                <Clock size={16} /> Menunggu
-              </div>
+              <div className="text-sm text-yellow-600">Menunggu</div>
               <p className="mt-1 text-lg sm:text-2xl font-bold text-txt-primary">
                 {pendingCount}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-              <div className="flex items-center gap-2 text-sm text-primary">
-                <CheckCircle size={16} /> Disetujui
-              </div>
+              <div className="text-sm text-primary">Disetujui</div>
               <p className="mt-1 text-lg sm:text-2xl font-bold text-txt-primary">
                 {approvedCount}
               </p>

@@ -83,8 +83,7 @@ export default function TiktokCreatePage() {
       </Link>
 
       <div className="rounded-lg border border-border bg-surface p-6 shadow-card">
-        <h1 className="flex items-center gap-2 text-xl font-bold text-txt-primary">
-          <Sparkles size={20} className="text-primary" />
+        <h1 className="text-xl font-bold text-txt-primary">
           Buat Konten TikTok Baru
         </h1>
         <p className="mt-1 text-sm text-txt-secondary">
@@ -92,7 +91,7 @@ export default function TiktokCreatePage() {
         </p>
 
         {error && (
-          <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-4 rounded-md border border-red-300 border-l-4 border-l-red-600 bg-surface p-3 text-sm text-red-700">
             {error}
           </div>
         )}

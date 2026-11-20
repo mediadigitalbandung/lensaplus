@@ -23,6 +23,8 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { verifyCronSecret, errorResponse, logAudit } from "@/lib/api-utils";
 import { decryptSecret } from "@/lib/crypto-secrets";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { trackCron } from "@/lib/cron-tracker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -45,7 +47,7 @@ interface DebugTokenData {
 }
 
 interface TokenCheckResult {
-  platform: "instagram" | "facebook";
+  platform: "instagram" | "facebook" | "threads";
   expiresAt: Date | null;
   daysLeft: number | null;
   neverExpires: boolean;
@@ -119,12 +121,23 @@ async function getSuperAdminEmails(): Promise<string[]> {
 
 async function handler(req: NextRequest) {
   const started = Date.now();
-  try {
-    try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
 
-    const [igSettings, fbSettings] = await Promise.all([
+  const LOCK_KEY = "cron:check-meta-tokens";
+  const lockToken = await acquireCronLock(LOCK_KEY, 5 * 60_000);
+  if (!lockToken) {
+    return NextResponse.json(
+      { success: true, skipped: true, reason: "ANOTHER_RUN_IN_PROGRESS" },
+      { status: 200 },
+    );
+  }
+
+  try {
+
+    const [igSettings, fbSettings, threadsSettings] = await Promise.all([
       prisma.instagramSettings.findUnique({ where: { id: "global" } }),
       prisma.facebookSettings.findUnique({ where: { id: "global" } }),
+      prisma.threadsSettings.findUnique({ where: { id: "global" } }),
     ]);
 
     const results: TokenCheckResult[] = [];
@@ -184,13 +197,36 @@ async function handler(req: NextRequest) {
       results.push(result);
     }
 
+    if (threadsSettings?.accessToken) {
+      const expiresAt = threadsSettings.tokenExpiresAt ?? null;
+      const daysLeft = expiresAt ? daysUntil(expiresAt) : null;
+      let warning: "expired" | "expiring_soon" | null = null;
+      if (daysLeft !== null) {
+        if (daysLeft < 0) warning = "expired";
+        else if (daysLeft < WARN_DAYS) warning = "expiring_soon";
+      }
+      results.push({
+        platform: "threads",
+        expiresAt,
+        daysLeft,
+        neverExpires: false,
+        isValid: daysLeft !== null ? daysLeft >= 0 : null,
+        warning,
+      });
+    }
+
     // Send warning emails for platforms that need attention
     const needsWarning = results.filter((r) => r.warning !== null);
     if (needsWarning.length > 0) {
       const adminEmails = await getSuperAdminEmails();
       for (const r of needsWarning) {
         const isExpired = r.warning === "expired";
-        const label = r.platform === "instagram" ? "Instagram" : "Facebook Page";
+        const label =
+          r.platform === "instagram"
+            ? "Instagram"
+            : r.platform === "facebook"
+              ? "Facebook Page"
+              : "Threads";
         const subject = isExpired
           ? `[LENSAPLUS] EXPIRED — Meta ${label} token sudah kedaluwarsa`
           : `[LENSAPLUS] Peringatan — Meta ${label} token habis dalam ${r.daysLeft} hari`;
@@ -259,13 +295,17 @@ async function handler(req: NextRequest) {
       },
       { status: 200 },
     );
+  } finally {
+    await releaseCronLock(LOCK_KEY, lockToken);
   }
 }
 
 export async function GET(req: NextRequest) {
-  try { return await handler(req); } catch (e) { return errorResponse(e); }
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
+  try { return await trackCron("check-meta-tokens", () => handler(req)); } catch (e) { return errorResponse(e); }
 }
 
 export async function POST(req: NextRequest) {
-  try { return await handler(req); } catch (e) { return errorResponse(e); }
+  try { verifyCronSecret(req); } catch (e) { return errorResponse(e); }
+  try { return await trackCron("check-meta-tokens", () => handler(req)); } catch (e) { return errorResponse(e); }
 }

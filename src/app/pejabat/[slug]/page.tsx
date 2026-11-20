@@ -60,6 +60,7 @@ export async function generateMetadata({ params: paramsPromise }: PageProps): Pr
     title: pageTitle,
     description,
     openGraph: { title: pageTitle, description },
+    alternates: { canonical: `/pejabat/${slug}` },
   };
 }
 

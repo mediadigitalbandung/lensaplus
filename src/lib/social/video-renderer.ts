@@ -35,7 +35,12 @@ const OUT_W = 1080;
 const OUT_H = 1920;
 const THREADS = 2;
 
-export const SOCIAL_REELS_DIR = path.join(process.cwd(), "public", "uploads", "social-reels");
+export const SOCIAL_REELS_DIR = path.join(
+  /* turbopackIgnore: true */ process.cwd(),
+  "public",
+  "uploads",
+  "social-reels",
+);
 
 const APP_URL = (() => {
   const url = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
@@ -62,7 +67,7 @@ export function reelPublicUrl(filename: string): string {
 
 function resolveFfmpegPath(): string {
   const p = (ffmpegStatic as unknown as string) || "";
-  if (!p || !existsSync(p)) {
+  if (!p || !existsSync(/* turbopackIgnore: true */ p)) {
     throw new Error(
       "ffmpeg binary not found. `ffmpeg-static` postinstall may have failed during deploy — " +
         "re-run `npm ci` on the server (do not use --ignore-scripts).",
@@ -89,7 +94,7 @@ const FFMPEG_TIMEOUT_MS = 180_000;
 function runFfmpeg(args: string[], timeoutMs = FFMPEG_TIMEOUT_MS): Promise<void> {
   const bin = resolveFfmpegPath();
   return new Promise((resolve, reject) => {
-    const proc = spawn(bin, args, { stdio: ["ignore", "ignore", "pipe"] });
+    const proc = spawn(/* turbopackIgnore: true */ bin, args, { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
     let settled = false;
 
@@ -217,7 +222,7 @@ export async function renderReelVideo(opts: RenderReelOptions): Promise<RenderRe
 
     const voicePath = opts.voiceWav && opts.voiceWav.length > 44 ? path.join(workDir, "voice.wav") : null;
     if (voicePath) await fs.writeFile(voicePath, opts.voiceWav as Buffer);
-    const hasBgm = !!(opts.bgmPath && existsSync(opts.bgmPath));
+    const hasBgm = !!(opts.bgmPath && existsSync(/* turbopackIgnore: true */ opts.bgmPath));
 
     // Audio inputs follow the concat video (input 0). Four cases: voice + BGM
     // (BGM ducked under the narration & mixed), voice only, BGM only, or silent.
@@ -301,7 +306,7 @@ export async function deleteReelFiles(videoUrl?: string | null, thumbnailUrl?: s
   for (const u of [videoUrl, thumbnailUrl]) {
     const safePath = resolvePublicSubpath(u, "uploads/social-reels");
     if (safePath) {
-      await fs.unlink(safePath).catch(() => {});
+      await fs.unlink(/* turbopackIgnore: true */ safePath).catch(() => {});
     }
   }
 }

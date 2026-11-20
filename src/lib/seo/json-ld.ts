@@ -34,13 +34,11 @@ const LOGO_URL = `${SITE_URL}/lensaplus-icon.png`;
 // as a knowledge-graph entity signal.
 const SISTER_BRANDS: string[] = (() => {
   const raw = process.env.LENSAPLUS_SISTER_BRANDS;
-  if (raw !== undefined) {
-    return raw
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => /^https?:\/\//i.test(s));
-  }
-  return ["https://jurnalishukumbandung.com"];
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => /^https?:\/\//i.test(s));
 })();
 
 // Publisher identity/contact for Organization structured data.

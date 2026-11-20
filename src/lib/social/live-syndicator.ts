@@ -17,6 +17,7 @@
  *   per-blog opt-in, so it can never fire unexpectedly.
  */
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
 import { TelegramPublisher, escapeTelegramHtml, TELEGRAM_TEXT_MAX } from "./telegram";
@@ -105,12 +106,52 @@ async function ensureRoot(
   });
   if (existing?.externalId) return existing.externalId;
 
+  const rootKey = `${blog.id}:${platform}`;
+  let claimed = false;
+  try {
+    await prisma.liveBlogSocialPost.create({
+      data: {
+        liveBlogId: blog.id,
+        platform,
+        isRoot: true,
+        rootKey,
+        status: "PENDING",
+        caption: rootCaption,
+      },
+    });
+    claimed = true;
+  } catch (err) {
+    if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002")) {
+      throw err;
+    }
+    // Another worker owns rootKey — retry only if the previous attempt REJECTED.
+    const retryClaim = await prisma.liveBlogSocialPost.updateMany({
+      where: { rootKey, status: "REJECTED" },
+      data: { status: "PENDING", errorMessage: null, caption: rootCaption },
+    });
+    if (retryClaim.count > 0) {
+      claimed = true;
+    }
+  }
+
+  if (!claimed) {
+    // Wait briefly for the winning worker to finish publishing the root thread.
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const row = await prisma.liveBlogSocialPost.findUnique({
+        where: { rootKey },
+        select: { status: true, externalId: true },
+      });
+      if (row?.status === "PUBLISHED" && row.externalId) return row.externalId;
+      if (row?.status === "REJECTED") return null;
+      await new Promise((r) => setTimeout(r, 350));
+    }
+    return null;
+  }
+
   const outcome = await makeRoot();
-  await prisma.liveBlogSocialPost.create({
+  await prisma.liveBlogSocialPost.update({
+    where: { rootKey },
     data: {
-      liveBlogId: blog.id,
-      platform,
-      isRoot: true,
       status: outcome.success ? "PUBLISHED" : "REJECTED",
       externalId: outcome.externalId ?? null,
       caption: rootCaption,

@@ -372,7 +372,6 @@ export default function RichTextEditor({
       editor.commands.setContent(incoming, { emitUpdate: false });
       setCounts(computeEditorCounts(editor.getText({ blockSeparator: " " })));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content, editor]);
 
   // ─── AI Tools ───

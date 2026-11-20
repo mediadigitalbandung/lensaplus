@@ -13,13 +13,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Bot,
-  FileText,
   Edit,
   Trash2,
   Loader2,
   Info,
   RefreshCw,
-  Terminal,
   Hash,
   Plus,
   Power,
@@ -714,8 +712,7 @@ export default function AutoArtikelPage() {
       {/* Target Keywords Manager */}
       <div className="mb-6 rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border bg-surface-secondary px-5 py-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-base font-bold text-txt-primary">
-            <Hash size={16} className="text-primary" />
+          <h2 className="text-base font-bold text-txt-primary">
             Target Keyword
           </h2>
           <span className="text-xs text-txt-muted">
@@ -948,34 +945,30 @@ export default function AutoArtikelPage() {
       </div>
 
       {/* Trigger Info */}
-      <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
-        <div className="flex items-start gap-3">
-          <Terminal size={18} className="mt-0.5 text-blue-600 shrink-0" />
-          <div className="flex-1">
-            <h3 className="text-sm font-bold text-blue-800">
-              Trigger Manual (Cron)
-            </h3>
-            <p className="mt-1 text-xs text-blue-700">
-              Endpoint{" "}
-              <code className="font-mono bg-blue-100 px-1 py-0.5 rounded-lg">
-                POST /api/cron/auto-article
-              </code>{" "}
-              diproteksi <code className="font-mono">Authorization: Bearer $CRON_SECRET</code>.
-              Jalankan dari terminal VPS:
-            </p>
-            <pre className="mt-2 overflow-x-auto rounded-lg bg-blue-900 p-3 text-[11px] text-blue-100">
+      <div className="mb-6 rounded-xl border border-border border-l-4 border-l-primary bg-surface p-5">
+        <div className="flex-1">
+          <h3 className="text-sm font-bold text-txt-primary">
+            Trigger Manual (Cron)
+          </h3>
+          <p className="mt-1 text-xs text-txt-secondary">
+            Endpoint{" "}
+            <code className="font-mono text-txt-primary">
+              POST /api/cron/auto-article
+            </code>{" "}
+            diproteksi <code className="font-mono text-txt-primary">Authorization: Bearer $CRON_SECRET</code>.
+            Jalankan dari terminal VPS:
+          </p>
+          <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-900 p-3 text-[11px] text-slate-100">
 {`curl -X POST https://lensaplus.com/api/cron/auto-article \\
   -H "Authorization: Bearer $CRON_SECRET"`}
-            </pre>
-          </div>
+          </pre>
         </div>
       </div>
 
       {/* Article list */}
       <div className="rounded-xl border border-border bg-surface shadow-card overflow-hidden">
         <div className="border-b border-border bg-surface-secondary px-5 py-4 flex items-center justify-between flex-wrap gap-3">
-          <h2 className="flex items-center gap-2 text-base font-bold text-txt-primary">
-            <FileText size={16} className="text-primary" />
+          <h2 className="text-base font-bold text-txt-primary">
             Artikel Auto-Generated
           </h2>
           <span className="text-xs text-txt-muted">

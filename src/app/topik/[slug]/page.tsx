@@ -3,7 +3,7 @@ export const revalidate = 300;
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 import ArticleCard from "@/components/artikel/ArticleCard";
@@ -114,9 +114,16 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
   const searchParams = await searchParamsPromise;
   const topic = await getTopic(params.slug);
 
-  // No topic cluster found — fall back to the original kategori redirect.
+  // No topic cluster found — redirect to /kategori/[slug] only if category exists.
   if (!topic) {
-    permanentRedirect(`/kategori/${params.slug}`);
+    const cat = await prisma.category.findUnique({
+      where: { slug: params.slug },
+      select: { slug: true },
+    });
+    if (cat) {
+      permanentRedirect(`/kategori/${cat.slug}`);
+    }
+    notFound();
   }
 
   const page = parsePositiveInt(searchParams.page, 1);
@@ -181,7 +188,7 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(itemListJsonLd) }}
       />
 
-      <main className="container-main py-10">
+      <div className="container-main py-10">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-1 text-xs text-txt-muted">
           <Link href="/" className="hover:text-primary">Beranda</Link>
@@ -300,7 +307,7 @@ export default async function TopikDetailPage({ params: paramsPromise, searchPar
             )}
           </div>
         )}
-      </main>
+      </div>
     </>
   );
 }

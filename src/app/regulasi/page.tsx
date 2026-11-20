@@ -18,6 +18,7 @@ export const metadata: Metadata = {
     description:
       "Direktori UU, PP, Perpres, Permen, Perda, dan Putusan Mahkamah terlengkap.",
   },
+  alternates: { canonical: "/regulasi" },
 };
 
 const TYPE_LABELS: Record<RegulationType, string> = {

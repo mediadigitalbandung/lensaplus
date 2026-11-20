@@ -184,7 +184,7 @@ async function loadArticleForPublish(
 
 function shouldPublishToPlatform(
   platform: Platform,
-  article: Pick<Article, "publishToInstagram" | "publishToFacebook" | "publishToTwitter">,
+  article: Pick<Article, "publishToInstagram" | "publishToFacebook" | "publishToTwitter" | "publishToThreads">,
   globalSettings: SocialMediaSettings,
   platformEnabled: boolean,
 ): { publish: boolean; reason?: string } {
@@ -195,7 +195,9 @@ function shouldPublishToPlatform(
       ? article.publishToInstagram
       : platform === "FACEBOOK"
         ? article.publishToFacebook
-        : article.publishToTwitter;
+        : platform === "TWITTER"
+          ? article.publishToTwitter
+          : article.publishToThreads;
 
   // Explicit false on article → skip, regardless of global.
   if (perArticle === false) {

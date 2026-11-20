@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   title: "Dashboard Ekonomi Bandung | Lensaplus",
   description:
     "Indikator ekonomi terkini Kota Bandung: inflasi, PDRB, UMK, pengangguran, dan data perekonomian Jawa Barat dari BPS.",
+  alternates: { canonical: "/ekonomi-bandung" },
 };
 
 const TREND_ICONS: Record<"up" | "down" | "stable", string> = {

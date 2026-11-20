@@ -2344,8 +2344,7 @@ function SettingsTab() {
   if (error && !loading) {
     return (
       <div className="py-16 text-center max-w-md mx-auto space-y-4">
-        <div className="p-6 rounded-xl border border-red-200 bg-red-50 space-y-3">
-          <span className="text-3xl">⚠️</span>
+        <div className="p-6 rounded-xl border border-red-300 border-l-4 border-l-red-600 bg-surface space-y-3">
           <h4 className="font-bold text-txt-primary text-sm">
             Gagal Memuat Pengaturan
           </h4>
@@ -2388,21 +2387,18 @@ function SettingsTab() {
     <div className="space-y-6">
       {/* Expiry Warning Alert Banner */}
       {(isIgExpired || isFbExpired || isIgExpiringSoon || isFbExpiringSoon) && (
-        <div className="rounded-xl border border-red-200 bg-red-50/70 backdrop-blur p-5 text-sm text-red-800">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl mt-0.5">⚠️</span>
-            <div className="space-y-1">
-              <h4 className="font-bold text-red-950 text-sm">
-                Perhatian: Status Token Meta Anda Bermasalah!
-              </h4>
-              <p className="text-xs leading-relaxed text-red-800 font-medium">
-                {isIgExpired && "• Access token Instagram Anda telah kedaluwarsa. "}
-                {isFbExpired && "• Access token Facebook Anda telah kedaluwarsa. "}
-                {isIgExpiringSoon && `• Access token Instagram Anda akan habis dalam ${igDaysLeft} hari. `}
-                {isFbExpiringSoon && `• Access token Facebook Anda akan habis dalam ${fbDaysLeft} hari. `}
-                Hal ini menyebabkan posting otomatis gagal dilakukan. Silakan ikuti panduan di bawah untuk memperbarui token Anda menggunakan token baru dari Meta Developers.
-              </p>
-            </div>
+        <div className="rounded-xl border border-red-300 border-l-4 border-l-red-600 bg-surface p-5 text-sm text-red-800">
+          <div className="space-y-1">
+            <h4 className="font-bold text-red-950 text-sm">
+              Perhatian: Status Token Meta Anda Bermasalah!
+            </h4>
+            <p className="text-xs leading-relaxed text-red-800 font-medium">
+              {isIgExpired && "• Access token Instagram Anda telah kedaluwarsa. "}
+              {isFbExpired && "• Access token Facebook Anda telah kedaluwarsa. "}
+              {isIgExpiringSoon && `• Access token Instagram Anda akan habis dalam ${igDaysLeft} hari. `}
+              {isFbExpiringSoon && `• Access token Facebook Anda akan habis dalam ${fbDaysLeft} hari. `}
+              Hal ini menyebabkan posting otomatis gagal dilakukan. Silakan ikuti panduan di bawah untuk memperbarui token Anda menggunakan token baru dari Meta Developers.
+            </p>
           </div>
         </div>
       )}
@@ -2425,8 +2421,8 @@ function SettingsTab() {
 
         {showGuide && (
           <div className="p-5 border-t border-border bg-surface-secondary/40 space-y-4 text-xs leading-relaxed text-txt-secondary">
-            <div className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-lg text-blue-950 space-y-1.5 backdrop-blur-sm">
-              <strong className="text-blue-950 font-bold block text-xs">💡 Info Penting Tentang Tipe Token:</strong>
+            <div className="p-3.5 border border-border border-l-4 border-l-primary bg-surface rounded-lg text-txt-secondary space-y-1.5">
+              <strong className="text-txt-primary font-bold block text-xs">Info Penting Tentang Tipe Token:</strong>
               Sangat direkomendasikan menggunakan <strong>Page Access Token</strong> yang didapatkan melalui proses &quot;Scan Akun&quot; di bawah. Token ini <strong>tidak akan pernah kedaluwarsa (Never Expires)</strong> jika Anda melakukan scan menggunakan <strong>User Access Token Jangka Panjang (Long-Lived, 60 hari)</strong>. 
               <br/>
               Jika server Anda telah dikonfigurasi dengan App ID &amp; Secret, sistem akan otomatis mengubah token jangka pendek menjadi jangka panjang saat di-scan! Jika belum, harap ikuti langkah perpanjangan manual di bawah.
@@ -2679,8 +2675,7 @@ function SettingsTab() {
       {/* Instagram */}
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <h3 className="text-base font-bold text-txt-primary flex items-center gap-2">
-            <Instagram size={16} className="text-pink-500" />
+          <h3 className="text-base font-bold text-txt-primary">
             Instagram
           </h3>
           {settings.instagram.hasAccessToken ? (
@@ -2898,8 +2893,7 @@ function SettingsTab() {
       {/* Facebook */}
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <h3 className="text-base font-bold text-txt-primary flex items-center gap-2">
-            <Facebook size={16} className="text-blue-600" />
+          <h3 className="text-base font-bold text-txt-primary">
             Facebook
           </h3>
           {settings.facebook.hasAccessToken ? (
@@ -3089,16 +3083,15 @@ function SettingsTab() {
       {/* Threads */}
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <h3 className="text-base font-bold text-txt-primary flex items-center gap-2">
-            <Share2 size={16} className="text-emerald-500" />
+          <h3 className="text-base font-bold text-txt-primary">
             Threads
           </h3>
           {settings.threads?.hasAccessToken ? (
-            <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20">
-              ✅ Terkoneksi
+            <span className="text-xs font-semibold text-emerald-700">
+              Terkoneksi
             </span>
           ) : (
-            <span className="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+            <span className="text-xs font-medium text-txt-muted">
               Belum Terkoneksi
             </span>
           )}

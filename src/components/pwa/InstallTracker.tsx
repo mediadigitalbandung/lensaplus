@@ -25,12 +25,16 @@ export default function InstallTracker() {
 
     // 2. Standalone detection (user opens from home screen) — fire once per session
     const sessionKey = "lensaplus_pwa_session_logged";
-    if (!sessionStorage.getItem(sessionKey)) {
-      const display = detectDisplayMode();
-      if (display !== "browser") {
-        track("pwa-launch", { display });
-        sessionStorage.setItem(sessionKey, "1");
+    try {
+      if (!sessionStorage.getItem(sessionKey)) {
+        const display = detectDisplayMode();
+        if (display !== "browser") {
+          track("pwa-launch", { display });
+          sessionStorage.setItem(sessionKey, "1");
+        }
       }
+    } catch {
+      /* ignore private-mode or blocked storage */
     }
 
     // 3. APK download click — delegated listener

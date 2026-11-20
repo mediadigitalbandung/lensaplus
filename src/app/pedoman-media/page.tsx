@@ -4,6 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Pedoman Media Siber",
   description: "Pedoman pemberitaan media siber Lensaplus.",
+  alternates: { canonical: "/pedoman-media" },
 };
 
 export default function PedomanMediaPage() {

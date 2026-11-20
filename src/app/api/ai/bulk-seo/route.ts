@@ -4,7 +4,7 @@ import { requireRole, ApiError, logAudit, errorResponse } from "@/lib/api-utils"
 import { prisma } from "@/lib/prisma";
 import { cleanAIShortText } from "@/lib/sanitize";
 import { callAI } from "@/lib/ai-client";
-import { getClientIp } from "@/lib/rate-limit";
+import { aiRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,10 @@ const SEO_SYSTEM_PROMPT =
 export async function POST(req: NextRequest) {
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
+    const { success: allowed } = aiRateLimit(session.user.id);
+    if (!allowed) {
+      throw new ApiError("Batas penggunaan AI tercapai (20 request/jam). Coba lagi nanti.", 429);
+    }
 
     const rawBody = await req.json().catch(() => {
       throw new ApiError("Payload JSON tidak valid", 400);

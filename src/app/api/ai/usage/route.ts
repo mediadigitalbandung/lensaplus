@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { requireRole, successResponse, errorResponse, parsePositiveInt } from "@/lib/api-utils";
+import { ApiError, requireRole, successResponse, errorResponse, parsePositiveInt } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,7 +9,10 @@ export async function GET(req: NextRequest) {
     // staffer's name + tokens + the articles they ran AI on). That's admin
     // cost telemetry, not data a CHIEF_EDITOR should see; matches the SA-only
     // middleware tier for /panel/ai-log.
-    await requireRole(["SUPER_ADMIN"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
+    if (!rateLimit(`ai-usage:${session.user.id}`, 60, 60_000).success) {
+      throw new ApiError("Terlalu banyak permintaan log AI. Coba lagi sebentar.", 429);
+    }
 
     const { searchParams } = new URL(req.url);
     const page = parsePositiveInt(searchParams.get("page"), 1);

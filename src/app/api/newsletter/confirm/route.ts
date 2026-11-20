@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { errorResponse } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -14,29 +15,33 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
  * forwarding. Redirects to /newsletter?status=confirmed for UX.
  */
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const token = searchParams.get("token");
-  if (!token) {
-    return NextResponse.redirect(`${SITE_URL}/newsletter?status=invalid-token`);
-  }
+  try {
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get("token");
+    if (!token) {
+      return NextResponse.redirect(`${SITE_URL}/newsletter?status=invalid-token`);
+    }
 
-  const sub = await prisma.newsletterSubscriber.findUnique({ where: { token } });
-  if (!sub) {
-    return NextResponse.redirect(`${SITE_URL}/newsletter?status=invalid-token`);
-  }
-  if (sub.confirmedAt && !sub.unsubscribedAt) {
-    return NextResponse.redirect(`${SITE_URL}/newsletter?status=already-confirmed`);
-  }
+    const sub = await prisma.newsletterSubscriber.findUnique({ where: { token } });
+    if (!sub) {
+      return NextResponse.redirect(`${SITE_URL}/newsletter?status=invalid-token`);
+    }
+    if (sub.confirmedAt && !sub.unsubscribedAt) {
+      return NextResponse.redirect(`${SITE_URL}/newsletter?status=already-confirmed`);
+    }
 
-  await prisma.newsletterSubscriber.update({
-    where: { id: sub.id },
-    data: {
-      confirmedAt: new Date(),
-      unsubscribedAt: null,
-      // Rotate token with CSPRNG — confirmation token shouldn't double as unsubscribe key.
-      token: `uns_${randomBytes(24).toString("hex")}`,
-    },
-  });
+    await prisma.newsletterSubscriber.update({
+      where: { id: sub.id },
+      data: {
+        confirmedAt: new Date(),
+        unsubscribedAt: null,
+        // Rotate token with CSPRNG — confirmation token shouldn't double as unsubscribe key.
+        token: `uns_${randomBytes(24).toString("hex")}`,
+      },
+    });
 
-  return NextResponse.redirect(`${SITE_URL}/newsletter?status=confirmed`);
+    return NextResponse.redirect(`${SITE_URL}/newsletter?status=confirmed`);
+  } catch (error) {
+    return errorResponse(error);
+  }
 }

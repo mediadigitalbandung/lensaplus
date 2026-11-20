@@ -40,6 +40,7 @@ import {
   BookOpen,
   Video,
   RadioTower,
+  Layers,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,7 @@ const menuItems: MenuItem[] = [
   { name: "Material Artikel", href: "/panel/material-artikel", icon: Sparkles, editorOnly: true },
   { name: "Sumber Berita", href: "/panel/sumber-berita", icon: Globe },
   { name: "Kategori", href: "/panel/kategori", icon: FolderOpen, editorOnly: true },
+  { name: "Topik", href: "/panel/topik", icon: Layers, managementOnly: true },
   { name: "Tags", href: "/panel/tags", icon: Hash, editorOnly: true },
   { name: "Riwayat Review", href: "/panel/riwayat-review", icon: ClipboardCheck, editorOnly: true },
   { name: "Komentar", href: "/panel/komentar", icon: MessageCircle, editorOnly: true },
@@ -79,6 +81,7 @@ const menuItems: MenuItem[] = [
   { name: "Analytics", href: "/panel/analytics", icon: BarChart3, managementOnly: true },
   { name: "Statistik", href: "/panel/statistik", icon: TrendingUp },
   { name: "SEO", href: "/panel/seo", icon: Search, managementOnly: true },
+  { name: "Log AI", href: "/panel/ai-log", icon: Bot, adminOnly: true },
   { name: "Email", href: "/panel/email", icon: Mail, adminOnly: true },
   { name: "Buletin", href: "/panel/newsletter-subscribers", icon: Mail, managementOnly: true },
   { name: "Pengaturan", href: "/panel/pengaturan", icon: Settings, adminOnly: true },
@@ -364,7 +367,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         {/* Main content. NOTE: no overflow-x here — an overflow ancestor turns
             the sticky top bar into a scroll-bound element and breaks it.
             Wide tables manage their own horizontal scroll wrappers. */}
-        <main className="flex-1 lg:ml-60 min-w-0">
+        <div className="flex-1 lg:ml-60 min-w-0">
           {/* Top bar — sticky, glassy, reflects the current section */}
           <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-surface/80 px-4 sm:px-5 backdrop-blur-md shadow-[0_1px_2px_rgba(0,32,69,0.06)]">
             <div className="flex min-w-0 items-center gap-3">
@@ -510,7 +513,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           )}
 
           <div className="p-4 sm:p-6">{children}</div>
-        </main>
+        </div>
       </div>
     </div>
   );

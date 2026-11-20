@@ -37,13 +37,24 @@ export async function PATCH(
     const body = await request.json();
     const data = updateMediaSchema.parse(body);
 
+    const updateData: {
+      title?: string | null;
+      caption?: string | null;
+      credit?: string | null;
+    } = {};
+    if (data.title !== undefined) {
+      updateData.title = data.title?.trim() || null;
+    }
+    if (data.caption !== undefined) {
+      updateData.caption = data.caption?.trim() || null;
+    }
+    if (data.credit !== undefined) {
+      updateData.credit = data.credit?.trim() || null;
+    }
+
     const updated = await prisma.media.update({
       where: { id: params.id },
-      data: {
-        title: data.title?.trim() || null,
-        caption: data.caption?.trim() || null,
-        credit: data.credit?.trim() || null,
-      },
+      data: updateData,
     });
 
     await logAudit(session.user.id, "MEDIA_UPDATE", "media", params.id, `Updated media metadata`);

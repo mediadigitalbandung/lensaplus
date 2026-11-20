@@ -110,14 +110,18 @@ export async function getQuotaStatus(): Promise<GoogleQuotaStatus> {
   return { used, limit, remaining, percentUsed, date };
 }
 
-async function incrementDailyCount(): Promise<void> {
-  await withQuotaLock(async (tx) => {
+async function tryReserveDailyQuota(limit: number): Promise<boolean> {
+  return withQuotaLock(async (tx) => {
     const current = await readOrResetDailyCountTx(tx);
+    if (current >= limit) {
+      return false;
+    }
     await tx.systemSetting.upsert({
       where: { key: QUOTA_KEY },
       create: { key: QUOTA_KEY, value: String(current + 1) },
       update: { value: String(current + 1) },
     });
+    return true;
   });
 }
 
@@ -224,12 +228,12 @@ export async function submitUrlToGoogle(
     };
   }
 
-  // Daily quota gate — Google's free quota is ~200/day (unless increased).
-  // If we've already hit the limit, fail fast without burning an API call.
+  // Atomic daily quota reservation — prevents concurrent callers from racing
+  // past the 200/day gate before the counter increments.
   const quotaLimit = await getQuotaLimit();
   try {
-    const count = await getDailyCount();
-    if (count >= quotaLimit) {
+    const reserved = await tryReserveDailyQuota(quotaLimit);
+    if (!reserved) {
       return {
         success: false,
         error: "QUOTA_EXCEEDED_DAILY",
@@ -251,13 +255,6 @@ export async function submitUrlToGoogle(
     const response = await indexing.urlNotifications.publish({
       requestBody: { url, type },
     });
-
-    // Record success in the daily counter (best-effort).
-    try {
-      await incrementDailyCount();
-    } catch {
-      /* swallow */
-    }
 
     return {
       success: true,

@@ -21,6 +21,7 @@ import {
 } from "@/lib/scraper/source-validation";
 import { SCRAPER_ROLES } from "@/lib/roles";
 import { canPublishDirectly } from "@/lib/auth";
+import { getClientIp } from "@/lib/rate-limit";
 
 /** A source is manageable by its owner, or by any SUPER_ADMIN. */
 function canManageSource(
@@ -107,7 +108,7 @@ export async function PUT(
       include: { category: { select: { id: true, name: true, slug: true } } },
     });
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(session.user.id, "NEWS_SOURCE_UPDATE", "NewsSource", params.id, JSON.stringify({ name: updated.name }), ip);
 
     return successResponse(updated);
@@ -131,7 +132,7 @@ export async function DELETE(
     }
     await prisma.newsSource.delete({ where: { id: params.id } });
 
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(request);
     await logAudit(session.user.id, "NEWS_SOURCE_DELETE", "NewsSource", params.id, JSON.stringify({ name: existing.name }), ip);
 
     return new NextResponse(null, { status: 204 });

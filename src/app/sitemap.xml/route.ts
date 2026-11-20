@@ -79,7 +79,10 @@ export async function GET() {
 
   try {
     const [categories, articles, tags, authors] = await Promise.all([
-      prisma.category.findMany({ select: { slug: true } }),
+      prisma.category.findMany({
+        where: { articles: { some: { status: "PUBLISHED" } } },
+        select: { slug: true },
+      }),
       prisma.article.findMany({
         where: { status: "PUBLISHED" },
         select: { slug: true, updatedAt: true },

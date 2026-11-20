@@ -29,9 +29,10 @@ vi.mock("fs/promises", () => ({
   writeFile: mockWriteFile,
 }));
 
+import sharp from "sharp";
 import { downloadImageToUploads } from "../scraper/download-image";
 
-const MINIMAL_JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
+let MINIMAL_JPEG: Uint8Array;
 
 function makeStreamResponse(
   status: number,
@@ -54,8 +55,15 @@ function makeStreamResponse(
 }
 
 describe("downloadImageToUploads resilience", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    MINIMAL_JPEG = new Uint8Array(
+      await sharp({
+        create: { width: 1, height: 1, channels: 3, background: { r: 255, g: 0, b: 0 } },
+      })
+        .jpeg()
+        .toBuffer(),
+    );
   });
 
   it("retries with browser User-Agent + Referer when CDN returns 403 to bot UA", async () => {

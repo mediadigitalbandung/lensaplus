@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
     pushSubscription: {
       findMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     membershipCard: {
       findMany: vi.fn(),
@@ -352,9 +353,9 @@ describe("audit-fix-backend regressions", () => {
         .mockResolvedValueOnce({})
         .mockRejectedValueOnce({ statusCode: 500, message: "Push service error" });
 
-      mocks.prisma.pushSubscription.update
+      mocks.prisma.pushSubscription.updateMany
         .mockRejectedValueOnce(new Error("Transient DB timeout"))
-        .mockResolvedValueOnce({});
+        .mockResolvedValueOnce({ count: 1 });
 
       const summary = await sendPushToSubscribers(
         { title: "Berita Utama", body: "Ringkasan", url: "/berita/utama" },
@@ -363,9 +364,10 @@ describe("audit-fix-backend regressions", () => {
 
       expect(summary).toEqual({ sent: 1, failed: 1, skipped: 199 });
       expect(mocks.prisma.pushSubscription.findMany).toHaveBeenCalledTimes(2);
-      expect(mocks.prisma.pushSubscription.update).toHaveBeenLastCalledWith({
-        where: { id: "sub-3" },
-        data: { failureCount: 5, isActive: false },
+      expect(mocks.prisma.pushSubscription.updateMany).toHaveBeenCalledTimes(2);
+      expect(mocks.prisma.pushSubscription.updateMany).toHaveBeenLastCalledWith({
+        where: { id: { in: ["sub-3"] } },
+        data: { isActive: false },
       });
     });
   });

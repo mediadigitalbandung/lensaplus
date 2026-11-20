@@ -98,7 +98,6 @@ export default function ReelGallery({ items }: { items: VideoStoryItem[] }) {
             className="aspect-[9/16] h-full max-h-[88vh] w-auto max-w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video
               src={playing}
               controls

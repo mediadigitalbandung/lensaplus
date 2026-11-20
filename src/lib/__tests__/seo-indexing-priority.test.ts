@@ -193,7 +193,7 @@ describe("SEO Indexing Priority (Artikel Utama -> Sorotan Sisa Kuota 200/hari)",
   });
 
   describe("runPrioritizedIndexingBatch", () => {
-    it("submits all pending main articles first, then uses remaining daily quota for sorotan", async () => {
+    it("submits pending main articles and excludes noindex /sorotan/* URLs from Google Indexing API", async () => {
       // 197 used out of 200 -> 3 remaining slots today
       mockGetQuotaStatus.mockResolvedValue({
         used: 197,
@@ -229,13 +229,6 @@ describe("SEO Indexing Priority (Artikel Utama -> Sorotan Sisa Kuota 200/hari)",
           lastIndexedAt: null,
           createdAt: new Date("2026-11-18T10:05:00Z"),
         },
-        {
-          id: "sor-2",
-          slug: "berita-utama-1-analisis",
-          indexStatus: "pending",
-          lastIndexedAt: null,
-          createdAt: new Date("2026-11-18T10:04:00Z"),
-        },
       ]);
 
       const submittedOrder: string[] = [];
@@ -248,23 +241,21 @@ describe("SEO Indexing Priority (Artikel Utama -> Sorotan Sisa Kuota 200/hari)",
         siteUrl: "https://lensaplus.com",
       });
 
-      // Exactly 3 Google Indexing calls: 2 main articles first, then 1 sorotan using the last remaining slot!
+      // Only main articles are submitted; noindex /sorotan/* URLs must never be sent
       expect(submittedOrder).toEqual([
         "https://lensaplus.com/berita/berita-utama-1",
         "https://lensaplus.com/berita/berita-utama-2",
-        "https://lensaplus.com/sorotan/berita-utama-1-kronologi",
       ]);
 
       expect(result.articles.succeeded).toBe(2);
       expect(result.articles.remainingPending).toBe(0);
-      expect(result.sorotan.succeeded).toBe(1);
-      expect(result.sorotan.skippedQuota).toBe(1);
-      expect(result.sorotan.deferredByPriority).toBe(1);
-      expect(result.quota.used).toBe(200);
-      expect(result.quota.remaining).toBe(0);
+      expect(result.sorotan.succeeded).toBe(0);
+      expect(result.sorotan.requested).toBe(0);
+      expect(result.quota.used).toBe(199);
+      expect(result.quota.remaining).toBe(1);
     });
 
-    it("never submits sorotan when main articles consume the remaining daily quota", async () => {
+    it("stops submitting main articles once remaining daily quota reaches 0", async () => {
       // 198 used out of 200 -> only 2 slots left today, and 3 main articles are pending
       mockGetQuotaStatus.mockResolvedValue({
         used: 198,
@@ -299,15 +290,7 @@ describe("SEO Indexing Priority (Artikel Utama -> Sorotan Sisa Kuota 200/hari)",
       ]);
       mockArticleCount.mockResolvedValue(3);
 
-      mockSorotanFindMany.mockResolvedValue([
-        {
-          id: "sor-1",
-          slug: "berita-1-kronologi",
-          indexStatus: "pending",
-          lastIndexedAt: null,
-          createdAt: new Date("2026-11-18T10:05:00Z"),
-        },
-      ]);
+      mockSorotanFindMany.mockResolvedValue([]);
 
       const submittedOrder: string[] = [];
       mockSubmitUrlToGoogle.mockImplementation(async (url: string) => {
@@ -327,8 +310,6 @@ describe("SEO Indexing Priority (Artikel Utama -> Sorotan Sisa Kuota 200/hari)",
       expect(result.articles.skippedQuota).toBe(1);
       expect(result.articles.remainingPending).toBe(1);
       expect(result.sorotan.succeeded).toBe(0);
-      expect(result.sorotan.deferredByPriority).toBe(1);
-      expect(result.sorotan.deferReason).toBe("ARTICLES_PRIORITIZED");
       expect(mockSorotanUpdate).not.toHaveBeenCalled();
     });
 

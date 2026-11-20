@@ -3,6 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Syarat & Ketentuan",
   description: "Syarat dan ketentuan penggunaan platform Lensaplus.",
+  alternates: { canonical: "/syarat-ketentuan" },
 };
 
 export default function SyaratKetentuanPage() {

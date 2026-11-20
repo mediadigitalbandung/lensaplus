@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 import { X } from "lucide-react";
 import { safeHref } from "@/components/common/safeHref";
 
@@ -140,7 +141,9 @@ export default function PopupAd() {
     ad.type === "HTML" && ad.htmlCode ? (
       <div
         className="w-full"
-        dangerouslySetInnerHTML={{ __html: ad.htmlCode }}
+        dangerouslySetInnerHTML={{
+          __html: DOMPurify.sanitize(ad.htmlCode, { ADD_ATTR: ["target"] }),
+        }}
       />
     ) : ad.imageUrl ? (
       // eslint-disable-next-line @next/next/no-img-element -- external advertiser-supplied URL

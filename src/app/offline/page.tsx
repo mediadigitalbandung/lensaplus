@@ -43,7 +43,7 @@ export default function OfflinePage() {
 
       {/* Footer hint */}
       <p className="mt-10 text-label-md text-on-surface-variant/60">
-        lensaplus.com — Media Berita Digital Bandung
+        lensaplus.com — Media Berita Digital Nasional Indonesia
       </p>
     </div>
   );

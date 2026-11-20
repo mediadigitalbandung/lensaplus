@@ -130,7 +130,7 @@ async function cacheFirst(request, cacheName, event) {
   if (cached) return cached;
 
   const response = await fetch(request);
-  if (response.ok) {
+  if (response.status === 200 && !request.headers.has('range')) {
     const clone = response.clone();
     const persistAndTrim = (async () => {
       await cache.put(request, clone);
@@ -154,7 +154,7 @@ async function networkFirstWithFallback(request, event) {
 
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (response.status === 200 && !request.headers.has('range')) {
       const clone = response.clone();
       const persistAndTrim = (async () => {
         await cache.put(request, clone);

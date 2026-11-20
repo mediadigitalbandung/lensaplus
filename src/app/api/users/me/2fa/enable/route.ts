@@ -4,11 +4,11 @@
  * on and return one-time backup codes (shown ONCE).
  */
 import { NextRequest } from "next/server";
-import { requireAuth, successResponse, errorResponse, ApiError } from "@/lib/api-utils";
+import { requireAuth, successResponse, errorResponse, ApiError, logAudit } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
 import { verifyTotp, generateBackupCodes, hashBackupCodes } from "@/lib/totp";
-import { twoFactorRateLimit } from "@/lib/rate-limit";
+import { twoFactorRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +39,15 @@ export async function POST(req: NextRequest) {
       where: { id: session.user.id },
       data: { twoFactorEnabled: true, twoFactorBackupCodes: hashBackupCodes(backupCodes) },
     });
+
+    await logAudit(
+      session.user.id,
+      "TWO_FACTOR_ENABLE",
+      "User",
+      session.user.id,
+      "User enabled 2FA",
+      getClientIp(req),
+    );
 
     return successResponse({ enabled: true, backupCodes });
   } catch (error) {

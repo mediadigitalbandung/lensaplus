@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Susunan Redaksi",
   description:
     "Susunan redaksi, legalitas, dan verifikasi Dewan Pers Lensaplus — portal berita digital modern.",
+  alternates: { canonical: "/redaksi" },
 };
 
 export default async function RedaksiPage() {

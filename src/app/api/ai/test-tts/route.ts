@@ -9,9 +9,10 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { errorResponse, requireRole, successResponse } from "@/lib/api-utils";
+import { ApiError, errorResponse, requireRole, successResponse } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,7 +43,10 @@ async function readStoredKey(settingKey: string, envFallbacks: string[]): Promis
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
+    if (!rateLimit(`ai-test-tts:${session.user.id}`, 15, 60_000).success) {
+      throw new ApiError("Terlalu banyak permintaan uji TTS. Coba lagi sebentar.", 429);
+    }
     const raw = await req.json().catch(() => ({}));
     const { provider } = schema.parse(raw || {});
 

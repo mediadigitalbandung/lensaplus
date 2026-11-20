@@ -110,6 +110,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               imgSrc,
+              "media-src 'self' blob: https:",
               // Whitelist Google AdSense + Funding Choices + Google Tag Manager / GA4 connections
               "connect-src 'self' https://api.deepseek.com https://api.anthropic.com https://trends.google.com https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://cloudflareinsights.com https://pagead2.googlesyndication.com https://adservice.google.com https://*.doubleclick.net https://*.googlesyndication.com https://fundingchoicesmessages.google.com https://*.adtrafficquality.google https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com",
               // Whitelist YouTube embeds + Cloudflare Turnstile + Google AdSense + Funding Choices + GTM frames
@@ -125,6 +126,19 @@ const nextConfig = {
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
         ],
+      },
+      // Allow social crawlers & cross-origin consumers to embed OG images and uploaded media
+      {
+        source: "/api/og",
+        headers: [{ key: "Cross-Origin-Resource-Policy", value: "cross-origin" }],
+      },
+      {
+        source: "/api/og/:path*",
+        headers: [{ key: "Cross-Origin-Resource-Policy", value: "cross-origin" }],
+      },
+      {
+        source: "/uploads/:path*",
+        headers: [{ key: "Cross-Origin-Resource-Policy", value: "cross-origin" }],
       },
     ];
   },

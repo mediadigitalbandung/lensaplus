@@ -151,12 +151,13 @@ export async function POST(
     // Persist progress (avoid pushing duplicate URLs when regenerating).
     // Do NOT reset `lastCheckedAt` on single-article cherry-pick so the
     // scheduled full-listing cron still runs on time.
+    const nextScrapedUrls = source.scrapedUrls.includes(data.url)
+      ? undefined
+      : Array.from(new Set([...source.scrapedUrls, data.url])).slice(-200);
     await prisma.newsSource.update({
       where: { id: source.id },
       data: {
-        ...(source.scrapedUrls.includes(data.url)
-          ? {}
-          : { scrapedUrls: { push: data.url } }),
+        ...(nextScrapedUrls ? { scrapedUrls: nextScrapedUrls } : {}),
         totalScraped: { increment: 1 },
         lastSuccessAt: new Date(),
         lastError: null,

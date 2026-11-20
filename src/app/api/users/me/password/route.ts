@@ -20,6 +20,7 @@ import {
   logAudit,
   ApiError,
 } from "@/lib/api-utils";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,10 @@ const passwordChangeSchema = z.object({
 export async function PUT(req: NextRequest) {
   try {
     const session = await requireAuth();
+    const { success: allowed } = rateLimit(`password-change:${session.user.id}`, 5, 15 * 60 * 1000);
+    if (!allowed) {
+      throw new ApiError("Terlalu banyak percobaan ubah password. Coba lagi nanti.", 429);
+    }
 
     const body = await req.json();
     const data = passwordChangeSchema.parse(body);
@@ -71,7 +76,7 @@ export async function PUT(req: NextRequest) {
       },
     });
 
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
+    const ip = getClientIp(req);
     await logAudit(
       session.user.id,
       "PASSWORD_CHANGE",

@@ -440,6 +440,7 @@ export default function EditorTab() {
                             <Link
                               href={`/sorotan/${item.slug}`}
                               target="_blank"
+                              rel="noopener noreferrer"
                               className="shrink-0 rounded-lg p-1.5 text-txt-muted hover:bg-surface-secondary hover:text-primary"
                               title="Lihat sorotan"
                             >

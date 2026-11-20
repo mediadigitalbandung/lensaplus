@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Tentang Kami",
   description:
     "Lensaplus — portal berita digital terpercaya: bisnis & ekonomi, pemerintahan, hukum, serta topik umum lainnya.",
+  alternates: { canonical: "/tentang" },
 };
 
 export default function TentangPage() {

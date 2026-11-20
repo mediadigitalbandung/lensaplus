@@ -2,13 +2,13 @@
   "id": "/",
   "name": "Lensaplus — Portal Berita Digital Modern",
   "short_name": "Lensaplus",
-  "description": "Portal berita digital modern — menyajikan informasi terkini seputar bisnis, ekonomi, pemerintahan, hukum, olahraga, hiburan, teknologi, dan peristiwa lokal tepercaya.",
+  "description": "Portal berita digital nasional Indonesia — menyajikan informasi terkini seputar politik, hukum, bisnis, ekonomi, olahraga, teknologi, dan peristiwa Nusantara tepercaya.",
   "start_url": "/?utm_source=pwa",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#ffffff",
-  "theme_color": "#0F172A",
+  "theme_color": "#2E1065",
   "orientation": "portrait-primary",
   "lang": "id-ID",
   "dir": "ltr",
@@ -17,25 +17,25 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/lensaplus-icon-192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/lensaplus-icon-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/lensaplus-icon-192.png",
+      "src": "/icons/icon-192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/lensaplus-icon-512.png",
+      "src": "/icons/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

@@ -237,7 +237,10 @@ describe("Auto-Sorotan end-to-end wiring", () => {
     expect(read("src/app/sorotan/page.tsx")).toContain('article: { status: "PUBLISHED"');
     expect(read("src/app/sorotan/[slug]/page.tsx")).toContain('sorotan.article.status === "PUBLISHED"');
     expect(read("src/app/api/seo/ping/route.ts")).toContain("runPrioritizedIndexingBatch");
-    expect(read("src/lib/seo/indexing-priority.ts")).toContain('article: { status: "PUBLISHED" }');
+    // Sorotan pages (/sorotan/*) carry noindex and are excluded from Google Indexing & IndexNow
+    const indexingPrioritySrc = read("src/lib/seo/indexing-priority.ts");
+    expect(indexingPrioritySrc).toContain("const canRunSorotan = false;");
+    expect(indexingPrioritySrc).not.toContain("prisma.sorotan.findMany");
 
     // Batch generator uses active angle count (9), not legacy hardcoded 3
     expect(read("src/app/api/seo/generate-sorotan/route.ts")).toContain("SOROTAN_ANGLE_COUNT");

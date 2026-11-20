@@ -21,7 +21,13 @@ export default async function TopikIndexPage() {
   let categories: any[] = [];
   try {
     categories = await prisma.category.findMany({
-      include: { _count: { select: { articles: true } } },
+      include: {
+        _count: {
+          select: {
+            articles: { where: { status: "PUBLISHED" } },
+          },
+        },
+      },
       orderBy: { order: "asc" },
     });
   } catch {

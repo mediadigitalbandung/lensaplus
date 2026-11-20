@@ -103,6 +103,8 @@ function SearchContent() {
   const suggestRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const suggestAbortRef = useRef<AbortController | null>(null);
 
   // Load search history on mount
   useEffect(() => {
@@ -110,6 +112,8 @@ function SearchContent() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+      searchAbortRef.current?.abort();
+      suggestAbortRef.current?.abort();
     };
   }, []);
 
@@ -126,17 +130,24 @@ function SearchContent() {
 
   // Debounced autocomplete fetch
   const fetchSuggestions = useCallback(async (q: string) => {
+    suggestAbortRef.current?.abort();
     if (q.length < 2) {
       setSuggestions([]);
       return;
     }
+    const controller = new AbortController();
+    suggestAbortRef.current = controller;
     try {
-      const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`, {
+        signal: controller.signal,
+      });
       const json = await res.json();
+      if (controller.signal.aborted) return;
       if (json.success) {
         setSuggestions(json.data || []);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setSuggestions([]);
     }
   }, []);
@@ -159,17 +170,24 @@ function SearchContent() {
   };
 
   const fetchResults = useCallback(async (q: string) => {
+    searchAbortRef.current?.abort();
     if (q.length < 2) {
       setResults([]);
       setTotal(0);
       setSearched(false);
+      setLoading(false);
       return;
     }
 
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
     setLoading(true);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=100`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=100`, {
+        signal: controller.signal,
+      });
       const json = await res.json();
+      if (controller.signal.aborted) return;
       if (json.success) {
         setResults(json.data.articles || []);
         setTotal(json.data.pagination?.total || json.data.articles?.length || 0);
@@ -177,13 +195,16 @@ function SearchContent() {
         setResults([]);
         setTotal(0);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setResults([]);
       setTotal(0);
     } finally {
-      setLoading(false);
-      setSearched(true);
-      setPage(0);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        setSearched(true);
+        setPage(0);
+      }
     }
   }, []);
 

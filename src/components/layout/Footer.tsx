@@ -20,6 +20,8 @@ const footerLinks = {
   ],
   kontak: [
     { name: "Kontak Redaksi", href: "/kontak" },
+    { name: "Topik", href: "/topik" },
+    { name: "Glosarium", href: "/glossary" },
     { name: "Siaran Langsung", href: "/live" },
     { name: "Pasang Aplikasi", href: "/unduh" },
     { name: "Newsletter", href: "/newsletter" },

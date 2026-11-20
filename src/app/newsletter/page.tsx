@@ -4,7 +4,7 @@ import NewsletterForm from "./NewsletterForm";
 export const metadata: Metadata = {
   title: "Newsletter — Lensaplus",
   description:
-    "Berlangganan newsletter mingguan Lensaplus — kabar hukum, investigasi, dan analisis pilihan dari Bandung. Gratis, sekali seminggu, mudah berhenti.",
+    "Berlangganan newsletter mingguan Lensaplus — kabar hukum, ekonomi, politik, dan analisis pilihan nasional Indonesia. Gratis, sekali seminggu, mudah berhenti.",
   alternates: { canonical: "/newsletter" },
 };
 
@@ -45,7 +45,7 @@ export default async function NewsletterPage({ searchParams: searchParamsPromise
             Newsletter
           </p>
           <h1 className="mt-3 text-3xl sm:text-4xl font-extrabold text-txt-primary tracking-tight font-serif leading-tight">
-            Kabar hukum Bandung, langsung ke kotak masuk Anda.
+            Kabar pilihan nasional, langsung ke kotak masuk Anda.
           </h1>
           <p className="mt-4 text-lg text-txt-secondary leading-relaxed">
             Setiap Senin pagi, kami kirim 8 laporan terbaik pekan ini — putusan, investigasi,

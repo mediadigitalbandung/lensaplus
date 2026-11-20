@@ -24,7 +24,8 @@ export type CronJobName =
   | "backup"
   | "scrape-sources"
   | "newsletter-digest"
-  | "retention-purge";
+  | "retention-purge"
+  | "check-meta-tokens";
 
 export interface CronRunResult {
   ok: boolean;
@@ -185,6 +186,7 @@ export async function readCronHealth(): Promise<
     "scrape-sources",
     "newsletter-digest",
     "retention-purge",
+    "check-meta-tokens",
   ];
   const keys = jobs.flatMap((j) => [
     `cron_${j}_last_run_at`,

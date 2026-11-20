@@ -28,13 +28,17 @@ export async function GET(req: NextRequest) {
     const data = await getCached(`ai:stats:${providerFilter ?? "all"}`, 5 * 60 * 1000, async () => {
       const where = providerFilter ? { provider: providerFilter } : {};
 
-      const [currentRate, manual, agg, logs] = await Promise.all([
+      const [currentRate, manual, agg, legacyAgg, logs] = await Promise.all([
         getUsdIdrRate(),
         isUsdIdrManual(),
         prisma.aIUsageLog.aggregate({
           where,
           _count: { _all: true },
           _sum: { totalTokens: true, costUsd: true, costIdr: true },
+        }),
+        prisma.aIUsageLog.aggregate({
+          where: { ...where, costIdr: null },
+          _sum: { costUsd: true },
         }),
         prisma.aIUsageLog.findMany({
           where,
@@ -54,8 +58,9 @@ export async function GET(req: NextRequest) {
       const totalRequests = agg._count._all;
       const totalTokens = agg._sum.totalTokens ?? 0;
       const totalCostUsd = agg._sum.costUsd ?? 0;
-      const totalCostIdr =
-        agg._sum.costIdr ?? logs.reduce((s, l) => s + rowIdr(l), 0);
+      const totalCostIdr = Math.round(
+        (agg._sum.costIdr ?? 0) + (legacyAgg._sum.costUsd ?? 0) * currentRate,
+      );
 
       // ── Per-article aggregation (articleTitle = attribution key) ──────────────
       const artMap = new Map<string, { title: string; calls: number; tokens: number; costIdr: number; providers: Set<string> }>();

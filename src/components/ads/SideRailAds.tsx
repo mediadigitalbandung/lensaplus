@@ -29,26 +29,62 @@ interface Ad {
   targetUrl?: string | null;
 }
 
-function useSidebarAd() {
+function useIsWideViewport(): boolean {
+  const [isWide, setIsWide] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 1536px)");
+    const update = () => setIsWide(mq.matches);
+    update();
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", update);
+      return () => mq.removeEventListener("change", update);
+    }
+    mq.addListener(update);
+    return () => mq.removeListener(update);
+  }, []);
+
+  return isWide;
+}
+
+function useSidebarAd(enabled: boolean) {
   const [ad, setAd] = useState<Ad | null>(null);
   const tracked = useRef(false);
 
   useEffect(() => {
-    fetch("/api/ads?slot=SIDEBAR")
-      .then((r) => r.json())
+    if (!enabled) return;
+    let cancelled = false;
+    const controller = new AbortController();
+
+    fetch("/api/ads?slot=SIDEBAR", { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        const ads: Ad[] = json.data || [];
+        if (cancelled || !json) return;
+        const ads: Ad[] = Array.isArray(json.data) ? json.data : [];
         if (ads.length > 0) setAd(ads[Math.floor(Math.random() * ads.length)]);
       })
       .catch(() => {});
-  }, []);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [enabled]);
 
   useEffect(() => {
-    if (ad && !tracked.current) {
-      tracked.current = true;
-      fetch(`/api/ads/${ad.id}/track?type=impression`, { method: "POST" }).catch(() => {});
-    }
-  }, [ad]);
+    if (!enabled || !ad || tracked.current) return;
+    const controller = new AbortController();
+    tracked.current = true;
+    fetch(`/api/ads/${ad.id}/track?type=impression`, {
+      method: "POST",
+      signal: controller.signal,
+    }).catch(() => {});
+
+    return () => {
+      controller.abort();
+    };
+  }, [enabled, ad]);
 
   return ad;
 }
@@ -64,8 +100,8 @@ function trackClick(adId: string) {
  *  - Anything else (HTML / no ad) → a branded Lensaplus newsletter promo
  *    that's intentionally shaped as a 160×720 column.
  */
-function RailContent() {
-  const ad = useSidebarAd();
+function RailContent({ enabled }: { enabled: boolean }) {
+  const ad = useSidebarAd(enabled);
 
   if (ad?.imageUrl) {
     const img = (
@@ -133,10 +169,11 @@ function RailContent() {
 const INITIAL_TOP_PX = 480; // bottom of NewsTicker (brand+nav+trending+market) at scroll=0
 const MIN_TOP_PX = 140; // clearance from sticky brand bar (~80) + nav (~50) + buffer
 
-function useRailTop(): number {
+function useRailTop(enabled: boolean): number {
   const [top, setTop] = useState(INITIAL_TOP_PX);
 
   useEffect(() => {
+    if (!enabled) return;
     const update = () => {
       const next = Math.max(MIN_TOP_PX, INITIAL_TOP_PX - window.scrollY);
       setTop(next);
@@ -144,15 +181,17 @@ function useRailTop(): number {
     update();
     window.addEventListener("scroll", update, { passive: true });
     return () => window.removeEventListener("scroll", update);
-  }, []);
+  }, [enabled]);
 
   return top;
 }
 
 export default function SideRailAds() {
   const pathname = usePathname() || "";
-  const top = useRailTop();
+  const isWide = useIsWideViewport();
+  const top = useRailTop(isWide);
 
+  if (!isWide) return null;
   if (pathname.startsWith("/panel")) return null;
   if (pathname.startsWith("/login")) return null;
   if (pathname.startsWith("/berita/")) return null;
@@ -191,7 +230,7 @@ export default function SideRailAds() {
         <div className={shell}>
           <div className={cap}>Iklan</div>
           <div className="flex-1 overflow-hidden">
-            <RailContent />
+            <RailContent enabled={isWide} />
           </div>
         </div>
       </aside>
@@ -203,7 +242,7 @@ export default function SideRailAds() {
         <div className={shell}>
           <div className={cap}>Iklan</div>
           <div className="flex-1 overflow-hidden">
-            <RailContent />
+            <RailContent enabled={isWide} />
           </div>
         </div>
       </aside>

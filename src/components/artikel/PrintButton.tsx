@@ -128,7 +128,7 @@ function PrintPreviewContent() {
         <Image src="/lensaplus-icon.png" alt="Lensaplus" width={40} height={40} />
         <div>
           <div style={{ fontSize: 16, fontWeight: 800 }}>Lensaplus</div>
-          <div style={{ fontSize: 9, color: "#6B7280" }}>Media Berita Digital Bandung &mdash; lensaplus.com</div>
+          <div style={{ fontSize: 9, color: "#6B7280" }}>Media Berita Digital Nasional Indonesia &mdash; lensaplus.com</div>
         </div>
       </div>
 

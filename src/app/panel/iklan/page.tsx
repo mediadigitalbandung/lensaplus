@@ -195,7 +195,7 @@ export default function IklanPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
+        <div className="mb-4 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-4 text-center text-base text-red-700">
           <p>{error}</p>
           <button onClick={fetchAds} className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Coba Lagi</button>
         </div>

@@ -29,7 +29,7 @@ export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
   articleId: z.string().min(1),
-  platform: z.enum(["INSTAGRAM", "FACEBOOK", "TWITTER"]),
+  platform: z.enum(["INSTAGRAM", "FACEBOOK", "TWITTER", "THREADS"]),
 });
 
 function parseHashtags(raw: string | null | undefined): string[] {

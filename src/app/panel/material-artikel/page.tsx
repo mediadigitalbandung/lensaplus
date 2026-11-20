@@ -350,10 +350,10 @@ export default function MaterialArtikelPage() {
         </div>
       </div>
 
-      <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+      <div className="mb-6 rounded-xl border border-border border-l-4 border-l-primary bg-surface p-4">
         <div className="flex items-start gap-3">
-          <Info size={16} className="mt-0.5 text-blue-600 shrink-0" />
-          <div className="text-xs text-blue-700 space-y-1">
+          <Info size={16} className="mt-0.5 text-primary shrink-0" />
+          <div className="text-xs text-txt-secondary space-y-1">
             <p>
               <strong>Cara pakai:</strong> (1) pilih kategori, (2) upload
               dokumen sumber (DOCX/PDF/TXT/MD), (3) upload foto-foto
@@ -523,11 +523,11 @@ export default function MaterialArtikelPage() {
                 key={s.uid}
                 className={`relative rounded-lg border p-2 transition-colors ${
                   s.status === "done"
-                    ? "border-primary/40 bg-primary-light"
+                    ? "border-primary/40 border-l-4 border-l-primary bg-surface"
                     : s.status === "failed"
-                      ? "border-red-300 bg-red-50"
+                      ? "border-red-300 border-l-4 border-l-red-600 bg-surface"
                       : s.status === "generating"
-                        ? "border-blue-300 bg-blue-50"
+                        ? "border-blue-300 border-l-4 border-l-blue-600 bg-surface"
                         : "border-border bg-surface-secondary"
                 }`}
               >

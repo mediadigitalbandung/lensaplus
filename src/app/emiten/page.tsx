@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   title: "Direktori Emiten Indonesia | Lensaplus",
   description:
     "Profil lengkap perusahaan publik Indonesia: sektor, market cap, CEO, dan berita terkait.",
+  alternates: { canonical: "/emiten" },
 };
 
 const SECTOR_LABELS: Record<CompanySector, string> = {

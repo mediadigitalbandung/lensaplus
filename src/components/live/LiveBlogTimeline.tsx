@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { Play } from "lucide-react";
 import { safeHref } from "@/components/common/safeHref";
 
@@ -78,7 +79,9 @@ function EntryCard({ entry }: { entry: LiveBlogEntry }) {
 
         <div
           className="article-content text-body-md text-on-surface prose prose-sm max-w-none"
-          dangerouslySetInnerHTML={{ __html: entry.content }}
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(entry.content, { ADD_ATTR: ["target"] }),
+          }}
         />
 
         {/* Media */}

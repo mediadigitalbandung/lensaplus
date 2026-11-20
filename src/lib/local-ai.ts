@@ -22,7 +22,7 @@ import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secrets";
 import { recordAiUsage } from "@/lib/ai-usage";
 
-const TIMEOUT_MS = 120_000; // CPU inference can be slow
+const TIMEOUT_MS = 60_000; // cap synchronous LLM timeout <= 60s
 
 export interface LocalAiConfig {
   enabled: boolean;

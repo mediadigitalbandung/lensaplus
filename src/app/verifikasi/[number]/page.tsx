@@ -61,7 +61,7 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
     : "";
 
   return (
-    <main className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-5 py-12">
+    <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-5 py-12">
       <div className="w-full rounded-xl border border-border bg-surface p-8 shadow-card">
         <div className="mb-6 text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">Lensaplus</p>
@@ -111,7 +111,7 @@ export default async function VerifyCardPage({ params }: { params: Promise<{ num
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 

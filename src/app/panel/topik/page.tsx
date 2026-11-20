@@ -368,7 +368,7 @@ export default function PanelTopikPage() {
       >
         <div className="space-y-4">
           {formError && (
-            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface px-4 py-3 text-sm text-red-700">
               {formError}
             </div>
           )}

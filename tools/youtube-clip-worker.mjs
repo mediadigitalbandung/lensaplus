@@ -241,16 +241,21 @@ async function processJob(job) {
   try {
     // 1) DOWNLOAD
     await setStage(job.id, "DOWNLOADING", 10);
+    const MAX_DOWNLOAD_BYTES = 500 * 1024 * 1024;
     const ytArgs = [
       "-f", "best[ext=mp4]/bestvideo[ext=mp4]+bestaudio/best",
       "--no-playlist", "--merge-output-format", "mp4",
+      "--max-filesize", "500M",
     ];
     // YouTube blocks datacenter IPs with a bot-check; a cookies file from a
     // logged-in session is required to download. Set YTDLP_COOKIES to its path.
     if (process.env.YTDLP_COOKIES) ytArgs.push("--cookies", process.env.YTDLP_COOKIES);
     ytArgs.push("-o", sourcePath, job.sourceUrl);
     await run(YTDLP, ytArgs);
-    await stat(sourcePath); // throws if download produced nothing
+    const downloadedStat = await stat(sourcePath); // throws if download produced nothing
+    if (downloadedStat.size > MAX_DOWNLOAD_BYTES) {
+      throw new Error(`Downloaded video exceeds max limit (${downloadedStat.size} bytes > 500 MB)`);
+    }
 
     // 2) TRANSCRIBE
     await setStage(job.id, "TRANSCRIBING", 35);

@@ -234,6 +234,7 @@ export default function LiveBlogsPage() {
                       <Link
                         href={`/live/${blog.slug}`}
                         target="_blank"
+                        rel="noopener noreferrer"
                         className="rounded-lg p-1.5 text-txt-muted hover:text-primary hover:bg-surface-container-low transition-colors"
                         title="Lihat publik"
                       >

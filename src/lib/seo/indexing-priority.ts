@@ -284,8 +284,10 @@ export async function runPrioritizedIndexingBatch(
   const includeFailedRetries = options.includeFailedRetries ?? true;
   const includePendingArticles =
     options.includePendingArticles ?? options.articleIds === undefined;
-  const includePendingSorotan =
-    options.includePendingSorotan ?? options.sorotanIds === undefined;
+  // /sorotan/* pages carry `robots: { index: false, follow: true }` for AdSense
+  // compliance and must NOT be submitted to Google Indexing API or IndexNow.
+  const includePendingSorotan = false;
+  void options.includePendingSorotan;
 
   const initialQuota = await getQuotaStatus();
   const maxArticleBatch = options.maxArticleBatch ?? initialQuota.limit;
@@ -477,77 +479,19 @@ export async function runPrioritizedIndexingBatch(
     dbPendingArticlesCount - pendingArticlesSucceeded,
   );
 
-  // 3. Fetch candidate Sorotan (only for PUBLISHED articles)
-  type RawSorotanRow = {
-    id: string;
-    slug: string;
-    indexStatus?: string | null;
-    lastIndexedAt?: Date | null;
-    createdAt?: Date | null;
-  };
-
-  let rawSorotan: RawSorotanRow[] = [];
-  if (options.sorotanIds && options.sorotanIds.length > 0) {
-    rawSorotan = await prisma.sorotan.findMany({
-      where: {
-        id: { in: options.sorotanIds },
-        article: { status: "PUBLISHED" },
-      },
-      select: {
-        id: true,
-        slug: true,
-        indexStatus: true,
-        lastIndexedAt: true,
-        createdAt: true,
-      },
-    });
-  } else if (includePendingSorotan) {
-    const sorotanFilter = includeFailedRetries
-      ? [
-          { indexStatus: "pending" },
-          { indexStatus: null },
-          { indexStatus: "failed" },
-        ]
-      : [{ indexStatus: "pending" }, { indexStatus: null }];
-    rawSorotan = await prisma.sorotan.findMany({
-      where: {
-        article: { status: "PUBLISHED" },
-        OR: sorotanFilter,
-      },
-      orderBy: [
-        { lastIndexedAt: { sort: "asc", nulls: "first" } },
-        { createdAt: "desc" },
-      ],
-      take: maxSorotanBatch,
-      select: {
-        id: true,
-        slug: true,
-        indexStatus: true,
-        lastIndexedAt: true,
-        createdAt: true,
-      },
-    });
-  }
-
-  const sortedSorotan = sortIndexingQueueByPriority(
-    rawSorotan.map((s) => ({ ...s, kind: "sorotan" as const })),
-  );
-
-  // 4. Sorotan only runs AFTER all pending main articles are done AND quota remains
-  const allArticlesFailedInBatch =
-    sortedArticles.length > 0 && articleSucceeded === 0 && articleFailed > 0;
-
-  const canRunSorotan =
-    !quotaHit &&
-    remainingQuota > 0 &&
-    remainingBatchCap > 0 &&
-    remainingPendingArticles === 0 &&
-    !allArticlesFailedInBatch;
+  // 3. Sorotan pages (/sorotan/*) carry `robots: noindex` and empty sitemap, so
+  // they are intentionally excluded from Google Indexing API & IndexNow.
+  // Keep empty result structures for backward compatibility with API callers.
+  void options.sorotanIds;
+  void includePendingSorotan;
+  void maxSorotanBatch;
+  const sortedSorotan: ReturnType<typeof sortIndexingQueueByPriority> = [];
+  const canRunSorotan = false;
 
   const sorotanOutcomes: IndexingItemOutcome[] = [];
-  let sorotanSucceeded = 0;
-  let sorotanFailed = 0;
-  let sorotanSkippedQuota = 0;
+  const sorotanSucceeded = 0;
+  const sorotanFailed = 0;
+  const sorotanSkippedQuota = 0;
   let deferredByPriority = 0;
   let sorotanDeferReason:
     | "QUOTA_EXHAUSTED"
@@ -557,115 +501,13 @@ export async function runPrioritizedIndexingBatch(
 
   if (!canRunSorotan && sortedSorotan.length > 0) {
     deferredByPriority = sortedSorotan.length;
-    if (allArticlesFailedInBatch) {
-      sorotanDeferReason = "ARTICLE_BATCH_FAILED";
-    } else if (remainingPendingArticles > 0) {
-      sorotanDeferReason = "ARTICLES_PRIORITIZED";
-    } else {
-      sorotanDeferReason = "QUOTA_EXHAUSTED";
-    }
-  } else if (canRunSorotan && sortedSorotan.length > 0) {
-    for (const s of sortedSorotan) {
-      const url = `${siteUrl}/sorotan/${s.slug}`;
-      if (quotaHit || remainingQuota <= 0 || remainingBatchCap <= 0) {
-        quotaHit = remainingQuota <= 0 || quotaHit;
-        sorotanSkippedQuota++;
-        deferredByPriority++;
-        sorotanDeferReason = "QUOTA_EXHAUSTED";
-        sorotanOutcomes.push({
-          id: s.id,
-          slug: s.slug,
-          url,
-          kind: "sorotan",
-          success: false,
-          skippedQuota: true,
-          error: "QUOTA_EXCEEDED_DAILY",
-        });
-        continue;
-      }
-
-      const r = await submitUrlToGoogle(url, "URL_UPDATED");
-      if (r.success) {
-        remainingQuota = Math.max(0, remainingQuota - 1);
-        remainingBatchCap = Math.max(0, remainingBatchCap - 1);
-        sorotanSucceeded++;
-        try {
-          await prisma.sorotan.update({
-            where: { id: s.id },
-            data: {
-              indexStatus: "submitted",
-              indexLastError: null,
-              lastIndexedAt: new Date(),
-            },
-          });
-        } catch {
-          // non-fatal
-        }
-        sorotanOutcomes.push({
-          id: s.id,
-          slug: s.slug,
-          url,
-          kind: "sorotan",
-          success: true,
-        });
-      } else if (r.error === "QUOTA_EXCEEDED_DAILY") {
-        quotaHit = true;
-        remainingQuota = 0;
-        sorotanSkippedQuota++;
-        deferredByPriority++;
-        sorotanDeferReason = "QUOTA_EXHAUSTED";
-        try {
-          await prisma.sorotan.update({
-            where: { id: s.id },
-            data: {
-              indexStatus: "pending",
-              indexLastError: null,
-            },
-          });
-        } catch {
-          // non-fatal
-        }
-        sorotanOutcomes.push({
-          id: s.id,
-          slug: s.slug,
-          url,
-          kind: "sorotan",
-          success: false,
-          skippedQuota: true,
-          error: "QUOTA_EXCEEDED_DAILY",
-        });
-      } else {
-        remainingBatchCap = Math.max(0, remainingBatchCap - 1);
-        sorotanFailed++;
-        try {
-          await prisma.sorotan.update({
-            where: { id: s.id },
-            data: {
-              indexStatus: "failed",
-              indexLastError: (r.error ?? "Unknown error").slice(0, 500),
-              lastIndexedAt: new Date(),
-            },
-          });
-        } catch {
-          // non-fatal
-        }
-        sorotanOutcomes.push({
-          id: s.id,
-          slug: s.slug,
-          url,
-          kind: "sorotan",
-          success: false,
-          error: r.error,
-        });
-      }
-    }
+    sorotanDeferReason = "QUOTA_EXHAUSTED";
   }
 
-  // 5. Ping IndexNow with prioritized URLs (main articles first, then sorotan)
-  const urlsForIndexNow = prioritizeUrlsForIndexing([
-    ...articleOutcomes.filter((o) => !o.skippedQuota).map((o) => o.url),
-    ...sorotanOutcomes.filter((o) => !o.skippedQuota).map((o) => o.url),
-  ]);
+  // 5. Ping IndexNow with main article URLs only (exclude noindex /sorotan/*)
+  const urlsForIndexNow = prioritizeUrlsForIndexing(
+    articleOutcomes.filter((o) => !o.skippedQuota).map((o) => o.url),
+  );
   const indexNow: IndexNowResult =
     urlsForIndexNow.length > 0
       ? await pingIndexNow(urlsForIndexNow)

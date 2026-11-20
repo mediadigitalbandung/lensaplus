@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse, requireRole, requireAuth, ApiError, parsePositiveInt } from "@/lib/api-utils";
 import { reportRateLimit, getClientIp } from "@/lib/rate-limit";
+import { readJsonBody } from "@/lib/security";
 import { sanitizeText } from "@/lib/sanitize";
 
 const updateReportSchema = z.object({
@@ -81,7 +82,7 @@ export async function PATCH(request: NextRequest) {
   try {
     await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const data = updateReportSchema.parse(body);
 
     const existing = await prisma.report.findUnique({ where: { id: data.id } });
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
       throw new ApiError("Terlalu banyak laporan. Coba lagi nanti.", 429);
     }
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const data = createReportSchema.parse(body);
 
     // Sanitize free-text detail field — strip HTML/angle brackets before storing

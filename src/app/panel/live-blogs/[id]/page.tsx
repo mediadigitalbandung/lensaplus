@@ -316,6 +316,7 @@ export default function LiveBlogEditorPage({ params: paramsPromise }: { params: 
           <Link
             href={`/live/${blog.slug}`}
             target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-label-sm text-primary hover:underline"
           >
             <ExternalLink size={12} />

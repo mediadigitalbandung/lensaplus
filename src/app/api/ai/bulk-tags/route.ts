@@ -3,6 +3,7 @@ import { requireRole, successResponse, errorResponse, ApiError, logAudit } from 
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
 import { callAI } from "@/lib/ai-client";
+import { aiRateLimit } from "@/lib/rate-limit";
 
 function slugifyTag(name: string): string {
   return slugify(name).slice(0, 60);
@@ -26,6 +27,10 @@ export async function POST(_req: NextRequest) {
   void _req;
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
+    const { success: allowed } = aiRateLimit(session.user.id);
+    if (!allowed) {
+      throw new ApiError("Batas penggunaan AI tercapai (20 request/jam). Coba lagi nanti.", 429);
+    }
 
     // Pre-check DeepSeek API key
     const setting = await prisma.systemSetting.findUnique({
@@ -59,7 +64,7 @@ export async function POST(_req: NextRequest) {
       try {
         const plainContent = article.content.replace(/<[^>]*>/g, "").slice(0, 1500);
 
-        const prompt = `Berikan 8-10 tag SEO-friendly dalam Bahasa Indonesia untuk artikel berita Lensaplus berikut (media berita digital Bandung — bisnis, ekonomi, pemerintahan, hukum, dan topik general lain).
+        const prompt = `Berikan 8-10 tag SEO-friendly dalam Bahasa Indonesia untuk artikel berita Lensaplus berikut (media berita digital nasional Indonesia — politik, hukum, bisnis, ekonomi, olahraga, teknologi, dan peristiwa Nusantara).
 Tag harus:
 - Kata kunci yang orang mungkin cari di Google
 - Campuran: topik spesifik + lokasi + topik umum sesuai kategori artikel
@@ -76,7 +81,7 @@ Format jawaban HANYA tag dipisah koma, tanpa penjelasan.`;
           feature: "bulk_tags",
           forceProvider: "deepseek",
           systemPrompt:
-            "Kamu adalah SEO specialist untuk Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general lain. Jawab HANYA dengan daftar tag dipisah koma.",
+            "Kamu adalah SEO specialist untuk Lensaplus — media berita digital nasional Indonesia dengan fokus politik, hukum, bisnis, ekonomi, olahraga, dan topik umum lainnya. Jawab HANYA dengan daftar tag dipisah koma.",
           userPrompt: prompt,
           maxTokens: 200,
           temperature: 0.8,

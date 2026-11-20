@@ -16,6 +16,7 @@ import { prisma } from "@/lib/prisma";
 import { callAI } from "@/lib/ai-client";
 import { cleanAIShortText } from "@/lib/sanitize";
 import { requireRole, successResponse, errorResponse, logAudit, ApiError } from "@/lib/api-utils";
+import { aiRateLimit } from "@/lib/rate-limit";
 import { Role } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -87,6 +88,9 @@ export async function POST(
   const params = await paramsPromise;
   try {
     const session = await requireRole(EDITOR_ROLES);
+    if (!aiRateLimit(session.user.id).success) {
+      throw new ApiError("Batas penggunaan AI tercapai (20 request/jam). Coba lagi nanti.", 429);
+    }
 
     const article = await prisma.article.findUnique({
       where: { id: params.id },
@@ -107,7 +111,7 @@ export async function POST(
     // more than enough for FAQ derivation without introducing hallucination risk.
     const plainContent = stripHtml(article.content).slice(0, 5000);
 
-    const userPrompt = `Kamu adalah asisten editorial Lensaplus — media berita digital Bandung dengan fokus bisnis, ekonomi, pemerintahan, dan hukum, plus topik general (olahraga, hiburan, teknologi, dll). \
+    const userPrompt = `Kamu adalah asisten editorial Lensaplus — media berita digital nasional Indonesia dengan fokus politik, hukum, bisnis, ekonomi, olahraga, teknologi, dan topik umum lainnya. \
 Tugas kamu: buat 5-7 pasangan tanya-jawab (FAQ) berbahasa Indonesia dari artikel berikut.
 
 ATURAN KETAT:

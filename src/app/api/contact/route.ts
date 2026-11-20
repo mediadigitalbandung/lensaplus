@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { successResponse, errorResponse, ApiError } from "@/lib/api-utils";
 import { commentRateLimit, getClientIp } from "@/lib/rate-limit";
+import { readJsonBody } from "@/lib/security";
 import { sanitizeText, sanitizeEmail } from "@/lib/sanitize";
 import { prisma } from "@/lib/prisma";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       throw new ApiError("Terlalu banyak pesan. Coba lagi nanti.", 429);
     }
 
-    const body = await request.json();
+    const body = await readJsonBody<Record<string, unknown>>(request);
     const { captchaToken, ...rest } = body;
 
     // Turnstile CAPTCHA is mandatory — submitting without a token used to

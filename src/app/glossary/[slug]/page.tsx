@@ -111,7 +111,7 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
         }}
       />
 
-      <main className="bg-surface min-h-screen py-10">
+      <div className="bg-surface min-h-screen py-10">
         <div className="container-main max-w-4xl">
           {/* Back link */}
           <Link
@@ -188,7 +188,7 @@ export default async function GlossaryDetailPage({ params: paramsPromise }: { pa
             profesional, hubungi advokat berlisensi.
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 }

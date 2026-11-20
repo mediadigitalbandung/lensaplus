@@ -11,12 +11,16 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get("q") || "";
-    const page = parsePositiveInt(searchParams.get("page"), 1);
+    const query = (searchParams.get("q") || "").trim().slice(0, 100);
+    const page = parsePositiveInt(searchParams.get("page"), 1, 100);
     const limit = 12;
 
     if (query.length < 2) {
-      return successResponse({ articles: [], total: 0 });
+      return successResponse({
+        articles: [],
+        total: 0,
+        pagination: { page, limit, total: 0, totalPages: 0 },
+      });
     }
 
     const where = {
@@ -55,6 +59,7 @@ export async function GET(request: NextRequest) {
 
     return successResponse({
       articles,
+      total,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {

@@ -236,10 +236,14 @@ export async function POST(
 
     // 4. Persist progress
     const firstFailure = results.find((r) => !r.ok && !r.skipped && r.error)?.error;
+    const nextScrapedUrls =
+      newlyScrapedUrls.length > 0
+        ? Array.from(new Set([...source.scrapedUrls, ...newlyScrapedUrls])).slice(-200)
+        : undefined;
     await prisma.newsSource.update({
       where: { id: source.id },
       data: {
-        scrapedUrls: { push: newlyScrapedUrls },
+        ...(nextScrapedUrls ? { scrapedUrls: nextScrapedUrls } : {}),
         totalScraped: { increment: successes },
         lastCheckedAt: new Date(),
         ...(successes > 0

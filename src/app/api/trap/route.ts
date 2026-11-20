@@ -20,6 +20,21 @@ export const dynamic = "force-dynamic";
  * doesn't realise it tripped a trap.
  */
 function handler(req: NextRequest) {
+  const secFetchSite = (req.headers.get("sec-fetch-site") || "").toLowerCase();
+  const secFetchDest = (req.headers.get("sec-fetch-dest") || "").toLowerCase();
+  // Prevent cross-site subresource DoS (e.g. <img src=".../api/trap"> on an external site)
+  if (
+    secFetchSite === "cross-site" ||
+    secFetchDest === "image" ||
+    secFetchDest === "script" ||
+    secFetchDest === "style"
+  ) {
+    return new NextResponse("ok", {
+      status: 200,
+      headers: { "x-robots-tag": "noindex, nofollow", "cache-control": "no-store" },
+    });
+  }
+
   const ip = getClientIp(req);
   banIp(ip);
   const ua = req.headers.get("user-agent") || "unknown";

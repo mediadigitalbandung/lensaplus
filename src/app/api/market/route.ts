@@ -13,7 +13,7 @@ const QUOTE_SYMBOLS = [
   "JPYIDR=X",    // JPY/IDR
   "CNYIDR=X",    // CNY/IDR
   "GC=F",        // Gold (USD/oz)
-  "CL=F",        // Brent crude (USD/barrel)
+  "BZ=F",        // Brent crude (USD/barrel)
   "BTC-USD",     // Bitcoin
   "ETH-USD",     // Ethereum
 ];
@@ -94,6 +94,7 @@ async function fetchQuotes(symbols: string[]): Promise<Record<string, QuoteResul
             "User-Agent": "Mozilla/5.0 (compatible; Lensaplus/1.0)",
             "Accept": "application/json,text/plain,*/*",
           },
+          signal: AbortSignal.timeout(10_000),
           next: { revalidate: 60 },
         });
         if (!res.ok) throw new Error(`Yahoo returned ${res.status}`);
@@ -172,7 +173,7 @@ export async function GET() {
 
     // ─── COMMODITY ──────────────────────────────────────────────────
     const goldQ = macroMap["GC=F"];
-    const oilQ = macroMap["CL=F"];
+    const oilQ = macroMap["BZ=F"];
 
     // Gold: Yahoo gives USD/troy-oz → convert to IDR/gram
     const goldUsdOz = goldQ?.price ?? 0;

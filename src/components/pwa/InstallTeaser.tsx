@@ -30,7 +30,10 @@ export default function InstallTeaser() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     // Only on homepage
-    if (pathname !== "/") return;
+    if (pathname !== "/") {
+      setShow(false);
+      return;
+    }
 
     // Already standalone — they installed
     const isStandalone =
@@ -50,13 +53,40 @@ export default function InstallTeaser() {
       /* ignore */
     }
 
+    // Coordinate with InstallPrompt: never stack two PWA banners simultaneously
+    const win = window as unknown as { __lensaplusInstallPromptActive?: boolean };
+    if (win.__lensaplusInstallPromptActive) return;
+    try {
+      const promptDismissed = localStorage.getItem("lensaplus-pwa-dismissed-at");
+      if (promptDismissed) return;
+    } catch {
+      /* ignore */
+    }
+
     // Mobile only
     const mq = window.matchMedia("(max-width: 640px)");
     if (!mq.matches) return;
 
     // Delay 5s
-    const timer = setTimeout(() => setShow(true), 5000);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => {
+      if (!win.__lensaplusInstallPromptActive) {
+        setShow(true);
+      }
+    }, 5000);
+
+    const onPromptActive = (e: Event) => {
+      const active = (e as CustomEvent<{ active?: boolean }>).detail?.active;
+      if (active) {
+        clearTimeout(timer);
+        setShow(false);
+      }
+    };
+    window.addEventListener("lensaplus:install-prompt-active", onPromptActive);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("lensaplus:install-prompt-active", onPromptActive);
+    };
   }, [pathname]);
 
   function dismiss() {
@@ -68,7 +98,7 @@ export default function InstallTeaser() {
     }
   }
 
-  if (!show) return null;
+  if (!show || pathname !== "/") return null;
 
   return (
     <div

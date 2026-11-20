@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       throw new ApiError("User tidak ditemukan", 404);
     }
 
-    const [articles, comments] = await Promise.all([
+    const [articles, comments, reports, membershipCard] = await Promise.all([
       prisma.article.findMany({
         where: { authorId: userId },
         select: { id: true, title: true, slug: true, status: true, publishedAt: true, createdAt: true },
@@ -62,13 +62,35 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: "desc" },
         take: 500,
       }),
+      prisma.report.findMany({
+        where: { email: user.email },
+        select: { id: true, reason: true, detail: true, status: true, articleId: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 500,
+      }),
+      prisma.membershipCard.findUnique({
+        where: { userId },
+        select: {
+          id: true,
+          number: true,
+          status: true,
+          issuedAt: true,
+          expiresAt: true,
+          holderName: true,
+          bloodType: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
     ]);
 
     const exportData = {
       exportedAt: new Date().toISOString(),
       profile: user,
+      membershipCard,
       articles,
       comments,
+      reports,
     };
 
     const ip = getClientIp(req);

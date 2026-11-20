@@ -19,7 +19,6 @@ import {
   HOME_TRENDING_ARTICLE_SELECT,
   HOME_TRENDING_CACHE_KEY,
 } from "@/lib/public-article-select";
-import { safeJsonLdStringify } from "@/lib/seo/json-ld";
 
 interface HomeArticle {
   id: string;
@@ -236,105 +235,16 @@ export default async function HomePage() {
     sorotanList = [];
   }
 
-  // Fallback demo articles with AI generated images if DB is empty
-  const demoArticles: HomeArticle[] = [
-    {
-      id: "demo-1",
-      title: "Transformasi Ekonomi Digital & Pembangunan Infrastruktur Bandung 2026",
-      slug: "transformasi-ekonomi-digital-bandung",
-      excerpt: "Pemerintah Kota Bandung bersama para pelaku usaha meluncurkan insiatif akselerasi ekonomi berbasis teknologi untuk mendorong pertumbuhan UMKM lokal.",
-      featuredImage: "/uploads/demo/hero-bandung.png",
-      publishedAt: new Date(),
-      viewCount: 1420,
-      verificationLabel: "VERIFIED",
-      author: { id: "a1", name: "Redaksi Lensaplus", avatar: null },
-      category: { id: "c1", name: "Bisnis & Ekonomi", slug: "bisnis-ekonomi" },
-    },
-    {
-      id: "demo-2",
-      title: "Analisis Kebijakan Investasi & Regulasi Perdagangan Jawa Barat",
-      slug: "analisis-kebijakan-investasi-jabar",
-      excerpt: "Tinjauan mendalam mengenai implikasi insentif pajak baru bagi pengusaha muda dan ekosistem industri kreatif di Bandung.",
-      featuredImage: "/uploads/demo/bisnis-ekonomi.png",
-      publishedAt: new Date(Date.now() - 3600000),
-      viewCount: 890,
-      verificationLabel: "VERIFIED",
-      author: { id: "a2", name: "Tim Ekonomi", avatar: null },
-      category: { id: "c1", name: "Bisnis & Ekonomi", slug: "bisnis-ekonomi" },
-    },
-    {
-      id: "demo-3",
-      title: "Sidang Pleno PN Bandung Putuskan Perkara Perdata Aset Daerah",
-      slug: "sidang-pleno-pn-bandung-putuskan-perkara-aset",
-      excerpt: "Majelis Hakim Pengadilan Negeri Bandung mengetuk palu atas sengketa lahan fasilitas umum, memberikan kepastian hukum bagi warga.",
-      featuredImage: "/uploads/demo/hukum-court.png",
-      publishedAt: new Date(Date.now() - 7200000),
-      viewCount: 1105,
-      verificationLabel: "VERIFIED",
-      author: { id: "a3", name: "Desk Hukum", avatar: null },
-      category: { id: "c2", name: "Hukum", slug: "hukum" },
-    },
-    {
-      id: "demo-4",
-      title: "Persib Bandung Bersiap Hadapi Laga Krusial Liga 1 Malam Ini",
-      slug: "persib-bandung-bersiap-hadapi-laga-krusial",
-      excerpt: "Stadion Gelora Bandung Lautan Api diprediksi penuh sesak oleh ribuan Bobotoh yang siap memberi dukungan penuh.",
-      featuredImage: "/uploads/demo/olahraga-stadium.png",
-      publishedAt: new Date(Date.now() - 10800000),
-      viewCount: 2350,
-      verificationLabel: "VERIFIED",
-      author: { id: "a4", name: "Desk Olahraga", avatar: null },
-      category: { id: "c3", name: "Olahraga", slug: "olahraga" },
-    },
-    {
-      id: "demo-5",
-      title: "Pengembangan Transportasi Publik Terintegrasi di Kawasan Bandung Raya",
-      slug: "pengembangan-transportasi-publik-bandung",
-      excerpt: "Proyek koridor bus listrik dan revitalisasi stasiun komuter Jawa Barat memasuki tahap finalisasi.",
-      featuredImage: "/uploads/demo/hero-bandung.png",
-      publishedAt: new Date(Date.now() - 14400000),
-      viewCount: 950,
-      verificationLabel: "VERIFIED",
-      author: { id: "a1", name: "Redaksi Lensaplus", avatar: null },
-      category: { id: "c4", name: "Pemerintahan", slug: "pemerintahan" },
-    },
-    {
-      id: "demo-6",
-      title: "Tren Industri Kreatif Bandung: Inovasi Startup & Produk Lokal",
-      slug: "tren-industri-kreatif-bandung",
-      excerpt: "Ekosistem kreator dan pengembang aplikasi Bandung menunjukkan pertumbuhan signifikan di pasar nasional.",
-      featuredImage: "/uploads/demo/bisnis-ekonomi.png",
-      publishedAt: new Date(Date.now() - 18000000),
-      viewCount: 780,
-      verificationLabel: "VERIFIED",
-      author: { id: "a2", name: "Tim Tekno", avatar: null },
-      category: { id: "c5", name: "Teknologi", slug: "teknologi" },
-    },
-    {
-      id: "demo-7",
-      title: "Evaluasi Pelaksanaan Perda Pengelolaan Sampah Kota Bandung",
-      slug: "evaluasi-pelaksanaan-perda-sampah-bandung",
-      excerpt: "Pemerintah Kota bersama dinas lingkungan hidup dorong partisipasi warga tingkatkan pemilahan sampah mandiri.",
-      featuredImage: "/uploads/demo/hero-bandung.png",
-      publishedAt: new Date(Date.now() - 21600000),
-      viewCount: 640,
-      verificationLabel: "VERIFIED",
-      author: { id: "a3", name: "Desk Lingkungan", avatar: null },
-      category: { id: "c6", name: "Lingkungan", slug: "lingkungan" },
-    },
-  ];
-
-  // Dedup by source article or use demo articles if DB empty
+  // Dedup published articles (no synthetic 404 demo slugs)
   const seenSource = new Set<string>();
-  const activeArticles = articles.length > 0 ? articles : demoArticles;
-  const dedupedArticles = activeArticles.filter((a) => {
+  const dedupedArticles = articles.filter((a) => {
     const key = a.sourceArticleId || a.id;
     if (seenSource.has(key)) return false;
     seenSource.add(key);
     return true;
   });
 
-  const activeTrending = trendingArticles.length > 0 ? trendingArticles : demoArticles;
+  const activeTrending = trendingArticles;
 
   // 1) Hero Lead Carousel (1 besar di atas): berita terhangat hari ini + terbaru (maks 5 slide)
   const heroLeadCandidates: HomeArticle[] = [];
@@ -431,89 +341,8 @@ export default async function HomePage() {
   }
   const catEntries = Object.entries(articlesByCategory);
 
-  const socialUrls = (process.env.LENSAPLUS_SOCIAL_URLS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => /^https?:\/\//i.test(s));
-  const fallbackSocialUrls = [
-    process.env.LENSAPLUS_TWITTER_URL,
-    process.env.LENSAPLUS_FACEBOOK_URL,
-    process.env.LENSAPLUS_INSTAGRAM_URL,
-    process.env.LENSAPLUS_LINKEDIN_URL,
-    process.env.LENSAPLUS_YOUTUBE_URL,
-    process.env.LENSAPLUS_TIKTOK_URL,
-  ].filter((s): s is string => !!s && /^https?:\/\//i.test(s));
-  const sisterBrands = ["https://jurnalishukumbandung.com"];
-  const baseSameAs = socialUrls.length > 0 ? socialUrls : fallbackSocialUrls;
-  const sameAs = Array.from(new Set([...baseSameAs, ...sisterBrands]));
-
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLdStringify([
-            {
-              "@context": "https://schema.org",
-              "@type": "NewsMediaOrganization",
-              "@id": "https://lensaplus.com/#organization",
-              name: "Lensaplus",
-              alternateName: "Lensaplus Indonesia",
-              url: "https://lensaplus.com",
-              logo: { "@type": "ImageObject", url: "https://lensaplus.com/lensaplus-icon.png", width: 512, height: 512 },
-              image: { "@type": "ImageObject", url: "https://lensaplus.com/lensaplus-icon.png" },
-              description:
-                "Portal media berita digital nasional Indonesia — bisnis, ekonomi, politik nasional, hukum & peradilan, olahraga, hiburan, teknologi, dan peristiwa Nusantara.",
-              foundingDate: "2024",
-              sameAs,
-              publishingPrinciples: "https://lensaplus.com/pedoman-media",
-              ethicsPolicy: "https://lensaplus.com/kode-etik",
-              missionCoveragePrioritiesPolicy: "https://lensaplus.com/pedoman-media",
-              correctionsPolicy: "https://lensaplus.com/kode-etik",
-              diversityPolicy: "https://lensaplus.com/kode-etik",
-              areaServed: [
-                { "@type": "Country", name: "Indonesia" },
-                { "@type": "City", name: "Jakarta" },
-                { "@type": "City", name: "Bandung" },
-                { "@type": "AdministrativeArea", name: "Ibu Kota Nusantara" },
-              ],
-              knowsAbout: [
-                "Berita Nasional", "Politik Indonesia", "Bisnis Indonesia", "Ekonomi Makro", "Pemerintahan", "Kebijakan Publik",
-                "APBD/APBN", "Hukum Indonesia", "Putusan Pengadilan", "UU/Regulasi",
-                "Pemilu", "Olahraga Indonesia", "Hiburan", "Teknologi Digital",
-                "Pendidikan", "Kesehatan", "Lingkungan",
-                "Berita Indonesia", "Peristiwa Nusantara",
-              ],
-              contactPoint: [
-                { "@type": "ContactPoint", contactType: "customer service", url: "https://lensaplus.com/kontak", areaServed: "ID", availableLanguage: ["Indonesian"] },
-                { "@type": "ContactPoint", contactType: "editorial", url: "https://lensaplus.com/redaksi", areaServed: "ID", availableLanguage: ["Indonesian"] },
-              ],
-              address: {
-                "@type": "PostalAddress",
-                addressLocality: "Jakarta & Bandung",
-                addressRegion: "Indonesia",
-                addressCountry: "ID",
-              },
-            },
-            {
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              "@id": "https://lensaplus.com/#website",
-              name: "Lensaplus",
-              alternateName: "Lensaplus — Media Berita Digital Nasional Indonesia",
-              url: "https://lensaplus.com",
-              inLanguage: "id-ID",
-              publisher: { "@id": "https://lensaplus.com/#organization" },
-              potentialAction: {
-                "@type": "SearchAction",
-                target: { "@type": "EntryPoint", urlTemplate: "https://lensaplus.com/search?q={search_term_string}" },
-                "query-input": "required name=search_term_string",
-              },
-            },
-          ]),
-        }}
-      />
-
       <h1 className="sr-only">Lensaplus — Media Berita Digital Nasional Indonesia</h1>
       
       {/* ── TOP LEADERBOARD AD ── */}
@@ -522,6 +351,16 @@ export default async function HomePage() {
       {/* ── HERO EDITORIAL GRID ── */}
       <section className="bg-surface py-4 sm:py-8 lg:py-10">
         <div className="container-main">
+          {dedupedArticles.length === 0 ? (
+            <div className="mx-auto max-w-xl border-l-4 border-primary pl-5 py-4">
+              <h2 className="font-serif text-headline-md text-on-surface">
+                Belum ada berita yang dipublikasikan
+              </h2>
+              <p className="mt-2 text-body-md text-on-surface-variant">
+                Redaksi sedang menyiapkan laporan terbaru untuk Anda. Silakan kembali beberapa saat lagi.
+              </p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10">
             {/* Column 1: Main Spotlight Carousel + 2-Card Carousel (6/12) */}
             {heroCarouselItems.length > 0 && (
@@ -636,6 +475,7 @@ export default async function HomePage() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </section>
 

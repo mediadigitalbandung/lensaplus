@@ -127,7 +127,7 @@ export default function TiktokListPage() {
 
   if (!canManage && !loading) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-700">
+      <div className="rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-5 text-red-700">
         Anda tidak memiliki izin untuk mengelola konten TikTok.
       </div>
     );
@@ -137,8 +137,7 @@ export default function TiktokListPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-xl sm:text-3xl font-bold text-txt-primary">
-            <Video size={24} className="text-primary" />
+          <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
             TikTok Konten
           </h1>
           <p className="text-sm text-txt-secondary">
@@ -191,7 +190,7 @@ export default function TiktokListPage() {
       </div>
 
       {/* Phase warning banner */}
-      <div className="mb-5 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+      <div className="mb-5 flex items-start gap-3 rounded-lg border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-4">
         <AlertCircle size={18} className="mt-0.5 shrink-0 text-yellow-700" />
         <div className="text-sm text-yellow-800">
           <p className="font-semibold">Fase 1 — Workflow Manual</p>
@@ -204,7 +203,7 @@ export default function TiktokListPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-4 text-sm text-red-700">
           {error}
           <button onClick={fetchContents} className="ml-3 font-semibold underline">
             Coba lagi
@@ -439,8 +438,7 @@ function YoutubeImportModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-2xl">
         <div className="flex items-center justify-between border-b border-border p-4">
-          <h3 className="flex items-center gap-2 text-base font-bold text-txt-primary">
-            <Youtube size={18} className="text-red-600" />
+          <h3 className="text-base font-bold text-txt-primary">
             Import & Auto-Clip dari YouTube
           </h3>
           <button type="button" onClick={close} aria-label="Tutup" className="rounded-lg p-1 text-txt-muted hover:bg-surface-secondary">
@@ -449,7 +447,7 @@ function YoutubeImportModal({
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          <div className="flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-[11px] text-yellow-800">
+          <div className="flex items-start gap-2 rounded-md border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-3 text-[11px] text-yellow-800">
             <AlertCircle size={14} className="mt-0.5 shrink-0" />
             <span>
               Semua klip dibuat sebagai <strong>DRAFT</strong> untuk ditinjau editor sebelum tayang.
@@ -459,7 +457,7 @@ function YoutubeImportModal({
           </div>
 
           {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">{error}</div>
+            <div className="rounded-md border border-red-300 border-l-4 border-l-red-600 bg-surface p-2 text-sm text-red-700">{error}</div>
           )}
 
           {!jobId && (
@@ -557,7 +555,7 @@ function YoutubeImportModal({
               )}
 
               {job.status === "FAILED" && (
-                <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-md border border-red-300 border-l-4 border-l-red-600 bg-surface p-3 text-sm text-red-700">
                   Gagal: {job.errorMessage || "kesalahan tidak diketahui"}
                 </div>
               )}

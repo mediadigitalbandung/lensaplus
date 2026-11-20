@@ -10,11 +10,12 @@ Lensaplus adalah **Media Berita Digital Nasional Indonesia** berstandar jurnalis
 - **Framework:** Next.js 16 App Router (TypeScript, React 19)
 - **Database:** PostgreSQL 16 (Self-hosted di VPS Hostinger, Prisma 5.22 ORM)
 - **Cakupan Redaksi:** Berita Nasional Indonesia, Politik, Hukum & Peradilan, Bisnis & Ekonomi Nasional, Olahraga, Teknologi Digital, & Peristiwa Nusantara.
-- **Design System:** "Editorial Authority"
-  - **Navy Primary:** `#002045` (Kedalaman editorial & profesionalisme)
-  - **Crimson Secondary:** `#b7102a` (Aksen breaking news & urgensi)
-  - **Surface Light:** `#fcf8f8` / `#ffffff`
-  - **Typography:** Serif (`Playfair Display` / `Merriweather`) untuk judul berita, Sans-serif (`Inter`) untuk antarmuka.
+- **Design System:** "Editorial Authority" (selaras dengan `tailwind.config.ts` & `docs/DESIGN_SOP.md`)
+  - **Primary (Midnight Amethyst):** `#2E1065` (`primary` — dark `#1E0A45`, light `#F5F3FF`, container `#4C1D95`)
+  - **Secondary (Vibrant Emerald):** `#10B981` (`secondary` — dark `#059669`, light `#E6F4EA`, container `#065F46`)
+  - **Tertiary (Coral Rose):** `#F43F5E` (`tertiary` — aksen urgensi)
+  - **Surface Light:** `#FAF9F6` (`surface`), `#FFFFFF` (`surface-container-lowest`), `#F5F4F0` (`surface-container-low`)
+  - **Typography:** Serif (`Playfair Display` / `Plus Jakarta Sans`) untuk judul berita, Sans-serif (`Inter`) untuk antarmuka.
 
 ---
 

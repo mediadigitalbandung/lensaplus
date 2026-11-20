@@ -116,7 +116,6 @@ export default function MembershipCardSection() {
       if (imgFront) URL.revokeObjectURL(imgFront);
       if (imgBack) URL.revokeObjectURL(imgBack);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imgFront, imgBack]);
 
   async function download(kind: DL) {

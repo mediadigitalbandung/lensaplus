@@ -88,12 +88,44 @@ export async function POST(request: NextRequest) {
       });
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-        // Already queued/processed. If a prior job finished, surface it so the
-        // UI can link to results instead of erroring.
+        // Already queued/processed. Allow atomic re-queue if the prior job FAILED.
         const existing = await prisma.youtubeClipJob.findUnique({
           where: { sourceVideoId: videoId },
           select: { id: true, status: true },
         });
+        if (existing?.status === "FAILED") {
+          const requeued = await prisma.youtubeClipJob.updateMany({
+            where: { id: existing.id, status: "FAILED" },
+            data: {
+              status: "QUEUED",
+              stage: null,
+              progress: 0,
+              errorMessage: null,
+              workerId: null,
+              startedAt: null,
+              finishedAt: null,
+              requestedClips: data.clips ?? 5,
+              targetLengthSec: data.targetLengthSec ?? null,
+              reframe: data.reframe ?? true,
+              burnCaptions: data.burnCaptions ?? false,
+              accountId: data.accountId || null,
+              videoTitle: data.videoTitle?.trim() || null,
+              rightsBasis: data.rightsBasis?.trim() || null,
+              requestedById: session.user.id,
+              requestedByName: session.user.name,
+            },
+          });
+          if (requeued.count > 0) {
+            await logAudit(
+              session.user.id,
+              "TIKTOK_YOUTUBE_IMPORT",
+              "youtube_clip_job",
+              existing.id,
+              `Re-queue failed YouTube clip job: ${data.url}${data.rightsBasis ? ` [rights: ${data.rightsBasis}]` : ""}`,
+            );
+            return successResponse({ jobId: existing.id, status: "QUEUED", videoId, requeued: true }, 201);
+          }
+        }
         throw new ApiError(
           `Video ini sudah pernah diproses (status: ${existing?.status ?? "QUEUED"}).`,
           409,

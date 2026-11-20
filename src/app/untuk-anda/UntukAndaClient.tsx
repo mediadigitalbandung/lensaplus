@@ -49,7 +49,7 @@ export default function UntukAndaClient() {
   }, [load]);
 
   return (
-    <main className="container-main py-8 sm:py-12">
+    <div className="container-main py-8 sm:py-12">
       <header className="mb-8 sm:mb-12">
         <div className="mb-3">
           <h1 className="border-l-4 border-primary pl-3 font-serif text-headline-md sm:text-display-sm font-bold text-on-surface">
@@ -138,6 +138,6 @@ export default function UntukAndaClient() {
           ))}
         </div>
       )}
-    </main>
+    </div>
   );
 }

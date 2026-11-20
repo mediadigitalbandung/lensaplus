@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Printer, List } from "lucide-react";
-import { marked } from "marked";
+import { Printer } from "lucide-react";
+import { Marked, Renderer } from "marked";
 import DOMPurify from "isomorphic-dompurify";
 
 interface TocEntry {
@@ -39,7 +39,7 @@ export default function DocumentationClient({
       return { html: "", toc: [] as TocEntry[] };
 
     const tocEntries: TocEntry[] = [];
-    const renderer = new marked.Renderer();
+    const renderer = new Renderer();
     let headingIndex = 0;
 
     renderer.heading = ({ tokens, depth }) => {
@@ -53,8 +53,8 @@ export default function DocumentationClient({
       return `<h${depth} id="${id}" class="doc-h doc-h${depth}">${text}</h${depth}>`;
     };
 
-    marked.use({ renderer });
-    const rawHtml = marked.parse(markdown, {
+    const localMarked = new Marked({ renderer });
+    const rawHtml = localMarked.parse(markdown, {
       async: false,
       breaks: false,
       gfm: true,
@@ -224,12 +224,9 @@ export default function DocumentationClient({
 
       <div className="doc-topbar mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <BookOpen size={24} className="text-primary" />
-            <h1 className="text-xl sm:text-3xl font-bold text-txt-primary">
-              Dokumentasi Fitur
-            </h1>
-          </div>
+          <h1 className="border-l-4 border-primary pl-3 text-xl sm:text-3xl font-bold text-txt-primary">
+            Dokumentasi Fitur
+          </h1>
           <p className="mt-1 text-sm text-txt-secondary">
             docs/FEATURE_REFERENCE.md — referensi lengkap fitur Lensaplus.
           </p>
@@ -247,8 +244,8 @@ export default function DocumentationClient({
         {/* Sidebar ToC */}
         <aside className="doc-sidebar hidden lg:block">
           <div className="sticky top-20 rounded-xl border border-border bg-surface p-4 shadow-card max-h-[calc(100vh-6rem)] overflow-y-auto">
-            <h3 className="flex items-center gap-1.5 text-xs font-bold text-txt-secondary mb-3 uppercase tracking-wider">
-              <List size={12} /> Daftar Isi
+            <h3 className="text-xs font-bold text-txt-secondary mb-3 uppercase tracking-wider">
+              Daftar Isi
             </h3>
             {toc.length === 0 ? (
               <p className="text-xs text-txt-muted">
@@ -260,10 +257,10 @@ export default function DocumentationClient({
                   <button
                     key={t.id}
                     onClick={() => scrollToId(t.id)}
-                    className={`block w-full text-left text-xs leading-tight py-1.5 rounded-lg px-2 transition-colors ${
+                    className={`block w-full text-left text-xs leading-tight py-1.5 px-2 transition-colors ${
                       activeId === t.id
-                        ? "bg-primary-light text-primary font-semibold"
-                        : "text-txt-secondary hover:bg-surface-secondary"
+                        ? "border-l-2 border-primary text-primary font-semibold"
+                        : "text-txt-secondary hover:text-primary"
                     } ${t.level === 2 ? "pl-4" : ""} ${
                       t.level === 3 ? "pl-6" : ""
                     }`}

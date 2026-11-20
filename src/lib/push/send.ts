@@ -48,6 +48,10 @@ export async function sendPushToSubscribers(
 
     for (let i = 0; i < subscriptions.length; i += CONCURRENCY) {
       const batch = subscriptions.slice(i, i + CONCURRENCY);
+      const successIds: string[] = [];
+      const expiredIds: string[] = [];
+      const retryGroups = new Map<number, string[]>();
+
       await Promise.all(
         batch.map(async (sub) => {
           // Filter by category preference if subscriber has specified a subset.
@@ -69,20 +73,10 @@ export async function sendPushToSubscribers(
                 keys: { p256dh: sub.p256dh, auth: sub.auth },
               },
               serializedPayload,
-              { TTL: 86400 }, // valid 24 hours
+              { TTL: 86400, timeout: 10_000 }, // valid 24 hours, 10s network timeout
             );
             sent++;
-            try {
-              await prisma.pushSubscription.update({
-                where: { id: sub.id },
-                data: { lastNotifAt: new Date(), failureCount: 0 },
-              });
-            } catch (dbErr) {
-              console.warn(
-                `[push/send] Failed to update success timestamp for ${sub.id}:`,
-                dbErr instanceof Error ? dbErr.message : String(dbErr),
-              );
-            }
+            successIds.push(sub.id);
           } catch (err: unknown) {
             failed++;
             const errorObj = err as { statusCode?: number };
@@ -90,23 +84,58 @@ export async function sendPushToSubscribers(
             // 410 Gone or 404 = subscription expired/removed by browser
             const isExpired =
               errorObj.statusCode === 410 || errorObj.statusCode === 404;
-            try {
-              await prisma.pushSubscription.update({
-                where: { id: sub.id },
-                data: {
-                  failureCount: newFailureCount,
-                  isActive: isExpired || newFailureCount >= 5 ? false : true,
-                },
-              });
-            } catch (dbErr) {
-              console.warn(
-                `[push/send] Failed to update failureCount for ${sub.id}:`,
-                dbErr instanceof Error ? dbErr.message : String(dbErr),
-              );
+            if (isExpired || newFailureCount >= 5) {
+              expiredIds.push(sub.id);
+            } else {
+              const list = retryGroups.get(newFailureCount) || [];
+              list.push(sub.id);
+              retryGroups.set(newFailureCount, list);
             }
           }
         }),
       );
+
+      if (successIds.length > 0) {
+        try {
+          await prisma.pushSubscription.updateMany({
+            where: { id: { in: successIds } },
+            data: { lastNotifAt: new Date(), failureCount: 0 },
+          });
+        } catch (dbErr) {
+          console.warn(
+            "[push/send] Failed to batch-update success timestamps:",
+            dbErr instanceof Error ? dbErr.message : String(dbErr),
+          );
+        }
+      }
+
+      if (expiredIds.length > 0) {
+        try {
+          await prisma.pushSubscription.updateMany({
+            where: { id: { in: expiredIds } },
+            data: { isActive: false },
+          });
+        } catch (dbErr) {
+          console.warn(
+            "[push/send] Failed to batch-disable expired subscriptions:",
+            dbErr instanceof Error ? dbErr.message : String(dbErr),
+          );
+        }
+      }
+
+      for (const [failureCount, ids] of retryGroups.entries()) {
+        try {
+          await prisma.pushSubscription.updateMany({
+            where: { id: { in: ids } },
+            data: { failureCount, isActive: true },
+          });
+        } catch (dbErr) {
+          console.warn(
+            `[push/send] Failed to batch-update failureCount=${failureCount}:`,
+            dbErr instanceof Error ? dbErr.message : String(dbErr),
+          );
+        }
+      }
     }
 
     if (subscriptions.length < PAGE_SIZE) break;

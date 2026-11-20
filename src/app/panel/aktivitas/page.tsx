@@ -240,7 +240,7 @@ export default function AktivitasPage() {
       {loading ? (
         <LoadingSkeleton />
       ) : error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        <div className="rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-4 text-sm text-red-700">
           {error}
         </div>
       ) : logs.length === 0 ? (

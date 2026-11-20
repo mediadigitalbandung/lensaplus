@@ -11,11 +11,13 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import {
+  ApiError,
   errorResponse,
   requireRole,
   successResponse,
 } from "@/lib/api-utils";
 import { callAI } from "@/lib/ai-client";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +62,10 @@ async function runOne(
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
+    if (!rateLimit(`ai-test:${session.user.id}`, 15, 60_000).success) {
+      throw new ApiError("Terlalu banyak permintaan uji AI. Coba lagi sebentar.", 429);
+    }
     const raw = await req.json().catch(() => ({}));
     const { provider } = bodySchema.parse(raw || {});
 

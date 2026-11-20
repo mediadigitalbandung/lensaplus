@@ -7,15 +7,19 @@
  * Auth: SUPER_ADMIN
  */
 
-import { errorResponse, requireRole, successResponse } from "@/lib/api-utils";
+import { ApiError, errorResponse, requireRole, successResponse } from "@/lib/api-utils";
 import { callLocalAI, getLocalAiConfig, isLocalAiReady } from "@/lib/local-ai";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    await requireRole(["SUPER_ADMIN"]);
+    const session = await requireRole(["SUPER_ADMIN"]);
+    if (!rateLimit(`ai-test-local:${session.user.id}`, 15, 60_000).success) {
+      throw new ApiError("Terlalu banyak permintaan uji Local AI. Coba lagi sebentar.", 429);
+    }
 
     const cfg = await getLocalAiConfig();
     if (!isLocalAiReady(cfg)) {

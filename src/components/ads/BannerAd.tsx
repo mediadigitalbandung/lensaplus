@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import DOMPurify from "isomorphic-dompurify";
 
 interface Ad {
   id: string;
@@ -127,7 +128,9 @@ function AdContent({ ad }: { ad: Ad }) {
       <div
         className="w-full min-h-[80px] sm:min-h-[100px]"
         style={{ minHeight: "clamp(80px, 18vw, 160px)" }}
-        dangerouslySetInnerHTML={{ __html: ad.htmlCode }}
+        dangerouslySetInnerHTML={{
+          __html: DOMPurify.sanitize(ad.htmlCode, { ADD_ATTR: ["target"] }),
+        }}
       />
     ) : ad.imageUrl ? (
       // eslint-disable-next-line @next/next/no-img-element -- external advertiser-supplied URL, domain not known ahead of time
@@ -218,7 +221,9 @@ export function SidebarAd({ slot = "SIDEBAR", index }: { slot?: string; index?: 
     const content =
       ad.type === "HTML" && ad.htmlCode ? (
         <div
-          dangerouslySetInnerHTML={{ __html: ad.htmlCode }}
+          dangerouslySetInnerHTML={{
+          __html: DOMPurify.sanitize(ad.htmlCode, { ADD_ATTR: ["target"] }),
+        }}
           className="w-full [&>div]:!aspect-auto [&>div]:!overflow-visible [&>div]:!min-h-[16rem]"
         />
       ) : ad.imageUrl ? (

@@ -10,6 +10,7 @@ import {
   parsePositiveInt,
 } from "@/lib/api-utils";
 import { commentRateLimit, getClientIp } from "@/lib/rate-limit";
+import { readJsonBody } from "@/lib/security";
 import { sanitizeText, sanitizeEmail } from "@/lib/sanitize";
 import { checkSpam } from "@/lib/spam-filter";
 
@@ -101,7 +102,7 @@ export async function POST(
       throw new ApiError("Komentar hanya bisa dikirim pada artikel yang sudah dipublikasi", 400);
     }
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const data = createCommentSchema.parse(body);
 
     if (data.parentId) {

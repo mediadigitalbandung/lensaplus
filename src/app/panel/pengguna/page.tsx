@@ -342,7 +342,7 @@ export default function PenggunaPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-center text-base text-red-700">
+        <div className="mb-4 rounded-lg border border-red-300 border-l-4 border-l-red-600 bg-surface p-4 text-center text-base text-red-700">
           <p>{error}</p>
           <button
             onClick={fetchUsers}

@@ -195,7 +195,7 @@ export default async function PasarPage() {
     <>
       <JsonLd updatedAt={updatedAt} />
 
-      <main className="container-main py-8 sm:py-10 lg:py-12" id="main-content">
+      <div className="container-main py-8 sm:py-10 lg:py-12">
         {/* ── Page header ────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 sm:mb-8">
           <div>
@@ -334,7 +334,7 @@ export default async function PasarPage() {
             Sumber: Yahoo Finance &bull; Data tertunda ~15 menit &bull; Bukan merupakan saran investasi.
           </p>
         </div>
-      </main>
+      </div>
     </>
   );
 }

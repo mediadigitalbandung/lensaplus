@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Kebijakan Privasi — Lensaplus",
   description:
     "Kebijakan privasi Lensaplus sesuai UU No. 27/2022 tentang Pelindungan Data Pribadi — informasi lengkap mengenai pengumpulan, penggunaan, retensi, dan hak subjek data.",
+  alternates: { canonical: "/privasi" },
 };
 
 const SECTION_HEADING =
@@ -508,7 +509,7 @@ export default function PrivasiPage() {
             <div className="mt-4 rounded-sm border border-border bg-surface-container p-6">
               <div className="space-y-2 text-base">
                 <p>
-                  <strong>Lensaplus — Redaksi Media Berita Digital Bandung</strong>
+                  <strong>Lensaplus — Redaksi Media Berita Digital Nasional Indonesia</strong>
                 </p>
                 <p>
                   <strong>Email DPO:</strong>{" "}

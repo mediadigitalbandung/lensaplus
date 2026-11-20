@@ -61,85 +61,97 @@ export async function GET(request: NextRequest) {
       { name: "Opini", slug: "opini", description: "Opini, analisis, dan kolom", order: 12 },
     ];
 
-    for (const cat of categories) {
-      await prisma.category.upsert({
-        where: { slug: cat.slug },
-        update: {},
-        create: cat,
-      });
-    }
-
-    // Generate secure random passwords (never hardcoded)
+    // Generate secure random passwords (never hardcoded) & hash outside transaction
     const adminPlain = generateSecurePassword();
     const editorPlain = generateSecurePassword();
     const journalistPlain = generateSecurePassword();
 
-    // Create super admin
-    const adminPassword = await bcrypt.hash(adminPlain, 12);
-    const admin = await prisma.user.create({
-      data: {
-        email: "admin@lensaplus.com",
-        password: adminPassword,
-        name: "Super Admin",
-        role: "SUPER_ADMIN",
-        bio: "Administrator Lensaplus",
-      },
-    });
+    const [adminPassword, editorPassword, journalistPassword] = await Promise.all([
+      bcrypt.hash(adminPlain, 12),
+      bcrypt.hash(editorPlain, 12),
+      bcrypt.hash(journalistPlain, 12),
+    ]);
 
-    // Create editor
-    const editorPassword = await bcrypt.hash(editorPlain, 12);
-    const editor = await prisma.user.create({
-      data: {
-        email: "editor@lensaplus.com",
-        password: editorPassword,
-        name: "Editor Kepala",
-        role: "CHIEF_EDITOR",
-        bio: "Editor Kepala Lensaplus",
-      },
-    });
+    const { admin, editor, journalist } = await prisma.$transaction(async (tx) => {
+      // Re-check inside transaction to prevent concurrent /api/setup races
+      const raceAdmin = await tx.user.findFirst({
+        where: { role: "SUPER_ADMIN" },
+        select: { id: true },
+      });
+      if (raceAdmin) {
+        throw new ApiError("Setup endpoint disabled", 403);
+      }
 
-    // Create demo journalist
-    const journalistPassword = await bcrypt.hash(journalistPlain, 12);
-    const journalist = await prisma.user.create({
-      data: {
-        email: "jurnalis@lensaplus.com",
-        password: journalistPassword,
-        name: "Ahmad Fauzi",
-        role: "SENIOR_JOURNALIST",
-        bio: "Jurnalis senior dengan pengalaman 10 tahun meliput berita.",
-        specialization: "Hukum",
-      },
-    });
+      for (const cat of categories) {
+        await tx.category.upsert({
+          where: { slug: cat.slug },
+          update: {},
+          create: cat,
+        });
+      }
 
-    // Create sample article
-    const hukumCat = await prisma.category.findUnique({
-      where: { slug: "hukum" },
-    });
-
-    if (hukumCat) {
-      await prisma.article.create({
+      const createdAdmin = await tx.user.create({
         data: {
-          title: "Mahkamah Konstitusi Putuskan Uji Materi UU Cipta Kerja di Bandung",
-          slug: "mk-putuskan-uji-materi-uu-cipta-kerja",
-          content: `<p>BANDUNG - Mahkamah Konstitusi Republik Indonesia telah memutuskan hasil uji materi terhadap beberapa pasal dalam Undang-Undang Cipta Kerja yang diajukan oleh serikat pekerja di Bandung.</p><h2>Latar Belakang Gugatan</h2><p>Gugatan ini diajukan oleh Konfederasi Serikat Pekerja Bandung (KSPB) yang mewakili lebih dari 50.000 pekerja di wilayah Bandung Raya.</p><blockquote>"Kami mengajukan gugatan ini demi melindungi hak-hak fundamental pekerja yang dijamin oleh konstitusi," ujar Ketua KSPB, Ahmad Fauzi.</blockquote><h2>Isi Putusan MK</h2><p>Dalam putusannya, MK memutuskan bahwa tiga dari lima pasal yang digugat dinyatakan bertentangan dengan UUD 1945.</p>`,
-          excerpt: "Mahkamah Konstitusi RI memutuskan hasil uji materi terhadap beberapa pasal dalam UU Cipta Kerja yang diajukan oleh serikat pekerja di Bandung.",
-          status: "PUBLISHED",
-          verificationLabel: "VERIFIED",
-          readTime: 5,
-          viewCount: 0,
-          publishedAt: new Date(),
-          authorId: journalist.id,
-          categoryId: hukumCat.id,
-          seoTitle: "MK Putuskan Uji Materi UU Cipta Kerja di Bandung",
-          seoDescription: "Hasil putusan MK terhadap uji materi UU Cipta Kerja dari serikat pekerja Bandung.",
-          sources: {
-            create: [
-              { name: "Ahmad Fauzi", title: "Ketua KSPB", institution: "Konfederasi Serikat Pekerja Bandung" },
-            ],
-          },
+          email: "admin@lensaplus.com",
+          password: adminPassword,
+          name: "Super Admin",
+          role: "SUPER_ADMIN",
+          bio: "Administrator Lensaplus",
         },
       });
-    }
+
+      const createdEditor = await tx.user.create({
+        data: {
+          email: "editor@lensaplus.com",
+          password: editorPassword,
+          name: "Editor Kepala",
+          role: "CHIEF_EDITOR",
+          bio: "Editor Kepala Lensaplus",
+        },
+      });
+
+      const createdJournalist = await tx.user.create({
+        data: {
+          email: "jurnalis@lensaplus.com",
+          password: journalistPassword,
+          name: "Ahmad Fauzi",
+          role: "SENIOR_JOURNALIST",
+          bio: "Jurnalis senior dengan pengalaman 10 tahun meliput berita.",
+          specialization: "Hukum",
+        },
+      });
+
+      const hukumCat = await tx.category.findUnique({
+        where: { slug: "hukum" },
+      });
+
+      if (hukumCat) {
+        await tx.article.create({
+          data: {
+            title: "Mahkamah Konstitusi Putuskan Uji Materi UU Cipta Kerja di Bandung",
+            slug: "mk-putuskan-uji-materi-uu-cipta-kerja",
+            content: `<p>BANDUNG - Mahkamah Konstitusi Republik Indonesia telah memutuskan hasil uji materi terhadap beberapa pasal dalam Undang-Undang Cipta Kerja yang diajukan oleh serikat pekerja di Bandung.</p><h2>Latar Belakang Gugatan</h2><p>Gugatan ini diajukan oleh Konfederasi Serikat Pekerja Bandung (KSPB) yang mewakili lebih dari 50.000 pekerja di wilayah Bandung Raya.</p><blockquote>"Kami mengajukan gugatan ini demi melindungi hak-hak fundamental pekerja yang dijamin oleh konstitusi," ujar Ketua KSPB, Ahmad Fauzi.</blockquote><h2>Isi Putusan MK</h2><p>Dalam putusannya, MK memutuskan bahwa tiga dari lima pasal yang digugat dinyatakan bertentangan dengan UUD 1945.</p>`,
+            excerpt: "Mahkamah Konstitusi RI memutuskan hasil uji materi terhadap beberapa pasal dalam UU Cipta Kerja yang diajukan oleh serikat pekerja di Bandung.",
+            status: "PUBLISHED",
+            verificationLabel: "VERIFIED",
+            readTime: 5,
+            viewCount: 0,
+            publishedAt: new Date(),
+            authorId: createdJournalist.id,
+            categoryId: hukumCat.id,
+            seoTitle: "MK Putuskan Uji Materi UU Cipta Kerja di Bandung",
+            seoDescription: "Hasil putusan MK terhadap uji materi UU Cipta Kerja dari serikat pekerja Bandung.",
+            sources: {
+              create: [
+                { name: "Ahmad Fauzi", title: "Ketua KSPB", institution: "Konfederasi Serikat Pekerja Bandung" },
+              ],
+            },
+          },
+        });
+      }
+
+      return { admin: createdAdmin, editor: createdEditor, journalist: createdJournalist };
+    });
 
     return successResponse({
       message: "Setup berhasil! Database telah di-seed.",

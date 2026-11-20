@@ -392,7 +392,7 @@ function ScopedInternalView({
                 <tr key={a.slug} className="hover:bg-surface-secondary/50">
                   <td className="px-5 py-3 text-txt-muted">{i + 1}</td>
                   <td className="px-5 py-3 font-medium text-txt-primary max-w-[400px] truncate">
-                    <Link href={`/berita/${a.slug}`} target="_blank" className="hover:text-primary">{a.title}</Link>
+                    <Link href={`/berita/${a.slug}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary">{a.title}</Link>
                   </td>
                   <td className="px-5 py-3 text-right font-bold">{formatNumber(a.viewCount)}</td>
                 </tr>
@@ -639,7 +639,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
                   <tr key={a.slug} className="hover:bg-surface-secondary/50">
                     <td className="px-5 py-3 text-txt-muted">{i + 1}</td>
                     <td className="px-5 py-3 font-medium text-txt-primary max-w-[400px] truncate">
-                      <Link href={`/berita/${a.slug}`} target="_blank" className="hover:text-primary">
+                      <Link href={`/berita/${a.slug}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary">
                         {a.title}
                       </Link>
                     </td>
@@ -674,7 +674,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
                   <tr key={a.slug} className="hover:bg-surface-secondary/50">
                     <td className="px-5 py-3 text-txt-muted">{i + 1}</td>
                     <td className="px-5 py-3 font-medium text-txt-primary max-w-[400px] truncate">
-                      <Link href={`/berita/${a.slug}`} target="_blank" className="hover:text-primary">
+                      <Link href={`/berita/${a.slug}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary">
                         {a.title}
                       </Link>
                     </td>
@@ -750,7 +750,7 @@ function InternalTab({ from, to, scope }: { from: string; to: string; scope: "al
             ) : (
               data.glossary.top5.map((g) => (
                 <div key={g.slug} className="flex justify-between text-xs">
-                  <Link href={`/glossary/${g.slug}`} target="_blank" className="text-txt-secondary hover:text-primary truncate max-w-[200px]">{g.istilah}</Link>
+                  <Link href={`/glossary/${g.slug}`} target="_blank" rel="noopener noreferrer" className="text-txt-secondary hover:text-primary truncate max-w-[200px]">{g.istilah}</Link>
                   <span className="font-bold text-txt-primary shrink-0">{formatNumber(g.viewCount)}</span>
                 </div>
               ))

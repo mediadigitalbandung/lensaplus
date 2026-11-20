@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     description:
       "Jadwal lengkap event emiten: earnings, IPO, RUPS, dividen.",
   },
+  alternates: { canonical: "/kalender-emiten" },
 };
 
 const TYPE_META: Record<string, { label: string }> = {
@@ -121,7 +122,7 @@ export default async function KalenderEmitenPage() {
   const todayKey = getWibDateParts(now).key;
 
   return (
-    <main className="container-main py-8 sm:py-12">
+    <div className="container-main py-8 sm:py-12">
       <header className="mb-8 sm:mb-12">
         <div className="mb-3">
           <h1 className="font-serif text-headline-md sm:text-display-sm font-bold text-on-surface border-l-4 border-primary pl-3">
@@ -276,6 +277,6 @@ export default async function KalenderEmitenPage() {
           .
         </p>
       </footer>
-    </main>
+    </div>
   );
 }

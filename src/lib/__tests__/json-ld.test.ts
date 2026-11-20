@@ -10,7 +10,8 @@ describe("newsArticleJsonLd", () => {
     vi.unstubAllEnvs();
   });
 
-  it("returns NewsArticle shape with @context, @type, publisher, sister sameAs", async () => {
+  it("returns NewsArticle shape with @context, @type, publisher, sister sameAs when configured", async () => {
+    vi.stubEnv("LENSAPLUS_SISTER_BRANDS", "https://example.org");
     const { newsArticleJsonLd } = await import("../seo/json-ld");
     const out = newsArticleJsonLd({
       title: "Test",
@@ -33,7 +34,8 @@ describe("newsArticleJsonLd", () => {
     expect(publisher.name).toBe("Lensaplus");
 
     const sameAs = publisher.sameAs as string[];
-    expect(sameAs).toContain("https://jurnalishukumbandung.com");
+    expect(sameAs).toContain("https://example.org");
+    expect(sameAs).not.toContain("https://jurnalishukumbandung.com");
 
     const mainEntity = out.mainEntityOfPage as Record<string, unknown>;
     expect(mainEntity["@id"]).toBe("https://lensaplus.com/berita/test");
@@ -90,9 +92,10 @@ describe("organizationJsonLd", () => {
     vi.unstubAllEnvs();
   });
 
-  it("includes sameAs with social URLs from env + sister brands, deduped", async () => {
+  it("includes sameAs with social URLs from env + sister brands when configured, deduped", async () => {
     vi.stubEnv("LENSAPLUS_TWITTER_URL", "https://twitter.com/lensaplus");
     vi.stubEnv("LENSAPLUS_FACEBOOK_URL", "https://facebook.com/lensaplus");
+    vi.stubEnv("LENSAPLUS_SISTER_BRANDS", "https://example.org,https://twitter.com/lensaplus");
 
     const { organizationJsonLd } = await import("../seo/json-ld");
     const out = organizationJsonLd() as Record<string, unknown>;
@@ -102,15 +105,16 @@ describe("organizationJsonLd", () => {
     const sameAs = out.sameAs as string[];
     expect(sameAs).toContain("https://twitter.com/lensaplus");
     expect(sameAs).toContain("https://facebook.com/lensaplus");
-    expect(sameAs).toContain("https://jurnalishukumbandung.com");
+    expect(sameAs).toContain("https://example.org");
+    expect(sameAs).not.toContain("https://jurnalishukumbandung.com");
     // de-dup: each URL should appear only once
     expect(new Set(sameAs).size).toBe(sameAs.length);
   });
 
-  it("returns sister brands even when no social env vars present", async () => {
+  it("returns empty sameAs by default when no social or sister brand env vars present", async () => {
     const { organizationJsonLd } = await import("../seo/json-ld");
     const out = organizationJsonLd() as Record<string, unknown>;
     const sameAs = out.sameAs as string[];
-    expect(sameAs).toContain("https://jurnalishukumbandung.com");
+    expect(sameAs).toEqual([]);
   });
 });

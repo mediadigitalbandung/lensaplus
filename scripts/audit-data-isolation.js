@@ -29,9 +29,9 @@ async function main() {
     await prisma.$executeRawUnsafe(`
       UPDATE articles
       SET
-        title = REPLACE(REPLACE(REPLACE(title, 'kartawarta.com', 'lensaplus.com'), 'Kartawarta', 'Lensaplus'), 'kartawarta', 'lensaplus'),
-        content = REPLACE(REPLACE(REPLACE(content, 'kartawarta.com', 'lensaplus.com'), 'Kartawarta', 'Lensaplus'), 'kartawarta', 'lensaplus'),
-        excerpt = REPLACE(REPLACE(REPLACE(excerpt, 'kartawarta.com', 'lensaplus.com'), 'Kartawarta', 'Lensaplus'), 'kartawarta', 'lensaplus')
+        title = REGEXP_REPLACE(REGEXP_REPLACE(title, 'kartawarta\\.com', 'lensaplus.com', 'gi'), 'kartawarta|krtwrt', 'Lensaplus', 'gi'),
+        content = REGEXP_REPLACE(REGEXP_REPLACE(content, 'kartawarta\\.com', 'lensaplus.com', 'gi'), 'kartawarta|krtwrt', 'Lensaplus', 'gi'),
+        excerpt = REGEXP_REPLACE(REGEXP_REPLACE(excerpt, 'kartawarta\\.com', 'lensaplus.com', 'gi'), 'kartawarta|krtwrt', 'Lensaplus', 'gi')
       WHERE title ~* 'kartawarta|krtwrt' OR content ~* 'kartawarta|krtwrt' OR excerpt ~* 'kartawarta|krtwrt';
     `);
     articlesWithLeak = await prisma.article.findMany({
@@ -66,16 +66,40 @@ async function main() {
     console.log(`  ✓ User remaining leaks: ${usersWithLeak.length}`);
   }
 
-  // 3. Audit remaining core content & settings tables
-  const [categoryLeaks, commentLeaks, sorotanLeaks, pollLeaks, settingLeaks] = await Promise.all([
+  // 3. Audit remaining core content, metadata & editorial directory tables
+  const [
+    categoryLeaks,
+    commentLeaks,
+    sorotanLeaks,
+    pollLeaks,
+    settingLeaks,
+    adLeaks,
+    socialPostLeaks,
+    liveBlogLeaks,
+    glossaryLeaks,
+    regulationLeaks,
+    officialLeaks,
+    topicLeaks,
+    tagLeaks,
+  ] = await Promise.all([
     prisma.category.count({ where: { OR: buildOrContains(["name", "description"]) } }),
     prisma.comment.count({ where: { OR: buildOrContains(["content", "authorName", "authorEmail"]) } }),
     prisma.sorotan.count({ where: { OR: buildOrContains(["title", "content"]) } }),
     prisma.poll.count({ where: { OR: buildOrContains(["question"]) } }),
     prisma.systemSetting.count({ where: { OR: buildOrContains(["key", "value"]) } }),
+    prisma.ad.count({ where: { OR: buildOrContains(["name", "htmlCode", "targetUrl"]) } }),
+    prisma.socialPost.count({ where: { OR: buildOrContains(["caption", "errorMessage"]) } }),
+    prisma.liveBlog.count({ where: { OR: buildOrContains(["title", "description"]) } }),
+    prisma.glossary.count({ where: { OR: buildOrContains(["istilah", "singkatan", "bahasaAsli", "bodyHtml", "bodyMarkdown"]) } }),
+    prisma.regulation.count({ where: { OR: buildOrContains(["title", "shortTitle", "description", "issuedBy"]) } }),
+    prisma.publicOfficial.count({ where: { OR: buildOrContains(["name", "fullName", "position", "institution", "bio"]) } }),
+    prisma.topic.count({ where: { OR: buildOrContains(["name", "description", "metaTitle", "metaDescription"]) } }),
+    prisma.tag.count({ where: { OR: buildOrContains(["name", "slug"]) } }),
   ]);
 
-  console.log(`📊 Other Tables Audit: categories=${categoryLeaks}, comments=${commentLeaks}, sorotan=${sorotanLeaks}, polls=${pollLeaks}, settings=${settingLeaks}`);
+  console.log(
+    `📊 Other Tables Audit: categories=${categoryLeaks}, comments=${commentLeaks}, sorotan=${sorotanLeaks}, polls=${pollLeaks}, settings=${settingLeaks}, ads=${adLeaks}, socialPosts=${socialPostLeaks}, liveBlogs=${liveBlogLeaks}, glossary=${glossaryLeaks}, regulations=${regulationLeaks}, officials=${officialLeaks}, topics=${topicLeaks}, tags=${tagLeaks}`
+  );
 
   // 4. Verify Isolation Summary
   const [totalArticles, totalCategories, totalUsers, totalPolls] = await Promise.all([
@@ -92,7 +116,15 @@ async function main() {
     commentLeaks +
     sorotanLeaks +
     pollLeaks +
-    settingLeaks;
+    settingLeaks +
+    adLeaks +
+    socialPostLeaks +
+    liveBlogLeaks +
+    glossaryLeaks +
+    regulationLeaks +
+    officialLeaks +
+    topicLeaks +
+    tagLeaks;
 
   console.log("\n=======================================================");
   console.log("🎉 LENSAPLUS DATA ISOLATION AUDIT REPORT");

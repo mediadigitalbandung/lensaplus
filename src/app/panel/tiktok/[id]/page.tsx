@@ -413,7 +413,7 @@ export default function TiktokEditorPage() {
 
   if (!content) {
     return (
-      <div className="rounded-md border border-red-200 bg-red-50 p-5 text-red-700">
+      <div className="rounded-md border border-red-300 border-l-4 border-l-red-600 bg-surface p-5 text-red-700">
         {error || "Konten tidak ditemukan"}
         <Link href="/panel/tiktok" className="ml-2 underline">
           Kembali
@@ -483,7 +483,7 @@ export default function TiktokEditorPage() {
       </div>
 
       {error && (
-        <div className="mb-3 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-3 flex items-center gap-2 rounded-md border border-red-300 border-l-4 border-l-red-600 bg-surface p-3 text-sm text-red-700">
           <AlertTriangle size={14} />
           {error}
         </div>
@@ -499,8 +499,7 @@ export default function TiktokEditorPage() {
         <div className="lg:col-span-4">
           <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 text-sm font-bold text-txt-primary">
-                <Layers size={14} className="text-primary" />
+              <h2 className="text-sm font-bold text-txt-primary">
                 Slot Media
               </h2>
               <div className="flex gap-1.5">
@@ -652,8 +651,7 @@ export default function TiktokEditorPage() {
         {/* Center — preview (4 cols) */}
         <div className="lg:col-span-4">
           <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-txt-primary">
-              <Pencil size={14} className="text-primary" />
+            <h2 className="mb-3 text-sm font-bold text-txt-primary">
               Preview
             </h2>
             <div
@@ -810,7 +808,7 @@ export default function TiktokEditorPage() {
                       className="w-full"
                     />
                   </div>
-                  <p className="rounded-md bg-yellow-50 p-2 text-[10px] text-yellow-800">
+                  <p className="rounded-md border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-2 text-[10px] text-yellow-800">
                     Catatan: BGM hanya akan ter-mix saat render otomatis aktif (Fase 2). Sebelum itu,
                     file BGM tetap tersimpan dan ikut terbawa di paket Export.
                   </p>
@@ -906,7 +904,7 @@ export default function TiktokEditorPage() {
                       <Send size={14} />
                       Posting ke TikTok (Fase 3)
                     </button>
-                    <p className="rounded-md bg-yellow-50 p-2 text-[10px] text-yellow-800">
+                    <p className="rounded-md border border-yellow-400 border-l-4 border-l-yellow-500 bg-surface p-2 text-[10px] text-yellow-800">
                       Kedua tombol di atas akan menampilkan pesan &quot;belum aktif&quot; sampai
                       Fase 2 (render worker) dan Fase 3 (audit TikTok) selesai. Saat ini gunakan
                       tombol <strong>Export</strong> di pojok kanan atas untuk dapat manifest JSON
@@ -918,7 +916,7 @@ export default function TiktokEditorPage() {
                     <button
                       type="button"
                       onClick={deleteContent}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-md border border-red-300 bg-surface px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
                     >
                       <Trash2 size={12} />
                       Hapus Konten Permanen
@@ -1193,8 +1191,7 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
       <div className="w-full max-w-2xl rounded-lg border border-border bg-surface p-6 shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border pb-3">
-          <h3 className="text-lg font-bold text-txt-primary flex items-center gap-2">
-            <Scissors size={18} className="text-primary" />
+          <h3 className="text-lg font-bold text-txt-primary">
             {editingSlot ? "Edit Trim Slot" : "Clipper Video TikTok"}
           </h3>
           <button type="button" onClick={onClose} aria-label="Tutup" className="rounded-lg p-1 text-txt-muted hover:bg-surface-secondary">
@@ -1205,14 +1202,14 @@ function VideoClipperModal({ isOpen, onClose, contentId, onSuccess, editingSlot 
         {/* Content */}
         <div className="flex-1 overflow-y-auto py-4 space-y-4">
           {error && (
-            <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="flex items-center gap-2 rounded-md border border-red-300 border-l-4 border-l-red-600 bg-surface p-3 text-sm text-red-700">
               <AlertTriangle size={14} className="shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {successMsg && (
-            <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+            <div className="flex items-center gap-2 rounded-md border border-green-300 border-l-4 border-l-green-600 bg-surface p-3 text-sm text-green-700">
               <Check size={14} className="shrink-0" />
               <span>{successMsg}</span>
             </div>

@@ -7,8 +7,10 @@ export async function GET() {
   try {
     await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR"]);
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const WIB_OFFSET_MS = 7 * 3600 * 1000;
+    const nowWib = new Date(Date.now() + WIB_OFFSET_MS);
+    const todayWibStr = nowWib.toISOString().slice(0, 10);
+    const today = new Date(`${todayWibStr}T00:00:00+07:00`);
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
@@ -64,12 +66,12 @@ export async function GET() {
         orderBy: { publishedAt: "desc" },
         take: 10,
       }),
-      // Daily article count for last 14 days
+      // Daily article count for last 14 days (bucketed in Asia/Jakarta WIB)
       prisma.$queryRaw<{ date: Date; count: bigint }[]>`
-        SELECT DATE("publishedAt") as date, COUNT(*) as count
+        SELECT ("publishedAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')::date as date, COUNT(*) as count
         FROM articles
         WHERE status = 'PUBLISHED' AND "publishedAt" >= ${new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000)}
-        GROUP BY DATE("publishedAt")
+        GROUP BY ("publishedAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')::date
         ORDER BY date ASC
       `,
     ]);
@@ -85,14 +87,14 @@ export async function GET() {
       views: viewsByCategory.get(c.id) ?? 0,
     })).sort((a, b) => b.views - a.views);
 
-    // Process daily stats for chart
+    // Process daily stats for chart (WIB calendar dates)
     const dailyChart = [];
     for (let i = 13; i >= 0; i--) {
       const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateStr = d.toISOString().split("T")[0];
+      const dateStr = new Date(d.getTime() + WIB_OFFSET_MS).toISOString().split("T")[0];
       const found = dailyStats.find((s) => new Date(s.date).toISOString().split("T")[0] === dateStr);
       dailyChart.push({
-        date: d.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+        date: d.toLocaleDateString("id-ID", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" }),
         count: found ? Number(found.count) : 0,
       });
     }

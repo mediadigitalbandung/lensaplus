@@ -34,6 +34,7 @@ function makeArticle(): ArticleForPublish {
     publishToInstagram: true,
     publishToFacebook: true,
     publishToTwitter: true,
+    publishToThreads: true,
     categoryId: "c1",
     author: { id: "u", name: "A", avatar: null },
     category: { id: "c1", name: "Hukum", slug: "hukum" },

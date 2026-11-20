@@ -2589,6 +2589,7 @@ function PreviewModal({
                             <Link
                               href={`/berita/${resolvedSlug}`}
                               target="_blank"
+                              rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-primary-dark"
                               title="Buka artikel yang sudah terbit"
                             >
@@ -2600,6 +2601,7 @@ function PreviewModal({
                             <Link
                               href={`/panel/artikel/${resolvedArticleId}/edit`}
                               target="_blank"
+                              rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 text-[11px] font-semibold text-txt-primary hover:border-primary hover:text-primary"
                               title="Edit artikel di panel"
                             >
@@ -2611,6 +2613,7 @@ function PreviewModal({
                         <Link
                           href={`/panel/artikel/${resolvedArticleId}/edit`}
                           target="_blank"
+                          rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-emerald-700"
                           title="Buka artikel di editor (tab baru)"
                         >
@@ -2628,6 +2631,7 @@ function PreviewModal({
                         <Link
                           href="/panel/artikel?origin=scraper"
                           target="_blank"
+                          rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 rounded-md border border-emerald-600/40 bg-surface px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-surface-secondary"
                           title="Buka daftar artikel hasil scraper"
                         >

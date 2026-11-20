@@ -37,6 +37,7 @@ export async function generateMetadata({ params: paramsPromise }: Props): Promis
       images: blog.coverImage ? [blog.coverImage] : undefined,
       type: "article",
     },
+    alternates: { canonical: `/live/${params.slug}` },
     robots:
       blog.status === "SCHEDULED"
         ? { index: true, follow: true }
@@ -208,7 +209,7 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
 
-      <main className="container-main py-6 sm:py-10">
+      <div className="container-main py-6 sm:py-10">
         {/* Back */}
         <Link
           href="/live"
@@ -304,7 +305,7 @@ export default async function LiveBlogDetailPage({ params: paramsPromise }: Prop
             initialStatus={blog.status}
           />
         </div>
-      </main>
+      </div>
     </>
   );
 }

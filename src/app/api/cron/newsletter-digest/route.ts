@@ -110,43 +110,53 @@ async function handler(req: NextRequest) {
     });
 
     let sent = 0;
+    const sentIds: string[] = [];
     const failures: string[] = [];
 
-    for (const sub of subscribers) {
-      const unsubUrl = `${SITE_URL}/api/newsletter/unsubscribe?token=${encodeURIComponent(sub.token)}`;
-      const html = `
-        <div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#191c1d;">
-          <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-bottom:2px solid #002045;padding-bottom:12px;margin-bottom:24px;">
-            <tr>
-              <td style="font-family:Georgia,serif;font-size:24px;font-weight:800;color:#002045;letter-spacing:-0.5px;">Lensaplus</td>
-              <td align="right" style="font-size:12px;color:#74777f;">Pekanan · ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" })}</td>
-            </tr>
-          </table>
-          <h2 style="font-family:Georgia,serif;color:#002045;margin:0 0 8px 0;font-size:22px;">Berita Pilihan Pekan Ini</h2>
-          <p style="margin:0 0 24px 0;color:#44474e;font-size:14px;">${articles.length} laporan terverifikasi pilihan redaksi Lensaplus.</p>
-          ${articleListHtml}
-          <hr style="margin:32px 0;border:0;border-top:1px solid #c4c6d0;">
-          <p style="font-size:11px;color:#74777f;line-height:1.6;text-align:center;">
-            Email ini dikirim ke ${escapeHtml(sub.email)} karena Anda berlangganan newsletter Lensaplus.<br>
-            <a href="${unsubUrl}" style="color:#74777f;text-decoration:underline;">Berhenti berlangganan</a>
-            &middot;
-            <a href="${SITE_URL}" style="color:#74777f;text-decoration:underline;">Kunjungi situs</a>
-          </p>
-        </div>
-      `;
-      try {
-        const mail = await sendEmail(sub.email, "Pekan Ini di Lensaplus", html);
-        if (!mail.ok) {
-          failures.push(`${sub.email}: ${mail.error || mail.reason || "SEND_FAIL"}`);
-          continue;
+    try {
+      for (const sub of subscribers) {
+        const unsubUrl = `${SITE_URL}/api/newsletter/unsubscribe?token=${encodeURIComponent(sub.token)}`;
+        const html = `
+          <div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#191c1d;">
+            <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-bottom:2px solid #002045;padding-bottom:12px;margin-bottom:24px;">
+              <tr>
+                <td style="font-family:Georgia,serif;font-size:24px;font-weight:800;color:#002045;letter-spacing:-0.5px;">Lensaplus</td>
+                <td align="right" style="font-size:12px;color:#74777f;">Pekanan · ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" })}</td>
+              </tr>
+            </table>
+            <h2 style="font-family:Georgia,serif;color:#002045;margin:0 0 8px 0;font-size:22px;">Berita Pilihan Pekan Ini</h2>
+            <p style="margin:0 0 24px 0;color:#44474e;font-size:14px;">${articles.length} laporan terverifikasi pilihan redaksi Lensaplus.</p>
+            ${articleListHtml}
+            <hr style="margin:32px 0;border:0;border-top:1px solid #c4c6d0;">
+            <p style="font-size:11px;color:#74777f;line-height:1.6;text-align:center;">
+              Email ini dikirim ke ${escapeHtml(sub.email)} karena Anda berlangganan newsletter Lensaplus.<br>
+              <a href="${unsubUrl}" style="color:#74777f;text-decoration:underline;">Berhenti berlangganan</a>
+              &middot;
+              <a href="${SITE_URL}" style="color:#74777f;text-decoration:underline;">Kunjungi situs</a>
+            </p>
+          </div>
+        `;
+        try {
+          const mail = await sendEmail(sub.email, "Pekan Ini di Lensaplus", html);
+          if (!mail.ok) {
+            failures.push(`${sub.email}: ${mail.error || mail.reason || "SEND_FAIL"}`);
+            continue;
+          }
+          sentIds.push(sub.id);
+          sent++;
+        } catch (e) {
+          failures.push(`${sub.email}: ${e instanceof Error ? e.message : String(e)}`);
         }
-        await prisma.newsletterSubscriber.update({
-          where: { id: sub.id },
-          data: { lastSentAt: new Date() },
-        });
-        sent++;
-      } catch (e) {
-        failures.push(`${sub.email}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    } finally {
+      if (sentIds.length > 0) {
+        const now = new Date();
+        for (let i = 0; i < sentIds.length; i += 500) {
+          await prisma.newsletterSubscriber.updateMany({
+            where: { id: { in: sentIds.slice(i, i + 500) } },
+            data: { lastSentAt: now },
+          });
+        }
       }
     }
 

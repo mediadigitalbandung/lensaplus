@@ -81,7 +81,7 @@ export default async function GlossaryPage() {
         }}
       />
 
-      <main className="bg-surface min-h-screen py-8 sm:py-10 lg:py-14 2xl:py-20">
+      <div className="bg-surface min-h-screen py-8 sm:py-10 lg:py-14 2xl:py-20">
         <div className="container-main">
           {/* Header */}
           <div className="mb-10">
@@ -179,7 +179,7 @@ export default async function GlossaryPage() {
             </p>
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 }

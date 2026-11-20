@@ -57,10 +57,13 @@ export async function GET() {
       prisma.article.count({ where: { status: "PUBLISHED" } }),
       // Sorotan with failed indexing — surface for retry
       prisma.sorotan.count({ where: { indexStatus: "failed" } }),
-      // Articles flagged by AI guardrail (reviewNote starts with "AI flagged")
+      // Articles flagged by AI guardrail (reviewNote prefixed with "[Guardrail]" or legacy "AI flag")
       prisma.article.count({
         where: {
-          reviewNote: { contains: "AI flag", mode: "insensitive" },
+          OR: [
+            { reviewNote: { startsWith: "[Guardrail]", mode: "insensitive" } },
+            { reviewNote: { contains: "AI flag", mode: "insensitive" } },
+          ],
         },
       }),
       // Reports in PENDING > 48h
