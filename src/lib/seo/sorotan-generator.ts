@@ -16,6 +16,11 @@ import { invalidateCachePrefix } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
 import { cleanAILongText } from "@/lib/sanitize";
 import {
+  cleanSorotanTitle,
+  formatSorotanHtml,
+  sorotanToPlainText,
+} from "./sorotan-format";
+import {
   ACTIVE_SOROTAN_ANGLES,
   SOROTAN_ANGLE_COUNT,
   SOROTAN_ANGLE_LABEL,
@@ -66,7 +71,7 @@ const ANGLE_PROMPTS: Record<SorotanAngle, string> = {
 };
 
 const SYSTEM_PROMPT =
-  "Kamu adalah editor senior Lensaplus — media berita digital nasional Indonesia dengan fokus berita umum, politik, hukum, pemerintahan, bisnis, ekonomi, olahraga, hiburan, teknologi, dan peristiwa Nusantara. Tugasmu menulis ringkasan sudut-pandang (sorotan) yang akurat, profesional, dan tidak menambah fakta baru. Output hanya teks artikel (tanpa judul, tanpa markdown header, tanpa list bullet kecuali ditulis dalam prosa).";
+  "Kamu adalah editor senior Lensaplus — media berita digital nasional Indonesia dengan fokus berita umum, politik, hukum, pemerintahan, bisnis, ekonomi, olahraga, hiburan, teknologi, dan peristiwa Nusantara. Tugasmu menulis ringkasan sudut-pandang (sorotan) yang akurat, profesional, dan tidak menambah fakta baru. Format output WAJIB berupa HTML editorial bersih: bungkus setiap paragraf dengan <p>...</p>, gunakan <h2>...</h2> untuk subjudul bagian bila diperlukan (JANGAN gunakan <h1> karena judul halaman sudah memakai <h1>), <blockquote>...</blockquote> untuk kutipan langsung, <ul><li>...</li></ul> untuk daftar poin bila relevan, serta <strong>/<em> seperlunya. JANGAN mengulang judul utama di awal, JANGAN gunakan Markdown (#, **, ```), dan JANGAN tambahkan kalimat pembuka meta seperti 'Berikut sorotan...'.";
 
 export interface GenerateSorotanResult {
   articleId: string;
@@ -76,19 +81,9 @@ export interface GenerateSorotanResult {
   sorotanIds: string[];
 }
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function deriveTitle(article: { title: string }, angle: SorotanAngle): string {
-  return `${ANGLE_LABEL[angle]}: ${article.title}`;
+  const cleanArticleTitle = cleanSorotanTitle(article.title) || article.title.trim();
+  return `${ANGLE_LABEL[angle]}: ${cleanArticleTitle}`;
 }
 
 const ANGLE_CONCURRENCY = 3;
@@ -133,7 +128,7 @@ async function generateSingleAngle(
   angle: SorotanAngle,
   opts?: GenerateSorotanOptions,
 ): Promise<SingleAngleOutcome> {
-  const sourceText = stripHtml(article.content);
+  const sourceText = sorotanToPlainText(article.content);
   // Trim context to ~6000 chars to keep prompt under model limits.
   const context = sourceText.length > 6000 ? sourceText.slice(0, 6000) : sourceText;
 
@@ -149,7 +144,7 @@ ${context}`;
       feature: "sorotan",
       systemPrompt: SYSTEM_PROMPT,
       userPrompt,
-      maxTokens: 1200,
+      maxTokens: 1600,
       temperature: 0.65,
       allowCombo: true,
       articleTitle: article.title,
@@ -157,9 +152,11 @@ ${context}`;
       ...(opts?.userName ? { userName: opts.userName } : {}),
     });
 
-    const content = cleanAILongText(result.text);
-    if (content.length < 200) {
-      return { error: `Content too short (${content.length} chars)`, angle };
+    const cleanedRaw = cleanAILongText(result.text);
+    const content = formatSorotanHtml(cleanedRaw);
+    const plainLength = sorotanToPlainText(content).length;
+    if (plainLength < 200) {
+      return { error: `Content too short (${plainLength} chars)`, angle };
     }
 
     const slug = `${article.slug}-${angle.toLowerCase()}`;

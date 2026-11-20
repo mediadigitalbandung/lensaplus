@@ -227,6 +227,83 @@ describe("generateSorotan", () => {
     expect(mockCallAI).toHaveBeenCalledTimes(1);
     expect(mockSorotanCreate).toHaveBeenCalledTimes(1);
   });
+
+  it("normalizes AI HTML output before saving (demotes <h1>, unescapes &lt;p&gt;, repairs truncated tags, strips XSS)", async () => {
+    mockArticleFindUnique.mockResolvedValue({
+      id: "art-fmt",
+      slug: "berita-format",
+      title: "Berita Format &amp; Uji",
+      content: "<p>Isi berita sumber.</p>",
+      excerpt: "Ringkasan berita.",
+      status: "DRAFT",
+      sorotan: [
+        { angle: "ANALISIS" },
+        { angle: "DAMPAK" },
+        { angle: "LATAR_BELAKANG" },
+        { angle: "PROFIL" },
+        { angle: "REAKSI" },
+        { angle: "HUKUM" },
+        { angle: "EKONOMI" },
+        { angle: "PROYEKSI" },
+      ],
+    });
+    mockCallAI.mockResolvedValue({
+      text:
+        "Berikut sorotan kronologi:\n\n" +
+        "&lt;h1&gt;Awal Peristiwa&lt;/h1&gt;\n" +
+        "<script>alert('xss')</script>" +
+        `<p class="bad">${LONG_VALID_TEXT}</p`,
+    });
+    mockSorotanCreate.mockResolvedValue({ id: "sor-fmt-1" });
+
+    const { generateSorotan } = await import("../seo/sorotan-generator");
+    const result = await generateSorotan("art-fmt");
+
+    expect(result.created).toBe(1);
+    expect(result.errors).toEqual([]);
+    const saved = mockSorotanCreate.mock.calls[0][0].data as {
+      title: string;
+      content: string;
+    };
+    expect(saved.title).toBe("Kronologi: Berita Format & Uji");
+    expect(saved.content).toContain("<h2>Awal Peristiwa</h2>");
+    expect(saved.content).toContain(`<p>${LONG_VALID_TEXT}</p>`);
+    expect(saved.content).not.toContain("<h1");
+    expect(saved.content).not.toContain("&lt;h1");
+    expect(saved.content).not.toContain("<script");
+    expect(saved.content).not.toContain("class=");
+  });
+
+  it("measures minimum 200-char threshold on plain text rather than raw HTML tag overhead", async () => {
+    mockArticleFindUnique.mockResolvedValue({
+      id: "art-short-html",
+      slug: "berita-short-html",
+      title: "Berita Pendek",
+      content: "<p>Isi berita.</p>",
+      excerpt: null,
+      status: "DRAFT",
+      sorotan: [
+        { angle: "ANALISIS" },
+        { angle: "DAMPAK" },
+        { angle: "LATAR_BELAKANG" },
+        { angle: "PROFIL" },
+        { angle: "REAKSI" },
+        { angle: "HUKUM" },
+        { angle: "EKONOMI" },
+        { angle: "PROYEKSI" },
+      ],
+    });
+    // >220 chars raw string, but almost all empty HTML tags and <30 chars real text
+    mockCallAI.mockResolvedValue({
+      text: "<p></p>".repeat(35) + "<p>Teks terlalu singkat.</p>",
+    });
+
+    const { generateSorotan } = await import("../seo/sorotan-generator");
+    const result = await generateSorotan("art-short-html");
+    expect(result.created).toBe(0);
+    expect(result.errors[0]).toContain("Content too short");
+    expect(mockSorotanCreate).not.toHaveBeenCalled();
+  });
 });
 
 describe("generateSorotanIfMissing & enqueueSorotanGeneration", () => {

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -17,6 +17,13 @@ import {
 } from "@/lib/seo-auto";
 import { markScrapedUrlsDeleted } from "@/lib/scraper/claim";
 import { checkArticleQuality } from "@/lib/article-quality";
+import {
+  isBulkPublishableStatus,
+  summarizeBulkPublishSkipped,
+  buildZeroPublishedErrorMessage,
+  formatBulkPublishAuditDetail,
+  type BulkPublishSkippedItem,
+} from "@/lib/bulk-publish";
 import { invalidateCachePrefix } from "@/lib/cache";
 import { canPublishDirectly } from "@/lib/auth";
 import { deleteUploadIfUnreferenced } from "@/lib/media-cleanup";
@@ -31,7 +38,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireRole(["SUPER_ADMIN", "CHIEF_EDITOR", "EDITOR"]);
     const body = await request.json();
-    const { action, ids } = bulkActionSchema.parse(body);
+    const { action, ids: rawIds } = bulkActionSchema.parse(body);
+    const ids = Array.from(new Set(rawIds));
 
     if (action === "archive") {
       const publishedToUnpublish = await prisma.article.findMany({
@@ -97,11 +105,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "publish") {
-      const candidates = await prisma.article.findMany({
-        where: {
-          id: { in: ids },
-          status: { in: ["APPROVED", "DRAFT", "IN_REVIEW", "REJECTED"] },
-        },
+      // Fetch ALL requested articles regardless of status so every skipped ID
+      // receives an accurate reason (quality gate vs ALREADY_PUBLISHED vs
+      // ARCHIVED vs NOT_FOUND) instead of silently disappearing from `skipped`.
+      const requestedArticles = await prisma.article.findMany({
+        where: { id: { in: ids } },
         select: {
           id: true,
           status: true,
@@ -117,18 +125,64 @@ export async function POST(request: NextRequest) {
           reviewedAt: true,
         },
       });
+      const fetchedById = new Map(requestedArticles.map((a) => [a.id, a]));
 
-      const passingApproved: typeof candidates = [];
-      const passingDraft: typeof candidates = [];
-      const skipped: Array<{ id: string; title: string; reason: string }> = [];
+      const passingApproved: typeof requestedArticles = [];
+      const passingDraft: typeof requestedArticles = [];
+      const skipped: BulkPublishSkippedItem[] = [];
 
-      for (const a of candidates) {
+      for (const id of ids) {
+        const a = fetchedById.get(id);
+        if (!a) {
+          skipped.push({
+            id,
+            title: "(Artikel tidak ditemukan)",
+            status: null,
+            code: "NOT_FOUND",
+            reason: "Artikel tidak ditemukan atau sudah dihapus.",
+          });
+          continue;
+        }
+        if (a.status === "PUBLISHED") {
+          skipped.push({
+            id: a.id,
+            title: a.title,
+            status: a.status,
+            code: "ALREADY_PUBLISHED",
+            reason: "Artikel sudah berstatus PUBLISHED.",
+          });
+          continue;
+        }
+        if (a.status === "ARCHIVED") {
+          skipped.push({
+            id: a.id,
+            title: a.title,
+            status: a.status,
+            code: "ARCHIVED",
+            reason:
+              "Artikel berstatus ARCHIVED (arsip). Kembalikan ke draf terlebih dahulu jika ingin dipublikasikan.",
+          });
+          continue;
+        }
+        if (!isBulkPublishableStatus(a.status)) {
+          skipped.push({
+            id: a.id,
+            title: a.title,
+            status: a.status,
+            code: "CONCURRENT_STATUS_CHANGE",
+            reason: `Status artikel (${a.status}) tidak dapat dipublikasikan langsung.`,
+          });
+          continue;
+        }
+
         const q = checkArticleQuality(a.content, a.featuredImage);
         if (!q.ok) {
           skipped.push({
             id: a.id,
             title: a.title,
-            reason: q.reason || "Tidak memenuhi syarat kualitas publikasi",
+            status: a.status,
+            code: "QUALITY_GATE",
+            reason: q.reason || "Tidak memenuhi syarat kualitas publikasi.",
           });
           continue;
         }
@@ -140,9 +194,21 @@ export async function POST(request: NextRequest) {
       const passingDraftIds = passingDraft.map((a) => a.id);
       const publishableIds = [...passingApprovedIds, ...passingDraftIds];
       if (publishableIds.length === 0) {
-        throw new ApiError(
-          skipped[0]?.reason || "Tidak ada artikel yang memenuhi syarat kualitas untuk diterbitkan",
-          400,
+        const skippedSummary = summarizeBulkPublishSkipped(skipped);
+        return NextResponse.json(
+          {
+            success: false,
+            error: buildZeroPublishedErrorMessage(skipped, skippedSummary),
+            data: {
+              count: 0,
+              requested: ids.length,
+              skippedCount: skipped.length,
+              skipped,
+              skippedSummary,
+              action: "publish",
+            },
+          },
+          { status: 400 },
         );
       }
 
@@ -180,10 +246,84 @@ export async function POST(request: NextRequest) {
       ]);
       const result = { count: approvedResult.count + draftResult.count };
 
+      // Reconcile if another request concurrently changed/deleted any candidate
+      // between `findMany` and `updateMany`, so `skipped` stays accurate.
+      const passingAll = [...passingApproved, ...passingDraft];
+      let actuallyPublishedIds = publishableIds;
+      if (result.count < publishableIds.length) {
+        const refreshed = await prisma.article.findMany({
+          where: { id: { in: publishableIds } },
+          select: { id: true, title: true, status: true, publishedAt: true },
+        });
+        const refreshedById = new Map(refreshed.map((r) => [r.id, r]));
+        actuallyPublishedIds = [];
+        for (const candidate of passingAll) {
+          const current = refreshedById.get(candidate.id);
+          if (!current) {
+            skipped.push({
+              id: candidate.id,
+              title: candidate.title,
+              status: null,
+              code: "NOT_FOUND",
+              reason: "Artikel dihapus sebelum publikasi selesai.",
+            });
+          } else if (
+            current.status === "PUBLISHED" &&
+            current.publishedAt?.getTime() === now.getTime()
+          ) {
+            actuallyPublishedIds.push(candidate.id);
+          } else if (current.status === "PUBLISHED") {
+            skipped.push({
+              id: candidate.id,
+              title: candidate.title,
+              status: current.status,
+              code: "ALREADY_PUBLISHED",
+              reason: "Artikel sudah dipublikasikan oleh proses lain.",
+            });
+          } else if (current.status === "ARCHIVED") {
+            skipped.push({
+              id: candidate.id,
+              title: candidate.title,
+              status: current.status,
+              code: "ARCHIVED",
+              reason: "Artikel diarsipkan sebelum publikasi selesai.",
+            });
+          } else {
+            skipped.push({
+              id: candidate.id,
+              title: candidate.title,
+              status: current.status,
+              code: "CONCURRENT_STATUS_CHANGE",
+              reason: `Status artikel berubah menjadi ${current.status} saat diproses.`,
+            });
+          }
+        }
+      }
+
+      const skippedSummary = summarizeBulkPublishSkipped(skipped);
+      if (result.count === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: buildZeroPublishedErrorMessage(skipped, skippedSummary),
+            data: {
+              count: 0,
+              requested: ids.length,
+              skippedCount: skipped.length,
+              skipped,
+              skippedSummary,
+              action: "publish",
+            },
+          },
+          { status: 400 },
+        );
+      }
+
       // Backfill approver attribution for APPROVED articles lacking approvedById/approvedAt
       // and auto-fill missing seoTitle/seoDescription to match single-article publish.
-      const passingAll = [...passingApproved, ...passingDraft];
+      const actuallyPublishedSet = new Set(actuallyPublishedIds);
       const metadataPatches = passingAll
+        .filter((a) => actuallyPublishedSet.has(a.id))
         .map((a) => {
           const patch: {
             approvedById?: string;
@@ -219,8 +359,8 @@ export async function POST(request: NextRequest) {
               while (queue.length > 0) {
                 const item = queue.shift();
                 if (!item) break;
-                await prisma.article.update({
-                  where: { id: item.id },
+                await prisma.article.updateMany({
+                  where: { id: item.id, status: "PUBLISHED" },
                   data: item.patch,
                 });
               }
@@ -234,8 +374,8 @@ export async function POST(request: NextRequest) {
         session.user.id,
         "STATUS_CHANGE",
         "article",
-        publishableIds.join(","),
-        `Bulk publish ${result.count} dari ${ids.length} artikel${skipped.length > 0 ? ` (${skipped.length} ditahan quality gate)` : ""}`,
+        actuallyPublishedIds.join(","),
+        formatBulkPublishAuditDetail(result.count, ids.length, skipped, skippedSummary),
       );
 
       // ISR + in-memory cache invalidation — essential so homepage/listings reflect new articles immediately.
@@ -256,7 +396,7 @@ export async function POST(request: NextRequest) {
       void (async () => {
         try {
           const publishedArticles = await prisma.article.findMany({
-            where: { id: { in: publishableIds }, status: "PUBLISHED" },
+            where: { id: { in: actuallyPublishedIds }, status: "PUBLISHED" },
             select: { id: true, slug: true },
           });
           const queue = [...publishedArticles];
@@ -288,6 +428,7 @@ export async function POST(request: NextRequest) {
         requested: ids.length,
         skippedCount: skipped.length,
         skipped,
+        skippedSummary,
         action: "publish",
         seoChain: "queued-background",
       });

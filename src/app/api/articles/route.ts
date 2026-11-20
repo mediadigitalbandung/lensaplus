@@ -20,6 +20,7 @@ import { canWriteArticles, canApproveArticles, canViewAllArticles } from "@/lib/
 import { guardPublicRead } from "@/lib/rate-limit";
 import { isSafeImageRef } from "@/lib/safe-path";
 import { enqueueSorotanGeneration } from "@/lib/seo/sorotan-generator";
+import { checkArticleQuality } from "@/lib/article-quality";
 
 const createArticleSchema = z.object({
   title: z.string().min(5, "Judul minimal 5 karakter").max(255),
@@ -152,12 +153,29 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const orderBy: Record<string, string> =
+    // Deterministic tie-breakers are essential: DRAFT/IN_REVIEW/APPROVED/REJECTED
+    // all have publishedAt=NULL (so without createdAt+id, PostgreSQL returns
+    // arbitrary heap order and pagination breaks), and bulk-published articles
+    // share an identical publishedAt timestamp.
+    const orderBy =
       sort === "views"
-        ? { viewCount: "desc" }
+        ? [
+            { viewCount: "desc" as const },
+            { publishedAt: "desc" as const },
+            { createdAt: "desc" as const },
+            { id: "desc" as const },
+          ]
         : sort === "oldest"
-          ? { publishedAt: "asc" }
-          : { publishedAt: "desc" };
+          ? [
+              { publishedAt: "asc" as const },
+              { createdAt: "asc" as const },
+              { id: "asc" as const },
+            ]
+          : [
+              { publishedAt: "desc" as const },
+              { createdAt: "desc" as const },
+              { id: "desc" as const },
+            ];
 
     // ── PUBLIC / ANONYMOUS PATH ──────────────────────────────────────────
     // Always enforce status=PUBLISHED, scope ?authorId= strictly to authorId
@@ -308,6 +326,9 @@ export async function GET(request: NextRequest) {
         ...a,
         reviewerName: a.reviewedBy ? reviewerMap[a.reviewedBy] || null : null,
       };
+      if (a.status !== "PUBLISHED" && a.status !== "ARCHIVED") {
+        row.publishQuality = checkArticleQuality(a.content, a.featuredImage);
+      }
       if (status === "PUBLISHED") delete row.content;
       return row;
     });

@@ -6,6 +6,7 @@ import { Prisma, SorotanAngle } from "@prisma/client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { breadcrumbJsonLd, safeJsonLdStringify } from "@/lib/seo/json-ld";
+import { cleanSorotanTitle, sorotanToPlainText } from "@/lib/seo/sorotan-format";
 import { parsePositiveInt } from "@/lib/utils";
 
 // Pagination + angle filter canonical: page 1 tanpa filter → "/sorotan",
@@ -215,16 +216,10 @@ export default async function SorotanListPage({ searchParams: searchParamsPromis
                   </span>
                 </div>
                 <h2 className="line-clamp-2 sm:line-clamp-3 font-serif text-sm sm:text-base font-bold leading-snug text-txt-primary transition-colors group-hover:text-primary">
-                  {s.title}
+                  {cleanSorotanTitle(s.title) || s.title}
                 </h2>
                 <p className="mt-1.5 sm:mt-2 line-clamp-2 sm:line-clamp-3 text-xs sm:text-sm text-txt-secondary">
-                  {s.content
-                    .replace(/<[^>]+>/g, " ")
-                    .replace(/&nbsp;/gi, " ")
-                    .replace(/\s+/g, " ")
-                    .trim()
-                    .slice(0, 200)}
-                  …
+                  {sorotanToPlainText(s.content, 200)}
                 </p>
                 <div className="mt-auto pt-2.5 sm:pt-4 text-[11px] sm:text-xs text-txt-muted truncate">
                   <span>{s.article.author.name}</span>

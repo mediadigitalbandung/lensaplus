@@ -30,6 +30,11 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import {
+  formatBulkPublishToastMessage,
+  isBulkPublishableStatus,
+  type BulkPublishSkippedItem,
+} from "@/lib/bulk-publish";
 
 interface Article {
   id: string;
@@ -93,7 +98,7 @@ export default function AutoArtikelPage() {
   const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "";
   const isSuperAdmin = userRole === "SUPER_ADMIN";
-  const { success: showSuccess, error: showError } = useToast();
+  const { success: showSuccess, warning: showWarning, error: showError } = useToast();
   const { confirm } = useConfirm();
 
   const [enabled, setEnabled] = useState<boolean>(false);
@@ -474,10 +479,17 @@ export default function AutoArtikelPage() {
   async function bulkApi(
     action: "publish" | "delete",
     ids: string[],
-  ): Promise<{ done: number; failed: number }> {
+  ): Promise<{
+    done: number;
+    failed: number;
+    skipped: BulkPublishSkippedItem[];
+    lastError: string | null;
+  }> {
     const CHUNK = 200;
     let done = 0;
     let failed = 0;
+    const skipped: BulkPublishSkippedItem[] = [];
+    let lastError: string | null = null;
     setBulkProgress({ done: 0, total: ids.length });
     for (let i = 0; i < ids.length; i += CHUNK) {
       const slice = ids.slice(i, i + CHUNK);
@@ -487,9 +499,15 @@ export default function AutoArtikelPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action, ids: slice }),
         });
-        const json = await res.json();
+        const json = await res.json().catch(() => ({}));
+        if (Array.isArray(json.data?.skipped)) {
+          skipped.push(...(json.data.skipped as BulkPublishSkippedItem[]));
+        }
         if (!res.ok || !json.success) {
           failed += slice.length;
+          if (typeof json.error === "string" && json.error) {
+            lastError = json.error;
+          }
         } else {
           const succeeded =
             typeof json.data?.count === "number" ? json.data.count : slice.length;
@@ -502,28 +520,43 @@ export default function AutoArtikelPage() {
       setBulkProgress({ done: done + failed, total: ids.length });
     }
     setBulkProgress(null);
-    return { done, failed };
+    return { done, failed, skipped, lastError };
   }
 
   async function handlePublishAll(visible: Article[]) {
-    const drafts = visible.filter((a) => a.status !== "PUBLISHED");
+    const drafts = visible.filter((a) => isBulkPublishableStatus(a.status));
     if (drafts.length === 0) {
-      showError("Tidak ada draf untuk dipublikasi.");
+      showError("Tidak ada draf yang siap dipublikasi.");
       return;
     }
     const ok = await confirm({
       title: `Publikasikan ${drafts.length} artikel?`,
-      message: `Semua ${drafts.length} draf auto-article di tab ini akan langsung dipublikasi (status PUBLISHED, label VERIFIED, publishedAt sekarang). Sorotan/social/Cloudflare-purge tidak ikut di-trigger karena bulk — jalankan via panel Sorotan kalau perlu. Tidak ada tombol undo, gunakan Takedown per artikel untuk rollback.`,
+      message: `Semua ${drafts.length} artikel auto-article yang memenuhi syarat di tab ini akan dipublikasikan (status PUBLISHED, publishedAt sekarang). Artikel yang belum memenuhi syarat kualitas (min. 300 kata & gambar utama) akan otomatis dilewati. Gunakan Takedown per artikel untuk rollback.`,
       variant: "warning",
     });
     if (!ok) return;
     setBulkAction("publish");
     try {
-      const { done, failed } = await bulkApi(
+      const { done, skipped, lastError } = await bulkApi(
         "publish",
         drafts.map((d) => d.id),
       );
-      showSuccess(`Publish selesai: ${done} sukses${failed ? `, ${failed} gagal` : ""}.`);
+      if (done === 0 && skipped.length === 0 && lastError) {
+        showError(lastError);
+      } else {
+        const toastResult = formatBulkPublishToastMessage({
+          count: done,
+          requested: drafts.length,
+          skipped,
+        });
+        if (toastResult.type === "success") {
+          showSuccess(toastResult.message);
+        } else if (toastResult.type === "warning") {
+          showWarning(toastResult.message);
+        } else {
+          showError(toastResult.message);
+        }
+      }
       fetchArticles();
     } finally {
       setBulkAction(null);

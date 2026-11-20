@@ -12,6 +12,11 @@ import {
   organizationJsonLd,
   safeJsonLdStringify,
 } from "@/lib/seo/json-ld";
+import {
+  cleanSorotanTitle,
+  formatSorotanHtml,
+  sorotanToPlainText,
+} from "@/lib/seo/sorotan-format";
 
 const ANGLE_LABEL: Record<string, string> = {
   KRONOLOGI: "Kronologi",
@@ -95,8 +100,9 @@ export async function generateMetadata({ params: paramsPromise }: {
     return { title: "Sorotan Tidak Ditemukan" };
   }
 
+  const cleanTitle = cleanSorotanTitle(sorotan.title) || sorotan.title;
   const title = `${ANGLE_LABEL[sorotan.angle] ?? sorotan.angle} — ${sorotan.article.title}`;
-  const description = sorotan.content.slice(0, 160).replace(/\s+/g, " ").trim();
+  const description = sorotanToPlainText(sorotan.content, 160);
 
   return {
     title,
@@ -121,7 +127,7 @@ export async function generateMetadata({ params: paramsPromise }: {
             url: sorotan.article.featuredImage,
             width: 1200,
             height: 630,
-            alt: sorotan.title,
+            alt: cleanTitle,
           },
         ],
       }),
@@ -152,6 +158,10 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
     process.env.NEXT_PUBLIC_APP_URL || "https://lensaplus.com";
   const sorotanUrl = `${appUrl}/sorotan/${sorotan.slug}`;
   const angleLabel = ANGLE_LABEL[sorotan.angle] ?? sorotan.angle;
+  const cleanTitle = cleanSorotanTitle(sorotan.title) || sorotan.title;
+  const formattedHtml = formatSorotanHtml(sorotan.content);
+  const plainContent = sorotanToPlainText(sorotan.content);
+  const plainExcerpt = sorotanToPlainText(sorotan.content, 200);
 
   // JSON-LD. Sorotan adalah re-framing dari artikel utama (long-tail SEO),
   // jadi WAJIB declare isBasedOn → article asli supaya Google ngerti relasi
@@ -160,10 +170,10 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
   // long-tail spesifik (e.g. "kronologi kasus X").
   const articleLdBase = articleJsonLd(
     {
-      title: sorotan.title,
+      title: cleanTitle,
       slug: sorotan.slug,
-      excerpt: sorotan.content.slice(0, 200),
-      content: sorotan.content,
+      excerpt: plainExcerpt,
+      content: plainContent,
       featuredImage: article.featuredImage,
       publishedAt: sorotan.createdAt,
       updatedAt: sorotan.updatedAt,
@@ -197,12 +207,6 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
 
   const orgLd = organizationJsonLd();
 
-  // Split content into paragraphs for readable rendering.
-  const paragraphs = sorotan.content
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
   return (
     <>
       <script
@@ -231,7 +235,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
             </Link>
             <span>&gt;</span>
             <span className="truncate max-w-[200px] sm:max-w-[400px] text-txt-muted">
-              {sorotan.title}
+              {cleanTitle}
             </span>
           </nav>
 
@@ -253,7 +257,7 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
 
               {/* Title */}
               <h1 className="font-serif text-headline-sm font-extrabold leading-tight text-txt-primary tracking-tight sm:text-headline-md lg:text-display-sm">
-                {sorotan.title}
+                {cleanTitle}
               </h1>
 
               {/* Meta */}
@@ -290,21 +294,18 @@ export default async function SorotanDetailPage({ params: paramsPromise }: {
                 <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-lg">
                   <Image
                     src={article.featuredImage}
-                    alt={sorotan.title}
+                    alt={cleanTitle}
                     fill
                     className="object-cover"
                   />
                 </div>
               )}
 
-              {/* Content */}
-              <div className="mt-8 space-y-5 text-base sm:text-[17px] leading-[1.85] text-txt-primary text-justify">
-                {paragraphs.length > 0 ? (
-                  paragraphs.map((p, i) => <p key={i}>{p}</p>)
-                ) : (
-                  <p>{sorotan.content}</p>
-                )}
-              </div>
+              {/* Content — normalized & strictly XSS-sanitized editorial HTML */}
+              <div
+                className="article-content mt-8 text-base sm:text-[17px] leading-[1.85] text-txt-primary break-words text-justify [&_h2:first-child]:mt-0 [&_h3:first-child]:mt-0 [&_blockquote]:my-6 [&_blockquote]:px-5 [&_blockquote]:py-4 sm:[&_blockquote]:px-7 sm:[&_blockquote]:py-5 [&_blockquote>p:last-child]:mb-0 [&_strong]:font-semibold [&_strong]:text-on-surface"
+                dangerouslySetInnerHTML={{ __html: formattedHtml }}
+              />
 
               {/* Continue-reading CTA — clean editorial banner that funnels every
                   sorotan reader to the main article page. */}
@@ -378,7 +379,7 @@ async function OtherAngles({
                 {ANGLE_LABEL[o.angle] ?? o.angle}
               </span>
               <p className="mt-1.5 text-sm font-medium text-txt-primary transition-colors group-hover:text-primary line-clamp-2">
-                {o.title}
+                {cleanSorotanTitle(o.title) || o.title}
               </p>
             </Link>
           </li>
